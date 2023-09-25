@@ -214,13 +214,23 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		stubvm.ExecuteContainer = executeContainer
 		stubvm.CrashRunningContainer = finishContainer
 		stubvm.ExtraCrunchRunArgs = "'--runtime-engine=stub' '--foo' '--extra='\\''args'\\'''"
-		switch n % 7 {
-		case 0:
+		switch {
+		case n%7 == 0:
+			// some instances start out OK but then stop
+			// running any commands
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)
-		case 1:
+		case n%7 == 1:
+			// some instances never pass a run-probe
 			stubvm.CrunchRunMissing = true
-		case 2:
+		case n%7 == 2:
+			// some instances start out OK but then start
+			// reporting themselves as broken
 			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
+		case n == 3:
+			// 1 instance is completely broken, ensuring
+			// the boot_outcomes{outcome="failure"} metric
+			// is not zero
+			stubvm.CrunchRunCrashRate = 1
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
 			stubvm.ArvMountDeadlockRate = 0.1

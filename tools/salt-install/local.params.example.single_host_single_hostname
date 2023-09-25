@@ -86,7 +86,11 @@ KEEP_INT_IP=""
 KEEPSTORE0_INT_IP=""
 SHELL_INT_IP=""
 
-DISABLED_CONTROLLER=""
+DATABASE_NAME="${CLUSTER}_arvados"
+DATABASE_USER="${CLUSTER}_arvados"
+# Set these if using an external PostgreSQL service.
+#DATABASE_EXTERNAL_SERVICE_HOST_OR_IP=
+#DATABASE_POSTGRESQL_VERSION=
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

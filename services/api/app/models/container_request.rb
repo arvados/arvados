@@ -232,6 +232,13 @@ class ContainerRequest < ArvadosModel
   end
 
   def update_collections(container:, collections: ['log', 'output'])
+
+    # Check if parent is frozen or trashed, in which case it isn't
+    # valid to create new collections in the project, so return
+    # without creating anything.
+    owner = Group.find_by_uuid(self.owner_uuid)
+    return if owner && !owner.admin_change_permitted
+
     collections.each do |out_type|
       pdh = container.send(out_type)
       next if pdh.nil?

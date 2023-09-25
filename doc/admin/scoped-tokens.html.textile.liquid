@@ -36,6 +36,8 @@ Object update calls use the @PATCH@ method.  A scope of @["PATCH", "/arvados/v1/
 
 Similarly, you can use a scope of @["PATCH", "/arvados/v1/collections/zzzzz-4zz18-0123456789abcde"]@ to restrict updates to a single collection.
 
+There is one special exception to the scope rules: a valid token is always allowed to issue a request to "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current regardless of its scopes. This allows clients to reliably determine whether a request failed because a token is invalid, or because the token is not permitted to perform a particular request. The API server itself needs to be able to do this to validate tokens issued by other clusters in a federation.
+
 h2. Creating a scoped token
 
 A scoped token can be created at the command line:

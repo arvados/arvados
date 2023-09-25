@@ -28,25 +28,48 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-
-h2(#main). development main (as of 2023-08-15)
+h2(#v2_7_0). v2.7.0 (2023-09-21)
 
 "previous: Upgrading to 2.6.3":#v2_6_3
 
-h3. Crunchstat log format change
+h3. New system for live container logs
 
-The reported number of CPUs available in a container is now formatted in @crunchstat.txt@ log files and @crunchstat-summary@ text reports as a floating-point number rather than an integer (@2.00 cpus@ rather than @2 cpus@). Programs that parse these files may need to be updated accordingly.
+Starting with Arvados 2.7, a new system for fetching live container logs is in place.  This system features significantly reduced database load compared to previous releases.  When Workbench or another application needs to access the logs of a process (running or completed), they should use the "log endpoint of container_requests":{{ site.baseurl }}/api/methods/container_requests.html which forwards requests to the running container.  This supersedes the previous system where compute processes would send all of their logs to the database, which produced significant load.
+
+The legacy logging system is now disabled by default for all installations with the setting @Containers.Logging.LimitLogBytesForJob: 0@.  If you have an existing Arvados installation where you have customized this value and do not need the legacy container logging system, we recommend removing @LimitLogBytesForJob@ from your configuration.
+
+If you need to re-enable the legacy logging system, set @Containers.Logging.LimitLogBytesForJob@ to a positive value (the previous default was @Containers.Logging.LimitLogBytesForJob: 67108864@).
+
+h3. Workbench 1 deprecated
+
+The original Arvados Workbench application (referred to as "Workbench 1") is deprecated and will be removed in a future major version of Arvados.  Users are advised to migrate to "Workbench 2".  Starting with this release, new installations of Arvados will only set up Workbench 2 and no longer include Workbench 1 by default.
+
+It is also important to note that Workbench 1 only supports the legacy logging system, which is now disabled by default.  If you need to re-enable the legacy logging system, see above.
 
 h3. Multi-node installer's domain name configuration changes
 
 The @domain_name@ variable at @terraform/vpc/terraform.tfvars@ and @DOMAIN@ variable at @local.params@ changed their meaning. In previous versions they were used in combination with @cluster_name@ and @CLUSTER@ to build the cluster's domain name (e.g.: @cluster_name@.@domain_name@). To allow the use of any arbitrary cluster domain, now we don't enforce using the cluster prefix as part of the domain, so @domain_name@ and @DOMAIN@ need to hold the entire domain for the given cluster.
 For example, if @cluster_name@ is set to @"xarv1"@ and @domain_name@ was previously set to @"example.com"@, it should now be set to @"xarv1.example.com"@ to keep using the same cluster domain.
 
+h3. Crunchstat log format change
+
+The reported number of CPUs available in a container is now formatted in @crunchstat.txt@ log files and @crunchstat-summary@ text reports as a floating-point number rather than an integer (@2.00 cpus@ rather than @2 cpus@). Programs that parse these files may need to be updated accordingly.
+
 h3. arvados-login-sync configuration changes, including ignored groups
 
 In the @Users@ section of your cluster configuration, there are now several options to control what system resources are or are not managed by @arvados-login-sync@. These options all have names that begin with @Sync@.
 
 The defaults for all of these options match the previous behavior of @arvados-login-sync@ _except_ for @SyncIgnoredGroups@. This list names groups that @arvados-login-sync@ will never modify by adding or removing members. As a security precaution, the default list names security-sensitive system groups on Debian- and Red Hat-based distributions. If you are using Arvados to manage system group membership on shell nodes, especially @sudo@ or @wheel@, you may want to provide your own list. Set @SyncIgnoredGroups: []@ to restore the original behavior of ignoring no groups.
+
+h3. API clients can always retrieve their current token, regardless of scopes
+
+We have introduced a small exception to the previous behavior of "Arvados API token scopes":{{ site.baseurl }}/admin/scoped-tokens.html in this release. A valid token is now always allowed to issue a request to "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current regardless of its scopes. This allows clients to reliably determine whether a request failed because a token is invalid, or because the token is not permitted to perform a particular request. The API server itself needs to be able to do this to validate tokens issued by other clusters in a federation.
+
+h3. Deprecated/legacy APIs slated for removal
+
+The legacy APIs "humans":../api/methods/humans.html, "specimens":../api/methods/specimens.html, "traits":../api/methods/traits.html, "jobs":../api/methods/jobs.html, "job_tasks":../api/methods/job_tasks.html, "pipeline_instances":../api/methods/pipeline_instances.html, "pipeline_templates":../api/methods/pipeline_templates.html, "nodes":../api/methods/nodes.html, "repositories":../api/methods/repositories.html, and "keep_disks":../api/methods/keep_disks.html are deprecated and will be removed in a future major version of Arvados.
+
+In addition, the @default_owner_uuid@, @api_client_id@, and @user_id@ fields of "api_client_authorizations":../api/methods/api_client_authorizations.html are deprecated and will be removed from @api_client_authorization@ responses in a future major version of Arvados.  This should not affect clients as  @default_owner_uuid@ was never implemented, and @api_client_id@ and @user_id@ returned internal ids that were not meaningful or usable with any other API call.
 
 h3. UseAWSS3v2Driver option removed
 

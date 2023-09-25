@@ -656,6 +656,13 @@ handle_cwltest () {
     rm -rf "$WORKSPACE/cwltest"
   fi
   git clone https://github.com/common-workflow-language/cwltest.git
+
+  # The subsequent release of cwltest confirms that files exist on disk, since
+  # our files are in Keep, all the tests fail.
+  # We should add [optional] Arvados support to cwltest so it can access
+  # Keep but for the time being just package the last working version.
+  (cd cwltest && git checkout 2.3.20230108193615)
+
   # signal to our build script that we want a cwltest executable installed in /usr/bin/
   mkdir cwltest/bin && touch cwltest/bin/cwltest
   fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
@@ -792,7 +799,7 @@ fpm_build_virtualenv_worker () {
   PACKAGE_PATH=`(cd dist; ls *tar.gz)`
 
   if [[ "arvados-python-client" == "$PKG" ]]; then
-    PYSDK_PATH=`pwd`/dist/
+    PYSDK_PATH="-f $(pwd)/dist/"
   fi
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
@@ -856,16 +863,16 @@ fpm_build_virtualenv_worker () {
   echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
   else
     # centos7 needs these special tweaks to install python-arvados-fuse
     build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
+    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
   fi
 
   if [[ "$?" != "0" ]]; then
     echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH"
     exit 1
   fi
 

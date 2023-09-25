@@ -27,8 +27,6 @@ table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |uuid|string|An identifier used to refer to the token without exposing the actual token.||
 |api_token|string|The actual token string that is expected in the Authorization header.||
-|api_client_id|integer|-||
-|user_id|integer|-||
 |created_by_ip_address|string|-||
 |last_used_by_ip_address|string|The network address of the most recent client using this token.||
 |last_used_at|datetime|Timestamp of the most recent request using this token.||
@@ -64,6 +62,15 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |api_client_id|integer||query||
 |scopes|array||query||
+
+h3(#current). current
+
+Return the full record associated with the provided API token. This endpoint is often used to check the validity of a given token.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
 
 h3. delete
 

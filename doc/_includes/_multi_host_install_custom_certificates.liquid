@@ -20,14 +20,17 @@ Copy your certificates to the directory specified with the variable @CUSTOM_CERT
 
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
-# @controller@
-# @websocket@        -- note: corresponds to default domain @ws.${DOMAIN}@
-# @keepproxy@        -- note: corresponds to default domain @keep.${DOMAIN}@
-# @download@         -- Part of keepweb
+# @balancer@         -- Optional on multi-node installations
 # @collections@      -- Part of keepweb, must be a wildcard for @*.collections.${DOMAIN}@
+# @controller@
+# @download@         -- Part of keepweb
+# @grafana@          -- Service available by default on multi-node installations
+# @keepproxy@        -- Corresponds to default domain @keep.${DOMAIN}@
+# @prometheus@       -- Service available by default on multi-node installations
+# @webshell@
+# @websocket@        -- Corresponds to default domain @ws.${DOMAIN}@
 # @workbench@
 # @workbench2@
-# @webshell@
 
 For example, for the @keepproxy@ service the script will expect to find this certificate:
 

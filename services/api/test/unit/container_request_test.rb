@@ -1498,6 +1498,22 @@ class ContainerRequestTest < ActiveSupport::TestCase
       # the cr's container now has priority of 0
       c.reload
       assert_equal 0, c.priority
+
+      assert_equal c.state, 'Running'
+      assert_equal cr.state, 'Committed'
+
+      # mark the container as cancelled, this should cause the
+      # container request to go to final state and run the finalize
+      # function
+      act_as_system_user do
+        c.update_attributes!(state: 'Cancelled', log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+      end
+      c.reload
+      cr.reload
+
+      assert_equal c.state, 'Cancelled'
+      assert_equal cr.state, 'Final'
+      assert_equal nil, cr.log_uuid
     end
   end
 

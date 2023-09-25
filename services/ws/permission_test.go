@@ -21,7 +21,7 @@ func (s *permSuite) TestCheck(c *check.C) {
 	// Disable auto-retry
 	client.Timeout = 0
 
-	pc := newPermChecker(*client).(*cachingPermChecker)
+	pc := newPermChecker(client).(*cachingPermChecker)
 	setToken := func(label, token string) {
 		c.Logf("...%s token %q", label, token)
 		pc.SetToken(token)
@@ -73,7 +73,7 @@ func (s *permSuite) TestCheck(c *check.C) {
 	pc.SetToken(arvadostest.ActiveToken)
 
 	c.Log("...network error")
-	pc.Client.APIHost = "127.0.0.1:9"
+	pc.ac.APIHost = "127.0.0.1:9"
 	wantError(arvadostest.UserAgreementCollection)
 	wantError(arvadostest.FooBarDirCollection)
 

@@ -21,6 +21,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Choose the SSL configuration":#certificates
 ## "Using a Let's Encrypt certificates":#lets-encrypt
 ## "Bring your own certificates":#bring-your-own
+### "Securing your TLS certificate keys":#secure-tls-keys
 # "Create a compute image":#create_a_compute_image
 # "Begin installation":#installation
 # "Further customization of the installation":#further_customization
@@ -31,7 +32,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Initial user and login":#initial_user
 # "Monitoring and Metrics":#monitoring
 # "Load balancing controllers":#load_balancing
-## "Rolling upgrades procedure":#rolling-upgrades
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
@@ -268,8 +268,8 @@ The @local.params.secrets@ file is intended to store security-sensitive data suc
 
 h3. Parameters from @local.params@:
 
-# Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
-# Set @DOMAIN@ to the base DNS domain of the environment, e.g. "xarv1.example.com"
+# Set @CLUSTER@ to the 5-character cluster identifier. (e.g. "xarv1")
+# Set @DOMAIN@ to the base DNS domain of the environment. (e.g. "xarv1.example.com")
 # Set the @*_INT_IP@ variables with the internal (private) IP addresses of each host. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
 # Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.  If you used terraform, this is emitted as @cluster_int_cidr@.
 _CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network._
@@ -314,16 +314,14 @@ The @multi_host/aws@ template uses S3 for storage.  Arvados also supports "files
 
 h3. Object storage in S3 (AWS Specific)
 
-Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
+If you "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
 
-# In the @arvados.cluster.Volumes.DriverParameters@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
+If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters in @local.params@:
 
-If "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
+# Set @KEEP_AWS_S3_BUCKET@ to the value of "keepstore bucket you created earlier":#keep-bucket
+# Set @KEEP_AWS_IAM_ROLE@ to "keepstore role you created earlier":#keep-bucket
 
-If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters as well:
-
-# Set @Bucket@ to the value of "keepstore bucket you created earlier":#keep-bucket
-# Set @IAMRole@ to "keepstore role you created earlier":#keep-bucket
+You can also configure a specific AWS Region for the S3 bucket by setting @KEEP_AWS_REGION@.
 
 {% include 'ssl_config_multi' %}
 
@@ -343,11 +341,13 @@ Arvados requires a database that is compatible with PostgreSQL 9.5 or later.  Fo
   ...
 )
 </code></pre>
-# In @local.params@, set @DATABASE_INT_IP@ to the database endpoint (can be a hostname, does not have to be an IP address).
-<pre><code>DATABASE_INT_IP=...
+# In @local.params@, set @DATABASE_INT_IP@ to empty string and @DATABASE_EXTERNAL_SERVICE_HOST_OR_IP@ to the database endpoint (can be a hostname, does not have to be an IP address).
+<pre><code>DATABASE_INT_IP=""
+...
+DATABASE_EXTERNAL_SERVICE_HOST_OR_IP="arvados.xxxxxxx.eu-east-1.rds.amazonaws.com"
 </code></pre>
-# In @local.params@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
-# In @local_config_dir/pillars/arvados.sls@ you may need to adjust the database name and user.  This can be found in the section @arvados.cluster.database@.
+# In @local.params.secrets@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
+# In @local.params@ you may need to adjust the database name and user.
 
 h2(#further_customization). Further customization of the installation (optional)
 
@@ -520,57 +520,9 @@ Once the infrastructure is deployed, you'll then need to define which node will 
 )
 </code></pre>
 
-Note that we also set the @database@ role to its own node.
+Note that we also set the @database@ role to its own node instead of just leaving it in a shared controller node.
 
-h3(#rolling-upgrades). Rolling upgrades procedure
-
-Once you have more than one controller backend node, it's easy to take one at a time from the backend pool to upgrade it to a newer version of Arvados (which might involve applying database migrations) by adding its name to the @DISABLED_CONTROLLER@ variable in @local.params@. For example:
-
-<pre><code>...
-DISABLED_CONTROLLER="controller1"
-...</code></pre>
-
-Then, apply the configuration change to just the load-balancer:
-
-<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
-
-This will allow you to do the necessary changes to the @controller1@ node without service disruption, as it will not be receiving any traffic until you remove it from the @DISABLED_CONTROLLER@ variable.
-
-Next step is applying the @deploy@ command to @controller1@:
-
-<pre><code class="userinput">./installer.sh deploy controller1.xarv1.example.com</code></pre>
-
-After that, disable the other controller node by editing @local.params@:
-
-<pre><code>...
-DISABLED_CONTROLLER="controller2"
-...</code></pre>
-
-...applying the changes on the balancer node:
-
-<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
-
-Then, deploy the changes to the recently disabled @controller2@ node:
-
-<pre><code class="userinput">./installer.sh deploy controller2.xarv1.example.com</code></pre>
-
-This won't cause a service interruption because the load balancer is already routing all traffic to the othe @controller1@ node.
-
-And the last step is enabling both controller nodes by making the following change to @local.params@:
-
-<pre><code>...
-DISABLED_CONTROLLER=""
-...</code></pre>
-
-...and running:
-
-<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
-
-This should get all your @controller@ nodes correctly upgraded, and you can continue executing the @deploy@ command with the rest of the nodes individually, or just run:
-
-<pre><code class="userinput">./installer.sh deploy</code></pre>
-
-Only the nodes with pending changes might require certain services to be restarted. In this example, the @workbench@ node will have the remaining Arvados services upgraded and restarted. However, these services are not as critical as the ones on the @controller@ nodes.
+Each time you run @installer.sh deploy@, the system will automatically do rolling upgrades. This means it will make changes to one controller node at a time, after removing it from the balancer so that there's no downtime.
 
 h2(#post_install). After the installation
 

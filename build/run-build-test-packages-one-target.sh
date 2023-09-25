@@ -31,6 +31,8 @@ Syntax:
     Version to build (default:
     \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
     0.1.timestamp.commithash)
+--skip-docker-build
+    Don't try to build Docker images
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -53,7 +55,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,upload,rc,target:,force-test,only-build:,force-build,arch:,build-version: \
+    help,debug,upload,rc,target:,force-test,only-build:,force-build,arch:,build-version:,skip-docker-build \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -102,6 +104,9 @@ while [ $# -gt 0 ]; do
             build_args+=("$1" "$2")
             shift
             ;;
+        --skip-docker-build)
+            SKIP_DOCKER_BUILD=1
+	    ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -124,6 +129,10 @@ fi
 
 if [[ -n "$FORCE_TEST" ]]; then
   build_args+=(--force-test)
+fi
+
+if [[ "$SKIP_DOCKER_BUILD" = 1 ]]; then
+  build_args+=(--skip-docker-build)
 fi
 
 if [[ -n "$ARCH" ]]; then
