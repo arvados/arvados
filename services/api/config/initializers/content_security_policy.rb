@@ -1,7 +1,3 @@
-# Copyright (C) The Arvados Authors. All rights reserved.
-#
-# SPDX-License-Identifier: AGPL-3.0
-
 # Be sure to restart your server when you modify this file.
 
 # Define an application-wide content security policy
@@ -22,6 +18,9 @@
 
 # If you are using UJS then enable automatic nonce generation
 # Rails.application.config.content_security_policy_nonce_generator = -> request { SecureRandom.base64(16) }
+
+# Set the nonce only to specific directives
+# Rails.application.config.content_security_policy_nonce_directives = %w(script-src)
 
 # Report CSP violations to a specified URI
 # For further information see the following documentation:

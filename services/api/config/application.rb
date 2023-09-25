@@ -5,41 +5,23 @@
 require_relative 'boot'
 
 require "rails"
-# Pick only the frameworks we need:
+# Pick the frameworks you want:
 require "active_model/railtie"
 require "active_job/railtie"
 require "active_record/railtie"
+# require "active_storage/engine"
 require "action_controller/railtie"
 require "action_mailer/railtie"
+# require "action_mailbox/engine"
+# require "action_text/engine"
 require "action_view/railtie"
+# require "action_cable/engine"
 require "sprockets/railtie"
 require "rails/test_unit/railtie"
-# Skipping the following:
-# * ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
-# * ActiveStorage (new in Rails 5.1)
 
-require 'digest'
-
-module Kernel
-  def suppress_warnings
-    verbose_orig = $VERBOSE
-    begin
-      $VERBOSE = nil
-      yield
-    ensure
-      $VERBOSE = verbose_orig
-    end
-  end
-end
-
-if defined?(Bundler)
-  suppress_warnings do
-    # If you precompile assets before deploying to production, use this line
-    Bundler.require(*Rails.groups(:assets => %w(development test)))
-    # If you want your assets lazily compiled in production, use this line
-    # Bundler.require(:default, :assets, Rails.env)
-  end
-end
+# Require the gems listed in Gemfile, including any gems
+# you've limited to :test, :development, or :production.
+Bundler.require(*Rails.groups)
 
 if ENV["ARVADOS_RAILS_LOG_TO_STDOUT"]
   Rails.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
@@ -50,41 +32,29 @@ module Server
 
     require_relative "arvados_config.rb"
 
+    # Initialize configuration defaults for originally generated Rails version.
+    config.load_defaults 5.0
+
     # Settings in config/environments/* take precedence over those specified here.
-    # Application configuration should go into files in config/initializers
-    # -- all .rb files in that directory are automatically loaded.
+    # Application configuration can go into files in config/initializers
+    # -- all .rb files in that directory are automatically loaded after loading
+    # the framework and any gems in your application.
 
-    # Custom directories with classes and modules you want to be autoloadable.
-    # config.autoload_paths += %W(#{config.root}/extras)
-
-    # Only load the plugins named here, in the order given (default is alphabetical).
-    # :all can be used as a placeholder for all plugins not explicitly named.
-    # config.plugins = [ :exception_notification, :ssl_requirement, :all ]
-
-    # Activate observers that should always be running.
-    # config.active_record.observers = :cacher, :garbage_collector, :forum_observer
+    # We use db/structure.sql instead of db/schema.rb.
     config.active_record.schema_format = :sql
 
-    # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
-    # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
-    # config.i18n.default_locale = :de
-
-    # Configure sensitive parameters which will be filtered from the log file.
-    config.filter_parameters += [:password]
-
-    # Load entire application at startup.
     config.eager_load = true
 
     config.active_support.test_order = :sorted
 
+    # container_request records can contain arbitrary data structures
+    # in mounts.*.content, so rails must not munge them.
     config.action_dispatch.perform_deep_munge = false
-
+    
     # force_ssl's redirect-to-https feature doesn't work when the
     # client supplies a port number, and prevents arvados-controller
     # from connecting to Rails internally via plain http.
     config.ssl_options = {redirect: false}
-
-    I18n.enforce_available_locales = false
 
     # Before using the filesystem backend for Rails.cache, check
     # whether we own the relevant directory. If we don't, using it is
