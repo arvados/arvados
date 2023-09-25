@@ -38,13 +38,12 @@ Gem::Specification.new do |s|
   s.files       = ["bin/arv", "bin/arv-tag", "LICENSE-2.0.txt"]
   s.executables << "arv"
   s.executables << "arv-tag"
-  s.required_ruby_version = '>= 2.1.0'
-  s.add_runtime_dependency 'arvados', '>= 1.4.1.20190320201707'
-  # Our google-api-client dependency used to be < 0.9, but that could be
-  # satisfied by the buggy 0.9.pre*, cf. https://dev.arvados.org/issues/9213
-  # We need at least version 0.8.7.3, cf. https://dev.arvados.org/issues/15673
-  s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.3', '< 0.8.9')
-  s.add_runtime_dependency 'activesupport', '>= 3.2.13', '< 5.3'
+  s.required_ruby_version = '>= 2.5.0'
+  s.add_runtime_dependency 'arvados', '~> 2.7.0.rc1'
+  # arvados fork of google-api-client gem with old API and new
+  # compatibility fixes, built from ../ruby-google-api-client/
+  s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
+  s.add_runtime_dependency 'activesupport', '>= 3.2.13', '< 8.0'
   s.add_runtime_dependency 'json', '>= 1.7.7', '<3'
   s.add_runtime_dependency 'optimist', '~> 3.0'
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'

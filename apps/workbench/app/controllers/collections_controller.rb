@@ -376,7 +376,7 @@ class CollectionsController < ApplicationController
       uri.path += 't=' + opts[:path_token] + '/'
     end
     uri.path += '_/'
-    uri.path += URI.escape(file) if file
+    uri.path += ERB::Util.url_encode(file).gsub('%2F', '/') if file
 
     query = Hash[URI.decode_www_form(uri.query || '')]
     { query_token: 'api_token',
