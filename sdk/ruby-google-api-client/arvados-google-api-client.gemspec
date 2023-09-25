@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.files += Dir.glob("vendor/**/*.rb")
   s.files += Dir.glob("tasks/**/*")
   s.files += Dir.glob("website/**/*")
-  s.homepage = "https://github.com/arvados/google-api-ruby-client/"
+  s.homepage = "https://github.com/arvados/arvados/tree/main/sdk/ruby-google-api-client"
   s.rdoc_options = ["--main", "README.md"]
   s.summary = "Fork of google-api-client used by Ruby-based Arvados components."
 
