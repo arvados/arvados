@@ -1028,6 +1028,7 @@ test_sdk/ruby() {
 }
 
 test_sdk/ruby-google-api-client() {
+    echo "*** note \`test sdk/ruby-google-api-client\` does not actually run any tests, see https://dev.arvados.org/issues/20993 ***"
     true
 }
 
