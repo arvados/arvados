@@ -105,13 +105,12 @@ class UserSessionsController < ApplicationController
     if params[:remote] !~ /^[0-9a-z]{5}$/ && !params[:remote].nil?
       return send_error 'Invalid remote cluster id', status: 400
     end
-    if current_user and params[:return_to]
+    if current_user && params[:return_to] == "https://controller.api.client.invalid"
       # Already logged in; just need to send a token to the requesting
-      # API client.
-      #
-      # FIXME: if current_user has never authorized this app before,
-      # ask for confirmation here!
-
+      # API client. Note, although this response looks like it's meant
+      # to be sent to a web browser, in fact the only supported use
+      # case is where our client is arvados-controller, giving us the
+      # placeholder URL https://controller.api.client.invalid.
       return send_api_token_to(params[:return_to], current_user, params[:remote])
     end
     p = []
@@ -173,7 +172,7 @@ class UserSessionsController < ApplicationController
       token = @api_client_auth.salted_token(remote: remote)
     end
     callback_url += 'api_token=' + token
-    redirect_to callback_url
+    redirect_to callback_url, allow_other_host: true
   end
 
   def cross_origin_forbidden
