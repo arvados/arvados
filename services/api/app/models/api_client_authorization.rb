@@ -389,7 +389,9 @@ class ApiClientAuthorization < ArvadosModel
         rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
           Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
           # Some other request won the race: retry fetching the user record.
-          user = User.find_by_uuid(remote_user['uuid'])
+          user = User.uncached do
+            User.find_by_uuid(remote_user['uuid'])
+          end
           if !user
             Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
             return nil
