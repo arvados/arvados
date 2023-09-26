@@ -113,13 +113,6 @@ export const processResourceActionSet: ContextMenuActionSet = [
                 dispatch<any>(openRemoveProcessDialog(resource.uuid));
             },
         },
-        // {
-        //     name: "Cancel",
-        //     icon: StopIcon,
-        //     execute: (dispatch, resource) => {
-        //         dispatch<any>(cancelRunningWorkflow(resource.uuid));
-        //     },
-        // },
     ],
 ];
 
@@ -127,7 +120,7 @@ export const runningProcessResourceActionSet = [
     [
         ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
         {
-            name: "Cancel",
+            name: "CANCEL",
             icon: StopIcon,
             execute: (dispatch, resource) => {
                 dispatch(cancelRunningWorkflow(resource.uuid));
@@ -146,6 +139,28 @@ export const processResourceAdminActionSet: ContextMenuActionSet = [
                 dispatch<any>(togglePublicFavorite(resource)).then(() => {
                     dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
                 });
+            },
+        },
+    ],
+];
+
+export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
+    [
+        ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
+        {
+            component: TogglePublicFavoriteAction,
+            name: "Add to public favorites",
+            execute: (dispatch, resource) => {
+                dispatch<any>(togglePublicFavorite(resource)).then(() => {
+                    dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
+                });
+            },
+        },
+        {
+            name: "CANCEL",
+            icon: StopIcon,
+            execute: (dispatch, resource) => {
+                dispatch<any>(cancelRunningWorkflow(resource.uuid));
             },
         },
     ],

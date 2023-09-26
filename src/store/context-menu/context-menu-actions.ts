@@ -300,12 +300,14 @@ export const resourceUuidToContextMenuKind =
                     : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
                 return isAdminUser && isEditable
-                    ? ContextMenuKind.PROCESS_ADMIN
+                    ? resource && isProcessCancelable(getProcess(resource.uuid)(getState().resources) as Process)
+                        ? ContextMenuKind.RUNNING_PROCESS_ADMIN
+                        : ContextMenuKind.PROCESS_ADMIN
                     : readonly
                     ? ContextMenuKind.READONLY_PROCESS_RESOURCE
                     : resource && isProcessCancelable(getProcess(resource.uuid)(getState().resources) as Process)
-                    ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
-                    : ContextMenuKind.PROCESS_RESOURCE;
+                    ? ContextMenuKind.PROCESS_RESOURCE
+                    : ContextMenuKind.RUNNING_PROCESS_RESOURCE;
             case ResourceKind.USER:
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:

@@ -56,6 +56,7 @@ import {
     processResourceActionSet,
     runningProcessResourceActionSet,
     processResourceAdminActionSet,
+    runningProcessResourceAdminActionSet,
     readOnlyProcessResourceActionSet,
 } from "views-components/context-menu/action-sets/process-resource-action-set";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
@@ -122,6 +123,7 @@ addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);
 addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
+addMenuActionSet(ContextMenuKind.RUNNING_PROCESS_ADMIN, runningProcessResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
