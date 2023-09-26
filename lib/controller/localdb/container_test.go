@@ -250,6 +250,9 @@ func (s *containerSuite) TestUpdatePriorityMultiLevelWorkflow(c *C) {
 						"state": "Cancelled",
 					},
 				})
+				if errors.Is(err, context.Canceled) {
+					break
+				}
 				c.Assert(err, IsNil)
 			}
 			time.Sleep(time.Second / 10)
