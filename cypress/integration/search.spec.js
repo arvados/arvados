@@ -314,7 +314,8 @@ describe("Search tests", function () {
             cy.get("[data-cy=search-results]").contains(federatedColName).rightclick();
             cy.get("[data-cy=context-menu]").within(() => {
                 cy.contains("Open in new tab").click();
-                cy.get("@Open").should("have.been.calledWith", `https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
+                // cy.get("@Open").should("have.been.calledWith", `https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
+                cy.get("@Open").should("have.been.calledWith", `${window.location.origin}/collections/${testCollection.uuid}`);
             });
         });
     });

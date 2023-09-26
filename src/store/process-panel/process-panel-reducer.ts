@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { OutputDetails, ProcessPanel } from "store/process-panel/process-panel";
+import { ProcessPanel } from "store/process-panel/process-panel";
 import { ProcessPanelAction, processPanelActions } from "store/process-panel/process-panel-actions";
 
 const initialState: ProcessPanel = {
