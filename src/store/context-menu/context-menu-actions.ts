@@ -306,8 +306,8 @@ export const resourceUuidToContextMenuKind =
                     : readonly
                     ? ContextMenuKind.READONLY_PROCESS_RESOURCE
                     : resource && isProcessCancelable(getProcess(resource.uuid)(getState().resources) as Process)
-                    ? ContextMenuKind.PROCESS_RESOURCE
-                    : ContextMenuKind.RUNNING_PROCESS_RESOURCE;
+                    ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
+                    : ContextMenuKind.PROCESS_RESOURCE;
             case ResourceKind.USER:
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:
