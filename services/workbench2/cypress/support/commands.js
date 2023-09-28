@@ -34,12 +34,16 @@ const controllerURL = Cypress.env('controller_url');
 const systemToken = Cypress.env('system_token');
 let createdResources = [];
 
-// Clean up on a 'before' hook to allow post-mortem analysis on individual tests.
-beforeEach(function () {
+const containerLogFolderPrefix = 'log for container ';
+
+// Clean up anything that was created.  You can temporarily add
+// 'return' to the top if you need the resources to hang around to
+// debug a specific test.
+afterEach(function () {
     if (createdResources.length === 0) {
         return;
     }
-    cy.log(`Cleaning ${createdResources.length} previously created resource(s)`);
+    cy.log(`Cleaning ${createdResources.length} previously created resource(s).`);
     createdResources.forEach(function({suffix, uuid}) {
         // Don't fail when a resource isn't already there, some objects may have
         // been removed, directly or indirectly, from the test that created them.
@@ -63,7 +67,7 @@ Cypress.Commands.add(
 });
 
 Cypress.Commands.add(
-    "doKeepRequest", (method = 'GET', path = '', data = null, qs = null,
+    "doWebDAVRequest", (method = 'GET', path = '', data = null, qs = null,
         token = systemToken, auth = false, followRedirect = true, failOnStatusCode = true) => {
     return cy.doRequest('GET', '/arvados/v1/config', null, null).then(({body: config}) => {
         return cy.request({
@@ -193,6 +197,17 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "collectionReplaceFiles", (token, uuid, data) => {
+        return cy.updateResource(token, 'collections', uuid, {
+            collection: {
+                preserve_version: true,
+            },
+            replace_files: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
     "getContainer", (token, uuid) => {
         return cy.getResource(token, 'containers', uuid)
     }
@@ -237,57 +252,60 @@ Cypress.Commands.add(
         cy.getContainerRequest(token, crUuid).then((containerRequest) => {
             if (containerRequest.log_uuid) {
                 cy.listContainerRequestLogs(token, crUuid).then((logFiles) => {
+                    const filePath = `${containerRequest.log_uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}/${fileName}`;
                     if (logFiles.find((file) => (file.name === fileName))) {
                         // File exists, fetch and append
-                        return cy.doKeepRequest(
+                        return cy.doWebDAVRequest(
                                 "GET",
-                                `c=${containerRequest.log_uuid}/${fileName}`,
+                                `c=${filePath}`,
                                 null,
                                 null,
                                 token
                             )
-                            .then(({ body: contents }) => cy.doKeepRequest(
+                            .then(({ body: contents }) => cy.doWebDAVRequest(
                                 "PUT",
-                                `c=${containerRequest.log_uuid}/${fileName}`,
+                                `c=${filePath}`,
                                 contents.split("\n").concat(lines).join("\n"),
                                 null,
                                 token
                             ));
                     } else {
                         // File not exists, put new file
-                        cy.doKeepRequest(
+                        cy.doWebDAVRequest(
                             "PUT",
-                            `c=${containerRequest.log_uuid}/${fileName}`,
+                            `c=${filePath}`,
                             lines.join("\n"),
                             null,
                             token
                         )
                     }
                 });
-                // Fetch current log contents and append new line
-                // let newLines = [...lines];
-                // return cy.doKeepRequest('GET', `c=${containerRequest.log_uuid}/${fileName}`, null, null, token)
-                //     .then(({body: contents}) => {
-                //         newLines = [contents.split('\n'), ...newLines];
-                //     })
-                //     .then(() => (
-                //         cy.doKeepRequest('PUT', `c=${containerRequest.log_uuid}/${fileName}`, newLines.join('\n'), null, token)
-                //     ));
             } else {
                 // Create log collection
                 return cy.createCollection(token, {
                     name: `Test log collection ${Math.floor(Math.random() * 999999)}`,
                     owner_uuid: containerRequest.owner_uuid,
                     manifest_text: ""
-                }).then((collection) => (
+                }).then((collection) => {
                     // Update CR log_uuid to fake log collection
                     cy.updateContainerRequest(token, containerRequest.uuid, {
                         log_uuid: collection.uuid,
                     }).then(() => (
-                        // Put new log file with contents into fake log collection
-                        cy.doKeepRequest('PUT', `c=${collection.uuid}/${fileName}`, lines.join('\n'), null, token)
-                    ))
-                ));
+                        // Create empty directory for container uuid
+                        cy.collectionReplaceFiles(token, collection.uuid, {
+                            [`/${containerLogFolderPrefix}${containerRequest.container_uuid}`]: "d41d8cd98f00b204e9800998ecf8427e+0"
+                        }).then(() => (
+                            // Put new log file with contents into fake log collection
+                            cy.doWebDAVRequest(
+                                'PUT',
+                                `c=${collection.uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}/${fileName}`,
+                                lines.join('\n'),
+                                null,
+                                token
+                            )
+                        ))
+                    ));
+                });
             }
         })
     )
@@ -296,7 +314,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "listContainerRequestLogs", (token, crUuid) => (
         cy.getContainerRequest(token, crUuid).then((containerRequest) => (
-            cy.doKeepRequest('PROPFIND', `c=${containerRequest.log_uuid}`, null, null, token)
+            cy.doWebDAVRequest('PROPFIND', `c=${containerRequest.log_uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}`, null, null, token)
                 .then(({body: data}) => {
                     return extractFilesData(new DOMParser().parseFromString(data, "text/xml"));
                 })

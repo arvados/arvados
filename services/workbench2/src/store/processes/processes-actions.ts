@@ -40,7 +40,7 @@ export const loadProcess = (containerRequestUuid: string) =>
             try {
                 const collection = await services.collectionService.get(containerRequest.outputUuid, false);
                 dispatch<any>(updateResources([collection]));
-            } catch {}
+            } catch { }
         }
 
         if (containerRequest.containerUuid) {
@@ -48,14 +48,14 @@ export const loadProcess = (containerRequestUuid: string) =>
             try {
                 container = await services.containerService.get(containerRequest.containerUuid, false);
                 dispatch<any>(updateResources([container]));
-            } catch {}
+            } catch { }
 
-            try{
+            try {
                 if (container && container.runtimeUserUuid) {
                     const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
                     dispatch<any>(updateResources([runtimeUser]));
                 }
-            } catch {}
+            } catch { }
 
             return { containerRequest, container };
         }
@@ -67,7 +67,7 @@ export const loadContainers = (containerUuids: string[], loadMounts: boolean = t
         let args: any = {
             filters: new FilterBuilder().addIn('uuid', containerUuids).getFilters(),
             limit: containerUuids.length,
-         };
+        };
         if (!loadMounts) {
             args.select = containerFieldsNoMounts;
         }
@@ -112,6 +112,7 @@ const containerFieldsNoMounts = [
     "scheduling_parameters",
     "started_at",
     "state",
+    "subrequests_cost",
     "uuid",
 ]
 
@@ -210,7 +211,7 @@ export const getRawInputs = (data: any): WorkflowInputsData | undefined => {
 export const getInputs = (data: any): CommandInputParameter[] => {
     // Definitions from mounts are needed so we return early if missing
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
-    const content  = getRawInputs(data) as any;
+    const content = getRawInputs(data) as any;
     // Only escape if content is falsy to allow displaying definitions if no inputs are present
     // (Don't check raw content length)
     if (!content) { return []; }
@@ -252,8 +253,8 @@ export const getInputCollectionMounts = (data: any): InputCollectionMount[] => {
             path: key,
         }))
         .filter(mount => mount.kind === 'collection' &&
-                mount.portable_data_hash &&
-                mount.path)
+            mount.portable_data_hash &&
+            mount.path)
         .map(mount => ({
             path: mount.path,
             pdh: mount.portable_data_hash,
@@ -297,7 +298,7 @@ export const removeProcessPermanently = (uuid: string) =>
             await services.containerRequestService.delete(uuid, false);
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        } catch(e) {
+        } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN) {
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));

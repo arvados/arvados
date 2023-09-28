@@ -91,7 +91,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 };
 
 
-const FrozenProject = (props: {item: ProjectResource}) => {
+const FrozenProject = (props: { item: ProjectResource }) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
         if (props.item.frozenByUuid) {
@@ -102,7 +102,7 @@ const FrozenProject = (props: {item: ProjectResource}) => {
     if (props.item.frozenByUuid) {
 
         return <Tooltip onOpen={getFullName} enterDelay={500} title={<span>Project was frozen by {fullUsername}</span>}>
-            <FreezeIcon style={{ fontSize: "inherit" }}/>
+            <FreezeIcon style={{ fontSize: "inherit" }} />
         </Tooltip>;
     } else {
         return null;
@@ -115,7 +115,7 @@ export const ResourceName = connect(
         return resource;
     })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
-    
+
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
@@ -230,12 +230,12 @@ export const UserResourceFullName = connect(
 const renderUuid = (item: { uuid: string }) =>
     <Typography data-cy="uuid" noWrap>
         {item.uuid}
-        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-'}
     </Typography>;
 
 const renderUuidCopyIcon = (item: { uuid: string }) =>
     <Typography data-cy="uuid" noWrap>
-        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-'}
     </Typography>;
 
 export const ResourceUuid = connect((state: RootState, props: { uuid: string }) => (
@@ -617,11 +617,8 @@ export const ResourceLinkTailPermissionLevel = connect(
 
 const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
     const headResource = getResource<Resource>(link.headUuid)(state.resources);
-    // const tailResource = getResource<Resource>(link.tailUuid)(state.resources);
-    const userUuid = getUserUuid(state);
-
     if (headResource && headResource.kind === ResourceKind.GROUP) {
-        return userUuid ? (headResource as GroupResource).writableBy?.includes(userUuid) : false;
+        return (headResource as GroupResource).canManage;
     } else {
         // true for now
         return true;
@@ -687,12 +684,12 @@ const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, c
     const selectedColumnUuid = item[column]
     return <Grid container alignItems="center" wrap="nowrap" >
         <Grid item>
-            {selectedColumnUuid ? 
-                <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} noWrap 
+            {selectedColumnUuid ?
+                <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} noWrap
                     onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}>
-                    {selectedColumnUuid} 
-                </Typography> 
-            : '-' }
+                    {selectedColumnUuid}
+                </Typography>
+                : '-'}
         </Grid>
         <Grid item>
             {selectedColumnUuid && renderUuidCopyIcon({ uuid: selectedColumnUuid })}
@@ -716,20 +713,20 @@ export const ResourceParentProcess = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
         return { parentProcess: process?.containerRequest?.requestingContainerUuid || '' };
-    })((props: { parentProcess: string }) => renderUuid({uuid: props.parentProcess}));
+    })((props: { parentProcess: string }) => renderUuid({ uuid: props.parentProcess }));
 
 export const ResourceModifiedByUserUuid = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
         return { userUuid: process?.containerRequest?.modifiedByUserUuid || '' };
-    })((props: { userUuid: string }) => renderUuid({uuid: props.userUuid}));
+    })((props: { userUuid: string }) => renderUuid({ uuid: props.userUuid }));
 
-    export const ResourceCreatedAtDate = connect(
+export const ResourceCreatedAtDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { date: resource ? resource.createdAt : '' };
     })((props: { date: string }) => renderDate(props.date));
-    
+
 export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
@@ -787,39 +784,39 @@ export const ResourceUUID = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
         return { uuid: resource ? resource.uuid : '' };
-    })((props: { uuid: string }) => renderUuid({uuid: props.uuid}));
+    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
-const renderVersion = (version: number) =>{
+const renderVersion = (version: number) => {
     return <Typography>{version ?? '-'}</Typography>
 }
 
 export const ResourceVersion = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        return { version: resource ? resource.version: '' };
+        return { version: resource ? resource.version : '' };
     })((props: { version: number }) => renderVersion(props.version));
-    
-const renderPortableDataHash = (portableDataHash:string | null) => 
+
+const renderPortableDataHash = (portableDataHash: string | null) =>
     <Typography noWrap>
         {portableDataHash ? <>{portableDataHash}
-        <CopyToClipboardSnackbar value={portableDataHash} /></> : '-' }
+            <CopyToClipboardSnackbar value={portableDataHash} /></> : '-'}
     </Typography>
-    
+
 export const ResourcePortableDataHash = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        return { portableDataHash: resource ? resource.portableDataHash : '' };    
+        return { portableDataHash: resource ? resource.portableDataHash : '' };
     })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
 
 
-const renderFileCount = (fileCount: number) =>{
+const renderFileCount = (fileCount: number) => {
     return <Typography>{fileCount ?? '-'}</Typography>
 }
 
 export const ResourceFileCount = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        return { fileCount: resource ? resource.fileCount: '' };
+        return { fileCount: resource ? resource.fileCount : '' };
     })((props: { fileCount: number }) => renderFileCount(props.fileCount));
 
 const userFromID =
@@ -968,12 +965,12 @@ export const CollectionStatus = connect((state: RootState, props: { uuid: string
 
 export const CollectionName = connect((state: RootState, props: { uuid: string, className?: string }) => {
     return {
-                collection: getResource<CollectionResource>(props.uuid)(state.resources),
-                uuid: props.uuid,
-                className: props.className,
-            };
+        collection: getResource<CollectionResource>(props.uuid)(state.resources),
+        uuid: props.uuid,
+        className: props.className,
+    };
 })((props: { collection: CollectionResource, uuid: string, className?: string }) =>
-        <Typography className={props.className}>{props.collection?.name || props.uuid}</Typography>
+    <Typography className={props.className}>{props.collection?.name || props.uuid}</Typography>
 );
 
 export const ProcessStatus = compose(
@@ -994,7 +991,7 @@ export const ProcessStatus = compose(
                 }}
             />
             : <Typography>-</Typography>
-        );
+    );
 
 export const ProcessStartDate = connect(
     (state: RootState, props: { uuid: string }) => {

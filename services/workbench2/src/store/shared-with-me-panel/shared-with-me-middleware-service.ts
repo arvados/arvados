@@ -19,8 +19,9 @@ import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
-import { FilterBuilder } from 'services/api/filter-builder';
+import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { AuthState } from 'store/auth/auth-reducer';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -33,11 +34,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const response = await this.services.groupsService
-                .contents('', {
-                    ...getParams(dataExplorer),
-                    excludeHomeProject: true,
-                    filters: new FilterBuilder().addDistinct('uuid', `${state.auth.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters()
-                });
+                .contents('', getParams(dataExplorer, state.auth));
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
             api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
             api.dispatch(updateResources(response.items));
@@ -51,10 +48,14 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer) => ({
+export const getParams = (dataExplorer: DataExplorer, authState: AuthState) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
-    filters: getFilters(dataExplorer),
+    filters: joinFilters(
+        getFilters(dataExplorer),
+        new FilterBuilder().addDistinct('uuid', `${authState.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters(),
+    ),
+    excludeHomeProject: true,
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {

@@ -10,6 +10,7 @@ import { User } from "models/user";
 import { RootState } from 'store/store';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
+import { navigateToMyAccount } from 'store/navigation/navigation-action';
 
 export const authMiddleware = (services: ServiceRepository): Middleware => store => next => action => {
     // Middleware to update external state (local storage, window
@@ -35,6 +36,15 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
             }
 
             store.dispatch<any>(initSessions(services.authService, state.auth.remoteHostsConfig[state.auth.localCluster], user));
+            if (Object.keys(state.auth.config.clusterConfig.Workbench.UserProfileFormFields).length > 0 &&
+                user.isActive &&
+                (Object.keys(user.prefs).length === 0 ||
+                    user.prefs.profile === undefined ||
+                    Object.keys(user.prefs.profile!).length === 0)) {
+                // If the user doesn't have a profile set, send them
+                // to the user profile page to encourage them to fill it out.
+                store.dispatch(navigateToMyAccount);
+            }
             if (!user.isActive) {
                 // As a special case, if the user is inactive, they
                 // may be able to self-activate using the "activate"

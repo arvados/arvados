@@ -60,7 +60,7 @@ export class GroupsService<
                 }))
                 : undefined
         };
-        const pathUrl = uuid ? `/${uuid}/contents` : '/contents';
+        const pathUrl = (uuid !== '') ? `/${uuid}/contents` : '/contents';
         const cfg: AxiosRequestConfig = {
             params: CommonResourceService.mapKeys(snakeCase)(params),
         };

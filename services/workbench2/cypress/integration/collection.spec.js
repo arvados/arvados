@@ -815,7 +815,7 @@ describe('Collection panel tests', function () {
                         cy.get('[data-cy=collection-version-browser-select-1]')
                             .should('contain', '1')
                             .and('contain', '6 B')
-                            .and('contain', adminUser.user.uuid);
+                            .and('contain', adminUser.user.full_name);
                         // Version 2: 3 bytes in size (one file removed)
                         cy.get('[data-cy=collection-version-browser-select-2]')
                             .should('contain', '2')
@@ -876,6 +876,7 @@ describe('Collection panel tests', function () {
                     .should('contain', '3').and('contain', '3 B');
 
                 // Check context menus on version browser
+                cy.waitForDom();
                 cy.get('[data-cy=collection-version-browser-select-3]').rightclick()
                 cy.get('[data-cy=context-menu]')
                     .should('contain', 'Add to favorites')
@@ -932,7 +933,7 @@ describe('Collection panel tests', function () {
 
                 cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
 
-                cy.get('main').contains(`Files extracted from: ${this.collection.name}`).click();
+                cy.waitForDom().get('main').contains(`Files extracted from: ${this.collection.name}`).click();
                 cy.get('[data-cy=collection-files-panel]')
                         .and('contain', 'bar');
             });

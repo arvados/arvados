@@ -24,14 +24,20 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
         super(serverApi, resourceType, actions, readOnlyFields.concat([
             'uuid',
             'etag',
-            'kind'
+            'kind',
+            'canWrite',
+            'canManage',
+            'createdAt',
+            'modifiedAt',
+            'modifiedByClientUuid',
+            'modifiedByUserUuid'
         ]));
     }
 
     create(data?: Partial<T>, showErrors?: boolean) {
         let payload: any;
         if (data !== undefined) {
-            this.readOnlyFields.forEach( field => delete data[field] );
+            this.readOnlyFields.forEach(field => delete data[field]);
             payload = {
                 [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };
@@ -42,7 +48,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
     update(uuid: string, data: Partial<T>, showErrors?: boolean, select?: string[]) {
         let payload: any;
         if (data !== undefined) {
-            this.readOnlyFields.forEach( field => delete data[field] );
+            this.readOnlyFields.forEach(field => delete data[field]);
             payload = {
                 [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };

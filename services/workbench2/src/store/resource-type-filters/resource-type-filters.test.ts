@@ -14,7 +14,7 @@ describe("buildProcessStatusFilters", () => {
         [ProcessStatusFilter.ONHOLD, `["state","!=","Final"],["priority","=","0"],["container.state","in",["Queued","Locked"]]`],
         [ProcessStatusFilter.COMPLETED, `["container.state","=","Complete"],["container.exit_code","=","0"]`],
         [ProcessStatusFilter.FAILED, `["container.state","=","Complete"],["container.exit_code","!=","0"]`],
-        [ProcessStatusFilter.QUEUED, `["container.state","=","Queued"],["priority","!=","0"]`],
+        [ProcessStatusFilter.QUEUED, `["container.state","in",["Queued","Locked"]],["priority","!=","0"]`],
         [ProcessStatusFilter.CANCELLED, `["container.state","=","Cancelled"]`],
         [ProcessStatusFilter.RUNNING, `["container.state","=","Running"]`],
     ].forEach(([status, expected]) => {

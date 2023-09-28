@@ -13,7 +13,6 @@ import { resourcesActions } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
-import { navigateTo } from 'store/navigation/navigation-action';
 import { updateFavorites } from 'store/favorites/favorites-actions';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
@@ -21,6 +20,8 @@ import { ResourceKind, extractUuidKind } from 'models/resource';
 import { ownerNameActions } from 'store/owner-name/owner-name-actions';
 import { getUserDisplayName } from 'models/user';
 import { CollectionResource } from 'models/collection';
+import { replace } from "react-router-redux";
+import { getNavUrl } from 'routes/routes';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -89,7 +90,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                 api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
                 api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
                 if (response.itemsAvailable === 1) {
-                    api.dispatch<any>(navigateTo(response.items[0].uuid));
+                    api.dispatch<any>(replace(getNavUrl(response.items[0].uuid, api.getState().auth)));
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 } else {
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));

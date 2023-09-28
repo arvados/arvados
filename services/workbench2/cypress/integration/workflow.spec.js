@@ -234,4 +234,35 @@ describe('Registered workflow panel tests', function() {
                 });
             });
     });
+
+    it('can delete a workflow', function() {
+        cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf"}})
+            .then(function(workflowResource) {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/projects/${activeUser.user.uuid}`);
+                cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Delete Workflow').click();
+                cy.get('[data-cy=project-panel] table tbody').should('not.contain', workflowResource.name);
+            });
+    });
+
+    it('cannot delete readonly workflow', function() {
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedReadonlyProject',
+            canWrite: false,
+        });
+        cy.getAll('@mySharedReadonlyProject')
+            .then(function ([mySharedReadonlyProject]) {
+                cy.createResource(adminUser.token, "workflows", {workflow: {name: "Test wf", owner_uuid: mySharedReadonlyProject.uuid}})
+                    .then(function(workflowResource) {
+                        cy.loginAs(activeUser);
+                        cy.goToPath(`/shared-with-me`);
+                        cy.contains("mySharedReadonlyProject").click();
+                        cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
+                        cy.get('[data-cy=context-menu]').should("not.contain", 'Delete Workflow');
+                    });
+            });
+    });
 });

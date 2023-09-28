@@ -56,6 +56,7 @@ import {
     isPrimitiveOfType,
     StringArrayCommandInputParameter,
     StringCommandInputParameter,
+    getEnumType
 } from "models/workflow";
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { File } from 'models/workflow';
@@ -305,9 +306,9 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                             <CircularProgress />
                         </Grid>}
                         {/* Once loaded, either raw or params may still be empty
-			   *   Raw when all params are empty
-			   *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
-			   */}
+			  *   Raw when all params are empty
+			  *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+			  */}
                         {(!loading && (hasRaw || hasParams)) &&
                             <>
                                 <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
@@ -556,9 +557,7 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
                 [directoryToProcessIOValue(directory, auth, pdh)] :
                 [{ display: <EmptyValue /> }];
 
-        case typeof input.type === 'object' &&
-            !(input.type instanceof Array) &&
-            input.type.type === 'enum':
+        case getEnumType(input) !== null:
             const enumValue = (input as EnumCommandInputParameter).value;
             return enumValue !== undefined && enumValue ?
                 [{ display: <pre>{enumValue}</pre> }] :
@@ -590,7 +589,7 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
             // Convert each main and secondaryFiles into array of ProcessIOValue preserving ordering
             let fileArrayValues: ProcessIOValue[] = [];
-            for(let i = 0; i < fileArrayMainFiles.length; i++) {
+            for (let i = 0; i < fileArrayMainFiles.length; i++) {
                 const secondaryFiles = ((fileArrayMainFiles[i] as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
                 fileArrayValues.push(
                     // Pass firstMainFilePdh to secondary files and every main file besides the first to hide pdh if equal
