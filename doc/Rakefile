@@ -54,11 +54,13 @@ file "sdk/python/arvados.html" do |t|
   if ENV['NO_SDK'] || File.exist?("no-sdk")
     next
   end
+  # pysdk_pdoc.py is a wrapper around the pdoc CLI. `which pdoc` is an easy
+  # and good-enough test to check whether it's installed at all.
   `which pdoc`
   if $? == 0
     raise unless system("python3", "setup.py", "build",
                         chdir: "../sdk/python", out: :err)
-    raise unless system("pdoc", "-o", "sdk/python", "../sdk/python/build/lib/arvados/",
+    raise unless system("python3", "pysdk_pdoc.py",
                         out: :err)
   else
     puts "Warning: pdoc not found, Python documentation will not be generated".colorize(:light_red)
