@@ -40,8 +40,8 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
 
     if (!isOpen && bannerResult) {
         menuItems.push(
-            <MenuItem>
-                <span onClick={openBanner}>Restore Banner</span>
+            <MenuItem onClick={openBanner}>
+                <span>Restore Banner</span>
             </MenuItem>
         );
     }
@@ -57,14 +57,14 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
 
     if (tooltipResult) {
         menuItems.push(
-            <MenuItem>
-                <span onClick={toggleTooltips}>Enable tooltips</span>
+            <MenuItem onClick={toggleTooltips}>
+                <span>Enable tooltips</span>
             </MenuItem>
         );
     } else {
         menuItems.push(
-            <MenuItem>
-                <span onClick={toggleTooltips}>Disable tooltips</span>
+            <MenuItem onClick={toggleTooltips}>
+                <span>Disable tooltips</span>
             </MenuItem>
         );
     }
@@ -78,12 +78,14 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
             icon={
                 <Badge
                     badgeContent={0}
-                    color="primary">
+                    color="primary"
+                >
                     <NotificationIcon />
                 </Badge>
             }
             id="account-menu"
-            title="Notifications">
+            title="Notifications"
+        >
             {menuItems.map((item, i) => (
                 <div key={i}>{item}</div>
             ))}
