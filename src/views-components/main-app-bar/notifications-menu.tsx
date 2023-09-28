@@ -26,11 +26,11 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 type NotificationsMenuProps = {
     isOpen: boolean;
     bannerUUID?: string;
-}
+};
 
 type NotificationsMenuComponentProps = NotificationsMenuProps & {
     openBanner: any;
-}
+};
 
 export const NotificationsMenuComponent = (props: NotificationsMenuComponentProps) => {
     const { isOpen, openBanner } = props;
@@ -39,41 +39,56 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
     const menuItems: any[] = [];
 
     if (!isOpen && bannerResult) {
-        menuItems.push(<MenuItem><span onClick={openBanner}>Restore Banner</span></MenuItem>);
+        menuItems.push(
+            <MenuItem>
+                <span onClick={openBanner}>Restore Banner</span>
+            </MenuItem>
+        );
     }
 
     const toggleTooltips = useCallback(() => {
         if (tooltipResult) {
             localStorage.removeItem(TOOLTIP_LOCAL_STORAGE_KEY);
         } else {
-            localStorage.setItem(TOOLTIP_LOCAL_STORAGE_KEY, 'true');
+            localStorage.setItem(TOOLTIP_LOCAL_STORAGE_KEY, "true");
         }
         window.location.reload();
     }, [tooltipResult]);
 
     if (tooltipResult) {
-        menuItems.push(<MenuItem><span onClick={toggleTooltips}>Enable tooltips</span></MenuItem>);
+        menuItems.push(
+            <MenuItem>
+                <span onClick={toggleTooltips}>Enable tooltips</span>
+            </MenuItem>
+        );
     } else {
-        menuItems.push(<MenuItem><span onClick={toggleTooltips}>Disable tooltips</span></MenuItem>);
+        menuItems.push(
+            <MenuItem>
+                <span onClick={toggleTooltips}>Disable tooltips</span>
+            </MenuItem>
+        );
     }
 
     if (menuItems.length === 0) {
         menuItems.push(<MenuItem>You are up to date</MenuItem>);
     }
 
-    return (<DropdownMenu
-        icon={
-            <Badge
-                badgeContent={0}
-                color="primary">
-                <NotificationIcon />
-            </Badge>}
-        id="account-menu"
-        title="Notifications">
-        {
-            menuItems.map((item, i) => <div key={i}>{item}</div>)
-        }
-    </DropdownMenu>);
-}
+    return (
+        <DropdownMenu
+            icon={
+                <Badge
+                    badgeContent={0}
+                    color="primary">
+                    <NotificationIcon />
+                </Badge>
+            }
+            id="account-menu"
+            title="Notifications">
+            {menuItems.map((item, i) => (
+                <div key={i}>{item}</div>
+            ))}
+        </DropdownMenu>
+    );
+};
 
 export const NotificationsMenu = connect(mapStateToProps, mapDispatchToProps)(NotificationsMenuComponent);
