@@ -49,8 +49,8 @@ _ALIASED_METHODS = frozenset([
 ])
 _DEPRECATED_NOTICE = '''
 
-!!! deprecated
-    This resource is deprecated in the Arvados API.
+.. WARNING:: Deprecated
+   This resource is deprecated in the Arvados API.
 '''
 _DEPRECATED_RESOURCES = frozenset([
     'Humans',

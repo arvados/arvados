@@ -652,22 +652,14 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
-    # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    # pdoc needed to generate the Python SDK documentation.
-    (
-        set -e
-        "${VENV3DIR}/bin/pip3" install wheel
-        "${VENV3DIR}/bin/pip3" install PyYAML
-        "${VENV3DIR}/bin/pip3" install httplib2
-        "${VENV3DIR}/bin/pip3" install future
-        "${VENV3DIR}/bin/pip3" install google-api-python-client
-        "${VENV3DIR}/bin/pip3" install ciso8601
-        "${VENV3DIR}/bin/pip3" install pycurl
-        "${VENV3DIR}/bin/pip3" install ws4py
-        "${VENV3DIR}/bin/pip3" install pdoc
-        cd "$WORKSPACE/sdk/python"
-        python3 setup.py install
-    ) || fatal "installing PyYAML and sdk/python failed"
+    # PyYAML is a test requirement used by run_test_server.py and needed for
+    # other, non-Python tests.
+    # pdoc is needed to build PySDK documentation.
+    # We run `setup.py build` first to generate _version.py.
+    env -C "$WORKSPACE/sdk/python" python3 setup.py build \
+        && python3 -m pip install "$WORKSPACE/sdk/python" \
+        && python3 -m pip install PyYAML pdoc \
+        || fatal "installing Python SDK and related dependencies failed"
 }
 
 retry() {

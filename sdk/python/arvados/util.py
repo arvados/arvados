@@ -74,16 +74,17 @@ def _deprecated(version=None, preferred=None):
         func_doc = re.sub(r'\n\s*$', '', func.__doc__ or '')
         match = re.search(r'\n([ \t]+)\S', func_doc)
         indent = '' if match is None else match.group(1)
+        warning_doc = f'\n\n{indent}.. WARNING:: Deprecated\n{indent}   {warning_msg}'
         # Make the deprecation notice the second "paragraph" of the
         # docstring if possible. Otherwise append it.
         docstring, count = re.subn(
             rf'\n[ \t]*\n{indent}',
-            f'\n\n{indent}DEPRECATED: {warning_msg}\n\n{indent}',
+            f'{warning_doc}\n\n{indent}',
             func_doc,
             count=1,
         )
         if not count:
-            docstring = f'{func_doc}\n\n{indent}DEPRECATED: {warning_msg}'.lstrip()
+            docstring = f'{func_doc.lstrip()}{warning_doc}'
         deprecated_wrapper.__doc__ = docstring
         return deprecated_wrapper
     return deprecated_decorator

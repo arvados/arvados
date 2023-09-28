@@ -198,45 +198,41 @@ def api_client(
 
     Arguments:
 
-    version: str
-    : A string naming the version of the Arvados API to use.
+    * version: str --- A string naming the version of the Arvados API to use.
 
-    discoveryServiceUrl: str
-    : The URL used to discover APIs passed directly to
-      `googleapiclient.discovery.build`.
+    * discoveryServiceUrl: str --- The URL used to discover APIs passed
+      directly to `googleapiclient.discovery.build`.
 
-    token: str
-    : The authentication token to send with each API call.
+    * token: str --- The authentication token to send with each API call.
 
     Keyword-only arguments:
 
-    cache: bool
-    : If true, loads the API discovery document from, or saves it to, a cache
-      on disk (located at `~/.cache/arvados/discovery`).
+    * cache: bool --- If true, loads the API discovery document from, or
+      saves it to, a cache on disk (located at
+      `~/.cache/arvados/discovery`).
 
-    http: httplib2.Http | None
-    : The HTTP client object the API client object will use to make requests.
-      If not provided, this function will build its own to use. Either way, the
-      object will be patched as part of the build process.
+    * http: httplib2.Http | None --- The HTTP client object the API client
+      object will use to make requests.  If not provided, this function will
+      build its own to use. Either way, the object will be patched as part
+      of the build process.
 
-    insecure: bool
-    : If true, ignore SSL certificate validation errors. Default `False`.
+    * insecure: bool --- If true, ignore SSL certificate validation
+      errors. Default `False`.
 
-    num_retries: int
-    : The number of times to retry each API request if it encounters a
-      temporary failure. Default 10.
+    * num_retries: int --- The number of times to retry each API request if
+      it encounters a temporary failure. Default 10.
 
-    request_id: str | None
-    : Default `X-Request-Id` header value for outgoing requests that
-      don't already provide one. If `None` or omitted, generate a random
-      ID. When retrying failed requests, the same ID is used on all
-      attempts.
+    * request_id: str | None --- Default `X-Request-Id` header value for
+      outgoing requests that don't already provide one. If `None` or
+      omitted, generate a random ID. When retrying failed requests, the same
+      ID is used on all attempts.
 
-    timeout: int
-    : A timeout value for HTTP requests in seconds. Default 300 (5 minutes).
+    * timeout: int --- A timeout value for HTTP requests in seconds. Default
+      300 (5 minutes).
 
     Additional keyword arguments will be passed directly to
     `googleapiclient.discovery.build`.
+
     """
     if http is None:
         http = httplib2.Http(
@@ -313,22 +309,19 @@ def normalize_api_kwargs(
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    discoveryServiceUrl: str | None
-    : The URL used to discover APIs passed directly to
-      `googleapiclient.discovery.build`. It is an error to pass both
-      `discoveryServiceUrl` and `host`.
+    * discoveryServiceUrl: str | None --- The URL used to discover APIs
+      passed directly to `googleapiclient.discovery.build`. It is an error
+      to pass both `discoveryServiceUrl` and `host`.
 
-    host: str | None
-    : The hostname and optional port number of the Arvados API server. Used to
-      build `discoveryServiceUrl`. It is an error to pass both
-      `discoveryServiceUrl` and `host`.
+    * host: str | None --- The hostname and optional port number of the
+      Arvados API server. Used to build `discoveryServiceUrl`. It is an
+      error to pass both `discoveryServiceUrl` and `host`.
 
-    token: str
-    : The authentication token to send with each API call.
+    * token: str --- The authentication token to send with each API call.
 
     Additional keyword arguments will be included in the return value.
     """
@@ -369,14 +362,15 @@ def api_kwargs_from_config(version=None, apiconfig=None, **kwargs):
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    apiconfig: Mapping[str, str] | None
-    : A mapping with entries for `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and
-      optionally `ARVADOS_API_HOST_INSECURE`. If not provided, calls
-      `arvados.config.settings` to get these parameters from user configuration.
+    * apiconfig: Mapping[str, str] | None --- A mapping with entries for
+      `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and optionally
+      `ARVADOS_API_HOST_INSECURE`. If not provided, calls
+      `arvados.config.settings` to get these parameters from user
+      configuration.
 
     Additional keyword arguments will be included in the return value.
     """
@@ -419,19 +413,18 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    host: str | None
-    : The hostname and optional port number of the Arvados API server.
+    * host: str | None --- The hostname and optional port number of the
+      Arvados API server.
 
-    token: str | None
-    : The authentication token to send with each API call.
+    * token: str | None --- The authentication token to send with each API
+      call.
 
-    discoveryServiceUrl: str | None
-    : The URL used to discover APIs passed directly to
-      `googleapiclient.discovery.build`.
+    * discoveryServiceUrl: str | None --- The URL used to discover APIs
+      passed directly to `googleapiclient.discovery.build`.
 
     If `host`, `token`, and `discoveryServiceUrl` are all omitted, `host` and
     `token` will be loaded from the user's configuration. Otherwise, you must
@@ -470,14 +463,15 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    apiconfig: Mapping[str, str] | None
-    : A mapping with entries for `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and
-      optionally `ARVADOS_API_HOST_INSECURE`. If not provided, calls
-      `arvados.config.settings` to get these parameters from user configuration.
+    * apiconfig: Mapping[str, str] | None --- A mapping with entries for
+      `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and optionally
+      `ARVADOS_API_HOST_INSECURE`. If not provided, calls
+      `arvados.config.settings` to get these parameters from user
+      configuration.
 
     Other arguments are passed directly to `api_client`. See that function's
     docstring for more information about their meaning.

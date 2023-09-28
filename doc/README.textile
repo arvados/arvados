@@ -25,7 +25,7 @@ arvados/doc$ python3 -m venv .venv
 arvados/doc$ .venv/bin/pip install pdoc
 </pre>
 
-Then the generation process will need to be able to find @arvados/doc/.venv/bin/pdoc@. Either add that full directory to your @$PATH@, or make a @pdoc@ symlink in another directory that's already in your @$PATH@.
+Then you must activate the virtualenv (e.g., run @. .venv/bin/activate@) before you run the @bundle exec rake@ commands below.
 
 h2. Generate HTML pages
 
