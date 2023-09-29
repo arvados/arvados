@@ -11,24 +11,29 @@ class UserSessionsController < ApplicationController
 
   respond_to :html
 
+  def login
+    return send_error "Legacy code path no longer supported", status: 404
+  end
+
   # create a new session
   def create
-    if !Rails.configuration.Login.LoginCluster.empty? and Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
-      raise "Local login disabled when LoginCluster is set"
-    end
-
-    max_expires_at = nil
-    if params[:provider] == 'controller'
-      if request.headers['Authorization'] != 'Bearer ' + Rails.configuration.SystemRootToken
-        return send_error('Invalid authorization header', status: 401)
-      end
-      # arvados-controller verified the user and is passing auth_info
-      # in request params.
-      authinfo = SafeJSON.load(params[:auth_info])
-      max_expires_at = authinfo["expires_at"]
-    else
+    remote, return_to_url = params[:return_to].split(',', 2)
+    if params[:provider] != 'controller' ||
+       return_to_url != 'https://controller.api.client.invalid'
       return send_error "Legacy code path no longer supported", status: 404
     end
+    if request.headers['Authorization'] != 'Bearer ' + Rails.configuration.SystemRootToken
+      return send_error('Invalid authorization header', status: 401)
+    end
+    if remote == ''
+      remote = nil
+    elsif remote !~ /^[0-9a-z]{5}$/
+      return send_error 'Invalid remote cluster id', status: 400
+    end
+    # arvados-controller verified the user and is passing auth_info
+    # in request params.
+    authinfo = SafeJSON.load(params[:auth_info])
+    max_expires_at = authinfo["expires_at"]
 
     if !authinfo['user_uuid'].blank?
       user = User.find_by_uuid(authinfo['user_uuid'])
@@ -49,90 +54,18 @@ class UserSessionsController < ApplicationController
     # For the benefit of functional and integration tests:
     @user = user
 
-    if user.uuid[0..4] != Rails.configuration.ClusterID
-      # Actually a remote user
-      # Send them to their home cluster's login
-      rh = Rails.configuration.RemoteClusters[user.uuid[0..4]]
-      remote, return_to_url = params[:return_to].split(',', 2)
-      @remotehomeurl = "#{rh.Scheme || "https"}://#{rh.Host}/login?remote=#{Rails.configuration.ClusterID}&return_to=#{return_to_url}"
-      render
-      return
-    end
-
     # prevent ArvadosModel#before_create and _update from throwing
     # "unauthorized":
     Thread.current[:user] = user
 
     user.save or raise Exception.new(user.errors.messages)
 
-    # Give the authenticated user a cookie for direct API access
-    session[:user_id] = user.id
-    session[:api_client_uuid] = nil
-    session[:api_client_trusted] = true # full permission to see user's secrets
-
-    @redirect_to = root_path
-    if params.has_key?(:return_to)
-      # return_to param's format is 'remote,return_to_url'. This comes from login()
-      # encoding the remote=zbbbb parameter passed by a client asking for a salted
-      # token.
-      remote, return_to_url = params[:return_to].split(',', 2)
-      if remote !~ /^[0-9a-z]{5}$/ && remote != ""
-        return send_error 'Invalid remote cluster id', status: 400
-      end
-      remote = nil if remote == ''
-      return send_api_token_to(return_to_url, user, remote, max_expires_at)
-    end
-    redirect_to @redirect_to
+    return send_api_token_to(return_to_url, user, remote, max_expires_at)
   end
 
   # Omniauth failure callback
   def failure
     flash[:notice] = params[:message]
-  end
-
-  # logout - this gets intercepted by controller, so this is probably
-  # mostly dead code at this point.
-  def logout
-    session[:user_id] = nil
-
-    flash[:notice] = 'You have logged off'
-    return_to = params[:return_to] || root_url
-    redirect_to return_to
-  end
-
-  # login.  Redirect to LoginCluster.
-  def login
-    if params[:remote] !~ /^[0-9a-z]{5}$/ && !params[:remote].nil?
-      return send_error 'Invalid remote cluster id', status: 400
-    end
-    if current_user && params[:return_to] == "https://controller.api.client.invalid"
-      # Already logged in; just need to send a token to the requesting
-      # API client. Note, although this response looks like it's meant
-      # to be sent to a web browser, in fact the only supported use
-      # case is where our client is arvados-controller, giving us the
-      # placeholder URL https://controller.api.client.invalid.
-      return send_api_token_to(params[:return_to], current_user, params[:remote])
-    end
-    p = []
-    p << "auth_provider=#{CGI.escape(params[:auth_provider])}" if params[:auth_provider]
-
-    if !Rails.configuration.Login.LoginCluster.empty? and Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
-      host = ApiClientAuthorization.remote_host(uuid_prefix: Rails.configuration.Login.LoginCluster)
-      if not host
-        raise "LoginCluster #{Rails.configuration.Login.LoginCluster} missing from RemoteClusters"
-      end
-      scheme = "https"
-      cluster = Rails.configuration.RemoteClusters[Rails.configuration.Login.LoginCluster]
-      if cluster and cluster['Scheme'] and !cluster['Scheme'].empty?
-        scheme = cluster['Scheme']
-      end
-      login_cluster = "#{scheme}://#{host}"
-      p << "remote=#{CGI.escape(params[:remote])}" if params[:remote]
-      p << "return_to=#{CGI.escape(params[:return_to])}" if params[:return_to]
-      redirect_to "#{login_cluster}/login?#{p.join('&')}"
-    else
-      return send_error "Legacy code path no longer supported", status: 404
-    end
   end
 
   def send_api_token_to(callback_url, user, remote=nil, token_expiration=nil)

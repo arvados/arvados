@@ -8,7 +8,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
   # remote prefix & return url packed into the return_to param passed around
   # between API and SSO provider.
   def client_url(remote: nil)
-    url = ',https://wb.example.com'
+    url = ',https://controller.api.client.invalid'
     url = "#{remote}#{url}" unless remote.nil?
     url
   end
