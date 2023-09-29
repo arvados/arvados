@@ -105,6 +105,8 @@ services/keep-balance
 services/login-sync
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
+services/workbench2_units
+services/workbench2_integration
 services/ws
 sdk/cli
 sdk/python
@@ -691,6 +693,9 @@ do_test() {
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
             ;;
+        services/workbench2_units | services/workbench2_integration)
+            suite=services/workbench2
+            ;;
         *)
             suite="${1}"
             ;;
@@ -705,7 +710,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker | services/workbench2_units | services/workbench2_integration)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -991,6 +996,11 @@ install_apps/workbench() {
         && RAILS_ENV=test RAILS_GROUPS=assets "$bundle" exec rake npm:install
 }
 
+install_services/workbench2() {
+    cd "$WORKSPACE/services/workbench2" \
+        && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
+}
+
 test_doc() {
     (
         set -e
@@ -1044,6 +1054,14 @@ test_sdk/java-v2() {
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
         && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+}
+
+test_services/workbench2_units() {
+    cd "$WORKSPACE/services/workbench2" && make unit-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
+}
+
+test_services/workbench2_integration() {
+    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
 }
 
 test_apps/workbench_units() {
@@ -1110,6 +1128,7 @@ install_all() {
     done
     do_install services/api
     do_install apps/workbench
+    do_install services/workbench2
 }
 
 test_all() {
@@ -1148,6 +1167,8 @@ test_all() {
     do_test apps/workbench_integration
     do_test apps/workbench_benchmark
     do_test apps/workbench_profile
+    do_test services/workbench2_units
+    do_test services/workbench2_integration
 }
 
 test_go() {

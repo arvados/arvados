@@ -1,0 +1,36 @@
+Clusters:
+  zzzzz:
+    ManagementToken: e687950a23c3a9bceec28c6223a06c79
+    SystemRootToken: systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy
+    API:
+      RequestTimeout: 30s
+      VocabularyPath: ""
+      MaxTokenLifetime: 24h
+    TLS:
+      Insecure: true
+    Collections:
+      CollectionVersioning: true
+      PreserveVersionIfIdle: -1s
+      BlobSigningKey: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
+      TrustAllContent: true
+      ForwardSlashNameSubstitution: /
+      ManagedProperties:
+        original_owner_uuid: {Function: original_owner, Protected: true}
+    Login:
+      TrustPrivateNetworks: true
+      PAM:
+        Enable: true
+    StorageClasses:
+      default:
+        Default: true
+      foo: {}
+      bar: {}
+    Volumes:
+      zzzzz-nyw5e-000000000000000:
+        StorageClasses:
+          default: true
+          foo: true
+      zzzzz-nyw5e-000000000000001:
+        StorageClasses:
+          default: true
+          bar: true

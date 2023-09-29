@@ -1,0 +1,46 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+# See https://help.github.com/ignore-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# vscode
+/.vs
+
+# testing
+/coverage
+/cypress/videos
+/cypress/screenshots
+/cypress/downloads
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.npm.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.idea
+.vscode
+/public/config.json
+/public/_health/
+
+# see https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
