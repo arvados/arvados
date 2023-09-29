@@ -43,13 +43,12 @@ _logger = logging.getLogger('arvados.api')
 _googleapiclient_log_lock = threading.Lock()
 
 MAX_IDLE_CONNECTION_DURATION = 30
-
-# These constants supported our own retry logic that we've since removed in
-# favor of using googleapiclient's num_retries. They're kept here purely for
-# API compatibility, but set to 0 to indicate no retries happen.
-RETRY_DELAY_INITIAL = 0
-RETRY_DELAY_BACKOFF = 0
-RETRY_COUNT = 0
+"""
+Number of seconds that API client HTTP connections should be allowed to idle
+in keepalive state before they are forced closed. Client code can adjust this
+constant, and it will be used for all Arvados API clients constructed after
+that point.
+"""
 
 # An unused HTTP 5xx status code to request a retry internally.
 # See _intercept_http_request. This should not be user-visible.
@@ -57,26 +56,6 @@ _RETRY_4XX_STATUS = 545
 
 if sys.version_info >= (3,):
     httplib2.SSLHandshakeError = None
-
-class OrderedJsonModel(apiclient.model.JsonModel):
-    """Model class for JSON that preserves the contents' order.
-
-    API clients that care about preserving the order of fields in API
-    server responses can use this model to do so, like this:
-
-        from arvados.api import OrderedJsonModel
-        client = arvados.api('v1', ..., model=OrderedJsonModel())
-    """
-
-    def deserialize(self, content):
-        # This is a very slightly modified version of the parent class'
-        # implementation.  Copyright (c) 2010 Google.
-        content = content.decode('utf-8')
-        body = json.loads(content, object_pairs_hook=collections.OrderedDict)
-        if self._data_wrapper and isinstance(body, dict) and 'data' in body:
-            body = body['data']
-        return body
-
 
 _orig_retry_request = apiclient.http._retry_request
 def _retry_request(http, num_retries, *args, **kwargs):
@@ -174,6 +153,18 @@ def _new_http_error(cls, *args, **kwargs):
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
 def http_cache(data_type):
+    """Set up an HTTP file cache
+
+    This function constructs and returns an `arvados.cache.SafeHTTPCache`
+    backed by the filesystem under `~/.cache/arvados/`, or `None` if the
+    directory cannot be set up. The return value can be passed to
+    `httplib2.Http` as the `cache` argument.
+
+    Arguments:
+
+    * data_type: str --- The name of the subdirectory under `~/.cache/arvados`
+      where data is cached.
+    """
     try:
         homedir = pathlib.Path.home()
     except RuntimeError:
@@ -486,3 +477,49 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
     docstring for more information about their meaning.
     """
     return api(**api_kwargs_from_config(version, apiconfig, **kwargs))
+
+class OrderedJsonModel(apiclient.model.JsonModel):
+    """Model class for JSON that preserves the contents' order
+
+    .. WARNING:: Deprecated
+       This model is redundant now that Python dictionaries preserve insertion
+       ordering. Code that passes this model to API constructors can remove it.
+
+    In Python versions before 3.6, API clients that cared about preserving the
+    order of fields in API server responses could use this model to do so.
+    Typical usage looked like:
+
+        from arvados.api import OrderedJsonModel
+        client = arvados.api('v1', ..., model=OrderedJsonModel())
+    """
+    @util._deprecated(preferred="the default model and rely on Python's built-in dictionary ordering")
+    def __init__(self, data_wrapper=False):
+        return super().__init__(data_wrapper)
+
+
+RETRY_DELAY_INITIAL = 0
+"""
+.. WARNING:: Deprecated
+   This constant was used by retry code in previous versions of the Arvados SDK.
+   Changing the value has no effect anymore.
+   Prefer passing `num_retries` to an API client constructor instead.
+   Refer to the constructor docstrings for details.
+"""
+
+RETRY_DELAY_BACKOFF = 0
+"""
+.. WARNING:: Deprecated
+   This constant was used by retry code in previous versions of the Arvados SDK.
+   Changing the value has no effect anymore.
+   Prefer passing `num_retries` to an API client constructor instead.
+   Refer to the constructor docstrings for details.
+"""
+
+RETRY_COUNT = 0
+"""
+.. WARNING:: Deprecated
+   This constant was used by retry code in previous versions of the Arvados SDK.
+   Changing the value has no effect anymore.
+   Prefer passing `num_retries` to an API client constructor instead.
+   Refer to the constructor docstrings for details.
+"""

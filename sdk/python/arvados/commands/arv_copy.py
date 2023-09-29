@@ -45,7 +45,6 @@ import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 import ruamel.yaml as yaml
 
-from arvados.api import OrderedJsonModel
 from arvados._version import __version__
 
 COMMIT_HASH_RE = re.compile(r'^[0-9a-f]{1,40}$')
@@ -191,7 +190,7 @@ def set_src_owner_uuid(resource, uuid, args):
 def api_for_instance(instance_name, num_retries):
     if not instance_name:
         # Use environment
-        return arvados.api('v1', model=OrderedJsonModel())
+        return arvados.api('v1')
 
     if '/' in instance_name:
         config_file = instance_name
@@ -215,7 +214,6 @@ def api_for_instance(instance_name, num_retries):
                              host=cfg['ARVADOS_API_HOST'],
                              token=cfg['ARVADOS_API_TOKEN'],
                              insecure=api_is_insecure,
-                             model=OrderedJsonModel(),
                              num_retries=num_retries,
                              )
     else:
