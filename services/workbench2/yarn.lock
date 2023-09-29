@@ -3796,7 +3796,7 @@ __metadata:
     jest-localstorage-mock: 2.2.0
     js-yaml: 3.13.1
     jssha: 2.3.1
-    jszip: 3.1.5
+    jszip: 3.8.0
     lodash: ^4.17.21
     lodash-es: 4.17.14
     lodash.mergewith: 4.6.2
@@ -5755,13 +5755,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:~2.3.0":
-  version: 2.3.0
-  resolution: "core-js@npm:2.3.0"
-  checksum: eb2e9e82d71e646e91abc9480ee4da8a4c02606418ea83602daae5988b4ba558a233f1a29dc8d660e2e4aaa7f6e4297b6c3089b55b0e7292917eef07a3952972
-  languageName: node
-  linkType: hard
-
 "core-util-is@npm:1.0.2, core-util-is@npm:~1.0.0":
   version: 1.0.2
   resolution: "core-util-is@npm:1.0.2"
@@ -7225,13 +7218,6 @@ __metadata:
     es5-ext: ^0.10.35
     es6-symbol: ^3.1.1
   checksum: 6e48b1c2d962c21dee604b3d9f0bc3889f11ed5a8b33689155a2065d20e3107e2a69cc63a71bd125aeee3a589182f8bbcb5c8a05b6a8f38fa4205671b6d09697
-  languageName: node
-  linkType: hard
-
-"es6-promise@npm:~3.0.2":
-  version: 3.0.2
-  resolution: "es6-promise@npm:3.0.2"
-  checksum: f9d6cabf3fa5cff33ddd9791c190b4ae83f372489b62c81d5c19dc10afd2e59736a31e20994f80fc54151c39c00ccc493b11b5b9dfc5e605eff597f239650da5
   languageName: node
   linkType: hard
 
@@ -11137,16 +11123,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jszip@npm:3.1.5":
-  version: 3.1.5
-  resolution: "jszip@npm:3.1.5"
+"jszip@npm:3.8.0":
+  version: 3.8.0
+  resolution: "jszip@npm:3.8.0"
   dependencies:
-    core-js: ~2.3.0
-    es6-promise: ~3.0.2
-    lie: ~3.1.0
+    lie: ~3.3.0
     pako: ~1.0.2
-    readable-stream: ~2.0.6
-  checksum: 2d0464089d7a4604c7b7586d089b7aa39fbcfe7cc058f7c066b3c92b43f3b94f69362d1b6dd8252049f5729e1fc452a788703382cbce6d77f607d3ce1227b231
+    readable-stream: ~2.3.6
+    set-immediate-shim: ~1.0.1
+  checksum: 219772f0291345ee91464b688869614c7cb936e450e767270799043d92739230bce3c9f70bd4e2bcdbdbf1a177e8a8cde39d6cc25d9300dd4a2e8956b2f3da95
   languageName: node
   linkType: hard
 
@@ -11285,12 +11270,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lie@npm:~3.1.0":
-  version: 3.1.1
-  resolution: "lie@npm:3.1.1"
+"lie@npm:~3.3.0":
+  version: 3.3.0
+  resolution: "lie@npm:3.3.0"
   dependencies:
     immediate: ~3.0.5
-  checksum: 6da9f2121d2dbd15f1eca44c0c7e211e66a99c7b326ec8312645f3648935bc3a658cf0e9fa7b5f10144d9e2641500b4f55bd32754607c3de945b5f443e50ddd1
+  checksum: 33102302cf19766f97919a6a98d481e01393288b17a6aa1f030a3542031df42736edde8dab29ffdbf90bebeffc48c761eb1d064dc77592ca3ba3556f9fe6d2a8
   languageName: node
   linkType: hard
 
@@ -14493,13 +14478,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"process-nextick-args@npm:~1.0.6":
-  version: 1.0.7
-  resolution: "process-nextick-args@npm:1.0.7"
-  checksum: 41224fbc803ac6c96907461d4dfc20942efa3ca75f2d521bcf7cf0e89f8dec127fb3fb5d76746b8fb468a232ea02d84824fae08e027aec185fd29049c66d49f8
-  languageName: node
-  linkType: hard
-
 "process-nextick-args@npm:~2.0.0":
   version: 2.0.1
   resolution: "process-nextick-args@npm:2.0.1"
@@ -15355,20 +15333,6 @@ __metadata:
     string_decoder: ^1.1.1
     util-deprecate: ^1.0.1
   checksum: d4ea81502d3799439bb955a3a5d1d808592cf3133350ed352aeaa499647858b27b1c4013984900238b0873ec8d0d8defce72469fb7a83e61d53f5ad61cb80dc8
-  languageName: node
-  linkType: hard
-
-"readable-stream@npm:~2.0.6":
-  version: 2.0.6
-  resolution: "readable-stream@npm:2.0.6"
-  dependencies:
-    core-util-is: ~1.0.0
-    inherits: ~2.0.1
-    isarray: ~1.0.0
-    process-nextick-args: ~1.0.6
-    string_decoder: ~0.10.x
-    util-deprecate: ~1.0.1
-  checksum: 5258b248531e58cbd855dab6a67dde3f4939f78a6d7707042ce61a74fe3421a7596405bc9c8970484dc9b2d929136e6cc40985f76759b9264a0a273f6136ed3b
   languageName: node
   linkType: hard
 
@@ -16430,6 +16394,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"set-immediate-shim@npm:~1.0.1":
+  version: 1.0.1
+  resolution: "set-immediate-shim@npm:1.0.1"
+  checksum: 5085c84039d1e5eee73d2bf48ce765fcec76159021d0cc7b40e23bcdf62cb6d450ffb781e3c62c1118425242c48eae96df712cba0a20a437e86b0d4a15d51a11
+  languageName: node
+  linkType: hard
+
 "set-value@npm:2.0.1, set-value@npm:^2.0.0, set-value@npm:^2.0.1":
   version: 2.0.1
   resolution: "set-value@npm:2.0.1"
@@ -17181,13 +17152,6 @@ __metadata:
   dependencies:
     safe-buffer: ~5.2.0
   checksum: 8417646695a66e73aefc4420eb3b84cc9ffd89572861fe004e6aeb13c7bc00e2f616247505d2dbbef24247c372f70268f594af7126f43548565c68c117bdeb56
-  languageName: node
-  linkType: hard
-
-"string_decoder@npm:~0.10.x":
-  version: 0.10.31
-  resolution: "string_decoder@npm:0.10.31"
-  checksum: fe00f8e303647e5db919948ccb5ce0da7dea209ab54702894dd0c664edd98e5d4df4b80d6fabf7b9e92b237359d21136c95bf068b2f7760b772ca974ba970202
   languageName: node
   linkType: hard
 
