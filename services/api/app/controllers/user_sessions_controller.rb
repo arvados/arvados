@@ -15,6 +15,10 @@ class UserSessionsController < ApplicationController
     return send_error "Legacy code path no longer supported", status: 404
   end
 
+  def logout
+    return send_error "Legacy code path no longer supported", status: 404
+  end
+
   # create a new session
   def create
     remote, return_to_url = params[:return_to].split(',', 2)
