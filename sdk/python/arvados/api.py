@@ -61,21 +61,20 @@ if sys.version_info >= (3,):
 class OrderedJsonModel(apiclient.model.JsonModel):
     """Model class for JSON that preserves the contents' order.
 
-    API clients that care about preserving the order of fields in API
-    server responses can use this model to do so, like this:
+    .. WARNING:: Deprecated
+       This model is redundant now that Python dictionaries preserve insertion
+       ordering. Code that passes this model to API constructors can remove it.
+
+    In Python versions before 3.6, API clients that cared about preserving the
+    order of fields in API server responses could use this model to do so.
+    Typical usage looked like:
 
         from arvados.api import OrderedJsonModel
         client = arvados.api('v1', ..., model=OrderedJsonModel())
     """
-
-    def deserialize(self, content):
-        # This is a very slightly modified version of the parent class'
-        # implementation.  Copyright (c) 2010 Google.
-        content = content.decode('utf-8')
-        body = json.loads(content, object_pairs_hook=collections.OrderedDict)
-        if self._data_wrapper and isinstance(body, dict) and 'data' in body:
-            body = body['data']
-        return body
+    @util._deprecated(preferred="the default model and rely on Python's built-in dictionary ordering")
+    def __init__(self, data_wrapper=False):
+        return super().__init__(data_wrapper)
 
 
 _orig_retry_request = apiclient.http._retry_request

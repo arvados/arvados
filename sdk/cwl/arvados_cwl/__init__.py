@@ -32,7 +32,6 @@ import arvados.logging
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
 import arvados.commands._util as arv_cmd
-from arvados.api import OrderedJsonModel
 
 from .perf import Perf
 from ._version import __version__
@@ -338,7 +337,6 @@ def main(args=sys.argv[1:],
         if api_client is None:
             api_client = arvados.safeapi.ThreadSafeApiCache(
                 api_params={
-                    'model': OrderedJsonModel(),
                     'num_retries': arvargs.retries,
                     'timeout': arvargs.http_timeout,
                 },
