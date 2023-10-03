@@ -34,8 +34,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         transition: "width 150ms",
     },
     button: {
-        width: "1rem",
-        margin: "auto 5px",
+        width: "2.5rem",
+        height: "2.5rem ",
     },
 });
 
@@ -63,7 +63,8 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={classes.root}
-                    style={{ width: `${buttons.length * 2.12}rem` }}>
+                    style={{ width: `${buttons.length * 2.5}rem` }}
+                >
                     {buttons.length ? (
                         buttons.map((btn, i) =>
                             btn.name === "ToggleTrashAction" ? (
@@ -71,7 +72,8 @@ export const MultiselectToolbar = connect(
                                     className={classes.button}
                                     title={currentPathIsTrash ? "Restore selected" : "Move to trash"}
                                     key={i}
-                                    disableFocusListener>
+                                    disableFocusListener
+                                >
                                     <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
                                         {currentPathIsTrash ? <RestoreFromTrashIcon /> : <TrashIcon />}
                                     </IconButton>
@@ -81,7 +83,8 @@ export const MultiselectToolbar = connect(
                                     className={classes.button}
                                     title={btn.name}
                                     key={i}
-                                    disableFocusListener>
+                                    disableFocusListener
+                                >
                                     <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
                                         {btn.icon ? btn.icon({}) : <></>}
                                     </IconButton>
