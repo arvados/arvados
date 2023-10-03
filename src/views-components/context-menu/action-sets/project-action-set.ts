@@ -25,11 +25,9 @@ export const toggleFavoriteAction = {
     component: ToggleFavoriteAction,
     name: "ToggleFavoriteAction",
     execute: (dispatch, resources) => {
-        resources.forEach(resource =>
-            dispatch(toggleFavorite(resource)).then(() => {
-                dispatch(favoritePanelActions.REQUEST_ITEMS());
-            })
-        );
+        dispatch(toggleFavorite(resources[0])).then(() => {
+            dispatch(favoritePanelActions.REQUEST_ITEMS());
+        });
     },
 };
 
@@ -37,7 +35,7 @@ export const openInNewTabMenuAction = {
     icon: OpenIcon,
     name: "Open in new tab",
     execute: (dispatch, resources) => {
-        resources.forEach(resource => dispatch(openInNewTabAction(resource)));
+        dispatch(openInNewTabAction(resources[0]));
     },
 };
 
@@ -61,7 +59,7 @@ export const advancedAction = {
     icon: AdvancedIcon,
     name: "API Details",
     execute: (dispatch, resources) => {
-        resources.forEach(resource => dispatch(openAdvancedTabDialog(resource.uuid)));
+        dispatch(openAdvancedTabDialog(resources[0].uuid));
     },
 };
 
@@ -69,7 +67,7 @@ export const openWith3rdPartyClientAction = {
     icon: FolderSharedIcon,
     name: "Open with 3rd party client",
     execute: (dispatch, resources) => {
-        resources.forEach(resource => dispatch(openWebDavS3InfoDialog(resource.uuid)));
+        dispatch(openWebDavS3InfoDialog(resources[0].uuid));
     },
 };
 
@@ -77,15 +75,15 @@ export const editProjectAction = {
     icon: RenameIcon,
     name: "Edit project",
     execute: (dispatch, resources) => {
-        resources.forEach(resource => dispatch(openProjectUpdateDialog(resource)));
+        dispatch(openProjectUpdateDialog(resources[0]));
     },
 };
 
 export const shareAction = {
     icon: ShareIcon,
     name: "Share",
-    execute: (dispatch, processes) => {
-        processes.forEach(process => dispatch(openSharingDialog(process.uuid)));
+    execute: (dispatch, resources) => {
+        dispatch(openSharingDialog(resources[0].uuid));
     },
 };
 
@@ -101,7 +99,7 @@ export const toggleTrashAction = {
     component: ToggleTrashAction,
     name: "ToggleTrashAction",
     execute: (dispatch, resources) => {
-        resources.forEach(resource => dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1)));
+        dispatch(toggleProjectTrashed(resources[0].uuid, resources[0].ownerUuid, resources[0].isTrashed!!, resources.length > 1));
     },
 };
 
@@ -109,13 +107,11 @@ export const freezeProjectAction = {
     component: ToggleLockAction,
     name: "ToggleLockAction",
     execute: (dispatch, resources) => {
-        resources.forEach(resource => {
-            if (resource.isFrozen) {
-                dispatch(unfreezeProject(resource.uuid));
-            } else {
-                dispatch(freezeProject(resource.uuid));
-            }
-        });
+        if (resources[0].isFrozen) {
+            dispatch(unfreezeProject(resources[0].uuid));
+        } else {
+            dispatch(freezeProject(resources[0].uuid));
+        }
     },
 };
 
