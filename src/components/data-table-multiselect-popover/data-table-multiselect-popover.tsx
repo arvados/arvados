@@ -2,34 +2,34 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect } from 'react';
-import { WithStyles, withStyles, ButtonBase, StyleRulesCallback, Theme, Popover, Card, Tooltip, IconButton } from '@material-ui/core';
-import classnames from 'classnames';
-import { DefaultTransformOrigin } from 'components/popover/helpers';
-import debounce from 'lodash/debounce';
-import { grey } from '@material-ui/core/colors';
-import { TCheckedList } from 'components/data-table/data-table';
+import React, { useEffect } from "react";
+import { WithStyles, withStyles, ButtonBase, StyleRulesCallback, Theme, Popover, Card, Tooltip, IconButton } from "@material-ui/core";
+import classnames from "classnames";
+import { DefaultTransformOrigin } from "components/popover/helpers";
+import debounce from "lodash/debounce";
+import { grey } from "@material-ui/core/colors";
+import { TCheckedList } from "components/data-table/data-table";
 
-export type CssRules = 'root' | 'icon' | 'iconButton' | 'disabled' | 'optionsContainer' | 'option';
+export type CssRules = "root" | "icon" | "iconButton" | "disabled" | "optionsContainer" | "option";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
-        borderRadius: '7px',
-        '&:hover': {
+        borderRadius: "7px",
+        "&:hover": {
             backgroundColor: grey[200],
         },
-        '&:focus': {
+        "&:focus": {
             color: theme.palette.text.primary,
         },
     },
     icon: {
-        cursor: 'pointer',
+        cursor: "pointer",
         fontSize: 20,
-        userSelect: 'none',
-        '&:hover': {
+        userSelect: "none",
+        "&:hover": {
             color: theme.palette.text.primary,
         },
-        paddingBottom: '5px',
+        paddingBottom: "5px",
     },
     iconButton: {
         color: theme.palette.text.primary,
@@ -41,17 +41,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         color: grey[500],
     },
     optionsContainer: {
-        padding: '1rem 0',
+        padding: "1rem 0",
         flex: 1,
     },
     option: {
-        cursor: 'pointer',
-        display: 'flex',
-        padding: '3px 2rem',
-        fontSize: '0.9rem',
-        alignItems: 'center',
-        '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.08)',
+        cursor: "pointer",
+        display: "flex",
+        padding: "3px 2rem",
+        fontSize: "0.9rem",
+        alignItems: "center",
+        "&:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.08)",
         },
     },
 });
@@ -83,13 +83,25 @@ export const DataTableMultiselectPopover = withStyles(styles)(
             const { classes, children, options, checkedList, disabled } = this.props;
             return (
                 <>
-                    <Tooltip disableFocusListener title='Select Options'>
-                        <ButtonBase className={classnames(classes.root)} component='span' onClick={disabled ? () => {} : this.open} disableRipple>
+                    <Tooltip
+                        disableFocusListener
+                        title="Select Options"
+                    >
+                        <ButtonBase
+                            className={classnames(classes.root)}
+                            component="span"
+                            onClick={disabled ? () => {} : this.open}
+                            disableRipple
+                        >
                             {children}
-                            <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
+                            <IconButton
+                                component="span"
+                                classes={{ root: classes.iconButton }}
+                                tabIndex={-1}
+                            >
                                 <i
-                                    className={`${classnames(['fas fa-sort-down', classes.icon])}${disabled ? ` ${classes.disabled}` : ''}`}
-                                    data-fa-transform='shrink-3'
+                                    className={`${classnames(["fas fa-sort-down", classes.icon])}${disabled ? ` ${classes.disabled}` : ""}`}
+                                    data-fa-transform="shrink-3"
                                     ref={this.icon}
                                 />
                             </IconButton>
@@ -120,7 +132,6 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                             </div>
                         </Card>
                     </Popover>
-                    <this.MountHandler />
                 </>
             );
         }
@@ -129,24 +140,8 @@ export const DataTableMultiselectPopover = withStyles(styles)(
             this.setState({ anchorEl: this.icon.current || undefined });
         };
 
-        submit = debounce(() => {
-            // const { onChange } = this.props;
-            // if (onChange) {
-            //     onChange(this.state.filters);
-            // }
-        }, 1000);
-
-        MountHandler = () => {
-            useEffect(() => {
-                return () => {
-                    this.submit.cancel();
-                };
-            }, []);
-            return null;
-        };
-
         close = () => {
-            this.setState((prev) => ({
+            this.setState(prev => ({
                 ...prev,
                 anchorEl: undefined,
             }));
