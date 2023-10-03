@@ -3841,7 +3841,7 @@ __metadata:
     jssha: 2.3.1
     jszip: ^3.10.1
     lodash: ^4.17.21
-    lodash-es: 4.17.14
+    lodash-es: ^4.17.21
     lodash.mergewith: 4.6.2
     lodash.template: 4.5.0
     material-ui-pickers: ^2.2.4
@@ -11610,14 +11610,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash-es@npm:4.17.14":
-  version: 4.17.14
-  resolution: "lodash-es@npm:4.17.14"
-  checksum: 56d39dc8e76ac366eae79d4e8d7c19bd2f8981b640a46942bf2d88fa871b2e083e48fe2b895c84ed139e13c0b466cac22ea27d7394be04f2ba62c518392c39be
-  languageName: node
-  linkType: hard
-
-"lodash-es@npm:^4.17.10, lodash-es@npm:^4.17.5, lodash-es@npm:^4.2.1":
+"lodash-es@npm:^4.17.10, lodash-es@npm:^4.17.21, lodash-es@npm:^4.17.5, lodash-es@npm:^4.2.1":
   version: 4.17.21
   resolution: "lodash-es@npm:4.17.21"
   checksum: 05cbffad6e2adbb331a4e16fbd826e7faee403a1a04873b82b42c0f22090f280839f85b95393f487c1303c8a3d2a010048bf06151a6cbe03eee4d388fb0a12d2
