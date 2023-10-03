@@ -1011,7 +1011,7 @@ describe("Collection panel tests", function () {
                         // subdir gets unselected, I think this is a bug but
                         // for the time being let's just make sure the test works.
                         cy.get("[data-cy=collection-files-panel]").contains("subdir").click();
-                        cy.waitForDom({ ficre: true }).get("[data-cy=collection-files-right-panel]").contains("5mb_b.bin").should("exist");
+                        cy.waitForDom().get("[data-cy=collection-files-right-panel]").contains("5mb_b.bin").should("exist");
                     });
                 });
             });
