@@ -20,9 +20,7 @@ export const navigationNotAvailable = (id: string) =>
         kind: SnackbarKind.ERROR,
     });
 
-export const navigateTo = (inputUuid: any) => async (dispatch: Dispatch, getState: () => RootState) => {
-    const uuid = typeof inputUuid === "string" ? inputUuid : inputUuid[0];
-
+export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState) => {
     for (const navToFn of pluginConfig.navigateToHandlers) {
         if (navToFn(dispatch, getState, uuid)) {
             return;
