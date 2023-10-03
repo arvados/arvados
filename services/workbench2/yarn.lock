@@ -3865,7 +3865,7 @@ __metadata:
     react-router: 4.3.1
     react-router-dom: 4.3.1
     react-router-redux: 5.0.0-alpha.9
-    react-rte: 0.16.3
+    react-rte: ^0.16.5
     react-scripts: 3.4.4
     react-splitter-layout: 3.0.1
     react-transition-group: 2.5.0
@@ -13818,6 +13818,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"picocolors@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "picocolors@npm:0.2.1"
+  checksum: 3b0f441f0062def0c0f39e87b898ae7461c3a16ffc9f974f320b44c799418cabff17780ee647fda42b856a1dc45897e2c62047e1b546d94d6d5c6962f45427b2
+  languageName: node
+  linkType: hard
+
 "picomatch@npm:^2.0.4, picomatch@npm:^2.2.1":
   version: 2.3.0
   resolution: "picomatch@npm:2.3.0"
@@ -14764,13 +14771,12 @@ __metadata:
   linkType: hard
 
 "postcss@npm:^7, postcss@npm:^7.0.0, postcss@npm:^7.0.1, postcss@npm:^7.0.14, postcss@npm:^7.0.17, postcss@npm:^7.0.2, postcss@npm:^7.0.23, postcss@npm:^7.0.27, postcss@npm:^7.0.32, postcss@npm:^7.0.5, postcss@npm:^7.0.6":
-  version: 7.0.36
-  resolution: "postcss@npm:7.0.36"
+  version: 7.0.39
+  resolution: "postcss@npm:7.0.39"
   dependencies:
-    chalk: ^2.4.2
+    picocolors: ^0.2.1
     source-map: ^0.6.1
-    supports-color: ^6.1.0
-  checksum: 4cfc0989b9ad5d0e8971af80d87f9c5beac5c84cb89ff22ad69852edf73c0a2fa348e7e0a135b5897bf893edad0fe86c428769050431ad9b532f072ff530828d
+  checksum: 4ac793f506c23259189064bdc921260d869a115a82b5e713973c5af8e94fbb5721a5cc3e1e26840500d7e1f1fa42a209747c5b1a151918a9bc11f0d7ed9048e3
   languageName: node
   linkType: hard
 
@@ -15413,9 +15419,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-rte@npm:0.16.3":
-  version: 0.16.3
-  resolution: "react-rte@npm:0.16.3"
+"react-rte@npm:^0.16.5":
+  version: 0.16.5
+  resolution: "react-rte@npm:0.16.5"
   dependencies:
     babel-runtime: ^6.23.0
     class-autobind: ^0.1.4
@@ -15428,9 +15434,9 @@ __metadata:
     draft-js-utils: ">=0.2.0"
     immutable: ^3.8.1
   peerDependencies:
-    react: 0.14.x || 15.x.x || 16.x.x
-    react-dom: 0.14.x || 15.x.x || 16.x.x
-  checksum: 812ed35161bea266cbdf42da0173398834eba0166328a01ae521c86b29b573ed25107985d3a077344ecd30536804376c0d94cb7d534abecdbc1dbf4d7af8bdc4
+    react: 0.14.x || 15.x.x || 16.x.x || 17.x.x
+    react-dom: 0.14.x || 15.x.x || 16.x.x || 17.x.x
+  checksum: 3af94acd7790989c44babc7b1327a0a047a1a7fd03f13d5c1ef2d276e949d7346a8b1b875b8457c2624e5c0cdcb6e3980f967280c52ff2f92d8234debec01c03
   languageName: node
   linkType: hard
 
