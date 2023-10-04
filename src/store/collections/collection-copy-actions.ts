@@ -65,7 +65,6 @@ export const copyCollection =
                         ownerUuid: "A collection with the same name already exists in the target project.",
                     } as FormErrors)
                 );
-                throw new Error("Could not copy the collection.");
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
                 throw new Error("Could not copy the collection.");
