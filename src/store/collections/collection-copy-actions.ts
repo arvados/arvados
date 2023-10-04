@@ -46,14 +46,18 @@ export const copyCollection =
             const collManifestText = await services.collectionService.get(resource.uuid, undefined, ["manifestText"]);
             collection.manifestText = collManifestText.manifestText;
             const { href, ...collectionRecord } = collection;
-            const newCollection = await services.collectionService.create({
-                ...collectionRecord,
-                ownerUuid: resource.ownerUuid,
-                name: resource.name,
-            });
+            const newCollection = await services.collectionService.create(
+                {
+                    ...collectionRecord,
+                    ownerUuid: resource.ownerUuid,
+                    name: resource.name,
+                },
+                false
+            );
             dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
             return newCollection;
         } catch (e) {
+            console.error("Error while copying collection: ", e);
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(
@@ -61,6 +65,7 @@ export const copyCollection =
                         ownerUuid: "A collection with the same name already exists in the target project.",
                     } as FormErrors)
                 );
+                throw new Error("Could not copy the collection.");
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
                 throw new Error("Could not copy the collection.");

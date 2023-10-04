@@ -152,7 +152,7 @@ fetchConfig().then(({ config, apiHost }) => {
                 } else if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
                     // Catch auth errors when navigating and redirect to login preserving url location
                     store.dispatch(logout(false, true));
-                } else if (error.status !== 422) {
+                } else {
                     store.dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: `${error.errors ? error.errors[0] : error.message}`,
