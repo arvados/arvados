@@ -18,12 +18,13 @@ export const toggleProjectTrashed =
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         let errorMessage = "";
         let successMessage = "";
+        let untrashedResource;
         try {
             if (isTrashed) {
                 errorMessage = "Could not restore project from trash";
                 successMessage = "Restored project from trash";
-                await services.groupsService.untrash(uuid);
-                dispatch<any>(isMulti ? navigateToTrash : navigateTo(uuid));
+                untrashedResource = await services.groupsService.untrash(uuid);
+                dispatch<any>(isMulti || !untrashedResource ? navigateToTrash : navigateTo(uuid));
                 dispatch<any>(activateSidePanelTreeItem(uuid));
             } else {
                 errorMessage = "Could not move project to trash";
@@ -32,20 +33,31 @@ export const toggleProjectTrashed =
                 dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
                 dispatch<any>(navigateTo(ownerUuid));
             }
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: successMessage,
-                    hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS,
-                })
-            );
+            if (untrashedResource) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: successMessage,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.SUCCESS,
+                    })
+                );
+            }
         } catch (e) {
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: errorMessage,
-                    kind: SnackbarKind.ERROR,
-                })
-            );
+            if (e.status === 422) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Could not restore project from trash: Duplicate name at destination",
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            } else {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: errorMessage,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            }
         }
     };
 
@@ -78,12 +90,21 @@ export const toggleCollectionTrashed =
                 })
             );
         } catch (e) {
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: errorMessage,
-                    kind: SnackbarKind.ERROR,
-                })
-            );
+            if (e.status === 422) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Could not restore collection from trash: Duplicate name at destination",
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            } else {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: errorMessage,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            }
         }
     };
 
