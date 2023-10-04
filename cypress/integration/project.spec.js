@@ -139,7 +139,7 @@ describe("Project tests", function () {
 
         const editProjectDescription = (name, type) => {
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-            cy.get("[data-cy=project-panel] tbody tr").contains(name).rightclick();
+            cy.get("[data-cy=project-panel] tbody tr").contains(name).rightclick({ force: true });
             cy.get("[data-cy=context-menu]").contains("Edit").click();
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.get("div[contenteditable=true]").click().type(type);
