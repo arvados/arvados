@@ -43,7 +43,8 @@ setup(name='arvados-cwl-runner',
           'networkx < 2.6',
           'msgpack==1.0.3',
           'importlib-metadata<5',
-          'setuptools>=40.3.0'
+          'setuptools>=40.3.0',
+          'zipp<3.16.0'
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),

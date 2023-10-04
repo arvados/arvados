@@ -560,7 +560,7 @@ class RunnerContainer(Runner):
                 }
                 self.job_order[param] = {"$include": mnt}
 
-        container_image = arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext),
+        container_image = arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext)
 
         workflow_runner_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
         if workflow_runner_req and workflow_runner_req.get("acrContainerImage"):
