@@ -45,7 +45,7 @@ func (s *RPCSuite) SetUpTest(c *check.C) {
 	})
 }
 
-func (s *RPCSuite) TestLogin(c *check.C) {
+func (s *RPCSuite) TestRailsLogin404(c *check.C) {
 	s.ctx = context.Background()
 	opts := arvados.LoginOptions{
 		ReturnTo: "https://foo.example.com/bar",
@@ -54,14 +54,13 @@ func (s *RPCSuite) TestLogin(c *check.C) {
 	c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 404)
 }
 
-func (s *RPCSuite) TestLogout(c *check.C) {
+func (s *RPCSuite) TestRailsLogout404(c *check.C) {
 	s.ctx = context.Background()
 	opts := arvados.LogoutOptions{
 		ReturnTo: "https://foo.example.com/bar",
 	}
 	resp, err := s.conn.Logout(s.ctx, opts)
-	c.Check(err, check.IsNil)
-	c.Check(resp.RedirectLocation, check.Equals, opts.ReturnTo)
+	c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 404)
 }
 
 func (s *RPCSuite) TestCollectionCreate(c *check.C) {
