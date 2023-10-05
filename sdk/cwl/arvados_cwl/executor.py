@@ -729,7 +729,7 @@ The 'jobs' API is no longer supported.
 
             if runtimeContext.print_keep_deps:
                 # Just find and print out all the collection dependencies and exit
-                print_keep_deps(tool)
+                print_keep_deps(self, runtimeContext, merged_map, tool)
                 return (None, "success")
 
             # Did not register a workflow, we're going to submit

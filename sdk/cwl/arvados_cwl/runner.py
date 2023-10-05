@@ -948,18 +948,19 @@ class Runner(Process):
             self.arvrunner.output_callback(outputs, processStatus)
 
 
-def print_keep_deps_visitor(references, doc_loader, tool):
+def print_keep_deps_visitor(api, runtimeContext, references, doc_loader, tool):
     def collect_locators(obj):
         loc = obj.get("location", "")
 
         g = arvados.util.keepuri_pattern.match(loc)
-        if g and g[1] not in references:
-            references.append(g[1])
-            return
+        if g:
+            references.add(g[1])
 
-        loc = obj.get("http://arvados.org/cwl#dockerCollectionPDH", "") or obj.get("acrContainerImage")
-        if loc:
-            references.append(loc)
+        if obj.get("class") == "http://arvados.org/cwl#WorkflowRunnerResources" and "acrContainerImage" in obj:
+            references.add(obj["acrContainerImage"])
+
+        if obj.get("class") == "DockerRequirement":
+            references.add(arvados_cwl.arvdocker.arv_docker_get_image(api, obj, False, runtimeContext))
 
     sc_result = scandeps(tool["id"], tool,
                          set(),
@@ -971,8 +972,15 @@ def print_keep_deps_visitor(references, doc_loader, tool):
     visit_class(tool, ("DockerRequirement", "http://arvados.org/cwl#WorkflowRunnerResources"), collect_locators)
 
 
-def print_keep_deps(tool):
-    references = []
+def print_keep_deps(arvRunner, runtimeContext, merged_map, tool):
+    references = set()
 
-    tool.visit(partial(print_keep_deps_visitor, references, tool.doc_loader))
-    print(json.dumps(references))
+    tool.visit(partial(print_keep_deps_visitor, arvRunner.api, runtimeContext, references, tool.doc_loader))
+
+    for mm in merged_map:
+        for k, v in merged_map[mm].resolved.items():
+            g = arvados.util.keepuri_pattern.match(v)
+            if g:
+                references.add(g[1])
+
+    arvRunner.stdout.write(json.dumps(sorted(list(references)))+"\n")

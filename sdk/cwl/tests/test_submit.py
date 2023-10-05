@@ -1774,3 +1774,18 @@ class TestCreateWorkflow(unittest.TestCase):
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
+
+
+class TestPrintKeepDeps(unittest.TestCase):
+    @stubs()
+    def test_print_keep_deps(self, stubs):
+        # test --print-keep-deps which is used by arv-copy
+
+        exited = arvados_cwl.main(
+            ["--print-keep-deps", "--debug",
+             "tests/wf/submit_wf_map.cwl"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
+
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         '["5d373e7629203ce39e7c22af98a0f881+52", "999999999999999999999999999999d4+99"]' + '\n')
+        self.assertEqual(exited, 0)
