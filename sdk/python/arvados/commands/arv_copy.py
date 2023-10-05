@@ -171,6 +171,9 @@ def main():
     for d in listvalues(local_repo_dir):
         shutil.rmtree(d, ignore_errors=True)
 
+    if not result:
+        exit(1)
+
     # If no exception was thrown and the response does not have an
     # error_token field, presume success
     if result is None or 'error_token' in result or 'uuid' not in result:
@@ -327,8 +330,13 @@ def copy_workflow(wf_uuid, src, dst, args):
         env = {"ARVADOS_API_HOST": urllib.parse.urlparse(src._rootDesc["rootUrl"]).netloc,
                "ARVADOS_API_TOKEN": src.api_token,
                "PATH": os.environ["PATH"]}
-        result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
-                                capture_output=True, env=env)
+        try:
+            result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
+                                    capture_output=True, env=env)
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            logger.error('Copying workflows requires arvados-cwl-runner 2.7.1 or later to be installed in PATH.')
+            return
+
         locations = json.loads(result.stdout)
 
         if locations:
