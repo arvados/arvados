@@ -36,6 +36,9 @@ import logging
 import tempfile
 import urllib.parse
 import io
+import json
+import queue
+import threading
 
 import arvados
 import arvados.config
@@ -566,12 +569,82 @@ def copy_collection(obj_uuid, src, dst, args):
     dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=args.retries)
     dst_manifest = io.StringIO()
     dst_locators = {}
-    bytes_written = 0
+    bytes_written = [0]
     bytes_expected = total_collection_size(manifest)
     if args.progress:
         progress_writer = ProgressWriter(human_progress)
     else:
         progress_writer = None
+
+    # go through the words
+    # put each block loc into 'get' queue
+    # 'get' threads get block and put it into 'put' queue
+    # 'put' threads put block and then update dst_locators
+    #
+    # after going through the whole manifest we go back through it
+    # again and build dst_manifest
+
+    lock = threading.Lock()
+    get_queue = queue.Queue()
+    put_queue = queue.Queue()
+
+    def get_thread():
+        while True:
+            word = get_queue.get()
+            if word is None:
+                return
+            data = src_keep.get(word)
+            put_queue.put((word, data))
+            get_queue.task_done()
+
+    def put_thread():
+        while True:
+            item = put_queue.get()
+            if item is None:
+                return
+            word, data = item
+            loc = arvados.KeepLocator(word)
+            blockhash = loc.md5sum
+            dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
+            with lock:
+                dst_locators[blockhash] = dst_locator
+                bytes_written[0] += loc.size
+            put_queue.task_done()
+
+    for line in manifest.splitlines():
+        words = line.split()
+        for word in words[1:]:
+            try:
+                loc = arvados.KeepLocator(word)
+            except ValueError:
+                # If 'word' can't be parsed as a locator,
+                # presume it's a filename.
+                continue
+            blockhash = loc.md5sum
+            # copy this block if we haven't seen it before
+            # (otherwise, just reuse the existing dst_locator)
+            with lock:
+                if blockhash in dst_locators:
+                    continue
+                logger.debug("Copying block %s (%s bytes)", blockhash, loc.size)
+                if progress_writer:
+                    progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
+
+            # queue it up.
+            get_queue.put(word)
+
+    threading.Thread(target=get_thread, daemon=True).start()
+    threading.Thread(target=get_thread, daemon=True).start()
+    threading.Thread(target=get_thread, daemon=True).start()
+    threading.Thread(target=get_thread, daemon=True).start()
+
+    threading.Thread(target=put_thread, daemon=True).start()
+    threading.Thread(target=put_thread, daemon=True).start()
+    threading.Thread(target=put_thread, daemon=True).start()
+    threading.Thread(target=put_thread, daemon=True).start()
+
+    get_queue.join()
+    put_queue.join()
 
     for line in manifest.splitlines():
         words = line.split()
@@ -586,22 +659,12 @@ def copy_collection(obj_uuid, src, dst, args):
                 dst_manifest.write(word)
                 continue
             blockhash = loc.md5sum
-            # copy this block if we haven't seen it before
-            # (otherwise, just reuse the existing dst_locator)
-            if blockhash not in dst_locators:
-                logger.debug("Copying block %s (%s bytes)", blockhash, loc.size)
-                if progress_writer:
-                    progress_writer.report(obj_uuid, bytes_written, bytes_expected)
-                data = src_keep.get(word)
-                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
-                dst_locators[blockhash] = dst_locator
-                bytes_written += loc.size
             dst_manifest.write(' ')
             dst_manifest.write(dst_locators[blockhash])
         dst_manifest.write("\n")
 
     if progress_writer:
-        progress_writer.report(obj_uuid, bytes_written, bytes_expected)
+        progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
         progress_writer.finish()
 
     # Copy the manifest and save the collection.
