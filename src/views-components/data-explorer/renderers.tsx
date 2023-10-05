@@ -49,7 +49,6 @@ import { setMemberIsHidden } from "store/group-details-panel/group-details-panel
 import { formatPermissionLevel } from "views-components/sharing-dialog/permission-select";
 import { PermissionLevel } from "models/permission";
 import { openPermissionEditContextMenu } from "store/context-menu/context-menu-actions";
-import { getUserUuid } from "common/getuser";
 import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
@@ -62,13 +61,15 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             container
             alignItems="center"
             wrap="nowrap"
-            spacing={16}>
+            spacing={16}
+        >
             <Grid item>{renderIcon(item)}</Grid>
             <Grid item>
                 <Typography
                     color="primary"
                     style={{ width: "auto", cursor: "pointer" }}
-                    onClick={() => dispatch<any>(navFunc(item.uuid))}>
+                    onClick={() => dispatch<any>(navFunc(item.uuid))}
+                >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
                     {item.name}
                 </Typography>
@@ -97,7 +98,8 @@ const FrozenProject = (props: { item: ProjectResource }) => {
             <Tooltip
                 onOpen={getFullName}
                 enterDelay={500}
-                title={<span>Project was frozen by {fullUsername}</span>}>
+                title={<span>Project was frozen by {fullUsername}</span>}
+            >
                 <FreezeIcon style={{ fontSize: "inherit" }} />
             </Tooltip>
         );
@@ -136,7 +138,8 @@ const renderDate = (date?: string) => {
     return (
         <Typography
             noWrap
-            style={{ minWidth: "100px" }}>
+            style={{ minWidth: "100px" }}
+        >
             {formatDate(date)}
         </Typography>
     );
@@ -147,12 +150,14 @@ const renderWorkflowName = (item: WorkflowResource) => (
         container
         alignItems="center"
         wrap="nowrap"
-        spacing={16}>
+        spacing={16}
+    >
         <Grid item>{renderIcon(item)}</Grid>
         <Grid item>
             <Typography
                 color="primary"
-                style={{ width: "100px" }}>
+                style={{ width: "100px" }}
+            >
                 {item.name}
             </Typography>
         </Grid>
@@ -219,7 +224,8 @@ const renderFullName = (dispatch: Dispatch, item: { uuid: string; firstName: str
             noWrap
             color="primary"
             style={{ cursor: "pointer" }}
-            onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}>
+            onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}
+        >
             {displayName}
         </Typography>
     ) : (
@@ -237,7 +243,8 @@ export const UserResourceFullName = connect((state: RootState, props: { uuid: st
 const renderUuid = (item: { uuid: string }) => (
     <Typography
         data-cy="uuid"
-        noWrap>
+        noWrap
+    >
         {item.uuid}
         {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
     </Typography>
@@ -246,7 +253,8 @@ const renderUuid = (item: { uuid: string }) => (
 const renderUuidCopyIcon = (item: { uuid: string }) => (
     <Typography
         data-cy="uuid"
-        noWrap>
+        noWrap
+    >
         {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || "-"}
     </Typography>
 );
@@ -275,7 +283,8 @@ const renderAccountStatus = (props: { status: UserAccountStatus }) => (
         alignItems="center"
         wrap="nowrap"
         spacing={8}
-        data-cy="account-status">
+        data-cy="account-status"
+    >
         <Grid item>
             {(() => {
                 switch (props.status) {
@@ -472,7 +481,8 @@ export const ResourceCluster = (props: { uuid: string }) => {
                 color: clusterColors[ci][1],
                 padding: "2px 7px",
                 borderRadius: 3,
-            }}>
+            }}
+        >
             {clusterId}
         </span>
     );
@@ -511,8 +521,12 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
             color="primary"
             style={{ cursor: "pointer" }}
             onClick={() => {
-                item.kind === ResourceKind.GROUP ? dispatch<any>(navigateToGroupDetails(item.uuid)) : dispatch<any>(navigateTo(item.uuid));
-            }}>
+                console.log(item);
+                item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
+                    ? dispatch<any>(navigateToGroupDetails(item.uuid))
+                    : dispatch<any>(navigateTo(item.uuid));
+            }}
+        >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
             {displayName || item.uuid}
         </Typography>
@@ -562,7 +576,8 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
             <Typography noWrap>
                 <IconButton
                     data-cy="resource-delete-button"
-                    onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}>
+                    onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}
+                >
                     <RemoveIcon />
                 </IconButton>
             </Typography>
@@ -570,7 +585,8 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
             <Typography noWrap>
                 <IconButton
                     disabled
-                    data-cy="resource-delete-button">
+                    data-cy="resource-delete-button"
+                >
                     <RemoveIcon />
                 </IconButton>
             </Typography>
@@ -611,7 +627,8 @@ const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage
             {canManage ? (
                 <IconButton
                     data-cy="edit-permission-button"
-                    onClick={event => dispatch<any>(openPermissionEditContextMenu(event, link))}>
+                    onClick={event => dispatch<any>(openPermissionEditContextMenu(event, link))}
+                >
                     <RenameIcon />
                 </IconButton>
             ) : (
@@ -684,7 +701,8 @@ const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
 const renderStatus = (status: string) => (
     <Typography
         noWrap
-        style={{ width: "60px" }}>
+        style={{ width: "60px" }}
+    >
         {status}
     </Typography>
 );
@@ -714,14 +732,16 @@ const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, c
         <Grid
             container
             alignItems="center"
-            wrap="nowrap">
+            wrap="nowrap"
+        >
             <Grid item>
                 {selectedColumnUuid ? (
                     <Typography
                         color="primary"
                         style={{ width: "auto", cursor: "pointer" }}
                         noWrap
-                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}>
+                        onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}
+                    >
                         {selectedColumnUuid}
                     </Typography>
                 ) : (
@@ -776,7 +796,8 @@ export const ResourceDeleteDate = connect((state: RootState, props: { uuid: stri
 export const renderFileSize = (fileSize?: number) => (
     <Typography
         noWrap
-        style={{ minWidth: "45px" }}>
+        style={{ minWidth: "45px" }}
+    >
         {formatFileSize(fileSize)}
     </Typography>
 );
@@ -876,7 +897,8 @@ const _resourceWithName = withStyles(
             <Typography
                 style={{ color: theme.palette.primary.main }}
                 inline
-                noWrap>
+                noWrap
+            >
                 {uuid}
             </Typography>
         );
@@ -886,7 +908,8 @@ const _resourceWithName = withStyles(
         <Typography
             style={{ color: theme.palette.primary.main }}
             inline
-            noWrap>
+            noWrap
+        >
             {userFullname} ({uuid})
         </Typography>
     );
@@ -953,7 +976,8 @@ export const ResponsiblePerson = compose(
             <Typography
                 style={{ color: theme.palette.primary.main }}
                 inline
-                noWrap>
+                noWrap
+            >
                 {uuid}
             </Typography>
         );
@@ -963,7 +987,8 @@ export const ResponsiblePerson = compose(
         <Typography
             style={{ color: theme.palette.primary.main }}
             inline
-            noWrap>
+            noWrap
+        >
             {responsiblePersonName} ({uuid})
         </Typography>
     );
@@ -1036,7 +1061,8 @@ export const ProcessStartDate = connect((state: RootState, props: { uuid: string
 export const renderRunTime = (time: number) => (
     <Typography
         noWrap
-        style={{ minWidth: "45px" }}>
+        style={{ minWidth: "45px" }}
+    >
         {formatTime(time, true)}
     </Typography>
 );
