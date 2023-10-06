@@ -15,7 +15,7 @@ This tutorial describes how to copy Arvados objects from one cluster to another 
 
 h2. arv-copy
 
-@arv-copy@ allows users to copy collections, workflow definitions and projects from one cluster to another.
+@arv-copy@ allows users to copy collections, workflow definitions and projects from one cluster to another.  You can also use @arv-copy@ to import resources from HTTP URLs into Keep.
 
 For projects, @arv-copy@ will copy all the collections workflow definitions owned by the project, and recursively copy subprojects.
 
@@ -101,3 +101,30 @@ We will use the uuid @jutro-j7d0g-xj19djofle3aryq@ as an example project.
 The name and description of the original project will be used for the destination copy.  If a project already exists with the same name, collections and workflow definitions will be copied into the project with the same name.
 
 If you would like to copy the project but not its subproject, you can use the @--no-recursive@ flag.
+
+h3. Importing HTTP resources to Keep
+
+You can also use @arv-copy@ to copy the contents of a HTTP URL into Keep.  When you do this, Arvados keeps track of the original URL the resource came from.  This allows you to refer to the resource by its original URL in Workflow inputs, but actually read from the local copy in Keep.
+
+<notextile>
+<pre><code>~$ <span class="userinput">peteramstutz@shell:~$ arv-copy --project-uuid tordo-j7d0g-lr8sq3tx3ovn68k https://example.com/index.html
+tordo-4zz18-dhpb6y9km2byb94
+2023-10-06 10:15:36 arvados.arv-copy[374147] INFO: Success: created copy with uuid tordo-4zz18-dhpb6y9km2byb94
+</code></pre>
+</notextile>
+
+In addition, if you provide a different cluster in @--src@, then @arv-copy@ will search the other cluster for a collection associated with that URL, and if found, copy from that collection instead of downloading from the original URL.
+
+<notextile>
+<pre><code>~$ <span class="userinput">peteramstutz@shell:~$ arv-copy --src pirca --project-uuid tordo-j7d0g-lr8sq3tx3ovn68k https://example.com/index.html
+tordo-4zz18-dhpb6y9km2byb94
+2023-10-06 10:15:36 arvados.arv-copy[374147] INFO: Success: created copy with uuid tordo-4zz18-dhpb6y9km2byb94
+</code></pre>
+</notextile>
+
+The following @arv-copy@ command line options affect the behavior of HTTP import.
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |
+|==--varying-url-params== VARYING_URL_PARAMS|A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.|
+|==--prefer-cached-downloads==|If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).|

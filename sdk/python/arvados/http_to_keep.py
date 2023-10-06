@@ -191,6 +191,10 @@ class _Downloader(PyCurlHelper):
             self._first_chunk = False
 
         self.count += len(chunk)
+
+        if self.target is None:
+            return
+
         self.target.write(chunk)
         loopnow = time.time()
         if (loopnow - self.checkpoint) < 20:
