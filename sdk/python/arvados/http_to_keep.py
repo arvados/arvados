@@ -345,7 +345,7 @@ def http_to_keep(api, project_uuid, url,
         item["properties"].update(properties)
         api.collections().update(uuid=item["uuid"], body={"collection":{"properties": item["properties"]}}).execute()
         cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-        return (item["portable_data_hash"], list(cr.keys())[0])
+        return (item["portable_data_hash"], list(cr.keys())[0], item["uuid"], clean_url, now)
 
     logger.info("Download complete")
 
@@ -363,4 +363,4 @@ def http_to_keep(api, project_uuid, url,
 
     api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
 
-    return (c.portable_data_hash(), curldownloader.name, c.manifest_locator())
+    return (c.portable_data_hash(), curldownloader.name, c.manifest_locator(), clean_url, now)
