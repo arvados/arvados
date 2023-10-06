@@ -59,7 +59,7 @@ func (s *RPCSuite) TestRailsLogout404(c *check.C) {
 	opts := arvados.LogoutOptions{
 		ReturnTo: "https://foo.example.com/bar",
 	}
-	resp, err := s.conn.Logout(s.ctx, opts)
+	_, err := s.conn.Logout(s.ctx, opts)
 	c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 404)
 }
 
