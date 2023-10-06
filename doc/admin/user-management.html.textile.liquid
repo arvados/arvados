@@ -10,13 +10,27 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Authentication":#authentication
+## "Federated Authentication":#federated_auth
+# "User activation":#user_activation
+# "User agreements and self-activation":#user_agreements
+# "User profile":#user_profile
+# "User visibility":#user_visibility
+# "Pre-setup user by email address":#pre-activated
+# "Pre-activate federated user":#pre-activated-fed
+# "Auto-setup federated users from trusted clusters":#auto_setup_federated
+# "Activation flows":#activation_flows
+## "Private instance":#activation_flow_private
+## "Federated instance":#federated
+## "Open instance":#activation_flow_open
+
 {% comment %}
 TODO: Link to relevant workbench documentation when it gets written
 {% endcomment %}
 
 This page describes how user accounts are created, set up and activated.
 
-h2. Authentication
+h2(#authentication). Authentication
 
 "Browser login and management of API tokens is described here.":{{site.baseurl}}/api/tokens.html
 
@@ -30,11 +44,11 @@ If no user account is found, a new user account is created with the information 
 
 If a user account has been "linked":{{site.baseurl}}/user/topics/link-accounts.html or "migrated":merge-remote-account.html the API server may follow internal redirects (@redirect_to_user_uuid@) to select the linked or migrated user account.
 
-h3. Federated Authentication
+h3(#federated_auth). Federated Authentication
 
 A federated user follows a slightly different flow.  The client presents a token issued by the remote cluster.  The local API server contacts the remote cluster to verify the user's identity.  This results in a user object (representing the remote user) being created on the local cluster.  If the user cannot be verified, the token will be rejected.  If the user is inactive on the remote cluster, a user record will be created, but it will also be inactive.
 
-h2. User activation
+h2(#user_activation). User activation
 
 This section describes the different user account states.
 
@@ -94,13 +108,13 @@ The @user_agreements/sign@ endpoint creates a Link object:
 
 The @user_agreements/signatures@ endpoint returns the list of Link objects that represent signatures by the current user (created by @sign@).
 
-h2. User profile
+h2(#user_profile). User profile
 
 The fields making up the user profile are described in @Workbench.UserProfileFormFields@ .  See "Configuration reference":config.html .
 
 The user profile is checked by workbench after checking if user agreements need to be signed.  The values entered are stored in the @properties@ field on the user object.  Unlike user agreements, the requirement to fill out the user profile is not enforced by the API server.
 
-h2. User visibility
+h2(#user_visibility). User visibility
 
 Initially, a user is not part of any groups and will not be able to interact with other users on the system.  The admin should determine who the user is permited to interact with and use Workbench or the "command line":group-management.html#add to create and add the user to the appropriate group(s).
 
@@ -118,7 +132,7 @@ $ arv user setup --uuid clsr1-tpzed-1234567890abcdf
 
 2. When the user logs in the first time, the email address will be recognized and the user will be associated with the existing user object.
 
-h2. Pre-activate federated user
+h2(#pre-activated-fed). Pre-activate federated user
 
 1. As admin, create a user object with the @uuid@ of the federated user (this is the user's uuid on their home cluster, called @clsr2@ in this example):
 
@@ -128,13 +142,13 @@ $ arv user create --user '{"uuid": "clsr2-tpzed-1234567890abcdf", "email": "foo@
 
 2. When the user logs in, they will be associated with the existing user object.
 
-h2. Auto-setup federated users from trusted clusters
+h2(#auto_setup_federated). Auto-setup federated users from trusted clusters
 
 By setting @ActivateUsers: true@ for each federated cluster in @RemoteClusters@, a federated user from one of the listed clusters will be automatically set up and activated on this cluster.  See configuration example in "Federated instance":#federated .
 
-h2. Activation flows
+h2(#activation_flows). Activation flows
 
-h3. Private instance
+h3(#activation_flow_private). Private instance
 
 Policy: users must be manually set up by the admin.
 
@@ -171,7 +185,7 @@ RemoteClusters:
 # Because 'clsr2' has @ActivateUsers@ the user is set up and activated.
 # User can immediately start using Workbench.
 
-h3. Open instance
+h3(#activation_flow_open). Open instance
 
 Policy: anybody who shows up and signs the agreements is activated.
 
