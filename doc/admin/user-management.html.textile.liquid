@@ -23,6 +23,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Private instance":#activation_flow_private
 ## "Federated instance":#federated
 ## "Open instance":#activation_flow_open
+# "Service Accounts":#service_accounts
 
 {% comment %}
 TODO: Link to relevant workbench documentation when it gets written
@@ -201,3 +202,11 @@ Users:
 # Workbench presents user with list of user agreements, user reads and clicks "sign" for each one.
 # Workbench tries to activate user.
 # User is activated.
+
+h2(#service_accounts). Service Accounts
+
+For automation purposes, you can create service accounts that aren't tied to an external authorization system. These kind of accounts don't really differ much from standard user accounts, they just cannot be accessed through a normal login mechanism.
+
+As an admin, you can create accounts like described in the "user pre-setup section above":#pre-activated and then "activate them by updating its @is_active@ field":{{site.baseurl}}/admin/user-management-cli.html#activate-user.
+
+Once a service account is created you can "use an admin account to set up a token":{{site.baseurl}}/admin/user-management-cli.html#create-token for it, so that the required automations can authenticate. Note that these tokens support having a limited lifetime and scope, if required by your security policies. You can read more about them at "the API reference page":{{site.baseurl}}/api/methods/api_client_authorizations.html.
