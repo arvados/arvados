@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement, useState } from "react";
+import React, { ReactElement, memo, useState } from "react";
 import { Dispatch } from "redux";
 import {
     StyleRulesCallback,
@@ -47,6 +47,7 @@ import {
     isPrimitiveOfType,
     StringArrayCommandInputParameter,
     StringCommandInputParameter,
+    getEnumType,
 } from "models/workflow";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { File } from "models/workflow";
@@ -277,8 +278,8 @@ export const ProcessIOCard = withStyles(styles)(
             return (
                 <Card
                     className={classes.card}
-                    data-cy="process-io-card">
-                    {/* here */}
+                    data-cy="process-io-card"
+                >
                     <CardHeader
                         className={classes.header}
                         classes={{
@@ -290,7 +291,8 @@ export const ProcessIOCard = withStyles(styles)(
                             <Typography
                                 noWrap
                                 variant="h6"
-                                color="inherit">
+                                color="inherit"
+                            >
                                 {label}
                             </Typography>
                         }
@@ -299,12 +301,14 @@ export const ProcessIOCard = withStyles(styles)(
                                 {mainProcess && (
                                     <Tooltip
                                         title={"Toggle Image Preview"}
-                                        disableFocusListener>
+                                        disableFocusListener
+                                    >
                                         <IconButton
                                             data-cy="io-preview-image-toggle"
                                             onClick={() => {
                                                 setShowImagePreview(!showImagePreview);
-                                            }}>
+                                            }}
+                                        >
                                             {showImagePreview ? <ImageIcon /> : <ImageOffIcon />}
                                         </IconButton>
                                     </Tooltip>
@@ -312,7 +316,8 @@ export const ProcessIOCard = withStyles(styles)(
                                 {doUnMaximizePanel && panelMaximized && (
                                     <Tooltip
                                         title={`Unmaximize ${panelName || "panel"}`}
-                                        disableFocusListener>
+                                        disableFocusListener
+                                    >
                                         <IconButton onClick={doUnMaximizePanel}>
                                             <UnMaximizeIcon />
                                         </IconButton>
@@ -321,7 +326,8 @@ export const ProcessIOCard = withStyles(styles)(
                                 {doMaximizePanel && !panelMaximized && (
                                     <Tooltip
                                         title={`Maximize ${panelName || "panel"}`}
-                                        disableFocusListener>
+                                        disableFocusListener
+                                    >
                                         <IconButton onClick={doMaximizePanel}>
                                             <MaximizeIcon />
                                         </IconButton>
@@ -330,10 +336,12 @@ export const ProcessIOCard = withStyles(styles)(
                                 {doHidePanel && (
                                     <Tooltip
                                         title={`Close ${panelName || "panel"}`}
-                                        disableFocusListener>
+                                        disableFocusListener
+                                    >
                                         <IconButton
                                             disabled={panelMaximized}
-                                            onClick={doHidePanel}>
+                                            onClick={doHidePanel}
+                                        >
                                             <CloseIcon />
                                         </IconButton>
                                     </Tooltip>
@@ -350,7 +358,8 @@ export const ProcessIOCard = withStyles(styles)(
                                         container
                                         item
                                         alignItems="center"
-                                        justify="center">
+                                        justify="center"
+                                    >
                                         <CircularProgress />
                                     </Grid>
                                 )}
@@ -364,7 +373,8 @@ export const ProcessIOCard = withStyles(styles)(
                                             value={mainProcTabState}
                                             onChange={handleMainProcTabChange}
                                             variant="fullWidth"
-                                            className={classes.symmetricTabs}>
+                                            className={classes.symmetricTabs}
+                                        >
                                             {/* params will be empty on processes without workflow definitions in mounts, so we only show raw */}
                                             {hasParams && <Tab label="Parameters" />}
                                             {!showParams && <Tab label="JSON" />}
@@ -390,7 +400,8 @@ export const ProcessIOCard = withStyles(styles)(
                                         container
                                         item
                                         alignItems="center"
-                                        justify="center">
+                                        justify="center"
+                                    >
                                         <DefaultView messages={["No parameters found"]} />
                                     </Grid>
                                 )}
@@ -403,7 +414,8 @@ export const ProcessIOCard = withStyles(styles)(
                                         container
                                         item
                                         alignItems="center"
-                                        justify="center">
+                                        justify="center"
+                                    >
                                         <CircularProgress />
                                     </Grid>
                                 )}
@@ -413,7 +425,8 @@ export const ProcessIOCard = withStyles(styles)(
                                             value={subProcTabState}
                                             onChange={handleSubProcTabChange}
                                             variant="fullWidth"
-                                            className={classes.symmetricTabs}>
+                                            className={classes.symmetricTabs}
+                                        >
                                             {hasInputMounts && <Tab label="Collections" />}
                                             {hasOutputCollecton && <Tab label="Collection" />}
                                             <Tab label="JSON" />
@@ -429,7 +442,8 @@ export const ProcessIOCard = withStyles(styles)(
                                                                 className={classes.keepLink}
                                                                 onClick={() => {
                                                                     navigateTo(outputUuid || "");
-                                                                }}>
+                                                                }}
+                                                            >
                                                                 {outputUuid}
                                                             </MuiLink>
                                                         </Typography>
@@ -452,7 +466,8 @@ export const ProcessIOCard = withStyles(styles)(
                                         container
                                         item
                                         alignItems="center"
-                                        justify="center">
+                                        justify="center"
+                                    >
                                         <DefaultView messages={["No data to display"]} />
                                     </Grid>
                                 )}
@@ -486,77 +501,82 @@ interface ProcessIOPreviewDataProps {
 
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
-const ProcessIOPreview = withStyles(styles)(({ classes, data, showImagePreview, valueLabel }: ProcessIOPreviewProps) => {
-    const showLabel = data.some((param: ProcessIOParameter) => param.label);
-    return (
-        <Table
-            className={classes.tableRoot}
-            aria-label="Process IO Preview">
-            <TableHead>
-                <TableRow>
-                    <TableCell>Name</TableCell>
-                    {showLabel && <TableCell className={classes.labelColumn}>Label</TableCell>}
-                    <TableCell>{valueLabel}</TableCell>
-                    <TableCell>Collection</TableCell>
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {data.map((param: ProcessIOParameter) => {
-                    const firstVal = param.value.length > 0 ? param.value[0] : undefined;
-                    const rest = param.value.slice(1);
-                    const mainRowClasses = {
-                        [classes.noBorderRow]: rest.length > 0,
-                    };
+const ProcessIOPreview = memo(
+    withStyles(styles)(({ classes, data, showImagePreview, valueLabel }: ProcessIOPreviewProps) => {
+        const showLabel = data.some((param: ProcessIOParameter) => param.label);
+        return (
+            <Table
+                className={classes.tableRoot}
+                aria-label="Process IO Preview"
+            >
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Name</TableCell>
+                        {showLabel && <TableCell className={classes.labelColumn}>Label</TableCell>}
+                        <TableCell>{valueLabel}</TableCell>
+                        <TableCell>Collection</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {data.map((param: ProcessIOParameter) => {
+                        const firstVal = param.value.length > 0 ? param.value[0] : undefined;
+                        const rest = param.value.slice(1);
+                        const mainRowClasses = {
+                            [classes.noBorderRow]: rest.length > 0,
+                        };
 
-                    return (
-                        <React.Fragment key={param.id}>
-                            <TableRow
-                                className={classNames(mainRowClasses)}
-                                data-cy="process-io-param">
-                                <TableCell>{param.id}</TableCell>
-                                {showLabel && <TableCell>{param.label}</TableCell>}
-                                <TableCell>
-                                    {firstVal && (
-                                        <ProcessValuePreview
-                                            value={firstVal}
-                                            showImagePreview={showImagePreview}
-                                        />
-                                    )}
-                                </TableCell>
-                                <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
-                                    <Typography className={classes.paramValue}>{firstVal?.collection}</Typography>
-                                </TableCell>
-                            </TableRow>
-                            {rest.map((val, i) => {
-                                const rowClasses = {
-                                    [classes.noBorderRow]: i < rest.length - 1,
-                                    [classes.secondaryRow]: val.secondary,
-                                };
-                                return (
-                                    <TableRow
-                                        className={classNames(rowClasses)}
-                                        key={i}>
-                                        <TableCell />
-                                        {showLabel && <TableCell />}
-                                        <TableCell>
+                        return (
+                            <React.Fragment key={param.id}>
+                                <TableRow
+                                    className={classNames(mainRowClasses)}
+                                    data-cy="process-io-param"
+                                >
+                                    <TableCell>{param.id}</TableCell>
+                                    {showLabel && <TableCell>{param.label}</TableCell>}
+                                    <TableCell>
+                                        {firstVal && (
                                             <ProcessValuePreview
-                                                value={val}
+                                                value={firstVal}
                                                 showImagePreview={showImagePreview}
                                             />
-                                        </TableCell>
-                                        <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
-                                            <Typography className={classes.paramValue}>{val.collection}</Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </React.Fragment>
-                    );
-                })}
-            </TableBody>
-        </Table>
-    );
-});
+                                        )}
+                                    </TableCell>
+                                    <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
+                                        <Typography className={classes.paramValue}>{firstVal?.collection}</Typography>
+                                    </TableCell>
+                                </TableRow>
+                                {rest.map((val, i) => {
+                                    const rowClasses = {
+                                        [classes.noBorderRow]: i < rest.length - 1,
+                                        [classes.secondaryRow]: val.secondary,
+                                    };
+                                    return (
+                                        <TableRow
+                                            className={classNames(rowClasses)}
+                                            key={i}
+                                        >
+                                            <TableCell />
+                                            {showLabel && <TableCell />}
+                                            <TableCell>
+                                                <ProcessValuePreview
+                                                    value={val}
+                                                    showImagePreview={showImagePreview}
+                                                />
+                                            </TableCell>
+                                            <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
+                                                <Typography className={classes.paramValue}>{val.collection}</Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </React.Fragment>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+        );
+    })
+);
 
 interface ProcessValuePreviewProps {
     value: ProcessIOValue;
@@ -604,7 +624,8 @@ const ProcessInputMounts = withStyles(styles)(
     }))(({ mounts, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
         <Table
             className={classes.tableRoot}
-            aria-label="Process Input Mounts">
+            aria-label="Process Input Mounts"
+        >
             <TableHead>
                 <TableRow>
                     <TableCell>Path</TableCell>
@@ -620,7 +641,8 @@ const ProcessInputMounts = withStyles(styles)(
                         <TableCell>
                             <RouterLink
                                 to={getNavUrl(mount.pdh, auth)}
-                                className={classes.keepLink}>
+                                className={classes.keepLink}
+                            >
                                 {mount.pdh}
                             </RouterLink>
                         </TableCell>
@@ -681,7 +703,7 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
                 ? [directoryToProcessIOValue(directory, auth, pdh)]
                 : [{ display: <EmptyValue /> }];
 
-        case typeof input.type === "object" && !(input.type instanceof Array) && input.type.type === "enum":
+        case getEnumType(input) !== null:
             const enumValue = (input as EnumCommandInputParameter).value;
             return enumValue !== undefined && enumValue ? [{ display: <pre>{enumValue}</pre> }] : [{ display: <EmptyValue /> }];
 
@@ -703,18 +725,16 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
             const fileArrayMainFiles = (input as FileArrayCommandInputParameter).value || [];
             const firstMainFilePdh = fileArrayMainFiles.length > 0 && fileArrayMainFiles[0] ? getResourcePdhUrl(fileArrayMainFiles[0], pdh) : "";
 
-            // Convert each main file into separate arrays of ProcessIOValue to preserve secondaryFile grouping
-            const fileArrayValues = fileArrayMainFiles
-                .map((mainFile: File, i): ProcessIOValue[] => {
-                    const secondaryFiles = (mainFile as unknown as FileWithSecondaryFiles)?.secondaryFiles || [];
-                    return [
-                        // Pass firstMainFilePdh to secondary files and every main file besides the first to hide pdh if equal
-                        ...(mainFile ? [fileToProcessIOValue(mainFile, false, auth, pdh, i > 0 ? firstMainFilePdh : "")] : []),
-                        ...secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh, firstMainFilePdh)),
-                    ];
-                    // Reduce each mainFile/secondaryFile group into single array preserving ordering
-                })
-                .reduce((acc: ProcessIOValue[], mainFile: ProcessIOValue[]) => acc.concat(mainFile), []);
+            // Convert each main and secondaryFiles into array of ProcessIOValue preserving ordering
+            let fileArrayValues: ProcessIOValue[] = [];
+            for (let i = 0; i < fileArrayMainFiles.length; i++) {
+                const secondaryFiles = (fileArrayMainFiles[i] as unknown as FileWithSecondaryFiles)?.secondaryFiles || [];
+                fileArrayValues.push(
+                    // Pass firstMainFilePdh to secondary files and every main file besides the first to hide pdh if equal
+                    ...(fileArrayMainFiles[i] ? [fileToProcessIOValue(fileArrayMainFiles[i], false, auth, pdh, i > 0 ? firstMainFilePdh : "")] : []),
+                    ...secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh, firstMainFilePdh))
+                );
+            }
 
             return fileArrayValues.length ? fileArrayValues : [{ display: <EmptyValue /> }];
 
@@ -771,7 +791,8 @@ const KeepUrlBase = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
         <Tooltip title={"View collection in Workbench"}>
             <RouterLink
                 to={pdhWbPath}
-                className={classes.keepLink}>
+                className={classes.keepLink}
+            >
                 {pdhUrl}
             </RouterLink>
         </Tooltip>
@@ -792,7 +813,8 @@ const KeepUrlPath = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
                 className={classes.keepLink}
                 href={keepUrlPathNav}
                 target="_blank"
-                rel="noopener noreferrer">
+                rel="noopener noreferrer"
+            >
                 {keepUrlPath || "/"}
             </a>
         </Tooltip>
@@ -870,7 +892,8 @@ const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, p
             display: (
                 <MuiLink
                     href={file.location}
-                    target="_blank">
+                    target="_blank"
+                >
                     {file.location}
                 </MuiLink>
             ),

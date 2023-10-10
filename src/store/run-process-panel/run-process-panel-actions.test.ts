@@ -119,7 +119,7 @@ describe("run-process-panel-actions", () => {
                 outputName: "Output from basicFormTestName",
                 outputPath: "/var/spool/cwl",
                 ownerUuid: "zzzzz-tpzed-yid70bw31f51234",
-                priority: 1,
+                priority: 500,
                 properties: {
                     workflowName: "revsort.cwl",
                     template_uuid: "zzzzz-7fd4e-2tlnerdkxnl4fjt",

@@ -11,7 +11,7 @@ import { loadPublicFavoritesProject } from 'store/tree-picker/tree-picker-action
 export const PublicFavoritesTreePicker = connect(() => ({
     rootItemIcon: PublicFavoriteIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
-    loadRootItem: (_, pickerId, includeCollections, includeFiles, options) => {
-        dispatch<any>(loadPublicFavoritesProject({ pickerId, includeCollections, includeFiles, options }));
+    loadRootItem: (_, pickerId, includeCollections, includeDirectories, includeFiles, options) => {
+        dispatch<any>(loadPublicFavoritesProject({ pickerId, includeCollections, includeDirectories, includeFiles, options }));
     },
 }))(ProjectsTreePicker);

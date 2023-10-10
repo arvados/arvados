@@ -9,13 +9,13 @@ import { DataTable, DataColumns, DataTableFetchMode } from "components/data-tabl
 import { DataColumn } from "components/data-table/data-column";
 import { SearchInput } from "components/search-input/search-input";
 import { ArvadosTheme } from "common/custom-theme";
-import { createTree } from "models/tree";
-import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
-import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreOptionsIcon } from "components/icon/icon";
-import { PaperProps } from "@material-ui/core/Paper";
-import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import { MultiselectToolbar } from "components/multiselect-toolbar/MultiselectToolbar";
 import { TCheckedList } from "components/data-table/data-table";
+import { createTree } from "models/tree";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
+import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
+import { PaperProps } from "@material-ui/core/Paper";
+import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
 type CssRules = "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | "dataTable" | "container";
 
@@ -196,18 +196,21 @@ export const DataExplorer = withStyles(styles)(
                     className={classes.root}
                     {...paperProps}
                     key={paperKey}
-                    data-cy={this.props["data-cy"]}>
+                    data-cy={this.props["data-cy"]}
+                >
                     <Grid
                         container
                         direction="column"
                         wrap="nowrap"
-                        className={classes.container}>
+                        className={classes.container}
+                    >
                         <div>
                             {title && (
                                 <Grid
                                     item
                                     xs
-                                    className={classes.title}>
+                                    className={classes.title}
+                                >
                                     {title}
                                 </Grid>
                             )}
@@ -215,7 +218,8 @@ export const DataExplorer = withStyles(styles)(
                                 <Grid
                                     className={classes.headerMenu}
                                     item
-                                    xs>
+                                    xs
+                                >
                                     <Toolbar className={classes.toolbar}>
                                         {!hideSearchInput && (
                                             <div className={classes.searchBox}>
@@ -239,7 +243,8 @@ export const DataExplorer = withStyles(styles)(
                                         {doUnMaximizePanel && panelMaximized && (
                                             <Tooltip
                                                 title={`Unmaximize ${panelName || "panel"}`}
-                                                disableFocusListener>
+                                                disableFocusListener
+                                            >
                                                 <IconButton onClick={doUnMaximizePanel}>
                                                     <UnMaximizeIcon />
                                                 </IconButton>
@@ -248,7 +253,8 @@ export const DataExplorer = withStyles(styles)(
                                         {doMaximizePanel && !panelMaximized && (
                                             <Tooltip
                                                 title={`Maximize ${panelName || "panel"}`}
-                                                disableFocusListener>
+                                                disableFocusListener
+                                            >
                                                 <IconButton onClick={doMaximizePanel}>
                                                     <MaximizeIcon />
                                                 </IconButton>
@@ -257,10 +263,12 @@ export const DataExplorer = withStyles(styles)(
                                         {doHidePanel && (
                                             <Tooltip
                                                 title={`Close ${panelName || "panel"}`}
-                                                disableFocusListener>
+                                                disableFocusListener
+                                            >
                                                 <IconButton
                                                     disabled={panelMaximized}
-                                                    onClick={doHidePanel}>
+                                                    onClick={doHidePanel}
+                                                >
                                                     <CloseIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -273,7 +281,8 @@ export const DataExplorer = withStyles(styles)(
                         <Grid
                             item
                             xs="auto"
-                            className={classes.dataTable}>
+                            className={classes.dataTable}
+                        >
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                                 items={items}
@@ -295,7 +304,8 @@ export const DataExplorer = withStyles(styles)(
                         </Grid>
                         <Grid
                             item
-                            xs>
+                            xs
+                        >
                             <Toolbar className={classes.footer}>
                                 {elementPath && (
                                     <Grid container>
@@ -304,7 +314,8 @@ export const DataExplorer = withStyles(styles)(
                                 )}
                                 <Grid
                                     container={!elementPath}
-                                    justify="flex-end">
+                                    justify="flex-end"
+                                >
                                     {fetchMode === DataTableFetchMode.PAGINATED ? (
                                         <TablePagination
                                             count={itemsAvailable}
@@ -321,7 +332,8 @@ export const DataExplorer = withStyles(styles)(
                                         <Button
                                             variant="text"
                                             size="medium"
-                                            onClick={this.loadMore}>
+                                            onClick={this.loadMore}
+                                        >
                                             Load more
                                         </Button>
                                     )}
@@ -348,14 +360,17 @@ export const DataExplorer = withStyles(styles)(
         renderContextMenuTrigger = (item: T) => (
             <Grid
                 container
-                justify="center">
+                justify="center"
+            >
                 <Tooltip
                     title="More options"
-                    disableFocusListener>
+                    disableFocusListener
+                >
                     <IconButton
                         className={this.props.classes.moreOptionsButton}
-                        onClick={event => this.props.onContextMenu(event, item)}>
-                        <MoreOptionsIcon />
+                        onClick={event => this.props.onContextMenu(event, item)}
+                    >
+                        <MoreVerticalIcon />
                     </IconButton>
                 </Tooltip>
             </Grid>

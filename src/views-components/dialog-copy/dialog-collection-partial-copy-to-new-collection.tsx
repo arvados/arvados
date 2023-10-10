@@ -8,20 +8,20 @@ import { FormDialog } from 'components/form-dialog/form-dialog';
 import { CollectionNameField, CollectionDescriptionField, CollectionProjectPickerField } from 'views-components/form-fields/collection-form-fields';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyFormData } from 'store/collections/collection-partial-copy-actions';
+import { CollectionPartialCopyToNewCollectionFormData } from 'store/collections/collection-partial-copy-actions';
 import { PickerIdProp } from "store/tree-picker/picker-id";
 
-type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>;
+type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToNewCollectionFormData>;
 
-export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
+export const DialogCollectionPartialCopyToNewCollection = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
     <FormDialog
-        dialogTitle='Create a collection'
+        dialogTitle='Copy to new collection'
         formFields={CollectionPartialCopyFields(props.pickerId)}
-        submitLabel='Create a collection'
+        submitLabel='Create collection'
         {...props}
     />;
 
-export const CollectionPartialCopyFields = memoize(
+const CollectionPartialCopyFields = memoize(
     (pickerId: string) =>
         () =>
             <>

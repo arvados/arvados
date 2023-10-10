@@ -136,6 +136,7 @@ describe("Project tests", function () {
                 });
             });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
 
         const editProjectDescription = (name, type) => {
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
@@ -550,12 +551,15 @@ describe("Project tests", function () {
                 cy.get("[data-cy=form-submit-btn]").click();
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
+        cy.get("[data-cy=snackbar]").contains("created");
+        cy.get("[data-cy=snackbar]").should("not.exist");
         cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
+        cy.waitForDom();
         cy.get("[data-cy=project-panel]").contains(projectName).should("be.visible").rightclick();
         cy.get("[data-cy=context-menu]").contains("Copy to clipboard").click();
         cy.window().then(win =>
             win.navigator.clipboard.readText().then(text => {
-                expect(text).to.match(/https\:\/\/localhost\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);
+                expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);
             })
         );
     });

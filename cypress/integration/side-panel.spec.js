@@ -65,7 +65,7 @@ describe('Side panel tests', function() {
             {url: '/all_processes', label: 'All Processes'},
             {url: '/trash', label: 'Trash'},
         ].map(function(section) {
-            cy.goToPath(section.url);
+            cy.waitForDom().goToPath(section.url);
             cy.get('[data-cy=breadcrumb-first]')
                 .should('contain', section.label);
             cy.get('[data-cy=side-panel-button]')

@@ -16,7 +16,6 @@ import {
     Checkbox,
     FormControlLabel,
     Typography,
-    Tooltip,
 } from '@material-ui/core';
 import {
     StyleRulesCallback,
@@ -40,7 +39,6 @@ import {
 import DateFnsUtils from "@date-io/date-fns";
 import moment from 'moment';
 import { SharingPublicAccessForm } from './sharing-public-access-form';
-import { AddIcon } from 'components/icon/icon';
 
 export interface SharingDialogDataProps {
     open: boolean;
@@ -66,7 +64,7 @@ export type SharingDialogComponentProps = SharingDialogDataProps & SharingDialog
 
 export default (props: SharingDialogComponentProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
-        sharingURLsNr, privateAccess, sharingURLsDisabled, permissions,
+        sharingURLsNr, privateAccess, sharingURLsDisabled,
         onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
     const showTabs = !sharingURLsDisabled && extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);

@@ -20,7 +20,7 @@ GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 # changes in the package. (i.e. example config files externally added
 ITERATION?=1
 
-TARGETS?=centos7 debian10 debian11 ubuntu1804 ubuntu2004
+TARGETS?=centos7 rocky8 debian10 debian11 ubuntu1804 ubuntu2004
 
 ARVADOS_DIRECTORY?=unset
 
@@ -62,7 +62,7 @@ clean-node-modules:
 
 clean: clean-rpm clean-deb clean-node-modules
 
-arvados-server-install:
+arvados-server-install: check-arvados-directory
 	cd $(ARVADOS_DIRECTORY)
 	go mod download
 	cd cmd/arvados-server
@@ -77,12 +77,15 @@ yarn-install: arvados-server-install
 unit-tests: yarn-install
 	yarn test --no-watchAll --bail --ci
 
-integration-tests: yarn-install
+integration-tests: yarn-install check-arvados-directory
 	yarn run cypress install
 	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
 
-integration-tests-in-docker: workbench2-build-image
+integration-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make integration-tests
+
+unit-tests-in-docker: workbench2-build-image check-arvados-directory
+	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make unit-tests
 
 test: unit-tests integration-tests
 
@@ -122,16 +125,15 @@ $(RPM_FILE): build
 	etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$(APP_NAME)/workbench2.example.json
 
 copy: $(DEB_FILE) $(RPM_FILE)
-	for target in $(TARGETS) ; do \
-	        mkdir -p packages/$$target
-		if [[ $$target =~ ^centos ]]; then
-			cp -p $(RPM_FILE) packages/$$target ; \
-		else
-			cp -p $(DEB_FILE) packages/$$target ; \
-		fi
-	done
-	rm -f $(RPM_FILE)
-	rm -f $(DEB_FILE)
+	for target in $(TARGETS); do \
+		mkdir -p "packages/$$target" && \
+		case "$$target" in \
+			centos*|rocky*) cp -p "$(RPM_FILE)" "packages/$$target" ;; \
+			debian*|ubuntu*) cp -p "$(DEB_FILE)" "packages/$$target" ;; \
+			*) echo "Unknown copy target $$target"; exit 1 ;; \
+		esac ; \
+	done ; \
+	rm -f "$(DEB_FILE)" "$(RPM_FILE)"
 
 # use FPM to create DEB and RPM
 packages: copy

@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
-import Menu from '@material-ui/core/Menu';
-import IconButton from '@material-ui/core/IconButton';
-import { PopoverOrigin } from '@material-ui/core/Popover';
-import { Tooltip } from '@material-ui/core';
+import React from "react";
+import Menu from "@material-ui/core/Menu";
+import IconButton from "@material-ui/core/IconButton";
+import { PopoverOrigin } from "@material-ui/core/Popover";
+import { Tooltip } from "@material-ui/core";
 
 interface DropdownMenuProps {
     id: string;
@@ -20,12 +20,12 @@ interface DropdownMenuState {
 
 export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMenuState> {
     state = {
-        anchorEl: undefined
+        anchorEl: undefined,
     };
 
     transformOrigin: PopoverOrigin = {
         vertical: -50,
-        horizontal: 0
+        horizontal: 0,
     };
 
     render() {
@@ -33,7 +33,9 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
         const { anchorEl } = this.state;
         return (
             <div>
-                <Tooltip title={title}>
+                <Tooltip
+                    title={title}
+                    disableFocusListener>
                     <IconButton
                         aria-owns={anchorEl ? id : undefined}
                         aria-haspopup="true"
@@ -57,9 +59,9 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
 
     handleClose = () => {
         this.setState({ anchorEl: undefined });
-    }
+    };
 
     handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         this.setState({ anchorEl: event.currentTarget });
-    }
+    };
 }

@@ -254,6 +254,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                                 <ProjectsTreePicker
                                     pickerId={this.props.commandInput.id}
                                     includeCollections
+                                    includeDirectories
                                     includeFiles
                                     showSelection
                                     options={this.props.options}

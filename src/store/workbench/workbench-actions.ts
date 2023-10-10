@@ -8,12 +8,7 @@ import { getUserUuid } from "common/getuser";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { favoritePanelActions, loadFavoritePanel } from "store/favorite-panel/favorite-panel-action";
-import {
-    getProjectPanelCurrentUuid,
-    openProjectPanel,
-    projectPanelActions,
-    setIsProjectPanelTrashed,
-} from "store/project-panel/project-panel-action";
+import { getProjectPanelCurrentUuid, projectPanelActions, setIsProjectPanelTrashed } from "store/project-panel/project-panel-action";
 import {
     activateSidePanelTreeItem,
     initSidePanelTree,
@@ -786,7 +781,6 @@ export const loadGroupDetailsPanel = (groupUuid: string) =>
 
 const finishLoadingProject = (project: GroupContentsResource | string) => async (dispatch: Dispatch<any>) => {
     const uuid = typeof project === "string" ? project : project.uuid;
-    dispatch(openProjectPanel(uuid));
     dispatch(loadDetailsPanel(uuid));
     if (typeof project !== "string") {
         dispatch(updateResources([project]));

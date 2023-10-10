@@ -16,7 +16,7 @@ import {
     Button,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, MoreOptionsIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
+import { CloseIcon, MoreVerticalIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
 import { Process, isProcessRunnable, isProcessResumable, isProcessCancelable } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
@@ -139,7 +139,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                             <IconButton
                                 aria-label="More options"
                                 onClick={event => onContextMenu(event)}>
-                                <MoreOptionsIcon />
+                                <MoreVerticalIcon />
                             </IconButton>
                         </Tooltip>
                         {doHidePanel &&

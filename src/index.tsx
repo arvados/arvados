@@ -30,7 +30,12 @@ import {
 } from "views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from "views-components/context-menu/action-sets/resource-action-set";
 import { favoriteActionSet } from "views-components/context-menu/action-sets/favorite-action-set";
-import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from "views-components/context-menu/action-sets/collection-files-action-set";
+import {
+    collectionFilesActionSet,
+    collectionFilesMultipleActionSet,
+    readOnlyCollectionFilesActionSet,
+    readOnlyCollectionFilesMultipleActionSet,
+} from "views-components/context-menu/action-sets/collection-files-action-set";
 import {
     collectionDirectoryItemActionSet,
     collectionFileItemActionSet,
@@ -81,7 +86,7 @@ import {
     projectAdminActionSet,
 } from "views-components/context-menu/action-sets/project-admin-action-set";
 import { permissionEditActionSet } from "views-components/context-menu/action-sets/permission-edit-action-set";
-import { workflowActionSet } from "views-components/context-menu/action-sets/workflow-action-set";
+import { workflowActionSet, readOnlyWorkflowActionSet } from "views-components/context-menu/action-sets/workflow-action-set";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { openNotFoundDialog } from "./store/not-found-panel/not-found-panel-action";
 import { storeRedirects } from "./common/redirect-to";
@@ -96,7 +101,9 @@ addMenuActionSet(ContextMenuKind.FILTER_GROUP, filterGroupActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION_FILES_MULTIPLE, collectionFilesMultipleActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES, readOnlyCollectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES_MULTIPLE, readOnlyCollectionFilesMultipleActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_NOT_SELECTED, collectionFilesNotSelectedActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_DIRECTORY_ITEM, collectionDirectoryItemActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_DIRECTORY_ITEM, readOnlyCollectionDirectoryItemActionSet);
@@ -125,6 +132,7 @@ addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_WORKFLOW, readOnlyWorkflowActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
 addMenuActionSet(ContextMenuKind.SEARCH_RESULTS, searchResultsActionSet);
 

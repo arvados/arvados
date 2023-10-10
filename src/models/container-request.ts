@@ -8,41 +8,41 @@ import { RuntimeConstraints } from './runtime-constraints';
 import { SchedulingParameters } from './scheduling-parameters';
 
 export enum ContainerRequestState {
-  UNCOMMITTED = 'Uncommitted',
-  COMMITTED = 'Committed',
-  FINAL = 'Final',
+    UNCOMMITTED = 'Uncommitted',
+    COMMITTED = 'Committed',
+    FINAL = 'Final',
 }
 
 export interface ContainerRequestResource
-  extends Resource,
+    extends Resource,
     ResourceWithProperties {
-  command: string[];
-  containerCountMax: number;
-  containerCount: number;
-  containerImage: string;
-  containerUuid: string | null;
-  cumulativeCost: number;
-  cwd: string;
-  description: string;
-  environment: any;
-  expiresAt: string;
-  filters: string;
-  kind: ResourceKind.CONTAINER_REQUEST;
-  logUuid: string | null;
-  mounts: { [path: string]: MountType };
-  name: string;
-  outputName: string;
-  outputPath: string;
-  outputProperties: any;
-  outputStorageClasses: string[];
-  outputTtl: number;
-  outputUuid: string | null;
-  priority: number | null;
-  requestingContainerUuid: string | null;
-  runtimeConstraints: RuntimeConstraints;
-  schedulingParameters: SchedulingParameters;
-  state: ContainerRequestState;
-  useExisting: boolean;
+    command: string[];
+    containerCountMax: number;
+    containerCount: number;
+    containerImage: string;
+    containerUuid: string | null;
+    cumulativeCost: number;
+    cwd: string;
+    description: string;
+    environment: any;
+    expiresAt: string;
+    filters: string;
+    kind: ResourceKind.CONTAINER_REQUEST;
+    logUuid: string | null;
+    mounts: { [path: string]: MountType };
+    name: string;
+    outputName: string;
+    outputPath: string;
+    outputProperties: any;
+    outputStorageClasses: string[];
+    outputTtl: number;
+    outputUuid: string | null;
+    priority: number | null;
+    requestingContainerUuid: string | null;
+    runtimeConstraints: RuntimeConstraints;
+    schedulingParameters: SchedulingParameters;
+    state: ContainerRequestState;
+    useExisting: boolean;
 }
 
 // Until the api supports unselecting fields, we need a list of all other fields to omit mounts
@@ -53,6 +53,7 @@ export const containerRequestFieldsNoMounts = [
     "container_image",
     "container_uuid",
     "created_at",
+    "cumulative_cost",
     "cwd",
     "description",
     "environment",

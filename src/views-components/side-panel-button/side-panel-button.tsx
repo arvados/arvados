@@ -89,8 +89,7 @@ export const SidePanelButton = withStyles(styles)(
                     enabled = true;
                 } else if (matchProjectRoute(location ? location.pathname : '')) {
                     const currentProject = getResource<ProjectResource>(currentItemId)(resources);
-                    if (currentProject && currentProject.writableBy &&
-                        currentProject.writableBy.indexOf(currentUserUUID || '') >= 0 &&
+                    if (currentProject && currentProject.canWrite &&
                         !currentProject.frozenByUuid &&
                         !isProjectTrashed(currentProject, resources) &&
                         currentProject.groupClass !== GroupClass.FILTER) {

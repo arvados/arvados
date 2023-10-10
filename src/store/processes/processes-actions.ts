@@ -27,6 +27,7 @@ import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 
 export const loadProcess =
     (containerRequestUuid: string) =>
@@ -116,6 +117,7 @@ const containerFieldsNoMounts = [
     "scheduling_parameters",
     "started_at",
     "state",
+    "subrequests_cost",
     "uuid",
 ];
 
@@ -324,9 +326,18 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
         .filter(resource => resource.kind === ResourceKind.PROCESS);
 
     for (const process of processesToRemove) {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
-        await services.containerRequestService.delete(process.uuid);
-        dispatch(projectPanelActions.REQUEST_ITEMS());
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        try {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
+            await services.containerRequestService.delete(uuid, false);
+            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        } catch (e) {
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            } else {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            }
+        }
     }
 };

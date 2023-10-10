@@ -11,7 +11,7 @@ import { compose, Dispatch } from 'redux';
 import { loadVirtualMachinesAdminData, openAddVirtualMachineLoginDialog, openRemoveVirtualMachineLoginDialog, openEditVirtualMachineLoginDialog } from 'store/virtual-machines/virtual-machines-actions';
 import { RootState } from 'store/store';
 import { ListResults } from 'services/common-service/common-service';
-import { MoreOptionsIcon, AddUserIcon } from 'components/icon/icon';
+import { MoreVerticalIcon, AddUserIcon } from 'components/icon/icon';
 import { VirtualMachineLogins, VirtualMachinesResource } from 'models/virtual-machines';
 import { openVirtualMachinesContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourceUuid, VirtualMachineHostname, VirtualMachineLogin } from 'views-components/data-explorer/renderers';
@@ -139,7 +139,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     <TableCell className={props.classes.moreOptions}>
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton onClick={event => props.onOptionsMenuOpen(event, machine)} className={props.classes.moreOptionsButton}>
-                                <MoreOptionsIcon />
+                                <MoreVerticalIcon />
                             </IconButton>
                         </Tooltip>
                     </TableCell>

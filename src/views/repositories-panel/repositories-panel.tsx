@@ -10,7 +10,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { Link } from 'react-router-dom';
 import { Dispatch, compose } from 'redux';
 import { RootState } from 'store/store';
-import { HelpIcon, AddIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { HelpIcon, AddIcon, MoreVerticalIcon } from 'components/icon/icon';
 import { loadRepositoriesData, openRepositoriesSampleGitDialog, openRepositoryCreateDialog } from 'store/repositories/repositories-actions';
 import { RepositoryResource } from 'models/repositories';
 import { openRepositoryContextMenu } from 'store/context-menu/context-menu-actions';
@@ -138,7 +138,7 @@ export const RepositoriesPanel = compose(
                                                 <TableCell className={classes.moreOptions}>
                                                     <Tooltip title="More options" disableFocusListener>
                                                         <IconButton onClick={event => onOptionsMenuOpen(event, repository)} className={classes.moreOptionsButton}>
-                                                            <MoreOptionsIcon />
+                                                            <MoreVerticalIcon />
                                                         </IconButton>
                                                     </Tooltip>
                                                 </TableCell>

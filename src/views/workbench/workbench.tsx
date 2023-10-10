@@ -32,7 +32,12 @@ import { MoveProcessDialog } from "views-components/dialog-forms/move-process-di
 import { MoveProjectDialog } from "views-components/dialog-forms/move-project-dialog";
 import { MoveCollectionDialog } from "views-components/dialog-forms/move-collection-dialog";
 import { FilesUploadCollectionDialog } from "views-components/dialog-forms/files-upload-collection-dialog";
-import { PartialCopyCollectionDialog } from "views-components/dialog-forms/partial-copy-collection-dialog";
+import { PartialCopyToNewCollectionDialog } from "views-components/dialog-forms/partial-copy-to-new-collection-dialog";
+import { PartialCopyToExistingCollectionDialog } from "views-components/dialog-forms/partial-copy-to-existing-collection-dialog";
+import { PartialCopyToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-copy-to-separate-collections-dialog";
+import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/partial-move-to-new-collection-dialog";
+import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
+import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { MainContentBar } from "views-components/main-content-bar/main-content-bar";
 import { Grid } from "@material-ui/core";
@@ -88,7 +93,6 @@ import { GroupAttributesDialog } from "views-components/groups-dialog/attributes
 import { GroupDetailsPanel } from "views/group-details-panel/group-details-panel";
 import { RemoveGroupMemberDialog } from "views-components/groups-dialog/member-remove-dialog";
 import { GroupMemberAttributesDialog } from "views-components/groups-dialog/member-attributes-dialog";
-import { PartialCopyToCollectionDialog } from "views-components/dialog-forms/partial-copy-to-collection-dialog";
 import { PublicFavoritePanel } from "views/public-favorites-panel/public-favorites-panel";
 import { LinkAccountPanel } from "views/link-account-panel/link-account-panel";
 import { FedLogin } from "./fed-login";
@@ -304,13 +308,15 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             container
             item
             xs
-            className={props.classes.root}>
+            className={props.classes.root}
+        >
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid
                 container
                 item
                 xs
-                className={props.classes.container}>
+                className={props.classes.container}
+            >
                 <SplitterLayout
                     customClassName={props.classes.splitter}
                     percentage={true}
@@ -318,7 +324,8 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                     primaryMinSize={10}
                     secondaryInitialSize={getSplitterInitialSize()}
                     secondaryMinSize={40}
-                    onSecondaryPaneSizeChange={saveSplitterSize}>
+                    onSecondaryPaneSizeChange={saveSplitterSize}
+                >
                     {props.isUserActive && props.isNotLinking && (
                         <Grid
                             container
@@ -326,7 +333,8 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                             xs
                             component="aside"
                             direction="column"
-                            className={props.classes.asidePanel}>
+                            className={props.classes.asidePanel}
+                        >
                             <SidePanel />
                         </Grid>
                     )}
@@ -336,16 +344,19 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                         xs
                         component="main"
                         direction="column"
-                        className={props.classes.contentWrapper}>
+                        className={props.classes.contentWrapper}
+                    >
                         <Grid
                             item
-                            xs>
+                            xs
+                        >
                             {props.isNotLinking && <MainContentBar />}
                         </Grid>
                         <Grid
                             item
                             xs
-                            className={props.classes.content}>
+                            className={props.classes.content}
+                        >
                             <Switch>
                                 {routes.props.children}
                                 <Route
@@ -386,8 +397,12 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
-            <PartialCopyCollectionDialog />
-            <PartialCopyToCollectionDialog />
+            <PartialCopyToNewCollectionDialog />
+            <PartialCopyToExistingCollectionDialog />
+            <PartialCopyToSeparateCollectionsDialog />
+            <PartialMoveToNewCollectionDialog />
+            <PartialMoveToExistingCollectionDialog />
+            <PartialMoveToSeparateCollectionsDialog />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />

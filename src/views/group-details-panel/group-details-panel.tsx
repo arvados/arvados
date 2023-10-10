@@ -136,8 +136,8 @@ const mapStateToProps = (state: RootState) => {
     return {
         resources: state.resources,
         groupCanManage: userUuid && !isBuiltinGroup(group?.uuid || '')
-                            ? group?.writableBy?.includes(userUuid)
-                            : false,
+            ? group?.canManage
+            : false,
     };
 };
 
@@ -158,7 +158,7 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
 )(
     class GroupDetailsPanel extends React.Component<GroupDetailsPanelProps & WithStyles<CssRules>> {
         state = {
-          value: 0,
+            value: 0,
         };
 
         componentDidMount() {
@@ -169,56 +169,56 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
             const { value } = this.state;
             return (
                 <Paper className={this.props.classes.root}>
-                  <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
-                      <Tab data-cy="group-details-members-tab" label="MEMBERS" />
-                      <Tab data-cy="group-details-permissions-tab" label="PERMISSIONS" />
-                  </Tabs>
-                  <div className={this.props.classes.content}>
-                    {value === 0 &&
-                        <DataExplorer
-                            id={GROUP_DETAILS_MEMBERS_PANEL_ID}
-                            data-cy="group-members-data-explorer"
-                            onRowClick={noop}
-                            onRowDoubleClick={noop}
-                            onContextMenu={noop}
-                            contextMenuColumn={false}
-                            defaultViewIcon={UserPanelIcon}
-                            defaultViewMessages={[MEMBERS_DEFAULT_MESSAGE]}
-                            hideColumnSelector
-                            hideSearchInput
-                            actions={
+                    <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
+                        <Tab data-cy="group-details-members-tab" label="MEMBERS" />
+                        <Tab data-cy="group-details-permissions-tab" label="PERMISSIONS" />
+                    </Tabs>
+                    <div className={this.props.classes.content}>
+                        {value === 0 &&
+                            <DataExplorer
+                                id={GROUP_DETAILS_MEMBERS_PANEL_ID}
+                                data-cy="group-members-data-explorer"
+                                onRowClick={noop}
+                                onRowDoubleClick={noop}
+                                onContextMenu={noop}
+                                contextMenuColumn={false}
+                                defaultViewIcon={UserPanelIcon}
+                                defaultViewMessages={[MEMBERS_DEFAULT_MESSAGE]}
+                                hideColumnSelector
+                                hideSearchInput
+                                actions={
                                     this.props.groupCanManage &&
                                     <Grid container justify='flex-end'>
                                         <Button
-                                        data-cy="group-member-add"
-                                        variant="contained"
-                                        color="primary"
-                                        onClick={this.props.onAddUser}>
-                                        <AddIcon /> Add user
+                                            data-cy="group-member-add"
+                                            variant="contained"
+                                            color="primary"
+                                            onClick={this.props.onAddUser}>
+                                            <AddIcon /> Add user
                                         </Button>
                                     </Grid>
-                            }
-                            paperProps={{
-                                elevation: 0,
-                            }} />
-                    }
-                    {value === 1 &&
-                        <DataExplorer
-                            id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
-                            data-cy="group-permissions-data-explorer"
-                            onRowClick={noop}
-                            onRowDoubleClick={noop}
-                            onContextMenu={noop}
-                            contextMenuColumn={false}
-                            defaultViewIcon={KeyIcon}
-                            defaultViewMessages={[PERMISSIONS_DEFAULT_MESSAGE]}
-                            hideColumnSelector
-                            hideSearchInput
-                            paperProps={{
-                                elevation: 0,
-                            }} />
-                    }
-                  </div>
+                                }
+                                paperProps={{
+                                    elevation: 0,
+                                }} />
+                        }
+                        {value === 1 &&
+                            <DataExplorer
+                                id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
+                                data-cy="group-permissions-data-explorer"
+                                onRowClick={noop}
+                                onRowDoubleClick={noop}
+                                onContextMenu={noop}
+                                contextMenuColumn={false}
+                                defaultViewIcon={KeyIcon}
+                                defaultViewMessages={[PERMISSIONS_DEFAULT_MESSAGE]}
+                                hideColumnSelector
+                                hideSearchInput
+                                paperProps={{
+                                    elevation: 0,
+                                }} />
+                        }
+                    </div>
                 </Paper>
             );
         }

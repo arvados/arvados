@@ -17,7 +17,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
+import { MoreVerticalIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
@@ -150,8 +150,8 @@ export const CollectionPanel = withStyles(styles)(connect(
                 isWritable = true;
             } else {
                 const itemOwner = getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources);
-                if (itemOwner && itemOwner.writableBy) {
-                    isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
+                if (itemOwner) {
+                    isWritable = itemOwner.canWrite;
                 }
             }
         }
@@ -200,7 +200,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                                                 data-cy='collection-panel-options-btn'
                                                 aria-label="Actions"
                                                 onClick={this.handleContextMenu}>
-                                                <MoreOptionsIcon />
+                                                <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>
                                     }
@@ -351,7 +351,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         {/*
             NOTE: The property list should be kept at the bottom, because it spans
             the entire available width, without regards of the twoCol prop.
-        */}
+          */}
         <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />

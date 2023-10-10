@@ -33,7 +33,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
     },
     logText: {
-        padding: theme.spacing.unit * 0.5,
+        padding: `0 ${theme.spacing.unit*0.5}px`,
     },
     wordWrap: {
         whiteSpace: 'pre-wrap',

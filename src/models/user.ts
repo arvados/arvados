@@ -24,6 +24,8 @@ export interface User {
     prefs: UserPrefs;
     isAdmin: boolean;
     isActive: boolean;
+    canWrite: boolean;
+    canManage: boolean;
 }
 
 export const getUserFullname = (user: User) => {
@@ -62,5 +64,4 @@ export const getUserClusterID = (user: User): string | undefined => {
 export interface UserResource extends Resource, User {
     kind: ResourceKind.USER;
     defaultOwnerUuid: string;
-    writableBy: string[];
 }

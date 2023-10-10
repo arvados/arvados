@@ -56,7 +56,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const listResults = await this.services.groupsService
-                .contents(userUuid, {
+                .contents('', {
                     ...dataExplorerToListParams(dataExplorer),
                     order: getOrder(dataExplorer),
                     filters,

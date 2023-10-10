@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProcessLogsPanel } from './process-logs-panel';
+import { ProcessLogs, ProcessLogsPanel } from './process-logs-panel';
 import { ProcessLogsPanelAction, processLogsPanelActions } from './process-logs-panel-actions';
 
 const initialState: ProcessLogsPanel = {
     filters: [],
     selectedFilter: '',
-    logs: { '': [] },
+    logs: {},
 };
 
 export const processLogsPanelReducer = (state = initialState, action: ProcessLogsPanelAction): ProcessLogsPanel =>
@@ -23,13 +23,24 @@ export const processLogsPanelReducer = (state = initialState, action: ProcessLog
             ...state,
             selectedFilter
         }),
-        ADD_PROCESS_LOGS_PANEL_ITEM: ({ logType, log }) => {
-            const filters = state.filters.indexOf(logType) > -1
-                ? state.filters
-                : [...state.filters, logType];
-            const currentLogs = state.logs[logType] || [];
-            const logsOfType = [...currentLogs, log];
-            const logs = { ...state.logs, [logType]: logsOfType };
+        ADD_PROCESS_LOGS_PANEL_ITEM: (groupedLogs: ProcessLogs) => {
+            // Update filters
+            const newFilters = Object.keys(groupedLogs).filter((logType) => (!state.filters.includes(logType)));
+            const filters = [...state.filters, ...newFilters];
+
+            // Append new log lines
+            const logs = Object.keys(groupedLogs).reduce((acc, logType) => {
+                if (Object.keys(acc).includes(logType)) {
+                    // If log type exists, append lines and update lastByte
+                    return {...acc, [logType]: {
+                        lastByte: groupedLogs[logType].lastByte,
+                        contents: [...acc[logType].contents, ...groupedLogs[logType].contents]
+                    }};
+                } else {
+                    return {...acc, [logType]: groupedLogs[logType]};
+                }
+            }, state.logs);
+
             return { ...state, logs, filters };
         },
         default: () => state,

@@ -8,7 +8,7 @@ import { connect } from "react-redux";
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from "common/service-provider";
-import { CustomizeTableIcon, DownloadIcon, MoreOptionsIcon } from "components/icon/icon";
+import { DownloadIcon, MoreHorizontalIcon, MoreVerticalIcon } from "components/icon/icon";
 import { SearchInput } from "components/search-input/search-input";
 import {
     ListItemIcon,
@@ -33,6 +33,7 @@ import { setCollectionFiles } from "store/collection-panel/collection-panel-file
 import { sortBy } from "lodash";
 import { formatFileSize } from "common/formatters";
 import { getInlineFileUrl, sanitizeToken } from "views-components/context-menu/actions/helpers";
+import { extractUuidKind, ResourceKind } from "models/resource";
 
 export interface CollectionPanelFilesProps {
     isWritable: boolean;
@@ -256,7 +257,7 @@ export const CollectionPanelFiles = withStyles(styles)(
         const rightData = pathData[rightKey];
 
         React.useEffect(() => {
-            if (props.currentItemUuid) {
+            if (props.currentItemUuid && extractUuidKind(props.currentItemUuid) === ResourceKind.COLLECTION) {
                 setPathData({});
                 setPath([props.currentItemUuid]);
             }
@@ -323,7 +324,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                 setLeftSearch("");
                 setRightSearch("");
             }
-        }, [rightKey]); // eslint-disable-line react-hooks/exhaustive-deps
+        }, [rightKey, rightData]); // eslint-disable-line react-hooks/exhaustive-deps
 
         const currentPDH = (collectionPanel.item || {}).portableDataHash;
         React.useEffect(() => {
@@ -491,7 +492,8 @@ export const CollectionPanelFiles = withStyles(styles)(
             <div
                 data-cy="collection-files-panel"
                 onClick={handleClick}
-                ref={parentRef}>
+                ref={parentRef}
+            >
                 <div className={classes.pathPanel}>
                     <div className={classes.pathPanelPathWrapper}>
                         {path.map((p: string, index: number) => (
@@ -499,7 +501,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                                 key={`${index}-${p}`}
                                 data-item="true"
                                 className={classes.pathPanelItem}
-                                data-breadcrumb-path={p}>
+                                data-breadcrumb-path={p}
+                            >
                                 <span className={classes.rowActive}>{index === 0 ? "Home" : p}</span> <b>/</b>&nbsp;
                             </span>
                         ))}
@@ -507,23 +510,27 @@ export const CollectionPanelFiles = withStyles(styles)(
                     <Tooltip
                         className={classes.pathPanelMenu}
                         title="More options"
-                        disableFocusListener>
+                        disableFocusListener
+                    >
                         <IconButton
                             data-cy="collection-files-panel-options-btn"
                             onClick={ev => {
                                 onOptionsMenuOpen(ev, isWritable);
-                            }}>
-                            <CustomizeTableIcon />
+                            }}
+                        >
+                            <MoreVerticalIcon />
                         </IconButton>
                     </Tooltip>
                 </div>
                 <div className={classes.wrapper}>
                     <div
                         className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}
-                        data-cy="collection-files-left-panel">
+                        data-cy="collection-files-left-panel"
+                    >
                         <Tooltip
                             title="Go back"
-                            className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
+                            className={path.length > 1 ? classes.backButton : classes.backButtonHidden}
+                        >
                             <IconButton onClick={() => setPath(state => [...state.slice(0, state.length - 1)])}>
                                 <BackIcon />
                             </IconButton>
@@ -546,7 +553,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                                                 height={height}
                                                 itemCount={filtered.length}
                                                 itemSize={35}
-                                                width={width}>
+                                                width={width}
+                                            >
                                                 {({ index, style }) => {
                                                     const { id, type, name } = filtered[index];
                                                     return (
@@ -557,7 +565,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                                                             data-type={type}
                                                             data-parent-path={name}
                                                             className={classNames(classes.row, getActiveClass(name))}
-                                                            key={id}>
+                                                            key={id}
+                                                        >
                                                             {getItemIcon(type, getActiveClass(name))}
                                                             <div className={classes.rowName}>{name}</div>
                                                             {getActiveClass(name) ? (
@@ -577,7 +586,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                             ) : (
                                 <div
                                     data-cy="collection-loader"
-                                    className={classes.row}>
+                                    className={classes.row}
+                                >
                                     <CircularProgress
                                         className={classes.loader}
                                         size={30}
@@ -588,7 +598,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                     </div>
                     <div
                         className={classes.rightPanel}
-                        data-cy="collection-files-right-panel">
+                        data-cy="collection-files-right-panel"
+                    >
                         <div className={classes.searchWrapper}>
                             <SearchInput
                                 selfClearProp={rightKey}
@@ -606,7 +617,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                                 }}
                                 variant="contained"
                                 color="primary"
-                                size="small">
+                                size="small"
+                            >
                                 <DownloadIcon className={classes.uploadIcon} />
                                 Upload data
                             </Button>
@@ -621,7 +633,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                                                 height={height}
                                                 itemCount={filtered.length}
                                                 itemSize={35}
-                                                width={width}>
+                                                width={width}
+                                            >
                                                 {({ index, style }) => {
                                                     const { id, type, name, size } = filtered[index];
 
@@ -633,7 +646,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                                                             data-type={type}
                                                             data-subfolder-path={name}
                                                             className={classes.row}
-                                                            key={id}>
+                                                            key={id}
+                                                        >
                                                             <Checkbox
                                                                 color="primary"
                                                                 className={classes.rowSelection}
@@ -647,17 +661,20 @@ export const CollectionPanelFiles = withStyles(styles)(
                                                                 style={{
                                                                     marginLeft: "auto",
                                                                     marginRight: "1rem",
-                                                                }}>
+                                                                }}
+                                                            >
                                                                 {formatFileSize(size)}
                                                             </span>
                                                             <Tooltip
                                                                 title="More options"
-                                                                disableFocusListener>
+                                                                disableFocusListener
+                                                            >
                                                                 <IconButton
                                                                     data-id="moreOptions"
                                                                     data-cy="file-item-options-btn"
-                                                                    className={classes.moreOptionsButton}>
-                                                                    <MoreOptionsIcon
+                                                                    className={classes.moreOptionsButton}
+                                                                >
+                                                                    <MoreHorizontalIcon
                                                                         data-id="moreOptions"
                                                                         className={classes.moreOptions}
                                                                     />

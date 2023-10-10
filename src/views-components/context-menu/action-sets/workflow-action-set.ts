@@ -2,48 +2,61 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
-import { openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
-import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon } from 'components/icon/icon';
-import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
-import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
+import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { openRunProcess, deleteWorkflow } from "store/workflow-panel/workflow-panel-actions";
+import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon, TrashIcon } from "components/icon/icon";
+import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
+import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 
-export const workflowActionSet: ContextMenuActionSet = [
+export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
     [
         {
             icon: OpenIcon,
-            name: 'Open in new tab',
+            name: "Open in new tab",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openInNewTabAction(resource)));
+                dispatch<any>(openInNewTabAction(resources[0]));
             },
         },
         {
             icon: Link,
-            name: 'Copy to clipboard',
+            name: "Copy to clipboard",
             execute: (dispatch, resources) => {
                 dispatch<any>(copyToClipboardAction(resources));
             },
         },
         {
             icon: DetailsIcon,
-            name: 'View details',
-            execute: (dispatch) => {
+            name: "View details",
+            execute: dispatch => {
                 dispatch<any>(toggleDetailsPanel());
             },
         },
         {
             icon: AdvancedIcon,
-            name: 'API Details',
+            name: "API Details",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             icon: StartIcon,
-            name: 'Run Workflow',
+            name: "Run Workflow",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openRunProcess(resource.uuid, resource.ownerUuid, resource.name)));
+                dispatch<any>(openRunProcess(resources[0].uuid, resources[0].ownerUuid, resources[0].name));
+            },
+        },
+    ],
+];
+
+export const workflowActionSet: ContextMenuActionSet = [
+    [
+        ...readOnlyWorkflowActionSet[0],
+        {
+            icon: TrashIcon,
+            name: "Delete Workflow",
+            execute: (dispatch, resources) => {
+                dispatch<any>(deleteWorkflow(resources[0].uuid, resources[0].ownerUuid));
             },
         },
     ],
