@@ -182,6 +182,10 @@ class _Downloader(PyCurlHelper):
         mt = re.match(r'^HTTP\/(\d(\.\d)?) ([1-5]\d\d) ([^\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]*)\r\n$', self._headers["x-status-line"])
         code = int(mt.group(3))
 
+        if not self.name:
+            logger.error("Cannot determine filename from URL or headers")
+            return
+
         if code == 200:
             self.target = self.collection.open(self.name, "wb")
 
@@ -193,7 +197,10 @@ class _Downloader(PyCurlHelper):
         self.count += len(chunk)
 
         if self.target is None:
-            return
+            # "If this number is not equal to the size of the byte
+            # string, this signifies an error and libcurl will abort
+            # the request."
+            return 0
 
         self.target.write(chunk)
         loopnow = time.time()

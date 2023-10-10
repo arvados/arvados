@@ -146,21 +146,29 @@ def main():
 
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
-    if t == 'Collection':
-        set_src_owner_uuid(src_arv.collections(), args.object_uuid, args)
-        result = copy_collection(args.object_uuid,
-                                 src_arv, dst_arv,
-                                 args)
-    elif t == 'Workflow':
-        set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
-        result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
-    elif t == 'Group':
-        set_src_owner_uuid(src_arv.groups(), args.object_uuid, args)
-        result = copy_project(args.object_uuid, src_arv, dst_arv, args.project_uuid, args)
-    elif t == 'httpURL':
-        result = copy_from_http(args.object_uuid, src_arv, dst_arv, args)
-    else:
-        abort("cannot copy object {} of type {}".format(args.object_uuid, t))
+
+    try:
+        if t == 'Collection':
+            set_src_owner_uuid(src_arv.collections(), args.object_uuid, args)
+            result = copy_collection(args.object_uuid,
+                                     src_arv, dst_arv,
+                                     args)
+        elif t == 'Workflow':
+            set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
+            result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
+        elif t == 'Group':
+            set_src_owner_uuid(src_arv.groups(), args.object_uuid, args)
+            result = copy_project(args.object_uuid, src_arv, dst_arv, args.project_uuid, args)
+        elif t == 'httpURL':
+            result = copy_from_http(args.object_uuid, src_arv, dst_arv, args)
+        else:
+            abort("cannot copy object {} of type {}".format(args.object_uuid, t))
+    except Exception as e:
+        if args.verbose:
+            logger.exception("%s", e)
+        else:
+            logger.error("%s", e)
+        exit(1)
 
     # Clean up any outstanding temp git repositories.
     for d in listvalues(local_repo_dir):
@@ -570,7 +578,7 @@ def copy_collection(obj_uuid, src, dst, args):
     dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=args.retries)
     dst_manifest = io.StringIO()
     dst_locators = {}
-    bytes_written = [0]
+    bytes_written = 0
     bytes_expected = total_collection_size(manifest)
     if args.progress:
         progress_writer = ProgressWriter(human_progress)
@@ -625,12 +633,14 @@ def copy_collection(obj_uuid, src, dst, args):
                     # Drain the 'get' queue so we end early
                     while True:
                         get_queue.get(False)
+                        get_queue.task_done()
                 except queue.Empty:
                     pass
             finally:
                 get_queue.task_done()
 
     def put_thread():
+        nonlocal bytes_written
         while True:
             item = put_queue.get()
             if item is None:
@@ -651,15 +661,16 @@ def copy_collection(obj_uuid, src, dst, args):
                 dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
                 with lock:
                     dst_locators[blockhash] = dst_locator
-                    bytes_written[0] += loc.size
+                    bytes_written += loc.size
                     if progress_writer:
-                        progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
+                        progress_writer.report(obj_uuid, bytes_written, bytes_expected)
             except e:
                 logger.error("Error putting block %s (%s bytes): %s", blockhash, loc.size, e)
                 try:
                     # Drain the 'get' queue so we end early
                     while True:
                         get_queue.get(False)
+                        get_queue.task_done()
                 except queue.Empty:
                     pass
                 transfer_error.append(e)
@@ -711,7 +722,7 @@ def copy_collection(obj_uuid, src, dst, args):
         dst_manifest.write("\n")
 
     if progress_writer:
-        progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
+        progress_writer.report(obj_uuid, bytes_written, bytes_expected)
         progress_writer.finish()
 
     # Copy the manifest and save the collection.
