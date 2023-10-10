@@ -9,7 +9,7 @@ import { updateResources } from "store/resources/resources-actions";
 import { Process } from "./process";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { projectPanelActions } from "store/project-panel/project-panel-action";
+import { projectPanelActions } from "store/data-explorer/data-explorer-action";
 import { navigateToRunProcess } from "store/navigation/navigation-action";
 import { goToStep, runProcessPanelActions } from "store/run-process-panel/run-process-panel-actions";
 import { getResource } from "store/resources/resources";

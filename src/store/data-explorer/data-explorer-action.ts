@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from 'common/unionize';
-import { DataColumns, DataTableFetchMode } from 'components/data-table/data-table';
-import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { DataColumns, DataTableFetchMode } from "components/data-table/data-table";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 
 export enum DataTableRequestState {
     IDLE,
@@ -40,8 +40,10 @@ export const bindDataExplorerActions = (id: string) => ({
     SET_FETCH_MODE: (payload: { fetchMode: DataTableFetchMode }) => dataExplorerActions.SET_FETCH_MODE({ ...payload, id }),
     SET_COLUMNS: (payload: { columns: DataColumns<any, any> }) => dataExplorerActions.SET_COLUMNS({ ...payload, id }),
     SET_FILTERS: (payload: { columnName: string; filters: DataTableFilters }) => dataExplorerActions.SET_FILTERS({ ...payload, id }),
-    SET_ITEMS: (payload: { items: any[]; page: number; rowsPerPage: number; itemsAvailable: number }) => dataExplorerActions.SET_ITEMS({ ...payload, id }),
-    APPEND_ITEMS: (payload: { items: any[]; page: number; rowsPerPage: number; itemsAvailable: number }) => dataExplorerActions.APPEND_ITEMS({ ...payload, id }),
+    SET_ITEMS: (payload: { items: any[]; page: number; rowsPerPage: number; itemsAvailable: number }) =>
+        dataExplorerActions.SET_ITEMS({ ...payload, id }),
+    APPEND_ITEMS: (payload: { items: any[]; page: number; rowsPerPage: number; itemsAvailable: number }) =>
+        dataExplorerActions.APPEND_ITEMS({ ...payload, id }),
     SET_PAGE: (payload: { page: number }) => dataExplorerActions.SET_PAGE({ ...payload, id }),
     SET_ROWS_PER_PAGE: (payload: { rowsPerPage: number }) => dataExplorerActions.SET_ROWS_PER_PAGE({ ...payload, id }),
     TOGGLE_COLUMN: (payload: { columnName: string }) => dataExplorerActions.TOGGLE_COLUMN({ ...payload, id }),
@@ -50,3 +52,6 @@ export const bindDataExplorerActions = (id: string) => ({
     RESET_EXPLORER_SEARCH_VALUE: () => dataExplorerActions.RESET_EXPLORER_SEARCH_VALUE({ id }),
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) => dataExplorerActions.SET_REQUEST_STATE({ ...payload, id }),
 });
+
+const PROJECT_PANEL_ID = "projectPanel";
+export const projectPanelActions = bindDataExplorerActions(PROJECT_PANEL_ID);
