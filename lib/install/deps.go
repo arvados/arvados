@@ -270,7 +270,7 @@ fi
 		if err != nil {
 			// Just warn instead of fail because this is expected when running
 			// inside Docker.
-			logger.Warnf("couldn't set fs.inotify.max_user_watches value: %w", err)
+			logger.Warnf("couldn't set fs.inotify.max_user_watches value: %v", err)
 		}
 	}
 
