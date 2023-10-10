@@ -33,6 +33,16 @@ nginx:
         requires:
           __CERT_REQUIRES__
         config:
+          # Maps WB1 '/actions?uuid=X' URLs to their equivalent on WB2
+          - 'map $request_uri $actions_redirect':
+            - '~^/actions\?uuid=(.*-4zz18-.*)': '/collections/$1'
+            - '~^/actions\?uuid=(.*-j7d0g-.*)': '/projects/$1'
+            - '~^/actions\?uuid=(.*-tpzed-.*)': '/projects/$1'
+            - '~^/actions\?uuid=(.*-7fd4e-.*)': '/workflows/$1'
+            - '~^/actions\?uuid=(.*-xvhdp-.*)': '/processes/$1'
+            - '~^/actions\?uuid=(.*)': '/'
+            - default: 0
+
           - server:
             - server_name: workbench.__DOMAIN__
             - listen:
@@ -48,6 +58,10 @@ nginx:
     # rewrite ^/links.* /links redirect;
     # rewrite ^/projects.* /projects redirect;
     # rewrite ^/trash /trash redirect;
+
+            # WB1 '/actions?uuid=X' URL Redirects
+            - 'if ($actions_redirect)':
+              - return: '301 $actions_redirect'
 
     # Redirects that include a uuid
             - rewrite: '^/work_units/(.*) /processes/$1 redirect'
