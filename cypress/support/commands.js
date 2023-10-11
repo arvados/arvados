@@ -67,6 +67,23 @@ Cypress.Commands.add(
     }
 );
 
+Cypress.Commands.add(
+    "doWebDAVRequest",
+    (method = "GET", path = "", data = null, qs = null, token = systemToken, auth = false, followRedirect = true, failOnStatusCode = true) => {
+        return cy.doRequest("GET", "/arvados/v1/config", null, null).then(({ body: config }) => {
+            return cy.request({
+                method: method,
+                url: `${config.Services.WebDAVDownload.ExternalURL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`,
+                body: data,
+                qs: auth ? qs : Object.assign({ api_token: token }, qs),
+                auth: auth ? { bearer: `${token}` } : undefined,
+                followRedirect: followRedirect,
+                failOnStatusCode: failOnStatusCode,
+            });
+        });
+    }
+);
+
 Cypress.Commands.add("getUser", (username, first_name = "", last_name = "", is_admin = false, is_active = true) => {
     // Create user if not already created
     return (
@@ -146,116 +163,22 @@ Cypress.Commands.add("createLink", (token, data) => {
     });
 });
 
-Cypress.Commands.add(
-    "doWebDAVRequest",
-    (method = "GET", path = "", data = null, qs = null, token = systemToken, auth = false, followRedirect = true, failOnStatusCode = true) => {
-        return cy.doRequest("GET", "/arvados/v1/config", null, null).then(({ body: config }) => {
-            return cy.request({
-                method: method,
-                url: `${config.Services.WebDAVDownload.ExternalURL.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`,
-                body: data,
-                qs: auth ? qs : Object.assign({ api_token: token }, qs),
-                auth: auth ? { bearer: `${token}` } : undefined,
-                followRedirect: followRedirect,
-                failOnStatusCode: failOnStatusCode,
-            });
-        });
-    }
-);
-
-Cypress.Commands.add("getUser", (username, first_name = "", last_name = "", is_admin = false, is_active = true) => {
-    // Create user if not already created
-    return (
-        cy
-            .doRequest(
-                "POST",
-                "/auth/controller/callback",
-                {
-                    auth_info: JSON.stringify({
-                        email: `${username}@example.local`,
-                        username: username,
-                        first_name: first_name,
-                        last_name: last_name,
-                        alternate_emails: [],
-                    }),
-                    return_to: ",https://example.local",
-                },
-                null,
-                systemToken,
-                true,
-                false
-            ) // Don't follow redirects so we can catch the token
-            .its("headers.location")
-            .as("location")
-            // Get its token and set the account up as admin and/or active
-            .then(
-                function () {
-                    this.userToken = this.location.split("=")[1];
-                    assert.isString(this.userToken);
-                    return cy
-                        .doRequest("GET", "/arvados/v1/users", null, {
-                            filters: `[["username", "=", "${username}"]]`,
-                        })
-                        .its("body.items.0")
-                        .as("aUser")
-                        .then(function () {
-                            cy.doRequest("PUT", `/arvados/v1/users/${this.aUser.uuid}`, {
-                                user: {
-                                    is_admin: is_admin,
-                                    is_active: is_active,
-                                },
-                            }).as("lastLogRecord");
-                        });
-                },
-                cy.getAll("@lastLogRecord").then(function () {
-                    return logs;
-                })
-            )
-    );
-});
-
-Cypress.Commands.add("createVirtualMachine", (token, data) => {
-    return cy.createResource(token, "virtual_machines", {
-        virtual_machine: JSON.stringify(data),
+Cypress.Commands.add("createGroup", (token, data) => {
+    return cy.createResource(token, "groups", {
+        group: JSON.stringify(data),
         ensure_unique_name: true,
     });
 });
 
-Cypress.Commands.add("getResource", (token, suffix, uuid) => {
-    return cy
-        .doRequest("GET", `/arvados/v1/${suffix}/${uuid}`, null, {}, token)
-        .its("body")
-        .then(function (resource) {
-            return resource;
-        });
+Cypress.Commands.add("trashGroup", (token, uuid) => {
+    return cy.deleteResource(token, "groups", uuid);
 });
 
-Cypress.Commands.add("createResource", (token, suffix, data) => {
-    return cy
-        .doRequest("POST", "/arvados/v1/" + suffix, data, null, token, true)
-        .its("body")
-        .then(function (resource) {
-            createdResources.push({ suffix, uuid: resource.uuid });
-            return resource;
-        });
-});
-
-Cypress.Commands.add("deleteResource", (token, suffix, uuid, failOnStatusCode = true) => {
-    return cy
-        .doRequest("DELETE", "/arvados/v1/" + suffix + "/" + uuid, null, null, token, false, true, failOnStatusCode)
-        .its("body")
-        .then(function (resource) {
-            return resource;
-        });
-});
-
-Cypress.Commands.add("updateResource", (token, suffix, uuid, data) => {
-    return cy
-        .doRequest("PATCH", "/arvados/v1/" + suffix + "/" + uuid, data, null, token, true)
-        .its("body")
-        .then(function (resource) {
-            return resource;
-        });
+Cypress.Commands.add("createWorkflow", (token, data) => {
+    return cy.createResource(token, "workflows", {
+        workflow: JSON.stringify(data),
+        ensure_unique_name: true,
+    });
 });
 
 Cypress.Commands.add("createCollection", (token, data) => {
@@ -381,11 +304,91 @@ Cypress.Commands.add("listContainerRequestLogs", (token, crUuid) =>
     )
 );
 
-cy.get("[data-cy=form-cancel-btn]").click();
+Cypress.Commands.add("createVirtualMachine", (token, data) => {
+    return cy.createResource(token, "virtual_machines", {
+        virtual_machine: JSON.stringify(data),
+        ensure_unique_name: true,
+    });
+});
+
+Cypress.Commands.add("getResource", (token, suffix, uuid) => {
+    return cy
+        .doRequest("GET", `/arvados/v1/${suffix}/${uuid}`, null, {}, token)
+        .its("body")
+        .then(function (resource) {
+            return resource;
+        });
+});
+
+Cypress.Commands.add("createResource", (token, suffix, data) => {
+    return cy
+        .doRequest("POST", "/arvados/v1/" + suffix, data, null, token, true)
+        .its("body")
+        .then(function (resource) {
+            createdResources.push({ suffix, uuid: resource.uuid });
+            return resource;
+        });
+});
+
+Cypress.Commands.add("deleteResource", (token, suffix, uuid, failOnStatusCode = true) => {
+    return cy
+        .doRequest("DELETE", "/arvados/v1/" + suffix + "/" + uuid, null, null, token, false, true, failOnStatusCode)
+        .its("body")
+        .then(function (resource) {
+            return resource;
+        });
+});
+
+Cypress.Commands.add("updateResource", (token, suffix, uuid, data) => {
+    return cy
+        .doRequest("PATCH", "/arvados/v1/" + suffix + "/" + uuid, data, null, token, true)
+        .its("body")
+        .then(function (resource) {
+            return resource;
+        });
+});
+
+Cypress.Commands.add("loginAs", user => {
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    cy.visit(`/token/?api_token=${user.token}`);
+    cy.url({ timeout: 10000 }).should("contain", "/projects/");
+    cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
+    cy.get("div#root").should("not.contain", "Your account is inactive");
+});
+
+Cypress.Commands.add("testEditProjectOrCollection", (container, oldName, newName, newDescription, isProject = true) => {
+    cy.get(container).contains(oldName).rightclick();
+    cy.get("[data-cy=context-menu]")
+        .contains(isProject ? "Edit project" : "Edit collection")
+        .click();
+    cy.get("[data-cy=form-dialog]").within(() => {
+        cy.get("input[name=name]").clear().type(newName);
+        cy.get(isProject ? "div[contenteditable=true]" : "input[name=description]")
+            .clear()
+            .type(newDescription);
+        cy.get("[data-cy=form-submit-btn]").click();
+    });
+
+    cy.get(container).contains(newName).rightclick();
+    cy.get("[data-cy=context-menu]")
+        .contains(isProject ? "Edit project" : "Edit collection")
+        .click();
+    cy.get("[data-cy=form-dialog]").within(() => {
+        cy.get("input[name=name]").should("have.value", newName);
+
+        if (isProject) {
+            cy.get("span[data-text=true]").contains(newDescription);
+        } else {
+            cy.get("input[name=description]").should("have.value", newDescription);
+        }
+
+        cy.get("[data-cy=form-cancel-btn]").click();
+    });
+});
 
 Cypress.Commands.add("doSearch", searchTerm => {
     cy.get("[data-cy=searchbar-input-field]").type(`{selectall}${searchTerm}{enter}`);
-    cy.get("[data-cy=searchbar-parent-form]").submit();
 });
 
 Cypress.Commands.add("goToPath", path => {
