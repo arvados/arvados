@@ -36,6 +36,9 @@ import logging
 import tempfile
 import urllib.parse
 import io
+import json
+import queue
+import threading
 
 import arvados
 import arvados.config
@@ -43,6 +46,7 @@ import arvados.keep
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
+import arvados.http_to_keep
 import ruamel.yaml as yaml
 
 from arvados._version import __version__
@@ -105,6 +109,11 @@ def main():
     copy_opts.add_argument(
         '--storage-classes', dest='storage_classes',
         help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
+    copy_opts.add_argument("--varying-url-params", type=str, default="",
+                        help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
+
+    copy_opts.add_argument("--prefer-cached-downloads", action="store_true", default=False,
+                        help="If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).")
 
     copy_opts.add_argument(
         'object_uuid',
@@ -125,7 +134,7 @@ def main():
     else:
         logger.setLevel(logging.INFO)
 
-    if not args.source_arvados:
+    if not args.source_arvados and arvados.util.uuid_pattern.match(args.object_uuid):
         args.source_arvados = args.object_uuid[:5]
 
     # Create API clients for the source and destination instances
@@ -137,19 +146,26 @@ def main():
 
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
-    if t == 'Collection':
-        set_src_owner_uuid(src_arv.collections(), args.object_uuid, args)
-        result = copy_collection(args.object_uuid,
-                                 src_arv, dst_arv,
-                                 args)
-    elif t == 'Workflow':
-        set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
-        result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
-    elif t == 'Group':
-        set_src_owner_uuid(src_arv.groups(), args.object_uuid, args)
-        result = copy_project(args.object_uuid, src_arv, dst_arv, args.project_uuid, args)
-    else:
-        abort("cannot copy object {} of type {}".format(args.object_uuid, t))
+
+    try:
+        if t == 'Collection':
+            set_src_owner_uuid(src_arv.collections(), args.object_uuid, args)
+            result = copy_collection(args.object_uuid,
+                                     src_arv, dst_arv,
+                                     args)
+        elif t == 'Workflow':
+            set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
+            result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
+        elif t == 'Group':
+            set_src_owner_uuid(src_arv.groups(), args.object_uuid, args)
+            result = copy_project(args.object_uuid, src_arv, dst_arv, args.project_uuid, args)
+        elif t == 'httpURL':
+            result = copy_from_http(args.object_uuid, src_arv, dst_arv, args)
+        else:
+            abort("cannot copy object {} of type {}".format(args.object_uuid, t))
+    except Exception as e:
+        logger.error("%s", e, exc_info=args.verbose)
+        exit(1)
 
     # Clean up any outstanding temp git repositories.
     for d in listvalues(local_repo_dir):
@@ -157,8 +173,9 @@ def main():
 
     # If no exception was thrown and the response does not have an
     # error_token field, presume success
-    if 'error_token' in result or 'uuid' not in result:
-        logger.error("API server returned an error result: {}".format(result))
+    if result is None or 'error_token' in result or 'uuid' not in result:
+        if result:
+            logger.error("API server returned an error result: {}".format(result))
         exit(1)
 
     print(result['uuid'])
@@ -565,6 +582,125 @@ def copy_collection(obj_uuid, src, dst, args):
     else:
         progress_writer = None
 
+    # go through the words
+    # put each block loc into 'get' queue
+    # 'get' threads get block and put it into 'put' queue
+    # 'put' threads put block and then update dst_locators
+    #
+    # after going through the whole manifest we go back through it
+    # again and build dst_manifest
+
+    lock = threading.Lock()
+
+    # the get queue should be unbounded because we'll add all the
+    # block hashes we want to get, but these are small
+    get_queue = queue.Queue()
+
+    threadcount = 4
+
+    # the put queue contains full data blocks
+    # and if 'get' is faster than 'put' we could end up consuming
+    # a great deal of RAM if it isn't bounded.
+    put_queue = queue.Queue(threadcount)
+    transfer_error = []
+
+    def get_thread():
+        while True:
+            word = get_queue.get()
+            if word is None:
+                put_queue.put(None)
+                get_queue.task_done()
+                return
+
+            blockhash = arvados.KeepLocator(word).md5sum
+            with lock:
+                if blockhash in dst_locators:
+                    # Already uploaded
+                    get_queue.task_done()
+                    continue
+
+            try:
+                logger.debug("Getting block %s", word)
+                data = src_keep.get(word)
+                put_queue.put((word, data))
+            except e:
+                logger.error("Error getting block %s: %s", word, e)
+                transfer_error.append(e)
+                try:
+                    # Drain the 'get' queue so we end early
+                    while True:
+                        get_queue.get(False)
+                        get_queue.task_done()
+                except queue.Empty:
+                    pass
+            finally:
+                get_queue.task_done()
+
+    def put_thread():
+        nonlocal bytes_written
+        while True:
+            item = put_queue.get()
+            if item is None:
+                put_queue.task_done()
+                return
+
+            word, data = item
+            loc = arvados.KeepLocator(word)
+            blockhash = loc.md5sum
+            with lock:
+                if blockhash in dst_locators:
+                    # Already uploaded
+                    put_queue.task_done()
+                    continue
+
+            try:
+                logger.debug("Putting block %s (%s bytes)", blockhash, loc.size)
+                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
+                with lock:
+                    dst_locators[blockhash] = dst_locator
+                    bytes_written += loc.size
+                    if progress_writer:
+                        progress_writer.report(obj_uuid, bytes_written, bytes_expected)
+            except e:
+                logger.error("Error putting block %s (%s bytes): %s", blockhash, loc.size, e)
+                try:
+                    # Drain the 'get' queue so we end early
+                    while True:
+                        get_queue.get(False)
+                        get_queue.task_done()
+                except queue.Empty:
+                    pass
+                transfer_error.append(e)
+            finally:
+                put_queue.task_done()
+
+    for line in manifest.splitlines():
+        words = line.split()
+        for word in words[1:]:
+            try:
+                loc = arvados.KeepLocator(word)
+            except ValueError:
+                # If 'word' can't be parsed as a locator,
+                # presume it's a filename.
+                continue
+
+            get_queue.put(word)
+
+    for i in range(0, threadcount):
+        get_queue.put(None)
+
+    for i in range(0, threadcount):
+        threading.Thread(target=get_thread, daemon=True).start()
+
+    for i in range(0, threadcount):
+        threading.Thread(target=put_thread, daemon=True).start()
+
+    get_queue.join()
+    put_queue.join()
+
+    if len(transfer_error) > 0:
+        return {"error_token": "Failed to transfer blocks"}
+
     for line in manifest.splitlines():
         words = line.split()
         dst_manifest.write(words[0])
@@ -578,16 +714,6 @@ def copy_collection(obj_uuid, src, dst, args):
                 dst_manifest.write(word)
                 continue
             blockhash = loc.md5sum
-            # copy this block if we haven't seen it before
-            # (otherwise, just reuse the existing dst_locator)
-            if blockhash not in dst_locators:
-                logger.debug("Copying block %s (%s bytes)", blockhash, loc.size)
-                if progress_writer:
-                    progress_writer.report(obj_uuid, bytes_written, bytes_expected)
-                data = src_keep.get(word)
-                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
-                dst_locators[blockhash] = dst_locator
-                bytes_written += loc.size
             dst_manifest.write(' ')
             dst_manifest.write(dst_locators[blockhash])
         dst_manifest.write("\n")
@@ -756,6 +882,10 @@ def git_rev_parse(rev, repo):
 def uuid_type(api, object_uuid):
     if re.match(arvados.util.keep_locator_pattern, object_uuid):
         return 'Collection'
+
+    if object_uuid.startswith("http:") or object_uuid.startswith("https:"):
+        return 'httpURL'
+
     p = object_uuid.split('-')
     if len(p) == 3:
         type_prefix = p[1]
@@ -764,6 +894,27 @@ def uuid_type(api, object_uuid):
             if type_prefix == obj_class:
                 return k
     return None
+
+
+def copy_from_http(url, src, dst, args):
+
+    project_uuid = args.project_uuid
+    varying_url_params = args.varying_url_params
+    prefer_cached_downloads = args.prefer_cached_downloads
+
+    cached = arvados.http_to_keep.check_cached_url(src, project_uuid, url, {},
+                                                   varying_url_params=varying_url_params,
+                                                   prefer_cached_downloads=prefer_cached_downloads)
+    if cached[2] is not None:
+        return copy_collection(cached[2], src, dst, args)
+
+    cached = arvados.http_to_keep.http_to_keep(dst, project_uuid, url,
+                                               varying_url_params=varying_url_params,
+                                               prefer_cached_downloads=prefer_cached_downloads)
+
+    if cached is not None:
+        return {"uuid": cached[2]}
+
 
 def abort(msg, code=1):
     logger.info("arv-copy: %s", msg)
