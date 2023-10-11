@@ -92,7 +92,7 @@ h3. How to copy a project
 We will use the uuid @jutro-j7d0g-xj19djofle3aryq@ as an example project.
 
 <notextile>
-<pre><code>~$ <span class="userinput">~$ arv-copy --project-uuid pirca-j7d0g-lr8sq3tx3ovn68k jutro-j7d0g-xj19djofle3aryq
+<pre><code>~$ <span class="userinput">arv-copy --project-uuid pirca-j7d0g-lr8sq3tx3ovn68k jutro-j7d0g-xj19djofle3aryq
 2021-09-08 21:29:32 arvados.arv-copy[6377] INFO:
 2021-09-08 21:29:32 arvados.arv-copy[6377] INFO: Success: created copy with uuid pirca-j7d0g-ig9gvu5piznducp
 </code></pre>
@@ -107,7 +107,7 @@ h3. Importing HTTP resources to Keep
 You can also use @arv-copy@ to copy the contents of a HTTP URL into Keep.  When you do this, Arvados keeps track of the original URL the resource came from.  This allows you to refer to the resource by its original URL in Workflow inputs, but actually read from the local copy in Keep.
 
 <notextile>
-<pre><code>~$ <span class="userinput">~$ arv-copy --project-uuid tordo-j7d0g-lr8sq3tx3ovn68k https://example.com/index.html
+<pre><code>~$ <span class="userinput">arv-copy --project-uuid tordo-j7d0g-lr8sq3tx3ovn68k https://example.com/index.html
 tordo-4zz18-dhpb6y9km2byb94
 2023-10-06 10:15:36 arvados.arv-copy[374147] INFO: Success: created copy with uuid tordo-4zz18-dhpb6y9km2byb94
 </code></pre>
