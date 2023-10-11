@@ -328,7 +328,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
     for (const process of processesToRemove) {
         try {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
-            await services.containerRequestService.delete(uuid, false);
+            await services.containerRequestService.delete(process.uuid, false);
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {

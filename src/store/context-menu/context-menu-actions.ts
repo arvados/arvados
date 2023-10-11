@@ -23,7 +23,6 @@ import { GroupContentsResource } from "services/groups-service/groups-service";
 import { LinkResource } from "models/link";
 import { resourceIsFrozen } from "common/frozen-resources";
 import { ProjectResource } from "models/project";
-import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition; resource: ContextMenuResource }>(),
