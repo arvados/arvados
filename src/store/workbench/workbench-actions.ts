@@ -437,7 +437,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
     }
 
     async function copySingleCollection(copyToProject: CollectionCopyResource) {
-        const newName = data.isSingle ? data.name : `Copy of: ${copyToProject.name}`;
+        const newName = data.isSingle || collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
         try {
             const collection = await dispatch<any>(
                 collectionCopyActions.copyCollection({
