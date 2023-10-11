@@ -14,6 +14,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { getResource } from "store/resources/resources";
 import { CollectionResource } from "models/collection";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
 export const COLLECTION_COPY_FORM_NAME = "collectionCopyFormName";
 export const COLLECTION_MULTI_COPY_FORM_NAME = "collectionMultiCopyFormName";
@@ -64,6 +65,13 @@ export const copyCollection =
                     stopSubmit(formName, {
                         ownerUuid: "A collection with the same name already exists in the target project.",
                     } as FormErrors)
+                );
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Could not copy the collection.",
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
                 );
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
