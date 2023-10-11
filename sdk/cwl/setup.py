@@ -44,6 +44,9 @@ setup(name='arvados-cwl-runner',
           'msgpack==1.0.3',
           'importlib-metadata<5',
           'setuptools>=40.3.0',
+
+          # zipp 3.16 dropped support for Python 3.7, so this can be
+          # removed this when we drop support for 3.7 as well.
           'zipp<3.16.0'
       ],
       data_files=[

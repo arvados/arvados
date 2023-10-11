@@ -333,9 +333,15 @@ def copy_workflow(wf_uuid, src, dst, args):
         try:
             result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
                                     capture_output=True, env=env)
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            logger.error('Copying workflows requires arvados-cwl-runner 2.7.1 or later to be installed in PATH.')
-            return
+        except FileNotFoundError:
+            no_arv_copy = True
+        else:
+            no_arv_copy = result.returncode == 2
+
+        if no_arv_copy:
+            raise Exception('Copying workflows requires arvados-cwl-runner 2.7.1 or later to be installed in PATH.')
+        elif result.returncode != 0:
+            raise Exception('There was an error getting Keep dependencies from workflow using arvados-cwl-runner --print-keep-deps')
 
         locations = json.loads(result.stdout)
 

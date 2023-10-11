@@ -983,4 +983,5 @@ def print_keep_deps(arvRunner, runtimeContext, merged_map, tool):
             if g:
                 references.add(g[1])
 
-    arvRunner.stdout.write(json.dumps(sorted(list(references)))+"\n")
+    json.dump(sorted(references), arvRunner.stdout)
+    print(file=arvRunner.stdout)
