@@ -164,10 +164,7 @@ def main():
         else:
             abort("cannot copy object {} of type {}".format(args.object_uuid, t))
     except Exception as e:
-        if args.verbose:
-            logger.exception("%s", e)
-        else:
-            logger.error("%s", e)
+        logger.error("%s", e, exc_info=args.verbose)
         exit(1)
 
     # Clean up any outstanding temp git repositories.
