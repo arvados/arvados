@@ -12,7 +12,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "servi
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { loadSidePanelTreeProjects } from "../side-panel-tree/side-panel-tree-actions";
 
 export const PROJECT_MOVE_FORM_NAME = "projectMoveFormName";

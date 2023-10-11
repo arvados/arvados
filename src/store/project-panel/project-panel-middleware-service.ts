@@ -18,7 +18,7 @@ import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "models/project";
 import { updateResources } from "store/resources/resources-actions";

@@ -12,7 +12,7 @@ import { loadProcess } from "store/processes/processes-actions";
 import { getProcess, getSubprocesses } from "store/processes/process";
 import { LogEventType } from "models/log";
 import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
 import { allProcessesPanelActions } from "store/all-processes-panel/all-processes-panel-action";
 import { loadCollection } from "store/workbench/workbench-actions";

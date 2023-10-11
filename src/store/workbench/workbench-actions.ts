@@ -9,7 +9,7 @@ import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { favoritePanelActions, loadFavoritePanel } from "store/favorite-panel/favorite-panel-action";
 import { getProjectPanelCurrentUuid, setIsProjectPanelTrashed } from "store/project-panel/project-panel-action";
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import {
     activateSidePanelTreeItem,
     initSidePanelTree,

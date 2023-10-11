@@ -4,7 +4,7 @@
 
 import { Dispatch } from "redux";
 import { ServiceRepository } from "services/services";
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { loadResource } from "store/resources/resources-actions";
 import { RootState } from "store/store";
 

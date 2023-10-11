@@ -11,8 +11,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "servi
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
-// import { projectPanelActions } from 'store/project-panel/project-panel-action';
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { getProcess } from "store/processes/process";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 

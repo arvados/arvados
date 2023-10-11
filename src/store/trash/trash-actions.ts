@@ -8,7 +8,7 @@ import { ServiceRepository } from "services/services";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
-import { projectPanelActions } from "store/data-explorer/data-explorer-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
 import { matchCollectionRoute } from "routes/routes";

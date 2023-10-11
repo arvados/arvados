@@ -52,6 +52,3 @@ export const bindDataExplorerActions = (id: string) => ({
     RESET_EXPLORER_SEARCH_VALUE: () => dataExplorerActions.RESET_EXPLORER_SEARCH_VALUE({ id }),
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) => dataExplorerActions.SET_REQUEST_STATE({ ...payload, id }),
 });
-
-const PROJECT_PANEL_ID = "projectPanel";
-export const projectPanelActions = bindDataExplorerActions(PROJECT_PANEL_ID);
