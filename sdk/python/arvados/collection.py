@@ -86,7 +86,7 @@ ChangeType = Literal[ADD, DEL, MOD, TOK]
 CollectionItem = Union[ArvadosFile, 'Collection']
 ChangeCallback = Callable[[ChangeType, 'Collection', str, CollectionItem], object]
 CreateType = Literal[COLLECTION, FILE]
-Properties = Mapping[str, Any]
+Properties = Dict[str, Any]
 StorageClasses = List[str]
 
 class CollectionBase(object):
@@ -1163,7 +1163,7 @@ class Collection(RichCollectionBase):
     def root_collection(self) -> 'Collection':
         return self
 
-    def get_properties(self) -> dict[str, Any]:
+    def get_properties(self) -> Properties:
         """Get this collection's properties
 
         This method always returns a dict. If this collection object does not
