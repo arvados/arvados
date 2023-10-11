@@ -1156,7 +1156,7 @@ class Collection(RichCollectionBase):
             except errors.SyntaxError as e:
                 raise errors.ArgumentError("Error processing manifest text: %s", str(e)) from None
 
-    def storage_classes_desired(self) -> list[str]:
+    def storage_classes_desired(self) -> List[str]:
         """Get this collection's `storage_classes_desired` value"""
         return self._storage_classes_desired or []
 
@@ -1200,7 +1200,7 @@ class Collection(RichCollectionBase):
     @synchronized
     def known_past_version(
             self,
-            modified_at_and_portable_data_hash: tuple[Optional[str], Optional[str]]
+            modified_at_and_portable_data_hash: Tuple[Optional[str], Optional[str]]
     ) -> bool:
         """Indicate whether an API record for this collection has been seen before
 
