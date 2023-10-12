@@ -337,11 +337,16 @@ export const loadInitialValue = (pickerItemIds: string[], pickerId: string, incl
         // Request ancestor trees in paralell and save home project status
         const pickerItemsData: PickerItemPreloadData[] = await Promise.allSettled(pickerItemIds.map(async itemId => {
             const mainItemUuid = itemId.includes('/') ? itemId.split('/')[0] : itemId;
+
             const ancestors = (await services.ancestorsService.ancestors(mainItemUuid, ''))
             .filter(item =>
                 item.kind === ResourceKind.GROUP ||
                 item.kind === ResourceKind.COLLECTION
             ) as (GroupResource | CollectionResource)[];
+
+            if (ancestors.length === 0) {
+                return Promise.reject({item: itemId});
+            }
 
             const isHomeProjectItem = !!(homeUuid && ancestors.some(item => item.ownerUuid === homeUuid));
 
@@ -353,8 +358,12 @@ export const loadInitialValue = (pickerItemIds: string[], pickerId: string, incl
             };
         })).then((res) => {
             // Show toast if any selections failed to restore
-            if (res.find((promiseResult): promiseResult is PromiseRejectedResult => (promiseResult.status === 'rejected'))) {
-                dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Some selections failed to load and were removed`, kind: SnackbarKind.ERROR }));
+            const rejectedPromises = res.filter((promiseResult): promiseResult is PromiseRejectedResult => (promiseResult.status === 'rejected'));
+            if (rejectedPromises.length) {
+                rejectedPromises.forEach(item => {
+                    console.error("The following item failed to load into the tree picker", item.reason);
+                });
+                dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Some selections failed to load and were removed. See console for details.`, kind: SnackbarKind.ERROR }));
             }
             // Filter out any failed promises and map to resulting preload data with ancestors
             return res.filter((promiseResult): promiseResult is PromiseFulfilledResult<PickerItemPreloadData> => (
