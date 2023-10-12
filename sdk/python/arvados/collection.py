@@ -2059,12 +2059,12 @@ class CollectionWriter(CollectionBase):
 
         You may only have one file object from the Collection open at a time,
         so be sure to close the object when you're done.  Using the object in
-        a with statement makes that easy::
+        a with statement makes that easy:
 
-          with cwriter.open('./doc/page1.txt') as outfile:
-              outfile.write(page1_data)
-          with cwriter.open('./doc/page2.txt') as outfile:
-              outfile.write(page2_data)
+            with cwriter.open('./doc/page1.txt') as outfile:
+                outfile.write(page1_data)
+            with cwriter.open('./doc/page2.txt') as outfile:
+                outfile.write(page2_data)
         """
         if filename is None:
             streampath, filename = split(streampath)
