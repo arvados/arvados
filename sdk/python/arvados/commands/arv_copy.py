@@ -171,6 +171,9 @@ def main():
     for d in listvalues(local_repo_dir):
         shutil.rmtree(d, ignore_errors=True)
 
+    if not result:
+        exit(1)
+
     # If no exception was thrown and the response does not have an
     # error_token field, presume success
     if result is None or 'error_token' in result or 'uuid' not in result:
@@ -324,21 +327,26 @@ def copy_workflow(wf_uuid, src, dst, args):
 
     # copy collections and docker images
     if args.recursive and wf["definition"]:
-        wf_def = yaml.safe_load(wf["definition"])
-        if wf_def is not None:
-            locations = []
-            docker_images = {}
-            graph = wf_def.get('$graph', None)
-            if graph is not None:
-                workflow_collections(graph, locations, docker_images)
-            else:
-                workflow_collections(wf_def, locations, docker_images)
+        env = {"ARVADOS_API_HOST": urllib.parse.urlparse(src._rootDesc["rootUrl"]).netloc,
+               "ARVADOS_API_TOKEN": src.api_token,
+               "PATH": os.environ["PATH"]}
+        try:
+            result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
+                                    capture_output=True, env=env)
+        except FileNotFoundError:
+            no_arv_copy = True
+        else:
+            no_arv_copy = result.returncode == 2
 
-            if locations:
-                copy_collections(locations, src, dst, args)
+        if no_arv_copy:
+            raise Exception('Copying workflows requires arvados-cwl-runner 2.7.1 or later to be installed in PATH.')
+        elif result.returncode != 0:
+            raise Exception('There was an error getting Keep dependencies from workflow using arvados-cwl-runner --print-keep-deps')
 
-            for image in docker_images:
-                copy_docker_image(image, docker_images[image], src, dst, args)
+        locations = json.loads(result.stdout)
+
+        if locations:
+            copy_collections(locations, src, dst, args)
 
     # copy the workflow itself
     del wf['uuid']

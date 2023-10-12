@@ -29,7 +29,7 @@ from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname, uniquename
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class, normalizeFilesDirs
-from cwltool.context import LoadingContext
+from cwltool.context import LoadingContext, getdefault
 
 from schema_salad.ref_resolver import file_uri, uri_file_path
 
@@ -42,6 +42,7 @@ from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool, set_cluster_target
 from ._version import __version__
 from .util import common_prefix
+from .arvdocker import arv_docker_get_image
 
 from .perf import Perf
 
@@ -178,14 +179,14 @@ def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
 def is_basetype(tp):
     return _basetype_re.match(tp) is not None
 
-def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix):
+def update_refs(api, d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix):
     if isinstance(d, MutableSequence):
         for i, s in enumerate(d):
             if prefix and isinstance(s, str):
                 if s.startswith(prefix):
                     d[i] = replacePrefix+s[len(prefix):]
             else:
-                update_refs(s, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
+                update_refs(api, s, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
     elif isinstance(d, MutableMapping):
         for field in ("id", "name"):
             if isinstance(d.get(field), str) and d[field].startswith("_:"):
@@ -198,8 +199,8 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, 
             baseuri = urlexpander(d["name"], baseuri, scoped_id=True)
 
         if d.get("class") == "DockerRequirement":
-            dockerImageId = d.get("dockerImageId") or d.get("dockerPull")
-            d["http://arvados.org/cwl#dockerCollectionPDH"] = runtimeContext.cached_docker_lookups.get(dockerImageId)
+            d["http://arvados.org/cwl#dockerCollectionPDH"] = arv_docker_get_image(api, d, False,
+                                                                                   runtimeContext)
 
         for field in d:
             if field in ("location", "run", "name") and isinstance(d[field], str):
@@ -222,15 +223,21 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, 
                     if isinstance(d["inputs"][inp], str) and not is_basetype(d["inputs"][inp]):
                         d["inputs"][inp] = rel_ref(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper)
                     if isinstance(d["inputs"][inp], MutableMapping):
-                        update_refs(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
+                        update_refs(api, d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
                 continue
+
+            if field in ("requirements", "hints") and isinstance(d[field], MutableMapping):
+                dr = d[field].get("DockerRequirement")
+                if dr:
+                    dr["http://arvados.org/cwl#dockerCollectionPDH"] = arv_docker_get_image(api, dr, False,
+                                                                                            runtimeContext)
 
             if field == "$schemas":
                 for n, s in enumerate(d["$schemas"]):
                     d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map, jobmapper)
                 continue
 
-            update_refs(d[field], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
+            update_refs(api, d[field], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
 
 
 def fix_schemadef(req, baseuri, urlexpander, merged_map, jobmapper, pdh):
@@ -292,7 +299,8 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     # Find the longest common prefix among all the file names.  We'll
     # use this to recreate the directory structure in a keep
     # collection with correct relative references.
-    prefix = common_prefix(firstfile, all_files)
+    prefix = common_prefix(firstfile, all_files) if firstfile else ""
+
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
 
@@ -326,7 +334,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
         # 2. find $import, $include, $schema, run, location
         # 3. update field value
-        update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, "", "")
+        update_refs(arvRunner.api, result, w, tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, "", "")
 
         # Write the updated file to the collection.
         with col.open(w[len(prefix):], "wt") as f:
@@ -411,9 +419,10 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         wf_runner_resources = {"class": "http://arvados.org/cwl#WorkflowRunnerResources"}
         hints.append(wf_runner_resources)
 
-    wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
-                                                                  submit_runner_image or "arvados/jobs:"+__version__,
-                                                                  runtimeContext)
+    if "acrContainerImage" not in wf_runner_resources:
+        wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
+                                                                      submit_runner_image or "arvados/jobs:"+__version__,
+                                                                      runtimeContext)
 
     if submit_runner_ram:
         wf_runner_resources["ramMin"] = submit_runner_ram
@@ -483,7 +492,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         if r["class"] == "SchemaDefRequirement":
             wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, col.portable_data_hash())
 
-    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, main["id"]+"#", "#main/")
+    update_refs(arvRunner.api, wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, main["id"]+"#", "#main/")
 
     doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
 
@@ -593,8 +602,18 @@ class ArvadosWorkflow(Workflow):
         self.dynamic_resource_req = []
         self.static_resource_req = []
         self.wf_reffiles = []
-        self.loadingContext = loadingContext
-        super(ArvadosWorkflow, self).__init__(toolpath_object, loadingContext)
+        self.loadingContext = loadingContext.copy()
+
+        self.requirements = copy.deepcopy(getdefault(loadingContext.requirements, []))
+        tool_requirements = toolpath_object.get("requirements", [])
+        self.hints = copy.deepcopy(getdefault(loadingContext.hints, []))
+        tool_hints = toolpath_object.get("hints", [])
+
+        workflow_runner_req, _ = self.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
+        if workflow_runner_req and workflow_runner_req.get("acrContainerImage"):
+            self.loadingContext.default_docker_image = workflow_runner_req.get("acrContainerImage")
+
+        super(ArvadosWorkflow, self).__init__(toolpath_object, self.loadingContext)
         self.cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
 
     def job(self, joborder, output_callback, runtimeContext):
