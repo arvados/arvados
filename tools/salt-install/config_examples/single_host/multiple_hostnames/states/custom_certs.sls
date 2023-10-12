@@ -28,6 +28,14 @@ extra_custom_certs_file_copy_{{ c }}:
     - unless: cmp {{ dest_cert_dir }}/{{ c }} {{ orig_cert_dir }}/{{ c }}
     - require:
       - file: extra_custom_certs_file_directory_certs_dir
+
+extra_nginx_service_reload_on_{{ c }}_certs_changes:
+  cmd.run:
+    - name: systemctl reload nginx
+    - require:
+      - file: extra_custom_certs_file_copy_{{ c }}
+    - onchanges:
+      - file: extra_custom_certs_file_copy_{{ c }}
     {%- endfor %}
   {%- endfor %}
 {%- endif %}
