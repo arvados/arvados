@@ -28,7 +28,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 -- Name: compute_permission_subgraph(character varying, character varying, integer, character varying); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer, perm_edge_id character varying) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean)
+CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer, perm_edge_id character varying) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean, target_is_user boolean)
     LANGUAGE sql STABLE
     AS $$
 
@@ -62,10 +62,10 @@ with
      permission (permission origin is self).
   */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    
+
 WITH RECURSIVE
         traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            
+
              values (perm_origin_uuid, starting_uuid, starting_perm,
                     should_traverse_owned(starting_uuid, starting_perm),
                     (perm_origin_uuid = starting_uuid or starting_uuid not like '_____-tpzed-_______________'))
@@ -107,10 +107,10 @@ case (edges.edge_id = perm_edge_id)
        can_manage permission granted by ownership.
   */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    
+
 WITH RECURSIVE
         traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            
+
     select edges.tail_uuid as origin_uuid, edges.head_uuid as target_uuid, edges.val,
            should_traverse_owned(edges.head_uuid, edges.val),
            edges.head_uuid like '_____-j7d0g-_______________'
@@ -174,16 +174,17 @@ case (edges.edge_id = perm_edge_id)
      query also makes sure those permission rows are always
      returned.
   */
-  select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
+  select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned), bool_or(v.target_is_user) from
     (select m.user_uuid,
          u.target_uuid,
          least(u.val, m.perm_level) as perm_level,
-         u.traverse_owned
+         u.traverse_owned,
+         (u.target_uuid like '_____-tpzed-_______________') as target_is_user
       from all_perms as u, materialized_permissions as m
            where u.perm_origin_uuid = m.target_uuid AND m.traverse_owned
-           AND (m.user_uuid = m.target_uuid or m.target_uuid not like '_____-tpzed-_______________')
+           AND (m.user_uuid = m.target_uuid or not m.target_is_user)
     union all
-      select target_uuid as user_uuid, target_uuid, 3, true
+      select target_uuid as user_uuid, target_uuid, 3, true, true
         from all_perms
         where all_perms.target_uuid like '_____-tpzed-_______________') as v
     group by v.user_uuid, v.target_uuid
@@ -1045,7 +1046,8 @@ CREATE TABLE public.materialized_permissions (
     user_uuid character varying,
     target_uuid character varying,
     perm_level integer,
-    traverse_owned boolean
+    traverse_owned boolean,
+    target_is_user boolean
 );
 
 
@@ -2038,6 +2040,13 @@ CREATE INDEX index_collections_on_name ON public.collections USING gin (name pub
 
 
 --
+-- Name: index_collections_on_name_btree; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collections_on_name_btree ON public.collections USING btree (name);
+
+
+--
 -- Name: index_collections_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2231,6 +2240,13 @@ CREATE INDEX index_groups_on_modified_at_and_uuid ON public.groups USING btree (
 --
 
 CREATE INDEX index_groups_on_name ON public.groups USING gin (name public.gin_trgm_ops);
+
+
+--
+-- Name: index_groups_on_name_btree; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_groups_on_name_btree ON public.groups USING btree (name);
 
 
 --
@@ -3293,6 +3309,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20230421142716'),
 ('20230503224107'),
 ('20230815160000'),
-('20230821000000');
+('20230821000000'),
+('20230922000000'),
+('20231012000000');
 
 

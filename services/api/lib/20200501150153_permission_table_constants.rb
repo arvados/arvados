@@ -47,7 +47,8 @@ WITH RECURSIVE
              where traverse_graph.target_uuid = edges.tail_uuid
              and (edges.tail_uuid like '_____-j7d0g-_______________' or
                   traverse_graph.starting_set)))
-        select traverse_graph.origin_uuid, target_uuid, max(val) as val, bool_or(traverse_owned) as traverse_owned from traverse_graph
+        select traverse_graph.origin_uuid, target_uuid, max(val) as val, bool_or(traverse_owned) as traverse_owned,
+               (target_uuid like '_____-tpzed-_______________') as target_is_user from traverse_graph
         group by (traverse_graph.origin_uuid, target_uuid)
 }
 

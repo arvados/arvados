@@ -93,8 +93,8 @@ delete_rows as (
   WHERE clause is important to avoid redundantly updating rows
   that haven't actually changed.
 */
-insert into #{PERMISSION_VIEW} (user_uuid, target_uuid, perm_level, traverse_owned)
-  select user_uuid, target_uuid, val as perm_level, traverse_owned from temptable_perms where val>0
+insert into #{PERMISSION_VIEW} (user_uuid, target_uuid, perm_level, traverse_owned, target_is_user)
+  select user_uuid, target_uuid, val as perm_level, traverse_owned, target_is_user from temptable_perms where val>0
 on conflict (user_uuid, target_uuid) do update
 set perm_level=EXCLUDED.perm_level, traverse_owned=EXCLUDED.traverse_owned
 where #{PERMISSION_VIEW}.user_uuid=EXCLUDED.user_uuid and
