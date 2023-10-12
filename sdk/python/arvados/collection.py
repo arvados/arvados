@@ -694,7 +694,7 @@ class RichCollectionBase(CollectionBase):
 
         Arguments:
 
-        * source: str | arvados.arvilfe.ArvadosFile |
+        * source: str | arvados.arvfile.ArvadosFile |
           arvados.collection.Subcollection --- The file or subcollection to
           add to this collection. If `source` is a str, the object will be
           found by looking up this path from `source_collection` (see
