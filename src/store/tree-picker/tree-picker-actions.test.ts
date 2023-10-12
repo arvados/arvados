@@ -14,6 +14,8 @@ import { SHARED_PROJECT_ID, initProjectsTreePicker } from "./tree-picker-actions
 import { CollectionResource } from "models/collection";
 import { GroupResource } from "models/group";
 import { CollectionDirectory, CollectionFile, CollectionFileType } from "models/collection-file";
+import { GroupContentsResource } from "services/groups-service/groups-service";
+import { ListResults } from "services/common-service/common-service";
 
 describe('tree-picker-actions', () => {
     const axiosInst = Axios.create({ headers: {} });
@@ -121,6 +123,11 @@ describe('tree-picker-actions', () => {
 
         services.collectionService.files = jest.fn(async (uuid): Promise<(CollectionDirectory | CollectionFile)[]> => {
             return fakeResources[uuid]?.files || [];
+        });
+
+        services.groupsService.contents = jest.fn(async (uuid, args) => {
+            const items = Object.keys(fakeResources).map(uuid => ({...fakeResources[uuid], uuid})).filter(item => item.ownerUuid === uuid);
+            return {items: items as GroupContentsResource[], itemsAvailable: items.length} as ListResults<GroupContentsResource>;
         });
 
         const pickerId = "pickerId";
