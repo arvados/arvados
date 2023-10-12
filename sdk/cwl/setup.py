@@ -45,9 +45,8 @@ setup(name='arvados-cwl-runner',
           'importlib-metadata<5',
           'setuptools>=40.3.0',
 
-          # zipp 3.16 dropped support for Python 3.7, so this can be
-          # removed this when we drop support for 3.7 as well.
-          'zipp<3.16.0'
+          # zipp 3.16 dropped support for Python 3.7
+          'zipp<3.16.0; python_version<"3.8"'
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
