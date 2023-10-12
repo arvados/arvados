@@ -110,7 +110,7 @@ export const initProjectsTreePicker = (pickerId: string, preloadParams?: TreePic
         dispatch<any>(initSearchProject(search));
 
         if (preloadParams && preloadParams.selectedItemUuids.length) {
-            dispatch<any>(loadInitialValue(
+            await dispatch<any>(loadInitialValue(
                 preloadParams.selectedItemUuids,
                 pickerId,
                 preloadParams.includeDirectories,
@@ -145,6 +145,10 @@ interface LoadProjectParamsWithId extends LoadProjectParams {
     searchProjects?: boolean;
 }
 
+/**
+ * loadProject is used to load or refresh a project node in a tree picker
+ *   Errors are caught and a toast is shown if the project fails to load
+ */
 export const loadProject = (params: LoadProjectParamsWithId) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const {
@@ -183,57 +187,62 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
         const itemLimit = 200;
 
-        const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: itemLimit });
-        dispatch<any>(updateResources(items));
+        try {
+            const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: itemLimit });
+            dispatch<any>(updateResources(items));
 
-        if (itemsAvailable > itemLimit) {
-            items.push({
-                uuid: "more-items-available",
-                kind: ResourceKind.WORKFLOW,
-                name: `*** Not all items listed (${items.length} out of ${itemsAvailable}), reduce item count with search or filter ***`,
-                description: "",
-                definition: "",
-                ownerUuid: "",
-                createdAt: "",
-                modifiedByClientUuid: "",
-                modifiedByUserUuid: "",
-                modifiedAt: "",
-                href: "",
-                etag: ""
-            });
-        }
+            if (itemsAvailable > itemLimit) {
+                items.push({
+                    uuid: "more-items-available",
+                    kind: ResourceKind.WORKFLOW,
+                    name: `*** Not all items listed (${items.length} out of ${itemsAvailable}), reduce item count with search or filter ***`,
+                    description: "",
+                    definition: "",
+                    ownerUuid: "",
+                    createdAt: "",
+                    modifiedByClientUuid: "",
+                    modifiedByUserUuid: "",
+                    modifiedAt: "",
+                    href: "",
+                    etag: ""
+                });
+            }
 
-        dispatch<any>(receiveTreePickerData<GroupContentsResource>({
-            id,
-            pickerId,
-            data: items.filter((item) => {
-                if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
-                    return false;
-                }
-
-                if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
-                    return false;
-                }
-
-                return true;
-            }),
-            extractNodeData: item => (
-                item.uuid === "more-items-available" ?
-                    {
-                        id: item.uuid,
-                        value: item,
-                        status: TreeNodeStatus.LOADED
+            dispatch<any>(receiveTreePickerData<GroupContentsResource>({
+                id,
+                pickerId,
+                data: items.filter((item) => {
+                    if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
+                        return false;
                     }
-                    : {
-                        id: item.uuid,
-                        value: item,
-                        status: item.kind === ResourceKind.PROJECT
-                            ? TreeNodeStatus.INITIAL
-                            : includeDirectories || includeFiles
+
+                    if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
+                        return false;
+                    }
+
+                    return true;
+                }),
+                extractNodeData: item => (
+                    item.uuid === "more-items-available" ?
+                        {
+                            id: item.uuid,
+                            value: item,
+                            status: TreeNodeStatus.LOADED
+                        }
+                        : {
+                            id: item.uuid,
+                            value: item,
+                            status: item.kind === ResourceKind.PROJECT
                                 ? TreeNodeStatus.INITIAL
-                                : TreeNodeStatus.LOADED
-                    }),
-        }));
+                                : includeDirectories || includeFiles
+                                    ? TreeNodeStatus.INITIAL
+                                    : TreeNodeStatus.LOADED
+                        }),
+            }));
+        } catch(e) {
+            console.error("Failed to load project into tree picker:", e);;
+            dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load project`, kind: SnackbarKind.ERROR }));
+        }
     };
 
 export const loadCollection = (id: string, pickerId: string, includeDirectories?: boolean, includeFiles?: boolean) =>
