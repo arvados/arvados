@@ -343,30 +343,6 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: groups; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.groups (
-    id bigint NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb,
-    frozen_by_uuid character varying
-);
-
-
---
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -687,6 +663,30 @@ ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
 
 CREATE TABLE public.frozen_groups (
     uuid character varying
+);
+
+
+--
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.groups (
+    id bigint NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone,
+    properties jsonb DEFAULT '{}'::jsonb,
+    frozen_by_uuid character varying
 );
 
 
@@ -2577,6 +2577,13 @@ CREATE UNIQUE INDEX index_logs_on_uuid ON public.logs USING btree (uuid);
 
 
 --
+-- Name: index_materialized_permissions_target_is_not_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_materialized_permissions_target_is_not_user ON public.materialized_permissions USING btree (target_uuid, traverse_owned, ((((user_uuid)::text = (target_uuid)::text) OR ((target_uuid)::text !~~ '_____-tpzed-_______________'::text))));
+
+
+--
 -- Name: index_nodes_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3293,6 +3300,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20230421142716'),
 ('20230503224107'),
 ('20230815160000'),
-('20230821000000');
+('20230821000000'),
+('20231013000000');
 
 
