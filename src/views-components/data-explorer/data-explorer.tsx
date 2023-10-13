@@ -22,7 +22,6 @@ interface Props {
 }
 
 const mapStateToProps = (state: RootState, { id }: Props) => {
-    // console.log(state.form.projectUpdateFormName? state.form.projectUpdateFormName:'')
     const progress = state.progressIndicator.find(p => p.id === id);
     const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : '';
