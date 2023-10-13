@@ -39,16 +39,6 @@ const mapStateToProps = (state: RootState): AccountMenuProps => ({
     localCluster: state.auth.localCluster
 });
 
-const wb1URL = (route: string) => {
-    const r = route.replace(/^\//, "");
-    if (r.match(/^(projects|collections)\//)) {
-        return r;
-    } else if (r.match(/^processes\//)) {
-        return r.replace(/^processes/, "container_requests");
-    }
-    return "";
-};
-
 type CssRules = 'link';
 
 const styles: StyleRulesCallback<CssRules> = () => ({

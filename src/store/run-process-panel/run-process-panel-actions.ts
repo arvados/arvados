@@ -103,7 +103,6 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
         const advancedFormValues = getWorkflowRunnerSettings(workflow);
 
         let owner = getResource<ProjectResource | UserResource>(getState().runProcessPanel.processOwnerUuid)(getState().resources);
-        const userUuid = getUserUuid(getState());
         if (!owner || !owner.canWrite) {
             owner = undefined;
         }
