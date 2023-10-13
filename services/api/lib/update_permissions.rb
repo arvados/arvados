@@ -69,6 +69,46 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
     # parallel with a transaction holding this lock mode."
     ActiveRecord::Base.connection.execute "LOCK TABLE #{PERMISSION_VIEW} in EXCLUSIVE MODE"
 
+    # Workaround for
+    # BUG #15160: planner overestimates number of rows in join when there are more than 200 rows coming from CTE
+    # https://www.postgresql.org/message-id/152395805004.19366.3107109716821067806@wrigleys.postgresql.org
+    #
+    # For a crucial join in the compute_permission_subgraph() query, the
+    # planner mis-estimates the number of rows in a Common Table
+    # Expression (CTE, this is a subquery in a WITH clause) and as a
+    # result it chooses the wrong join order.  The join starts with the
+    # permissions table because it mistakenly thinks
+    # count(materalized_permissions) < count(new computed permissions)
+    # when actually it is the other way around.
+    #
+    # Because of the incorrect join order, it choose the wrong join
+    # strategy (merge join, which works best when two tables are roughly
+    # the same size).  As a workaround, we can tell it not to use that
+    # join strategy, this causes it to pick hash join instead, which
+    # turns out to be a bit better.  However, because the join order is
+    # still wrong, we don't get the full benefit of the index.
+    #
+    # This is very unfortunate because it makes the query performance
+    # dependent on the size of the materalized_permissions table, when
+    # the goal of this design was to make permission updates scale-free
+    # and only depend on the number of permissions affected and not the
+    # total table size.  In several hours of researching I wasn't able
+    # to find a way to force the correct join order, so I'm calling it
+    # here and I have to move on.
+    #
+    # This is apparently addressed in Postgres 12, but I developed &
+    # tested this on Postgres 9.6, so in the future we should reevaluate
+    # the performance & query plan on Postgres 12.
+    #
+    # Update: as of 2023-10-13, incorrect merge join behavior is still
+    # observed on at least one major user installation that is using
+    # Postgres 14, so it seems this workaround is still needed.
+    #
+    # https://git.furworks.de/opensourcemirror/postgresql/commit/a314c34079cf06d05265623dd7c056f8fa9d577f
+    #
+    # Disable merge join for just this query (also local for this transaction), then reenable it.
+    ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to false;"
+
     ActiveRecord::Base.connection.exec_query %{
 with temptable_perms as (
   select * from compute_permission_subgraph($1, $2, $3, $4)),
