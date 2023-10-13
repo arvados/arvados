@@ -22,7 +22,6 @@ import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/proj
 import { RootState } from 'store/store';
 import { ResourcesState } from 'store/resources/resources';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { sanitizeHTML } from 'common/html-sanitize';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -103,7 +102,7 @@ const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
                 {project.description ?
                     <RichTextEditorLink
                         title={`Description of ${project.name}`}
-                        content={sanitizeHTML(project.description)}
+                        content={project.description}
                         label='Show full description' />
                     : '---'
                 }

@@ -46,8 +46,11 @@ const domPurifyConfig: TDomPurifyConfig = {
 };
 
 export const sanitizeHTML = (dirtyInput: string): string => {
-    console.log('dirty ->',dirtyInput);
+    console.log('dirty------', dirtyInput);
+
     const clean = DOMPurify.sanitize(dirtyInput, domPurifyConfig);
-    console.log('clean =>',clean);
+    
+    console.log('clean------', clean);
+
     return clean;
 };
