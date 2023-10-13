@@ -215,7 +215,7 @@ describe('Create workflow tests', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
-            manifest_text: "./subdir/dir1 d41d8cd98f00b204e9800998ecf8427e+0+A8f0be20f1a6e28cf4e2c034dc3d4a02a49bebe7e@653aae59 0:0:\\056\n./subdir/dir2 d41d8cd98f00b204e9800998ecf8427e+0+A8f0be20f1a6e28cf4e2c034dc3d4a02a49bebe7e@653aae59 0:0:\\056\n"
+            manifest_text: "./subdir/dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n./subdir/dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n"
         })
             .as('testCollection');
 
