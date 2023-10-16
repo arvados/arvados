@@ -149,6 +149,7 @@ func (sch *Scheduler) runQueue() {
 	}).Debug("runQueue")
 
 	dontstart := map[arvados.InstanceType]bool{}
+	var atcapacity = map[string]bool{}    // ProviderTypes reported as AtCapacity during this runQueue() invocation
 	var overquota []container.QueueEnt    // entries that are unmappable because of worker pool quota
 	var overmaxsuper []container.QueueEnt // unmappable because max supervisors (these are not included in overquota)
 	var containerAllocatedWorkerBootingCount int
@@ -189,6 +190,11 @@ tryrun:
 				overquota = sorted[i:]
 				break tryrun
 			}
+			if unalloc[it] < 1 && (atcapacity[it.ProviderType] || sch.pool.AtCapacity(it)) {
+				logger.Trace("not locking: AtCapacity and no unalloc workers")
+				atcapacity[it.ProviderType] = true
+				continue
+			}
 			if sch.pool.KillContainer(ctr.UUID, "about to lock") {
 				logger.Info("not locking: crunch-run process from previous attempt has not exited")
 				continue
@@ -211,6 +217,27 @@ tryrun:
 				logger.Trace("overquota")
 				overquota = sorted[i:]
 				break tryrun
+			} else if atcapacity[it.ProviderType] || sch.pool.AtCapacity(it) {
+				// Continue trying lower-priority
+				// containers in case they can run on
+				// different instance types that are
+				// available.
+				//
+				// The local "atcapacity" cache helps
+				// when the pool's flag resets after
+				// we look at container A but before
+				// we look at lower-priority container
+				// B. In that case we want to run
+				// container A on the next call to
+				// runQueue(), rather than run
+				// container B now.
+				//
+				// TODO: try running this container on
+				// a bigger (but not much more
+				// expensive) instance type.
+				logger.WithField("InstanceType", it.Name).Trace("at capacity")
+				atcapacity[it.ProviderType] = true
+				continue
 			} else if sch.pool.Create(it) {
 				// Success. (Note pool.Create works
 				// asynchronously and does its own
@@ -219,10 +246,7 @@ tryrun:
 				logger.Info("creating new instance")
 			} else {
 				// Failed despite not being at quota,
-				// e.g., cloud ops throttled.  TODO:
-				// avoid getting starved here if
-				// instances of a specific type always
-				// fail.
+				// e.g., cloud ops throttled.
 				logger.Trace("pool declined to create new instance")
 				continue
 			}

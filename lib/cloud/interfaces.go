@@ -37,6 +37,20 @@ type QuotaError interface {
 	error
 }
 
+// A CapacityError should be returned by an InstanceSet's Create
+// method when the cloud service indicates it has insufficient
+// capacity to create new instances -- i.e., we shouldn't retry right
+// away.
+type CapacityError interface {
+	// If true, wait before trying to create more instances.
+	IsCapacityError() bool
+	// If true, the condition is specific to the requested
+	// instance types.  Wait before trying to create more
+	// instances of that same type.
+	IsInstanceTypeSpecific() bool
+	error
+}
+
 type SharedResourceTags map[string]string
 type InstanceSetID string
 type InstanceTags map[string]string

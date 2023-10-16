@@ -508,8 +508,15 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 	_, ok := wrapped.(cloud.RateLimitError)
 	c.Check(ok, check.Equals, true)
 
-	quotaError := awserr.New("InsufficientInstanceCapacity", "", nil)
+	quotaError := awserr.New("InstanceLimitExceeded", "", nil)
 	wrapped = wrapError(quotaError, nil)
 	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
+
+	capacityError := awserr.New("InsufficientInstanceCapacity", "", nil)
+	wrapped = wrapError(capacityError, nil)
+	caperr, ok := wrapped.(cloud.CapacityError)
+	c.Check(ok, check.Equals, true)
+	c.Check(caperr.IsCapacityError(), check.Equals, true)
+	c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
 }
