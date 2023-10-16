@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -39,13 +40,26 @@ type RPCSuite struct {
 func (s *RPCSuite) SetUpTest(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	s.ctx = context.WithValue(ctx, contextKeyTestTokens, []string{arvadostest.ActiveToken})
-	s.conn = NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_TEST_API_HOST")}, true, func(ctx context.Context) ([]string, error) {
+}
+
+func (s *RPCSuite) setupConn(c *check.C, host string) {
+	s.conn = NewConn("zzzzz", &url.URL{Scheme: "https", Host: host}, true, func(ctx context.Context) ([]string, error) {
 		tokens, _ := ctx.Value(contextKeyTestTokens).([]string)
 		return tokens, nil
 	})
 }
 
+func (s *RPCSuite) workbench2URL(c *check.C) string {
+	loader := config.NewLoader(nil, s.log)
+	cfg, err := loader.Load()
+	c.Assert(err, check.IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	return cluster.Services.Workbench2.ExternalURL.String()
+}
+
 func (s *RPCSuite) TestRailsLogin404(c *check.C) {
+	s.setupConn(c, os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.ctx = context.Background()
 	opts := arvados.LoginOptions{
 		ReturnTo: "https://foo.example.com/bar",
@@ -55,6 +69,7 @@ func (s *RPCSuite) TestRailsLogin404(c *check.C) {
 }
 
 func (s *RPCSuite) TestRailsLogout404(c *check.C) {
+	s.setupConn(c, os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.ctx = context.Background()
 	opts := arvados.LogoutOptions{
 		ReturnTo: "https://foo.example.com/bar",
@@ -63,7 +78,20 @@ func (s *RPCSuite) TestRailsLogout404(c *check.C) {
 	c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 404)
 }
 
+func (s *RPCSuite) TestControllerLogout(c *check.C) {
+	s.setupConn(c, os.Getenv("ARVADOS_API_HOST"))
+	s.ctx = context.Background()
+	url := s.workbench2URL(c)
+	opts := arvados.LogoutOptions{
+		ReturnTo: url,
+	}
+	resp, err := s.conn.Logout(s.ctx, opts)
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, url)
+}
+
 func (s *RPCSuite) TestCollectionCreate(c *check.C) {
+	s.setupConn(c, os.Getenv("ARVADOS_TEST_API_HOST"))
 	coll, err := s.conn.CollectionCreate(s.ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"owner_uuid":         arvadostest.ActiveUserUUID,
 		"portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
@@ -73,6 +101,7 @@ func (s *RPCSuite) TestCollectionCreate(c *check.C) {
 }
 
 func (s *RPCSuite) TestSpecimenCRUD(c *check.C) {
+	s.setupConn(c, os.Getenv("ARVADOS_TEST_API_HOST"))
 	sp, err := s.conn.SpecimenCreate(s.ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"owner_uuid": arvadostest.ActiveUserUUID,
 		"properties": map[string]string{"foo": "bar"},
