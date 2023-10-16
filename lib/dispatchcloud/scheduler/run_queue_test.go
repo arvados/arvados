@@ -362,8 +362,8 @@ func (*SchedulerSuite) TestInstanceCapacity(c *check.C) {
 
 	// Start container4, but then pool reports AtCapacity for
 	// type4, so we skip trying to create an instance for
-	// container3, but do try to create a type2 instance for
-	// container2.
+	// container3, skip locking container2, but do try to create a
+	// type1 instance for container1.
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(1)})
 	c.Check(pool.shutdowns, check.Equals, 0)
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
