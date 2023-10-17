@@ -261,16 +261,18 @@ DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install doc
 		}
 
 		err = inst.runBash(`
-add="fs.inotify.max_user_watches=524288"
-if ! grep -F -- "$add" /etc/sysctl.conf; then
-    echo "$add" | tee -a /etc/sysctl.conf
+key=fs.inotify.max_user_watches
+min=524288
+if [[ "$(sysctl --values "${key}")" -lt "${min}" ]]; then
+    sysctl "${key}=${min}"
+    # writing sysctl worked, so we should make it permanent
+    echo "${key}=${min}" | tee -a /etc/sysctl.conf
     sysctl -p
 fi
 `, stdout, stderr)
 		if err != nil {
-			// Just warn instead of fail because this is expected when running
-			// inside Docker.
-			logger.Warnf("couldn't set fs.inotify.max_user_watches value: %v", err)
+			err = fmt.Errorf("couldn't set fs.inotify.max_user_watches value. (Is this a docker container? Fix this on the docker host by adding fs.inotify.max_user_watches=524288 to /etc/sysctl.conf and running `sysctl -p`)")
+			return 1
 		}
 	}
 
