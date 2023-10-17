@@ -2,23 +2,39 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton } from '@material-ui/core';
-import classnames from 'classnames';
-import { DataColumn, SortDirection } from './data-column';
-import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
-import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
-import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
-import { countNodes, getTreeDirty } from 'models/tree';
-import { IconType, PendingIcon } from 'components/icon/icon';
-import { SvgIconProps } from '@material-ui/core/SvgIcon';
-import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
+import React from "react";
+import {
+    Table,
+    TableBody,
+    TableRow,
+    TableCell,
+    TableHead,
+    TableSortLabel,
+    StyleRulesCallback,
+    Theme,
+    WithStyles,
+    withStyles,
+    IconButton,
+    Tooltip,
+} from "@material-ui/core";
+import classnames from "classnames";
+import { DataColumn, SortDirection } from "./data-column";
+import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
+import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
+import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
+import { countNodes, getTreeDirty } from "models/tree";
+import { IconType, PendingIcon } from "components/icon/icon";
+import { SvgIconProps } from "@material-ui/core/SvgIcon";
+import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
+import { createTree } from "models/tree";
+import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
 export enum DataTableFetchMode {
     PAGINATED,
-    INFINITE
+    INFINITE,
 }
 
 export interface DataTableDataProps<I> {
@@ -35,154 +51,349 @@ export interface DataTableDataProps<I> {
     defaultViewMessages?: string[];
     currentItemUuid?: string;
     currentRoute?: string;
+    toggleMSToolbar: (isVisible: boolean) => void;
+    setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    checkedList: TCheckedList;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
+type CssRules =
+    | "tableBody"
+    | "root"
+    | "content"
+    | "noItemsInfo"
+    | "checkBoxHead"
+    | "checkBoxCell"
+    | "checkBox"
+    | "firstTableCell"
+    | "tableCell"
+    | "arrow"
+    | "arrowButton"
+    | "tableCellWorkflows"
+    | "loader";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
-        width: '100%',
+        width: "100%",
     },
     content: {
-        display: 'inline-block',
-        width: '100%',
+        display: "inline-block",
+        width: "100%",
     },
     tableBody: {
-        background: theme.palette.background.paper
+        background: theme.palette.background.paper,
     },
     loader: {
-        left: '50%',
-        marginLeft: '-84px',
-        position: 'absolute'
+        left: "50%",
+        marginLeft: "-84px",
+        position: "absolute",
     },
     noItemsInfo: {
         textAlign: "center",
-        padding: theme.spacing.unit
+        padding: theme.spacing.unit,
+    },
+    checkBoxHead: {
+        padding: "0",
+        display: "flex",
+    },
+    checkBoxCell: {
+        padding: "0",
+        paddingLeft: "10px",
+    },
+    checkBox: {
+        cursor: "pointer",
     },
     tableCell: {
-        wordWrap: 'break-word',
-        paddingRight: '24px',
-        color: '#737373'
-
+        wordWrap: "break-word",
+        paddingRight: "24px",
+        color: "#737373",
+    },
+    firstTableCell: {
+        paddingLeft: "5px",
     },
     tableCellWorkflows: {
-        '&:nth-last-child(2)': {
-            padding: '0px',
-            maxWidth: '48px'
+        "&:nth-last-child(2)": {
+            padding: "0px",
+            maxWidth: "48px",
         },
-        '&:last-child': {
-            padding: '0px',
-            paddingRight: '24px',
-            width: '48px'
-        }
+        "&:last-child": {
+            padding: "0px",
+            paddingRight: "24px",
+            width: "48px",
+        },
     },
     arrow: {
-        margin: 0
+        margin: 0,
     },
     arrowButton: {
-        color: theme.palette.text.primary
-    }
+        color: theme.palette.text.primary,
+    },
 });
+
+export type TCheckedList = Record<string, boolean>;
+
+type DataTableState = {
+    isSelected: boolean;
+};
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
+        state: DataTableState = {
+            isSelected: false,
+        };
+
+        componentDidMount(): void {
+            this.initializeCheckedList(this.props.items);
+        }
+
+        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
+            const { items, setCheckedListOnStore } = this.props;
+            const { isSelected } = this.state;
+            if (prevProps.items !== items) {
+                if (isSelected === true) this.setState({ isSelected: false });
+                if (items.length) this.initializeCheckedList(items);
+                else setCheckedListOnStore({});
+            }
+        }
+
+        checkBoxColumn: DataColumn<any, any> = {
+            name: "checkBoxColumn",
+            selected: true,
+            configurable: false,
+            filters: createTree(),
+            render: uuid => {
+                const { classes, checkedList } = this.props;
+                return (
+                    <input
+                        type="checkbox"
+                        name={uuid}
+                        className={classes.checkBox}
+                        checked={checkedList && checkedList[uuid] ? checkedList[uuid] : false}
+                        onChange={() => this.handleSelectOne(uuid)}
+                        onDoubleClick={ev => ev.stopPropagation()}></input>
+                );
+            },
+        };
+
+        multiselectOptions: DataTableMultiselectOption[] = [
+            { name: "All", fn: list => this.handleSelectAll(list) },
+            { name: "None", fn: list => this.handleSelectNone(list) },
+            { name: "Invert", fn: list => this.handleInvertSelect(list) },
+        ];
+
+        initializeCheckedList = (uuids: any[]): void => {
+            const newCheckedList = { ...this.props.checkedList };
+
+            uuids.forEach(uuid => {
+                if (!newCheckedList.hasOwnProperty(uuid)) {
+                    newCheckedList[uuid] = false;
+                }
+            });
+            for (const key in newCheckedList) {
+                if (!uuids.includes(key)) {
+                    delete newCheckedList[key];
+                }
+            }
+            this.props.setCheckedListOnStore(newCheckedList);
+        };
+
+        isAllSelected = (list: TCheckedList): boolean => {
+            for (const key in list) {
+                if (list[key] === false) return false;
+            }
+            return true;
+        };
+
+        isAnySelected = (): boolean => {
+            const { checkedList } = this.props;
+            if (!Object.keys(checkedList).length) return false;
+            for (const key in checkedList) {
+                if (checkedList[key] === true) return true;
+            }
+            return false;
+        };
+
+        handleSelectOne = (uuid: string): void => {
+            const { checkedList } = this.props;
+            const newCheckedList = { ...checkedList };
+            newCheckedList[uuid] = !checkedList[uuid];
+            this.setState({ isSelected: this.isAllSelected(newCheckedList) });
+            this.props.setCheckedListOnStore(newCheckedList);
+        };
+
+        handleSelectorSelect = (): void => {
+            const { checkedList } = this.props;
+            const { isSelected } = this.state;
+            isSelected ? this.handleSelectNone(checkedList) : this.handleSelectAll(checkedList);
+        };
+
+        handleSelectAll = (list: TCheckedList): void => {
+            if (Object.keys(list).length) {
+                const newCheckedList = { ...list };
+                for (const key in newCheckedList) {
+                    newCheckedList[key] = true;
+                }
+                this.setState({ isSelected: true });
+                this.props.setCheckedListOnStore(newCheckedList);
+            }
+        };
+
+        handleSelectNone = (list: TCheckedList): void => {
+            const newCheckedList = { ...list };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = false;
+            }
+            this.setState({ isSelected: false });
+            this.props.setCheckedListOnStore(newCheckedList);
+        };
+
+        handleInvertSelect = (list: TCheckedList): void => {
+            if (Object.keys(list).length) {
+                const newCheckedList = { ...list };
+                for (const key in newCheckedList) {
+                    newCheckedList[key] = !list[key];
+                }
+                this.setState({ isSelected: this.isAllSelected(newCheckedList) });
+                this.props.setCheckedListOnStore(newCheckedList);
+            }
+        };
+
         render() {
-            const { items, classes, working } = this.props;
-            return <div className={classes.root}>
-                <div className={classes.content}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                {this.mapVisibleColumns(this.renderHeadCell)}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody className={classes.tableBody}>
-                            { !working && items.map(this.renderBodyRow) }
-                        </TableBody>
-                    </Table>
-                    { !!working &&
-                        <div className={classes.loader}>
-                            <DataTableDefaultView
-                                icon={PendingIcon}
-                                messages={['Loading data, please wait.']} />
-                        </div> }
-                    {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
+            const { items, classes, working, columns } = this.props;
+            if (columns[0].name === this.checkBoxColumn.name) columns.shift();
+            columns.unshift(this.checkBoxColumn);
+            return (
+                <div className={classes.root}>
+                    <div className={classes.content}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
+                            </TableHead>
+                            <TableBody className={classes.tableBody}>{!working && items.map(this.renderBodyRow)}</TableBody>
+                        </Table>
+                        {!!working && (
+                            <div className={classes.loader}>
+                                <DataTableDefaultView
+                                    icon={PendingIcon}
+                                    messages={["Loading data, please wait."]}
+                                />
+                            </div>
+                        )}
+                        {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
+                    </div>
                 </div>
-            </div>;
+            );
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
-            const dirty = columns.some((column) => getTreeDirty('')(column.filters));
-            return <DataTableDefaultView
-                icon={this.props.defaultViewIcon}
-                messages={this.props.defaultViewMessages}
-                filtersApplied={dirty} />;
-        }
+            const dirty = columns.some(column => getTreeDirty("")(column.filters));
+            return (
+                <DataTableDefaultView
+                    icon={this.props.defaultViewIcon}
+                    messages={this.props.defaultViewMessages}
+                    filtersApplied={dirty}
+                />
+            );
+        };
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
-            const { onSortToggle, onFiltersChange, classes } = this.props;
-            return <TableCell className={classes.tableCell} key={key || index}>
-                {renderHeader ?
-                    renderHeader() :
-                    countNodes(filters) > 0
-                        ? <DataTableFiltersPopover
+            const { onSortToggle, onFiltersChange, classes, checkedList } = this.props;
+            const { isSelected } = this.state;
+            return column.name === "checkBoxColumn" ? (
+                <TableCell
+                    key={key || index}
+                    className={classes.checkBoxCell}>
+                    <div className={classes.checkBoxHead}>
+                        <Tooltip title={this.state.isSelected ? "Deselect All" : "Select All"}>
+                            <input
+                                type="checkbox"
+                                className={classes.checkBox}
+                                checked={isSelected}
+                                disabled={!this.props.items.length}
+                                onChange={this.handleSelectorSelect}></input>
+                        </Tooltip>
+                        <DataTableMultiselectPopover
+                            name={`Options`}
+                            disabled={!this.props.items.length}
+                            options={this.multiselectOptions}
+                            checkedList={checkedList}></DataTableMultiselectPopover>
+                    </div>
+                </TableCell>
+            ) : (
+                <TableCell
+                    className={index === 1 ? classes.firstTableCell : classes.tableCell}
+                    key={key || index}>
+                    {renderHeader ? (
+                        renderHeader()
+                    ) : countNodes(filters) > 0 ? (
+                        <DataTableFiltersPopover
                             name={`${name} filters`}
                             mutuallyExclusive={column.mutuallyExclusiveFilters}
-                            onChange={filters =>
-                                onFiltersChange &&
-                                onFiltersChange(filters, column)}
+                            onChange={filters => onFiltersChange && onFiltersChange(filters, column)}
                             filters={filters}>
                             {name}
                         </DataTableFiltersPopover>
-                        : sort
-                            ? <TableSortLabel
-                                active={sort.direction !== SortDirection.NONE}
-                                direction={sort.direction !== SortDirection.NONE ? sort.direction : undefined}
-                                IconComponent={this.ArrowIcon}
-                                hideSortIcon
-                                onClick={() =>
-                                    onSortToggle &&
-                                    onSortToggle(column)}>
-                                {name}
-                            </TableSortLabel>
-                            : <span>
-                                {name}
-                            </span>}
-            </TableCell>;
-        }
+                    ) : sort ? (
+                        <TableSortLabel
+                            active={sort.direction !== SortDirection.NONE}
+                            direction={sort.direction !== SortDirection.NONE ? sort.direction : undefined}
+                            IconComponent={this.ArrowIcon}
+                            hideSortIcon
+                            onClick={() => onSortToggle && onSortToggle(column)}>
+                            {name}
+                        </TableSortLabel>
+                    ) : (
+                        <span>{name}</span>
+                    )}
+                </TableCell>
+            );
+        };
 
         ArrowIcon = ({ className, ...props }: SvgIconProps) => (
-            <IconButton component='span' className={this.props.classes.arrowButton} tabIndex={-1}>
-                <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)} />
+            <IconButton
+                component="span"
+                className={this.props.classes.arrowButton}
+                tabIndex={-1}>
+                <ArrowDownwardIcon
+                    {...props}
+                    className={classnames(className, this.props.classes.arrow)}
+                />
             </IconButton>
-        )
+        );
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
-            return <TableRow
-                hover
-                key={extractKey ? extractKey(item) : index}
-                onClick={event => onRowClick && onRowClick(event, item)}
-                onContextMenu={this.handleRowContextMenu(item)}
-                onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                selected={item === currentItemUuid}>
-                {this.mapVisibleColumns((column, index) => <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
-                        {column.render(item)}
-                    </TableCell>
-                )}
-            </TableRow>;
-        }
+            return (
+                <TableRow
+                    hover
+                    key={extractKey ? extractKey(item) : index}
+                    onClick={event => onRowClick && onRowClick(event, item)}
+                    onContextMenu={this.handleRowContextMenu(item)}
+                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
+                    selected={item === currentItemUuid}>
+                    {this.mapVisibleColumns((column, index) => (
+                        <TableCell
+                            key={column.key || index}
+                            className={
+                                currentRoute === "/workflows"
+                                    ? classes.tableCellWorkflows
+                                    : index === 0
+                                    ? classes.checkBoxCell
+                                    : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ""}`
+                            }>
+                            {column.render(item)}
+                        </TableCell>
+                    ))}
+                </TableRow>
+            );
+        };
 
         mapVisibleColumns = (fn: (column: DataColumn<T, any>, index: number) => React.ReactElement<any>) => {
             return this.props.columns.filter(column => column.selected).map(fn);
-        }
+        };
 
-        handleRowContextMenu = (item: T) =>
-            (event: React.MouseEvent<HTMLElement>) =>
-                this.props.onContextMenu(event, item)
-
+        handleRowContextMenu = (item: T) => (event: React.MouseEvent<HTMLElement>) => this.props.onContextMenu(event, item);
     }
 );

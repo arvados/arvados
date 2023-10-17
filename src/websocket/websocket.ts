@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootStore } from 'store/store';
-import { AuthService } from 'services/auth-service/auth-service';
-import { Config } from 'common/config';
-import { WebSocketService } from './websocket-service';
-import { ResourceEventMessage } from './resource-event-message';
-import { ResourceKind } from 'models/resource';
-import { loadProcess } from 'store/processes/processes-actions';
-import { getProcess, getSubprocesses } from 'store/processes/process';
-import { LogEventType } from 'models/log';
+import { RootStore } from "store/store";
+import { AuthService } from "services/auth-service/auth-service";
+import { Config } from "common/config";
+import { WebSocketService } from "./websocket-service";
+import { ResourceEventMessage } from "./resource-event-message";
+import { ResourceKind } from "models/resource";
+import { loadProcess } from "store/processes/processes-actions";
+import { getProcess, getSubprocesses } from "store/processes/process";
+import { LogEventType } from "models/log";
 import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
-import { projectPanelActions } from "store/project-panel/project-panel-action";
-import { getProjectPanelCurrentUuid } from 'store/project-panel/project-panel-action';
-import { allProcessesPanelActions } from 'store/all-processes-panel/all-processes-panel-action';
-import { loadCollection } from 'store/workbench/workbench-actions';
-import { matchAllProcessesRoute, matchProjectRoute, matchProcessRoute } from 'routes/routes';
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
+import { allProcessesPanelActions } from "store/all-processes-panel/all-processes-panel-action";
+import { loadCollection } from "store/workbench/workbench-actions";
+import { matchAllProcessesRoute, matchProjectRoute, matchProcessRoute } from "routes/routes";
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {
@@ -31,7 +31,7 @@ export const initWebSocket = (config: Config, authService: AuthService, store: R
 const messageListener = (store: RootStore) => (message: ResourceEventMessage) => {
     if (message.eventType === LogEventType.CREATE || message.eventType === LogEventType.UPDATE) {
         const state = store.getState();
-        const location = state.router.location ? state.router.location.pathname : '';
+        const location = state.router.location ? state.router.location.pathname : "";
         switch (message.objectKind) {
             case ResourceKind.COLLECTION:
                 const currentCollection = state.collectionPanel.item;

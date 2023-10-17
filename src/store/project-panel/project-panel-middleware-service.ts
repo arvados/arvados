@@ -6,8 +6,8 @@ import {
     DataExplorerMiddlewareService,
     dataExplorerToListParams,
     getDataExplorerColumnFilters,
-    listResultsToDataExplorerItemsMeta
-} from 'store/data-explorer/data-explorer-middleware-service';
+    listResultsToDataExplorerItemsMeta,
+} from "store/data-explorer/data-explorer-middleware-service";
 import { ProjectPanelColumnNames } from "views/project-panel/project-panel";
 import { RootState } from "store/store";
 import { DataColumns } from "components/data-table/data-table";
@@ -17,30 +17,24 @@ import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
-import {
-    IS_PROJECT_PANEL_TRASHED,
-    projectPanelActions,
-    getProjectPanelCurrentUuid
-} from 'store/project-panel/project-panel-action';
+import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "models/project";
 import { updateResources } from "store/resources/resources-actions";
 import { getProperty } from "store/properties/properties";
-import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
-import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
-import { ListResults } from 'services/common-service/common-service';
-import { loadContainers } from 'store/processes/processes-actions';
-import { ResourceKind } from 'models/resource';
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { ListResults } from "services/common-service/common-service";
+import { loadContainers } from "store/processes/processes-actions";
+import { ResourceKind } from "models/resource";
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
-import {
-    serializeResourceTypeFilters,
-    buildProcessStatusFilters
-} from 'store/resource-type-filters/resource-type-filters';
-import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
-import { selectedFieldsOfGroup } from 'models/group';
-import { defaultCollectionSelectedFields } from 'models/collection';
-import { containerRequestFieldsNoMounts } from 'models/container-request';
+import { serializeResourceTypeFilters, buildProcessStatusFilters } from "store/resource-type-filters/resource-type-filters";
+import { updatePublicFavorites } from "store/public-favorites/public-favorites-actions";
+import { selectedFieldsOfGroup } from "models/group";
+import { defaultCollectionSelectedFields } from "models/collection";
+import { containerRequestFieldsNoMounts } from "models/container-request";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -67,12 +61,14 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(setItems(response));
             } catch (e) {
-                api.dispatch(projectPanelActions.SET_ITEMS({
-                    items: [],
-                    itemsAvailable: 0,
-                    page: 0,
-                    rowsPerPage: dataExplorer.rowsPerPage
-                }));
+                api.dispatch(
+                    projectPanelActions.SET_ITEMS({
+                        items: [],
+                        itemsAvailable: 0,
+                        page: 0,
+                        rowsPerPage: dataExplorer.rowsPerPage,
+                    })
+                );
                 api.dispatch(couldNotFetchProjectContents());
             } finally {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
@@ -81,22 +77,16 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
     }
 }
 
-export const loadMissingProcessesInformation = (resources: GroupContentsResource[]) =>
-    async (dispatch: Dispatch) => {
-        const containerUuids = resources.reduce((uuids, resource) => {
-            return resource.kind === ResourceKind.CONTAINER_REQUEST &&
-                resource.containerUuid &&
-                !uuids.includes(resource.containerUuid)
-                ? [...uuids, resource.containerUuid]
-                : uuids;
-        }, [] as string[]);
-        if (containerUuids.length > 0) {
-            await dispatch<any>(loadContainers(
-                containerUuids,
-                false
-            ));
-        }
-    };
+export const loadMissingProcessesInformation = (resources: GroupContentsResource[]) => async (dispatch: Dispatch) => {
+    const containerUuids = resources.reduce((uuids, resource) => {
+        return resource.kind === ResourceKind.CONTAINER_REQUEST && resource.containerUuid && !uuids.includes(resource.containerUuid)
+            ? [...uuids, resource.containerUuid]
+            : uuids;
+    }, [] as string[]);
+    if (containerUuids.length > 0) {
+        await dispatch<any>(loadContainers(containerUuids, false));
+    }
+};
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     projectPanelActions.SET_ITEMS({
@@ -109,16 +99,14 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer),
     includeTrash: isProjectTrashed,
-    select: selectedFieldsOfGroup.concat(defaultCollectionSelectedFields, containerRequestFieldsNoMounts)
+    select: selectedFieldsOfGroup.concat(defaultCollectionSelectedFields, containerRequestFieldsNoMounts),
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
-    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
-    const activeStatusFilter = Object.keys(statusColumnFilters).find(
-        filterName => statusColumnFilters[filterName].selected
-    );
+    const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
+    const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);
 
     // TODO: Extract group contents name filter
     const nameFilters = new FilterBuilder()
@@ -128,25 +116,16 @@ export const getFilters = (dataExplorer: DataExplorer) => {
         .getFilters();
 
     // Filter by container status
-    const statusFilters = buildProcessStatusFilters(
-        new FilterBuilder(),
-        activeStatusFilter || '',
-        GroupContentsResourcePrefix.PROCESS).getFilters();
+    const statusFilters = buildProcessStatusFilters(new FilterBuilder(), activeStatusFilter || "", GroupContentsResourcePrefix.PROCESS).getFilters();
 
-    return joinFilters(
-        statusFilters,
-        typeFilters,
-        nameFilters,
-    );
+    return joinFilters(statusFilters, typeFilters, nameFilters);
 };
 
 const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = getSortColumn<ProjectResource>(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
     if (sortColumn && sortColumn.sort) {
-        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC ? OrderDirection.ASC : OrderDirection.DESC;
 
         return order
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
@@ -160,18 +139,18 @@ const getOrder = (dataExplorer: DataExplorer) => {
 
 const projectPanelCurrentUuidIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Project panel is not opened.',
-        kind: SnackbarKind.ERROR
+        message: "Project panel is not opened.",
+        kind: SnackbarKind.ERROR,
     });
 
 const couldNotFetchProjectContents = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch project contents.',
-        kind: SnackbarKind.ERROR
+        message: "Could not fetch project contents.",
+        kind: SnackbarKind.ERROR,
     });
 
 const projectPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Project panel is not ready.',
-        kind: SnackbarKind.ERROR
+        message: "Project panel is not ready.",
+        kind: SnackbarKind.ERROR,
     });

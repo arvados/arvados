@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import {
     WithStyles,
     withStyles,
@@ -16,28 +16,28 @@ import {
     Typography,
     CardContent,
     Tooltip,
-    IconButton
-} from "@material-ui/core";
-import classnames from "classnames";
-import { DefaultTransformOrigin } from "components/popover/helpers";
+    IconButton,
+} from '@material-ui/core';
+import classnames from 'classnames';
+import { DefaultTransformOrigin } from 'components/popover/helpers';
 import { createTree } from 'models/tree';
-import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";
+import { DataTableFilters, DataTableFiltersTree } from './data-table-filters-tree';
 import { getNodeDescendants } from 'models/tree';
-import debounce from "lodash/debounce";
+import debounce from 'lodash/debounce';
 
-export type CssRules = "root" | "icon" | "iconButton" | "active" | "checkbox";
+export type CssRules = 'root' | 'icon' | 'iconButton' | 'active' | 'checkbox';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
-        cursor: "pointer",
-        display: "inline-flex",
-        justifyContent: "flex-start",
-        flexDirection: "inherit",
-        alignItems: "center",
-        "&:hover": {
+        cursor: 'pointer',
+        display: 'inline-flex',
+        justifyContent: 'flex-start',
+        flexDirection: 'inherit',
+        alignItems: 'center',
+        '&:hover': {
             color: theme.palette.text.primary,
         },
-        "&:focus": {
+        '&:focus': {
             color: theme.palette.text.primary,
         },
     },
@@ -52,7 +52,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         userSelect: 'none',
         width: 16,
         height: 15,
-        marginTop: 1
+        marginTop: 1,
     },
     iconButton: {
         color: theme.palette.text.primary,
@@ -60,13 +60,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     checkbox: {
         width: 24,
-        height: 24
-    }
+        height: 24,
+    },
 });
 
 enum SelectionMode {
     ALL = 'all',
-    NONE = 'none'
+    NONE = 'none',
 }
 
 export interface DataTableFilterProps {
@@ -103,68 +103,52 @@ export const DataTableFiltersPopover = withStyles(styles)(
 
         render() {
             const { name, classes, defaultSelection = SelectionMode.ALL, children } = this.props;
-            const isActive = getNodeDescendants('')(this.state.filters)
-                .some(f => defaultSelection === SelectionMode.ALL
-                    ? !f.selected
-                    : f.selected
-                );
-            return <>
-                <Tooltip disableFocusListener title='Filters'>
-                    <ButtonBase
-                        className={classnames([classes.root, { [classes.active]: isActive }])}
-                        component="span"
-                        onClick={this.open}
-                        disableRipple>
-                        {children}
-                        <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
-                            <i className={classnames(["fas fa-filter", classes.icon])}
-                                data-fa-transform="shrink-3"
-                                ref={this.icon} />
-                        </IconButton>
-                    </ButtonBase>
-                </Tooltip>
-                <Popover
-                    anchorEl={this.state.anchorEl}
-                    open={!!this.state.anchorEl}
-                    anchorOrigin={DefaultTransformOrigin}
-                    transformOrigin={DefaultTransformOrigin}
-                    onClose={this.close}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="caption">
-                                {name}
-                            </Typography>
-                        </CardContent>
-                        <DataTableFiltersTree
-                            filters={this.state.filters}
-                            mutuallyExclusive={this.props.mutuallyExclusive}
-                            onChange={this.onChange} />
-                        {this.props.mutuallyExclusive ||
-                        <CardActions>
-                            <Button
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                                onClick={this.close}>
-                                Close
-                            </Button>
-                        </CardActions >
-                        }
-                    </Card>
-                </Popover>
-                <this.MountHandler />
-            </>;
+            const isActive = getNodeDescendants('')(this.state.filters).some((f) => (defaultSelection === SelectionMode.ALL ? !f.selected : f.selected));
+            return (
+                <>
+                    <Tooltip disableFocusListener title='Filters'>
+                        <ButtonBase className={classnames([classes.root, { [classes.active]: isActive }])} component='span' onClick={this.open} disableRipple>
+                            {children}
+                            <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
+                                <i className={classnames(['fas fa-filter', classes.icon])} data-fa-transform='shrink-3' ref={this.icon} />
+                            </IconButton>
+                        </ButtonBase>
+                    </Tooltip>
+                    <Popover
+                        anchorEl={this.state.anchorEl}
+                        open={!!this.state.anchorEl}
+                        anchorOrigin={DefaultTransformOrigin}
+                        transformOrigin={DefaultTransformOrigin}
+                        onClose={this.close}
+                    >
+                        <Card>
+                            <CardContent>
+                                <Typography variant='caption'>{name}</Typography>
+                            </CardContent>
+                            <DataTableFiltersTree filters={this.state.filters} mutuallyExclusive={this.props.mutuallyExclusive} onChange={this.onChange} />
+                            <>
+                                {this.props.mutuallyExclusive || (
+                                    <CardActions>
+                                        <Button color='primary' variant='outlined' size='small' onClick={this.close}>
+                                            Close
+                                        </Button>
+                                    </CardActions>
+                                )}
+                            </>
+                        </Card>
+                    </Popover>
+                    <this.MountHandler />
+                </>
+            );
         }
 
         static getDerivedStateFromProps(props: DataTableFilterProps, state: DataTableFilterState): DataTableFilterState {
-            return props.filters !== state.prevFilters
-                ? { ...state, filters: props.filters, prevFilters: props.filters }
-                : state;
+            return props.filters !== state.prevFilters ? { ...state, filters: props.filters, prevFilters: props.filters } : state;
         }
 
         open = () => {
             this.setState({ anchorEl: this.icon.current || undefined });
-        }
+        };
 
         onChange = (filters) => {
             this.setState({ filters });
@@ -179,9 +163,9 @@ export const DataTableFiltersPopover = withStyles(styles)(
                 // Non-mutually exclusive filters are debounced
                 this.submit();
             }
-        }
+        };
 
-        submit = debounce (() => {
+        submit = debounce(() => {
             const { onChange } = this.props;
             if (onChange) {
                 onChange(this.state.filters);
@@ -192,17 +176,16 @@ export const DataTableFiltersPopover = withStyles(styles)(
             useEffect(() => {
                 return () => {
                     this.submit.cancel();
-                }
-            },[]);
+                };
+            }, []);
             return null;
         };
 
         close = () => {
-            this.setState(prev => ({
+            this.setState((prev) => ({
                 ...prev,
-                anchorEl: undefined
+                anchorEl: undefined,
             }));
-        }
-
+        };
     }
 );
