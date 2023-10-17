@@ -240,6 +240,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				codename = "buster"
 			case 11:
 				codename = "bullseye"
+			case 12:
+				codename = "bookworm"
 			default:
 				err = fmt.Errorf("don't know how to install docker-ce for debian %d", osv.Major)
 				return 1
