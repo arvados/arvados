@@ -393,6 +393,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 					wp.atCapacityUntil = map[string]time.Time{}
 				}
 				wp.atCapacityUntil[capKey] = time.Now().Add(capacityErrorTTL)
+				time.AfterFunc(capacityErrorTTL, wp.notify)
 			}
 			logger.WithError(err).Error("create failed")
 			wp.instanceSet.throttleCreate.CheckRateLimitError(err, wp.logger, "create instance", wp.notify)
