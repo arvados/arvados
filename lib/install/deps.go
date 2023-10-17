@@ -231,7 +231,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 
 	if dev || test {
-		if havedockerversion, err := exec.Command("docker", "--version").CombinedOutput(); err == nil {
+		if havedockerversion, err2 := exec.Command("docker", "--version").CombinedOutput(); err2 == nil {
 			logger.Printf("%s installed, assuming that version is ok", bytes.TrimSuffix(havedockerversion, []byte("\n")))
 		} else if osv.Debian {
 			var codename string
@@ -240,6 +240,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				codename = "buster"
 			case 11:
 				codename = "bullseye"
+			case 12:
+				codename = "bookworm"
 			default:
 				err = fmt.Errorf("don't know how to install docker-ce for debian %d", osv.Major)
 				return 1
@@ -261,16 +263,18 @@ DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install doc
 		}
 
 		err = inst.runBash(`
-add="fs.inotify.max_user_watches=524288"
-if ! grep -F -- "$add" /etc/sysctl.conf; then
-    echo "$add" | tee -a /etc/sysctl.conf
+key=fs.inotify.max_user_watches
+min=524288
+if [[ "$(sysctl --values "${key}")" -lt "${min}" ]]; then
+    sysctl "${key}=${min}"
+    # writing sysctl worked, so we should make it permanent
+    echo "${key}=${min}" | tee -a /etc/sysctl.conf
     sysctl -p
 fi
 `, stdout, stderr)
 		if err != nil {
-			// Just warn instead of fail because this is expected when running
-			// inside Docker.
-			logger.Warnf("couldn't set fs.inotify.max_user_watches value: %v", err)
+			err = fmt.Errorf("couldn't set fs.inotify.max_user_watches value. (Is this a docker container? Fix this on the docker host by adding fs.inotify.max_user_watches=524288 to /etc/sysctl.conf and running `sysctl -p`)")
+			return 1
 		}
 	}
 
