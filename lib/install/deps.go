@@ -268,7 +268,9 @@ if ! grep -F -- "$add" /etc/sysctl.conf; then
 fi
 `, stdout, stderr)
 		if err != nil {
-			return 1
+			// Just warn instead of fail because this is expected when running
+			// inside Docker.
+			logger.Warnf("couldn't set fs.inotify.max_user_watches value: %v", err)
 		}
 	}
 
