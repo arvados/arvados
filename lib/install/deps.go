@@ -231,7 +231,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 
 	if dev || test {
-		if havedockerversion, err := exec.Command("docker", "--version").CombinedOutput(); err == nil {
+		if havedockerversion, err2 := exec.Command("docker", "--version").CombinedOutput(); err2 == nil {
 			logger.Printf("%s installed, assuming that version is ok", bytes.TrimSuffix(havedockerversion, []byte("\n")))
 		} else if osv.Debian {
 			var codename string
