@@ -279,7 +279,7 @@ export const moveProject =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const checkedList = getState().multiselect.checkedList;
-        const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
+        const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
 
         //if no items in checkedlist default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -423,7 +423,7 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
 
 export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const checkedList = getState().multiselect.checkedList;
-    const uuidsToCopy: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
+    const uuidsToCopy: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
 
     //if no items in checkedlist && no items passed in, default to normal context menu behavior
     if (!uuidsToCopy.length) uuidsToCopy.push(data.uuid);
@@ -437,13 +437,13 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
     }
 
     async function copySingleCollection(copyToProject: CollectionCopyResource) {
-        const newName = data.isSingle || collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
+        const newName = data.fromContextMenu || collectionsToCopy.length === 1 ? data.name : `Copy of: ${copyToProject.name}`;
         try {
             const collection = await dispatch<any>(
                 collectionCopyActions.copyCollection({
                     ...copyToProject,
                     name: newName,
-                    isSingle: collectionsToCopy.length === 1 ? true : data.isSingle,
+                    fromContextMenu: collectionsToCopy.length === 1 ? true : data.fromContextMenu,
                 })
             );
             if (copyToProject && collection) {
@@ -475,7 +475,7 @@ export const moveCollection =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const checkedList = getState().multiselect.checkedList;
-        const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
+        const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
 
         //if no items in checkedlist && no items passed in, default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -597,7 +597,7 @@ export const moveProcess =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const checkedList = getState().multiselect.checkedList;
-        const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
+        const uuidsToMove: string[] = data.fromContextMenu ? [data.uuid] : selectedToArray(checkedList);
 
         //if no items in checkedlist && no items passed in, default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -831,7 +831,7 @@ const groupContentsHandlers = unionize(groupContentsHandlersRecord);
 
 type GroupContentsHandler = UnionOf<typeof groupContentsHandlers>;
 
-type CollectionCopyResource = Resource & { name: string; isSingle: boolean };
+type CollectionCopyResource = Resource & { name: string; fromContextMenu: boolean };
 
 type MoveableResource = Resource & { name: string };
 

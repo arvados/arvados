@@ -52,7 +52,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
 const handleItemClick = memoize(
     (resource: DataProps["resource"], onItemClick: ActionProps["onItemClick"]): ContextMenuProps["onItemClick"] =>
         item => {
-            onItemClick(item, { ...resource, isSingle: true } as ContextMenuResource);
+            onItemClick(item, { ...resource, fromContextMenu: true } as ContextMenuResource);
         }
 );
 
