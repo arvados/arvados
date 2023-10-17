@@ -16,27 +16,21 @@ export const apiClientAuthorizationActionSet: ContextMenuActionSet = [
             name: "Attributes",
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                for (const resource of [...resources]) {
-                    dispatch<any>(openApiClientAuthorizationAttributesDialog(resource.uuid));
-                }
+                    dispatch<any>(openApiClientAuthorizationAttributesDialog(resources[0].uuid));
             },
         },
         {
             name: "API Details",
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                for (const resource of [...resources]) {
-                    dispatch<any>(openAdvancedTabDialog(resource.uuid));
-                }
+                    dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: "Remove",
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                for (const resource of [...resources]) {
-                    dispatch<any>(openApiClientAuthorizationRemoveDialog(resource.uuid));
-                }
+                    dispatch<any>(openApiClientAuthorizationRemoveDialog(resources[0].uuid));
             },
         },
     ],

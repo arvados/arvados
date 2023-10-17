@@ -13,21 +13,21 @@ export const sshKeyActionSet: ContextMenuActionSet = [
             name: 'Attributes',
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openSshKeyAttributesDialog(resource.uuid)));
+                dispatch<any>(openSshKeyAttributesDialog(resources[0].uuid));
             },
         },
         {
             name: 'API Details',
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: 'Remove',
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openSshKeyRemoveDialog(resource.uuid)));
+                dispatch<any>(openSshKeyRemoveDialog(resources[0].uuid));
             },
         },
     ],

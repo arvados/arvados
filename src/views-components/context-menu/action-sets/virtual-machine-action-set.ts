@@ -13,21 +13,21 @@ export const virtualMachineActionSet: ContextMenuActionSet = [
             name: 'Attributes',
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openVirtualMachineAttributes(resource.uuid)));
+                dispatch<any>(openVirtualMachineAttributes(resources[0].uuid));
             },
         },
         {
             name: 'API Details',
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: 'Remove',
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openRemoveVirtualMachineDialog(resource.uuid)));
+                dispatch<any>(openRemoveVirtualMachineDialog(resources[0].uuid));
             },
         },
     ],

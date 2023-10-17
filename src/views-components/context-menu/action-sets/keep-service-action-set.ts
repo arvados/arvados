@@ -13,21 +13,21 @@ export const keepServiceActionSet: ContextMenuActionSet = [
             name: 'Attributes',
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openKeepServiceAttributesDialog(resource.uuid)));
+                 dispatch<any>(openKeepServiceAttributesDialog(resources[0].uuid));
             },
         },
         {
             name: 'API Details',
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: 'Remove',
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openKeepServiceRemoveDialog(resource.uuid)));
+                 dispatch<any>(openKeepServiceRemoveDialog(resources[0].uuid));
             },
         },
     ],

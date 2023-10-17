@@ -32,28 +32,28 @@ export const userActionSet: ContextMenuActionSet = [
             name: 'Attributes',
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openUserAttributes(resource.uuid)));
+                dispatch<any>(openUserAttributes(resources[0].uuid));
             },
         },
         {
             name: 'Project',
             icon: ProjectIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openUserProjects(resource.uuid)));
+                dispatch<any>(openUserProjects(resources[0].uuid));
             },
         },
         {
             name: 'API Details',
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: 'Account Settings',
             icon: UserPanelIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(navigateToUserProfile(resource.uuid)));
+                dispatch<any>(navigateToUserProfile(resources[0].uuid));
             },
             filters: [needsUserProfileLink],
         },
@@ -63,7 +63,7 @@ export const userActionSet: ContextMenuActionSet = [
             name: 'Activate User',
             icon: ActiveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openActivateDialog(resource.uuid)));
+                dispatch<any>(openActivateDialog(resources[0].uuid));
             },
             filters: [isAdmin, canActivateUser],
         },
@@ -71,7 +71,7 @@ export const userActionSet: ContextMenuActionSet = [
             name: 'Setup User',
             icon: AdminMenuIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openSetupDialog(resource.uuid)));
+                dispatch<any>(openSetupDialog(resources[0].uuid));
             },
             filters: [isAdmin, canSetupUser],
         },
@@ -79,7 +79,7 @@ export const userActionSet: ContextMenuActionSet = [
             name: 'Deactivate User',
             icon: DeactivateUserIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openDeactivateDialog(resource.uuid)));
+                dispatch<any>(openDeactivateDialog(resources[0].uuid));
             },
             filters: [isAdmin, canDeactivateUser],
         },
@@ -87,7 +87,7 @@ export const userActionSet: ContextMenuActionSet = [
             name: 'Login As User',
             icon: LoginAsIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(loginAs(resource.uuid)));
+                dispatch<any>(loginAs(resources[0].uuid));
             },
             filters: [isAdmin, isOtherUser],
         },

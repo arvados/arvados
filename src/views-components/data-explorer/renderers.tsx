@@ -521,7 +521,6 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
             color="primary"
             style={{ cursor: "pointer" }}
             onClick={() => {
-                console.log(item);
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
                     ? dispatch<any>(navigateToGroupDetails(item.uuid))
                     : dispatch<any>(navigateTo(item.uuid));

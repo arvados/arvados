@@ -13,28 +13,28 @@ export const groupActionSet: ContextMenuActionSet = [
             name: 'Rename',
             icon: RenameIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openGroupUpdateDialog(resource)));
+                dispatch<any>(openGroupUpdateDialog(resources[0]))
             },
         },
         {
             name: 'Attributes',
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openGroupAttributes(resource.uuid)));
+                dispatch<any>(openGroupAttributes(resources[0].uuid))
             },
         },
         {
             name: 'API Details',
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: 'Remove',
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openRemoveGroupDialog(resource.uuid)));
+                dispatch<any>(openRemoveGroupDialog(resources[0].uuid));
             },
         },
     ],

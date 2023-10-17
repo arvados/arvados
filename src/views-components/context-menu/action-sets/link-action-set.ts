@@ -13,21 +13,21 @@ export const linkActionSet: ContextMenuActionSet = [
             name: 'Attributes',
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openLinkAttributesDialog(resource.uuid)));
+                 dispatch<any>(openLinkAttributesDialog(resources[0].uuid));
             },
         },
         {
             name: 'API Details',
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
             name: 'Remove',
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openLinkRemoveDialog(resource.uuid)));
+                 dispatch<any>(openLinkRemoveDialog(resources[0].uuid));
             },
         },
     ],

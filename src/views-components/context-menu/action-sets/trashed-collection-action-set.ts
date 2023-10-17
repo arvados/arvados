@@ -28,7 +28,7 @@ export const trashedCollectionActionSet: ContextMenuActionSet = [
             icon: AdvancedIcon,
             name: 'API Details',
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
