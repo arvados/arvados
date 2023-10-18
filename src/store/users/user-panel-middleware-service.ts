@@ -70,6 +70,9 @@ const getOrder = (dataExplorer: DataExplorer) => {
         } else {
             order.addOrder(sortDirection, sortColumn.sort.field);
         }
+
+        // Use createdAt as a secondary sort column so we break ties consistently.
+        order.addOrder(OrderDirection.DESC, "createdAt");
     }
     return order.getOrder();
 };
