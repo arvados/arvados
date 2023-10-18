@@ -129,14 +129,20 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
         case containerRequest.containerUuid && !container:
             return ProcessStatus.UNKNOWN;
 
+        case containerRequest.state === ContainerRequestState.UNCOMMITTED:
+            return ProcessStatus.DRAFT;
+
+        case containerRequest.state === ContainerRequestState.FINAL &&
+            container?.state === ContainerState.RUNNING:
+            // It's right about to be completed but we haven't
+            // gotten the updated container record yet
+            return ProcessStatus.RUNNING;
+
         case containerRequest.state === ContainerRequestState.FINAL &&
             container?.state !== ContainerState.COMPLETE:
             // Request was finalized before its container started (or the
             // container was cancelled)
             return ProcessStatus.CANCELLED;
-
-        case containerRequest.state === ContainerRequestState.UNCOMMITTED:
-            return ProcessStatus.DRAFT;
 
         case container && container.state === ContainerState.COMPLETE:
             if (container?.exitCode === 0) {

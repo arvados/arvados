@@ -33,7 +33,8 @@ export abstract class DataExplorerMiddlewareService {
 
     abstract requestItems(
         api: MiddlewareAPI<Dispatch, RootState>,
-        criteriaChanged?: boolean
+        criteriaChanged?: boolean,
+        background?: boolean
     ): Promise<void>;
 }
 
