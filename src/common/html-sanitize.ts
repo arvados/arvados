@@ -41,9 +41,11 @@ const domPurifyConfig: TDomPurifyConfig = {
         'sub',
         'sup',
         'ul',
+        'span',
+        'section'
     ],
     ALLOWED_ATTR: ['src', 'width', 'height', 'href', 'alt', 'title', 'style' ],
 };
 
-export const sanitizeHTML = (dirtyInput: string): string => DOMPurify.sanitize(dirtyInput, domPurifyConfig);
+export const sanitizeHTML = (dirtyString: string): string => DOMPurify.sanitize(dirtyString, domPurifyConfig);
 
