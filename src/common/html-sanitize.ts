@@ -37,12 +37,12 @@ const domPurifyConfig: TDomPurifyConfig = {
         'pre',
         's',
         'del',
+        'section',
+        'span',
         'strong',
         'sub',
         'sup',
         'ul',
-        'span',
-        'section'
     ],
     ALLOWED_ATTR: ['src', 'width', 'height', 'href', 'alt', 'title', 'style' ],
 };
