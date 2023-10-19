@@ -38,6 +38,7 @@ import ruamel.yaml as yaml
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
                      trim_anonymous_location, remove_redundant_fields, discover_secondary_files,
                      make_builder, arvados_jobs_image, FileUpdates)
+from .arvcontainer import RunnerContainer
 from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool, set_cluster_target
 from ._version import __version__
@@ -147,7 +148,7 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info,
 
 
 def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
-    if s.startswith("keep:"):
+    if s.startswith("keep:") or s.startswith("arvwf:"):
         return s
 
     uri = urlexpander(s, baseuri)
@@ -616,17 +617,8 @@ class ArvadosWorkflow(Workflow):
         super(ArvadosWorkflow, self).__init__(toolpath_object, self.loadingContext)
         self.cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
 
-    def job(self, joborder, output_callback, runtimeContext):
 
-        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext, self.metadata)
-        runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
-
-        req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
-        if not req:
-            return super(ArvadosWorkflow, self).job(joborder, output_callback, runtimeContext)
-
-        # RunInSingleContainer is true
-
+    def runInSingleContainer(self, joborder, output_callback, runtimeContext, builder):
         with SourceLine(self.tool, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
             if "id" not in self.tool:
                 raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
@@ -788,6 +780,51 @@ class ArvadosWorkflow(Workflow):
             "id": "#"
         })
         return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
+
+
+    def separateRunner(self, joborder, output_callback, runtimeContext, req, builder):
+
+        name = runtimeContext.name
+
+        rpn = req.get("runnerProcessName")
+        if rpn:
+            name = builder.do_eval(rpn)
+
+        return RunnerContainer(self.arvrunner,
+                               self,
+                               self.loadingContext,
+                               runtimeContext.enable_reuse,
+                               None,
+                               None,
+                               submit_runner_ram=runtimeContext.submit_runner_ram,
+                               name=name,
+                               on_error=runtimeContext.on_error,
+                               submit_runner_image=runtimeContext.submit_runner_image,
+                               intermediate_output_ttl=runtimeContext.intermediate_output_ttl,
+                               merged_map=None,
+                               priority=runtimeContext.priority,
+                               secret_store=self.arvrunner.secret_store,
+                               collection_cache_size=runtimeContext.collection_cache_size,
+                               collection_cache_is_default=self.arvrunner.should_estimate_cache_size,
+                               git_info=runtimeContext.git_info,
+                               reuse_runner=True).job(joborder, output_callback, runtimeContext)
+
+
+    def job(self, joborder, output_callback, runtimeContext):
+
+        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext, self.metadata)
+        runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
+
+        req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
+        if req:
+            return self.runInSingleContainer(joborder, output_callback, runtimeContext, builder)
+
+        req, _ = self.get_requirement("http://arvados.org/cwl#SeparateRunner")
+        if req:
+            return self.separateRunner(joborder, output_callback, runtimeContext, req, builder)
+
+        return super(ArvadosWorkflow, self).job(joborder, output_callback, runtimeContext)
+
 
     def make_workflow_step(self,
                            toolpath_object,      # type: Dict[Text, Any]

@@ -603,6 +603,8 @@ The 'jobs' API is no longer supported.
                 if git_info[g]:
                     logger.info("  %s: %s", g.split("#", 1)[1], git_info[g])
 
+        runtimeContext.git_info = git_info
+
         workbench1 = self.api.config()["Services"]["Workbench1"]["ExternalURL"]
         workbench2 = self.api.config()["Services"]["Workbench2"]["ExternalURL"]
         controller = self.api.config()["Services"]["Controller"]["ExternalURL"]
@@ -874,7 +876,8 @@ The 'jobs' API is no longer supported.
                     if (self.task_queue.in_flight + len(self.processes)) > 0:
                         self.workflow_eval_lock.wait(3)
                     else:
-                        logger.error("Workflow is deadlocked, no runnable processes and not waiting on any pending processes.")
+                        if self.final_status is None:
+                            logger.error("Workflow is deadlocked, no runnable processes and not waiting on any pending processes.")
                         break
 
                 if self.stop_polling.is_set():

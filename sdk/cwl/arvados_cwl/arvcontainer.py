@@ -593,7 +593,7 @@ class RunnerContainer(Runner):
                 "ram": 1024*1024 * (math.ceil(self.submit_runner_ram) + math.ceil(self.collection_cache_size)),
                 "API": True
             },
-            "use_existing": False, # Never reuse the runner container - see #15497.
+            "use_existing": self.reuse_runner,
             "properties": {}
         }
 
@@ -617,6 +617,8 @@ class RunnerContainer(Runner):
                 "content": packed
             }
             container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
+        elif self.embedded_tool.tool.get("id", "").startswith("file:"):
+            raise WorkflowException("Tool id '%s' is a local file but expected keep: or arvwf:" % self.embedded_tool.tool.get("id"))
         else:
             main = self.loadingContext.loader.idx["_:main"]
             if main.get("id") == "_:main":
