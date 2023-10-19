@@ -215,30 +215,11 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
                 description: res.description,
                 outputUuid: res.outputUuid || "",
                 workflowUuid: res.properties.template_uuid || "",
-                menuKind: ContextMenuKind.PROCESS_RESOURCE,
+                menuKind: isProcessCancelable(process) ? ContextMenuKind.RUNNING_PROCESS_RESOURCE : ContextMenuKind.PROCESS_RESOURCE
             })
         );
     }
 };
-
-export const openRunningProcessContextMenu =
-    (event: React.MouseEvent<HTMLElement>, process: Process) => (dispatch: Dispatch, getState: () => RootState) => {
-        const res = getResource<ProcessResource>(process.containerRequest.uuid)(getState().resources);
-        if (res) {
-            dispatch<any>(
-                openContextMenu(event, {
-                    uuid: res.uuid,
-                    ownerUuid: res.ownerUuid,
-                    kind: ResourceKind.PROCESS,
-                    name: res.name,
-                    description: res.description,
-                    outputUuid: res.outputUuid || "",
-                    workflowUuid: res.properties.template_uuid || "",
-                    menuKind: ContextMenuKind.RUNNING_PROCESS_RESOURCE,
-                })
-            );
-        }
-    };
 
 export const openPermissionEditContextMenu =
     (event: React.MouseEvent<HTMLElement>, link: LinkResource) => (dispatch: Dispatch, getState: () => RootState) => {

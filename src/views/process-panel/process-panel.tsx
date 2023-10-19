@@ -6,7 +6,7 @@ import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { getProcess, getSubprocesses, Process, getProcessStatus } from "store/processes/process";
 import { Dispatch } from "redux";
-import { openProcessContextMenu, openRunningProcessContextMenu } from "store/context-menu/context-menu-actions";
+import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from "./process-panel-root";
 import { getProcessPanelCurrentUuid, ProcessPanel as ProcessPanelState } from "store/process-panel/process-panel";
 import { groupBy } from "lodash";
@@ -19,7 +19,6 @@ import {
     loadNodeJson,
 } from "store/process-panel/process-panel-actions";
 import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from "store/processes/processes-actions";
-import { isProcessCancelable } from "store/processes/process";
 import { navigateToLogCollection, pollProcessLogs, setProcessLogsPanelFilter } from "store/process-logs-panel/process-logs-panel-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
@@ -52,10 +51,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
         );
     },
     onContextMenu: (event, process) => {
-        // dispatch<any>(openProcessContextMenu(event, process));
-        if (process && isProcessCancelable(process)) {
-            dispatch<any>(openRunningProcessContextMenu(event, process));
-        } else if (process) {
+        if (process) {
             dispatch<any>(openProcessContextMenu(event, process));
         }
     },

@@ -122,8 +122,8 @@ export const runningProcessResourceActionSet = [
         {
             name: "CANCEL",
             icon: StopIcon,
-            execute: (dispatch, resource) => {
-                dispatch(cancelRunningWorkflow(resource.uuid));
+            execute: (dispatch, resources) => {
+                dispatch(cancelRunningWorkflow(resources[0].uuid));
             },
         },
     ],

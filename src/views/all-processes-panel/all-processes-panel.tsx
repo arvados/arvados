@@ -22,14 +22,14 @@ import {
     ResourceCreatedAtDate,
 } from "views-components/data-explorer/renderers";
 import { ProcessIcon } from "components/icon/icon";
-import { openProcessContextMenu, openRunningProcessContextMenu } from "store/context-menu/context-menu-actions";
+import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { navigateTo } from "store/navigation/navigation-action";
 import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 import { RootState } from "store/store";
 import { createTree } from "models/tree";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
-import { getProcess, isProcessCancelable } from "store/processes/process";
+import { getProcess } from "store/processes/process";
 import { ResourcesState } from "store/resources/resources";
 
 type CssRules = "toolbar" | "button" | "root";
@@ -132,9 +132,7 @@ export const AllProcessesPanel = withStyles(styles)(
         class extends React.Component<AllProcessesPanelProps> {
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const process = getProcess(resourceUuid)(this.props.resources);
-                if (process && isProcessCancelable(process)) {
-                    this.props.dispatch<any>(openRunningProcessContextMenu(event, process));
-                } else if (process) {
+                if (process) {
                     this.props.dispatch<any>(openProcessContextMenu(event, process));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
