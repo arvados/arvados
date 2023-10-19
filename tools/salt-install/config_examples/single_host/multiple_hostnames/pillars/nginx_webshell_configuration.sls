@@ -55,7 +55,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: extra_custom_certs_file_copy_arvados-webshell.pem
+          file: extra_custom_certs_webshell_cert_file_copy
         config:
           - server:
             - server_name: webshell.__CLUSTER__.__DOMAIN__

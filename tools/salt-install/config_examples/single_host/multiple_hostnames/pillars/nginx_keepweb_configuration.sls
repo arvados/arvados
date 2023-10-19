@@ -39,7 +39,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: extra_custom_certs_file_copy_arvados-{{ vh }}.pem
+          file: extra_custom_certs_{{ vh }}_cert_file_copy
         config:
           - server:
             - server_name: {{ vh }}.__CLUSTER__.__DOMAIN__

@@ -676,7 +676,7 @@ if [ -z "${ROLES:-}" ]; then
       grep -q ${CERT_NAME} ${P_DIR}/extra_custom_certs.sls || echo "  - ${CERT_NAME}" >> ${P_DIR}/extra_custom_certs.sls
 
       # As the pillar differs whether we use LE or custom certs, we need to do a final edition on them
-      sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${CERT_NAME}.pem/g;
+      sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${CERT_NAME}_cert_file_copy/g;
               s#__CERT_PEM__#/etc/nginx/ssl/arvados-${CERT_NAME}.pem#g;
               s#__CERT_KEY__#/etc/nginx/ssl/arvados-${CERT_NAME}.key#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
@@ -766,7 +766,7 @@ else
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
           for SVC in grafana prometheus; do
-            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${SVC}.pem/g;
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${SVC}_cert_file_copy/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${SVC}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${SVC}.key#g" \
               ${P_DIR}/nginx_${SVC}_configuration.sls
@@ -804,7 +804,7 @@ else
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
-          sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+          sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${R}_cert_file_copy/g;
                   s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
                   s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
             ${P_DIR}/nginx_${R}_configuration.sls
@@ -860,7 +860,7 @@ else
             ${P_DIR}/nginx_${R}_configuration.sls
           else
             grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
-            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${R}_cert_file_copy/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
             ${P_DIR}/nginx_${R}_configuration.sls
@@ -949,14 +949,14 @@ else
           # Special case for keepweb
           if [ ${R} = "keepweb" ]; then
             for kwsub in download collections; do
-              sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${kwsub}.pem/g;
+              sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${kwsub}_cert_file_copy/g;
                       s#__CERT_PEM__#/etc/nginx/ssl/arvados-${kwsub}.pem#g;
                       s#__CERT_KEY__#/etc/nginx/ssl/arvados-${kwsub}.key#g" \
               ${P_DIR}/nginx_${kwsub}_configuration.sls
               grep -q ${kwsub} ${P_DIR}/extra_custom_certs.sls || echo "  - ${kwsub}" >> ${P_DIR}/extra_custom_certs.sls
             done
           else
-            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${R}_cert_file_copy/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
             ${P_DIR}/nginx_${R}_configuration.sls

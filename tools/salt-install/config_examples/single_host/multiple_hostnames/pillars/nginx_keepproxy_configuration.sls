@@ -33,7 +33,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: extra_custom_certs_file_copy_arvados-keepproxy.pem
+          file: extra_custom_certs_keepproxy_cert_file_copy
         config:
           - server:
             - server_name: keep.__CLUSTER__.__DOMAIN__
