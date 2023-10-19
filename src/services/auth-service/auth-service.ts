@@ -35,6 +35,8 @@ export interface UserDetailsResponse {
     is_active: boolean;
     username: string;
     prefs: UserPrefs;
+    can_write: boolean;
+    can_manage: boolean;
 }
 
 export class AuthService {
@@ -146,6 +148,8 @@ export class AuthService {
                     isAdmin: resp.data.is_admin,
                     isActive: resp.data.is_active,
                     username: resp.data.username,
+                    canWrite: resp.data.can_write,
+                    canManage: resp.data.can_manage,
                     prefs
                 };
             })

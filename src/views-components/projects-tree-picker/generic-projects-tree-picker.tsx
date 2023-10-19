@@ -21,7 +21,9 @@ import { CollectionFileType } from 'models/collection-file';
 type PickedTreePickerProps = Pick<TreePickerProps<ProjectsTreePickerItem>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 export interface ProjectsTreePickerDataProps {
+    cascadeSelection: boolean;
     includeCollections?: boolean;
+    includeDirectories?: boolean;
     includeFiles?: boolean;
     rootItemIcon: IconType;
     showSelection?: boolean;
@@ -29,17 +31,17 @@ export interface ProjectsTreePickerDataProps {
     disableActivation?: string[];
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string,
-        includeCollections?: boolean, includeFiles?: boolean, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) => void;
+        includeCollections?: boolean, includeDirectories?: boolean, includeFiles?: boolean, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) => void;
 }
 
 export type ProjectsTreePickerProps = ProjectsTreePickerDataProps & Partial<PickedTreePickerProps>;
 
-const mapStateToProps = (_: any, { rootItemIcon, showSelection }: ProjectsTreePickerProps) => ({
+const mapStateToProps = (_: any, { rootItemIcon, showSelection, cascadeSelection }: ProjectsTreePickerProps) => ({
     render: renderTreeItem(rootItemIcon),
-    showSelection: isSelectionVisible(showSelection),
+    showSelection: isSelectionVisible(showSelection, cascadeSelection),
 });
 
-const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeFiles, relatedTreePickers, options, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollections, includeDirectories, includeFiles, relatedTreePickers, options, ...props }: ProjectsTreePickerProps): PickedTreePickerProps => ({
     onContextMenu: () => { return; },
     toggleItemActive: (event, item, pickerId) => {
 
@@ -59,18 +61,18 @@ const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollectio
             if ('kind' in data) {
                 dispatch<any>(
                     data.kind === ResourceKind.COLLECTION
-                        ? loadCollection(id, pickerId)
-                        : loadProject({ id, pickerId, includeCollections, includeFiles, options })
+                        ? loadCollection(id, pickerId, includeDirectories, includeFiles)
+                        : loadProject({ id, pickerId, includeCollections, includeDirectories, includeFiles, options })
                 );
             } else if (!('type' in data) && loadRootItem) {
-                loadRootItem(item as TreeItem<ProjectsTreePickerRootItem>, pickerId, includeCollections, includeFiles, options);
+                loadRootItem(item as TreeItem<ProjectsTreePickerRootItem>, pickerId, includeCollections, includeDirectories, includeFiles, options);
             }
         } else if (status === TreeItemStatus.LOADED) {
             dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
         }
     },
     toggleItemSelection: (event, item, pickerId) => {
-        dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: item.id, pickerId }));
+        dispatch<any>(treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: item.id, pickerId, cascade: props.cascadeSelection }));
         if (props.toggleItemSelection) {
             props.toggleItemSelection(event, item, pickerId);
         }
@@ -107,11 +109,14 @@ const getProjectPickerIcon = ({ data }: TreeItem<ProjectsTreePickerItem>, rootIc
     }
 };
 
-const isSelectionVisible = (shouldBeVisible?: boolean) =>
-    ({ status, items }: TreeItem<ProjectsTreePickerItem>): boolean => {
+const isSelectionVisible = (shouldBeVisible: boolean | undefined, cascadeSelection: boolean) =>
+    ({ status, items, data }: TreeItem<ProjectsTreePickerItem>): boolean => {
         if (shouldBeVisible) {
-            if (items && items.length > 0) {
-                return items.every(isSelectionVisible(shouldBeVisible));
+            if (!cascadeSelection && 'kind' in data && data.kind === ResourceKind.COLLECTION) {
+                // In non-casecade mode collections are selectable without being loaded
+                return true;
+            } else if (items && items.length > 0) {
+                return items.every(isSelectionVisible(shouldBeVisible, cascadeSelection));
             }
             return status === TreeItemStatus.LOADED;
         }

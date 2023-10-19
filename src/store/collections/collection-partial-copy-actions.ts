@@ -3,84 +3,106 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { difference } from "lodash";
 import { RootState } from 'store/store';
-import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
+import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { ServiceRepository } from 'services/services';
-import { filterCollectionFilesBySelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
+import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
+import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
+import { updateResources } from 'store/resources/resources-actions';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { CollectionResource } from 'models/collection';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';
+export const COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS = 'COLLECTION_PARTIAL_COPY_TO_SEPARATE_DIALOG';
 
-export interface CollectionPartialCopyFormData {
+export interface CollectionPartialCopyToNewCollectionFormData {
     name: string;
     description: string;
     projectUuid: string;
 }
 
-export interface CollectionPartialCopyToSelectedCollectionFormData {
-    collectionUuid: string;
+export interface CollectionPartialCopyToExistingCollectionFormData {
+    destination: FileOperationLocation;
 }
 
-export const openCollectionPartialCopyDialog = () =>
+export interface CollectionPartialCopyToSeparateCollectionsFormData {
+    name: string;
+    projectUuid: string;
+}
+
+export const openCollectionPartialCopyToNewCollectionDialog = (resource: ContextMenuResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
-            const initialData = {
-                name: `Files extracted from: ${currentCollection.name}`,
-                description: currentCollection.description,
-                projectUuid: undefined
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialData));
-            dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_COPY_FORM_NAME));
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: {} }));
+        const sourceCollection = getState().collectionPanel.item;
+
+        if (sourceCollection) {
+            openCopyToNewDialog(dispatch, sourceCollection, [resource]);
         }
     };
 
-export const copyCollectionPartial = ({ name, description, projectUuid }: CollectionPartialCopyFormData) =>
+export const openCollectionPartialCopyMultipleToNewCollectionDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const sourceCollection = getState().collectionPanel.item;
+        const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
+
+        if (sourceCollection && selectedItems.length) {
+            openCopyToNewDialog(dispatch, sourceCollection, selectedItems);
+        }
+    };
+
+const openCopyToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
+    // Get selected files
+    const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
+    // Populate form initial state
+    const initialFormData = {
+        name: `Files extracted from: ${sourceCollection.name}`,
+        description: sourceCollection.description,
+        projectUuid: undefined
+    };
+    dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialFormData));
+    dispatch<any>(resetPickerProjectTree());
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: collectionFileSelection }));
+};
+
+export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToNewCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
-        const state = getState();
-        const currentCollection = state.collectionPanel.item;
-        if (currentCollection) {
+        if (fileSelection.collection) {
             try {
+                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
-                const collectionManifestText = await services.collectionService.get(currentCollection.uuid, undefined, ['manifestText']);
-                const collectionCopy = {
-                    name,
-                    description,
-                    ownerUuid: projectUuid,
-                    uuid: undefined,
-                    manifestText: collectionManifestText.manifestText,
-                };
-                const newCollection = await services.collectionService.create(collectionCopy);
-                const copiedFiles = await services.collectionService.files(newCollection.uuid);
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true).map(file => file.id);
-                const filesToDelete = copiedFiles.map(({ id }) => id).filter(file => {
-                    return !paths.find(path => path.indexOf(file.replace(newCollection.uuid, '')) > -1);
-                });
-                await services.collectionService.deleteFiles(
-                    newCollection.uuid,
-                    filesToDelete
+
+                // Copy files
+                const updatedCollection = await services.collectionService.copyFiles(
+                    fileSelection.collection.portableDataHash,
+                    fileSelection.selectedPaths,
+                    {
+                        name: formData.name,
+                        description: formData.description,
+                        ownerUuid: formData.projectUuid,
+                        uuid: undefined,
+                    },
+                    '/',
+                    false
                 );
+                dispatch(updateResources([updatedCollection]));
+                dispatch<any>(navigateTo(updatedCollection.uuid));
+
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'New collection created.',
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                    dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME, { name: 'Collection with this name already exists.' } as FormErrors));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection with this name already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -88,70 +110,143 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+            } finally {
+                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
     };
 
-export const openCollectionPartialCopyToSelectedCollectionDialog = () =>
+export const openCollectionPartialCopyToExistingCollectionDialog = (resource: ContextMenuResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
-            const initialData = {
-                collectionUuid: ''
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, initialData));
-            dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: {} }));
+        const sourceCollection = getState().collectionPanel.item;
+
+        if (sourceCollection) {
+            openCopyToExistingDialog(dispatch, sourceCollection, [resource]);
         }
     };
 
-export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: CollectionPartialCopyToSelectedCollectionFormData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
-        const state = getState();
-        const currentCollection = state.collectionPanel.item;
+export const openCollectionPartialCopyMultipleToExistingCollectionDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const sourceCollection = getState().collectionPanel.item;
+        const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
 
-        if (currentCollection && !currentCollection.manifestText) {
-            const fetchedCurrentCollection = await services.collectionService.get(currentCollection.uuid, undefined, ['manifestText']);
-            currentCollection.manifestText = fetchedCurrentCollection.manifestText;
-            currentCollection.unsignedManifestText = fetchedCurrentCollection.unsignedManifestText;
+        if (sourceCollection && selectedItems.length) {
+            openCopyToExistingDialog(dispatch, sourceCollection, selectedItems);
         }
+    };
 
-        if (currentCollection) {
+const openCopyToExistingDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
+    // Get selected files
+    const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
+    // Populate form initial state
+    const initialFormData = {
+        destination: {uuid: sourceCollection.uuid, destinationPath: ''}
+    };
+    dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, initialFormData));
+    dispatch<any>(resetPickerProjectTree());
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: collectionFileSelection }));
+}
+
+export const copyCollectionPartialToExistingCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToExistingCollectionFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
+                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
-                const selectedCollection = await services.collectionService.get(collectionUuid);
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
-                const pathsToRemove = paths.filter(path => {
-                    const a = path.split('/');
-                    const fileExistsInSelectedCollection = selectedCollection.manifestText.includes(a[1]);
-                    if (fileExistsInSelectedCollection) {
-                        return path;
-                    } else {
-                        return null;
-                    }
-                });
-                const diffPathToRemove = difference(paths, pathsToRemove);
-                await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
-                const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid, undefined, ['uuid', 'manifestText']);
-                await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${(currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText) || ''}` });
-                await services.collectionService.deleteFiles(collectionWithDeletedFiles.uuid, diffPathToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
+
+                // Copy files
+                const updatedCollection = await services.collectionService.copyFiles(
+                    fileSelection.collection.portableDataHash,
+                    fileSelection.selectedPaths,
+                    {uuid: formData.destination.uuid},
+                    formData.destination.subpath || '/',
+                    false
+                );
+                dispatch(updateResources([updatedCollection]));
+
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Files has been copied to selected collection.',
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+            } finally {
+                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
+            }
+        }
+    };
+
+export const openCollectionPartialCopyToSeparateCollectionsDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const sourceCollection = getState().collectionPanel.item;
+        const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
+
+        if (sourceCollection && selectedItems.length) {
+            // Get selected files
+            const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
+            // Populate form initial state
+            const initialFormData = {
+                name: sourceCollection.name,
+                projectUuid: undefined
+            };
+            dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, initialFormData));
+            dispatch<any>(resetPickerProjectTree());
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: collectionFileSelection }));
+        }
+    };
+
+export const copyCollectionPartialToSeparateCollections = (fileSelection: CollectionFileSelection, formData: CollectionPartialCopyToSeparateCollectionsFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (fileSelection.collection) {
+            try {
+                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
+
+                // Copy files
+                const collections = await Promise.all(fileSelection.selectedPaths.map((path) =>
+                    services.collectionService.copyFiles(
+                        fileSelection.collection.portableDataHash,
+                        [path],
+                        {
+                            name: `File copied from collection ${formData.name}${path}`,
+                            ownerUuid: formData.projectUuid,
+                            uuid: undefined,
+                        },
+                        '/',
+                        false
+                    )
+                ));
+                dispatch(updateResources(collections));
+                dispatch<any>(navigateTo(formData.projectUuid));
+
+                dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'New collections created.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }));
+            } catch (e) {
+                const error = getCommonResourceServiceError(e);
+                if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else if (error === CommonResourceServiceError.UNKNOWN) {
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else {
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                }
+            } finally {
+                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             }
         }
     };

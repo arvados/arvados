@@ -106,6 +106,20 @@ describe('Sharing tests', function () {
 
                 cy.contains('Shared with me').click();
 
+                // Test search
+                cy.get('[data-cy=search-input] input').type('readonly');
+                cy.get('main').should('not.contain', mySharedWritableProject.name);
+                cy.get('main').should('contain', mySharedReadonlyProject.name);
+                cy.get('[data-cy=search-input] input').clear();
+
+                // Test filter
+                cy.waitForDom().get('th').contains('Type').click();
+                cy.get('div[role=presentation]').contains('Project').click();
+                cy.waitForDom().get('main table tr td').contains('Project').should('not.exist');
+                cy.get('div[role=presentation]').contains('Project').click();
+                cy.waitForDom().get('div[role=presentation] button').contains('Close').click();
+
+                // Test move to trash
                 cy.get('main').contains(mySharedWritableProject.name).rightclick();
                 cy.get('[data-cy=context-menu]').should('contain', 'Move to trash');
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();

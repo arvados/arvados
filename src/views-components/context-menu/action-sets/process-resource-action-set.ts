@@ -36,8 +36,8 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
     [
         {
             component: ToggleFavoriteAction,
-            execute: (dispatch, resource) => {
-                dispatch<any>(toggleFavorite(resource)).then(() => {
+            execute: (dispatch, resources) => {
+                dispatch<any>(toggleFavorite(resources[0])).then(() => {
                     dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
                 });
             },
@@ -45,23 +45,23 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
         {
             icon: OpenIcon,
             name: "Open in new tab",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openInNewTabAction(resource));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openInNewTabAction(resources[0]));
             },
         },
         {
             icon: ReRunProcessIcon,
             name: "Copy and re-run process",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openCopyProcessDialog(resource));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openCopyProcessDialog(resources[0]));
             },
         },
         {
             icon: OutputIcon,
             name: "Outputs",
-            execute: (dispatch, resource) => {
-                if (resource.outputUuid) {
-                    dispatch<any>(navigateToOutput(resource.outputUuid));
+            execute: (dispatch, resources) => {
+                if (resources[0].outputUuid) {
+                    dispatch<any>(navigateToOutput(resources[0].outputUuid));
                 }
             },
         },
@@ -75,8 +75,8 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
         {
             icon: AdvancedIcon,
             name: "API Details",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openAdvancedTabDialog(resource.uuid));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
     ],
@@ -88,29 +88,29 @@ export const processResourceActionSet: ContextMenuActionSet = [
         {
             icon: RenameIcon,
             name: "Edit process",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openProcessUpdateDialog(resource));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openProcessUpdateDialog(resources[0]));
             },
         },
         {
             icon: ShareIcon,
             name: "Share",
-            execute: (dispatch, { uuid }) => {
-                dispatch<any>(openSharingDialog(uuid));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openSharingDialog(resources[0].uuid));
             },
         },
         {
             icon: MoveToIcon,
             name: "Move to",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openMoveProcessDialog(resource));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openMoveProcessDialog(resources[0]));
             },
         },
         {
             name: "Remove",
             icon: RemoveIcon,
-            execute: (dispatch, resource) => {
-                dispatch<any>(openRemoveProcessDialog(resource.uuid));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
             },
         },
     ],
@@ -135,8 +135,8 @@ export const processResourceAdminActionSet: ContextMenuActionSet = [
         {
             component: TogglePublicFavoriteAction,
             name: "Add to public favorites",
-            execute: (dispatch, resource) => {
-                dispatch<any>(togglePublicFavorite(resource)).then(() => {
+            execute: (dispatch, resources) => {
+                dispatch<any>(togglePublicFavorite(resources[0])).then(() => {
                     dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
                 });
             },
@@ -150,8 +150,8 @@ export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
         {
             component: TogglePublicFavoriteAction,
             name: "Add to public favorites",
-            execute: (dispatch, resource) => {
-                dispatch<any>(togglePublicFavorite(resource)).then(() => {
+            execute: (dispatch, resources) => {
+                dispatch<any>(togglePublicFavorite(resources[0])).then(() => {
                     dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
                 });
             },
@@ -159,8 +159,8 @@ export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
         {
             name: "CANCEL",
             icon: StopIcon,
-            execute: (dispatch, resource) => {
-                dispatch<any>(cancelRunningWorkflow(resource.uuid));
+            execute: (dispatch, resources) => {
+                dispatch<any>(cancelRunningWorkflow(resources[0].uuid));
             },
         },
     ],

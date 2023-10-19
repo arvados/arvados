@@ -83,10 +83,11 @@ describe('auth-actions', () => {
         const config: any = {
             rootUrl: "https://zzzzz.example.com",
             uuidPrefix: "zzzzz",
-            remoteHosts: { },
+            remoteHosts: {},
             apiRevision: 12345678,
             clusterConfig: {
                 Login: { LoginCluster: "" },
+                Workbench: { UserProfileFormFields: {} }
             },
         };
 
@@ -162,6 +163,7 @@ describe('auth-actions', () => {
             apiRevision: 12345678,
             clusterConfig: {
                 Login: { LoginCluster: "zzzz1" },
+                Workbench: { UserProfileFormFields: {} }
             },
         };
 
@@ -226,6 +228,7 @@ describe('auth-actions', () => {
             apiRevision: 12345678,
             clusterConfig: {
                 Login: { LoginCluster: "" },
+                Workbench: { UserProfileFormFields: {} }
             },
         };
 
@@ -249,6 +252,7 @@ describe('auth-actions', () => {
                                 Login: {
                                     LoginCluster: "",
                                 },
+                                Workbench: { UserProfileFormFields: {} }
                             },
                             remoteHosts: {
                                 "xc59z": "xc59z.example.com",
@@ -269,6 +273,7 @@ describe('auth-actions', () => {
                                     "Login": {
                                         "LoginCluster": "",
                                     },
+                                    Workbench: { UserProfileFormFields: {} }
                                 },
                                 "remoteHosts": {
                                     "xc59z": "xc59z.example.com",

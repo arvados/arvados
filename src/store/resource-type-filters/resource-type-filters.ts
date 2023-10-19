@@ -306,7 +306,7 @@ export const buildProcessStatusFilters = (fb: FilterBuilder, activeStatusFilter:
             break;
         }
         case ProcessStatusFilter.QUEUED: {
-            fb.addEqual('container.state', ContainerState.QUEUED, resourcePrefix);
+            fb.addIn('container.state', [ContainerState.QUEUED, ContainerState.LOCKED], resourcePrefix);
             fb.addDistinct('priority', '0', resourcePrefix);
             break;
         }

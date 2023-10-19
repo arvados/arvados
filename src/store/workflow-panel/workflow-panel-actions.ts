@@ -8,14 +8,14 @@ import { ServiceRepository } from 'services/services';
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { propertiesActions } from 'store/properties/properties-actions';
 import { getProperty } from 'store/properties/properties';
-import { navigateToRunProcess } from 'store/navigation/navigation-action';
+import { navigateToRunProcess, navigateTo } from 'store/navigation/navigation-action';
 import {
     goToStep,
     runProcessPanelActions,
     loadPresets,
     getWorkflowRunnerSettings
 } from 'store/run-process-panel/run-process-panel-actions';
-import { snackbarActions } from 'store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
@@ -23,7 +23,6 @@ import { RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-a
 import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
-import { getUserUuid } from "common/getuser";
 import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
@@ -63,9 +62,8 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
             let owner;
             if (ownerUuid) {
                 // Must be writable.
-                const userUuid = getUserUuid(getState());
                 owner = getResource<ProjectResource | UserResource>(ownerUuid)(getState().resources);
-                if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+                if (!owner || !owner.canWrite) {
                     owner = undefined;
                 }
             }
@@ -117,3 +115,11 @@ export const getWorkflowDetails = (state: RootState) => {
     const workflow = workflows.find(workflow => workflow.uuid === uuid);
     return workflow || undefined;
 };
+
+export const deleteWorkflow = (workflowUuid: string, ownerUuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch<any>(navigateTo(ownerUuid));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
+        await services.workflowService.delete(workflowUuid);
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+    };

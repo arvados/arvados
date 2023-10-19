@@ -12,7 +12,7 @@ import { SEARCH_PROJECT_ID } from 'store/tree-picker/tree-picker-actions';
 export const SearchProjectsPicker = connect(() => ({
     rootItemIcon: SearchIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
-    loadRootItem: (_, pickerId, includeCollections, includeFiles, options) => {
-        dispatch<any>(loadProject({ id: SEARCH_PROJECT_ID, pickerId, includeCollections, includeFiles, searchProjects: true, options }));
+    loadRootItem: (_, pickerId, includeCollections, includeDirectories, includeFiles, options) => {
+        dispatch<any>(loadProject({ id: SEARCH_PROJECT_ID, pickerId, includeCollections, includeDirectories, includeFiles, searchProjects: true, options }));
     },
 }))(ProjectsTreePicker);

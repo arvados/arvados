@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
@@ -125,6 +125,7 @@ export interface TreeProps<T> {
     toggleItemActive: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
+    selectedRef?: (node: HTMLDivElement | null) => void;
 
     /**
      * When set to true use radio buttons instead of checkboxes for item selection.
@@ -167,6 +168,7 @@ interface FlatTreeProps {
     showSelection: any;
     useRadioButtons?: boolean;
     handleCheckboxChange: Function;
+    selectedRef?: (node: HTMLDivElement | null) => void;
 }
 
 const FLAT_TREE_ACTIONS = {
@@ -254,7 +256,7 @@ const FlatTree = (props: FlatTreeProps) =>
                             checked={item.selected}
                             className={props.classes.checkbox}
                             color="primary" />}
-                    <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer}>
+                    <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer} ref={item.active ? props.selectedRef : undefined}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
                             <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
                             <span style={{ fontSize: '0.875rem' }}>
@@ -270,98 +272,26 @@ const FlatTree = (props: FlatTreeProps) =>
     </div>;
 
 export const Tree = withStyles(styles)(
-    class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
-        render(): ReactElement<any> {
-            const level = this.props.level ? this.props.level : 0;
-            const { classes, render, items, toggleItemActive, toggleItemOpen, disableRipple, currentItemUuid, useRadioButtons, itemsMap } = this.props;
-            const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
-            const showSelection = typeof this.props.showSelection === 'function'
-                ? this.props.showSelection
-                : () => this.props.showSelection ? true : false;
+    function<T>(props: TreeProps<T> & WithStyles<CssRules>) {
+        const level = props.level ? props.level : 0;
+        const { classes, render, items, toggleItemActive, toggleItemOpen, disableRipple, currentItemUuid, useRadioButtons, itemsMap } = props;
+        const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
+        const showSelection = typeof props.showSelection === 'function'
+            ? props.showSelection
+            : () => props.showSelection ? true : false;
 
-            const { levelIndentation = 20, itemRightPadding = 20 } = this.props;
-            return <List className={list}>
-                {items && items.map((it: TreeItem<T>, idx: number) =>
-                    <div key={`item/${level}/${it.id}`}>
-                        <ListItem button className={listItem}
-                            style={{
-                                paddingLeft: (level + 1) * levelIndentation,
-                                paddingRight: itemRightPadding,
-                            }}
-                            disableRipple={disableRipple}
-                            onClick={event => toggleItemActive(event, it)}
-                            selected={showSelection(it) && it.id === currentItemUuid}
-                            onContextMenu={(event) => this.props.onContextMenu(event, it)}>
-                            {it.status === TreeItemStatus.PENDING ?
-                                <CircularProgress size={10} className={loader} /> : null}
-                            <i onClick={(e) => this.handleToggleItemOpen(it, e)}
-                                className={toggableIconContainer}>
-                                <ListItemIcon className={this.getToggableIconClassNames(it.open, it.active)}>
-                                    {this.getProperArrowAnimation(it.status, it.items!)}
-                                </ListItemIcon>
-                            </i>
-                            {showSelection(it) && !useRadioButtons &&
-                                <Checkbox
-                                    checked={it.selected}
-                                    indeterminate={!it.selected && it.indeterminate}
-                                    className={classes.checkbox}
-                                    color="primary"
-                                    onClick={this.handleCheckboxChange(it)} />}
-                            {showSelection(it) && useRadioButtons &&
-                                <Radio
-                                    checked={it.selected}
-                                    className={classes.checkbox}
-                                    color="primary" />}
-                            <div className={renderContainer}>
-                                {render(it, level)}
-                            </div>
-                        </ListItem>
-                        {
-                            it.open && it.items && it.items.length > 0 &&
-                                it.flatTree ?
-                                <FlatTree
-                                    it={it}
-                                    itemsMap={itemsMap}
-                                    showSelection={showSelection}
-                                    classes={this.props.classes}
-                                    useRadioButtons={useRadioButtons}
-                                    levelIndentation={levelIndentation}
-                                    handleCheckboxChange={this.handleCheckboxChange}
-                                    onContextMenu={this.props.onContextMenu}
-                                    handleToggleItemOpen={this.handleToggleItemOpen}
-                                    toggleItemActive={this.props.toggleItemActive}
-                                    getToggableIconClassNames={this.getToggableIconClassNames}
-                                    getProperArrowAnimation={this.getProperArrowAnimation}
-                                /> :
-                                <Collapse in={it.open} timeout="auto" unmountOnExit>
-                                    <Tree
-                                        showSelection={this.props.showSelection}
-                                        items={it.items}
-                                        render={render}
-                                        disableRipple={disableRipple}
-                                        toggleItemOpen={toggleItemOpen}
-                                        toggleItemActive={toggleItemActive}
-                                        level={level + 1}
-                                        onContextMenu={this.props.onContextMenu}
-                                        toggleItemSelection={this.props.toggleItemSelection} />
-                                </Collapse>
-                        }
-                    </div>)}
-            </List>;
+        const getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
+            return isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon style={{ fontSize: '14px' }} />;
         }
 
-        getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
-            return this.isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon style={{ fontSize: '14px' }} />;
-        }
-
-        isSidePanelIconNotNeeded = (status: string, items: Array<TreeItem<T>>) => {
+        const isSidePanelIconNotNeeded = (status: string, items: Array<TreeItem<T>>) => {
             return status === TreeItemStatus.PENDING ||
                 (status === TreeItemStatus.LOADED && !items) ||
                 (status === TreeItemStatus.LOADED && items && items.length === 0);
         }
 
-        getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {
-            const { iconOpen, iconClose, active, toggableIcon } = this.props.classes;
+        const getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {
+            const { iconOpen, iconClose, active, toggableIcon } = props.classes;
             return classnames(toggableIcon, {
                 [iconOpen]: isOpen,
                 [iconClose]: !isOpen,
@@ -369,8 +299,8 @@ export const Tree = withStyles(styles)(
             });
         }
 
-        handleCheckboxChange = (item: TreeItem<T>) => {
-            const { toggleItemSelection } = this.props;
+        const handleCheckboxChange = (item: TreeItem<T>) => {
+            const { toggleItemSelection } = props;
             return toggleItemSelection
                 ? (event: React.MouseEvent<HTMLElement>) => {
                     event.stopPropagation();
@@ -379,9 +309,92 @@ export const Tree = withStyles(styles)(
                 : undefined;
         }
 
-        handleToggleItemOpen = (item: TreeItem<T>, event: React.MouseEvent<HTMLElement>) => {
+        const handleToggleItemOpen = (item: TreeItem<T>, event: React.MouseEvent<HTMLElement>) => {
             event.stopPropagation();
-            this.props.toggleItemOpen(event, item);
+            props.toggleItemOpen(event, item);
         }
+
+        // Scroll to selected item whenever it changes, accepts selectedRef from props for recursive trees
+        const [cachedSelectedRef, setCachedRef] = useState<HTMLDivElement | null>(null)
+        const selectedRef = props.selectedRef || useCallback((node: HTMLDivElement | null) => {
+            if (node && node.scrollIntoView && node !== cachedSelectedRef) {
+                node.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            setCachedRef(node);
+        }, [cachedSelectedRef]);
+
+        const { levelIndentation = 20, itemRightPadding = 20 } = props;
+        return <List className={list}>
+            {items && items.map((it: TreeItem<T>, idx: number) => {
+                return <div key={`item/${level}/${it.id}`}>
+                    <ListItem button className={listItem}
+                        style={{
+                            paddingLeft: (level + 1) * levelIndentation,
+                            paddingRight: itemRightPadding,
+                        }}
+                        disableRipple={disableRipple}
+                        onClick={event => toggleItemActive(event, it)}
+                        selected={showSelection(it) && it.id === currentItemUuid}
+                        onContextMenu={(event) => props.onContextMenu(event, it)}>
+                        {it.status === TreeItemStatus.PENDING ?
+                            <CircularProgress size={10} className={loader} /> : null}
+                        <i onClick={(e) => handleToggleItemOpen(it, e)}
+                            className={toggableIconContainer}>
+                            <ListItemIcon className={getToggableIconClassNames(it.open, it.active)}>
+                                {getProperArrowAnimation(it.status, it.items!)}
+                            </ListItemIcon>
+                        </i>
+                        {showSelection(it) && !useRadioButtons &&
+                            <Checkbox
+                                checked={it.selected}
+                                indeterminate={!it.selected && it.indeterminate}
+                                className={classes.checkbox}
+                                color="primary"
+                                onClick={handleCheckboxChange(it)} />}
+                        {showSelection(it) && useRadioButtons &&
+                            <Radio
+                                checked={it.selected}
+                                className={classes.checkbox}
+                                color="primary" />}
+                        <div className={renderContainer} ref={!!it.active ? selectedRef : undefined}>
+                            {render(it, level)}
+                        </div>
+                    </ListItem>
+                    {
+                        it.open && it.items && it.items.length > 0 &&
+                            it.flatTree ?
+                            <FlatTree
+                                it={it}
+                                itemsMap={itemsMap}
+                                showSelection={showSelection}
+                                classes={props.classes}
+                                useRadioButtons={useRadioButtons}
+                                levelIndentation={levelIndentation}
+                                handleCheckboxChange={handleCheckboxChange}
+                                onContextMenu={props.onContextMenu}
+                                handleToggleItemOpen={handleToggleItemOpen}
+                                toggleItemActive={props.toggleItemActive}
+                                getToggableIconClassNames={getToggableIconClassNames}
+                                getProperArrowAnimation={getProperArrowAnimation}
+                                selectedRef={selectedRef}
+                            /> :
+                            <Collapse in={it.open} timeout="auto" unmountOnExit>
+                                <Tree
+                                    showSelection={props.showSelection}
+                                    items={it.items}
+                                    render={render}
+                                    disableRipple={disableRipple}
+                                    toggleItemOpen={toggleItemOpen}
+                                    toggleItemActive={toggleItemActive}
+                                    level={level + 1}
+                                    onContextMenu={props.onContextMenu}
+                                    toggleItemSelection={props.toggleItemSelection}
+                                    selectedRef={selectedRef}
+                                />
+                            </Collapse>
+                    }
+                </div>;
+            })}
+        </List>;
     }
 );

@@ -76,6 +76,8 @@ export interface ClusterConfigJSON {
         SiteName: string;
         IdleTimeout: string;
         BannerUUID: string;
+        UserProfileFormFields: {};
+        UserProfileFormMessage: string;
     };
     Login: {
         LoginCluster: string;
@@ -305,7 +307,9 @@ export const mockClusterConfigJSON = (
         SSHHelpHostSuffix: '',
         SiteName: '',
         IdleTimeout: '0s',
-        BannerUUID: ""
+        BannerUUID: "",
+        UserProfileFormFields: {},
+        UserProfileFormMessage: '',
     },
     Login: {
         LoginCluster: '',

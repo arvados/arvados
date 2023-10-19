@@ -53,6 +53,7 @@ export const containerRequestFieldsNoMounts = [
     "container_image",
     "container_uuid",
     "created_at",
+    "cumulative_cost",
     "cwd",
     "description",
     "environment",

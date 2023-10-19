@@ -7,18 +7,21 @@ import { UserService } from '../user-service/user-service';
 import { GroupResource } from 'models/group';
 import { UserResource } from 'models/user';
 import { extractUuidObjectType, ResourceObjectType } from "models/resource";
+import { CollectionService } from "services/collection-service/collection-service";
+import { CollectionResource } from "models/collection";
 
 export class AncestorService {
     constructor(
         private groupsService: GroupsService,
-        private userService: UserService
+        private userService: UserService,
+        private collectionService: CollectionService,
     ) { }
 
-    async ancestors(startUuid: string, endUuid: string): Promise<Array<UserResource | GroupResource>> {
+    async ancestors(startUuid: string, endUuid: string): Promise<Array<UserResource | GroupResource | CollectionResource>> {
         return this._ancestors(startUuid, endUuid);
     }
 
-    private async _ancestors(startUuid: string, endUuid: string, previousUuid = ''): Promise<Array<UserResource | GroupResource>> {
+    private async _ancestors(startUuid: string, endUuid: string, previousUuid = ''): Promise<Array<UserResource | GroupResource | CollectionResource>> {
 
         if (startUuid === previousUuid) {
             return [];
@@ -49,6 +52,8 @@ export class AncestorService {
                 return this.groupsService;
             case ResourceObjectType.USER:
                 return this.userService;
+            case ResourceObjectType.COLLECTION:
+                return this.collectionService;
             default:
                 return undefined;
         }

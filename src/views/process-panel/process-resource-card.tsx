@@ -119,7 +119,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                 <DetailsAttribute label="Cores" value={process.container?.runtimeConstraints.vcpus} />
                             </Grid>
                             <Grid item xs={12}>
-                                <DetailsAttribute label="RAM" value={formatFileSize(process.container?.runtimeConstraints.ram)} />
+                                <DetailsAttribute label="RAM*" value={formatFileSize(process.container?.runtimeConstraints.ram)} />
                             </Grid>
                             <Grid item xs={12}>
                                 <DetailsAttribute label="Disk" value={formatFileSize(diskRequest)} />
@@ -214,6 +214,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                             </Grid>}
                     </Grid>
                 </Grid>
+                <Typography>* RAM available to the program is limited to Requested RAM, not Instance RAM</Typography>
             </CardContent>
         </Card >;
     }

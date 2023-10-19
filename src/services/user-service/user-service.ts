@@ -12,8 +12,7 @@ export class UserService extends CommonResourceService<UserResource> {
     constructor(serverApi: AxiosInstance, actions: ApiActions, readOnlyFields: string[] = []) {
         super(serverApi, "users", actions, readOnlyFields.concat([
             'fullName',
-            'isInvited',
-            'writableBy',
+            'isInvited'
         ]));
     }
 

@@ -103,8 +103,7 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
         const advancedFormValues = getWorkflowRunnerSettings(workflow);
 
         let owner = getResource<ProjectResource | UserResource>(getState().runProcessPanel.processOwnerUuid)(getState().resources);
-        const userUuid = getUserUuid(getState());
-        if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+        if (!owner || !owner.canWrite) {
             owner = undefined;
         }
 
@@ -183,7 +182,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 '/var/lib/cwl/cwl.input.json'
             ],
             outputPath: '/var/spool/cwl',
-            priority: 1,
+            priority: 500,
             outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : `Output from ${basicForm.name}`,
             properties: {
                 template_uuid: selectedWorkflow.uuid,

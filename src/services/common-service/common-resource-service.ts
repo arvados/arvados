@@ -13,6 +13,8 @@ export enum CommonResourceServiceError {
     OWNERSHIP_CYCLE = 'OwnershipCycle',
     MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
     NAME_HAS_ALREADY_BEEN_TAKEN = 'NameHasAlreadyBeenTaken',
+    PERMISSION_ERROR_FORBIDDEN = 'PermissionErrorForbidden',
+    SOURCE_DESTINATION_CANNOT_BE_SAME = 'SourceDestinationCannotBeSame',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -22,14 +24,20 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
         super(serverApi, resourceType, actions, readOnlyFields.concat([
             'uuid',
             'etag',
-            'kind'
+            'kind',
+            'canWrite',
+            'canManage',
+            'createdAt',
+            'modifiedAt',
+            'modifiedByClientUuid',
+            'modifiedByUserUuid'
         ]));
     }
 
     create(data?: Partial<T>, showErrors?: boolean) {
         let payload: any;
         if (data !== undefined) {
-            this.readOnlyFields.forEach( field => delete data[field] );
+            this.readOnlyFields.forEach(field => delete data[field]);
             payload = {
                 [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };
@@ -40,7 +48,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
     update(uuid: string, data: Partial<T>, showErrors?: boolean, select?: string[]) {
         let payload: any;
         if (data !== undefined) {
-            this.readOnlyFields.forEach( field => delete data[field] );
+            this.readOnlyFields.forEach(field => delete data[field]);
             payload = {
                 [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };
@@ -53,7 +61,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
 }
 
 export const getCommonResourceServiceError = (errorResponse: any) => {
-    if ('errors' in errorResponse) {
+    if (errorResponse && 'errors' in errorResponse) {
         const error = errorResponse.errors.join('');
         switch (true) {
             case /UniqueViolation/.test(error):
@@ -64,11 +72,13 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
                 return CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE;
             case /Name has already been taken/.test(error):
                 return CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN;
+            case /403 Forbidden/.test(error):
+                return CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
+            case new RegExp(CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME).test(error):
+                return CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }
     }
     return CommonResourceServiceError.NONE;
 };
-
-

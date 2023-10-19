@@ -39,16 +39,6 @@ const mapStateToProps = (state: RootState): AccountMenuProps => ({
     localCluster: state.auth.localCluster
 });
 
-const wb1URL = (route: string) => {
-    const r = route.replace(/^\//, "");
-    if (r.match(/^(projects|collections)\//)) {
-        return r;
-    } else if (r.match(/^processes\//)) {
-        return r.replace(/^processes/, "container_requests");
-    }
-    return "";
-};
-
 type CssRules = 'link';
 
 const styles: StyleRulesCallback<CssRules> = () => ({
@@ -71,10 +61,6 @@ export const AccountMenuComponent =
             <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
-            <MenuItem>
-                <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
-                    className={classes.link}>
-                    Switch to Workbench v1</a></MenuItem>
         </>;
 
         const reduceItemsFn: (a: React.ReactElement[],
@@ -97,7 +83,7 @@ export const AccountMenuComponent =
                 <MenuItem data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
-		 </MenuItem>
+                </MenuItem>
             </DropdownMenu>
             : null;
     };

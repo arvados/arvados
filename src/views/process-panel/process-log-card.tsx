@@ -15,6 +15,7 @@ import {
     Grid,
     Typography,
 } from '@material-ui/core';
+import { useAsyncInterval } from 'common/use-async-interval';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
     CloseIcon,
@@ -28,7 +29,7 @@ import {
     WordWrapOffIcon,
     WordWrapOnIcon,
 } from 'components/icon/icon';
-import { Process } from 'store/processes/process';
+import { Process, isProcessRunning } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
     FilterOption,
@@ -84,6 +85,7 @@ export interface ProcessLogsCardActionProps {
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
     onCopy: (text: string) => void;
+    pollProcessLogs: (processUuid: string) => Promise<void>;
 }
 
 type ProcessLogsCardProps = ProcessLogsCardDataProps
@@ -94,12 +96,16 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines,
-        onLogFilterChange, navigateToLog, onCopy,
+        onLogFilterChange, navigateToLog, onCopy, pollProcessLogs,
         doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
         const [wordWrap, setWordWrap] = useState<boolean>(true);
         const [fontSize, setFontSize] = useState<number>(3);
         const fontBaseSize = 10;
         const fontStepSize = 1;
+
+        useAsyncInterval(() => (
+            pollProcessLogs(process.containerRequest.uuid)
+        ), isProcessRunning(process) ? 2000 : null);
 
         return <Grid item className={classes.root} xs={12}>
             <Card className={classes.card}>
@@ -184,4 +190,3 @@ export const ProcessLogsCard = withStyles(styles)(
             </Card>
         </Grid >
 });
-

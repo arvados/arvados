@@ -11,7 +11,9 @@ import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-s
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
 import { sortByProperty } from "common/array-utils";
+
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
+
 const mapStateToProps = (state: RootState): DataProps => {
     const { open, position, resource } = state.contextMenu;
 
@@ -42,7 +44,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     onItemClick: (action: ContextMenuAction, resource?: ContextMenuResource) => {
         dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
         if (resource) {
-            action.execute(dispatch, resource);
+            action.execute(dispatch, [resource]);
         }
     },
 });
@@ -50,7 +52,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
 const handleItemClick = memoize(
     (resource: DataProps["resource"], onItemClick: ActionProps["onItemClick"]): ContextMenuProps["onItemClick"] =>
         item => {
-            onItemClick(item, resource);
+            onItemClick(item, { ...resource, fromContextMenu: true } as ContextMenuResource);
         }
 );
 
@@ -87,12 +89,14 @@ export enum ContextMenuKind {
     FAVORITE = "Favorite",
     TRASH = "Trash",
     COLLECTION_FILES = "CollectionFiles",
+    COLLECTION_FILES_MULTIPLE = "CollectionFilesMultiple",
     READONLY_COLLECTION_FILES = "ReadOnlyCollectionFiles",
+    READONLY_COLLECTION_FILES_MULTIPLE = "ReadOnlyCollectionFilesMultiple",
+    COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
     COLLECTION_FILE_ITEM = "CollectionFileItem",
     COLLECTION_DIRECTORY_ITEM = "CollectionDirectoryItem",
     READONLY_COLLECTION_FILE_ITEM = "ReadOnlyCollectionFileItem",
     READONLY_COLLECTION_DIRECTORY_ITEM = "ReadOnlyCollectionDirectoryItem",
-    COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
     COLLECTION = "Collection",
     COLLECTION_ADMIN = "CollectionAdmin",
     READONLY_COLLECTION = "ReadOnlyCollection",
@@ -115,5 +119,6 @@ export enum ContextMenuKind {
     PERMISSION_EDIT = "PermissionEdit",
     LINK = "Link",
     WORKFLOW = "Workflow",
+    READONLY_WORKFLOW = "ReadOnlyWorkflow",
     SEARCH_RESULTS = "SearchResults",
 }

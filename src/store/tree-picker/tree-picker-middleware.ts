@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
+import { Dispatch, MiddlewareAPI } from 'redux';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { Middleware } from "redux";
@@ -37,6 +37,8 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
             isSearchAction = true;
             searchChanged = store.getState().treePickerSearch.collectionFilterValues[pickerId] !== collectionFilterValue;
         },
+
+        REFRESH_TREE_PICKER: refreshPickers(store),
         default: () => { }
     });
 
@@ -62,57 +64,59 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
                 }
             }),
 
-        SET_TREE_PICKER_COLLECTION_FILTER: ({ pickerId }) =>
-            store.dispatch<any>((dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-                const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
-                if (picker) {
-                    const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
-                    getNodeDescendantsIds('')(picker)
-                        .map(id => {
-                            const node = getNode(id)(picker);
-                            if (node && node.status !== TreeNodeStatus.INITIAL) {
-                                if (node.id.substring(6, 11) === 'tpzed' || node.id.substring(6, 11) === 'j7d0g') {
-                                    dispatch<any>(loadProject({
-                                        ...loadParams,
-                                        id: node.id,
-                                        pickerId: pickerId,
-                                    }));
-                                }
-                                if (node.id === SHARED_PROJECT_ID) {
-                                    dispatch<any>(loadProject({
-                                        ...loadParams,
-                                        id: node.id,
-                                        pickerId: pickerId,
-                                        loadShared: true
-                                    }));
-                                }
-                                if (node.id === SEARCH_PROJECT_ID) {
-                                    dispatch<any>(loadProject({
-                                        ...loadParams,
-                                        id: node.id,
-                                        pickerId: pickerId,
-                                        searchProjects: true
-                                    }));
-                                }
-                                if (node.id === FAVORITES_PROJECT_ID) {
-                                    dispatch<any>(loadFavoritesProject({
-                                        ...loadParams,
-                                        pickerId: pickerId,
-                                    }));
-                                }
-                                if (node.id === PUBLIC_FAVORITES_PROJECT_ID) {
-                                    dispatch<any>(loadPublicFavoritesProject({
-                                        ...loadParams,
-                                        pickerId: pickerId,
-                                    }));
-                                }
-                            }
-                            return id;
-                        });
-                }
-            }),
+        SET_TREE_PICKER_COLLECTION_FILTER: refreshPickers(store),
         default: () => { }
     });
 
     return r;
 }
+
+const refreshPickers = (store: MiddlewareAPI) => ({ pickerId }) =>
+    store.dispatch<any>((dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
+        if (picker) {
+            const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
+            getNodeDescendantsIds('')(picker)
+                .map(id => {
+                    const node = getNode(id)(picker);
+                    if (node && node.status !== TreeNodeStatus.INITIAL) {
+                        if (node.id.substring(6, 11) === 'tpzed' || node.id.substring(6, 11) === 'j7d0g') {
+                            dispatch<any>(loadProject({
+                                ...loadParams,
+                                id: node.id,
+                                pickerId: pickerId,
+                            }));
+                        }
+                        if (node.id === SHARED_PROJECT_ID) {
+                            dispatch<any>(loadProject({
+                                ...loadParams,
+                                id: node.id,
+                                pickerId: pickerId,
+                                loadShared: true
+                            }));
+                        }
+                        if (node.id === SEARCH_PROJECT_ID) {
+                            dispatch<any>(loadProject({
+                                ...loadParams,
+                                id: node.id,
+                                pickerId: pickerId,
+                                searchProjects: true
+                            }));
+                        }
+                        if (node.id === FAVORITES_PROJECT_ID) {
+                            dispatch<any>(loadFavoritesProject({
+                                ...loadParams,
+                                pickerId: pickerId,
+                            }));
+                        }
+                        if (node.id === PUBLIC_FAVORITES_PROJECT_ID) {
+                            dispatch<any>(loadPublicFavoritesProject({
+                                ...loadParams,
+                                pickerId: pickerId,
+                            }));
+                        }
+                    }
+                    return id;
+                });
+        }
+    })

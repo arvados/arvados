@@ -142,7 +142,9 @@ const FileInputComponent = connect()(
                             <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
                                 includeCollections
+                                includeDirectories
                                 includeFiles
+                                cascadeSelection={false}
                                 options={this.props.options}
                                 toggleItemActive={this.setFile} />
                         </div>

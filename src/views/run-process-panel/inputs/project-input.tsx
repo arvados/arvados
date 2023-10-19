@@ -99,7 +99,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
             }
         }
 
-        invalid = () => (!this.state.project || this.state.project.writableBy.indexOf(this.props.userUuid) === -1);
+        invalid = () => (!this.state.project || !this.state.project.canWrite);
 
         renderInput() {
             return <GenericInput
@@ -140,6 +140,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                         <div className={classes.pickerWrapper}>
                             <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
+                                cascadeSelection={false}
                                 options={this.props.options}
                                 toggleItemActive={this.setProject} />
                         </div>
