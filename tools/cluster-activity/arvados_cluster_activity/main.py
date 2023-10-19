@@ -12,6 +12,8 @@ import datetime
 import ciso8601
 import csv
 import os
+from prometheus_api_client.utils import parse_datetime
+from datetime import timedelta
 
 from prometheus_api_client import PrometheusConnect, MetricsList, Metric
 
@@ -59,6 +61,44 @@ def parse_arguments(arguments):
 
     return args, since, to
 
+def data_usage(prom, cluster):
+    metric_data = prom.get_current_metric_value(metric_name='arvados_keep_total_bytes', label_config={"cluster": cluster})
+
+    metric_object_list = MetricsList(metric_data)
+    #for item in metric_object_list:
+    #    print(item.metric_name, item.label_config, "\n")
+
+    my_metric_object = metric_object_list[0] # one of the metrics from the list
+
+    #print(my_metric_object.metric_values)
+    value = my_metric_object.metric_values.iloc[0]["y"]
+
+    for scale in ["KiB", "MiB", "GiB", "TiB", "PiB"]:
+        value = value / 1024
+        if value < 1024:
+            print(value, scale)
+            break
+
+
+def container_usage(prom, cluster):
+
+    start_time = parse_datetime("7d")
+    end_time = parse_datetime("now")
+    chunk_size = timedelta(days=1)
+
+    metric_data = prom.get_metric_range_data(metric_name='arvados_dispatchcloud_containers_running',
+                                             label_config={"cluster": cluster},
+                                             start_time=start_time,
+                                             end_time=end_time,
+                                             chunk_size=chunk_size,
+                                             )
+
+    metric_object_list = MetricsList(metric_data)
+    my_metric_object = metric_object_list[0] # one of the metrics from the list
+
+    s = my_metric_object.metric_values.sum(numeric_only=True)
+    print(s["y"] / 4, "container minutes")
+
 
 def main(arguments=None):
     if arguments is None:
@@ -73,22 +113,11 @@ def main(arguments=None):
 
     prom = PrometheusConnect(url=prom_host, headers={"Authorization": "Bearer "+prom_token})
 
-    metric_data = prom.get_current_metric_value(metric_name='arvados_keep_total_bytes', label_config={"cluster": "pirca"})
-
-    metric_object_list = MetricsList(metric_data)
-    #for item in metric_object_list:
-    #    print(item.metric_name, item.label_config, "\n")
-
-    my_metric_object = metric_object_list[0] # one of the metrics from the list
-
-    print(my_metric_object.metric_values)
-    value = my_metric_object.metric_values.iloc[0]["y"]
-
-    for scale in ["KiB", "MiB", "GiB", "TiB", "PiB"]:
-        value = value / 1024
-        if value < 1024:
-            print(value, scale)
-            break
+    for cluster in ("tordo", "pirca", "jutro"):
+        print(cluster)
+        data_usage(prom, cluster)
+        container_usage(prom, cluster)
+        print()
 
 if __name__ == "__main__":
     main()
