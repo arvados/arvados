@@ -9,16 +9,12 @@ package arvadosclient
 import (
 	"bytes"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -121,40 +117,10 @@ type ArvadosClient struct {
 	RequestID string
 }
 
-var CertFiles = []string{
-	"/etc/arvados/ca-certificates.crt",
-	"/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu/Gentoo etc.
-	"/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
-}
-
 // MakeTLSConfig sets up TLS configuration for communicating with
 // Arvados and Keep services.
 func MakeTLSConfig(insecure bool) *tls.Config {
-	tlsconfig := tls.Config{InsecureSkipVerify: insecure}
-
-	if !insecure {
-		// Use the first entry in CertFiles that we can read
-		// certificates from. If none of those work out, use
-		// the Go defaults.
-		certs := x509.NewCertPool()
-		for _, file := range CertFiles {
-			data, err := ioutil.ReadFile(file)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					log.Printf("proceeding without loading cert file %q: %s", file, err)
-				}
-				continue
-			}
-			if !certs.AppendCertsFromPEM(data) {
-				log.Printf("unable to load any certificates from %v", file)
-				continue
-			}
-			tlsconfig.RootCAs = certs
-			break
-		}
-	}
-
-	return &tlsconfig
+	return &tls.Config{InsecureSkipVerify: insecure}
 }
 
 // New returns an ArvadosClient using the given arvados.Client
