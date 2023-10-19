@@ -70,7 +70,6 @@ export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: 
 
 export const openCollectionFilesContextMenu =
     (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => (dispatch: Dispatch, getState: () => RootState) => {
-        const isCollectionFileSelected = JSON.stringify(getState().collectionPanelFiles).includes('"selected":true');
         const selectedCount = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).length;
         const multiple = selectedCount > 1;
         dispatch<any>(
