@@ -151,7 +151,7 @@ export const updateOutputParams = () => async (dispatch: Dispatch<any>, getState
     const outputDefinitions = getState().processPanel.outputDefinitions;
     const outputRaw = getState().processPanel.outputRaw;
 
-    if (outputRaw !== null && outputRaw.rawOutputs) {
+    if (outputRaw && outputRaw.rawOutputs) {
         dispatch<ProcessPanelAction>(
             processPanelActions.SET_OUTPUT_PARAMS(formatOutputData(outputDefinitions, outputRaw.rawOutputs, outputRaw.pdh, getState().auth))
         );

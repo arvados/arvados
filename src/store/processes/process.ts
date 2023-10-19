@@ -134,8 +134,10 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
 
         case containerRequest.state === ContainerRequestState.FINAL &&
             container?.state === ContainerState.RUNNING:
-            // It's right about to be completed but we haven't
-            // gotten the updated container record yet
+            // It is about to be completed but we haven't
+            // gotten the updated container record yet,
+            // if we don't catch this and show it as "Running"
+            // it will flicker "Cancelled" briefly
             return ProcessStatus.RUNNING;
 
         case containerRequest.state === ContainerRequestState.FINAL &&
