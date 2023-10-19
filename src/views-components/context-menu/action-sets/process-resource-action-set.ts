@@ -116,17 +116,16 @@ export const processResourceActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const runningProcessResourceActionSet = [
+const runningProcessOnlyActionSet: ContextMenuActionSet = [
     [
-        ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             name: "CANCEL",
             icon: StopIcon,
             execute: (dispatch, resources) => {
-                dispatch(cancelRunningWorkflow(resources[0].uuid));
+                dispatch<any>(cancelRunningWorkflow(resources[0].uuid));
             },
         },
-    ],
+    ]
 ];
 
 export const processResourceAdminActionSet: ContextMenuActionSet = [
@@ -144,24 +143,16 @@ export const processResourceAdminActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
+export const runningProcessResourceActionSet = [
     [
         ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
-        {
-            component: TogglePublicFavoriteAction,
-            name: "Add to public favorites",
-            execute: (dispatch, resources) => {
-                dispatch<any>(togglePublicFavorite(resources[0])).then(() => {
-                    dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
-                });
-            },
-        },
-        {
-            name: "CANCEL",
-            icon: StopIcon,
-            execute: (dispatch, resources) => {
-                dispatch<any>(cancelRunningWorkflow(resources[0].uuid));
-            },
-        },
+        ...runningProcessOnlyActionSet.reduce((prev, next) => prev.concat(next), []),
+    ],
+];
+
+export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
+    [
+        ...processResourceAdminActionSet.reduce((prev, next) => prev.concat(next), []),
+        ...runningProcessOnlyActionSet.reduce((prev, next) => prev.concat(next), []),
     ],
 ];
