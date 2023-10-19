@@ -612,7 +612,7 @@ class RunnerContainer(Runner):
             }
             container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
         elif self.embedded_tool.tool.get("id", "").startswith("file:"):
-            raise Exception("Tool id '%s' is a local file but expected keep: or arvwf:" % self.embedded_tool.tool.get("id"))
+            raise WorkflowException("Tool id '%s' is a local file but expected keep: or arvwf:" % self.embedded_tool.tool.get("id"))
         else:
             main = self.loadingContext.loader.idx["_:main"]
             if main.get("id") == "_:main":
