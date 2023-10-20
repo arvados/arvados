@@ -165,12 +165,13 @@ def main(arguments=None):
 
     headers = {}
     if prom_token:
-        headers["Authorization"] = "Bearer "+prom_token
+        headers["Authorization"] = "Bearer %s" % prom_token
 
     if prom_user:
-        headers["Authorization"] = "Basic "+(base64.b64encode("%s:%s" % (prom_user, prom_pw)))
+        headers["Authorization"] = "Basic %s" % str(base64.b64encode(bytes("%s:%s" % (prom_user, prom_pw), 'utf-8')), 'utf-8')
 
-    prom = PrometheusConnect(url=prom_host, headers=header)
+    print(headers)
+    prom = PrometheusConnect(url=prom_host, headers=headers)
 
     cluster = args.cluster
 
