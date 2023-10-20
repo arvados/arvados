@@ -69,17 +69,34 @@ def data_usage(prom, timestamp, cluster, label):
                                                 params={"time": timestamp.timestamp()})
 
     metric_object_list = MetricsList(metric_data)
-
     my_metric_object = metric_object_list[0] # one of the metrics from the list
-
     value = my_metric_object.metric_values.iloc[0]["y"]
+    summary_value = value
+
+    metric_data = prom.get_current_metric_value(metric_name='arvados_keep_dedup_byte_ratio',
+                                                label_config={"cluster": cluster},
+                                                params={"time": timestamp.timestamp()})
+
+    my_metric_object = MetricsList(metric_data)[0]
+    dedup_ratio = my_metric_object.metric_values.iloc[0]["y"]
+
+    value_gb = value / (1024*1024*1024)
+    first_50tb = min(1024*50, value_gb)
+    next_450tb = max(min(1024*450, value_gb-1024*50), 0)
+    over_500tb = max(value_gb-1024*500, 0)
+
+    monthly_cost = (first_50tb * 0.023) + (next_450tb * 0.022) + (over_500tb * 0.021)
 
     for scale in ["KiB", "MiB", "GiB", "TiB", "PiB"]:
-        value = value / 1024
-        if value < 1024:
-            v = "%.3f %s" % (value, scale)
-            print(label % v)
+        summary_value = summary_value / 1024
+        if summary_value < 1024:
+            print(label,
+                  "%.3f %s apparent," % (summary_value*dedup_ratio, scale),
+                  "%.3f %s actually stored," % (summary_value, scale),
+                  "$%.2f monthly S3 storage cost" % monthly_cost)
             break
+
+
 
 
 def container_usage(prom, start_time, end_time, metric, label, fn=None):
@@ -96,6 +113,9 @@ def container_usage(prom, start_time, end_time, metric, label, fn=None):
                                               end_time=(start + chunk_size),
                                               step=15
                                               )
+
+        if len(metric_data) == 0:
+            break
 
         if "__name__" not in metric_data[0]["metric"]:
             metric_data[0]["metric"]["__name__"] = metric
@@ -136,10 +156,12 @@ def main(arguments=None):
     cluster = args.cluster
 
     print(cluster, "between", since, "and", to, "timespan", (to-since))
-    data_usage(prom, since, cluster, "%s at start")
-    data_usage(prom, to - timedelta(minutes=240), cluster, "%s now")
+
+    data_usage(prom, since, cluster, "at start:")
+    data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
+
     container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
-    container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f dollars')
+    container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute')
     print()
 
 if __name__ == "__main__":
