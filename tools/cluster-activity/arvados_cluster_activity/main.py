@@ -15,34 +15,44 @@ import os
 from prometheus_api_client.utils import parse_datetime
 from datetime import timedelta
 import pandas
+import base64
 
 from prometheus_api_client import PrometheusConnect, MetricsList, Metric
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC)')
-    arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC)')
-    arg_parser.add_argument('--days', type=int, help='Number of days before now() to start the report')
+    arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
+    arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
     arg_parser.add_argument('--cluster', type=str, help='Cluster to query')
     args = arg_parser.parse_args(arguments)
 
-    if args.days and (args.start or args.end):
+    if args.days and args.start:
         arg_parser.print_help()
         print("Error: either specify --days or both --start and --end")
         exit(1)
 
-    if not args.days and (not args.start or not args.end):
+    if not args.days and not args.start:
         arg_parser.print_help()
         print("\nError: either specify --days or both --start and --end")
         exit(1)
 
-    if (args.start and not args.end) or (args.end and not args.start):
+    if (args.start and not args.end):
         arg_parser.print_help()
         print("\nError: no start or end date found, either specify --days or both --start and --end")
         exit(1)
 
-    if args.days:
+    if args.end:
+        try:
+            to = datetime.datetime.strptime(args.end,"%Y-%m-%d")
+        except:
+            arg_parser.print_help()
+            print("\nError: end date must be in YYYY-MM-DD format")
+            exit(1)
+    else:
         to = datetime.datetime.utcnow()
+
+    if args.days:
         since = to - datetime.timedelta(days=args.days)
 
     if args.start:
@@ -53,13 +63,6 @@ def parse_arguments(arguments):
             print("\nError: start date must be in YYYY-MM-DD format")
             exit(1)
 
-    if args.end:
-        try:
-            to = datetime.datetime.strptime(args.end,"%Y-%m-%d")
-        except:
-            arg_parser.print_help()
-            print("\nError: end date must be in YYYY-MM-DD format")
-            exit(1)
 
     return args, since, to
 
@@ -69,6 +72,10 @@ def data_usage(prom, timestamp, cluster, label):
                                                 params={"time": timestamp.timestamp()})
 
     metric_object_list = MetricsList(metric_data)
+
+    if len(metric_data) == 0:
+        return
+
     my_metric_object = metric_object_list[0] # one of the metrics from the list
     value = my_metric_object.metric_values.iloc[0]["y"]
     summary_value = value
@@ -76,6 +83,9 @@ def data_usage(prom, timestamp, cluster, label):
     metric_data = prom.get_current_metric_value(metric_name='arvados_keep_dedup_byte_ratio',
                                                 label_config={"cluster": cluster},
                                                 params={"time": timestamp.timestamp()})
+
+    if len(metric_data) == 0:
+        return
 
     my_metric_object = MetricsList(metric_data)[0]
     dedup_ratio = my_metric_object.metric_values.iloc[0]["y"]
@@ -149,9 +159,18 @@ def main(arguments=None):
     #arv = arvados.api()
 
     prom_host = os.environ["PROMETHEUS_HOST"]
-    prom_token = os.environ["PROMETHEUS_APIKEY"]
+    prom_token = os.environ.get("PROMETHEUS_APIKEY")
+    prom_user = os.environ.get("PROMETHEUS_USER")
+    prom_pw = os.environ.get("PROMETHEUS_PASSWORD")
 
-    prom = PrometheusConnect(url=prom_host, headers={"Authorization": "Bearer "+prom_token})
+    headers = {}
+    if prom_token:
+        headers["Authorization"] = "Bearer "+prom_token
+
+    if prom_user:
+        headers["Authorization"] = "Basic "+(base64.b64encode("%s:%s" % (prom_user, prom_pw)))
+
+    prom = PrometheusConnect(url=prom_host, headers=header)
 
     cluster = args.cluster
 
@@ -161,7 +180,7 @@ def main(arguments=None):
     data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
 
     container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
-    container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute')
+    container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
     print()
 
 if __name__ == "__main__":
