@@ -59,7 +59,9 @@ import { addRouteChangeHandlers } from "./routes/route-change-handlers";
 import { setTokenDialogApiHost } from "store/token-dialog/token-dialog-actions";
 import {
     processResourceActionSet,
+    runningProcessResourceActionSet,
     processResourceAdminActionSet,
+    runningProcessResourceAdminActionSet,
     readOnlyProcessResourceActionSet,
 } from "views-components/context-menu/action-sets/process-resource-action-set";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
@@ -114,6 +116,7 @@ addMenuActionSet(ContextMenuKind.READONLY_COLLECTION, readOnlyCollectionActionSe
 addMenuActionSet(ContextMenuKind.OLD_VERSION_COLLECTION, oldCollectionVersionActionSet);
 addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
+addMenuActionSet(ContextMenuKind.RUNNING_PROCESS_RESOURCE, runningProcessResourceActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_PROCESS_RESOURCE, readOnlyProcessResourceActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 addMenuActionSet(ContextMenuKind.REPOSITORY, repositoryActionSet);
@@ -127,6 +130,7 @@ addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);
 addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
+addMenuActionSet(ContextMenuKind.RUNNING_PROCESS_ADMIN, runningProcessResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);

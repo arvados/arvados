@@ -11,7 +11,7 @@ import { getResource, getResourceWithEditableStatus } from "../resources/resourc
 import { UserResource } from "models/user";
 import { isSidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
 import { extractUuidKind, ResourceKind, EditableResource, Resource } from "models/resource";
-import { Process } from "store/processes/process";
+import { Process, isProcessCancelable } from "store/processes/process";
 import { RepositoryResource } from "models/repositories";
 import { SshKeyResource } from "models/ssh-key";
 import { VirtualMachinesResource } from "models/virtual-machines";
@@ -23,6 +23,7 @@ import { GroupContentsResource } from "services/groups-service/groups-service";
 import { LinkResource } from "models/link";
 import { resourceIsFrozen } from "common/frozen-resources";
 import { ProjectResource } from "models/project";
+import { getProcess } from "store/processes/process";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 
 export const contextMenuActions = unionize({
@@ -214,7 +215,7 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
                 description: res.description,
                 outputUuid: res.outputUuid || "",
                 workflowUuid: res.properties.template_uuid || "",
-                menuKind: ContextMenuKind.PROCESS_RESOURCE,
+                menuKind: isProcessCancelable(process) ? ContextMenuKind.RUNNING_PROCESS_RESOURCE : ContextMenuKind.PROCESS_RESOURCE
             })
         );
     }
@@ -289,9 +290,13 @@ export const resourceUuidToContextMenuKind =
                     : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
                 return isAdminUser && isEditable
-                    ? ContextMenuKind.PROCESS_ADMIN
+                    ? resource && isProcessCancelable(getProcess(resource.uuid)(getState().resources) as Process)
+                        ? ContextMenuKind.RUNNING_PROCESS_ADMIN
+                        : ContextMenuKind.PROCESS_ADMIN
                     : readonly
                     ? ContextMenuKind.READONLY_PROCESS_RESOURCE
+                    : resource && isProcessCancelable(getProcess(resource.uuid)(getState().resources) as Process)
+                    ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
                     : ContextMenuKind.PROCESS_RESOURCE;
             case ResourceKind.USER:
                 return ContextMenuKind.ROOT_PROJECT;
