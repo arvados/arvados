@@ -182,13 +182,17 @@ class Parameter(inspect.Parameter):
         if default_value is None:
             default_doc = ''
         else:
-            default_doc = f" Default {default_value!r}."
-        # If there is no description, use a zero-width space to help Markdown
-        # parsers retain the definition list structure.
-        description = self._spec['description'] or '\u200b'
+            default_doc = f"Default {default_value!r}."
+        description = self._spec['description']
+        doc_parts = [f'{self.api_name}: {self.annotation}']
+        if description or default_doc:
+            doc_parts.append('---')
+            if description:
+                doc_parts.append(description)
+            if default_doc:
+                doc_parts.append(default_doc)
         return f'''
-{self.api_name}: {self.annotation}
-: {description}{default_doc}
+* {' '.join(doc_parts)}
 '''
 
 
