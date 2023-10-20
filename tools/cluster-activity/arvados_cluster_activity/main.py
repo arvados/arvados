@@ -170,15 +170,20 @@ def main(arguments=None):
     if prom_user:
         headers["Authorization"] = "Basic %s" % str(base64.b64encode(bytes("%s:%s" % (prom_user, prom_pw), 'utf-8')), 'utf-8')
 
-    print(headers)
     prom = PrometheusConnect(url=prom_host, headers=headers)
 
     cluster = args.cluster
 
     print(cluster, "between", since, "and", to, "timespan", (to-since))
 
-    data_usage(prom, since, cluster, "at start:")
-    data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
+    try:
+        data_usage(prom, since, cluster, "at start:")
+    except:
+        pass
+    try:
+        data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
+    except:
+        pass
 
     container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
     container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
