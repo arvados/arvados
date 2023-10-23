@@ -153,7 +153,7 @@ fetchConfig().then(({ config, apiHost }) => {
 
     const services = createServices(config, {
         progressFn: (id, working) => {
-            store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
+            //store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
         },
         errorFn: (id, error, showSnackBar: boolean) => {
             if (showSnackBar) {

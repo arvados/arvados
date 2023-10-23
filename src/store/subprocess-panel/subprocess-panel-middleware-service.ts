@@ -26,19 +26,19 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
         if (parentContainerRequestUuid === "") { return; }
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
             if (parentContainerRequest.containerUuid) {
                 const containerRequests = await this.services.containerRequestService.list(
                     {
-                        ...getParams(dataExplorer, parentContainerRequest) ,
+                        ...getParams(dataExplorer, parentContainerRequest),
                         select: containerRequestFieldsNoMounts
                     });
                 api.dispatch(updateResources(containerRequests.items));
@@ -46,9 +46,9 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
                 // Populate the actual user view
                 api.dispatch(setItems(containerRequests));
             }
-            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
         } catch {
-            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
             api.dispatch(couldNotFetchSubprocesses());
         }
     }
@@ -65,27 +65,27 @@ export const getParams = (
 export const getFilters = (
     dataExplorer: DataExplorer,
     parentContainerRequest: ContainerRequestResource) => {
-        const columns = dataExplorer.columns as DataColumns<string, ProcessResource>;
-        const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
-        const activeStatusFilter = Object.keys(statusColumnFilters).find(
-            filterName => statusColumnFilters[filterName].selected
-        ) || ProcessStatusFilter.ALL;
+    const columns = dataExplorer.columns as DataColumns<string, ProcessResource>;
+    const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
+    const activeStatusFilter = Object.keys(statusColumnFilters).find(
+        filterName => statusColumnFilters[filterName].selected
+    ) || ProcessStatusFilter.ALL;
 
-        // Get all the subprocess' container requests and containers.
-        const fb = new FilterBuilder().addEqual('requesting_container_uuid', parentContainerRequest.containerUuid);
-        const statusFilters = buildProcessStatusFilters(fb, activeStatusFilter).getFilters();
+    // Get all the subprocess' container requests and containers.
+    const fb = new FilterBuilder().addEqual('requesting_container_uuid', parentContainerRequest.containerUuid);
+    const statusFilters = buildProcessStatusFilters(fb, activeStatusFilter).getFilters();
 
-        const nameFilters = dataExplorer.searchValue
-            ? new FilterBuilder()
-                .addILike("name", dataExplorer.searchValue)
-                .getFilters()
-            : '';
+    const nameFilters = dataExplorer.searchValue
+        ? new FilterBuilder()
+            .addILike("name", dataExplorer.searchValue)
+            .getFilters()
+        : '';
 
-        return joinFilters(
-            nameFilters,
-            statusFilters
-        );
-    };
+    return joinFilters(
+        nameFilters,
+        statusFilters
+    );
+};
 
 export const setItems = (listResults: ListResults<ProcessResource>) =>
     subprocessPanelActions.SET_ITEMS({

@@ -15,7 +15,7 @@ export enum DataTableRequestState {
 export const dataExplorerActions = unionize({
     CLEAR: ofType<{ id: string }>(),
     RESET_PAGINATION: ofType<{ id: string }>(),
-    REQUEST_ITEMS: ofType<{ id: string; criteriaChanged?: boolean }>(),
+    REQUEST_ITEMS: ofType<{ id: string; criteriaChanged?: boolean, background?: boolean }>(),
     REQUEST_STATE: ofType<{ id: string; criteriaChanged?: boolean }>(),
     SET_FETCH_MODE: ofType<{ id: string; fetchMode: DataTableFetchMode }>(),
     SET_COLUMNS: ofType<{ id: string; columns: DataColumns<any, any> }>(),
@@ -36,7 +36,7 @@ export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
 export const bindDataExplorerActions = (id: string) => ({
     CLEAR: () => dataExplorerActions.CLEAR({ id }),
     RESET_PAGINATION: () => dataExplorerActions.RESET_PAGINATION({ id }),
-    REQUEST_ITEMS: (criteriaChanged?: boolean) => dataExplorerActions.REQUEST_ITEMS({ id, criteriaChanged }),
+    REQUEST_ITEMS: (criteriaChanged?: boolean, background?: boolean) => dataExplorerActions.REQUEST_ITEMS({ id, criteriaChanged, background }),
     SET_FETCH_MODE: (payload: { fetchMode: DataTableFetchMode }) => dataExplorerActions.SET_FETCH_MODE({ ...payload, id }),
     SET_COLUMNS: (payload: { columns: DataColumns<any, any> }) => dataExplorerActions.SET_COLUMNS({ ...payload, id }),
     SET_FILTERS: (payload: { columnName: string; filters: DataTableFilters }) => dataExplorerActions.SET_FILTERS({ ...payload, id }),

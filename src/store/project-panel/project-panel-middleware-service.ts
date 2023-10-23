@@ -41,7 +41,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const projectUuid = getProjectPanelCurrentUuid(state);
@@ -52,7 +52,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 const resourceUuids = response.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
@@ -71,7 +71,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 );
                 api.dispatch(couldNotFetchProjectContents());
             } finally {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
             }
         }
     }

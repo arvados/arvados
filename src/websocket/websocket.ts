@@ -46,7 +46,7 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
                     }
                     const proc = getProcess(state.processPanel.containerRequestUuid)(state.resources);
                     if (proc && proc.container && proc.container.uuid === message.properties["new_attributes"]["requesting_container_uuid"]) {
-                        store.dispatch(subprocessPanelActions.REQUEST_ITEMS());
+                        store.dispatch(subprocessPanelActions.REQUEST_ITEMS(false, true));
                         return;
                     }
                 }
@@ -57,16 +57,16 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
                     const subproc = getSubprocesses(state.processPanel.containerRequestUuid)(state.resources);
                     for (const sb of subproc) {
                         if (sb.containerRequest.uuid === message.objectUuid || (sb.container && sb.container.uuid === message.objectUuid)) {
-                            store.dispatch(subprocessPanelActions.REQUEST_ITEMS());
+                            store.dispatch(subprocessPanelActions.REQUEST_ITEMS(false, true));
                             break;
                         }
                     }
                 }
                 if (matchAllProcessesRoute(location)) {
-                    store.dispatch(allProcessesPanelActions.REQUEST_ITEMS());
+                    store.dispatch(allProcessesPanelActions.REQUEST_ITEMS(false, true));
                 }
                 if (matchProjectRoute(location) && message.objectOwnerUuid === getProjectPanelCurrentUuid(state)) {
-                    store.dispatch(projectPanelActions.REQUEST_ITEMS());
+                    store.dispatch(projectPanelActions.REQUEST_ITEMS(false, true));
                 }
                 return;
             default:
