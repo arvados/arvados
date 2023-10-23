@@ -54,6 +54,8 @@ gem 'rails-observers'
 gem 'rails-perftest'
 gem 'rails-controller-testing'
 
+gem 'webrick'
+
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
 # Install any plugin gems
