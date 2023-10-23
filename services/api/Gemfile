@@ -20,7 +20,7 @@ group :test, :development do
   # 'require' the packages during application startup. Installation is
   # still mandatory.
   gem 'test-unit', '~> 3.0', require: false
-  gem 'simplecov', '~> 0.7.1', require: false
+  gem 'simplecov', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
   gem 'byebug'
