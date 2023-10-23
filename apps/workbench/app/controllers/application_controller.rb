@@ -588,7 +588,7 @@ class ApplicationController < ActionController::Base
   def set_current_request_id
     response.headers['X-Request-Id'] =
       Thread.current[:request_id] =
-      "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+      "req-" + Random.new.rand(2**128).to_s(36)[0..19]
     yield
     Thread.current[:request_id] = nil
   end

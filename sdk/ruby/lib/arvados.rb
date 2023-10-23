@@ -21,7 +21,7 @@ class Arvados
     attr_reader :request_id
 
     def execute(*args)
-      @request_id = "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+      @request_id = "req-" + Random.new.rand(2**128).to_s(36)[0..19]
       if args.last.is_a? Hash
         args.last[:headers] ||= {}
         args.last[:headers]['X-Request-Id'] = @request_id
