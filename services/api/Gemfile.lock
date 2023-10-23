@@ -245,7 +245,7 @@ GEM
       actionpack (>= 5.2)
       railties (>= 5.2)
     retriable (1.4.1)
-    ruby-prof (0.15.9)
+    ruby-prof (1.6.3)
     ruby2_keywords (0.0.5)
     signet (0.16.1)
       addressable (~> 2.8)
@@ -307,11 +307,11 @@ DEPENDENCIES
   rails-observers
   rails-perftest
   responders
-  ruby-prof (~> 0.15.0)
+  ruby-prof
   simplecov
   simplecov-rcov
   sprockets-rails
-  test-unit (~> 3.0)
+  test-unit
   themes_for_rails!
 
 BUNDLED WITH

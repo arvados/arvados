@@ -11,15 +11,11 @@ gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
-
-  # As of now (2019-03-27) There's an open issue about incompatibilities with
-  # newer versions of this gem: https://github.com/rails/rails-perftest/issues/38
-  gem 'ruby-prof', '~> 0.15.0'
-
+  gem 'ruby-prof'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
-  gem 'test-unit', '~> 3.0', require: false
+  gem 'test-unit', require: false
   gem 'simplecov', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
