@@ -58,8 +58,10 @@ export const getOrder = <T extends Resource = Resource>(dataExplorer: DataExplor
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
+        // Use createdAt as a secondary sort column so we break ties consistently.
         return order
             .addOrder(sortDirection, sortColumn.sort.field)
+            .addOrder(OrderDirection.DESC, "createdAt")
             .getOrder();
     } else {
         return order.getOrder();
