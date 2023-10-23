@@ -164,6 +164,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libssl-dev",
 			"libxml2-dev",
 			"libxslt1-dev",
+			"libyaml-dev",
 			"linkchecker",
 			"lsof",
 			"make",
@@ -306,6 +307,7 @@ cd "${tmp}/ruby-`+rubyversion+`"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
 make install
+/var/lib/arvados/bin/gem update --no-document --system 3.4.21
 /var/lib/arvados/bin/gem install bundler --no-document
 `, stdout, stderr)
 		if err != nil {
