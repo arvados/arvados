@@ -9,11 +9,10 @@ class PipelineInstance < ArvadosModel
   serialize :components, Hash
   serialize :properties, Hash
   serialize :components_summary, Hash
-  belongs_to :pipeline_template, {
-               foreign_key: 'pipeline_template_uuid',
-               primary_key: 'uuid',
-               optional: true,
-             }
+  belongs_to :pipeline_template,
+             foreign_key: 'pipeline_template_uuid',
+             primary_key: 'uuid',
+             optional: true
 
   before_validation :bootstrap_components
   before_validation :update_state

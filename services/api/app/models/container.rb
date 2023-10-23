@@ -51,17 +51,15 @@ class Container < ArvadosModel
   after_save :update_cr_logs
   after_save :handle_completed
 
-  has_many :container_requests, {
-             class_name: 'ContainerRequest',
-             foreign_key: 'container_uuid',
+  has_many :container_requests,
+           class_name: 'ContainerRequest',
+           foreign_key: 'container_uuid',
+           primary_key: 'uuid'
+  belongs_to :auth,
+             class_name: 'ApiClientAuthorization',
+             foreign_key: 'auth_uuid',
              primary_key: 'uuid',
-           }
-  belongs_to :auth, {
-               class_name: 'ApiClientAuthorization',
-               foreign_key: 'auth_uuid',
-               primary_key: 'uuid',
-               optional: true,
-             }
+             optional: true
 
   api_accessible :user, extend: :common do |t|
     t.add :command
