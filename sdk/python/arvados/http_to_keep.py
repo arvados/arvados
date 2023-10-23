@@ -182,6 +182,10 @@ class _Downloader(PyCurlHelper):
         mt = re.match(r'^HTTP\/(\d(\.\d)?) ([1-5]\d\d) ([^\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]*)\r\n$', self._headers["x-status-line"])
         code = int(mt.group(3))
 
+        if not self.name:
+            logger.error("Cannot determine filename from URL or headers")
+            return
+
         if code == 200:
             self.target = self.collection.open(self.name, "wb")
 
@@ -191,6 +195,13 @@ class _Downloader(PyCurlHelper):
             self._first_chunk = False
 
         self.count += len(chunk)
+
+        if self.target is None:
+            # "If this number is not equal to the size of the byte
+            # string, this signifies an error and libcurl will abort
+            # the request."
+            return 0
+
         self.target.write(chunk)
         loopnow = time.time()
         if (loopnow - self.checkpoint) < 20:
@@ -238,16 +249,10 @@ def _etag_quote(etag):
         return '"' + etag + '"'
 
 
-def http_to_keep(api, project_uuid, url,
-                 utcnow=datetime.datetime.utcnow, varying_url_params="",
-                 prefer_cached_downloads=False):
-    """Download a file over HTTP and upload it to keep, with HTTP headers as metadata.
-
-    Before downloading the URL, checks to see if the URL already
-    exists in Keep and applies HTTP caching policy, the
-    varying_url_params and prefer_cached_downloads flags in order to
-    decide whether to use the version in Keep or re-download it.
-    """
+def check_cached_url(api, project_uuid, url, etags,
+                     utcnow=datetime.datetime.utcnow,
+                     varying_url_params="",
+                     prefer_cached_downloads=False):
 
     logger.info("Checking Keep for %s", url)
 
@@ -270,8 +275,6 @@ def http_to_keep(api, project_uuid, url,
 
     now = utcnow()
 
-    etags = {}
-
     curldownloader = _Downloader(api)
 
     for item in items:
@@ -287,19 +290,44 @@ def http_to_keep(api, project_uuid, url,
         if prefer_cached_downloads or _fresh_cache(cache_url, properties, now):
             # HTTP caching rules say we should use the cache
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return (item["portable_data_hash"], next(iter(cr.keys())) )
+            return (item["portable_data_hash"], next(iter(cr.keys())), item["uuid"], clean_url, now)
 
         if not _changed(cache_url, clean_url, properties, now, curldownloader):
             # Etag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return (item["portable_data_hash"], next(iter(cr.keys())))
+            return (item["portable_data_hash"], next(iter(cr.keys())), item["uuid"], clean_url, now)
 
         for etagstr in ("Etag", "ETag"):
             if etagstr in properties[cache_url] and len(properties[cache_url][etagstr]) > 2:
                 etags[properties[cache_url][etagstr]] = item
 
     logger.debug("Found ETag values %s", etags)
+
+    return (None, None, None, clean_url, now)
+
+
+def http_to_keep(api, project_uuid, url,
+                 utcnow=datetime.datetime.utcnow, varying_url_params="",
+                 prefer_cached_downloads=False):
+    """Download a file over HTTP and upload it to keep, with HTTP headers as metadata.
+
+    Before downloading the URL, checks to see if the URL already
+    exists in Keep and applies HTTP caching policy, the
+    varying_url_params and prefer_cached_downloads flags in order to
+    decide whether to use the version in Keep or re-download it.
+    """
+
+    etags = {}
+    cache_result = check_cached_url(api, project_uuid, url, etags,
+                                    utcnow, varying_url_params,
+                                    prefer_cached_downloads)
+
+    if cache_result[0] is not None:
+        return cache_result
+
+    clean_url = cache_result[3]
+    now = cache_result[4]
 
     properties = {}
     headers = {}
@@ -308,6 +336,8 @@ def http_to_keep(api, project_uuid, url,
     logger.debug("Sending GET request with headers %s", headers)
 
     logger.info("Beginning download of %s", url)
+
+    curldownloader = _Downloader(api)
 
     req = curldownloader.download(url, headers)
 
@@ -326,7 +356,7 @@ def http_to_keep(api, project_uuid, url,
         item["properties"].update(properties)
         api.collections().update(uuid=item["uuid"], body={"collection":{"properties": item["properties"]}}).execute()
         cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-        return (item["portable_data_hash"], list(cr.keys())[0])
+        return (item["portable_data_hash"], list(cr.keys())[0], item["uuid"], clean_url, now)
 
     logger.info("Download complete")
 
@@ -344,4 +374,4 @@ def http_to_keep(api, project_uuid, url,
 
     api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
 
-    return (c.portable_data_hash(), curldownloader.name)
+    return (c.portable_data_hash(), curldownloader.name, c.manifest_locator(), clean_url, now)

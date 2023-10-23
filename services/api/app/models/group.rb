@@ -163,63 +163,70 @@ class Group < ArvadosModel
     #   Remove groups that don't belong from trash
     #   Add/update groups that do belong in the trash
 
-    temptable = "group_subtree_#{rand(2**64).to_s(10)}"
-    ActiveRecord::Base.connection.exec_query(
-      "create temporary table #{temptable} on commit drop " +
-      "as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)",
+    frozen_descendants = ActiveRecord::Base.connection.exec_query(%{
+with temptable as (select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp))
+      select uuid from frozen_groups, temptable where uuid = target_uuid
+},
       "Group.update_trash.select",
       [self.uuid,
        TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
        self.trash_at])
-    frozen_descendants = ActiveRecord::Base.connection.exec_query(
-      "select uuid from frozen_groups, #{temptable} where uuid = target_uuid",
-      "Group.update_trash.check_frozen")
     if frozen_descendants.any?
       raise ArgumentError.new("cannot trash project containing frozen project #{frozen_descendants[0]["uuid"]}")
     end
-    ActiveRecord::Base.connection.exec_delete(
-      "delete from trashed_groups where group_uuid in (select target_uuid from #{temptable} where trash_at is NULL)",
-      "Group.update_trash.delete")
-    ActiveRecord::Base.connection.exec_query(
-      "insert into trashed_groups (group_uuid, trash_at) "+
-      "select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL " +
-      "on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at",
-      "Group.update_trash.insert")
-    ActiveRecord::Base.connection.exec_query(
-      "select container_uuid from container_requests where " +
-      "owner_uuid in (select target_uuid from #{temptable}) and " +
-      "requesting_container_uuid is NULL and state = 'Committed' and container_uuid is not NULL",
-      "Group.update_trash.update_priorities").each do |container_uuid|
+
+    ActiveRecord::Base.connection.exec_query(%{
+with temptable as (select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)),
+
+delete_rows as (delete from trashed_groups where group_uuid in (select target_uuid from temptable where trash_at is NULL)),
+
+insert_rows as (insert into trashed_groups (group_uuid, trash_at)
+  select target_uuid as group_uuid, trash_at from temptable where trash_at is not NULL
+  on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at)
+
+select container_uuid from container_requests where
+  owner_uuid in (select target_uuid from temptable) and
+  requesting_container_uuid is NULL and state = 'Committed' and container_uuid is not NULL
+},
+      "Group.update_trash.select",
+      [self.uuid,
+       TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
+       self.trash_at]).each do |container_uuid|
       update_priorities container_uuid["container_uuid"]
     end
   end
 
   def update_frozen
     return unless saved_change_to_frozen_by_uuid? || saved_change_to_owner_uuid?
-    temptable = "group_subtree_#{rand(2**64).to_s(10)}"
-    ActiveRecord::Base.connection.exec_query(
-      "create temporary table #{temptable} on commit drop as select * from project_subtree_with_is_frozen($1,$2)",
-      "Group.update_frozen.select",
-      [self.uuid,
-       !self.frozen_by_uuid.nil?])
+
     if frozen_by_uuid
-      rows = ActiveRecord::Base.connection.exec_query(
-        "select cr.uuid, cr.state from container_requests cr, #{temptable} frozen " +
-        "where cr.owner_uuid = frozen.uuid and frozen.is_frozen " +
-        "and cr.state not in ($1, $2) limit 1",
-        "Group.update_frozen.check_container_requests",
-        [ContainerRequest::Uncommitted,
-         ContainerRequest::Final])
+      rows = ActiveRecord::Base.connection.exec_query(%{
+with temptable as (select * from project_subtree_with_is_frozen($1,$2))
+
+select cr.uuid, cr.state from container_requests cr, temptable frozen
+  where cr.owner_uuid = frozen.uuid and frozen.is_frozen
+  and cr.state not in ($3, $4) limit 1
+},
+                                                      "Group.update_frozen.check_container_requests",
+                                                      [self.uuid,
+                                                       !self.frozen_by_uuid.nil?,
+                                                       ContainerRequest::Uncommitted,
+                                                       ContainerRequest::Final])
       if rows.any?
         raise ArgumentError.new("cannot freeze project containing container request #{rows.first['uuid']} with state = #{rows.first['state']}")
       end
     end
-    ActiveRecord::Base.connection.exec_delete(
-      "delete from frozen_groups where uuid in (select uuid from #{temptable} where not is_frozen)",
-      "Group.update_frozen.delete")
-    ActiveRecord::Base.connection.exec_query(
-      "insert into frozen_groups (uuid) select uuid from #{temptable} where is_frozen on conflict do nothing",
-      "Group.update_frozen.insert")
+
+ActiveRecord::Base.connection.exec_query(%{
+with temptable as (select * from project_subtree_with_is_frozen($1,$2)),
+
+delete_rows as (delete from frozen_groups where uuid in (select uuid from temptable where not is_frozen))
+
+insert into frozen_groups (uuid) select uuid from temptable where is_frozen on conflict do nothing
+}, "Group.update_frozen.update",
+                                         [self.uuid,
+                                          !self.frozen_by_uuid.nil?])
+
   end
 
   def before_ownership_change

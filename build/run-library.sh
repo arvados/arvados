@@ -455,7 +455,7 @@ test_package_presence() {
       fi
     else
       local rpm_root
-      case "TARGET" in
+      case "$TARGET" in
         centos7) rpm_root="CentOS/7/dev" ;;
         rocky8) rpm_root="CentOS/8/dev" ;;
         *)

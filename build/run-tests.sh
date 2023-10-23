@@ -105,6 +105,8 @@ services/keep-balance
 services/login-sync
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
+services/workbench2_units
+services/workbench2_integration
 services/ws
 sdk/cli
 sdk/python
@@ -653,22 +655,14 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
-    # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    # pdoc needed to generate the Python SDK documentation.
-    (
-        set -e
-        "${VENV3DIR}/bin/pip3" install wheel
-        "${VENV3DIR}/bin/pip3" install PyYAML
-        "${VENV3DIR}/bin/pip3" install httplib2
-        "${VENV3DIR}/bin/pip3" install future
-        "${VENV3DIR}/bin/pip3" install google-api-python-client
-        "${VENV3DIR}/bin/pip3" install ciso8601
-        "${VENV3DIR}/bin/pip3" install pycurl
-        "${VENV3DIR}/bin/pip3" install ws4py
-        "${VENV3DIR}/bin/pip3" install pdoc
-        cd "$WORKSPACE/sdk/python"
-        python3 setup.py install
-    ) || fatal "installing PyYAML and sdk/python failed"
+    # PyYAML is a test requirement used by run_test_server.py and needed for
+    # other, non-Python tests.
+    # pdoc is needed to build PySDK documentation.
+    # We run `setup.py build` first to generate _version.py.
+    env -C "$WORKSPACE/sdk/python" python3 setup.py build \
+        && python3 -m pip install "$WORKSPACE/sdk/python" \
+        && python3 -m pip install PyYAML pdoc \
+        || fatal "installing Python SDK and related dependencies failed"
 }
 
 retry() {
@@ -699,6 +693,9 @@ do_test() {
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
             ;;
+        services/workbench2_units | services/workbench2_integration)
+            suite=services/workbench2
+            ;;
         *)
             suite="${1}"
             ;;
@@ -713,7 +710,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker | services/workbench2_units | services/workbench2_integration)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -999,6 +996,11 @@ install_apps/workbench() {
         && RAILS_ENV=test RAILS_GROUPS=assets "$bundle" exec rake npm:install
 }
 
+install_services/workbench2() {
+    cd "$WORKSPACE/services/workbench2" \
+        && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
+}
+
 test_doc() {
     (
         set -e
@@ -1052,6 +1054,14 @@ test_sdk/java-v2() {
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
         && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+}
+
+test_services/workbench2_units() {
+    cd "$WORKSPACE/services/workbench2" && make unit-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
+}
+
+test_services/workbench2_integration() {
+    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
 }
 
 test_apps/workbench_units() {
@@ -1118,6 +1128,7 @@ install_all() {
     done
     do_install services/api
     do_install apps/workbench
+    do_install services/workbench2
 }
 
 test_all() {
@@ -1156,6 +1167,8 @@ test_all() {
     do_test apps/workbench_integration
     do_test apps/workbench_benchmark
     do_test apps/workbench_profile
+    do_test services/workbench2_units
+    do_test services/workbench2_integration
 }
 
 test_go() {

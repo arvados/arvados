@@ -101,13 +101,13 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3(#contents). contents
 
-Retrieve a list of items owned by the group.  Use "recursive" to list objects within subprojects as well.
+Retrieve a list of items owned by the group or user.  Use "recursive" to list objects within subprojects as well.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the group in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID of the group or user to enumerate. If this is a user UUID, this method returns the contents of that user's home project.|path||
 |limit|integer (default 100)|Maximum number of items to return.|query||
 |order|array|Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order. Sort within a resource type by prefixing the attribute with the resource name and a period.|query|@["collections.modified_at desc"]@|
 |filters|array|Conditions for filtering items.|query|@[["uuid", "is_a", "arvados#job"]]@|

@@ -173,8 +173,8 @@ extra_snakeoil_certs_arvados_snakeoil_cert_{{ vh }}_cmd_run:
       - pkg: extra_snakeoil_certs_dependencies_pkg_installed
       - cmd: extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run
     - require_in:
-      - file: extra_custom_certs_file_copy_arvados-{{ vh }}.pem
-      - file: extra_custom_certs_file_copy_arvados-{{ vh }}.key
+      - file: extra_custom_certs_{{ vh }}_cert_file_copy
+      - file: extra_custom_certs_{{ vh }}_key_file_copy
 
   {%- if grains.get('os_family') == 'Debian' %}
 extra_snakeoil_certs_certs_permissions_{{ vh}}_cmd_run:

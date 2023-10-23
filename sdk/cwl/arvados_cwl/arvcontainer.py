@@ -560,13 +560,19 @@ class RunnerContainer(Runner):
                 }
                 self.job_order[param] = {"$include": mnt}
 
+        container_image = arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext)
+
+        workflow_runner_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
+        if workflow_runner_req and workflow_runner_req.get("acrContainerImage"):
+            container_image = workflow_runner_req.get("acrContainerImage")
+
         container_req = {
             "name": self.name,
             "output_path": "/var/spool/cwl",
             "cwd": "/var/spool/cwl",
             "priority": self.priority,
             "state": "Committed",
-            "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext),
+            "container_image": container_image,
             "mounts": {
                 "/var/lib/cwl/cwl.input.json": {
                     "kind": "json",
@@ -587,7 +593,7 @@ class RunnerContainer(Runner):
                 "ram": 1024*1024 * (math.ceil(self.submit_runner_ram) + math.ceil(self.collection_cache_size)),
                 "API": True
             },
-            "use_existing": False, # Never reuse the runner container - see #15497.
+            "use_existing": self.reuse_runner,
             "properties": {}
         }
 
@@ -611,6 +617,8 @@ class RunnerContainer(Runner):
                 "content": packed
             }
             container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
+        elif self.embedded_tool.tool.get("id", "").startswith("file:"):
+            raise WorkflowException("Tool id '%s' is a local file but expected keep: or arvwf:" % self.embedded_tool.tool.get("id"))
         else:
             main = self.loadingContext.loader.idx["_:main"]
             if main.get("id") == "_:main":

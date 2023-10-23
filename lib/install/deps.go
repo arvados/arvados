@@ -41,7 +41,6 @@ const (
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.12"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "9a62117dbe56bdfa42489415eb6696638c2bb336" // 2.6.3
 )
 
 //go:embed arvados.service
@@ -232,7 +231,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 
 	if dev || test {
-		if havedockerversion, err := exec.Command("docker", "--version").CombinedOutput(); err == nil {
+		if havedockerversion, err2 := exec.Command("docker", "--version").CombinedOutput(); err2 == nil {
 			logger.Printf("%s installed, assuming that version is ok", bytes.TrimSuffix(havedockerversion, []byte("\n")))
 		} else if osv.Debian {
 			var codename string
@@ -241,6 +240,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				codename = "buster"
 			case 11:
 				codename = "bullseye"
+			case 12:
+				codename = "bookworm"
 			default:
 				err = fmt.Errorf("don't know how to install docker-ce for debian %d", osv.Major)
 				return 1
@@ -258,6 +259,21 @@ DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install doc
 			}
 		} else {
 			err = fmt.Errorf("don't know how to install docker for osversion %v", osv)
+			return 1
+		}
+
+		err = inst.runBash(`
+key=fs.inotify.max_user_watches
+min=524288
+if [[ "$(sysctl --values "${key}")" -lt "${min}" ]]; then
+    sysctl "${key}=${min}"
+    # writing sysctl worked, so we should make it permanent
+    echo "${key}=${min}" | tee -a /etc/sysctl.conf
+    sysctl -p
+fi
+`, stdout, stderr)
+		if err != nil {
+			err = fmt.Errorf("couldn't set fs.inotify.max_user_watches value. (Is this a docker container? Fix this on the docker host by adding fs.inotify.max_user_watches=524288 to /etc/sysctl.conf and running `sysctl -p`)")
 			return 1
 		}
 	}
@@ -532,38 +548,6 @@ ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /us
 				return 1
 			}
 		}
-
-		if havewb2version, err := exec.Command("git", "--git-dir=/var/lib/arvados/arvados-workbench2/.git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil && string(havewb2version) == workbench2version+"\n" {
-			logger.Print("workbench2 repo is already at " + workbench2version)
-		} else {
-			err = inst.runBash(`
-V=`+workbench2version+`
-cd /var/lib/arvados
-if [[ ! -e arvados-workbench2 ]]; then
-  git clone https://git.arvados.org/arvados-workbench2.git
-  cd arvados-workbench2
-  git checkout $V
-else
-  cd arvados-workbench2
-  if ! git checkout $V; then
-    git fetch
-    git checkout yarn.lock
-    git checkout $V
-  fi
-fi
-rm -rf build
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-yarn install
-`, stdout, stderr); err != nil {
-			return 1
-		}
 	}
 
 	if prod || pkg {
@@ -693,8 +677,8 @@ done
 
 		// Install workbench2 app to /var/lib/arvados/workbench2/
 		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version[:9]+`" yarn build
+cd `+inst.SourcePath+`/services/workbench2
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
 rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
 			return 1

@@ -37,9 +37,6 @@ func (runner runWorkbench2) Run(ctx context.Context, fail func(error), super *Su
 			err = super.RunProgram(ctx, "/var/lib/arvados/workbench2", runOptions{
 				user: "www-data",
 			}, "arvados-server", "workbench2", super.cluster.Services.Controller.ExternalURL.Host, net.JoinHostPort(host, port), ".")
-		} else if super.Workbench2Source == "" {
-			super.logger.Info("skipping Workbench2: Workbench2Source==\"\" and not in production mode")
-			return
 		} else {
 			stdinr, stdinw := io.Pipe()
 			defer stdinw.Close()
@@ -47,15 +44,15 @@ func (runner runWorkbench2) Run(ctx context.Context, fail func(error), super *Su
 				<-ctx.Done()
 				stdinw.Close()
 			}()
-			if err = os.Mkdir(super.Workbench2Source+"/public/_health", 0777); err != nil && !errors.Is(err, fs.ErrExist) {
+			if err = os.Mkdir(super.SourcePath+"/services/workbench2/public/_health", 0777); err != nil && !errors.Is(err, fs.ErrExist) {
 				fail(err)
 				return
 			}
-			if err = ioutil.WriteFile(super.Workbench2Source+"/public/_health/ping", []byte(`{"health":"OK"}`), 0666); err != nil {
+			if err = ioutil.WriteFile(super.SourcePath+"/services/workbench2/public/_health/ping", []byte(`{"health":"OK"}`), 0666); err != nil {
 				fail(err)
 				return
 			}
-			err = super.RunProgram(ctx, super.Workbench2Source, runOptions{
+			err = super.RunProgram(ctx, super.SourcePath+"/services/workbench2", runOptions{
 				env: []string{
 					"CI=true",
 					"HTTPS=false",

@@ -33,7 +33,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: extra_custom_certs_file_copy_arvados-websocket.pem
+          file: extra_custom_certs_websocket_cert_file_copy
         config:
           - server:
             - server_name: ws.__CLUSTER__.__DOMAIN__

@@ -1,0 +1,25 @@
+[
+    {
+        "name": "File browser",
+        "extensions": [
+            ".txt",
+            ".zip"
+        ],
+        "url": "https://doc.arvados.org",
+        "filePathParam": "filePath",
+        "iconUrl": "https://material.io/tools/icons/static/icons/baseline-next_week-24px.svg"
+    },
+    {
+        "name": "Collection browser",
+        "extensions": [],
+        "collections": true,
+        "url": "https://doc.arvados.org",
+        "filePathParam": "collectionPath"
+    },
+    {
+        "name": "Universal browser",
+        "collections": true,
+        "url": "https://doc.arvados.org",
+        "filePathParam": "filePath"
+    }
+]

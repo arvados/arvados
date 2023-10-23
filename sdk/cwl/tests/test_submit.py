@@ -1180,7 +1180,7 @@ class TestSubmit(unittest.TestCase):
                                         "out": [
                                             {"id": "#main/step/out"}
                                         ],
-                                        "run": "keep:7628e49da34b93de9f4baf08a6212817+247/secret_wf.cwl"
+                                        "run": "keep:991302581d01db470345a131480e623b+247/secret_wf.cwl"
                                     }
                                 ]
                             }
@@ -1736,4 +1736,56 @@ class TestCreateWorkflow(unittest.TestCase):
 
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_workflow_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+    @stubs()
+    def test_create_map(self, stubs):
+        # test uploading a document that uses objects instead of arrays
+        # for certain fields like inputs and requirements.
+
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
+
+        exited = arvados_cwl.main(
+            ["--create-workflow", "--debug",
+             "--api=containers",
+             "--project-uuid", project_uuid,
+             "--disable-git",
+             "tests/wf/submit_wf_map.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
+
+        stubs.api.pipeline_templates().create.refute_called()
+        stubs.api.container_requests().create.refute_called()
+
+        expect_workflow = StripYAMLComments(
+            open("tests/wf/expect_upload_wrapper_map.cwl").read().rstrip())
+
+        body = {
+            "workflow": {
+                "owner_uuid": project_uuid,
+                "name": "submit_wf_map.cwl",
+                "description": "",
+                "definition": expect_workflow,
+            }
+        }
+        stubs.api.workflows().create.assert_called_with(
+            body=JsonDiffMatcher(body))
+
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_workflow_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+
+class TestPrintKeepDeps(unittest.TestCase):
+    @stubs()
+    def test_print_keep_deps(self, stubs):
+        # test --print-keep-deps which is used by arv-copy
+
+        exited = arvados_cwl.main(
+            ["--print-keep-deps", "--debug",
+             "tests/wf/submit_wf_map.cwl"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api)
+
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         '["5d373e7629203ce39e7c22af98a0f881+52", "999999999999999999999999999999d4+99"]' + '\n')
         self.assertEqual(exited, 0)

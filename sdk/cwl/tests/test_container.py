@@ -85,7 +85,8 @@ class TestContainer(unittest.TestCase):
              "construct_tool_object": runner.arv_make_tool,
              "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access),
              "loader": Loader({}),
-             "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"})
+             "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"}),
+             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__
              })
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
@@ -1463,7 +1464,8 @@ class TestWorkflow(unittest.TestCase):
              "make_fs_access": make_fs_access,
              "loader": document_loader,
              "metadata": {"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"},
-             "construct_tool_object": runner.arv_make_tool})
+             "construct_tool_object": runner.arv_make_tool,
+             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__})
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
              "basedir": "",

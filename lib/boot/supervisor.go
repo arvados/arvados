@@ -61,8 +61,7 @@ type Supervisor struct {
 	// explicitly configured in config file. If blank, use a
 	// random port on ListenHost.
 	ControllerAddr string
-	// Path to arvados-workbench2 source tree checkout.
-	Workbench2Source     string
+
 	NoWorkbench1         bool
 	NoWorkbench2         bool
 	OwnTemporaryDatabase bool
