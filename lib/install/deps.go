@@ -33,7 +33,7 @@ var Command cmd.Handler = &installCommand{}
 const goversion = "1.20.6"
 
 const (
-	rubyversion             = "2.7.7"
+	rubyversion             = "3.2.2"
 	bundlerversion          = "2.2.19"
 	singularityversion      = "3.10.4"
 	pjsversion              = "1.9.8"
