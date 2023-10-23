@@ -4,15 +4,10 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 5.2.0'
-gem 'responders', '~> 2.0'
-
-# i18n 1.14.1 seems to be incompatible with rails 5
-gem 'i18n', '~> 0.9.5'
-
-# Pin sprockets to < 4.0 to avoid issues when upgrading rails to 5.2
-# See: https://github.com/rails/sprockets-rails/issues/443
-gem 'sprockets', '~> 3.0'
+gem 'rails', '~> 7.0.0'
+gem 'responders'
+gem 'i18n'
+gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
@@ -55,7 +50,6 @@ gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 gem 'arvados', '~> 2.7.0.rc1'
 gem 'httpclient'
 
-gem 'safe_yaml'
 gem 'lograge'
 gem 'logstash-event'
 

@@ -166,7 +166,7 @@ class UserTest < ActiveSupport::TestCase
       if auto_admin_first_user_config
         # This test requires no admin users exist (except for the system user)
         act_as_system_user do
-          users(:admin).update_attributes!(is_admin: false)
+          users(:admin).update!(is_admin: false)
         end
         @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true)
         assert_equal 0, @all_users.count, "No admin users should exist (except for the system user)"
@@ -800,7 +800,7 @@ class UserTest < ActiveSupport::TestCase
   test "empty identity_url saves as null" do
     set_user_from_auth :admin
     user = users(:active)
-    assert user.update_attributes(identity_url: '')
+    assert user.update(identity_url: '')
     user.reload
     assert_nil user.identity_url
   end

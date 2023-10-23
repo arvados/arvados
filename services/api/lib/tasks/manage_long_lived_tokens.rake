@@ -31,7 +31,7 @@ namespace :db do
       end
       if (auth.user.uuid =~ /-tpzed-000000000000000/).nil? and (auth.user.uuid =~ /-tpzed-anonymouspublic/).nil?
         CurrentApiClientHelper.act_as_system_user do
-          auth.update_attributes!(expires_at: exp_date)
+          auth.update!(expires_at: exp_date)
         end
         token_count += 1
       end

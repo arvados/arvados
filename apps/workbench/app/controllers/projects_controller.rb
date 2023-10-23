@@ -141,7 +141,7 @@ class ProjectsController < ApplicationController
         # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
         begin
-          item.update_attributes owner_uuid: current_user.uuid
+          item.update owner_uuid: current_user.uuid
           @removed_uuids << item.uuid
         rescue ArvadosApiClient::ApiErrorResponseException => e
           if e.message.include? '_owner_uuid_'
@@ -151,7 +151,7 @@ class ProjectsController < ApplicationController
             updates = {}
             updates[:name] = rename_to
             updates[:owner_uuid] = current_user.uuid
-            item.update_attributes updates
+            item.update updates
             @removed_uuids << item.uuid
           else
             raise
@@ -170,7 +170,7 @@ class ProjectsController < ApplicationController
     end
     while (objects = @object.contents).any?
       objects.each do |object|
-        object.update_attributes! owner_uuid: current_user.uuid
+        object.update! owner_uuid: current_user.uuid
       end
     end
     if ArvadosBase::resource_class_for_uuid(@object.owner_uuid) == Group

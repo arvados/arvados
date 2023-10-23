@@ -300,12 +300,12 @@ class ArvadosBase
     self.name.underscore.pluralize.downcase
   end
 
-  def update_attributes raw_params={}
+  def update raw_params={}
     assign_attributes(self.class.permit_attribute_params(raw_params))
     save
   end
 
-  def update_attributes! raw_params={}
+  def update! raw_params={}
     assign_attributes(self.class.permit_attribute_params(raw_params))
     save!
   end

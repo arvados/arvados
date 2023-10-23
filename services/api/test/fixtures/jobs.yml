@@ -8,8 +8,8 @@ running:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 2.7.minute.ago.to_s(:db) %>
-  started_at: <%= 2.7.minute.ago.to_s(:db) %>
+  created_at: <%= 2.7.minute.ago.to_fs(:db) %>
+  started_at: <%= 2.7.minute.ago.to_fs(:db) %>
   finished_at: ~
   script: hash
   repository: active/foo
@@ -32,11 +32,11 @@ running:
 running_cancelled:
   uuid: zzzzz-8i9sb-4cf0nhn6xte809j
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  cancelled_at: <%= 1.minute.ago.to_s(:db) %>
+  cancelled_at: <%= 1.minute.ago.to_fs(:db) %>
   cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
   finished_at: ~
   script: hash
   repository: active/foo
@@ -63,9 +63,9 @@ uses_nonexistent_script_version:
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
-  created_at: <%= 5.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
-  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 5.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
+  finished_at: <%= 2.minute.ago.to_fs(:db) %>
   script: hash
   repository: active/foo
   running: false
@@ -94,9 +94,9 @@ foobar:
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
-  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
+  finished_at: <%= 2.minute.ago.to_fs(:db) %>
   running: false
   success: true
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
@@ -122,9 +122,9 @@ barbaz:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: 1
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
-  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
+  finished_at: <%= 2.minute.ago.to_fs(:db) %>
   running: false
   success: true
   repository: active/foo
@@ -151,9 +151,9 @@ runningbarbaz:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: 1
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
-  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
+  finished_at: <%= 2.minute.ago.to_fs(:db) %>
   running: true
   success: ~
   repository: active/foo
@@ -172,8 +172,8 @@ runningbarbaz:
 
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
-  created_at: <%= 14.minute.ago.to_s(:db) %>
-  finished_at: <%= 13.minutes.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
+  finished_at: <%= 13.minutes.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -189,8 +189,8 @@ previous_job_run:
 
 previous_job_run_nil_log:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqq3
-  created_at: <%= 14.minute.ago.to_s(:db) %>
-  finished_at: <%= 13.minutes.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
+  finished_at: <%= 13.minutes.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -206,8 +206,8 @@ previous_job_run_nil_log:
 
 previous_ancient_job_run:
   uuid: zzzzz-8i9sb-ahd7cie8jah9qui
-  created_at: <%= 366.days.ago.to_s(:db) %>
-  finished_at: <%= 365.days.ago.to_s(:db) %>
+  created_at: <%= 366.days.ago.to_fs(:db) %>
+  finished_at: <%= 365.days.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -223,7 +223,7 @@ previous_ancient_job_run:
 
 previous_docker_job_run:
   uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
-  created_at: <%= 14.minute.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -242,7 +242,7 @@ previous_docker_job_run:
 
 previous_ancient_docker_image_job_run:
   uuid: zzzzz-8i9sb-t3b460aolxxuldl
-  created_at: <%= 144.minute.ago.to_s(:db) %>
+  created_at: <%= 144.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -260,7 +260,7 @@ previous_ancient_docker_image_job_run:
 
 previous_job_run_with_arvados_sdk_version:
   uuid: zzzzz-8i9sb-eoo0321or2dw2jg
-  created_at: <%= 14.minute.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -281,7 +281,7 @@ previous_job_run_with_arvados_sdk_version:
 
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
-  created_at: <%= 14.minute.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash
@@ -297,7 +297,7 @@ previous_job_run_no_output:
 previous_job_run_superseded_by_hash_branch:
   # This supplied_script_version is a branch name with later commits.
   uuid: zzzzz-8i9sb-aeviezu5dahph3e
-  created_at: <%= 15.minute.ago.to_s(:db) %>
+  created_at: <%= 15.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/shabranchnames
   script: testscript
@@ -311,7 +311,7 @@ previous_job_run_superseded_by_hash_branch:
 
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
-  created_at: <%= 14.minute.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: active/foo
   script: hash2
@@ -326,14 +326,14 @@ nondeterminisic_job_run:
 
 nearly_finished_job:
   uuid: zzzzz-8i9sb-2gx6rz0pjl033w3
-  created_at: <%= 14.minute.ago.to_s(:db) %>
+  created_at: <%= 14.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: arvados
   script: doesnotexist
   script_version: 309e25a64fe994867db8459543af372f850e25b9
   script_parameters:
     input: b519d9cb706a29fc7ea24dbea2f05851+249025
-  started_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
   finished_at: ~
   running: true
   success: ~
@@ -348,7 +348,7 @@ nearly_finished_job:
 
 queued:
   uuid: zzzzz-8i9sb-grx15v5mjnsyxk7
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_at: ~
   cancelled_by_user_uuid: ~
@@ -382,11 +382,11 @@ job_with_real_log:
 cancelled:
   uuid: zzzzz-8i9sb-4cf0abc123e809j
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  cancelled_at: <%= 1.minute.ago.to_s(:db) %>
+  cancelled_at: <%= 1.minute.ago.to_fs(:db) %>
   cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
   finished_at: ~
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: false
@@ -432,8 +432,8 @@ running_will_be_completed:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 3.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
   finished_at: ~
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
@@ -499,9 +499,9 @@ job_with_latest_version:
   supplied_script_version: main
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  created_at: <%= 3.minute.ago.to_s(:db) %>
-  started_at: <%= 2.minute.ago.to_s(:db) %>
-  finished_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
+  started_at: <%= 2.minute.ago.to_fs(:db) %>
+  finished_at: <%= 1.minute.ago.to_fs(:db) %>
   running: false
   success: true
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
@@ -544,8 +544,8 @@ completed_job_in_publicly_accessible_project:
   log: zzzzz-4zz18-4en62shvi99lxd4
   output: b519d9cb706a29fc7ea24dbea2f05851+93
   script_parameters_digest: 02a085407e751d00b5dc88f1bd5e8247
-  started_at: <%= 10.minute.ago.to_s(:db) %>
-  finished_at: <%= 5.minute.ago.to_s(:db) %>
+  started_at: <%= 10.minute.ago.to_fs(:db) %>
+  finished_at: <%= 5.minute.ago.to_fs(:db) %>
 
 job_in_publicly_accessible_project_but_other_objects_elsewhere:
   uuid: zzzzz-8i9sb-jyq01muyhgr4ofj
@@ -568,8 +568,8 @@ running_job_with_components:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 3.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
+  started_at: <%= 3.minute.ago.to_fs(:db) %>
   finished_at: ~
   script: hash
   repository: active/foo
@@ -599,8 +599,8 @@ running_job_with_components_at_level_1:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   finished_at: ~
   repository: active/foo
   script: hash
@@ -630,8 +630,8 @@ running_job_with_components_at_level_2:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   finished_at: ~
   repository: active/foo
   script: hash
@@ -660,8 +660,8 @@ running_job_1_with_components_at_level_3:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   finished_at: ~
   repository: active/foo
   script: hash
@@ -687,8 +687,8 @@ running_job_2_with_components_at_level_3:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   finished_at: ~
   repository: active/foo
   script: hash
@@ -715,8 +715,8 @@ running_job_1_with_circular_component_relationship:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   finished_at: ~
   repository: active/foo
   script: hash
@@ -744,8 +744,8 @@ running_job_2_with_circular_component_relationship:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   finished_at: ~
   repository: active/foo
   script: hash

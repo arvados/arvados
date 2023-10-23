@@ -30,7 +30,7 @@ class Arvados::V1::UsersController < ApplicationController
       end
       if needupdate.length > 0
         begin
-          u.update_attributes!(needupdate)
+          u.update!(needupdate)
         rescue ActiveRecord::RecordInvalid
           loginCluster = Rails.configuration.Login.LoginCluster
           if u.uuid[0..4] == loginCluster && !needupdate[:username].nil?
@@ -40,7 +40,7 @@ class Arvados::V1::UsersController < ApplicationController
             if local_user.andand.uuid[0..4] == loginCluster && local_user.uuid != u.uuid
               new_username = "#{needupdate[:username]}conflict#{rand(99999999)}"
               Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
-              local_user.update_attributes!({username: new_username})
+              local_user.update!({username: new_username})
               retry
             end
           end
@@ -103,7 +103,7 @@ class Arvados::V1::UsersController < ApplicationController
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
         if todo_uuids.empty?
-          @object.update_attributes is_active: true
+          @object.update is_active: true
           logger.info "User #{@object.uuid} activated"
         else
           logger.warn "User #{@object.uuid} called users.activate " +

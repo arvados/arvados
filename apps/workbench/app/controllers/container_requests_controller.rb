@@ -83,7 +83,7 @@ class ContainerRequestsController < ApplicationController
         @object.state = 'Final'
       end
     end
-    @object.update_attributes! priority: 0
+    @object.update! priority: 0
     if params[:return_to]
       redirect_to params[:return_to]
     else

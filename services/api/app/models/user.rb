@@ -56,8 +56,8 @@ class User < ArvadosModel
   before_destroy :clear_permissions
   after_destroy :remove_self_from_permissions
 
-  has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
-  has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
+  has_many :authorized_keys, foreign_key: 'authorized_user_uuid', primary_key: 'uuid'
+  has_many :repositories, foreign_key: 'owner_uuid', primary_key: 'uuid'
 
   default_scope { where('redirect_to_user_uuid is null') }
 
@@ -145,10 +145,10 @@ SELECT 1 FROM #{PERMISSION_VIEW}
 },
                   # "name" arg is a query label that appears in logs:
                    "user_can_query",
-                   [[nil, self.uuid],
-                    [nil, target_uuid],
-                    [nil, VAL_FOR_PERM[action]],
-                    [nil, target_owner_uuid]]
+                   [self.uuid,
+                    target_uuid,
+                    VAL_FOR_PERM[action],
+                    target_owner_uuid]
                   ).any?
         return false
       end
@@ -237,7 +237,7 @@ SELECT target_uuid, perm_level
                    # "name" arg is a query label that appears in logs:
                    "User.group_permissions",
                    # "binds" arg is an array of [col_id, value] for '$1' vars:
-                   [[nil, uuid]]).
+                   [uuid]).
         rows.each do |group_uuid, max_p_val|
         @group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
       end
@@ -497,7 +497,7 @@ SELECT target_uuid, perm_level
       end
 
       if redirect_to_new_user
-        update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
+        update!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
         update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM

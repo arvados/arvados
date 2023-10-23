@@ -7,9 +7,7 @@ source 'https://rubygems.org'
 gem 'rails', '~> 5.2.0'
 gem 'arvados', '~> 2.7.0.rc1'
 
-# i18n 1.14.1 seems to be incompatible with rails 5
-gem 'i18n', '~> 0.9.5'
-
+gem 'i18n'
 gem 'activerecord-nulldb-adapter', git: 'https://github.com/arvados/nulldb'
 gem 'multi_json'
 gem 'oj'

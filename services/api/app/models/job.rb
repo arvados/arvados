@@ -50,7 +50,7 @@ class Job < ArvadosModel
   before_create :create_disabled
   before_update :update_disabled
 
-  has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
+  has_many(:nodes, foreign_key: 'job_uuid', primary_key: 'uuid')
 
   class SubmitIdReused < RequestError
   end
@@ -107,7 +107,7 @@ class Job < ArvadosModel
   end
 
   def assert_finished
-    update_attributes(finished_at: finished_at || db_current_time,
+    update(finished_at: finished_at || db_current_time,
                       success: success.nil? ? false : success,
                       running: false)
   end

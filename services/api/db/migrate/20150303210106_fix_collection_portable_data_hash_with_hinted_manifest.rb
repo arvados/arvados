@@ -107,7 +107,7 @@ class FixCollectionPortableDataHashWithHintedManifest < ActiveRecord::Migration[
       attributes[:properties]["migrated_from"] ||= coll.uuid
       coll_copy = Collection.create!(attributes)
       Log.log_create(coll_copy)
-      coll.update_attributes(portable_data_hash: stripped_pdh)
+      coll.update(portable_data_hash: stripped_pdh)
       Log.log_update(coll, start_log)
     end
   end

@@ -38,7 +38,7 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
       # Go behind Workbench's back to expire the "active" token.
       token = api_fixture('api_client_authorizations')['active']['api_token']
       auth = ApiClientAuthorization.find(token)
-      auth.update_attributes(expires_at: '1999-12-31T23:59:59Z')
+      auth.update(expires_at: '1999-12-31T23:59:59Z')
     end
     click_link "Subprojects"
     wait_for_ajax

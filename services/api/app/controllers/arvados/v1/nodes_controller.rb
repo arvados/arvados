@@ -37,7 +37,7 @@ class Arvados::V1::NodesController < ApplicationController
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
-    @object.update_attributes!(attrs_to_update)
+    @object.update!(attrs_to_update)
     @object.assign_slot if params[:assign_slot]
     @object.save!
     show

@@ -154,10 +154,39 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 		return loginError(err)
 	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
-	return ctrl.Parent.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
-		ReturnTo: state.Remote + "," + state.ReturnTo,
+	resp, err := ctrl.Parent.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+		ReturnTo: state.Remote + ",https://controller.api.client.invalid",
 		AuthInfo: *authinfo,
 	})
+	if err != nil {
+		return resp, err
+	}
+	// Extract token from rails' UserSessionCreate response, and
+	// attach it to our caller's desired ReturnTo URL.  The Rails
+	// handler explicitly disallows sending the real ReturnTo as a
+	// belt-and-suspenders defence against Rails accidentally
+	// exposing an additional login relay.
+	u, err := url.Parse(resp.RedirectLocation)
+	if err != nil {
+		return resp, err
+	}
+	token := u.Query().Get("api_token")
+	if token == "" {
+		resp.RedirectLocation = state.ReturnTo
+	} else {
+		u, err := url.Parse(state.ReturnTo)
+		if err != nil {
+			return resp, err
+		}
+		q := u.Query()
+		if q == nil {
+			q = url.Values{}
+		}
+		q.Set("api_token", token)
+		u.RawQuery = q.Encode()
+		resp.RedirectLocation = u.String()
+	}
+	return resp, nil
 }
 
 func (ctrl *oidcLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {

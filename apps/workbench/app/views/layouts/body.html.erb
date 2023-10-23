@@ -286,6 +286,6 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <%
     prefs = current_user.prefs
     prefs[:getting_started_shown] = Time.now
-    current_user.update_attributes prefs: prefs.to_json
+    current_user.update prefs: prefs.to_json
   %>
 <% end %>

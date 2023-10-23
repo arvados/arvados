@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require '20200501150153_permission_table_constants'
+require_relative '20200501150153_permission_table_constants'
 
 REVOKE_PERM = 0
 CAN_MANAGE_PERM = 3
@@ -143,10 +143,10 @@ where #{PERMISSION_VIEW}.user_uuid=EXCLUDED.user_uuid and
         #{PERMISSION_VIEW}.traverse_owned != EXCLUDED.traverse_owned);
 },
                                              'update_permissions.select',
-                                             [[nil, perm_origin_uuid],
-                                              [nil, starting_uuid],
-                                              [nil, perm_level],
-                                              [nil, edge_id]]
+                                             [perm_origin_uuid,
+                                              starting_uuid,
+                                              perm_level,
+                                              edge_id]
 
     if perm_level>0
       check_permissions_against_full_refresh

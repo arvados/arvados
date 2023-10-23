@@ -10,8 +10,8 @@ class ApiClientAuthorization < ArvadosModel
   extend CurrentApiClient
   extend DbCurrentTime
 
-  belongs_to :api_client
-  belongs_to :user
+  belongs_to :api_client, optional: true
+  belongs_to :user, optional: true
   after_initialize :assign_random_api_token
   serialize :scopes, Array
 
@@ -389,7 +389,9 @@ class ApiClientAuthorization < ArvadosModel
         rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
           Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
           # Some other request won the race: retry fetching the user record.
-          user = User.find_by_uuid(remote_user['uuid'])
+          user = User.uncached do
+            User.find_by_uuid(remote_user['uuid'])
+          end
           if !user
             Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
             return nil
@@ -413,9 +415,9 @@ class ApiClientAuthorization < ArvadosModel
             (remote_user_prefix == Rails.configuration.Login.LoginCluster or
              Rails.configuration.Users.NewUsersAreActive or
              Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-            user.update_attributes!(is_active: true)
+            user.update!(is_active: true)
           elsif user.is_active && !remote_user['is_active']
-            user.update_attributes!(is_active: false)
+            user.update!(is_active: false)
           end
 
           if remote_user_prefix == Rails.configuration.Login.LoginCluster and
@@ -423,7 +425,7 @@ class ApiClientAuthorization < ArvadosModel
             user.is_admin != remote_user['is_admin']
             # Remote cluster controls our user database, including the
             # admin flag.
-            user.update_attributes!(is_admin: remote_user['is_admin'])
+            user.update!(is_admin: remote_user['is_admin'])
           end
         end
       end
@@ -459,7 +461,7 @@ class ApiClientAuthorization < ArvadosModel
           return nil
         end
       end
-      auth.update_attributes!(user: user,
+      auth.update!(user: user,
                               api_token: stored_secret,
                               api_client_id: 0,
                               scopes: scopes,

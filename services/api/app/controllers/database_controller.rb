@@ -18,10 +18,10 @@ class DatabaseController < ApplicationController
     user_uuids = User.
       where('email is null or (email not like ? and email not like ?)', '%@example.com', '%.example.com').
       collect(&:uuid)
-    fixture_uuids =
-      YAML::load_file(File.expand_path('../../../test/fixtures/users.yml',
-                                       __FILE__)).
-      values.collect { |u| u['uuid'] }
+    fnm = File.expand_path('../../../test/fixtures/users.yml', __FILE__)
+    fixture_uuids = File.open(fnm) do |f|
+      YAML.safe_load(f, filename: fnm, permitted_classes: [Time]).values.collect { |u| u['uuid'] }
+    end
     unexpected_uuids = user_uuids - fixture_uuids
     if unexpected_uuids.any?
       logger.error("Running in test environment, but non-fixture users exist: " +

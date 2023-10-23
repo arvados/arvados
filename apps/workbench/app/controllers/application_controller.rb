@@ -374,7 +374,7 @@ class ApplicationController < ActionController::Base
         end
       end
     end
-    if @object.update_attributes @updates
+    if @object.update @updates
       show
     else
       self.render_error status: 422
@@ -400,7 +400,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
     @new_resource_attrs ||= {}
     @object = @object.dup
-    @object.update_attributes @new_resource_attrs
+    @object.update @new_resource_attrs
     if not @new_resource_attrs[:name] and @object.respond_to? :name
       if @object.name and @object.name != ''
         @object.name = "Copy of #{@object.name}"
