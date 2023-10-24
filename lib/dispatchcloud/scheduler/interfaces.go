@@ -34,6 +34,7 @@ type WorkerPool interface {
 	Running() map[string]time.Time
 	Unallocated() map[arvados.InstanceType]int
 	CountWorkers() map[worker.State]int
+	AtCapacity(arvados.InstanceType) bool
 	AtQuota() bool
 	Create(arvados.InstanceType) bool
 	Shutdown(arvados.InstanceType) bool

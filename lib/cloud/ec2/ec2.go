@@ -665,21 +665,36 @@ func (err rateLimitError) EarliestRetry() time.Time {
 	return err.earliestRetry
 }
 
-var isCodeCapacity = map[string]bool{
+type capacityError struct {
+	error
+	isInstanceTypeSpecific bool
+}
+
+func (er *capacityError) IsCapacityError() bool {
+	return true
+}
+
+func (er *capacityError) IsInstanceTypeSpecific() bool {
+	return er.isInstanceTypeSpecific
+}
+
+var isCodeQuota = map[string]bool{
 	"InstanceLimitExceeded":             true,
 	"InsufficientAddressCapacity":       true,
 	"InsufficientFreeAddressesInSubnet": true,
-	"InsufficientInstanceCapacity":      true,
 	"InsufficientVolumeCapacity":        true,
 	"MaxSpotInstanceCountExceeded":      true,
 	"VcpuLimitExceeded":                 true,
 }
 
-// isErrorCapacity returns whether the error is to be throttled based on its code.
+// isErrorQuota returns whether the error indicates we have reached
+// some usage quota/limit -- i.e., immediately retrying with an equal
+// or larger instance type will probably not work.
+//
 // Returns false if error is nil.
-func isErrorCapacity(err error) bool {
+func isErrorQuota(err error) bool {
 	if aerr, ok := err.(awserr.Error); ok && aerr != nil {
-		if _, ok := isCodeCapacity[aerr.Code()]; ok {
+		if _, ok := isCodeQuota[aerr.Code()]; ok {
 			return true
 		}
 	}
@@ -720,8 +735,10 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		}
 		throttleValue.Store(d)
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
-	} else if isErrorCapacity(err) {
+	} else if isErrorQuota(err) {
 		return &ec2QuotaError{err}
+	} else if aerr, ok := err.(awserr.Error); ok && aerr != nil && aerr.Code() == "InsufficientInstanceCapacity" {
+		return &capacityError{err, true}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))
 		return err
