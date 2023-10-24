@@ -10,6 +10,7 @@ import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { loadFavorites} from "store/side-panel-tree/side-panel-tree-actions";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -51,6 +52,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                     kind: SnackbarKind.SUCCESS
                 }));
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
+                dispatch<any>(loadFavorites())
             })
             .catch((e: any) => {
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));

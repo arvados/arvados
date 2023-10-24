@@ -98,7 +98,7 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         if (projectUuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
             await dispatch<any>(loadPublicFavorites);
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
-            await dispatch<any>(loadFavorites);
+            await dispatch<any>(loadFavorites());
         } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
         }
@@ -124,7 +124,7 @@ const loadProject = (projectUuid: string) =>
         dispatch(resourcesActions.SET_RESOURCES(items));
     };
 
-const loadFavorites = async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const loadFavorites =()=> async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.FAVORITES, pickerId: SIDE_PANEL_TREE }));
 
     const params = {
@@ -170,7 +170,6 @@ const loadPublicFavorites = async (dispatch: Dispatch, getState: () => RootState
     };
 
     const { items } = await services.linkService.list(params);
-    console.log(items)
 
     dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
         id: SidePanelTreeCategory.PUBLIC_FAVORITES,
@@ -184,7 +183,6 @@ const loadPublicFavorites = async (dispatch: Dispatch, getState: () => RootState
 export const activateSidePanelTreeItem = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const node = getSidePanelTreeNode(id)(getState().treePicker);
-        console.log(id)
         if (node && !node.active) {
             dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
         }
