@@ -68,7 +68,7 @@ arvados-server-install: check-arvados-directory
 	go mod download
 	cd cmd/arvados-server
 	echo GOPATH is $(GOPATH)
-	go install
+	GOFLAGS=-buildvcs=false go install
 	cd -
 	ls -l $(GOPATH)/bin/arvados-server
 	$(GOPATH)/bin/arvados-server install -type test
