@@ -9,6 +9,7 @@ import { checkPublicFavorite } from "./public-favorites-reducer";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { loadPublicFavoritesTree } from "store/side-panel-tree/side-panel-tree-actions";
 
 export const publicFavoritesActions = unionize({
     TOGGLE_PUBLIC_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -48,6 +49,7 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
                     kind: SnackbarKind.SUCCESS
                 }));
                 dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));
+                dispatch<any>(loadPublicFavoritesTree())
             })
             .catch((e: any) => {
                 dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));
