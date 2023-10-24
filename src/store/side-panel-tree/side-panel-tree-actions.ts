@@ -14,13 +14,9 @@ import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode,
 import { ProjectResource } from 'models/project';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ResourceKind } from 'models/resource';
-import { GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
-import { GroupClass } from 'models/group';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass } from 'models/link';
-
-
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
@@ -33,6 +29,7 @@ export enum SidePanelTreeCategory {
 }
 
 export const SIDE_PANEL_TREE = 'sidePanelTree';
+const TREE_NODE_LIMIT = 50
 
 export const getSidePanelTree = (treePicker: TreePicker) =>
     getTreePicker<ProjectResource | string>(SIDE_PANEL_TREE)(treePicker);
@@ -132,14 +129,14 @@ const loadFavorites = async (dispatch: Dispatch, getState: () => RootState, serv
 
     const params = {
         filters: new FilterBuilder()
-                        .addEqual("link_class", LinkClass.STAR)
-                        .addEqual('tail_uuid', getUserUuid(getState()))
-                        .addEqual('tail_kind', ResourceKind.USER)
-                        .getFilters(),
-        // order: new OrderBuilder<ProjectResource>()
-        //     .addAsc('name', GroupContentsResourcePrefix.PROJECT)
-        //     .getOrder(),
-        // limit: 50
+            .addEqual("link_class", LinkClass.STAR)
+            .addEqual('tail_uuid', getUserUuid(getState()))
+            .addEqual('tail_kind', ResourceKind.USER)
+            .getFilters(),
+        order: new OrderBuilder<ProjectResource>()
+            .addDesc('createdAt')
+            .getOrder(),
+        limit: 50
     }
 
     const { items } = await services.linkService.list(params);
@@ -166,10 +163,10 @@ const loadPublicFavorites = async (dispatch: Dispatch, getState: () => RootState
             .addEqual('owner_uuid', publicProjectUuid)
             .addIsA('head_uuid', typeFilters)
             .getFilters(),
-        // order: new OrderBuilder<ProjectResource>()
-        //     .addAsc('name', GroupContentsResourcePrefix.PROJECT)
-        //     .getOrder(),
-        // limit: 1000
+        order: new OrderBuilder<ProjectResource>()
+            .addDesc('createdAt')
+            .getOrder(),
+        limit: TREE_NODE_LIMIT
     };
 
     const { items } = await services.linkService.list(params);
@@ -217,18 +214,11 @@ export const activateSidePanelTreeBranch = (id: string) =>
         const userUuid = getUserUuid(getState());
         if (!userUuid) { return; }
         const ancestors = await services.ancestorsService.ancestors(id, userUuid);
-        // const isShared = ancestors.every(({ uuid }) => uuid !== userUuid);
-        // if (isShared) {
-        //     await dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.SHARED_WITH_ME));
-        // }
         for (const ancestor of ancestors) {
             await dispatch<any>(loadSidePanelTreeProjects(ancestor.uuid));
         }
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({
-            ids: [
-                // ...(isShared ? [SidePanelTreeCategory.SHARED_WITH_ME] : []),
-                ...ancestors.map(ancestor => ancestor.uuid)
-            ],
+            ids: ancestors.map(ancestor => ancestor.uuid),
             pickerId: SIDE_PANEL_TREE
         }));
         dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
