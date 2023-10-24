@@ -319,7 +319,7 @@ class Container < ArvadosModel
         resolved_runtime_constraints.delete('cuda')
       ].uniq
     end
-    reusable_runtime_constraints = hash_product(runtime_constraint_variations)
+    reusable_runtime_constraints = hash_product(**runtime_constraint_variations)
                                      .map { |v| resolved_runtime_constraints.merge(v) }
 
     candidates = candidates.where_serialized(:runtime_constraints, reusable_runtime_constraints, md5: true, multivalue: true)
