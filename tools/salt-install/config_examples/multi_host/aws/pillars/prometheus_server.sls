@@ -14,10 +14,23 @@ prometheus:
       - prometheus
       - alertmanager
       - node_exporter
+      - blackbox_exporter
   pkg:
     use_upstream_repo: false
     use_upstream_archive: true
     component:
+      blackbox_exporter:
+        config_file: /etc/prometheus/blackbox_exporter.yml
+        config:
+          modules:
+            http_2xx:
+              prober: http
+              timeout: 5s
+              http:
+                valid_http_versions: [HTTP/1.1, HTTP/2]
+                valid_status_codes: []  # Default is [200]
+                fail_if_ssl: false
+                fail_if_not_ssl: false
       prometheus:
         service:
            args:
@@ -38,6 +51,43 @@ prometheus:
                 labels:
                   instance: mon.__CLUSTER__
                   cluster: __CLUSTER__
+
+            - job_name: http_probe
+              metrics_path: /probe
+              params:
+                module: [http_2xx]
+              static_configs:
+                - targets: ['https://__DOMAIN__']
+                  labels:
+                    instance: controller.__CLUSTER__
+                - targets: ['https://workbench.__DOMAIN__']
+                  labels:
+                    instance: workbench.__CLUSTER__
+                - targets: ['https://workbench2.__DOMAIN__']
+                  labels:
+                    instance: workbench2.__CLUSTER__
+                - targets: ['https://download.__DOMAIN__']
+                  labels:
+                    instance: download.__CLUSTER__
+                - targets: ['https://grafana.__DOMAIN__']
+                  labels:
+                    instance: grafana.__CLUSTER__
+                - targets: ['https://prometheus.__DOMAIN__']
+                  labels:
+                    instance: prometheus.__CLUSTER__
+                - targets: ['https://webshell.__DOMAIN__']
+                  labels:
+                    instance: webshell.__CLUSTER__
+                - targets: ['https://ws.__DOMAIN__']
+                  labels:
+                    instance: ws.__CLUSTER__
+              relabel_configs:
+                - source_labels: [__address__]
+                  target_label: __param_target
+                - source_labels: [__param_target]
+                  target_label: instance
+                - target_label: __address__
+                  replacement: 127.0.0.1:9115          # blackbox exporter.
 
             ## Arvados unique jobs
             - job_name: arvados_ws

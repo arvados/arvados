@@ -1,0 +1,606 @@
+{
+    "__inputs": [
+      {
+        "name": "DS_PROMETHEUS",
+        "label": "Prometheus",
+        "description": "",
+        "type": "datasource",
+        "pluginId": "prometheus",
+        "pluginName": "Prometheus"
+      }
+    ],
+    "__elements": {},
+    "__requires": [
+      {
+        "type": "grafana",
+        "id": "grafana",
+        "name": "Grafana",
+        "version": "10.1.5"
+      },
+      {
+        "type": "datasource",
+        "id": "prometheus",
+        "name": "Prometheus",
+        "version": "1.0.0"
+      },
+      {
+        "type": "panel",
+        "id": "table",
+        "name": "Table",
+        "version": ""
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "description": "",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "gnetId": 13230,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": false,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "instance"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 500
+                },
+                {
+                  "id": "displayName",
+                  "value": "Instance"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #B"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "lcd",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "max",
+                  "value": 0.5
+                },
+                {
+                  "id": "displayName",
+                  "value": "Connect Time"
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 0.2
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.4
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #A"
+              },
+              "properties": [
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "Certificate expires in"
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "semi-dark-red",
+                        "value": null
+                      },
+                      {
+                        "color": "semi-dark-yellow",
+                        "value": 12096000
+                      },
+                      {
+                        "color": "semi-dark-green",
+                        "value": 25920000
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 220
+                },
+                {
+                  "id": "custom.align",
+                  "value": "left"
+                },
+                {
+                  "id": "unit",
+                  "value": "dtdurations"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #D"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "HTTP Response"
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 300
+                      },
+                      {
+                        "color": "red",
+                        "value": 400
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "custom.align",
+                  "value": "center"
+                },
+                {
+                  "id": "custom.width",
+                  "value": 150
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #C"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "Transfer Time"
+                },
+                {
+                  "id": "max",
+                  "value": 0.5
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "lcd",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 0.125
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.3
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #E"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "TLS Time"
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "lcd",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "max",
+                  "value": 1
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 0.5
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.9
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #F"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "Processing Time"
+                },
+                {
+                  "id": "max",
+                  "value": 0.5
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "lcd",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 0.25
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.4
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Value #G"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "Resolve Time"
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "lcd",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "max",
+                  "value": 0.01
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "#EAB839",
+                        "value": 0.005
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.009
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 22,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "frameIndex": 1,
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": false,
+              "displayName": "Certificate expires in"
+            }
+          ]
+        },
+        "pluginVersion": "10.1.5",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_ssl_earliest_cert_expiry-time()",
+            "format": "table",
+            "hide": false,
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_http_status_code",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "D"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_http_duration_seconds{phase=\"resolve\"}",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "G"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_http_duration_seconds{phase=\"connect\"}",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "B"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_http_duration_seconds{phase=\"tls\"}",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "E"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_http_duration_seconds{phase=\"processing\"}",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "F"
+          },
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "expr": "probe_http_duration_seconds{phase=\"transfer\"}",
+            "format": "table",
+            "instant": true,
+            "interval": "",
+            "legendFormat": "",
+            "refId": "C"
+          }
+        ],
+        "title": "Certificate & Connection Monitoring",
+        "transformations": [
+          {
+            "id": "seriesToColumns",
+            "options": {
+              "byField": "instance"
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "Time 1": true,
+                "Time 2": true,
+                "Time 3": true,
+                "Time 4": true,
+                "Time 5": true,
+                "Time 6": true,
+                "Time 7": true,
+                "__name__": true,
+                "__name__ 1": true,
+                "__name__ 2": true,
+                "__name__ 3": true,
+                "__name__ 4": true,
+                "__name__ 5": true,
+                "__name__ 6": true,
+                "job": true,
+                "job 1": true,
+                "job 2": true,
+                "job 3": true,
+                "job 4": true,
+                "job 5": true,
+                "job 6": true,
+                "job 7": true,
+                "phase": true,
+                "phase 1": true,
+                "phase 2": true,
+                "phase 3": true,
+                "phase 4": true,
+                "phase 5": true
+              },
+              "indexByName": {},
+              "renameByName": {}
+            }
+          }
+        ],
+        "type": "table"
+      }
+    ],
+    "refresh": "",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": [],
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "SSL Certificate Monitor",
+    "uid": "r8eWoHpGz",
+    "version": 4,
+    "weekStart": ""
+  }
