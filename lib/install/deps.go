@@ -557,7 +557,13 @@ ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /us
 			"cmd/arvados-server",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
+			// -buildvcs=false here avoids a fatal "error
+			// obtaining VCS status" when git refuses to
+			// run (for example) as root in a docker
+			// container using a non-root-owned git tree
+			// mounted from the host -- as in
+			// "arvados-package build".
+			cmd := exec.Command("go", "install", "-buildvcs=false", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
 			cmd.Env = append(cmd.Env, os.Environ()...)
 			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
