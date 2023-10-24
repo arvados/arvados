@@ -154,6 +154,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jre-headless",
 			"gettext",
 			"libattr1-dev",
+			"libffi-dev",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests
 			"libgnutls28-dev",
