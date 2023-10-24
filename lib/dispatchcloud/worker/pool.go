@@ -82,6 +82,9 @@ const (
 	// instances have been shutdown.
 	quotaErrorTTL = time.Minute
 
+	// Time after a capacity error to try again
+	capacityErrorTTL = time.Minute
+
 	// Time between "X failed because rate limiting" messages
 	logRateLimitErrorInterval = time.Second * 10
 )
@@ -181,6 +184,7 @@ type Pool struct {
 	atQuotaUntilFewerInstances int
 	atQuotaUntil               time.Time
 	atQuotaErr                 cloud.QuotaError
+	atCapacityUntil            map[string]time.Time
 	stop                       chan bool
 	mtx                        sync.RWMutex
 	setupOnce                  sync.Once
@@ -320,14 +324,11 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 		// Boot probe is certain to fail.
 		return false
 	}
-	wp.mtx.Lock()
-	defer wp.mtx.Unlock()
-	if time.Now().Before(wp.atQuotaUntil) ||
-		wp.atQuotaUntilFewerInstances > 0 ||
-		wp.instanceSet.throttleCreate.Error() != nil ||
-		(wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating)) {
+	if wp.AtCapacity(it) || wp.AtQuota() || wp.instanceSet.throttleCreate.Error() != nil {
 		return false
 	}
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
 	// The maxConcurrentInstanceCreateOps knob throttles the number of node create
 	// requests in flight. It was added to work around a limitation in Azure's
 	// managed disks, which support no more than 20 concurrent node creation
@@ -381,6 +382,19 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 					logger.WithField("atQuotaUntilFewerInstances", n).Info("quota error -- waiting for next instance shutdown")
 				}
 			}
+			if err, ok := err.(cloud.CapacityError); ok && err.IsCapacityError() {
+				capKey := it.ProviderType
+				if !err.IsInstanceTypeSpecific() {
+					// set capacity flag for all
+					// instance types
+					capKey = ""
+				}
+				if wp.atCapacityUntil == nil {
+					wp.atCapacityUntil = map[string]time.Time{}
+				}
+				wp.atCapacityUntil[capKey] = time.Now().Add(capacityErrorTTL)
+				time.AfterFunc(capacityErrorTTL, wp.notify)
+			}
 			logger.WithError(err).Error("create failed")
 			wp.instanceSet.throttleCreate.CheckRateLimitError(err, wp.logger, "create instance", wp.notify)
 			return
@@ -391,6 +405,22 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 		logger.Infof("now at MaxInstances limit of %d instances", wp.maxInstances)
 	}
 	return true
+}
+
+// AtCapacity returns true if Create() is currently expected to fail
+// for the given instance type.
+func (wp *Pool) AtCapacity(it arvados.InstanceType) bool {
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
+	if t, ok := wp.atCapacityUntil[it.ProviderType]; ok && time.Now().Before(t) {
+		// at capacity for this instance type
+		return true
+	}
+	if t, ok := wp.atCapacityUntil[""]; ok && time.Now().Before(t) {
+		// at capacity for all instance types
+		return true
+	}
+	return false
 }
 
 // AtQuota returns true if Create is not expected to work at the
