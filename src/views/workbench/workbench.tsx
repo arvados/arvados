@@ -119,7 +119,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     splitter: {
         "& > .layout-splitter": {
-            width: "2px",
+            width: "3px",
         },
         "& > .layout-splitter-disabled": {
             pointerEvents: "none",
