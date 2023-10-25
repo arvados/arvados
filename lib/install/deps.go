@@ -600,7 +600,7 @@ v=/var/lib/arvados/lib/python
 tmp=/var/lib/arvados/tmp/python
 python3 -m venv "$v"
 . "$v/bin/activate"
-pip3 install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
+pip3 install --no-cache-dir 'setuptools>=62.4.0' 'pip>=7'
 export ARVADOS_BUILDING_VERSION="`+inst.PackageVersion+`"
 for src in "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"; do
   rsync -a --delete-after "$src/" "$tmp/"
