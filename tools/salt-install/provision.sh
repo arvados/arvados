@@ -722,7 +722,9 @@ else
         # "ArvadosPromDataSource" is the hardcoded UID for Prometheus' datasource
         # in Grafana.
         for f in $(ls "${GRAFANA_DASHBOARDS_DIR}"/*.json); do
-          sed 's#${DS_PROMETHEUS}#ArvadosPromDataSource#g' \
+          sed "s#__TLS_EXPIRATION_YELLOW__#${TLS_EXPIRATION_YELLOW}#g;
+               s#__TLS_EXPIRATION_GREEN__#${TLS_EXPIRATION_GREEN}#g;
+               s#\${DS_PROMETHEUS}#ArvadosPromDataSource#g" \
           "${f}" > "${GRAFANA_DASHBOARDS_DEST_DIR}"/$(basename "${f}")
         done
 

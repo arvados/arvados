@@ -48,6 +48,14 @@ for node in "${!NODES[@]}"; do
   done
 done
 
+# Sets TLS certificate expiration thresholds
+TLS_EXPIRATION_YELLOW=5184000 # > 2 months
+TLS_EXPIRATION_GREEN=15552000 # > 6 months
+if [[ "${SSL_MODE}" == "lets-encrypt" ]]; then
+  TLS_EXPIRATION_YELLOW=2592000 # > 1 months
+  TLS_EXPIRATION_GREEN=5184000 # > 2 months
+fi
+
 # Auto-detects load-balancing mode
 if [ -z "${ROLE2NODES['balancer']:-}" ]; then
   ENABLE_BALANCER="no"

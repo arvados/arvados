@@ -171,11 +171,11 @@
                       },
                       {
                         "color": "semi-dark-yellow",
-                        "value": 12096000
+                        "value": __TLS_EXPIRATION_YELLOW__
                       },
                       {
                         "color": "semi-dark-green",
-                        "value": 25920000
+                        "value": __TLS_EXPIRATION_GREEN__
                       }
                     ]
                   }
