@@ -45,9 +45,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["700"],
         height: '14px',
         width: '14px',
+        marginBottom: '0.4rem',
     },
     toggableIcon: {
-        fontSize: '14px'
+        fontSize: '14px',
     },
     renderContainer: {
         flex: 1
