@@ -613,74 +613,69 @@ done
 			return 1
 		}
 
-		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
-		for dstdir, srcdir := range map[string]string{
-			"railsapi":   "services/api",
-			"workbench1": "apps/workbench",
+		// Install RailsAPI to /var/lib/arvados/railsapi/
+		fmt.Fprintln(stderr, "building railsapi...")
+		cmd = exec.Command("rsync",
+			"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
+			"--exclude", "/coverage",
+			"--exclude", "/log",
+			"--exclude", "/node_modules",
+			"--exclude", "/tmp",
+			"--exclude", "/public/assets",
+			"--exclude", "/vendor",
+			"--exclude", "/config/environments",
+			"./", "/var/lib/arvados/railsapi/")
+		cmd.Dir = filepath.Join(inst.SourcePath, "services", "api")
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return 1
+		}
+		for _, cmdline := range [][]string{
+			{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
+			{"touch", "log/production.log"},
+			{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU())},
+
+			{"chown", "www-data:www-data", ".", "public/assets"},
+			// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
+			{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
+			{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
+			{"chown", "root:root", "."},
+			{"chown", "-R", "root:root", "public/assets", "vendor"},
+
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
 		} {
-			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("rsync",
-				"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
-				"--exclude", "/coverage",
-				"--exclude", "/log",
-				"--exclude", "/node_modules",
-				"--exclude", "/tmp",
-				"--exclude", "/public/assets",
-				"--exclude", "/vendor",
-				"--exclude", "/config/environments",
-				"./", "/var/lib/arvados/"+dstdir+"/")
-			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
+			if cmdline[len(cmdline)-2] == "rake" {
+				continue
+			}
+			cmd = exec.Command(cmdline[0], cmdline[1:]...)
+			cmd.Dir = "/var/lib/arvados/railsapi"
 			cmd.Stdout = stdout
 			cmd.Stderr = stderr
+			fmt.Fprintf(stderr, "... %s\n", cmd.Args)
 			err = cmd.Run()
 			if err != nil {
 				return 1
 			}
-			for _, cmdline := range [][]string{
-				{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
-				{"touch", "log/production.log"},
-				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU())},
-
-				{"chown", "www-data:www-data", ".", "public/assets"},
-				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
-				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
-				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
-				{"chown", "root:root", "."},
-				{"chown", "-R", "root:root", "public/assets", "vendor"},
-
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
-			} {
-				if cmdline[len(cmdline)-2] == "rake" && dstdir != "workbench1" {
-					continue
-				}
-				cmd = exec.Command(cmdline[0], cmdline[1:]...)
-				cmd.Dir = "/var/lib/arvados/" + dstdir
-				cmd.Stdout = stdout
-				cmd.Stderr = stderr
-				fmt.Fprintf(stderr, "... %s\n", cmd.Args)
-				err = cmd.Run()
-				if err != nil {
-					return 1
-				}
-			}
-			cmd = exec.Command("sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "validate-install")
-			cmd.Dir = "/var/lib/arvados/" + dstdir
-			cmd.Stdout = stdout
-			cmd.Stderr = stderr
-			err = cmd.Run()
-			if err != nil && !strings.Contains(err.Error(), "exit status 2") {
-				// Exit code 2 indicates there were warnings (like
-				// "other passenger installations have been detected",
-				// which we can't expect to avoid) but no errors.
-				// Other non-zero exit codes (1, 9) indicate errors.
-				return 1
-			}
+		}
+		cmd = exec.Command("sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "validate-install")
+		cmd.Dir = "/var/lib/arvados/railsapi"
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil && !strings.Contains(err.Error(), "exit status 2") {
+			// Exit code 2 indicates there were warnings (like
+			// "other passenger installations have been detected",
+			// which we can't expect to avoid) but no errors.
+			// Other non-zero exit codes (1, 9) indicate errors.
+			return 1
 		}
 
 		// Install workbench2 app to /var/lib/arvados/workbench2/
