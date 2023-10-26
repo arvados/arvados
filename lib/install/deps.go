@@ -677,11 +677,24 @@ done
 			return 1
 		}
 
-		// Install workbench2 app to /var/lib/arvados/workbench2/
+		// Install workbench2 app to
+		// /var/lib/arvados/workbench2/.
+		//
+		// We copy the source tree from the (possibly
+		// readonly) source tree into a temp dir because `yarn
+		// build` writes to {source-tree}/build/. When we
+		// upgrade to react-scripts >= 4.0.2 we may be able to
+		// build from the source dir and write directly to the
+		// final destination (using
+		// YARN_INSTALL_STATE_PATH=/dev/null
+		// BUILD_PATH=/var/lib/arvados/workbench2) instead of
+		// using two rsync steps here.
 		if err = inst.runBash(`
-cd `+inst.SourcePath+`/services/workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
-rsync -a --delete-after build/ /var/lib/arvados/workbench2/
+tmp=/var/lib/arvados/tmp/workbench2
+trap "rm -r ${tmp}" ERR EXIT
+rsync -a --delete-after `+inst.SourcePath+`/services/workbench2/ "$tmp/"
+env -C "$tmp" VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
+rsync -a --delete-after "$tmp/build/" /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
 			return 1
 		}
