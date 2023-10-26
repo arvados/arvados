@@ -604,9 +604,8 @@ pip3 install --no-cache-dir 'setuptools>=62.4.0' 'pip>=7'
 export ARVADOS_BUILDING_VERSION="`+inst.PackageVersion+`"
 for src in "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"; do
   rsync -a --delete-after "$src/" "$tmp/"
-  cd "$tmp"
-  python3 setup.py install
-  cd ..
+  env -C "$tmp" python3 setup.py build
+  pip3 install "$tmp"
   rm -rf "$tmp"
 done
 `, stdout, stderr); err != nil {
