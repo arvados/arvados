@@ -52,8 +52,8 @@ done
 TLS_EXPIRATION_YELLOW=5184000 # > 2 months
 TLS_EXPIRATION_GREEN=15552000 # > 6 months
 if [[ "${SSL_MODE}" == "lets-encrypt" ]]; then
-  TLS_EXPIRATION_YELLOW=2592000 # > 1 months
-  TLS_EXPIRATION_GREEN=5184000 # > 2 months
+  TLS_EXPIRATION_YELLOW=1900800 # > 22 days
+  TLS_EXPIRATION_GREEN=2505600 # > 29 days
 fi
 
 # Auto-detects load-balancing mode
