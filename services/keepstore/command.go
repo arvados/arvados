@@ -186,7 +186,7 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 
 	// Initialize the trashq and workers
 	h.trashq = NewWorkQueue()
-	for i := 0; i < 1 || i < h.Cluster.Collections.BlobTrashConcurrency; i++ {
+	for i := 0; i < h.Cluster.Collections.BlobTrashConcurrency; i++ {
 		go RunTrashWorker(h.volmgr, h.Logger, h.Cluster, h.trashq)
 	}
 
