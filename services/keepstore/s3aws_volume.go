@@ -295,10 +295,6 @@ func (v *S3AWSVolume) Compare(ctx context.Context, loc string, expect []byte) er
 // EmptyTrash looks for trashed blocks that exceeded BlobTrashLifetime
 // and deletes them from the volume.
 func (v *S3AWSVolume) EmptyTrash() {
-	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
-		return
-	}
-
 	var bytesInTrash, blocksInTrash, bytesDeleted, blocksDeleted int64
 
 	// Define "ready to delete" as "...when EmptyTrash started".

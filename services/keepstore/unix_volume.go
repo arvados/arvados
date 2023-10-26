@@ -647,10 +647,6 @@ var unixTrashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
 // EmptyTrash walks hierarchy looking for {hash}.trash.*
 // and deletes those with deadline < now.
 func (v *UnixVolume) EmptyTrash() {
-	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
-		return
-	}
-
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int64
 

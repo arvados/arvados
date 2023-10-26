@@ -575,10 +575,6 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 // EmptyTrash looks for trashed blocks that exceeded BlobTrashLifetime
 // and deletes them from the volume.
 func (v *AzureBlobVolume) EmptyTrash() {
-	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
-		return
-	}
-
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int64
 

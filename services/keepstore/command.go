@@ -208,7 +208,9 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 	}
 	h.keepClient.Arvados.ApiToken = fmt.Sprintf("%x", rand.Int63())
 
-	if d := h.Cluster.Collections.BlobTrashCheckInterval.Duration(); d > 0 {
+	if d := h.Cluster.Collections.BlobTrashCheckInterval.Duration(); d > 0 &&
+		h.Cluster.Collections.BlobTrash &&
+		h.Cluster.Collections.BlobDeleteConcurrency > 0 {
 		go emptyTrash(h.volmgr.writables, d)
 	}
 
