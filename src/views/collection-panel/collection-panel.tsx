@@ -37,6 +37,7 @@ import { Link as ButtonLink } from '@material-ui/core';
 import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { DefaultView } from "components/default-view/default-view";
 
 type CssRules = 'root'
     | 'button'
@@ -229,7 +230,17 @@ export const CollectionPanel = withStyles(styles)(connect(
                             </Card>
                         </MPVPanelContent>
                     </MPVContainer >
-                    : null;
+                    : <Grid
+                        container
+                        alignItems="center"
+                        justify="center"
+                        style={{ minHeight: "100%" }}>
+                        <DefaultView
+                            icon={CollectionIcon}
+                            messages={["Collection not found"]}
+                        />
+                    </Grid>
+                    ;
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {

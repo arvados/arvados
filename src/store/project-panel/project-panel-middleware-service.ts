@@ -35,6 +35,7 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
+import { openNotFoundDialog } from "store/not-found-panel/not-found-panel-action";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -69,7 +70,12 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                         rowsPerPage: dataExplorer.rowsPerPage,
                     })
                 );
-                api.dispatch(couldNotFetchProjectContents());
+                if (e.status === 404) {
+                    // It'll just show up as not found
+                }
+                else {
+                    api.dispatch(couldNotFetchProjectContents());
+                }
             } finally {
                 if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
             }

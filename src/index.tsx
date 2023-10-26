@@ -153,25 +153,13 @@ fetchConfig().then(({ config, apiHost }) => {
 
     const services = createServices(config, {
         progressFn: (id, working) => {
-            //store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
         },
         errorFn: (id, error, showSnackBar: boolean) => {
             if (showSnackBar) {
                 console.error("Backend error:", error);
-
-                if (error.status === 404) {
-                    store.dispatch(openNotFoundDialog());
-                } else if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
+                if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
                     // Catch auth errors when navigating and redirect to login preserving url location
                     store.dispatch(logout(false, true));
-                } else {
-                    store.dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: `${error.errors ? error.errors[0] : error.message}`,
-                            kind: SnackbarKind.ERROR,
-                            hideDuration: 8000,
-                        })
-                    );
                 }
             }
         },

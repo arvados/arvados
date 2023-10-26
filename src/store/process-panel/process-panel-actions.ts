@@ -59,7 +59,7 @@ export const navigateToOutput = (uuid: string) => async (dispatch: Dispatch<any>
         await services.collectionService.get(uuid);
         dispatch<any>(navigateTo(uuid));
     } catch {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "This collection does not exists!", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 4000, kind: SnackbarKind.WARNING }));
     }
 };
 
@@ -159,8 +159,7 @@ export const updateOutputParams = () => async (dispatch: Dispatch<any>, getState
 };
 
 export const openWorkflow = (uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch<any>(navigateToWorkflows);
-    dispatch<any>(showWorkflowDetails(uuid));
+    dispatch<any>(navigateTo(uuid));
 };
 
 export const initProcessPanelFilters = processPanelActions.SET_PROCESS_PANEL_FILTERS([
