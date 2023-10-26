@@ -116,7 +116,7 @@
                       "value": __TLS_EXPIRATION_YELLOW__
                     },
                     {
-                      "color": "green",
+                      "color": "transparent",
                       "value": __TLS_EXPIRATION_GREEN__
                     }
                   ]
