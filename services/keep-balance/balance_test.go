@@ -87,6 +87,8 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 			KeepMount: arvados.KeepMount{
 				UUID:           fmt.Sprintf("zzzzz-mount-%015x", i),
 				StorageClasses: map[string]bool{"default": true},
+				AllowWrite:     true,
+				AllowTrash:     true,
 			},
 			KeepService: srv,
 		}}
@@ -169,7 +171,8 @@ func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
 			KeepMount: arvados.KeepMount{
 				DeviceID:       bal.srvs[(i+1)%len(bal.srvs)].mounts[0].KeepMount.DeviceID,
 				UUID:           bal.srvs[(i+1)%len(bal.srvs)].mounts[0].KeepMount.UUID,
-				ReadOnly:       readonly,
+				AllowWrite:     !readonly,
+				AllowTrash:     !readonly,
 				Replication:    1,
 				StorageClasses: map[string]bool{"default": true},
 			},
@@ -374,7 +377,7 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 }
 
 func (bal *balancerSuite) TestCleanupMounts(c *check.C) {
-	bal.srvs[3].mounts[0].KeepMount.ReadOnly = true
+	bal.srvs[3].mounts[0].KeepMount.AllowWrite = false
 	bal.srvs[3].mounts[0].KeepMount.DeviceID = "abcdef"
 	bal.srvs[14].mounts[0].KeepMount.UUID = bal.srvs[3].mounts[0].KeepMount.UUID
 	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
@@ -583,6 +586,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// classes=[special,special2].
 	bal.srvs[9].mounts = []*KeepMount{{
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"special": true},
 			UUID:           "zzzzz-mount-special00000009",
@@ -591,6 +596,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 		KeepService: bal.srvs[9],
 	}, {
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"special": true, "special2": true},
 			UUID:           "zzzzz-mount-special20000009",
@@ -603,6 +610,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// classes=[special3], one with classes=[default].
 	bal.srvs[13].mounts = []*KeepMount{{
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"special2": true},
 			UUID:           "zzzzz-mount-special2000000d",
@@ -611,6 +620,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 		KeepService: bal.srvs[13],
 	}, {
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"default": true},
 			UUID:           "zzzzz-mount-00000000000000d",

@@ -211,7 +211,7 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 	if d := h.Cluster.Collections.BlobTrashCheckInterval.Duration(); d > 0 &&
 		h.Cluster.Collections.BlobTrash &&
 		h.Cluster.Collections.BlobDeleteConcurrency > 0 {
-		go emptyTrash(h.volmgr.writables, d)
+		go emptyTrash(h.volmgr.mounts, d)
 	}
 
 	return nil

@@ -846,7 +846,7 @@ func (b *s3AWSbucket) Del(path string) error {
 
 // Trash a Keep block.
 func (v *S3AWSVolume) Trash(loc string) error {
-	if v.volume.ReadOnly {
+	if v.volume.ReadOnly && !v.volume.AllowTrashWhenReadOnly {
 		return MethodDisabledError
 	}
 	if t, err := v.Mtime(loc); err != nil {

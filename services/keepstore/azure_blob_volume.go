@@ -480,10 +480,9 @@ func (v *AzureBlobVolume) listBlobs(page int, params storage.ListBlobsParameters
 
 // Trash a Keep block.
 func (v *AzureBlobVolume) Trash(loc string) error {
-	if v.volume.ReadOnly {
+	if v.volume.ReadOnly && !v.volume.AllowTrashWhenReadOnly {
 		return MethodDisabledError
 	}
-
 	// Ideally we would use If-Unmodified-Since, but that
 	// particular condition seems to be ignored by Azure. Instead,
 	// we get the Etag before checking Mtime, and use If-Match to

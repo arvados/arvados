@@ -36,10 +36,12 @@ func TrashItem(volmgr *RRVolumeManager, logger logrus.FieldLogger, cluster *arva
 
 	var volumes []*VolumeMount
 	if uuid := trashRequest.MountUUID; uuid == "" {
-		volumes = volmgr.AllWritable()
-	} else if mnt := volmgr.Lookup(uuid, true); mnt == nil {
+		volumes = volmgr.Mounts()
+	} else if mnt := volmgr.Lookup(uuid, false); mnt == nil {
 		logger.Warnf("trash request for nonexistent mount: %v", trashRequest)
 		return
+	} else if !mnt.KeepMount.AllowTrash {
+		logger.Warnf("trash request for mount with ReadOnly=true, AllowTrashWhenReadOnly=false: %v", trashRequest)
 	} else {
 		volumes = []*VolumeMount{mnt}
 	}

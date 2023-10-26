@@ -1684,6 +1684,7 @@ Clusters:
             ReadOnly: false
           "http://host1.example:25107": {}
         ReadOnly: false
+        AllowTrashWhenReadOnly: false
         Replication: 1
         StorageClasses:
           # If you have configured storage classes (see StorageClasses
