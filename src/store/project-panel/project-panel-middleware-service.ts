@@ -35,7 +35,6 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
-import { openNotFoundDialog } from "store/not-found-panel/not-found-panel-action";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

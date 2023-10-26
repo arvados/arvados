@@ -64,7 +64,6 @@ import {
     runningProcessResourceAdminActionSet,
     readOnlyProcessResourceActionSet,
 } from "views-components/context-menu/action-sets/process-resource-action-set";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { trashedCollectionActionSet } from "views-components/context-menu/action-sets/trashed-collection-action-set";
 import { setBuildInfo } from "store/app-info/app-info-actions";
 import { getBuildInfo } from "common/app-info";
@@ -89,8 +88,6 @@ import {
 } from "views-components/context-menu/action-sets/project-admin-action-set";
 import { permissionEditActionSet } from "views-components/context-menu/action-sets/permission-edit-action-set";
 import { workflowActionSet, readOnlyWorkflowActionSet } from "views-components/context-menu/action-sets/workflow-action-set";
-import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { openNotFoundDialog } from "./store/not-found-panel/not-found-panel-action";
 import { storeRedirects } from "./common/redirect-to";
 import { searchResultsActionSet } from "views-components/context-menu/action-sets/search-results-action-set";
 
