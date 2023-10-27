@@ -137,8 +137,8 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     { name: "Details" },
                     { name: "Inputs" },
                     { name: "Outputs" },
-                    { name: "Files" },
                     { name: "Executions" },
+                    { name: "Definition" },
                 ];
                 return item
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
@@ -196,13 +196,13 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 showParams={true}
                             />
                         </MPVPanelContent>
+                        <MPVPanelContent forwardProps xs>
+                            <WorkflowProcessesPanel />
+                        </MPVPanelContent>
                         <MPVPanelContent xs>
                             <Card className={classes.filesCard}>
                                 <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={workflowCollection} />
                             </Card>
-                        </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs>
-                            <WorkflowProcessesPanel />
                         </MPVPanelContent>
                     </MPVContainer>
                     : null;
