@@ -117,7 +117,8 @@ arvados:
 
     ### API
     API:
-      MaxConcurrentRequests: {{ max_workers * 2 }}
+      MaxConcurrentRailsRequests: {{ max_workers * 2 }}
+      MaxConcurrentRequests: {{ max_reqs }}
       MaxQueuedRequests: {{ max_reqs }}
 
     ### CONTAINERS

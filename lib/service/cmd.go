@@ -148,6 +148,19 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 1
 	}
 
+	maxReqs := cluster.API.MaxConcurrentRequests
+	if maxRails := cluster.API.MaxConcurrentRailsRequests; maxRails > 0 &&
+		(maxRails < maxReqs || maxReqs == 0) &&
+		strings.HasSuffix(prog, "controller") {
+		// Ideally, we would accept up to
+		// MaxConcurrentRequests, and apply the
+		// MaxConcurrentRailsRequests limit only for requests
+		// that require calling upstream to RailsAPI. But for
+		// now we make the simplifying assumption that every
+		// controller request causes an upstream RailsAPI
+		// request.
+		maxReqs = maxRails
+	}
 	instrumented := httpserver.Instrument(reg, log,
 		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
@@ -156,7 +169,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 						interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
 							&httpserver.RequestLimiter{
 								Handler:                    handler,
-								MaxConcurrent:              cluster.API.MaxConcurrentRequests,
+								MaxConcurrent:              maxReqs,
 								MaxQueue:                   cluster.API.MaxQueuedRequests,
 								MaxQueueTimeForMinPriority: cluster.API.MaxQueueTimeForLockRequests.Duration(),
 								Priority:                   c.requestPriority,
@@ -199,7 +212,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		<-handler.Done()
 		srv.Close()
 	}()
-	go c.requestQueueDumpCheck(cluster, prog, reg, &srv.Server, logger)
+	go c.requestQueueDumpCheck(cluster, maxReqs, prog, reg, &srv.Server, logger)
 	err = srv.Wait()
 	if err != nil {
 		return 1
@@ -211,9 +224,9 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 // server's incoming HTTP request queue size. When it exceeds 90% of
 // API.MaxConcurrentRequests, write the /_inspect/requests data to a
 // JSON file in the specified directory.
-func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, reg *prometheus.Registry, srv *http.Server, logger logrus.FieldLogger) {
+func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, maxReqs int, prog string, reg *prometheus.Registry, srv *http.Server, logger logrus.FieldLogger) {
 	outdir := cluster.SystemLogs.RequestQueueDumpDirectory
-	if outdir == "" || cluster.ManagementToken == "" || cluster.API.MaxConcurrentRequests < 1 {
+	if outdir == "" || cluster.ManagementToken == "" || maxReqs < 1 {
 		return
 	}
 	logger = logger.WithField("worker", "RequestQueueDump")
@@ -228,7 +241,7 @@ func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, r
 		for _, mf := range mfs {
 			if mf.Name != nil && *mf.Name == "arvados_concurrent_requests" && len(mf.Metric) == 1 {
 				n := int(mf.Metric[0].GetGauge().GetValue())
-				if n > 0 && n >= cluster.API.MaxConcurrentRequests*9/10 {
+				if n > 0 && n >= maxReqs*9/10 {
 					dump = true
 					break
 				}
