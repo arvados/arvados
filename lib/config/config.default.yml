@@ -225,6 +225,12 @@ Clusters:
 
       # Maximum number of concurrent requests to process concurrently
       # in a single service process, or 0 for no limit.
+      #
+      # Note this applies to all Arvados services (controller, webdav,
+      # websockets, etc.). Concurrency in the controller service is
+      # also effectively limited by MaxConcurrentRailsRequests (see
+      # below) because most controller requests proxy through to the
+      # RailsAPI service.
       MaxConcurrentRequests: 64
 
       # Maximum number of concurrent requests to process concurrently
