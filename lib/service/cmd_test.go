@@ -39,15 +39,19 @@ const (
 	contextKey key = iota
 )
 
-func (*Suite) TestGetListenAddress(c *check.C) {
+func unusedPort(c *check.C) string {
 	// Find an available port on the testing host, so the test
 	// cases don't get confused by "already in use" errors.
 	listener, err := net.Listen("tcp", ":")
 	c.Assert(err, check.IsNil)
-	_, unusedPort, err := net.SplitHostPort(listener.Addr().String())
-	c.Assert(err, check.IsNil)
 	listener.Close()
+	_, port, err := net.SplitHostPort(listener.Addr().String())
+	c.Assert(err, check.IsNil)
+	return port
+}
 
+func (*Suite) TestGetListenAddress(c *check.C) {
+	port := unusedPort(c)
 	defer os.Unsetenv("ARVADOS_SERVICE_INTERNAL_URL")
 	for idx, trial := range []struct {
 		// internalURL => listenURL, both with trailing "/"
@@ -60,17 +64,17 @@ func (*Suite) TestGetListenAddress(c *check.C) {
 		expectInternal   string
 	}{
 		{
-			internalURLs:   map[string]string{"http://localhost:" + unusedPort + "/": ""},
-			expectListen:   "http://localhost:" + unusedPort + "/",
-			expectInternal: "http://localhost:" + unusedPort + "/",
+			internalURLs:   map[string]string{"http://localhost:" + port + "/": ""},
+			expectListen:   "http://localhost:" + port + "/",
+			expectInternal: "http://localhost:" + port + "/",
 		},
 		{ // implicit port 80 in InternalURLs
 			internalURLs:     map[string]string{"http://localhost/": ""},
 			expectErrorMatch: `.*:80: bind: permission denied`,
 		},
 		{ // implicit port 443 in InternalURLs
-			internalURLs:   map[string]string{"https://host.example/": "http://localhost:" + unusedPort + "/"},
-			expectListen:   "http://localhost:" + unusedPort + "/",
+			internalURLs:   map[string]string{"https://host.example/": "http://localhost:" + port + "/"},
+			expectListen:   "http://localhost:" + port + "/",
 			expectInternal: "https://host.example/",
 		},
 		{ // implicit port 443 in ListenURL
@@ -85,16 +89,16 @@ func (*Suite) TestGetListenAddress(c *check.C) {
 		{
 			internalURLs: map[string]string{
 				"https://hostname1.example/": "http://localhost:12435/",
-				"https://hostname2.example/": "http://localhost:" + unusedPort + "/",
+				"https://hostname2.example/": "http://localhost:" + port + "/",
 			},
 			envVar:         "https://hostname2.example", // note this works despite missing trailing "/"
-			expectListen:   "http://localhost:" + unusedPort + "/",
+			expectListen:   "http://localhost:" + port + "/",
 			expectInternal: "https://hostname2.example/",
 		},
 		{ // cannot listen on any of the ListenURLs
 			internalURLs: map[string]string{
-				"https://hostname1.example/": "http://1.2.3.4:" + unusedPort + "/",
-				"https://hostname2.example/": "http://1.2.3.4:" + unusedPort + "/",
+				"https://hostname1.example/": "http://1.2.3.4:" + port + "/",
+				"https://hostname2.example/": "http://1.2.3.4:" + port + "/",
 			},
 			expectErrorMatch: "configuration does not enable the \"arvados-controller\" service on this host",
 		},
@@ -194,10 +198,19 @@ func (*Suite) TestCommand(c *check.C) {
 	c.Check(stderr.String(), check.Matches, `(?ms).*"msg":"CheckHealth called".*`)
 }
 
-func (*Suite) TestDumpRequests(c *check.C) {
+func (s *Suite) TestDumpRequestsKeepweb(c *check.C) {
+	s.testDumpRequests(c, arvados.ServiceNameKeepweb, "MaxConcurrentRequests")
+}
+
+func (s *Suite) TestDumpRequestsController(c *check.C) {
+	s.testDumpRequests(c, arvados.ServiceNameController, "MaxConcurrentRailsRequests")
+}
+
+func (*Suite) testDumpRequests(c *check.C, serviceName arvados.ServiceName, maxReqsConfigKey string) {
 	defer func(orig time.Duration) { requestQueueDumpCheckInterval = orig }(requestQueueDumpCheckInterval)
 	requestQueueDumpCheckInterval = time.Second / 10
 
+	port := unusedPort(c)
 	tmpdir := c.MkDir()
 	cf, err := ioutil.TempFile(tmpdir, "cmd_test.")
 	c.Assert(err, check.IsNil)
@@ -211,14 +224,18 @@ Clusters:
   SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   ManagementToken: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
   API:
-   MaxConcurrentRailsRequests: %d
+   `+maxReqsConfigKey+`: %d
    MaxQueuedRequests: 0
   SystemLogs: {RequestQueueDumpDirectory: %q}
   Services:
    Controller:
-    ExternalURL: "http://localhost:12345"
-    InternalURLs: {"http://localhost:12345": {}}
+    ExternalURL: "http://localhost:`+port+`"
+    InternalURLs: {"http://localhost:`+port+`": {}}
+   WebDAV:
+    ExternalURL: "http://localhost:`+port+`"
+    InternalURLs: {"http://localhost:`+port+`": {}}
 `, max, tmpdir)
+	cf.Close()
 
 	started := make(chan bool, max+1)
 	hold := make(chan bool)
@@ -230,7 +247,7 @@ Clusters:
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cmd := Command(arvados.ServiceNameController, func(ctx context.Context, _ *arvados.Cluster, token string, reg *prometheus.Registry) Handler {
+	cmd := Command(serviceName, func(ctx context.Context, _ *arvados.Cluster, token string, reg *prometheus.Registry) Handler {
 		return &testHandler{ctx: ctx, handler: handler, healthCheck: healthCheck}
 	})
 	cmd.(*command).ctx = context.WithValue(ctx, contextKey, "bar")
@@ -239,7 +256,7 @@ Clusters:
 	var stdin, stdout, stderr bytes.Buffer
 
 	go func() {
-		cmd.RunCommand("arvados-controller", []string{"-config", cf.Name()}, &stdin, &stdout, &stderr)
+		cmd.RunCommand(string(serviceName), []string{"-config", cf.Name()}, &stdin, &stdout, &stderr)
 		close(exited)
 	}()
 	select {
@@ -252,10 +269,10 @@ Clusters:
 	deadline := time.Now().Add(time.Second * 2)
 	for i := 0; i < max+1; i++ {
 		go func() {
-			resp, err := client.Get("http://localhost:12345/testpath")
+			resp, err := client.Get("http://localhost:" + port + "/testpath")
 			for err != nil && strings.Contains(err.Error(), "dial tcp") && deadline.After(time.Now()) {
 				time.Sleep(time.Second / 100)
-				resp, err = client.Get("http://localhost:12345/testpath")
+				resp, err = client.Get("http://localhost:" + port + "/testpath")
 			}
 			if c.Check(err, check.IsNil) {
 				c.Logf("resp StatusCode %d", resp.StatusCode)
@@ -267,12 +284,12 @@ Clusters:
 		case <-started:
 		case <-time.After(time.Second):
 			c.Logf("%s", stderr.String())
-			panic("timed out")
+			c.Fatal("timed out")
 		}
 	}
 	for delay := time.Second / 100; ; delay = delay * 2 {
 		time.Sleep(delay)
-		j, err := os.ReadFile(tmpdir + "/arvados-controller-requests.json")
+		j, err := os.ReadFile(tmpdir + "/" + string(serviceName) + "-requests.json")
 		if os.IsNotExist(err) && deadline.After(time.Now()) {
 			continue
 		}
@@ -298,7 +315,7 @@ Clusters:
 	}
 
 	for _, path := range []string{"/_inspect/requests", "/metrics"} {
-		req, err := http.NewRequest("GET", "http://localhost:12345"+path, nil)
+		req, err := http.NewRequest("GET", "http://localhost:"+port+""+path, nil)
 		c.Assert(err, check.IsNil)
 		req.Header.Set("Authorization", "Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 		resp, err := client.Do(req)
@@ -320,10 +337,10 @@ Clusters:
 	}
 	close(hold)
 	cancel()
-
 }
 
 func (*Suite) TestTLS(c *check.C) {
+	port := unusedPort(c)
 	cwd, err := os.Getwd()
 	c.Assert(err, check.IsNil)
 
@@ -333,8 +350,8 @@ Clusters:
   SystemRootToken: abcde
   Services:
    Controller:
-    ExternalURL: "https://localhost:12345"
-    InternalURLs: {"https://localhost:12345": {}}
+    ExternalURL: "https://localhost:` + port + `"
+    InternalURLs: {"https://localhost:` + port + `": {}}
   TLS:
    Key: file://` + cwd + `/../../services/api/tmp/self-signed.key
    Certificate: file://` + cwd + `/../../services/api/tmp/self-signed.pem
@@ -359,7 +376,7 @@ Clusters:
 		defer close(got)
 		client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
 		for range time.NewTicker(time.Millisecond).C {
-			resp, err := client.Get("https://localhost:12345")
+			resp, err := client.Get("https://localhost:" + port)
 			if err != nil {
 				c.Log(err)
 				continue
