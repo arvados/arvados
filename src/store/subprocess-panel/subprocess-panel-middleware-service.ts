@@ -2,25 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ServiceRepository } from 'services/services';
-import { MiddlewareAPI, Dispatch } from 'redux';
-import {
-    dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters, getOrder
-} from 'store/data-explorer/data-explorer-middleware-service';
-import { RootState } from 'store/store';
-import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
-import { updateResources } from 'store/resources/resources-actions';
-import { ListResults } from 'services/common-service/common-service';
-import { ProcessResource } from 'models/process';
-import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
-import { subprocessPanelActions } from './subprocess-panel-actions';
-import { DataColumns } from 'components/data-table/data-table';
-import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
-import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
-import { loadMissingProcessesInformation } from '../project-panel/project-panel-middleware-service';
+import { RootState } from "../store";
+import { ServiceRepository } from "services/services";
+import { FilterBuilder, joinFilters } from "services/api/filter-builder";
+import { Dispatch, MiddlewareAPI } from "redux";
+import { DataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { ProcessesMiddlewareService } from "store/processes/processes-middleware-service";
+import { subprocessPanelActions } from './subprocess-panel-actions';
 import { getProcess } from "store/processes/process";
 
 export class SubprocessMiddlewareService extends ProcessesMiddlewareService {

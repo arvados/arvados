@@ -12,7 +12,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { BoundDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { updateResources } from 'store/resources/resources-actions';
-import { ListArguments, ListResults } from 'services/common-service/common-service';
+import { ListArguments } from 'services/common-service/common-service';
 import { ProcessResource } from 'models/process';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
