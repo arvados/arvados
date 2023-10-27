@@ -98,6 +98,8 @@ import { AdminMenuIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { multiselectActions } from "store/multiselect/multiselect-actions";
+import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
+import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -179,6 +181,7 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
             })
         );
         dispatch(subprocessPanelActions.SET_COLUMNS({ columns: subprocessPanelColumns }));
+        dispatch(workflowProcessesPanelActions.SET_COLUMNS({ columns: workflowProcessesPanelColumns }));
 
         if (services.linkAccountService.getAccountToLink()) {
             dispatch(linkAccountPanelActions.HAS_SESSION_DATA());
@@ -579,6 +582,7 @@ export const loadRegisteredWorkflow = (uuid: string) =>
                 await dispatch<any>(finishLoadingProject(workflow.ownerUuid));
                 await dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
                 dispatch<any>(breadcrumbfunc(workflow.ownerUuid));
+                dispatch(workflowProcessesPanelActions.REQUEST_ITEMS());
             }
         }
     });
