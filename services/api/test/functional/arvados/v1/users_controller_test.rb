@@ -1043,8 +1043,8 @@ The Arvados team.
     existinguuid = 'remot-tpzed-foobarbazwazqux'
     newuuid = 'remot-tpzed-newnarnazwazqux'
     unchanginguuid = 'remot-tpzed-nochangingattrs'
-    conflictinguuid1 = 'remot-tpzed-conflictingname'
-    conflictinguuid2 = 'remot-tpzed-conflictingname'
+    conflictinguuid1 = 'remot-tpzed-conflictingnam1'
+    conflictinguuid2 = 'remot-tpzed-conflictingnam2'
     act_as_system_user do
       User.create!(uuid: existinguuid, email: 'root@existing.example.com')
       User.create!(uuid: unchanginguuid, email: 'root@unchanging.example.com', prefs: {'foo' => {'bar' => 'baz'}})
@@ -1077,7 +1077,7 @@ The Arvados team.
                 'email' => 'root@conflictingname1.example.com',
                 'username' => 'active'
               },
-              conflictinguuid1 => {
+              conflictinguuid2 => {
                 'email' => 'root@conflictingname2.example.com',
                 'username' => 'federatedactive'
               },
