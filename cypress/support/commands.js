@@ -99,7 +99,7 @@ Cypress.Commands.add("getUser", (username, first_name = "", last_name = "", is_a
                         last_name: last_name,
                         alternate_emails: [],
                     }),
-                    return_to: ",https://example.local",
+                    return_to: ",https://controller.api.client.invalid",
                 },
                 null,
                 systemToken,
