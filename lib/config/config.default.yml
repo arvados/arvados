@@ -225,7 +225,11 @@ Clusters:
 
       # Maximum number of concurrent requests to process concurrently
       # in a single service process, or 0 for no limit.
-      MaxConcurrentRequests: 8
+      MaxConcurrentRequests: 64
+
+      # Maximum number of concurrent requests to process concurrently
+      # in a single RailsAPI service process, or 0 for no limit.
+      MaxConcurrentRailsRequests: 8
 
       # Maximum number of incoming requests to hold in a priority
       # queue waiting for one of the MaxConcurrentRequests slots to be

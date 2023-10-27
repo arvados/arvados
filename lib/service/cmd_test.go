@@ -211,7 +211,7 @@ Clusters:
   SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   ManagementToken: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
   API:
-   MaxConcurrentRequests: %d
+   MaxConcurrentRailsRequests: %d
    MaxQueuedRequests: 0
   SystemLogs: {RequestQueueDumpDirectory: %q}
   Services:
