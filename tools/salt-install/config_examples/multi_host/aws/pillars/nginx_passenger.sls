@@ -29,7 +29,7 @@ nginx:
     # Make the passenger queue small (twice the concurrency, so
     # there's at most one pending request for each busy worker)
     # because controller reorders requests based on priority, and
-    # won't send more than API.MaxConcurrentRequests to passenger
+    # won't send more than API.MaxConcurrentRailsRequests to passenger
     # (which is max_workers * 2), so things that are moved to the head
     # of the line get processed quickly.
     passenger_max_request_queue_size: {{ max_workers * 2 + 1 }}

@@ -68,6 +68,7 @@ var whitelist = map[string]bool{
 	"API.KeepServiceRequestTimeout":            false,
 	"API.LockBeforeUpdate":                     false,
 	"API.LogCreateRequestFraction":             false,
+	"API.MaxConcurrentRailsRequests":           false,
 	"API.MaxConcurrentRequests":                false,
 	"API.MaxIndexDatabaseRead":                 false,
 	"API.MaxItemsPerResponse":                  true,
