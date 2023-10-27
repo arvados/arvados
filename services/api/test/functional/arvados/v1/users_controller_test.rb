@@ -1043,11 +1043,15 @@ The Arvados team.
     existinguuid = 'remot-tpzed-foobarbazwazqux'
     newuuid = 'remot-tpzed-newnarnazwazqux'
     unchanginguuid = 'remot-tpzed-nochangingattrs'
+    conflictinguuid1 = 'remot-tpzed-conflictingnam1'
+    conflictinguuid2 = 'remot-tpzed-conflictingnam2'
     act_as_system_user do
       User.create!(uuid: existinguuid, email: 'root@existing.example.com')
       User.create!(uuid: unchanginguuid, email: 'root@unchanging.example.com', prefs: {'foo' => {'bar' => 'baz'}})
     end
     assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
+
+    Rails.configuration.Login.LoginCluster = 'remot'
 
     authorize_with(:admin)
     patch(:batch_update,
@@ -1068,6 +1072,14 @@ The Arvados team.
               unchanginguuid => {
                 'email' => 'root@unchanging.example.com',
                 'prefs' => {'foo' => {'bar' => 'baz'}},
+              },
+              conflictinguuid1 => {
+                'email' => 'root@conflictingname1.example.com',
+                'username' => 'active'
+              },
+              conflictinguuid2 => {
+                'email' => 'root@conflictingname2.example.com',
+                'username' => 'federatedactive'
               },
             }})
     assert_response(:success)
