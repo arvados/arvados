@@ -52,3 +52,5 @@ export const bindDataExplorerActions = (id: string) => ({
     RESET_EXPLORER_SEARCH_VALUE: () => dataExplorerActions.RESET_EXPLORER_SEARCH_VALUE({ id }),
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) => dataExplorerActions.SET_REQUEST_STATE({ ...payload, id }),
 });
+
+export type BoundDataExplorerActions = ReturnType<typeof bindDataExplorerActions>;
