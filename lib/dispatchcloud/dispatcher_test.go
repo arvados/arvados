@@ -160,7 +160,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	s.disp.setupOnce.Do(s.disp.initialize)
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
-		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
 			return ChooseInstanceType(s.cluster, ctr)
 		},
 		Logger: ctxlog.TestLogger(c),

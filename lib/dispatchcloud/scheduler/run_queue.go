@@ -163,10 +163,9 @@ func (sch *Scheduler) runQueue() {
 
 tryrun:
 	for i, ent := range sorted {
-		ctr, it := ent.Container, ent.InstanceType
+		ctr, types := ent.Container, ent.InstanceTypes
 		logger := sch.logger.WithFields(logrus.Fields{
 			"ContainerUUID": ctr.UUID,
-			"InstanceType":  it.Name,
 		})
 		if ctr.SchedulingParameters.Supervisor {
 			supervisors += 1
@@ -178,6 +177,35 @@ tryrun:
 		if _, running := running[ctr.UUID]; running || ctr.Priority < 1 {
 			continue
 		}
+		// If we have unalloc instances of any of the eligible
+		// instance types, unallocOK is true and unallocType
+		// is the lowest-cost type.
+		var unallocOK bool
+		var unallocType arvados.InstanceType
+		for _, it := range types {
+			if unalloc[it] > 0 {
+				unallocOK = true
+				unallocType = it
+				break
+			}
+		}
+		// If the pool is not reporting AtCapacity for any of
+		// the eligible instance types, availableOK is true
+		// and availableType is the lowest-cost type.
+		var availableOK bool
+		var availableType arvados.InstanceType
+		for _, it := range types {
+			if atcapacity[it.ProviderType] {
+				continue
+			} else if sch.pool.AtCapacity(it) {
+				atcapacity[it.ProviderType] = true
+				continue
+			} else {
+				availableOK = true
+				availableType = it
+				break
+			}
+		}
 		switch ctr.State {
 		case arvados.ContainerStateQueued:
 			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
@@ -185,14 +213,13 @@ tryrun:
 				continue
 			}
 			trying++
-			if unalloc[it] < 1 && sch.pool.AtQuota() {
+			if !unallocOK && sch.pool.AtQuota() {
 				logger.Trace("not locking: AtQuota and no unalloc workers")
 				overquota = sorted[i:]
 				break tryrun
 			}
-			if unalloc[it] < 1 && (atcapacity[it.ProviderType] || sch.pool.AtCapacity(it)) {
+			if !unallocOK && !availableOK {
 				logger.Trace("not locking: AtCapacity and no unalloc workers")
-				atcapacity[it.ProviderType] = true
 				continue
 			}
 			if sch.pool.KillContainer(ctr.UUID, "about to lock") {
@@ -200,15 +227,16 @@ tryrun:
 				continue
 			}
 			go sch.lockContainer(logger, ctr.UUID)
-			unalloc[it]--
+			unalloc[unallocType]--
 		case arvados.ContainerStateLocked:
 			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
 				logger.Tracef("not starting: already at maxConcurrency %d", sch.maxConcurrency)
 				continue
 			}
 			trying++
-			if unalloc[it] > 0 {
-				unalloc[it]--
+			if unallocOK {
+				unalloc[unallocType]--
+				logger = logger.WithField("InstanceType", unallocType)
 			} else if sch.pool.AtQuota() {
 				// Don't let lower-priority containers
 				// starve this one by using keeping
@@ -217,7 +245,7 @@ tryrun:
 				logger.Trace("overquota")
 				overquota = sorted[i:]
 				break tryrun
-			} else if atcapacity[it.ProviderType] || sch.pool.AtCapacity(it) {
+			} else if !availableOK {
 				// Continue trying lower-priority
 				// containers in case they can run on
 				// different instance types that are
@@ -231,19 +259,21 @@ tryrun:
 				// container A on the next call to
 				// runQueue(), rather than run
 				// container B now.
-				//
-				// TODO: try running this container on
-				// a bigger (but not much more
-				// expensive) instance type.
-				logger.WithField("InstanceType", it.Name).Trace("at capacity")
-				atcapacity[it.ProviderType] = true
+				logger.Trace("all eligible types at capacity")
 				continue
-			} else if sch.pool.Create(it) {
+			} else if logger = logger.WithField("InstanceType", availableType); sch.pool.Create(availableType) {
 				// Success. (Note pool.Create works
 				// asynchronously and does its own
 				// logging about the eventual outcome,
 				// so we don't need to.)
 				logger.Info("creating new instance")
+				// Don't bother trying to start the
+				// container yet -- obviously the
+				// instance will take some time to
+				// boot and become ready.
+				containerAllocatedWorkerBootingCount += 1
+				dontstart[availableType] = true
+				continue
 			} else {
 				// Failed despite not being at quota,
 				// e.g., cloud ops throttled.
@@ -251,20 +281,19 @@ tryrun:
 				continue
 			}
 
-			if dontstart[it] {
+			if dontstart[unallocType] {
 				// We already tried & failed to start
 				// a higher-priority container on the
 				// same instance type. Don't let this
 				// one sneak in ahead of it.
 			} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
-			} else if sch.pool.StartContainer(it, ctr) {
+			} else if sch.pool.StartContainer(unallocType, ctr) {
 				logger.Trace("StartContainer => true")
-				// Success.
 			} else {
 				logger.Trace("StartContainer => false")
 				containerAllocatedWorkerBootingCount += 1
-				dontstart[it] = true
+				dontstart[unallocType] = true
 			}
 		}
 	}

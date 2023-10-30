@@ -516,6 +516,7 @@ type ContainersConfig struct {
 	SupportedDockerImageFormats   StringSet
 	AlwaysUsePreemptibleInstances bool
 	PreemptiblePriceFactor        float64
+	MaximumPriceFactor            float64
 	RuntimeEngine                 string
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string

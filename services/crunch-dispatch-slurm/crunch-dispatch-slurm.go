@@ -197,14 +197,16 @@ func (disp *Dispatcher) sbatchArgs(container arvados.Container) ([]string, error
 	if disp.cluster == nil {
 		// no instance types configured
 		args = append(args, disp.slurmConstraintArgs(container)...)
-	} else if it, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
+	} else if types, err := dispatchcloud.ChooseInstanceType(disp.cluster, &container); err == dispatchcloud.ErrInstanceTypesNotConfigured {
 		// ditto
 		args = append(args, disp.slurmConstraintArgs(container)...)
 	} else if err != nil {
 		return nil, err
 	} else {
-		// use instancetype constraint instead of slurm mem/cpu/tmp specs
-		args = append(args, "--constraint=instancetype="+it.Name)
+		// use instancetype constraint instead of slurm
+		// mem/cpu/tmp specs (note types[0] is the lowest-cost
+		// suitable instance type)
+		args = append(args, "--constraint=instancetype="+types[0].Name)
 	}
 
 	if len(container.SchedulingParameters.Partitions) > 0 {

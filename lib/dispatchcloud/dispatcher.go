@@ -111,7 +111,7 @@ func (disp *dispatcher) newExecutor(inst cloud.Instance) worker.Executor {
 	return exr
 }
 
-func (disp *dispatcher) typeChooser(ctr *arvados.Container) (arvados.InstanceType, error) {
+func (disp *dispatcher) typeChooser(ctr *arvados.Container) ([]arvados.InstanceType, error) {
 	return ChooseInstanceType(disp.Cluster, ctr)
 }
 

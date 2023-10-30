@@ -93,11 +93,12 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 				KeepCacheRAM: 123456789,
 			},
 		})
-		c.Check(err, check.IsNil)
-		c.Check(best.Name, check.Equals, "best")
-		c.Check(best.RAM >= 1234567890, check.Equals, true)
-		c.Check(best.VCPUs >= 2, check.Equals, true)
-		c.Check(best.Scratch >= 2*GiB, check.Equals, true)
+		c.Assert(err, check.IsNil)
+		c.Assert(best, check.HasLen, 1)
+		c.Check(best[0].Name, check.Equals, "best")
+		c.Check(best[0].RAM >= 1234567890, check.Equals, true)
+		c.Check(best[0].VCPUs >= 2, check.Equals, true)
+		c.Check(best[0].Scratch >= 2*GiB, check.Equals, true)
 	}
 }
 
@@ -121,7 +122,8 @@ func (*NodeSizeSuite) TestChooseWithBlobBuffersOverhead(c *check.C) {
 		},
 	})
 	c.Check(err, check.IsNil)
-	c.Check(best.Name, check.Equals, "best")
+	c.Assert(best, check.HasLen, 1)
+	c.Check(best[0].Name, check.Equals, "best")
 }
 
 func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
@@ -145,11 +147,12 @@ func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
 		},
 	})
 	c.Check(err, check.IsNil)
-	c.Check(best.Name, check.Equals, "best")
-	c.Check(best.RAM >= 1234567890, check.Equals, true)
-	c.Check(best.VCPUs >= 2, check.Equals, true)
-	c.Check(best.Scratch >= 2*GiB, check.Equals, true)
-	c.Check(best.Preemptible, check.Equals, true)
+	c.Assert(best, check.HasLen, 1)
+	c.Check(best[0].Name, check.Equals, "best")
+	c.Check(best[0].RAM >= 1234567890, check.Equals, true)
+	c.Check(best[0].VCPUs >= 2, check.Equals, true)
+	c.Check(best[0].Scratch >= 2*GiB, check.Equals, true)
+	c.Check(best[0].Preemptible, check.Equals, true)
 }
 
 func (*NodeSizeSuite) TestScratchForDockerImage(c *check.C) {
@@ -252,9 +255,10 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				CUDA:         tc.CUDA,
 			},
 		})
-		if best.Name != "" {
+		if len(best) > 0 {
 			c.Check(err, check.IsNil)
-			c.Check(best.Name, check.Equals, tc.SelectedInstance)
+			c.Assert(best, check.HasLen, 1)
+			c.Check(best[0].Name, check.Equals, tc.SelectedInstance)
 		} else {
 			c.Check(err, check.Not(check.IsNil))
 		}
