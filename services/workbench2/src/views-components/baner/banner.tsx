@@ -10,6 +10,7 @@ import bannerActions from "store/banner/banner-action";
 import { ArvadosTheme } from "common/custom-theme";
 import servicesProvider from "common/service-provider";
 import { Dispatch } from "redux";
+import { sanitizeHTML } from "common/html-sanitize";
 
 type CssRules = "dialogContent" | "dialogContentIframe";
 
@@ -92,7 +93,7 @@ export const BannerComponent = (props: BannerComponentProps) => {
         >
             <div data-cy="confirmation-dialog">
                 <DialogContent className={props.classes.dialogContent}>
-                    <div dangerouslySetInnerHTML={{ __html: bannerContents }}></div>
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(bannerContents) }}></div>
                 </DialogContent>
                 <DialogActions style={{ margin: "0px 24px 24px" }}>
                     <Button

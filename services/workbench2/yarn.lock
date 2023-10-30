@@ -2508,6 +2508,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/dompurify@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "@types/dompurify@npm:3.0.3"
+  dependencies:
+    "@types/trusted-types": "*"
+  checksum: ff629277db4d19d836b0d878e93efb27d876d1073db81507c39d44d509b30ee3bcdc9e951dbbf9574b1fc6c52e1eaa95abf4279fa45aca281868717f8a7298da
+  languageName: node
+  linkType: hard
+
 "@types/enzyme-adapter-react-16@npm:1.0.3":
   version: 1.0.3
   resolution: "@types/enzyme-adapter-react-16@npm:1.0.3"
@@ -2915,6 +2924,13 @@ __metadata:
   version: 1.0.1
   resolution: "@types/stack-utils@npm:1.0.1"
   checksum: 9dc052b575acfeca3f165fb19d87b7b2989d54ed7d64a7eeb0b7587bc5795ef1f2c2b1511a44dcf0831ef35b8ce3486f97fcbfdd50c01f68aa297de31502c9d9
+  languageName: node
+  linkType: hard
+
+"@types/trusted-types@npm:*":
+  version: 2.0.4
+  resolution: "@types/trusted-types@npm:2.0.4"
+  checksum: 5256c4576cd1c90d33ddd9cc9cbd4f202b39c98cbe8b7f74963298f9eb2159c285ea5c25a6181b4c594d8d75641765bff85d72c2d251ad076e6529ce0eeedd1c
   languageName: node
   linkType: hard
 
@@ -3793,6 +3809,7 @@ __metadata:
     "@sinonjs/fake-timers": ^10.3.0
     "@types/classnames": 2.2.6
     "@types/debounce": 3.0.0
+    "@types/dompurify": ^3.0.3
     "@types/enzyme": 3.1.14
     "@types/enzyme-adapter-react-16": 1.0.3
     "@types/file-saver": 2.0.0
@@ -3830,6 +3847,7 @@ __metadata:
     cypress: 6.3.0
     date-fns: ^2.28.0
     debounce: 1.2.0
+    dompurify: ^3.0.6
     elliptic: 6.5.4
     enzyme: 3.11.0
     enzyme-adapter-react-16: 1.15.6
@@ -6884,6 +6902,13 @@ __metadata:
   dependencies:
     domelementtype: ^2.2.0
   checksum: 4c665ceed016e1911bf7d1dadc09dc888090b64dee7851cccd2fcf5442747ec39c647bb1cb8c8919f8bbdd0f0c625a6bafeeed4b2d656bbecdbae893f43ffaaa
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.0.6":
+  version: 3.0.6
+  resolution: "dompurify@npm:3.0.6"
+  checksum: e5c6cdc5fe972a9d0859d939f1d86320de275be00bbef7bd5591c80b1e538935f6ce236624459a1b0c84ecd7c6a1e248684aa4637512659fccc0ce7c353828a6
   languageName: node
   linkType: hard
 

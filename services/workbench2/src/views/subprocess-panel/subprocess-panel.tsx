@@ -4,8 +4,8 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
-import { SubprocessPanelRoot, SubprocessPanelActionProps, SubprocessPanelDataProps } from 'views/subprocess-panel/subprocess-panel-root';
+import { openProcessContextMenu } from "store/context-menu/context-menu-actions";
+import { SubprocessPanelRoot, SubprocessPanelActionProps, SubprocessPanelDataProps } from "views/subprocess-panel/subprocess-panel-root";
 import { RootState } from "store/store";
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
@@ -23,11 +23,11 @@ const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => (
     },
     onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
-    }
+    },
 });
 
 const mapStateToProps = (state: RootState): SubprocessPanelDataProps => ({
-    resources: state.resources
+    resources: state.resources,
 });
 
 export const SubprocessPanel = connect(mapStateToProps, mapDispatchToProps)(SubprocessPanelRoot);

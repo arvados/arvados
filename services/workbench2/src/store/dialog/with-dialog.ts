@@ -18,7 +18,8 @@ export type WithDialogDispatchProps = {
 };
 
 export type WithDialogProps<T> = WithDialogStateProps<T> & WithDialogDispatchProps;
-export const withDialog = (id: string) =>
+export const withDialog =
+    (id: string) =>
     // TODO: How to make compiler happy with & P instead of & any?
     // eslint-disable-next-line
     <T, P>(component: React.ComponentType<WithDialogProps<T> & any>) =>
@@ -26,13 +27,17 @@ export const withDialog = (id: string) =>
 
 const emptyData = {};
 
-export const mapStateToProps = (id: string) => <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {
-    const dialog = state.dialog[id];
-    return dialog ? dialog : { open: false, data: emptyData };
-};
+export const mapStateToProps =
+    (id: string) =>
+    <T>(state: { dialog: DialogState }): WithDialogStateProps<T> => {
+        const dialog = state.dialog[id];
+        return dialog ? dialog : { open: false, data: emptyData };
+    };
 
-export const mapDispatchToProps = (id: string) => (dispatch: Dispatch): WithDialogDispatchProps => ({
-    closeDialog: () => {
-        dispatch(dialogActions.CLOSE_DIALOG({ id }));
-    }
-});
+export const mapDispatchToProps =
+    (id: string) =>
+    (dispatch: Dispatch): WithDialogDispatchProps => ({
+        closeDialog: () => {
+            dispatch(dialogActions.CLOSE_DIALOG({ id }));
+        },
+    });

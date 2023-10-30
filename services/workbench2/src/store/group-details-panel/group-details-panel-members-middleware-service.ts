@@ -13,6 +13,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupMembersPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
 import { ResourceKind } from 'models/resource';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 
 export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -28,6 +29,7 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             return;
         } else {
             try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const groupResource = await this.services.groupsService.get(groupUuid);
                 api.dispatch(updateResources([groupResource]));
 
@@ -65,6 +67,8 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
                 api.dispatch(updateResources(projectsIn.items));
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
+            } finally {
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }

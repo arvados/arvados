@@ -144,6 +144,7 @@ const FileInputComponent = connect()(
                                 includeCollections
                                 includeDirectories
                                 includeFiles
+                                cascadeSelection={false}
                                 options={this.props.options}
                                 toggleItemActive={this.setFile} />
                         </div>

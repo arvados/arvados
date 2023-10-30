@@ -18,6 +18,7 @@ import parse from "parse-duration";
 import { CopyIcon } from 'components/icon/icon';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { sanitizeHTML } from 'common/html-sanitize';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot' | 'copyIcon' | 'tableWrapper' | 'webshellButton';
 
@@ -269,7 +270,7 @@ const CardSSHSection = (props: VirtualMachineProps) =>
         <Card>
             <CardContent>
                 <Typography>
-                    <div dangerouslySetInnerHTML={{ __html: props.helpText }} style={{ margin: "1em" }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(props.helpText) }} style={{ margin: "1em" }} />
                 </Typography>
             </CardContent>
         </Card>

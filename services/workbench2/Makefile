@@ -37,6 +37,7 @@ DEB_FILE=$(APP_NAME)_$(VERSION)-$(ITERATION)_amd64.deb
 # redHat package file
 RPM_FILE=$(APP_NAME)-$(VERSION)-$(ITERATION).x86_64.rpm
 
+GOPATH=$(shell go env GOPATH)
 export WORKSPACE?=$(shell pwd)
 
 .PHONY: help clean* yarn-install test build packages packages-with-version integration-tests-in-docker
@@ -67,7 +68,8 @@ arvados-server-install: check-arvados-directory
 	cd $(ARVADOS_DIRECTORY)
 	go mod download
 	cd cmd/arvados-server
-	go install
+	echo GOPATH is $(GOPATH)
+	GOFLAGS=-buildvcs=false go install
 	cd -
 	ls -l $(GOPATH)/bin/arvados-server
 	$(GOPATH)/bin/arvados-server install -type test
@@ -87,6 +89,9 @@ integration-tests-in-docker: workbench2-build-image check-arvados-directory
 
 unit-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make arvados-server-install unit-tests
+
+tests-in-docker: workbench2-build-image check-arvados-directory
+	docker run -t -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados -e ci="${ci}" workbench2-build make test
 
 test: unit-tests integration-tests
 
