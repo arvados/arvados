@@ -12,8 +12,7 @@ import {
     Card,
     CardHeader,
     CardContent,
-    IconButton,
-    Grid
+    IconButton
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -27,7 +26,7 @@ import { getResource } from 'store/resources/resources';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io-card';
-import { DefaultView } from "components/default-view/default-view";
+import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
 type CssRules = 'root'
     | 'button'
@@ -202,16 +201,11 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                             </Card>
                         </MPVPanelContent>
                     </MPVContainer>
-                    : <Grid
-                        container
-                        alignItems="center"
-                        justify="center"
-                        style={{ minHeight: "100%" }}>
-                        <DefaultView
-                            icon={WorkflowIcon}
-                            messages={["Workflow not found"]}
-                        />
-                    </Grid>;
+                    :
+                    <NotFoundView
+                        icon={WorkflowIcon}
+                        messages={["Workflow not found"]}
+                    />
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {

@@ -6,7 +6,7 @@ import React from 'react';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { DispatchProp, connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
-import { StyleRulesCallback, WithStyles, Grid } from '@material-ui/core';
+import { StyleRulesCallback, WithStyles } from '@material-ui/core';
 
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { DataColumns } from 'components/data-table/data-table';
@@ -51,7 +51,7 @@ import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
-import { DefaultView } from "components/default-view/default-view";
+import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
 type CssRules = 'root' | 'button';
 
@@ -276,16 +276,11 @@ export const ProjectPanel = withStyles(styles)(
                             defaultViewMessages={DEFAULT_VIEW_MESSAGES}
                         />
                     </div>
-                    : <Grid
-                        container
-                        alignItems="center"
-                        justify="center"
-                        style={{ minHeight: "100%" }}>
-                        <DefaultView
-                            icon={ProjectIcon}
-                            messages={["Project not found"]}
-                        />
-                    </Grid>;
+                    :
+                    <NotFoundView
+                        icon={ProjectIcon}
+                        messages={["Project not found"]}
+                    />
             }
 
             isCurrentItemChild = (resource: Resource) => {
