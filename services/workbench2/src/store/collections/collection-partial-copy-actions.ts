@@ -156,7 +156,13 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
 
                 // Copy files
-                const updatedCollection = await services.collectionService.copyFiles(fileSelection.collection.portableDataHash, fileSelection.selectedPaths, {uuid: formData.destination.uuid}, formData.destination.path || '/', false);
+                const updatedCollection = await services.collectionService.copyFiles(
+                    fileSelection.collection.portableDataHash,
+                    fileSelection.selectedPaths,
+                    {uuid: formData.destination.uuid},
+                    formData.destination.subpath || '/',
+                    false
+                );
                 dispatch(updateResources([updatedCollection]));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));

@@ -97,9 +97,9 @@ fi
 if [ ! -x ${GOPATH:-${HOME}/go}/bin/arvados-server ]; then
     echo "Building & installing arvados-server..."
     cd ${ARVADOS_DIR}
-    go mod download || exit 1
+    GOFLAGS=-buildvcs=false go mod download || exit 1
     cd cmd/arvados-server
-    go install
+    GOFLAGS=-buildvcs=false go install
     cd -
 
     echo "Installing dev dependencies..."

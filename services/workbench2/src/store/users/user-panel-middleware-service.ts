@@ -19,6 +19,7 @@ import { UserResource } from 'models/user';
 import { UserPanelColumnNames } from 'views/user-panel/user-panel';
 import { BuiltinGroups, getBuiltinGroupUuid } from 'models/group';
 import { LinkClass } from 'models/link';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export class UserMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -29,6 +30,7 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
+            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const users = await this.services.userService.list(getParams(dataExplorer));
             api.dispatch(updateResources(users.items));
             api.dispatch(setItems(users));
@@ -44,6 +46,8 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch(updateResources(allUserMemberships.items));
         } catch {
             api.dispatch(couldNotFetchUsers());
+        } finally {
+            api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
 }
@@ -70,6 +74,9 @@ const getOrder = (dataExplorer: DataExplorer) => {
         } else {
             order.addOrder(sortDirection, sortColumn.sort.field);
         }
+
+        // Use createdAt as a secondary sort column so we break ties consistently.
+        order.addOrder(OrderDirection.DESC, "createdAt");
     }
     return order.getOrder();
 };

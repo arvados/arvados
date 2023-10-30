@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Multi-file deletion tests', function () {
+describe('Create workflow tests', function () {
     let activeUser;
     let adminUser;
 
@@ -204,4 +204,81 @@ describe('Multi-file deletion tests', function () {
                     });
             });
     }));
+
+    it('allows selecting collection subdirectories and reselects existing selections', () => {
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'myProject1',
+            addToFavorites: true
+        });
+
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: "./subdir/dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n./subdir/dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n"
+        })
+            .as('testCollection');
+
+        cy.getAll('@myProject1', '@testCollection')
+            .then(function ([myProject1, testCollection]) {
+                cy.readFile('cypress/fixtures/workflow_directory_array.yaml').then(workflow => {
+                    cy.createWorkflow(adminUser.token, {
+                        name: `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
+                        definition: workflow,
+                        owner_uuid: myProject1.uuid,
+                    })
+                        .as('testWorkflow');
+                });
+
+                cy.loginAs(activeUser);
+
+                cy.get('main').contains(myProject1.name).click();
+
+                cy.get('[data-cy=side-panel-button]').click();
+
+                cy.get('#aside-menu-list').contains('Run a workflow').click();
+
+                cy.get('@testWorkflow')
+                    .then((testWorkflow) => {
+                        cy.get('main').contains(testWorkflow.name).click();
+                        cy.get('[data-cy=run-process-next-button]').click();
+
+                        cy.get('label').contains('directoryInputName').parent('div').find('input').click();
+                        cy.get('div[role=dialog]')
+                            .within(() => {
+                                // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
+                                cy.get('p').contains('Home Projects').closest('ul')
+                                    .find('i')
+                                    .then(el => el.click());
+
+                                cy.get(`[data-id=${testCollection.uuid}]`)
+                                    .find('i').click();
+
+                                cy.get(`[data-id="${testCollection.uuid}/subdir"]`)
+                                    .find('i').click();
+
+                                cy.contains('dir1').closest('[data-action=TOGGLE_ACTIVE]').parent().find('input[type=checkbox]').click();
+                                cy.contains('dir2').closest('[data-action=TOGGLE_ACTIVE]').parent().find('input[type=checkbox]').click();
+
+                                cy.get('[data-cy=ok-button]').click();
+                            });
+
+                        // Verify subdirectories were selected
+                        cy.get('label').contains('directoryInputName').parent('div')
+                            .within(() => {
+                                cy.contains('dir1');
+                                cy.contains('dir2');
+                            });
+
+                        // Reopen tree picker and verify subdirectories are preselected
+                        cy.get('label').contains('directoryInputName').parent('div').find('input').click();
+                        cy.waitForDom().get('div[role=dialog]')
+                            .within(() => {
+                                cy.contains('dir1').closest('[data-action=TOGGLE_ACTIVE]').parent().find('input[type=checkbox]').should('be.checked');
+                                cy.contains('dir2').closest('[data-action=TOGGLE_ACTIVE]').parent().find('input[type=checkbox]').should('be.checked');
+                            });
+                    });
+
+            });
+    })
 })

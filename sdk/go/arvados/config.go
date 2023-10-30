@@ -99,6 +99,7 @@ type Cluster struct {
 		DisabledAPIs                     StringSet
 		MaxIndexDatabaseRead             int
 		MaxItemsPerResponse              int
+		MaxConcurrentRailsRequests       int
 		MaxConcurrentRequests            int
 		MaxQueuedRequests                int
 		MaxQueueTimeForLockRequests      Duration

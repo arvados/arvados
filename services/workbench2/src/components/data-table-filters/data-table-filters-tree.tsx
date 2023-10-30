@@ -59,14 +59,14 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
         if (item.selected) { return; }
 
         // Otherwise select this node and deselect the others
-        const filters = selectNode(item.id)(this.props.filters);
+        const filters = selectNode(item.id, true)(this.props.filters);
         const toDeselect = Object.keys(this.props.filters).filter((id) => (id !== item.id));
-        onChange(deselectNodes(toDeselect)(filters));
+        onChange(deselectNodes(toDeselect, true)(filters));
     }
 
     toggleFilter = (_: React.MouseEvent, item: TreeItem<DataTableFilterItem>) => {
         const { onChange = noop } = this.props;
-        onChange(toggleNodeSelection(item.id)(this.props.filters));
+        onChange(toggleNodeSelection(item.id, true)(this.props.filters));
     }
 
     toggleOpen = (_: React.MouseEvent, item: TreeItem<DataTableFilterItem>) => {
