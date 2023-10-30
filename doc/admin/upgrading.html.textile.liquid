@@ -32,6 +32,12 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.0":#v2_7_0
 
+h3. Synchronize keepstore and keep-balance upgrades
+
+The internal communication between keepstore and keep-balance about read-only volumes has changed. After keep-balance is upgraded, old versions of keepstore will be treated as read-only. We recommend upgrading and restarting all keepstore services first, then upgrading and restarting keep-balance.
+
+h3. Separate configs for MaxConcurrentRequests and MaxConcurrentRailsRequests
+
 The default configuration value @API.MaxConcurrentRequests@ (the number of concurrent requests that will be processed by a single instance of an arvados service process) is raised from 8 to 64.
 
 A new configuration key @API.MaxConcurrentRailsRequests@ (default 8) limits the number of concurrent requests processed by a RailsAPI service process.
