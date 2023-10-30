@@ -797,6 +797,34 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	c.Check(resp.Header().Get("Content-Disposition"), check.Equals, "attachment")
 }
 
+func (s *IntegrationSuite) TestVhostRedirectMultipleTokens(c *check.C) {
+	baseUrl := arvadostest.FooCollection + ".example.com/foo"
+	query := url.Values{}
+
+	// The intent of these tests is to check that requests are redirected
+	// correctly in the presence of multiple API tokens. The exact response
+	// codes and content are not closely considered: they're just how
+	// keep-web responded when we made the smallest possible fix. Changing
+	// those responses may be okay, but you should still test all these
+	// different cases and the associated redirect logic.
+	query["api_token"] = []string{arvadostest.ActiveToken, arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{arvadostest.ActiveToken, arvadostest.AnonymousToken, ""}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{arvadostest.ActiveToken, "", arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{"", arvadostest.ActiveToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+
+	expectContent := regexp.QuoteMeta(unauthorizedMessage + "\n")
+	query["api_token"] = []string{arvadostest.AnonymousToken, "invalidtoo"}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+	query["api_token"] = []string{arvadostest.AnonymousToken, ""}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+	query["api_token"] = []string{"", arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+}
+
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection+".example.com/foo",
@@ -999,20 +1027,36 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 
 	s.handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
+		attachment, _ := regexp.MatchString(`^attachment(;|$)`, resp.Header().Get("Content-Disposition"))
+		// Since we're not redirecting, check that any api_token in the URL is
+		// handled safely.
+		// If there is no token in the URL, then we're good.
+		// Otherwise, if the response code is an error, the body is expected to
+		// be static content, and nothing that might maliciously introspect the
+		// URL. It's considered safe and allowed.
+		// Otherwise, if the response content has attachment disposition,
+		// that's considered safe for all the reasons explained in the
+		// safeAttachment comment in handler.go.
+		c.Check(!u.Query().Has("api_token") || resp.Code >= 400 || attachment, check.Equals, true)
 		return resp
 	}
+
+	loc, err := url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Check(loc.Scheme, check.Equals, u.Scheme)
+	c.Check(loc.Host, check.Equals, u.Host)
+	c.Check(loc.RawPath, check.Equals, u.RawPath)
+	// If the response was a redirect, it should never include an API token.
+	c.Check(loc.Query().Has("api_token"), check.Equals, false)
 	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
-	c.Check(strings.Split(resp.Header().Get("Location"), "?")[0], check.Equals, "http://"+hostPath)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
-	u, err := u.Parse(resp.Header().Get("Location"))
-	c.Assert(err, check.IsNil)
 	c.Logf("following redirect to %s", u)
 	req = &http.Request{
 		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
+		Host:       loc.Host,
+		URL:        loc,
+		RequestURI: loc.RequestURI(),
 		Header:     reqHeader,
 	}
 	for _, c := range cookies {
