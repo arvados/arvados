@@ -297,10 +297,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
 	cors := origin != "" && !strings.HasSuffix(origin, "://"+r.Host)
 	safeAjax := cors && (r.Method == http.MethodGet || r.Method == http.MethodHead)
-	// Important distiction: safeAttachment checks whether api_token exists as
-	// a query parameter. The following condition checks whether api_token
-	// exists as request form data *or* a query parameter. This distinction is
-	// necessary to redirect when required, and not when not.
+	// Important distinction: safeAttachment checks whether api_token exists
+	// as a query parameter. haveFormTokens checks whether api_token exists
+	// as request form data *or* a query parameter. Different checks are
+	// necessary because both the request disposition and the location of
+	// the API token affect whether or not the request needs to be
+	// redirected. The different branch comments below explain further.
 	safeAttachment := attachment && !r.URL.Query().Has("api_token")
 	if formTokens, haveFormTokens := r.Form["api_token"]; !haveFormTokens {
 		// No token to use or redact.
