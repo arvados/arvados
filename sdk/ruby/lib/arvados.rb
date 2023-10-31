@@ -76,7 +76,7 @@ class Arvados
     _arvados = self
     namespace_class = Arvados.const_set "A#{self.object_id}", Class.new
     self.arvados_api.schemas.each do |classname, schema|
-      next if classname.match /List$/
+      next if classname.match(/List$/)
       klass = Class.new(Arvados::Model) do
         def self.arvados
           @arvados
@@ -137,7 +137,7 @@ class Arvados
   end
 
   def debuglog *args
-    self.class.debuglog *args
+    self.class.debuglog(*args)
   end
 
   def config(config_file_path="~/.config/arvados/settings.conf")
@@ -206,10 +206,10 @@ class Arvados
       arvados.client
     end
     def self.debuglog(*args)
-      arvados.class.debuglog *args
+      arvados.class.debuglog(*args)
     end
     def debuglog(*args)
-      self.class.arvados.class.debuglog *args
+      self.class.arvados.class.debuglog(*args)
     end
     def self.api_exec(method, parameters={})
       api_method = arvados_api.send(api_models_sym).send(method.name.to_sym)
