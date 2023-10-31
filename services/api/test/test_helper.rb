@@ -179,21 +179,21 @@ class ActionController::TestCase
   end
 
   [:get, :post, :put, :patch, :delete].each do |method|
-    define_method method do |action, **args|
+    define_method method do |action, **kwargs|
       check_counter action
       # After Rails 5.0 upgrade, some params don't get properly serialized.
       # One case are filters: [['attr', 'op', 'val']] become [['attr'], ['op'], ['val']]
       # if not passed upstream as a JSON string.
-      if args[:params].is_a?(Hash)
-        args[:params].each do |key, _|
+      if kwargs[:params].is_a?(Hash)
+        kwargs[:params].each do |key, _|
           next if key == :exclude_script_versions # Job Reuse tests
           # Keys could be: :filters, :where, etc
-          if [Array, Hash].include?(args[:params][key].class)
-            args[:params][key] = SafeJSON.dump(args[:params][key])
+          if [Array, Hash].include?(kwargs[:params][key].class)
+            kwargs[:params][key] = SafeJSON.dump(kwargs[:params][key])
           end
         end
       end
-      super action, **args
+      super action, **kwargs
     end
   end
 
