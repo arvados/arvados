@@ -306,7 +306,8 @@ wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/`+rubymajorver
 cd "${tmp}/ruby-`+rubyversion+`"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
-make install <(yes || true)
+rm -f /var/lib/arvados/bin/erb
+make install
 /var/lib/arvados/bin/gem update --no-document --system 3.4.21
 /var/lib/arvados/bin/gem install bundler --no-document
 `, stdout, stderr)
