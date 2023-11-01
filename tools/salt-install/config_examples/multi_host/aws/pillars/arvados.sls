@@ -153,7 +153,7 @@ arvados:
           IAMRole: __KEEP_AWS_IAM_ROLE__
           Region: __KEEP_AWS_REGION__
           # IMPORTANT: The default value for PrefixLength is 0, and should not
-          # be changed once the cluster is in use. For new installations it's
+          # be changed once the volume is in use. For new installations it's
           # recommended to set it to 3 for better performance.
           # See: https://doc.arvados.org/install/configure-s3-object-storage.html
           PrefixLength: 3
