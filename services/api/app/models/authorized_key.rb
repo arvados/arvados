@@ -9,12 +9,11 @@ class AuthorizedKey < ArvadosModel
   before_create :permission_to_set_authorized_user_uuid
   before_update :permission_to_set_authorized_user_uuid
 
-  belongs_to :authorized_user, {
-               foreign_key: 'authorized_user_uuid',
-               class_name: 'User',
-               primary_key: 'uuid',
-               optional: true,
-             }
+  belongs_to :authorized_user,
+             foreign_key: 'authorized_user_uuid',
+             class_name: 'User',
+             primary_key: 'uuid',
+             optional: true
 
   validate :public_key_must_be_unique
 

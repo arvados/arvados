@@ -49,7 +49,9 @@ func (e *KeepError) Error() string {
 func emptyTrash(mounts []*VolumeMount, interval time.Duration) {
 	for range time.NewTicker(interval).C {
 		for _, v := range mounts {
-			v.EmptyTrash()
+			if v.KeepMount.AllowTrash {
+				v.EmptyTrash()
+			}
 		}
 	}
 }

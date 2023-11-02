@@ -475,8 +475,10 @@ func (rtr *router) handleDELETE(resp http.ResponseWriter, req *http.Request) {
 		Deleted int `json:"copies_deleted"`
 		Failed  int `json:"copies_failed"`
 	}
-	for _, vol := range rtr.volmgr.AllWritable() {
-		if err := vol.Trash(hash); err == nil {
+	for _, vol := range rtr.volmgr.Mounts() {
+		if !vol.KeepMount.AllowTrash {
+			continue
+		} else if err := vol.Trash(hash); err == nil {
 			result.Deleted++
 		} else if os.IsNotExist(err) {
 			continue

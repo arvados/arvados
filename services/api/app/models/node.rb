@@ -20,11 +20,10 @@ class Node < ArvadosModel
   # Only a controller can figure out whether or not the current API tokens
   # have access to the associated Job.  They're expected to set
   # job_readable=true if the Job UUID can be included in the API response.
-  belongs_to :job, {
-               foreign_key: 'job_uuid',
-               primary_key: 'uuid',
-               optional: true,
-             }
+  belongs_to :job,
+             foreign_key: 'job_uuid',
+             primary_key: 'uuid',
+             optional: true
   attr_accessor :job_readable
 
   UNUSED_NODE_IP = '127.40.4.0'

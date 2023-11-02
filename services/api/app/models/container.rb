@@ -51,17 +51,15 @@ class Container < ArvadosModel
   after_save :update_cr_logs
   after_save :handle_completed
 
-  has_many :container_requests, {
-             class_name: 'ContainerRequest',
-             foreign_key: 'container_uuid',
+  has_many :container_requests,
+           class_name: 'ContainerRequest',
+           foreign_key: 'container_uuid',
+           primary_key: 'uuid'
+  belongs_to :auth,
+             class_name: 'ApiClientAuthorization',
+             foreign_key: 'auth_uuid',
              primary_key: 'uuid',
-           }
-  belongs_to :auth, {
-               class_name: 'ApiClientAuthorization',
-               foreign_key: 'auth_uuid',
-               primary_key: 'uuid',
-               optional: true,
-             }
+             optional: true
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -321,7 +319,7 @@ class Container < ArvadosModel
         resolved_runtime_constraints.delete('cuda')
       ].uniq
     end
-    reusable_runtime_constraints = hash_product(runtime_constraint_variations)
+    reusable_runtime_constraints = hash_product(**runtime_constraint_variations)
                                      .map { |v| resolved_runtime_constraints.merge(v) }
 
     candidates = candidates.where_serialized(:runtime_constraints, reusable_runtime_constraints, md5: true, multivalue: true)

@@ -109,6 +109,7 @@ GEM
     concurrent-ruby (1.2.2)
     crass (1.0.6)
     date (3.3.3)
+    docile (1.4.0)
     erubi (1.12.0)
     extlib (0.9.16)
     factory_bot (6.2.1)
@@ -244,19 +245,21 @@ GEM
       actionpack (>= 5.2)
       railties (>= 5.2)
     retriable (1.4.1)
-    ruby-prof (0.15.9)
+    ruby-prof (1.6.3)
     ruby2_keywords (0.0.5)
     signet (0.16.1)
       addressable (~> 2.8)
       faraday (>= 0.17.5, < 3.0)
       jwt (>= 1.5, < 3.0)
       multi_json (~> 1.10)
-    simplecov (0.7.1)
-      multi_json (~> 1.0)
-      simplecov-html (~> 0.7.1)
-    simplecov-html (0.7.1)
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-html (0.12.3)
     simplecov-rcov (0.3.1)
       simplecov (>= 0.4.1)
+    simplecov_json_formatter (0.1.4)
     sprockets (4.2.1)
       concurrent-ruby (~> 1.0)
       rack (>= 2.2.4, < 4)
@@ -270,6 +273,7 @@ GEM
     timeout (0.4.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
+    webrick (1.8.1)
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
@@ -304,12 +308,13 @@ DEPENDENCIES
   rails-observers
   rails-perftest
   responders
-  ruby-prof (~> 0.15.0)
-  simplecov (~> 0.7.1)
+  ruby-prof
+  simplecov
   simplecov-rcov
   sprockets-rails
-  test-unit (~> 3.0)
+  test-unit
   themes_for_rails!
+  webrick
 
 BUNDLED WITH
    2.4.19
