@@ -115,7 +115,9 @@ const loadProject = (projectUuid: string) =>
                 .addAsc('name')
                 .getOrder()
         };
+
         const { items } = await services.projectService.list(params);
+        
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: projectUuid,
             pickerId: SIDE_PANEL_TREE,
@@ -228,7 +230,7 @@ export const toggleSidePanelTreeItemCollapse = (id: string) =>
         if (node && node.status === TreeNodeStatus.INITIAL) {
             await dispatch<any>(loadSidePanelTreeProjects(node.id));
         }
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId: SIDE_PANEL_TREE }));
+            dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId: SIDE_PANEL_TREE }));
     };
 
 export const expandSidePanelTreeItem = (id: string) =>

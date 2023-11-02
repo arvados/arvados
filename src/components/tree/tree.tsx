@@ -14,6 +14,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
 import { ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
+import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
 
 type CssRules = 'list'
     | 'listItem'
@@ -100,6 +101,7 @@ export enum TreeItemStatus {
 
 export interface TreeItem<T> {
     data: T;
+    depth?: number;
     id: string;
     open: boolean;
     active: boolean;
@@ -155,6 +157,10 @@ const getActionAndId = (event: any, initAction: string | undefined = undefined) 
 
     return [action, id];
 };
+
+const isInFavoritesTree = (item: TreeItem<any>): boolean => {
+    return item.id === SidePanelTreeCategory.FAVORITES || item.id === SidePanelTreeCategory.PUBLIC_FAVORITES;
+}
 
 interface FlatTreeProps {
     it: TreeItem<any>;
@@ -241,11 +247,11 @@ const FlatTree = (props: FlatTreeProps) =>
                 .map((item: any) => <div key={item.id} data-id={item.id}
                     className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
                     style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
-                    <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
+                    {!isInFavoritesTree(props.it) && <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
                         <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
                             {props.getProperArrowAnimation(item.status, item.items!)}
                         </ListItemIcon>
-                    </i>
+                    </i>}
                     {props.showSelection(item) && !props.useRadioButtons &&
                         <Checkbox
                             checked={item.selected}
@@ -327,6 +333,9 @@ export const Tree = withStyles(styles)(
         const { levelIndentation = 20, itemRightPadding = 20 } = props;
         return <List className={list}>
             {items && items.map((it: TreeItem<T>, idx: number) => {
+                if (isInFavoritesTree(it) && it.open === true && it.items && it.items.length) {
+                    it = { ...it, items: it.items.filter(item => item.depth && item.depth < 3) }
+                }
                 return <div key={`item/${level}/${it.id}`}>
                     <ListItem button className={listItem}
                         style={{
