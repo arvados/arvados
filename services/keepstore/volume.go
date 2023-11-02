@@ -316,8 +316,6 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 		if err != nil {
 			return nil, fmt.Errorf("error initializing volume %s: %s", uuid, err)
 		}
-		logger.Printf("started volume %s (%s), ReadOnly=%v", uuid, vol, cfgvol.ReadOnly || va.ReadOnly)
-
 		sc := cfgvol.StorageClasses
 		if len(sc) == 0 {
 			sc = map[string]bool{"default": true}
@@ -330,7 +328,8 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 			KeepMount: arvados.KeepMount{
 				UUID:           uuid,
 				DeviceID:       vol.GetDeviceID(),
-				ReadOnly:       cfgvol.ReadOnly || va.ReadOnly,
+				AllowWrite:     !va.ReadOnly && !cfgvol.ReadOnly,
+				AllowTrash:     !va.ReadOnly && (!cfgvol.ReadOnly || cfgvol.AllowTrashWhenReadOnly),
 				Replication:    repl,
 				StorageClasses: sc,
 			},
@@ -340,9 +339,10 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 		vm.mounts = append(vm.mounts, mnt)
 		vm.mountMap[uuid] = mnt
 		vm.readables = append(vm.readables, mnt)
-		if !mnt.KeepMount.ReadOnly {
+		if mnt.KeepMount.AllowWrite {
 			vm.writables = append(vm.writables, mnt)
 		}
+		logger.Printf("started volume %s (%s), AllowWrite=%v, AllowTrash=%v", uuid, vol, mnt.AllowWrite, mnt.AllowTrash)
 	}
 	// pri(mnt): return highest priority of any storage class
 	// offered by mnt
@@ -382,7 +382,7 @@ func (vm *RRVolumeManager) Mounts() []*VolumeMount {
 }
 
 func (vm *RRVolumeManager) Lookup(uuid string, needWrite bool) *VolumeMount {
-	if mnt, ok := vm.mountMap[uuid]; ok && (!needWrite || !mnt.ReadOnly) {
+	if mnt, ok := vm.mountMap[uuid]; ok && (!needWrite || mnt.AllowWrite) {
 		return mnt
 	}
 	return nil

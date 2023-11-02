@@ -480,10 +480,9 @@ func (v *AzureBlobVolume) listBlobs(page int, params storage.ListBlobsParameters
 
 // Trash a Keep block.
 func (v *AzureBlobVolume) Trash(loc string) error {
-	if v.volume.ReadOnly {
+	if v.volume.ReadOnly && !v.volume.AllowTrashWhenReadOnly {
 		return MethodDisabledError
 	}
-
 	// Ideally we would use If-Unmodified-Since, but that
 	// particular condition seems to be ignored by Azure. Instead,
 	// we get the Etag before checking Mtime, and use If-Match to
@@ -575,10 +574,6 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 // EmptyTrash looks for trashed blocks that exceeded BlobTrashLifetime
 // and deletes them from the volume.
 func (v *AzureBlobVolume) EmptyTrash() {
-	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
-		return
-	}
-
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int64
 
