@@ -1694,6 +1694,10 @@ Clusters:
             ReadOnly: false
           "http://host1.example:25107": {}
         ReadOnly: false
+        # AllowTrashWhenReadOnly enables unused and overreplicated
+        # blocks to be trashed/deleted even when ReadOnly is
+        # true. Normally, this is false and ReadOnly prevents all
+        # trash/delete operations as well as writes.
         AllowTrashWhenReadOnly: false
         Replication: 1
         StorageClasses:
