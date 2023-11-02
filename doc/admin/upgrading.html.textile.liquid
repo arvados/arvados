@@ -32,6 +32,12 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.0":#v2_7_0
 
+h3. Check implications of Containers.MaximumPriceFactor 1.5
+
+When scheduling a container, Arvados now considers using instance types other than the lowest-cost type consistent with the container's resource constraints. If a larger instance is already running and idle, or the cloud provider reports that the optimal instance type is not currently available, Arvados will select a larger instance type, provided the cost does not exceed 1.5x the optimal instance type cost.
+
+This will typically reduce overall latency for containers and reduce instance booting/shutdown overhead, but may increase costs depending on workload and instance availability. To avoid this behavior, configure @Containers.MaximumPriceFactor: 1.0@.
+
 h3. Synchronize keepstore and keep-balance upgrades
 
 The internal communication between keepstore and keep-balance about read-only volumes has changed. After keep-balance is upgraded, old versions of keepstore will be treated as read-only. We recommend upgrading and restarting all keepstore services first, then upgrading and restarting keep-balance.
