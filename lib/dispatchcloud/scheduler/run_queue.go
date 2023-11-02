@@ -235,9 +235,28 @@ tryrun:
 			}
 			trying++
 			if unallocOK {
+				// We have a suitable instance type,
+				// so mark it as allocated, and try to
+				// start the container.
 				unalloc[unallocType]--
 				logger = logger.WithField("InstanceType", unallocType)
-			} else if sch.pool.AtQuota() {
+				if dontstart[unallocType] {
+					// We already tried & failed to start
+					// a higher-priority container on the
+					// same instance type. Don't let this
+					// one sneak in ahead of it.
+				} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
+					logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
+				} else if sch.pool.StartContainer(unallocType, ctr) {
+					logger.Trace("StartContainer => true")
+				} else {
+					logger.Trace("StartContainer => false")
+					containerAllocatedWorkerBootingCount += 1
+					dontstart[unallocType] = true
+				}
+				continue
+			}
+			if sch.pool.AtQuota() {
 				// Don't let lower-priority containers
 				// starve this one by using keeping
 				// idle workers alive on different
@@ -245,7 +264,8 @@ tryrun:
 				logger.Trace("overquota")
 				overquota = sorted[i:]
 				break tryrun
-			} else if !availableOK {
+			}
+			if !availableOK {
 				// Continue trying lower-priority
 				// containers in case they can run on
 				// different instance types that are
@@ -261,40 +281,24 @@ tryrun:
 				// container B now.
 				logger.Trace("all eligible types at capacity")
 				continue
-			} else if logger = logger.WithField("InstanceType", availableType); sch.pool.Create(availableType) {
-				// Success. (Note pool.Create works
-				// asynchronously and does its own
-				// logging about the eventual outcome,
-				// so we don't need to.)
-				logger.Info("creating new instance")
-				// Don't bother trying to start the
-				// container yet -- obviously the
-				// instance will take some time to
-				// boot and become ready.
-				containerAllocatedWorkerBootingCount += 1
-				dontstart[availableType] = true
-				continue
-			} else {
+			}
+			logger = logger.WithField("InstanceType", availableType)
+			if !sch.pool.Create(availableType) {
 				// Failed despite not being at quota,
 				// e.g., cloud ops throttled.
 				logger.Trace("pool declined to create new instance")
 				continue
 			}
-
-			if dontstart[unallocType] {
-				// We already tried & failed to start
-				// a higher-priority container on the
-				// same instance type. Don't let this
-				// one sneak in ahead of it.
-			} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
-				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
-			} else if sch.pool.StartContainer(unallocType, ctr) {
-				logger.Trace("StartContainer => true")
-			} else {
-				logger.Trace("StartContainer => false")
-				containerAllocatedWorkerBootingCount += 1
-				dontstart[unallocType] = true
-			}
+			// Success. (Note pool.Create works
+			// asynchronously and does its own logging
+			// about the eventual outcome, so we don't
+			// need to.)
+			logger.Info("creating new instance")
+			// Don't bother trying to start the container
+			// yet -- obviously the instance will take
+			// some time to boot and become ready.
+			containerAllocatedWorkerBootingCount += 1
+			dontstart[availableType] = true
 		}
 	}
 
