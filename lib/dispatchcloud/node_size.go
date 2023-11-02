@@ -178,9 +178,9 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.
 			// if same price and RAM, prefer more VCPUs
 			return types[i].VCPUs > types[j].VCPUs
 		}
-		if types[i].VCPUs != types[j].VCPUs {
-			// if same price and RAM, prefer more VCPUs
-			return types[i].VCPUs > types[j].VCPUs
+		if types[i].Scratch != types[j].Scratch {
+			// if same price and RAM and VCPUs, prefer more scratch
+			return types[i].Scratch > types[j].Scratch
 		}
 		// no preference, just sort the same way each time
 		return types[i].Name < types[j].Name
