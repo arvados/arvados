@@ -16,40 +16,43 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
   end
 
   test "user list token can only list users" do
-    get_args = [params: {}, headers: auth(:active_userlist)]
-    get(v1_url('users'), *get_args)
+    get_args = {params: {}, headers: auth(:active_userlist)}
+    get(v1_url('users'), **get_args)
     assert_response :success
-    get(v1_url('users', ''), *get_args)  # Add trailing slash.
+    get(v1_url('users', ''), **get_args)  # Add trailing slash.
     assert_response :success
-    get(v1_url('users', 'current'), *get_args)
+    get(v1_url('users', 'current'), **get_args)
     assert_response 403
-    get(v1_url('virtual_machines'), *get_args)
+    get(v1_url('virtual_machines'), **get_args)
     assert_response 403
   end
 
   test "narrow + wide scoped tokens for different users" do
-    get_args = [params: {
-                  reader_tokens: [api_client_authorizations(:anonymous).api_token]
-                }, headers: auth(:active_userlist)]
-    get(v1_url('users'), *get_args)
+    get_args = {
+      params: {
+        reader_tokens: [api_client_authorizations(:anonymous).api_token]
+      },
+      headers: auth(:active_userlist),
+    }
+    get(v1_url('users'), **get_args)
     assert_response :success
-    get(v1_url('users', ''), *get_args)  # Add trailing slash.
+    get(v1_url('users', ''), **get_args)  # Add trailing slash.
     assert_response :success
-    get(v1_url('users', 'current'), *get_args)
+    get(v1_url('users', 'current'), **get_args)
     assert_response 403
-    get(v1_url('virtual_machines'), *get_args)
+    get(v1_url('virtual_machines'), **get_args)
     assert_response 403
    end
 
   test "specimens token can see exactly owned specimens" do
-    get_args = [params: {}, headers: auth(:active_specimens)]
-    get(v1_url('specimens'), *get_args)
+    get_args = {params: {}, headers: auth(:active_specimens)}
+    get(v1_url('specimens'), **get_args)
     assert_response 403
-    get(v1_url('specimens', specimens(:owned_by_active_user).uuid), *get_args)
+    get(v1_url('specimens', specimens(:owned_by_active_user).uuid), **get_args)
     assert_response :success
-    head(v1_url('specimens', specimens(:owned_by_active_user).uuid), *get_args)
+    head(v1_url('specimens', specimens(:owned_by_active_user).uuid), **get_args)
     assert_response :success
-    get(v1_url('specimens', specimens(:owned_by_spectator).uuid), *get_args)
+    get(v1_url('specimens', specimens(:owned_by_spectator).uuid), **get_args)
     assert_includes(403..404, @response.status)
   end
 
@@ -82,12 +85,12 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
   test "token without scope has no access" do
     # Logs are good for this test, because logs have relatively
     # few access controls enforced at the model level.
-    req_args = [params: {}, headers: auth(:admin_noscope)]
-    get(v1_url('logs'), *req_args)
+    req_args = {params: {}, headers: auth(:admin_noscope)}
+    get(v1_url('logs'), **req_args)
     assert_response 403
-    get(v1_url('logs', logs(:noop).uuid), *req_args)
+    get(v1_url('logs', logs(:noop).uuid), **req_args)
     assert_response 403
-    post(v1_url('logs'), *req_args)
+    post(v1_url('logs'), **req_args)
     assert_response 403
   end
 
@@ -97,10 +100,10 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     def vm_logins_url(name)
       v1_url('virtual_machines', virtual_machines(name).uuid, 'logins')
     end
-    get_args = [params: {}, headers: auth(:admin_vm)]
-    get(vm_logins_url(:testvm), *get_args)
+    get_args = {params: {}, headers: auth(:admin_vm)}
+    get(vm_logins_url(:testvm), **get_args)
     assert_response :success
-    get(vm_logins_url(:testvm2), *get_args)
+    get(vm_logins_url(:testvm2), **get_args)
     assert_includes(400..419, @response.status,
                     "getting testvm2 logins should have failed")
   end

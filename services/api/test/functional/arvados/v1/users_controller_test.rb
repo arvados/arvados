@@ -68,7 +68,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "respond 401 if given token exists but user record is missing" do
     authorize_with :valid_token_deleted_user
-    get :current, {format: :json}
+    get :current, format: :json
     assert_response 401
   end
 

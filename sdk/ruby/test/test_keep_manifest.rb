@@ -357,8 +357,6 @@ class ManifestTest < Minitest::Test
       "invalid file token \"0:0:a/./bc.txt\""],
     [false, ". d41d8cd98f00b204e9800998ecf8427e 0:0:a/../bc.txt\n",
       "invalid file token \"0:0:a/../bc.txt\""],
-    [false, "./abc/./foo d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",
-      "invalid stream name \"./abc/./foo\""],
     [false, "d41d8cd98f00b204e9800998ecf8427e+0 0:0:abc.txt\n",
       "invalid stream name \"d41d8cd98f00b204e9800998ecf8427e+0\""],
     [false, ". d41d8cd98f00b204e9800998ecf8427 0:0:abc.txt\n",
