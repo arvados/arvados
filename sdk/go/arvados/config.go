@@ -319,12 +319,13 @@ type StorageClassConfig struct {
 }
 
 type Volume struct {
-	AccessViaHosts   map[URL]VolumeAccess
-	ReadOnly         bool
-	Replication      int
-	StorageClasses   map[string]bool
-	Driver           string
-	DriverParameters json.RawMessage
+	AccessViaHosts         map[URL]VolumeAccess
+	ReadOnly               bool
+	AllowTrashWhenReadOnly bool
+	Replication            int
+	StorageClasses         map[string]bool
+	Driver                 string
+	DriverParameters       json.RawMessage
 }
 
 type S3VolumeDriverParameters struct {

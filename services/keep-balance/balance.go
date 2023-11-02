@@ -228,7 +228,7 @@ func (bal *Balancer) cleanupMounts() {
 	rwdev := map[string]*KeepService{}
 	for _, srv := range bal.KeepServices {
 		for _, mnt := range srv.mounts {
-			if !mnt.ReadOnly {
+			if mnt.AllowWrite {
 				rwdev[mnt.UUID] = srv
 			}
 		}
@@ -238,7 +238,7 @@ func (bal *Balancer) cleanupMounts() {
 	for _, srv := range bal.KeepServices {
 		var dedup []*KeepMount
 		for _, mnt := range srv.mounts {
-			if mnt.ReadOnly && rwdev[mnt.UUID] != nil {
+			if !mnt.AllowWrite && rwdev[mnt.UUID] != nil {
 				bal.logf("skipping srv %s readonly mount %q because same volume is mounted read-write on srv %s", srv, mnt.UUID, rwdev[mnt.UUID])
 			} else {
 				dedup = append(dedup, mnt)
@@ -587,9 +587,11 @@ func (bal *Balancer) setupLookupTables(cluster *arvados.Cluster) {
 		for _, mnt := range srv.mounts {
 			bal.mounts++
 
-			// All mounts on a read-only service are
-			// effectively read-only.
-			mnt.ReadOnly = mnt.ReadOnly || srv.ReadOnly
+			if srv.ReadOnly {
+				// All mounts on a read-only service
+				// are effectively read-only.
+				mnt.AllowWrite = false
+			}
 
 			for class := range mnt.StorageClasses {
 				if mbc := bal.mountsByClass[class]; mbc == nil {
@@ -674,7 +676,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 			slots = append(slots, slot{
 				mnt:  mnt,
 				repl: repl,
-				want: repl != nil && mnt.ReadOnly,
+				want: repl != nil && !mnt.AllowTrash,
 			})
 		}
 	}
@@ -763,7 +765,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				protMnt[slot.mnt] = true
 				replProt += slot.mnt.Replication
 			}
-			if replWant < desired && (slot.repl != nil || !slot.mnt.ReadOnly) {
+			if replWant < desired && (slot.repl != nil || slot.mnt.AllowWrite) {
 				slots[i].want = true
 				wantSrv[slot.mnt.KeepService] = true
 				wantMnt[slot.mnt] = true
@@ -882,7 +884,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		case slot.repl == nil && slot.want && len(blk.Replicas) == 0:
 			lost = true
 			change = changeNone
-		case slot.repl == nil && slot.want && !slot.mnt.ReadOnly:
+		case slot.repl == nil && slot.want && slot.mnt.AllowWrite:
 			slot.mnt.KeepService.AddPull(Pull{
 				SizedDigest: blkid,
 				From:        blk.Replicas[0].KeepMount.KeepService,

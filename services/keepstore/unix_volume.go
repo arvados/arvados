@@ -442,8 +442,7 @@ func (v *UnixVolume) Trash(loc string) error {
 	// be re-written), or (b) Touch() will update the file's timestamp and
 	// Trash() will read the correct up-to-date timestamp and choose not to
 	// trash the file.
-
-	if v.volume.ReadOnly || !v.cluster.Collections.BlobTrash {
+	if v.volume.ReadOnly && !v.volume.AllowTrashWhenReadOnly {
 		return MethodDisabledError
 	}
 	if err := v.lock(context.TODO()); err != nil {
@@ -647,10 +646,6 @@ var unixTrashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
 // EmptyTrash walks hierarchy looking for {hash}.trash.*
 // and deletes those with deadline < now.
 func (v *UnixVolume) EmptyTrash() {
-	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
-		return
-	}
-
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int64
 
