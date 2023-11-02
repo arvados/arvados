@@ -513,10 +513,18 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
 
-	capacityError := awserr.New("InsufficientInstanceCapacity", "", nil)
-	wrapped = wrapError(capacityError, nil)
-	caperr, ok := wrapped.(cloud.CapacityError)
-	c.Check(ok, check.Equals, true)
-	c.Check(caperr.IsCapacityError(), check.Equals, true)
-	c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
+	for _, trial := range []struct {
+		code string
+		msg  string
+	}{
+		{"InsufficientInstanceCapacity", ""},
+		{"Unsupported", "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f."},
+	} {
+		capacityError := awserr.New(trial.code, trial.msg, nil)
+		wrapped = wrapError(capacityError, nil)
+		caperr, ok := wrapped.(cloud.CapacityError)
+		c.Check(ok, check.Equals, true)
+		c.Check(caperr.IsCapacityError(), check.Equals, true)
+		c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
+	}
 }

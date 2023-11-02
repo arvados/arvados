@@ -711,7 +711,8 @@ func isErrorSubnetSpecific(err error) bool {
 	code := aerr.Code()
 	return strings.Contains(code, "Subnet") ||
 		code == "InsufficientInstanceCapacity" ||
-		code == "InsufficientVolumeCapacity"
+		code == "InsufficientVolumeCapacity" ||
+		code == "Unsupported"
 }
 
 type ec2QuotaError struct {
@@ -737,7 +738,8 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
 	} else if isErrorQuota(err) {
 		return &ec2QuotaError{err}
-	} else if aerr, ok := err.(awserr.Error); ok && aerr != nil && aerr.Code() == "InsufficientInstanceCapacity" {
+	} else if aerr, ok := err.(awserr.Error); ok && (aerr.Code() == "InsufficientInstanceCapacity" ||
+		(aerr.Code() == "Unsupported" && strings.Contains(aerr.Message(), "requested instance type"))) {
 		return &capacityError{err, true}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))
