@@ -104,9 +104,6 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 
 export const SidePanelCollapsed = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & any) => {
-        const [selectedIcon, setSelectedIcon] = useState(selectedPath)
-
-        useEffect(() => setSelectedIcon(selectedPath), [selectedPath])
 
         const handleClick = (cat: TCollapsedCategory) => {
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
@@ -119,7 +116,7 @@ export const SidePanelCollapsed = withStyles(styles)(
                 {sidePanelCollapsedCategories.map((cat) => (
                     <ListItem
                         key={cat.name}
-                        className={selectedIcon === cat.name ? selected : unselected}
+                        className={selectedPath === cat.name ? selected : unselected}
                         onClick={() => handleClick(cat)}
                     >
                         <Tooltip
