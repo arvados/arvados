@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement, useState } from 'react'
+import React, { ReactElement, useEffect, useState } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
 import { List, ListItem, Tooltip } from '@material-ui/core'
@@ -106,8 +106,9 @@ export const SidePanelCollapsed = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & any) => {
         const [selectedIcon, setSelectedIcon] = useState(selectedPath)
 
+        useEffect(() => setSelectedIcon(selectedPath), [selectedPath])
+
         const handleClick = (cat: TCollapsedCategory) => {
-            setSelectedIcon(selectedPath)
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
             else navTo(cat.navTarget)
         }
