@@ -107,7 +107,7 @@ export const SidePanelCollapsed = withStyles(styles)(
         const [selectedIcon, setSelectedIcon] = useState(selectedPath)
 
         const handleClick = (cat: TCollapsedCategory) => {
-            setSelectedIcon(cat.name)
+            setSelectedIcon(selectedPath)
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
             else navTo(cat.navTarget)
         }
