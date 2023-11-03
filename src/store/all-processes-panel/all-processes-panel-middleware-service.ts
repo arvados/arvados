@@ -27,13 +27,13 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         if (!dataExplorer) {
             api.dispatch(allProcessesPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const processItems = await this.services.containerRequestService.list(
                     {
                         ...getParams(dataExplorer),
@@ -41,7 +41,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
                         select: containerRequestFieldsNoMounts,
                     });
 
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
                 api.dispatch(resourcesActions.SET_RESOURCES(processItems.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(processItems.items));
                 api.dispatch(allProcessesPanelActions.SET_ITEMS({
@@ -51,7 +51,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
                     rowsPerPage: processItems.limit
                 }));
             } catch {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
                 api.dispatch(allProcessesPanelActions.SET_ITEMS({
                     items: [],
                     itemsAvailable: 0,
@@ -64,13 +64,13 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
     }
 }
 
-const getParams = ( dataExplorer: DataExplorer ) => ({
+const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder<ContainerRequestResource>(dataExplorer),
     filters: getFilters(dataExplorer)
 });
 
-const getFilters = ( dataExplorer: DataExplorer ) => {
+const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string, ContainerRequestResource>;
     const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
     const activeStatusFilter = Object.keys(statusColumnFilters).find(

@@ -8,10 +8,9 @@ import { Dispatch } from "redux";
 import { ProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
-import { navigateTo, navigateToWorkflows } from "store/navigation/navigation-action";
+import { navigateTo } from "store/navigation/navigation-action";
 import { snackbarActions } from "store/snackbar/snackbar-actions";
 import { SnackbarKind } from "../snackbar/snackbar-actions";
-import { showWorkflowDetails } from "store/workflow-panel/workflow-panel-actions";
 import { loadSubprocessPanel, subprocessPanelActions } from "../subprocess-panel/subprocess-panel-actions";
 import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
 import { CollectionFile } from "models/collection-file";
@@ -59,7 +58,7 @@ export const navigateToOutput = (uuid: string) => async (dispatch: Dispatch<any>
         await services.collectionService.get(uuid);
         dispatch<any>(navigateTo(uuid));
     } catch {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "This collection does not exists!", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 4000, kind: SnackbarKind.WARNING }));
     }
 };
 
@@ -151,7 +150,7 @@ export const updateOutputParams = () => async (dispatch: Dispatch<any>, getState
     const outputDefinitions = getState().processPanel.outputDefinitions;
     const outputRaw = getState().processPanel.outputRaw;
 
-    if (outputRaw !== null && outputRaw.rawOutputs) {
+    if (outputRaw && outputRaw.rawOutputs) {
         dispatch<ProcessPanelAction>(
             processPanelActions.SET_OUTPUT_PARAMS(formatOutputData(outputDefinitions, outputRaw.rawOutputs, outputRaw.pdh, getState().auth))
         );
@@ -159,8 +158,7 @@ export const updateOutputParams = () => async (dispatch: Dispatch<any>, getState
 };
 
 export const openWorkflow = (uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch<any>(navigateToWorkflows);
-    dispatch<any>(showWorkflowDetails(uuid));
+    dispatch<any>(navigateTo(uuid));
 };
 
 export const initProcessPanelFilters = processPanelActions.SET_PROCESS_PANEL_FILTERS([

@@ -51,6 +51,7 @@ import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
+import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
 type CssRules = 'root' | 'button';
 
@@ -238,6 +239,7 @@ const DEFAULT_VIEW_MESSAGES = ['Your project is empty.', 'Please create a projec
 interface ProjectPanelDataProps {
     currentItemId: string;
     resources: ResourcesState;
+    project: GroupResource;
     isAdmin: boolean;
     userUuid: string;
     dataExplorerItems: any;
@@ -245,17 +247,24 @@ interface ProjectPanelDataProps {
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-export const ProjectPanel = withStyles(styles)(
-    connect((state: RootState) => ({
-        currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
+const mapStateToProps = (state: RootState) => {
+    const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
+    const project = getResource<GroupResource>(currentItemId || "")(state.resources);
+    return {
+        currentItemId,
+        project,
         resources: state.resources,
         userUuid: state.auth.user!.uuid,
-    }))(
+    };
+}
+
+export const ProjectPanel = withStyles(styles)(
+    connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
 
-                return (
+                return this.props.project ?
                     <div data-cy='project-panel' className={classes.root}>
                         <DataExplorer
                             id={PROJECT_PANEL_ID}
@@ -267,7 +276,11 @@ export const ProjectPanel = withStyles(styles)(
                             defaultViewMessages={DEFAULT_VIEW_MESSAGES}
                         />
                     </div>
-                );
+                    :
+                    <NotFoundView
+                        icon={ProjectIcon}
+                        messages={["Project not found"]}
+                    />
             }
 
             isCurrentItemChild = (resource: Resource) => {

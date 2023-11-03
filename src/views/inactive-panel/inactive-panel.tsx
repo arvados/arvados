@@ -10,6 +10,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { ArvadosTheme } from 'common/custom-theme';
 import { navigateToLinkAccount } from 'store/navigation/navigation-action';
 import { RootState } from 'store/store';
+import { sanitizeHTML } from 'common/html-sanitize';
 
 export type CssRules = 'root' | 'ontop' | 'title';
 
@@ -57,7 +58,7 @@ export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isL
         style={{ marginTop: 56, height: "100%" }}>
         <Grid item>
             <Typography>
-                <span dangerouslySetInnerHTML={{ __html: inactivePageText }} style={{ margin: "1em" }} />
+                <span dangerouslySetInnerHTML={{ __html: sanitizeHTML(inactivePageText) }} style={{ margin: "1em" }} />
             </Typography>
         </Grid>
         { !isLoginClusterFederation

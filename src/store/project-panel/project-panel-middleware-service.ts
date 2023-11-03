@@ -41,7 +41,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         const projectUuid = getProjectPanelCurrentUuid(state);
@@ -52,7 +52,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 const resourceUuids = response.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
@@ -69,9 +69,14 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                         rowsPerPage: dataExplorer.rowsPerPage,
                     })
                 );
-                api.dispatch(couldNotFetchProjectContents());
+                if (e.status === 404) {
+                    // It'll just show up as not found
+                }
+                else {
+                    api.dispatch(couldNotFetchProjectContents());
+                }
             } finally {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
             }
         }
     }
@@ -127,10 +132,12 @@ const getOrder = (dataExplorer: DataExplorer) => {
     if (sortColumn && sortColumn.sort) {
         const sortDirection = sortColumn.sort.direction === SortDirection.ASC ? OrderDirection.ASC : OrderDirection.DESC;
 
+        // Use createdAt as a secondary sort column so we break ties consistently.
         return order
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROCESS)
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
+            .addOrder(OrderDirection.DESC, "createdAt", GroupContentsResourcePrefix.PROCESS)
             .getOrder();
     } else {
         return order.getOrder();

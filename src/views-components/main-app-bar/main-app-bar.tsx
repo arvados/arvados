@@ -15,6 +15,7 @@ import { HelpMenu } from 'views-components/main-app-bar/help-menu';
 import { ReactNode } from "react";
 import { AdminMenu } from "views-components/main-app-bar/admin-menu";
 import { pluginConfig } from 'plugins';
+import { sanitizeHTML } from "common/html-sanitize";
 
 type CssRules = 'toolbar' | 'link';
 
@@ -47,7 +48,7 @@ export const MainAppBar = withStyles(styles)(
                     {pluginConfig.appBarLeft || <Grid container item xs={3} direction="column" justify="center">
                         <Typography variant='h6' color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
-                                <span dangerouslySetInnerHTML={{ __html: props.siteBanner }} /> ({props.uuidPrefix})
+                                <span dangerouslySetInnerHTML={{ __html: sanitizeHTML(props.siteBanner) }} /> ({props.uuidPrefix})
                 </Link>
                         </Typography>
                         <Typography variant="caption" color="inherit">

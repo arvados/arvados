@@ -15,6 +15,7 @@ import {
     OutputIcon,
     AdvancedIcon,
     OpenIcon,
+    StopIcon,
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { openMoveProcessDialog } from "store/processes/process-move-actions";
@@ -29,6 +30,7 @@ import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { cancelRunningWorkflow } from "store/processes/processes-actions";
 
 export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
     [
@@ -114,6 +116,18 @@ export const processResourceActionSet: ContextMenuActionSet = [
     ],
 ];
 
+const runningProcessOnlyActionSet: ContextMenuActionSet = [
+    [
+        {
+            name: "CANCEL",
+            icon: StopIcon,
+            execute: (dispatch, resources) => {
+                dispatch<any>(cancelRunningWorkflow(resources[0].uuid));
+            },
+        },
+    ]
+];
+
 export const processResourceAdminActionSet: ContextMenuActionSet = [
     [
         ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
@@ -126,5 +140,19 @@ export const processResourceAdminActionSet: ContextMenuActionSet = [
                 });
             },
         },
+    ],
+];
+
+export const runningProcessResourceActionSet = [
+    [
+        ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
+        ...runningProcessOnlyActionSet.reduce((prev, next) => prev.concat(next), []),
+    ],
+];
+
+export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
+    [
+        ...processResourceAdminActionSet.reduce((prev, next) => prev.concat(next), []),
+        ...runningProcessOnlyActionSet.reduce((prev, next) => prev.concat(next), []),
     ],
 ];

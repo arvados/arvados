@@ -59,10 +59,11 @@ import { addRouteChangeHandlers } from "./routes/route-change-handlers";
 import { setTokenDialogApiHost } from "store/token-dialog/token-dialog-actions";
 import {
     processResourceActionSet,
+    runningProcessResourceActionSet,
     processResourceAdminActionSet,
+    runningProcessResourceAdminActionSet,
     readOnlyProcessResourceActionSet,
 } from "views-components/context-menu/action-sets/process-resource-action-set";
-import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { trashedCollectionActionSet } from "views-components/context-menu/action-sets/trashed-collection-action-set";
 import { setBuildInfo } from "store/app-info/app-info-actions";
 import { getBuildInfo } from "common/app-info";
@@ -87,8 +88,6 @@ import {
 } from "views-components/context-menu/action-sets/project-admin-action-set";
 import { permissionEditActionSet } from "views-components/context-menu/action-sets/permission-edit-action-set";
 import { workflowActionSet, readOnlyWorkflowActionSet } from "views-components/context-menu/action-sets/workflow-action-set";
-import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { openNotFoundDialog } from "./store/not-found-panel/not-found-panel-action";
 import { storeRedirects } from "./common/redirect-to";
 import { searchResultsActionSet } from "views-components/context-menu/action-sets/search-results-action-set";
 
@@ -114,6 +113,7 @@ addMenuActionSet(ContextMenuKind.READONLY_COLLECTION, readOnlyCollectionActionSe
 addMenuActionSet(ContextMenuKind.OLD_VERSION_COLLECTION, oldCollectionVersionActionSet);
 addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
+addMenuActionSet(ContextMenuKind.RUNNING_PROCESS_RESOURCE, runningProcessResourceActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_PROCESS_RESOURCE, readOnlyProcessResourceActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 addMenuActionSet(ContextMenuKind.REPOSITORY, repositoryActionSet);
@@ -127,6 +127,7 @@ addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);
 addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
+addMenuActionSet(ContextMenuKind.RUNNING_PROCESS_ADMIN, runningProcessResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
@@ -149,25 +150,13 @@ fetchConfig().then(({ config, apiHost }) => {
 
     const services = createServices(config, {
         progressFn: (id, working) => {
-            store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
         },
         errorFn: (id, error, showSnackBar: boolean) => {
             if (showSnackBar) {
                 console.error("Backend error:", error);
-
-                if (error.status === 404) {
-                    store.dispatch(openNotFoundDialog());
-                } else if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
+                if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
                     // Catch auth errors when navigating and redirect to login preserving url location
                     store.dispatch(logout(false, true));
-                } else {
-                    store.dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: `${error.errors ? error.errors[0] : error.message}`,
-                            kind: SnackbarKind.ERROR,
-                            hideDuration: 8000,
-                        })
-                    );
                 }
             }
         },

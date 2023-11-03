@@ -12,6 +12,7 @@ import { RootState } from 'store/store';
 import { LoginForm } from 'views-components/login-form/login-form';
 import Axios from 'axios';
 import { Config } from 'common/config';
+import { sanitizeHTML } from 'common/html-sanitize';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 
@@ -98,7 +99,7 @@ export const LoginPanel = withStyles(styles)(
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
             <Grid item className={classes.container}>
                 <Typography component="div">
-                    <div dangerouslySetInnerHTML={{ __html: welcomePage }} style={{ margin: "1em" }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(welcomePage) }} style={{ margin: "1em" }} />
                 </Typography>
                 {Object.keys(remoteHosts).length > 1 && loginCluster === "" &&
 

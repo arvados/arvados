@@ -311,6 +311,8 @@ export const CollectionPanelFiles = withStyles(styles)(
                             return { ...next, ...prev };
                         }, {});
                     setPathData(state => ({ ...state, ...newState }));
+                }, () => {
+                    // Nothing to do
                 })
                 .finally(() => {
                     setIsLoading(false);

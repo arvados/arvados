@@ -76,7 +76,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                 }).catch(() => {
                     api.dispatch(couldNotFetchSearchResults(session.clusterId));
                 });
-            }
+        }
         );
     }
 }
@@ -102,10 +102,12 @@ const getOrder = (dataExplorer: DataExplorer) => {
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
+        // Use createdAt as a secondary sort column so we break ties consistently.
         return order
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROCESS)
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
+            .addOrder(OrderDirection.DESC, "createdAt", GroupContentsResourcePrefix.PROCESS)
             .getOrder();
     } else {
         return order.getOrder();
