@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement, useEffect, useState } from 'react'
+import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
 import { List, ListItem, Tooltip } from '@material-ui/core'
@@ -20,7 +20,6 @@ import {
     navigateToTrash,
 } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
-import { Tree } from 'models/tree'
 
 type CssRules = 'root' | 'unselected' | 'selected'
 
