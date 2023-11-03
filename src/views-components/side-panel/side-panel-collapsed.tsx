@@ -88,19 +88,10 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
 ]
 
-const findSelectedPath = (tree: Tree<any>) => {
-    for (const category in tree) {
-        if (tree[category].active === true) {
-            return tree[category].id
-        }
-    }
-    return null
-}
-
 const mapStateToProps = (state: RootState) => {
     return {
         user: state.auth.user,
-        selectedPath: findSelectedPath(state.treePicker.sidePanelTree),
+        selectedPath: state.properties.breadcrumbs[0].label,
     }
 }
 
