@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement } from 'react'
+import React, { ReactElement, useState } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
 import { List, ListItem, Tooltip } from '@material-ui/core'
@@ -20,13 +20,17 @@ import {
     navigateToTrash,
 } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
+import { Tree } from 'models/tree'
 
-type CssRules = 'root' | 'icon'
+type CssRules = 'root' | 'unselected' | 'selected'
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {},
-    icon: {
+    unselected: {
         color: theme.customs.colors.grey700,
+    },
+    selected: {
+        color: theme.palette.primary.main,
     },
 })
 
@@ -84,9 +88,19 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
 ]
 
+const findSelectedPath = (tree: Tree<any>) => {
+    for (const category in tree) {
+        if (tree[category].active === true) {
+            return tree[category].id
+        }
+    }
+    return null
+}
+
 const mapStateToProps = (state: RootState) => {
     return {
         user: state.auth.user,
+        selectedPath: findSelectedPath(state.treePicker.sidePanelTree),
     }
 }
 
@@ -98,19 +112,22 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 }
 
 export const SidePanelCollapsed = withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, navToHome, navTo }: WithStyles & any) => {
+    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & any) => {
+        const [selectedIcon, setSelectedIcon] = useState(selectedPath)
 
         const handleClick = (cat: TCollapsedCategory) => {
+            setSelectedIcon(cat.name)
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
             else navTo(cat.navTarget)
         }
 
+        const { root, unselected, selected } = classes
         return (
-            <List>
-                {sidePanelCollapsedCategories.map(cat => (
+            <List className={root}>
+                {sidePanelCollapsedCategories.map((cat) => (
                     <ListItem
                         key={cat.name}
-                        className={classes.icon}
+                        className={selectedIcon === cat.name ? selected : unselected}
                         onClick={() => handleClick(cat)}
                     >
                         <Tooltip

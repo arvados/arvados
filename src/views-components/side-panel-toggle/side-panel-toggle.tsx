@@ -21,7 +21,7 @@ const SidePanelToggle = (props: collapseButtonProps) => {
             width: `${COLLAPSE_ICON_SIZE}px`,
             height: `${COLLAPSE_ICON_SIZE}px`,
             marginTop: '0.4rem',
-            marginLeft: '0.6rem'
+            marginLeft: '0.7rem',
         },
         icon: {
             opacity: '0.5',
