@@ -64,7 +64,7 @@ const getProjectPickerIcon = (item: TreeItem<ProjectResource | string>) =>
         ? getSidePanelIcon(item.data)
         : (item.data && item.data.groupClass === GroupClass.FILTER)
             ? FilterGroupIcon
-            : ProjectIcon;
+            : ProjectsIcon;
 
 export const getSidePanelIcon = (category: string) => {
     switch (category) {
