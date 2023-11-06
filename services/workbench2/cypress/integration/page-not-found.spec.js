@@ -45,8 +45,7 @@ describe('Page not found tests', function() {
             cy.goToPath(path);
 
             // then
-            cy.get('[data-cy=not-found-page]').should('not.exist');
-            cy.get('[data-cy=not-found-content]').should('exist');
+            cy.get('[data-cy=not-found-view]').should('exist');
         });
     });
 })
