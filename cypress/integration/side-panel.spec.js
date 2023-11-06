@@ -136,7 +136,7 @@ describe('Side panel tests', function() {
         });
     });
 
-    it.only('collapses and un-collapses', () => {
+    it('collapses and un-collapses', () => {
 
             cy.loginAs(activeUser)
             
@@ -146,5 +146,4 @@ describe('Side panel tests', function() {
             cy.get('[data-cy=side-panel-toggle]').click()
             cy.get('[data-cy=side-panel-tree]').should('exist')
         })
-    // })
 })
