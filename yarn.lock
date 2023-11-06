@@ -1646,6 +1646,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@coreui/coreui@npm:next":
+  version: 5.0.0-alpha.3
+  resolution: "@coreui/coreui@npm:5.0.0-alpha.3"
+  peerDependencies:
+    "@popperjs/core": ^2.11.8
+  checksum: 2363ad6be775c6a895a49126a5b9062ffa9ebd0bea6dfb835c1300cd122fb1cf18d85fe647a9c08a3a384caa871e761d8ffb28ea45c7872cb2b034df6527da20
+  languageName: node
+  linkType: hard
+
+"@coreui/react@npm:next":
+  version: 5.0.0-alpha.3
+  resolution: "@coreui/react@npm:5.0.0-alpha.3"
+  peerDependencies:
+    "@coreui/coreui": ^5.0.0-alpha.2
+    react: ">=17"
+    react-dom: ">=17"
+  checksum: efd333cc346307219dcf7fe183eed65305b12e71984bcb940d80a55509d7b92523082e37045bfcb8c4b334920ca185128a9f72f3e8bec69d15cad889cbeda4b4
+  languageName: node
+  linkType: hard
+
 "@csstools/convert-colors@npm:^1.4.0":
   version: 1.4.0
   resolution: "@csstools/convert-colors@npm:1.4.0"
@@ -3800,6 +3820,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "arvados-workbench-2@workspace:."
   dependencies:
+    "@coreui/coreui": next
+    "@coreui/react": next
     "@date-io/date-fns": 1
     "@fortawesome/fontawesome-svg-core": 1.2.28
     "@fortawesome/free-solid-svg-icons": 5.13.0
@@ -3841,6 +3863,7 @@ __metadata:
     axios-mock-adapter: 1.17.0
     babel-core: 6.26.3
     babel-runtime: 6.26.0
+    bootstrap: ^5.3.2
     caniuse-lite: 1.0.30001299
     classnames: 2.2.6
     cwlts: 1.15.29
@@ -4602,6 +4625,15 @@ __metadata:
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
   checksum: 3e25c80ef626c3a3487c73dbfc70ac322ec830666c9ad915d11b701142fab25ec1e63eff2c450c74347acfd2de854ccde865cd79ef4db1683f7c7b046ea43bb0
+  languageName: node
+  linkType: hard
+
+"bootstrap@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "bootstrap@npm:5.3.2"
+  peerDependencies:
+    "@popperjs/core": ^2.11.8
+  checksum: d5580b253d121ffc137388d41da58dce8d15f1ccd574e12f28d4a08e7649ca15e95db645b2b677cb8025bccd446bff04138fc0fe64f8cba0ccc5dc004a8644cf
   languageName: node
   linkType: hard
 

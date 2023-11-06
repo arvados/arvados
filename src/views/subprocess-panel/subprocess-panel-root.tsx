@@ -20,6 +20,8 @@ import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { StyleRulesCallback, Typography, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
+import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';
+import { Process } from 'store/processes/process';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
@@ -80,6 +82,7 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
 ];
 
 export interface SubprocessPanelDataProps {
+    process: Process;
     resources: ResourcesState;
 }
 
@@ -122,5 +125,6 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         doUnMaximizePanel={props.doUnMaximizePanel}
         panelMaximized={props.panelMaximized}
         panelName={props.panelName}
-        title={<SubProcessesTitle/>} />;
+        title={<SubProcessesTitle/>}
+        toolbar={<SubprocessProgressBar process={props.process} />} />;
 };

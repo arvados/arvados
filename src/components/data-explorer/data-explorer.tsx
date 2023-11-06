@@ -79,6 +79,7 @@ interface DataExplorerDataProps<T> {
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
     title?: React.ReactNode;
+    toolbar?: React.ReactNode;
     paperKey?: string;
     currentItemUuid: string;
     elementPath?: string;
@@ -181,6 +182,7 @@ export const DataExplorer = withStyles(styles)(
                 fetchMode,
                 currentItemUuid,
                 title,
+                toolbar,
                 doHidePanel,
                 doMaximizePanel,
                 doUnMaximizePanel,
@@ -277,6 +279,7 @@ export const DataExplorer = withStyles(styles)(
                                     <MultiselectToolbar />
                                 </Grid>
                             )}
+                            {toolbar && (toolbar)}
                         </div>
                         <Grid
                             item
