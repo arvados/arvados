@@ -111,10 +111,11 @@ export const SidePanelCollapsed = withStyles(styles)(
 
         const { root, unselected, selected } = classes
         return (
-            <List className={root}>
+            <List data-cy="side-panel-collapsed" className={root}>
                 {sidePanelCollapsedCategories.map((cat) => (
                     <ListItem
                         key={cat.name}
+                        data-cy={`collapsed-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
                         className={selectedPath === cat.name ? selected : unselected}
                         onClick={() => handleClick(cat)}
                     >
