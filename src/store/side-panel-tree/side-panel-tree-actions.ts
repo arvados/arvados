@@ -29,7 +29,7 @@ export enum SidePanelTreeCategory {
 }
 
 export const SIDE_PANEL_TREE = 'sidePanelTree';
-const TREE_NODE_LIMIT = 50
+const SP_TREE_NODE_LIMIT = 50
 
 export const getSidePanelTree = (treePicker: TreePicker) =>
     getTreePicker<ProjectResource | string>(SIDE_PANEL_TREE)(treePicker);
@@ -136,7 +136,7 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
             .addEqual('tail_kind', ResourceKind.USER)
             .getFilters(),
         order: new OrderBuilder<ProjectResource>().addDesc('createdAt').getOrder(),
-        limit: 50,
+        limit: SP_TREE_NODE_LIMIT,
     };
 
     const { items } = await services.linkService.list(params);
@@ -166,7 +166,7 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
             .addIsA('head_uuid', typeFilters)
             .getFilters(),
         order: new OrderBuilder<ProjectResource>().addDesc('createdAt').getOrder(),
-        limit: TREE_NODE_LIMIT,
+        limit: SP_TREE_NODE_LIMIT,
     };
 
     const { items } = await services.linkService.list(params);
