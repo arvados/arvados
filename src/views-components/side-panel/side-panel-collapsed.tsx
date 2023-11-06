@@ -87,10 +87,10 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
 ]
 
-const mapStateToProps = (state: RootState) => {
+const mapStateToProps = ({auth, properties }: RootState) => {
     return {
-        user: state.auth.user,
-        selectedPath: state.properties.breadcrumbs[0].label,
+        user: auth.user,
+        selectedPath: properties.breadcrumbs ? properties.breadcrumbs[0].label : SidePanelCollapsedCategory.PROJECTS,
     }
 }
 

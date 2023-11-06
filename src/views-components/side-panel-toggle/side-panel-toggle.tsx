@@ -29,7 +29,7 @@ const SidePanelToggle = (props: collapseButtonProps) => {
     }
 
     return <Tooltip disableFocusListener title="Toggle Side Panel">
-        <IconButton style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
+        <IconButton data-cy="side-panel-toggle" style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
             <div>
                 {props.isCollapsed ?
                     <img style={collapseButtonIconStyles.icon} src='/mui-start-icon.svg' alt='an arrow pointing right'/>

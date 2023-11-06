@@ -135,4 +135,16 @@ describe('Side panel tests', function() {
             });
         });
     });
+
+    it.only('collapses and un-collapses', () => {
+
+            cy.loginAs(activeUser)
+            
+            cy.get('[data-cy=side-panel-tree]').should('exist')
+            cy.get('[data-cy=side-panel-toggle]').click()
+            cy.get('[data-cy=side-panel-tree]').should('not.exist')
+            cy.get('[data-cy=side-panel-toggle]').click()
+            cy.get('[data-cy=side-panel-tree]').should('exist')
+        })
+    // })
 })
