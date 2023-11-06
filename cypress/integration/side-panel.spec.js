@@ -148,7 +148,7 @@ describe('Side panel tests', function() {
         cy.get('[data-cy=side-panel-collapsed]').should('not.exist')
     })
 
-    it.only('can navigate from collapsed panel', () => {
+    it('can navigate from collapsed panel', () => {
 
         const collapsedCategories = {
             'shared-with-me': '/shared-with-me',
