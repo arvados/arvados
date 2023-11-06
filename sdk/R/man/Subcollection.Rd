@@ -10,27 +10,27 @@ It is essentially a composite of arvadosFiles and other subcollections.
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Subcollection$new()}}
-\item \href{#method-getName}{\code{Subcollection$getName()}}
-\item \href{#method-getRelativePath}{\code{Subcollection$getRelativePath()}}
-\item \href{#method-add}{\code{Subcollection$add()}}
-\item \href{#method-remove}{\code{Subcollection$remove()}}
-\item \href{#method-getFileListing}{\code{Subcollection$getFileListing()}}
-\item \href{#method-getSizeInBytes}{\code{Subcollection$getSizeInBytes()}}
-\item \href{#method-move}{\code{Subcollection$move()}}
-\item \href{#method-copy}{\code{Subcollection$copy()}}
-\item \href{#method-duplicate}{\code{Subcollection$duplicate()}}
-\item \href{#method-get}{\code{Subcollection$get()}}
-\item \href{#method-getFirst}{\code{Subcollection$getFirst()}}
-\item \href{#method-setCollection}{\code{Subcollection$setCollection()}}
-\item \href{#method-getCollection}{\code{Subcollection$getCollection()}}
-\item \href{#method-getParent}{\code{Subcollection$getParent()}}
-\item \href{#method-setParent}{\code{Subcollection$setParent()}}
+\item \href{#method-Subcollection-new}{\code{Subcollection$new()}}
+\item \href{#method-Subcollection-getName}{\code{Subcollection$getName()}}
+\item \href{#method-Subcollection-getRelativePath}{\code{Subcollection$getRelativePath()}}
+\item \href{#method-Subcollection-add}{\code{Subcollection$add()}}
+\item \href{#method-Subcollection-remove}{\code{Subcollection$remove()}}
+\item \href{#method-Subcollection-getFileListing}{\code{Subcollection$getFileListing()}}
+\item \href{#method-Subcollection-getSizeInBytes}{\code{Subcollection$getSizeInBytes()}}
+\item \href{#method-Subcollection-move}{\code{Subcollection$move()}}
+\item \href{#method-Subcollection-copy}{\code{Subcollection$copy()}}
+\item \href{#method-Subcollection-duplicate}{\code{Subcollection$duplicate()}}
+\item \href{#method-Subcollection-get}{\code{Subcollection$get()}}
+\item \href{#method-Subcollection-getFirst}{\code{Subcollection$getFirst()}}
+\item \href{#method-Subcollection-setCollection}{\code{Subcollection$setCollection()}}
+\item \href{#method-Subcollection-getCollection}{\code{Subcollection$getCollection()}}
+\item \href{#method-Subcollection-getParent}{\code{Subcollection$getParent()}}
+\item \href{#method-Subcollection-setParent}{\code{Subcollection$setParent()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Subcollection-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-new}{}}}
 \subsection{Method \code{new()}}{
 Initialize new enviroment.
 \subsection{Usage}{
@@ -49,8 +49,8 @@ A new `Subcollection` object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getName"></a>}}
-\if{latex}{\out{\hypertarget{method-getName}{}}}
+\if{html}{\out{<a id="method-Subcollection-getName"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getName}{}}}
 \subsection{Method \code{getName()}}{
 Returns name of the file.
 \subsection{Usage}{
@@ -59,8 +59,8 @@ Returns name of the file.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getRelativePath"></a>}}
-\if{latex}{\out{\hypertarget{method-getRelativePath}{}}}
+\if{html}{\out{<a id="method-Subcollection-getRelativePath"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getRelativePath}{}}}
 \subsection{Method \code{getRelativePath()}}{
 Returns Subcollection's path relative to the root.
 \subsection{Usage}{
@@ -69,8 +69,8 @@ Returns Subcollection's path relative to the root.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-add"></a>}}
-\if{latex}{\out{\hypertarget{method-add}{}}}
+\if{html}{\out{<a id="method-Subcollection-add"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-add}{}}}
 \subsection{Method \code{add()}}{
 Adds ArvadosFile or Subcollection specified by content to the Subcollection.
 \subsection{Usage}{
@@ -86,8 +86,8 @@ Adds ArvadosFile or Subcollection specified by content to the Subcollection.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-remove"></a>}}
-\if{latex}{\out{\hypertarget{method-remove}{}}}
+\if{html}{\out{<a id="method-Subcollection-remove"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-remove}{}}}
 \subsection{Method \code{remove()}}{
 Removes ArvadosFile or Subcollection specified by name from the Subcollection.
 \subsection{Usage}{
@@ -103,8 +103,8 @@ Removes ArvadosFile or Subcollection specified by name from the Subcollection.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getFileListing"></a>}}
-\if{latex}{\out{\hypertarget{method-getFileListing}{}}}
+\if{html}{\out{<a id="method-Subcollection-getFileListing"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getFileListing}{}}}
 \subsection{Method \code{getFileListing()}}{
 Returns Subcollections file content as character vector.
 \subsection{Usage}{
@@ -120,8 +120,8 @@ Returns Subcollections file content as character vector.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getSizeInBytes"></a>}}
-\if{latex}{\out{\hypertarget{method-getSizeInBytes}{}}}
+\if{html}{\out{<a id="method-Subcollection-getSizeInBytes"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getSizeInBytes}{}}}
 \subsection{Method \code{getSizeInBytes()}}{
 Returns subcollections content size in bytes.
 \subsection{Usage}{
@@ -130,8 +130,8 @@ Returns subcollections content size in bytes.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-move"></a>}}
-\if{latex}{\out{\hypertarget{method-move}{}}}
+\if{html}{\out{<a id="method-Subcollection-move"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-move}{}}}
 \subsection{Method \code{move()}}{
 Moves Subcollection to a new location inside collection.
 \subsection{Usage}{
@@ -147,8 +147,8 @@ Moves Subcollection to a new location inside collection.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-copy"></a>}}
-\if{latex}{\out{\hypertarget{method-copy}{}}}
+\if{html}{\out{<a id="method-Subcollection-copy"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-copy}{}}}
 \subsection{Method \code{copy()}}{
 Copies Subcollection to a new location inside collection.
 \subsection{Usage}{
@@ -164,8 +164,8 @@ Copies Subcollection to a new location inside collection.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-duplicate"></a>}}
-\if{latex}{\out{\hypertarget{method-duplicate}{}}}
+\if{html}{\out{<a id="method-Subcollection-duplicate"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-duplicate}{}}}
 \subsection{Method \code{duplicate()}}{
 Duplicate Subcollection and gives it a new name.
 \subsection{Usage}{
@@ -181,8 +181,8 @@ Duplicate Subcollection and gives it a new name.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-get"></a>}}
-\if{latex}{\out{\hypertarget{method-get}{}}}
+\if{html}{\out{<a id="method-Subcollection-get"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-get}{}}}
 \subsection{Method \code{get()}}{
 If name is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.
 \subsection{Usage}{
@@ -198,8 +198,8 @@ If name is valid, returns ArvadosFile or Subcollection specified by relativePath
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getFirst"></a>}}
-\if{latex}{\out{\hypertarget{method-getFirst}{}}}
+\if{html}{\out{<a id="method-Subcollection-getFirst"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getFirst}{}}}
 \subsection{Method \code{getFirst()}}{
 Returns files in Subcollection.
 \subsection{Usage}{
@@ -208,8 +208,8 @@ Returns files in Subcollection.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setCollection"></a>}}
-\if{latex}{\out{\hypertarget{method-setCollection}{}}}
+\if{html}{\out{<a id="method-Subcollection-setCollection"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-setCollection}{}}}
 \subsection{Method \code{setCollection()}}{
 Sets Collection by its UUID.
 \subsection{Usage}{
@@ -218,8 +218,8 @@ Sets Collection by its UUID.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getCollection"></a>}}
-\if{latex}{\out{\hypertarget{method-getCollection}{}}}
+\if{html}{\out{<a id="method-Subcollection-getCollection"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getCollection}{}}}
 \subsection{Method \code{getCollection()}}{
 Returns Collection of Subcollection.
 \subsection{Usage}{
@@ -228,8 +228,8 @@ Returns Collection of Subcollection.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getParent"></a>}}
-\if{latex}{\out{\hypertarget{method-getParent}{}}}
+\if{html}{\out{<a id="method-Subcollection-getParent"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-getParent}{}}}
 \subsection{Method \code{getParent()}}{
 Returns Collection UUID.
 \subsection{Usage}{
@@ -238,8 +238,8 @@ Returns Collection UUID.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setParent"></a>}}
-\if{latex}{\out{\hypertarget{method-setParent}{}}}
+\if{html}{\out{<a id="method-Subcollection-setParent"></a>}}
+\if{latex}{\out{\hypertarget{method-Subcollection-setParent}{}}}
 \subsection{Method \code{setParent()}}{
 Sets new Collection.
 \subsection{Usage}{

@@ -37,9 +37,9 @@ class ArvadosModel < ApplicationRecord
   # user.uuid==object.owner_uuid.
   has_many(:permissions,
            ->{where(link_class: 'permission')},
-           foreign_key: :head_uuid,
+           foreign_key: 'head_uuid',
            class_name: 'Link',
-           primary_key: :uuid)
+           primary_key: 'uuid')
 
   # If async is true at create or update, permission graph
   # update is deferred allowing making multiple calls without the performance
@@ -145,7 +145,7 @@ class ArvadosModel < ApplicationRecord
     super(permit_attribute_params(raw_params), *args)
   end
 
-  def update_attributes raw_params={}, *args
+  def update raw_params={}, *args
     super(self.class.permit_attribute_params(raw_params), *args)
   end
 
@@ -464,6 +464,7 @@ class ArvadosModel < ApplicationRecord
       end
     end
 
+    return self if sql_conds == nil
     self.where(sql_conds,
                user_uuids: all_user_uuids.collect{|c| c["target_uuid"]},
                permission_link_classes: ['permission'])
@@ -938,8 +939,6 @@ class ArvadosModel < ApplicationRecord
   # hook.
   def fill_container_defaults_after_find
     fill_container_defaults
-    set_attribute_was('runtime_constraints', runtime_constraints)
-    set_attribute_was('scheduling_parameters', scheduling_parameters)
     clear_changes_information
   end
 

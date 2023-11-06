@@ -20,10 +20,12 @@ arvados/doc$ bundle install
 To generate the Python SDK documentation, these additional dependencies are needed:
 
 <pre>
-arvados/doc$ sudo apt-get install python3-pip
-arvados/doc$ pip3 install arvados-python-client
-arvados/doc$ pip3 install pdoc3
+arvados/doc$ sudo apt install python3-pip python3-venv
+arvados/doc$ python3 -m venv .venv
+arvados/doc$ .venv/bin/pip install pdoc
 </pre>
+
+Then you must activate the virtualenv (e.g., run @. .venv/bin/activate@) before you run the @bundle exec rake@ commands below.
 
 h2. Generate HTML pages
 

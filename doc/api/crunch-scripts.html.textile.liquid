@@ -11,7 +11,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-p=. *Legacy.  The job APIs are read-only and disabled by default in new installations.  Use "container requests":methods/container_requests.html .*
+{% include 'notebox_begin_warning' %}
+This is a legacy API.  This endpoint is deprecated, disabled by default in new installations, and slated to be removed entirely in a future major release of Arvados.  It is replaced by "container requests.":methods/container_requests.html
+{% include 'notebox_end' %}
 
 h2. Crunch scripts
 

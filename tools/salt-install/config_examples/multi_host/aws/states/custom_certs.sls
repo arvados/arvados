@@ -24,18 +24,40 @@ extra_custom_certs_file_directory_certs_dir:
   {%- for cert in certs %}
     {%- set cert_file = 'arvados-' ~ cert ~ '.pem' %}
     {%- set key_file = 'arvados-' ~ cert ~ '.key' %}
-    {% for c in [cert_file, key_file] %}
-extra_custom_certs_file_copy_{{ c }}:
+extra_custom_certs_{{ cert }}_cert_file_copy:
   file.copy:
-    - name: {{ dest_cert_dir }}/{{ c }}
-    - source: {{ orig_cert_dir }}/{{ c }}
+    - name: {{ dest_cert_dir }}/{{ cert_file }}
+    - source: {{ orig_cert_dir }}/{{ cert_file }}
     - force: true
     - user: root
     - group: root
     - mode: 0640
-    - unless: cmp {{ dest_cert_dir }}/{{ c }} {{ orig_cert_dir }}/{{ c }}
+    - unless: cmp {{ dest_cert_dir }}/{{ cert_file }} {{ orig_cert_dir }}/{{ cert_file }}
     - require:
       - file: extra_custom_certs_file_directory_certs_dir
-    {%- endfor %}
+
+extra_custom_certs_{{ cert }}_key_file_copy:
+  file.copy:
+    - name: {{ dest_cert_dir }}/{{ key_file }}
+    - source: {{ orig_cert_dir }}/{{ key_file }}
+    - force: true
+    - user: root
+    - group: root
+    - mode: 0640
+    - unless: cmp {{ dest_cert_dir }}/{{ key_file }} {{ orig_cert_dir }}/{{ key_file }}
+    - require:
+      - file: extra_custom_certs_file_directory_certs_dir
+
+extra_nginx_service_reload_on_{{ cert }}_certs_changes:
+  cmd.run:
+    - name: systemctl reload nginx
+    - require:
+      - file: extra_custom_certs_{{ cert }}_cert_file_copy
+      - file: extra_custom_certs_{{ cert }}_key_file_copy
+    - onchanges:
+      - file: extra_custom_certs_{{ cert }}_cert_file_copy
+      - file: extra_custom_certs_{{ cert }}_key_file_copy
+    - onlyif:
+      - test $(openssl rsa -modulus -noout -in {{ dest_cert_dir }}/{{ key_file }}) == $(openssl x509 -modulus -noout -in {{ dest_cert_dir }}/{{ cert_file }})
   {%- endfor %}
 {%- endif %}

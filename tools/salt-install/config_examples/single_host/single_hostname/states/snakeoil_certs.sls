@@ -143,8 +143,8 @@ extra_snakeoil_certs_arvados_snakeoil_cert___HOSTNAME_EXT___cmd_run:
       - pkg: extra_snakeoil_certs_dependencies_pkg_installed
       - cmd: extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run
     - require_in:
-      - file: extra_custom_certs_file_copy_arvados-__HOSTNAME_EXT__.pem
-      - file: extra_custom_certs_file_copy_arvados-__HOSTNAME_EXT__.key
+      - file: extra_custom_certs___HOSTNAME_EXT___cert_file_copy
+      - file: extra_custom_certs___HOSTNAME_EXT___key_file_copy
 
   {%- if grains.get('os_family') == 'Debian' %}
 extra_snakeoil_certs_certs_permissions___HOSTNAME_EXT___cmd_run:

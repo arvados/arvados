@@ -43,7 +43,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 	probeTimeout := time.Second
 
 	ac := arvados.NewClientFromEnv()
-	is, err := (&test.StubDriver{}).InstanceSet(nil, "test-instance-set-id", nil, suite.logger)
+	is, err := (&test.StubDriver{}).InstanceSet(nil, "test-instance-set-id", nil, suite.logger, nil)
 	c.Assert(err, check.IsNil)
 	inst, err := is.Create(arvados.InstanceType{}, "", nil, "echo InitCommand", nil)
 	c.Assert(err, check.IsNil)

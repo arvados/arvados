@@ -99,8 +99,10 @@ type Cluster struct {
 		DisabledAPIs                     StringSet
 		MaxIndexDatabaseRead             int
 		MaxItemsPerResponse              int
+		MaxConcurrentRailsRequests       int
 		MaxConcurrentRequests            int
 		MaxQueuedRequests                int
+		MaxQueueTimeForLockRequests      Duration
 		LogCreateRequestFraction         float64
 		MaxKeepBlobBuffers               int
 		MaxRequestAmplification          int
@@ -257,6 +259,12 @@ type Cluster struct {
 		RoleGroupsVisibleToAll                bool
 		CanCreateRoleGroups                   bool
 		ActivityLoggingPeriod                 Duration
+		SyncIgnoredGroups                     []string
+		SyncRequiredGroups                    []string
+		SyncUserAccounts                      bool
+		SyncUserAPITokens                     bool
+		SyncUserGroups                        bool
+		SyncUserSSHKeys                       bool
 	}
 	StorageClasses map[string]StorageClassConfig
 	Volumes        map[string]Volume
@@ -309,12 +317,13 @@ type StorageClassConfig struct {
 }
 
 type Volume struct {
-	AccessViaHosts   map[URL]VolumeAccess
-	ReadOnly         bool
-	Replication      int
-	StorageClasses   map[string]bool
-	Driver           string
-	DriverParameters json.RawMessage
+	AccessViaHosts         map[URL]VolumeAccess
+	ReadOnly               bool
+	AllowTrashWhenReadOnly bool
+	Replication            int
+	StorageClasses         map[string]bool
+	Driver                 string
+	DriverParameters       json.RawMessage
 }
 
 type S3VolumeDriverParameters struct {
@@ -566,6 +575,7 @@ type CloudVMsConfig struct {
 	MaxProbesPerSecond             int
 	MaxConcurrentInstanceCreateOps int
 	MaxInstances                   int
+	InitialQuotaEstimate           int
 	SupervisorFraction             float64
 	PollInterval                   Duration
 	ProbeInterval                  Duration

@@ -47,7 +47,7 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 		cluster:        cluster,
 		client:         client,
 		eventSource:    eventSource,
-		newPermChecker: func() permChecker { return newPermChecker(*client) },
+		newPermChecker: func() permChecker { return newPermChecker(client) },
 		done:           done,
 		reg:            reg,
 	}

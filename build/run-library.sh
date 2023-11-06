@@ -174,25 +174,23 @@ package_go_binary() {
     return 1
   fi
 
-  cross_compilation=1
-  if [[ "$TARGET" == "centos7" ]]; then
-    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
-      return 1
-    fi
-    cross_compilation=0
-  fi
-
-  if [[ "$package_format" == "deb" ]] &&
-     [[ "$TARGET" == "debian10" ]] || [[ "$TARGET" == "ubuntu1804" ]] || [[ "$TARGET" == "ubuntu2004" ]]; then
-    # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
-    # not install properly side by side with the amd64 version before Debian 11.
-    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
-      return 1
-    fi
-    cross_compilation=0
-  fi
+  case "$package_format-$TARGET" in
+    # Older Debian/Ubuntu do not support cross compilation because the
+    # libfuse package does not support multiarch. See
+    # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477>.
+    # Red Hat-based distributions do not support native cross compilation at
+    # all (they use a qemu-based solution we haven't implemented yet).
+    deb-debian10|deb-ubuntu1804|deb-ubuntu2004|rpm-*)
+      cross_compilation=0
+      if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+        echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+        return 1
+      fi
+      ;;
+    *)
+      cross_compilation=1
+      ;;
+  esac
 
   if [[ -n "$target_arch" ]]; then
     archs=($target_arch)
@@ -456,15 +454,21 @@ test_package_presence() {
         return 0
       fi
     else
-      centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
+      local rpm_root
+      case "$TARGET" in
+        centos7) rpm_root="CentOS/7/dev" ;;
+        rocky8) rpm_root="CentOS/8/dev" ;;
+        *)
+          echo "FIXME: Don't know RPM URL path for $TARGET, building"
+          return 0
+          ;;
+      esac
+      local rpm_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
 
-      repo_pkg_list=$(curl -s -o - ${centos_repo})
-      echo ${repo_pkg_list} |grep -q ${full_pkgname}
-      if [ $? -eq 0 ]; then
+      if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$rpm_url"; then
         echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" ${centos_repo}${full_pkgname}
         return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
+      elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
         echo "Package $full_pkgname exists, not rebuilding!"
         return 1
       else
@@ -652,6 +656,13 @@ handle_cwltest () {
     rm -rf "$WORKSPACE/cwltest"
   fi
   git clone https://github.com/common-workflow-language/cwltest.git
+
+  # The subsequent release of cwltest confirms that files exist on disk, since
+  # our files are in Keep, all the tests fail.
+  # We should add [optional] Arvados support to cwltest so it can access
+  # Keep but for the time being just package the last working version.
+  (cd cwltest && git checkout 2.3.20230108193615)
+
   # signal to our build script that we want a cwltest executable installed in /usr/bin/
   mkdir cwltest/bin && touch cwltest/bin/cwltest
   fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
@@ -788,7 +799,7 @@ fpm_build_virtualenv_worker () {
   PACKAGE_PATH=`(cd dist; ls *tar.gz)`
 
   if [[ "arvados-python-client" == "$PKG" ]]; then
-    PYSDK_PATH=`pwd`/dist/
+    PYSDK_PATH="-f $(pwd)/dist/"
   fi
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
@@ -852,16 +863,16 @@ fpm_build_virtualenv_worker () {
   echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
 
   if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
+    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
   else
     # centos7 needs these special tweaks to install python-arvados-fuse
     build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH
+    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
   fi
 
   if [[ "$?" != "0" ]]; then
     echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -f $PYSDK_PATH $PACKAGE_PATH"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH"
     exit 1
   fi
 
@@ -919,11 +930,6 @@ fpm_build_virtualenv_worker () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  if [[ "$package_format" == "rpm" ]]; then
-    # Make sure to conflict with the old rh-python36 packages we used to publish
-    COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
-  fi
-
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
@@ -940,9 +946,21 @@ fpm_build_virtualenv_worker () {
   fi
 
   COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
-
-  # avoid warning
-  COMMAND_ARR+=('--deb-no-default-config-files')
+  case "$package_format" in
+      deb)
+          COMMAND_ARR+=(
+              # Avoid warning
+              --deb-no-default-config-files
+          ) ;;
+      rpm)
+          COMMAND_ARR+=(
+              # Conflict with older packages we used to publish
+              --conflicts "rh-python36-python-$PKG"
+              # Do not generate /usr/lib/.build-id links on RH8+
+              # (otherwise our packages conflict with platform-python)
+              --rpm-rpmbuild-define "_build_id_links none"
+          ) ;;
+  esac
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override

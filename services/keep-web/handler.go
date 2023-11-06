@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/webdavfs"
@@ -35,6 +36,10 @@ type handler struct {
 	Cache     cache
 	Cluster   *arvados.Cluster
 	setupOnce sync.Once
+
+	lockMtx    sync.Mutex
+	lock       map[string]*sync.RWMutex
+	lockTidied time.Time
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -288,12 +293,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		reqTokens = auth.CredentialsFromRequest(r).Tokens
 	}
 
-	formToken := r.FormValue("api_token")
+	r.ParseForm()
 	origin := r.Header.Get("Origin")
 	cors := origin != "" && !strings.HasSuffix(origin, "://"+r.Host)
 	safeAjax := cors && (r.Method == http.MethodGet || r.Method == http.MethodHead)
-	safeAttachment := attachment && r.URL.Query().Get("api_token") == ""
-	if formToken == "" {
+	// Important distinction: safeAttachment checks whether api_token exists
+	// as a query parameter. haveFormTokens checks whether api_token exists
+	// as request form data *or* a query parameter. Different checks are
+	// necessary because both the request disposition and the location of
+	// the API token affect whether or not the request needs to be
+	// redirected. The different branch comments below explain further.
+	safeAttachment := attachment && !r.URL.Query().Has("api_token")
+	if formTokens, haveFormTokens := r.Form["api_token"]; !haveFormTokens {
 		// No token to use or redact.
 	} else if safeAjax || safeAttachment {
 		// If this is a cross-origin request, the URL won't
@@ -308,7 +319,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// form?" problem, so provided the token isn't
 		// embedded in the URL, there's no reason to do
 		// redirect-with-cookie in this case either.
-		reqTokens = append(reqTokens, formToken)
+		for _, tok := range formTokens {
+			reqTokens = append(reqTokens, tok)
+		}
 	} else if browserMethod[r.Method] {
 		// If this is a page view, and the client provided a
 		// token via query string or POST body, we must put
@@ -406,16 +419,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// collection id is outside scope of supplied
 			// token
 			tokenScopeProblem = true
+			sess.Release()
 			continue
 		} else if os.IsNotExist(err) {
 			// collection does not exist or is not
 			// readable using this token
+			sess.Release()
 			continue
 		} else if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sess.Release()
 			return
 		}
 		defer f.Close()
+		defer sess.Release()
 
 		collectionDir, sessionFS, session, tokenUser = f, fs, sess, user
 		break
@@ -530,7 +547,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fsprefix+strings.Join(targetPath, "/"), nil, tokenUser)
 
-	if writeMethod[r.Method] {
+	writing := writeMethod[r.Method]
+	locker := h.collectionLock(collectionID, writing)
+	defer locker.Unlock()
+
+	if writing {
 		// Save the collection only if/when all
 		// webdav->filesystem operations succeed --
 		// and send a 500 error if the modified
@@ -763,7 +784,7 @@ func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename
 }
 
 func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, location string, credentialsOK bool) {
-	if formToken := r.FormValue("api_token"); formToken != "" {
+	if formTokens, haveFormTokens := r.Form["api_token"]; haveFormTokens {
 		if !credentialsOK {
 			// It is not safe to copy the provided token
 			// into a cookie unless the current vhost
@@ -784,13 +805,19 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 		// bar, and in the case of a POST request to avoid
 		// raising warnings when the user refreshes the
 		// resulting page.
-		http.SetCookie(w, &http.Cookie{
-			Name:     "arvados_api_token",
-			Value:    auth.EncodeTokenCookie([]byte(formToken)),
-			Path:     "/",
-			HttpOnly: true,
-			SameSite: http.SameSiteLaxMode,
-		})
+		for _, tok := range formTokens {
+			if tok == "" {
+				continue
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "arvados_api_token",
+				Value:    auth.EncodeTokenCookie([]byte(tok)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+			break
+		}
 	}
 
 	// Propagate query parameters (except api_token) from
@@ -940,6 +967,41 @@ func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) 
 		}
 	}
 	return nil, ""
+}
+
+var lockTidyInterval = time.Minute * 10
+
+// Lock the specified collection for reading or writing. Caller must
+// call Unlock() on the returned Locker when the operation is
+// finished.
+func (h *handler) collectionLock(collectionID string, writing bool) sync.Locker {
+	h.lockMtx.Lock()
+	defer h.lockMtx.Unlock()
+	if time.Since(h.lockTidied) > lockTidyInterval {
+		// Periodically delete all locks that aren't in use.
+		h.lockTidied = time.Now()
+		for id, locker := range h.lock {
+			if locker.TryLock() {
+				locker.Unlock()
+				delete(h.lock, id)
+			}
+		}
+	}
+	locker := h.lock[collectionID]
+	if locker == nil {
+		locker = new(sync.RWMutex)
+		if h.lock == nil {
+			h.lock = map[string]*sync.RWMutex{}
+		}
+		h.lock[collectionID] = locker
+	}
+	if writing {
+		locker.Lock()
+		return locker
+	} else {
+		locker.RLock()
+		return locker.RLocker()
+	}
 }
 
 func ServeCORSPreflight(w http.ResponseWriter, header http.Header) bool {

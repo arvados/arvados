@@ -1,0 +1,5 @@
+svg.cwl-workflow.__plugin-validate .workflow .__validate-invalid .inner {
+  stroke: #f89406; }
+
+svg.cwl-workflow.__plugin-validate .workflow.has-selection .__validate-invalid:not(.highlighted) .inner {
+  stroke: #7c4a03; }

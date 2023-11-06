@@ -3,7 +3,7 @@
 SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
-  wf_def = ActiveSupport::HashWithIndifferentAccess.new YAML::load(@object.definition) if @object.definition
+  wf_def = ActiveSupport::HashWithIndifferentAccess.new YAML.load(@object.definition) if @object.definition
   wf_def = wf_def[:"$graph"].andand[0] || wf_def if wf_def
 
   items = {}

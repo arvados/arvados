@@ -18,7 +18,7 @@ class Workflow < ArvadosModel
 
   def validate_definition
     begin
-      @definition_yaml = YAML.load self.definition if !definition.nil?
+      @definition_yaml = YAML.safe_load self.definition if !definition.nil?
     rescue => e
       errors.add :definition, "is not valid yaml: #{e.message}"
     end
@@ -27,7 +27,7 @@ class Workflow < ArvadosModel
   def set_name_and_description
     old_wf = {}
     begin
-      old_wf = YAML.load self.definition_was if !self.definition_was.nil?
+      old_wf = YAML.safe_load self.definition_was if !self.definition_was.nil?
     rescue => e
       logger.warn "set_name_and_description error: #{e.message}"
       return

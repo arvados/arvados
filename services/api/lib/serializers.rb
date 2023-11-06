@@ -16,7 +16,7 @@ class Serializer
   end
 
   def self.legacy_load(s)
-    val = Psych.safe_load(s)
+    val = Psych.safe_load(s, permitted_classes: [Time])
     if val.is_a? String
       # If apiserver was downgraded to a YAML-only version after
       # storing JSON in the database, the old code would have loaded

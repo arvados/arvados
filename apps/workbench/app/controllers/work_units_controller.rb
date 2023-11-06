@@ -70,7 +70,7 @@ class WorkUnitsController < ApplicationController
       workflow = Workflow.find? template_uuid
       if workflow.definition
         begin
-          wf_json = ActiveSupport::HashWithIndifferentAccess.new YAML::load(workflow.definition)
+          wf_json = ActiveSupport::HashWithIndifferentAccess.new YAML.load(workflow.definition)
         rescue => e
           logger.error "Error converting definition yaml to json: #{e.message}"
           raise ArgumentError, "Error converting definition yaml to json: #{e.message}"

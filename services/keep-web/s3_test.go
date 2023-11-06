@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -324,6 +325,11 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectSuccess(c *check.C) {
 	s.testS3PutObjectSuccess(c, stage.projbucket, stage.coll.Name+"/", stage.coll.UUID)
 }
 func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket, prefix string, collUUID string) {
+	// We insert a delay between test cases to ensure we exercise
+	// rollover of expired sessions.
+	sleep := time.Second / 100
+	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(sleep * 3)
+
 	for _, trial := range []struct {
 		path        string
 		size        int
@@ -359,6 +365,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 			contentType: "application/x-directory",
 		},
 	} {
+		time.Sleep(sleep)
 		c.Logf("=== %v", trial)
 
 		objname := prefix + trial.path
@@ -817,8 +824,8 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 
 	var markers int
 	for markers, s.handler.Cluster.Collections.S3FolderObjects = range []bool{false, true} {
-		dirs := 2
-		filesPerDir := 1001
+		dirs := 2000
+		filesPerDir := 2
 		stage.writeBigDirs(c, dirs, filesPerDir)
 		// Total # objects is:
 		//                 2 file entries from s3setup (emptyfile and sailboat.txt)
@@ -827,6 +834,7 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 		// +filesPerDir*dirs file entries from writeBigDirs (dir0/file0.txt, etc.)
 		s.testS3List(c, stage.collbucket, "", 4000, markers+2+(filesPerDir+markers)*dirs)
 		s.testS3List(c, stage.collbucket, "", 131, markers+2+(filesPerDir+markers)*dirs)
+		s.testS3List(c, stage.collbucket, "", 51, markers+2+(filesPerDir+markers)*dirs)
 		s.testS3List(c, stage.collbucket, "dir0/", 71, filesPerDir+markers)
 	}
 }
@@ -849,6 +857,9 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 			break
 		}
 		for _, key := range resp.Contents {
+			if _, dup := gotKeys[key.Key]; dup {
+				c.Errorf("got duplicate key %q on page %d", key.Key, pages)
+			}
 			gotKeys[key.Key] = key
 			if strings.Contains(key.Key, "sailboat.txt") {
 				c.Check(key.Size, check.Equals, int64(4))
@@ -863,7 +874,16 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 		}
 		nextMarker = resp.NextMarker
 	}
-	c.Check(len(gotKeys), check.Equals, expectFiles)
+	if !c.Check(len(gotKeys), check.Equals, expectFiles) {
+		var sorted []string
+		for k := range gotKeys {
+			sorted = append(sorted, k)
+		}
+		sort.Strings(sorted)
+		for _, k := range sorted {
+			c.Logf("got %s", k)
+		}
+	}
 }
 
 func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
@@ -929,7 +949,8 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		{"dir0", "", ""},
 		{"dir0/", "", ""},
 		{"dir0/f", "", ""},
-		{"dir0", "/", "dir0/file14.txt"},       // no commonprefixes
+		{"dir0", "/", "dir0/file14.txt"},       // one commonprefix, "dir0/"
+		{"dir0", "/", "dir0/zzzzfile.txt"},     // no commonprefixes
 		{"", "", "dir0/file14.txt"},            // middle page, skip walking dir1
 		{"", "", "dir1/file14.txt"},            // middle page, skip walking dir0
 		{"", "", "dir1/file498.txt"},           // last page of results
@@ -960,27 +981,30 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		var expectTruncated bool
 		for _, key := range allfiles {
 			full := len(expectKeys)+len(expectPrefixes) >= maxKeys
-			if !strings.HasPrefix(key, trial.prefix) || key < trial.marker {
+			if !strings.HasPrefix(key, trial.prefix) || key <= trial.marker {
 				continue
 			} else if idx := strings.Index(key[len(trial.prefix):], trial.delimiter); trial.delimiter != "" && idx >= 0 {
 				prefix := key[:len(trial.prefix)+idx+1]
 				if len(expectPrefixes) > 0 && expectPrefixes[len(expectPrefixes)-1] == prefix {
 					// same prefix as previous key
 				} else if full {
-					expectNextMarker = key
 					expectTruncated = true
 				} else {
 					expectPrefixes = append(expectPrefixes, prefix)
+					expectNextMarker = prefix
 				}
 			} else if full {
-				if trial.delimiter != "" {
-					expectNextMarker = key
-				}
 				expectTruncated = true
 				break
 			} else {
 				expectKeys = append(expectKeys, key)
+				if trial.delimiter != "" {
+					expectNextMarker = key
+				}
 			}
+		}
+		if !expectTruncated {
+			expectNextMarker = ""
 		}
 
 		var gotKeys []string
@@ -997,6 +1021,61 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		c.Check(resp.NextMarker, check.Equals, expectNextMarker, commentf)
 		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
+	}
+}
+
+func (s *IntegrationSuite) TestS3ListObjectsV2ManySubprojects(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	projects := 50
+	collectionsPerProject := 2
+	for i := 0; i < projects; i++ {
+		var subproj arvados.Group
+		err := stage.arv.RequestAndDecode(&subproj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+			"group": map[string]interface{}{
+				"owner_uuid":  stage.subproj.UUID,
+				"group_class": "project",
+				"name":        fmt.Sprintf("keep-web s3 test subproject %d", i),
+			},
+		})
+		c.Assert(err, check.IsNil)
+		for j := 0; j < collectionsPerProject; j++ {
+			err = stage.arv.RequestAndDecode(nil, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{
+				"owner_uuid":    subproj.UUID,
+				"name":          fmt.Sprintf("keep-web s3 test collection %d", j),
+				"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:emptyfile\n./emptydir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n",
+			}})
+			c.Assert(err, check.IsNil)
+		}
+	}
+	c.Logf("setup complete")
+
+	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
+		Region:           aws_aws.String("auto"),
+		Endpoint:         aws_aws.String(s.testServer.URL),
+		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
+		S3ForcePathStyle: aws_aws.Bool(true),
+	}))
+	client := aws_s3.New(sess)
+	ctx := context.Background()
+	params := aws_s3.ListObjectsV2Input{
+		Bucket:    aws_aws.String(stage.proj.UUID),
+		Delimiter: aws_aws.String("/"),
+		Prefix:    aws_aws.String("keep-web s3 test subproject/"),
+		MaxKeys:   aws_aws.Int64(int64(projects / 2)),
+	}
+	for page := 1; ; page++ {
+		t0 := time.Now()
+		result, err := client.ListObjectsV2WithContext(ctx, &params)
+		if !c.Check(err, check.IsNil) {
+			break
+		}
+		c.Logf("got page %d in %v with len(Contents) == %d, len(CommonPrefixes) == %d", page, time.Since(t0), len(result.Contents), len(result.CommonPrefixes))
+		if !*result.IsTruncated {
+			break
+		}
+		params.ContinuationToken = result.NextContinuationToken
+		*params.MaxKeys = *params.MaxKeys/2 + 1
 	}
 }
 

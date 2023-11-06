@@ -12,36 +12,34 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 Arvados Data collections can be downloaded using either the arv commands or using Workbench.
 
 # "*Download using Workbench*":#download-using-workbench
-# "*Sharing collections*":#download-shared-collection
+# "*Creating a special download URL for a collection*":#download-shared-collection
 # "*Download using command line tools*":#download-using-arv
 
 h2(#download-using-workbench). Download using Workbench
 
 You can also download Arvados data collections using the Workbench.
 
-Visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project. You will see the *Data collections* tab, which lists the collections in this project.
+When you visit a project in Workbench (for instance, the <i class="fa fa-fw fa-folder"></i> *Home Projects* or any projects under it), the collections will show up on the project details page, with "_Data collection_" in the *Type* column.
 
-You can access the contents of a collection by clicking on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection. This will take you to the collection's page. Using this page you can see the collection's contents, and download individual files.
+Clicking on a collection will bring you to its details page. There, the lower panel acts like a file manager where you can navigate to or search for files, select them for actions, and download them.
 
-You can now download the collection files by clicking on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> button(s).
+To download a file, simply click on the file, or bring up the context menu using right-click or the triple-dot button on its row, and then select the menu item *Download*.
 
-h2(#download-shared-collection). Sharing collections
+h2(#download-shared-collection). Creating a special download URL for a collection
 
-h3. Sharing with other Arvados users
+To share a collection with users that do not have an account on your Arvados cluster, locate the collection and then go to the *Sharing settings* dialog box as described above. There, select the *SHARING URLS* tab.
 
-Collections can be shared with other users on the Arvados cluster by sharing the parent project.  Navigate to the parent project using the "breadcrumbs" bar, then click on the *Sharing* tab.  From the sharing tab, you can choose which users or groups to share with, and their level of access.
+You can then generate a new sharing URL using the <span class="btn btn-sm btn-primary">CREATE SHARING URL</span> button, with the option to set an expiration time for the URL. You can then copy the URL to the clipboard for sharing with others. To revoke (that is, delete) a sharing URL, click on the cross icon beside it.
 
-h3. Creating a special download URL
+<figure>!{width: 80%}{{ site.baseurl }}/images/sharing-collection-url.png!<figcaption>_The_ *SHARING URLS* _tab in the_ *Sharing settings* _dialog box, showing the created URL with an expiration time_</figcaption></figure>
 
-To share a collection with users that do not have an account on your Arvados cluster, visit the collection page using Workbench as described in the above section. Once on this page, click on the <span class="btn btn-sm btn-primary" >Create sharing link</span> button.
-
-This will create a sharing link for the collection as shown below. You can copy the sharing link in this page and share it with other users.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/shared-collection.png!
-
-A user with this url can download this collection by simply accessing this url using browser. It will present a downloadable version of the collection as shown below.
+Any user with the sharing URL can download this collection by simply accessing this URL using browser. It will present a downloadable version of the collection as shown below.
 
 !{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/download-shared-collection.png!
+
+When a collection is being shared by URL, in the *WITH USERS/GROUS* tab of *Sharing settings*, the following message will appear if *General access* is Private: _Although there aren't specific permissions set, this is publicly accessible via Sharing URL(s)._
+
+* *Note:* Sharing by URL is specific to collections. Projects or individual files cannot be shared in this way.
 
 h2(#download-using-arv). Download using command line tools
 

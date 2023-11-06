@@ -47,6 +47,10 @@ case "$TARGET" in
         yum install --assumeyes httpd
         yum reinstall --assumeyes "$PACKAGE_NAME"
         ;;
+    rocky*)
+        microdnf --assumeyes install httpd
+        microdnf --assumeyes reinstall "$PACKAGE_NAME"
+        ;;
     *)
         echo -e "$0: Unknown target '$TARGET'.\n" >&2
         exit 1

@@ -14,14 +14,14 @@ module HasUuid
     base.has_many(:links_via_head,
                   -> { where("not (link_class = 'permission')") },
                   class_name: 'Link',
-                  foreign_key: :head_uuid,
-                  primary_key: :uuid,
+                  foreign_key: 'head_uuid',
+                  primary_key: 'uuid',
                   dependent: :destroy)
     base.has_many(:links_via_tail,
                   -> { where("not (link_class = 'permission')") },
                   class_name: 'Link',
-                  foreign_key: :tail_uuid,
-                  primary_key: :uuid,
+                  foreign_key: 'tail_uuid',
+                  primary_key: 'uuid',
                   dependent: :destroy)
   end
 

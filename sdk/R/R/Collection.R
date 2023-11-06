@@ -9,7 +9,7 @@
 #' for exaplme actions like creating, updating, moving or removing are possible.
 #'
 #' @seealso
-#' \code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}
+#' https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R
 #'
 #' @export
 
@@ -28,7 +28,9 @@ Collection <- R6::R6Class(
         #' @param uuid The UUID Autentic for Collection UUID.
         #' @return A new `Collection` object.
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, CollectionUUID)
+        #' }
         initialize = function(api, uuid)
         {
             private$REST <- api$getRESTService()
@@ -89,6 +91,7 @@ Collection <- R6::R6Class(
         #' @param Ncol Used in reading binary file to set numbers of columns in data.frame.
         #' @param Nrow Used in reading binary file to set numbers of rows in data.frame size.
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, collectionUUID)
         #' readFile <- collection$readArvFile(arvadosFile, istable = 'yes')                    # table
         #' readFile <- collection$readArvFile(arvadosFile, istable = 'no')                     # text
@@ -96,6 +99,7 @@ Collection <- R6::R6Class(
         #' readFile <- collection$readArvFile(arvadosFile, fileclass = 'fasta')                # fasta
         #' readFile <- collection$readArvFile(arvadosFile, Ncol= 4, Nrow = 32)                 # binary, only numbers
         #' readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = "factor") # binary with factor or text
+        #' }
         readArvFile = function(file, con, sep = ',', istable = NULL, fileclass = "SeqFastadna", Ncol = NULL, Nrow = NULL, wantedFunction = NULL)
         {
             arvFile <- self$get(file)
@@ -197,6 +201,7 @@ Collection <- R6::R6Class(
         #' @param file File to be saved.
         #' @param istable Used in writing txt file to check if the file is table or not.
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, collectionUUID)
         #' writeFile <- collection$writeFile(name = "myoutput.csv", file = file, fileFormat = "csv", istable = NULL, collectionUUID = collectionUUID)             # csv
         #' writeFile <- collection$writeFile(name = "myoutput.tsv", file = file, fileFormat = "tsv", istable = NULL, collectionUUID = collectionUUID)             # tsv
@@ -205,8 +210,9 @@ Collection <- R6::R6Class(
         #' writeFile <- collection$writeFile(name = "myoutputtext.txt", file = file, fileFormat = "txt", istable = "no", collectionUUID = collectionUUID)         # txt text
         #' writeFile <- collection$writeFile(name = "myoutputbinary.dat", file = file, fileFormat = "dat", collectionUUID = collectionUUID)                       # binary
         #' writeFile <- collection$writeFile(name = "myoutputxlsx.xlsx", file = file, fileFormat = "xlsx", collectionUUID = collectionUUID)                       # xlsx
-        writeFile = function(name, file, collectionUUID, fileFormat, istable = NULL, seqName = NULL) {
-
+        #' }
+        writeFile = function(name, file, collectionUUID, fileFormat, istable = NULL, seqName = NULL)
+        {
             # set enviroment
             ARVADOS_API_TOKEN <- Sys.getenv("ARVADOS_API_TOKEN")
             ARVADOS_API_HOST <- Sys.getenv("ARVADOS_API_HOST")
@@ -247,7 +253,9 @@ Collection <- R6::R6Class(
         #' Creates one or more ArvadosFiles and adds them to the collection at specified path.
         #' @param files Content to be created.
         #' @examples
+        #' \dontrun{
         #' collection <- arv$collections_create(name = collectionTitle, description = collectionDescription, owner_uuid = collectionOwner, properties = list("ROX37196928443768648" = "ROX37742976443830153"))
+        #' }
         create = function(files)
         {
             if(is.null(private$tree))
@@ -281,7 +289,9 @@ Collection <- R6::R6Class(
         #' Remove one or more files from the collection.
         #' @param paths Content to be removed.
         #' @examples
+        #' \dontrun{
         #' collection$remove(fileName.format)
+        #' }
         remove = function(paths)
         {
             if(is.null(private$tree))
@@ -320,7 +330,9 @@ Collection <- R6::R6Class(
         #' @param content Content to be moved.
         #' @param destination Path to move content.
         #' @examples
+        #' \dontrun{
         #' collection$move("fileName.format", path)
+        #' }
         move = function(content, destination)
         {
             if(is.null(private$tree))
@@ -341,7 +353,9 @@ Collection <- R6::R6Class(
         #' @param content Content to be moved.
         #' @param destination Path to move content.
         #' @examples
+        #' \dontrun{
         #' copied <- collection$copy("oldName.format", "newName.format")
+        #' }
         copy = function(content, destination)
         {
             if(is.null(private$tree))
@@ -360,7 +374,9 @@ Collection <- R6::R6Class(
         #' @description
         #' Refreshes the environment.
         #' @examples
+        #' \dontrun{
         #' collection$refresh()
+        #' }
         refresh = function()
         {
             if(!is.null(private$tree))
@@ -373,7 +389,9 @@ Collection <- R6::R6Class(
         #' @description
         #' Returns collections file content as character vector.
         #' @examples
+        #' \dontrun{
         #' list <- collection$getFileListing()
+        #' }
         getFileListing = function()
         {
             if(is.null(private$tree))
@@ -387,7 +405,9 @@ Collection <- R6::R6Class(
         #' If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.
         #' @param relativePath Path from content is taken.
         #' @examples
+        #' \dontrun{
         #' arvadosFile <- collection$get(fileName)
+        #' }
         get = function(relativePath)
         {
             if(is.null(private$tree))
@@ -434,10 +454,3 @@ print.Collection = function(x, ...)
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
     cat(paste0("uuid: ", "\"", x$uuid,               "\""), sep = "\n")
 }
-
-
-
-
-
-
-

@@ -50,489 +50,6 @@
   },
   "protocol": "rest",
   "resources": {
-    "jobs": {
-      "methods": {
-        "get": {
-          "id": "arvados.jobs.get",
-          "path": "jobs/{uuid}",
-          "httpMethod": "GET",
-          "description": "Gets a Job's metadata by UUID.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the Job in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "parameterOrder": [
-            "uuid"
-          ],
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "index": {
-          "id": "arvados.jobs.list",
-          "path": "jobs",
-          "httpMethod": "GET",
-          "description": "List Jobs.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Jobs. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#jobList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "JobList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "create": {
-          "id": "arvados.jobs.create",
-          "path": "jobs",
-          "httpMethod": "POST",
-          "description": "Create a new Job.",
-          "parameters": {
-            "select": {
-              "type": "array",
-              "description": "Attributes of the new object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "ensure_unique_name": {
-              "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
-              "location": "query",
-              "required": false,
-              "default": "false"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "find_or_create": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "minimum_script_version": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "exclude_script_versions": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "job": {
-                "$ref": "Job"
-              }
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "update": {
-          "id": "arvados.jobs.update",
-          "path": "jobs/{uuid}",
-          "httpMethod": "PUT",
-          "description": "Update attributes of an existing Job.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the Job in question.",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "job": {
-                "$ref": "Job"
-              }
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "delete": {
-          "id": "arvados.jobs.delete",
-          "path": "jobs/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "Delete an existing Job.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the Job in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "queue": {
-          "id": "arvados.jobs.queue",
-          "path": "jobs/queue",
-          "httpMethod": "GET",
-          "description": "queue jobs",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "queue_size": {
-          "id": "arvados.jobs.queue_size",
-          "path": "jobs/queue_size",
-          "httpMethod": "GET",
-          "description": "queue_size jobs",
-          "parameters": {},
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "cancel": {
-          "id": "arvados.jobs.cancel",
-          "path": "jobs/{uuid}/cancel",
-          "httpMethod": "POST",
-          "description": "cancel jobs",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "lock": {
-          "id": "arvados.jobs.lock",
-          "path": "jobs/{uuid}/lock",
-          "httpMethod": "POST",
-          "description": "lock jobs",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "list": {
-          "id": "arvados.jobs.list",
-          "path": "jobs",
-          "httpMethod": "GET",
-          "description": "List Jobs.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Jobs. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#jobList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "JobList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.jobs.show",
-          "path": "jobs/{uuid}",
-          "httpMethod": "GET",
-          "description": "show jobs",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.jobs.destroy",
-          "path": "jobs/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy jobs",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Job"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        }
-      }
-    },
     "api_clients": {
       "methods": {
         "get": {
@@ -3742,6 +3259,489 @@
         }
       }
     },
+    "jobs": {
+      "methods": {
+        "get": {
+          "id": "arvados.jobs.get",
+          "path": "jobs/{uuid}",
+          "httpMethod": "GET",
+          "description": "Gets a Job's metadata by UUID.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Job in question.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "parameterOrder": [
+            "uuid"
+          ],
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "index": {
+          "id": "arvados.jobs.list",
+          "path": "jobs",
+          "httpMethod": "GET",
+          "description": "List Jobs.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Jobs. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#jobList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "JobList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "create": {
+          "id": "arvados.jobs.create",
+          "path": "jobs",
+          "httpMethod": "POST",
+          "description": "Create a new Job.",
+          "parameters": {
+            "select": {
+              "type": "array",
+              "description": "Attributes of the new object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "ensure_unique_name": {
+              "type": "boolean",
+              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "location": "query",
+              "required": false,
+              "default": "false"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "Create object on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "find_or_create": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "minimum_script_version": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "exclude_script_versions": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "job": {
+                "$ref": "Job"
+              }
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "update": {
+          "id": "arvados.jobs.update",
+          "path": "jobs/{uuid}",
+          "httpMethod": "PUT",
+          "description": "Update attributes of an existing Job.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Job in question.",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the updated object to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "job": {
+                "$ref": "Job"
+              }
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "delete": {
+          "id": "arvados.jobs.delete",
+          "path": "jobs/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "Delete an existing Job.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the Job in question.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "queue": {
+          "id": "arvados.jobs.queue",
+          "path": "jobs/queue",
+          "httpMethod": "GET",
+          "description": "queue jobs",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "queue_size": {
+          "id": "arvados.jobs.queue_size",
+          "path": "jobs/queue_size",
+          "httpMethod": "GET",
+          "description": "queue_size jobs",
+          "parameters": {},
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "cancel": {
+          "id": "arvados.jobs.cancel",
+          "path": "jobs/{uuid}/cancel",
+          "httpMethod": "POST",
+          "description": "cancel jobs",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "lock": {
+          "id": "arvados.jobs.lock",
+          "path": "jobs/{uuid}/lock",
+          "httpMethod": "POST",
+          "description": "lock jobs",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "list": {
+          "id": "arvados.jobs.list",
+          "path": "jobs",
+          "httpMethod": "GET",
+          "description": "List Jobs.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Jobs. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#jobList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "JobList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "show": {
+          "id": "arvados.jobs.show",
+          "path": "jobs/{uuid}",
+          "httpMethod": "GET",
+          "description": "show jobs",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "destroy": {
+          "id": "arvados.jobs.destroy",
+          "path": "jobs/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "destroy jobs",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "Job"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        }
+      }
+    },
     "job_tasks": {
       "methods": {
         "get": {
@@ -5831,496 +5831,6 @@
         }
       }
     },
-    "users": {
-      "methods": {
-        "get": {
-          "id": "arvados.users.get",
-          "path": "users/{uuid}",
-          "httpMethod": "GET",
-          "description": "Gets a User's metadata by UUID.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the User in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "parameterOrder": [
-            "uuid"
-          ],
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "index": {
-          "id": "arvados.users.list",
-          "path": "users",
-          "httpMethod": "GET",
-          "description": "List Users.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Users. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "create": {
-          "id": "arvados.users.create",
-          "path": "users",
-          "httpMethod": "POST",
-          "description": "Create a new User.",
-          "parameters": {
-            "select": {
-              "type": "array",
-              "description": "Attributes of the new object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "ensure_unique_name": {
-              "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
-              "location": "query",
-              "required": false,
-              "default": "false"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "user": {
-                "$ref": "User"
-              }
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "update": {
-          "id": "arvados.users.update",
-          "path": "users/{uuid}",
-          "httpMethod": "PUT",
-          "description": "Update attributes of an existing User.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the User in question.",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "user": {
-                "$ref": "User"
-              }
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "delete": {
-          "id": "arvados.users.delete",
-          "path": "users/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "Delete an existing User.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the User in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "current": {
-          "id": "arvados.users.current",
-          "path": "users/current",
-          "httpMethod": "GET",
-          "description": "current users",
-          "parameters": {},
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "system": {
-          "id": "arvados.users.system",
-          "path": "users/system",
-          "httpMethod": "GET",
-          "description": "system users",
-          "parameters": {},
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "activate": {
-          "id": "arvados.users.activate",
-          "path": "users/{uuid}/activate",
-          "httpMethod": "POST",
-          "description": "activate users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "setup": {
-          "id": "arvados.users.setup",
-          "path": "users/setup",
-          "httpMethod": "POST",
-          "description": "setup users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "user": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "repo_name": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "vm_uuid": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "send_notification_email": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "unsetup": {
-          "id": "arvados.users.unsetup",
-          "path": "users/{uuid}/unsetup",
-          "httpMethod": "POST",
-          "description": "unsetup users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "merge": {
-          "id": "arvados.users.merge",
-          "path": "users/merge",
-          "httpMethod": "POST",
-          "description": "merge users",
-          "parameters": {
-            "new_owner_uuid": {
-              "type": "string",
-              "required": true,
-              "description": "",
-              "location": "query"
-            },
-            "new_user_token": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "redirect_to_new_user": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "old_user_uuid": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "new_user_uuid": {
-              "type": "string",
-              "required": false,
-              "description": "",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "list": {
-          "id": "arvados.users.list",
-          "path": "users",
-          "httpMethod": "GET",
-          "description": "List Users.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Users. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.users.show",
-          "path": "users/{uuid}",
-          "httpMethod": "GET",
-          "description": "show users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.users.destroy",
-          "path": "users/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        }
-      }
-    },
     "pipeline_instances": {
       "methods": {
         "get": {
@@ -7989,6 +7499,862 @@
         }
       }
     },
+    "users": {
+      "methods": {
+        "get": {
+          "id": "arvados.users.get",
+          "path": "users/{uuid}",
+          "httpMethod": "GET",
+          "description": "Gets a User's metadata by UUID.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the User in question.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "parameterOrder": [
+            "uuid"
+          ],
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "index": {
+          "id": "arvados.users.list",
+          "path": "users",
+          "httpMethod": "GET",
+          "description": "List Users.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Users. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "UserList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "create": {
+          "id": "arvados.users.create",
+          "path": "users",
+          "httpMethod": "POST",
+          "description": "Create a new User.",
+          "parameters": {
+            "select": {
+              "type": "array",
+              "description": "Attributes of the new object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "ensure_unique_name": {
+              "type": "boolean",
+              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "location": "query",
+              "required": false,
+              "default": "false"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "Create object on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "user": {
+                "$ref": "User"
+              }
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "update": {
+          "id": "arvados.users.update",
+          "path": "users/{uuid}",
+          "httpMethod": "PUT",
+          "description": "Update attributes of an existing User.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the User in question.",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the updated object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "user": {
+                "$ref": "User"
+              }
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "delete": {
+          "id": "arvados.users.delete",
+          "path": "users/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "Delete an existing User.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the User in question.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "current": {
+          "id": "arvados.users.current",
+          "path": "users/current",
+          "httpMethod": "GET",
+          "description": "current users",
+          "parameters": {},
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "system": {
+          "id": "arvados.users.system",
+          "path": "users/system",
+          "httpMethod": "GET",
+          "description": "system users",
+          "parameters": {},
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "activate": {
+          "id": "arvados.users.activate",
+          "path": "users/{uuid}/activate",
+          "httpMethod": "POST",
+          "description": "activate users",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "setup": {
+          "id": "arvados.users.setup",
+          "path": "users/setup",
+          "httpMethod": "POST",
+          "description": "setup users",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "user": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "repo_name": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "vm_uuid": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "send_notification_email": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "unsetup": {
+          "id": "arvados.users.unsetup",
+          "path": "users/{uuid}/unsetup",
+          "httpMethod": "POST",
+          "description": "unsetup users",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "merge": {
+          "id": "arvados.users.merge",
+          "path": "users/merge",
+          "httpMethod": "POST",
+          "description": "merge users",
+          "parameters": {
+            "new_owner_uuid": {
+              "type": "string",
+              "required": true,
+              "description": "",
+              "location": "query"
+            },
+            "new_user_token": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "redirect_to_new_user": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "old_user_uuid": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "new_user_uuid": {
+              "type": "string",
+              "required": false,
+              "description": "",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "list": {
+          "id": "arvados.users.list",
+          "path": "users",
+          "httpMethod": "GET",
+          "description": "List Users.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Users. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "UserList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "show": {
+          "id": "arvados.users.show",
+          "path": "users/{uuid}",
+          "httpMethod": "GET",
+          "description": "show users",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "destroy": {
+          "id": "arvados.users.destroy",
+          "path": "users/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "destroy users",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "User"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        }
+      }
+    },
+    "user_agreements": {
+      "methods": {
+        "get": {
+          "id": "arvados.user_agreements.get",
+          "path": "user_agreements/{uuid}",
+          "httpMethod": "GET",
+          "description": "Gets a UserAgreement's metadata by UUID.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the UserAgreement in question.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "parameterOrder": [
+            "uuid"
+          ],
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "index": {
+          "id": "arvados.user_agreements.list",
+          "path": "user_agreements",
+          "httpMethod": "GET",
+          "description": "List UserAgreements.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching UserAgreements. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userAgreementList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "UserAgreementList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "create": {
+          "id": "arvados.user_agreements.create",
+          "path": "user_agreements",
+          "httpMethod": "POST",
+          "description": "Create a new UserAgreement.",
+          "parameters": {
+            "select": {
+              "type": "array",
+              "description": "Attributes of the new object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "ensure_unique_name": {
+              "type": "boolean",
+              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "location": "query",
+              "required": false,
+              "default": "false"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "Create object on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "user_agreement": {
+                "$ref": "UserAgreement"
+              }
+            }
+          },
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "update": {
+          "id": "arvados.user_agreements.update",
+          "path": "user_agreements/{uuid}",
+          "httpMethod": "PUT",
+          "description": "Update attributes of an existing UserAgreement.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the UserAgreement in question.",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the updated object to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "request": {
+            "required": true,
+            "properties": {
+              "user_agreement": {
+                "$ref": "UserAgreement"
+              }
+            }
+          },
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "delete": {
+          "id": "arvados.user_agreements.delete",
+          "path": "user_agreements/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "Delete an existing UserAgreement.",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "The UUID of the UserAgreement in question.",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "signatures": {
+          "id": "arvados.user_agreements.signatures",
+          "path": "user_agreements/signatures",
+          "httpMethod": "GET",
+          "description": "signatures user_agreements",
+          "parameters": {},
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "sign": {
+          "id": "arvados.user_agreements.sign",
+          "path": "user_agreements/sign",
+          "httpMethod": "POST",
+          "description": "sign user_agreements",
+          "parameters": {},
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "list": {
+          "id": "arvados.user_agreements.list",
+          "path": "user_agreements",
+          "httpMethod": "GET",
+          "description": "List UserAgreements.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching UserAgreements. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userAgreementList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "offset": {
+              "type": "integer",
+              "required": false,
+              "default": "0",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            },
+            "cluster_id": {
+              "type": "string",
+              "description": "List objects on a remote federated cluster instead of the current one.",
+              "location": "query",
+              "required": false
+            },
+            "bypass_federation": {
+              "type": "boolean",
+              "required": false,
+              "description": "bypass federation behavior, list items from local instance database only",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "UserAgreementList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        },
+        "new": {
+          "id": "arvados.user_agreements.new",
+          "path": "user_agreements/new",
+          "httpMethod": "GET",
+          "description": "new user_agreements",
+          "parameters": {},
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "show": {
+          "id": "arvados.user_agreements.show",
+          "path": "user_agreements/{uuid}",
+          "httpMethod": "GET",
+          "description": "show user_agreements",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
+        "destroy": {
+          "id": "arvados.user_agreements.destroy",
+          "path": "user_agreements/{uuid}",
+          "httpMethod": "DELETE",
+          "description": "destroy user_agreements",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "description": "",
+              "required": true,
+              "location": "path"
+            }
+          },
+          "response": {
+            "$ref": "UserAgreement"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        }
+      }
+    },
     "virtual_machines": {
       "methods": {
         "get": {
@@ -8676,372 +9042,6 @@
         }
       }
     },
-    "user_agreements": {
-      "methods": {
-        "get": {
-          "id": "arvados.user_agreements.get",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "GET",
-          "description": "Gets a UserAgreement's metadata by UUID.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the UserAgreement in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "parameterOrder": [
-            "uuid"
-          ],
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "index": {
-          "id": "arvados.user_agreements.list",
-          "path": "user_agreements",
-          "httpMethod": "GET",
-          "description": "List UserAgreements.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching UserAgreements. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userAgreementList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreementList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "create": {
-          "id": "arvados.user_agreements.create",
-          "path": "user_agreements",
-          "httpMethod": "POST",
-          "description": "Create a new UserAgreement.",
-          "parameters": {
-            "select": {
-              "type": "array",
-              "description": "Attributes of the new object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "ensure_unique_name": {
-              "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
-              "location": "query",
-              "required": false,
-              "default": "false"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "user_agreement": {
-                "$ref": "UserAgreement"
-              }
-            }
-          },
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "update": {
-          "id": "arvados.user_agreements.update",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "PUT",
-          "description": "Update attributes of an existing UserAgreement.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the UserAgreement in question.",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "user_agreement": {
-                "$ref": "UserAgreement"
-              }
-            }
-          },
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "delete": {
-          "id": "arvados.user_agreements.delete",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "Delete an existing UserAgreement.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the UserAgreement in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "signatures": {
-          "id": "arvados.user_agreements.signatures",
-          "path": "user_agreements/signatures",
-          "httpMethod": "GET",
-          "description": "signatures user_agreements",
-          "parameters": {},
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "sign": {
-          "id": "arvados.user_agreements.sign",
-          "path": "user_agreements/sign",
-          "httpMethod": "POST",
-          "description": "sign user_agreements",
-          "parameters": {},
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "list": {
-          "id": "arvados.user_agreements.list",
-          "path": "user_agreements",
-          "httpMethod": "GET",
-          "description": "List UserAgreements.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching UserAgreements. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userAgreementList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreementList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "new": {
-          "id": "arvados.user_agreements.new",
-          "path": "user_agreements/new",
-          "httpMethod": "GET",
-          "description": "new user_agreements",
-          "parameters": {},
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "show": {
-          "id": "arvados.user_agreements.show",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "GET",
-          "description": "show user_agreements",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.user_agreements.destroy",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy user_agreements",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        }
-      }
-    },
     "configs": {
       "methods": {
         "get": {
@@ -9096,146 +9096,6 @@
   },
   "revision": "20220510",
   "schemas": {
-    "JobList": {
-      "id": "JobList",
-      "description": "Job list",
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "Object type. Always arvados#jobList.",
-          "default": "arvados#jobList"
-        },
-        "etag": {
-          "type": "string",
-          "description": "List version."
-        },
-        "items": {
-          "type": "array",
-          "description": "The list of Jobs.",
-          "items": {
-            "$ref": "Job"
-          }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Jobs."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Jobs."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
-        }
-      }
-    },
-    "Job": {
-      "id": "Job",
-      "description": "Job",
-      "type": "object",
-      "uuidPrefix": "8i9sb",
-      "properties": {
-        "uuid": {
-          "type": "string"
-        },
-        "etag": {
-          "type": "string",
-          "description": "Object version."
-        },
-        "owner_uuid": {
-          "type": "string"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
-        "modified_by_user_uuid": {
-          "type": "string"
-        },
-        "modified_at": {
-          "type": "datetime"
-        },
-        "submit_id": {
-          "type": "string"
-        },
-        "script": {
-          "type": "string"
-        },
-        "script_version": {
-          "type": "string"
-        },
-        "script_parameters": {
-          "type": "Hash"
-        },
-        "cancelled_by_client_uuid": {
-          "type": "string"
-        },
-        "cancelled_by_user_uuid": {
-          "type": "string"
-        },
-        "cancelled_at": {
-          "type": "datetime"
-        },
-        "started_at": {
-          "type": "datetime"
-        },
-        "finished_at": {
-          "type": "datetime"
-        },
-        "running": {
-          "type": "boolean"
-        },
-        "success": {
-          "type": "boolean"
-        },
-        "output": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "datetime"
-        },
-        "is_locked_by_uuid": {
-          "type": "string"
-        },
-        "log": {
-          "type": "string"
-        },
-        "tasks_summary": {
-          "type": "Hash"
-        },
-        "runtime_constraints": {
-          "type": "Hash"
-        },
-        "nondeterministic": {
-          "type": "boolean"
-        },
-        "repository": {
-          "type": "string"
-        },
-        "supplied_script_version": {
-          "type": "string"
-        },
-        "docker_image_locator": {
-          "type": "string"
-        },
-        "priority": {
-          "type": "integer"
-        },
-        "description": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string"
-        },
-        "arvados_sdk_version": {
-          "type": "string"
-        },
-        "components": {
-          "type": "Hash"
-        }
-      }
-    },
     "ApiClientList": {
       "id": "ApiClientList",
       "description": "ApiClient list",
@@ -10044,6 +9904,146 @@
         }
       }
     },
+    "JobList": {
+      "id": "JobList",
+      "description": "Job list",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Object type. Always arvados#jobList.",
+          "default": "arvados#jobList"
+        },
+        "etag": {
+          "type": "string",
+          "description": "List version."
+        },
+        "items": {
+          "type": "array",
+          "description": "The list of Jobs.",
+          "items": {
+            "$ref": "Job"
+          }
+        },
+        "next_link": {
+          "type": "string",
+          "description": "A link to the next page of Jobs."
+        },
+        "next_page_token": {
+          "type": "string",
+          "description": "The page token for the next page of Jobs."
+        },
+        "selfLink": {
+          "type": "string",
+          "description": "A link back to this list."
+        }
+      }
+    },
+    "Job": {
+      "id": "Job",
+      "description": "Job",
+      "type": "object",
+      "uuidPrefix": "8i9sb",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "etag": {
+          "type": "string",
+          "description": "Object version."
+        },
+        "owner_uuid": {
+          "type": "string"
+        },
+        "modified_by_client_uuid": {
+          "type": "string"
+        },
+        "modified_by_user_uuid": {
+          "type": "string"
+        },
+        "modified_at": {
+          "type": "datetime"
+        },
+        "submit_id": {
+          "type": "string"
+        },
+        "script": {
+          "type": "string"
+        },
+        "script_version": {
+          "type": "string"
+        },
+        "script_parameters": {
+          "type": "Hash"
+        },
+        "cancelled_by_client_uuid": {
+          "type": "string"
+        },
+        "cancelled_by_user_uuid": {
+          "type": "string"
+        },
+        "cancelled_at": {
+          "type": "datetime"
+        },
+        "started_at": {
+          "type": "datetime"
+        },
+        "finished_at": {
+          "type": "datetime"
+        },
+        "running": {
+          "type": "boolean"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "output": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "datetime"
+        },
+        "is_locked_by_uuid": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        },
+        "tasks_summary": {
+          "type": "Hash"
+        },
+        "runtime_constraints": {
+          "type": "Hash"
+        },
+        "nondeterministic": {
+          "type": "boolean"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "supplied_script_version": {
+          "type": "string"
+        },
+        "docker_image_locator": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "description": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "arvados_sdk_version": {
+          "type": "string"
+        },
+        "components": {
+          "type": "Hash"
+        }
+      }
+    },
     "JobTaskList": {
       "id": "JobTaskList",
       "description": "JobTask list",
@@ -10566,95 +10566,6 @@
         }
       }
     },
-    "UserList": {
-      "id": "UserList",
-      "description": "User list",
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "Object type. Always arvados#userList.",
-          "default": "arvados#userList"
-        },
-        "etag": {
-          "type": "string",
-          "description": "List version."
-        },
-        "items": {
-          "type": "array",
-          "description": "The list of Users.",
-          "items": {
-            "$ref": "User"
-          }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Users."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Users."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
-        }
-      }
-    },
-    "User": {
-      "id": "User",
-      "description": "User",
-      "type": "object",
-      "uuidPrefix": "tpzed",
-      "properties": {
-        "uuid": {
-          "type": "string"
-        },
-        "etag": {
-          "type": "string",
-          "description": "Object version."
-        },
-        "owner_uuid": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "datetime"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
-        "modified_by_user_uuid": {
-          "type": "string"
-        },
-        "modified_at": {
-          "type": "datetime"
-        },
-        "email": {
-          "type": "string"
-        },
-        "first_name": {
-          "type": "string"
-        },
-        "last_name": {
-          "type": "string"
-        },
-        "identity_url": {
-          "type": "string"
-        },
-        "is_admin": {
-          "type": "boolean"
-        },
-        "prefs": {
-          "type": "Hash"
-        },
-        "is_active": {
-          "type": "boolean"
-        },
-        "username": {
-          "type": "string"
-        }
-      }
-    },
     "PipelineInstanceList": {
       "id": "PipelineInstanceList",
       "description": "PipelineInstance list",
@@ -11031,6 +10942,217 @@
         }
       }
     },
+    "UserList": {
+      "id": "UserList",
+      "description": "User list",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Object type. Always arvados#userList.",
+          "default": "arvados#userList"
+        },
+        "etag": {
+          "type": "string",
+          "description": "List version."
+        },
+        "items": {
+          "type": "array",
+          "description": "The list of Users.",
+          "items": {
+            "$ref": "User"
+          }
+        },
+        "next_link": {
+          "type": "string",
+          "description": "A link to the next page of Users."
+        },
+        "next_page_token": {
+          "type": "string",
+          "description": "The page token for the next page of Users."
+        },
+        "selfLink": {
+          "type": "string",
+          "description": "A link back to this list."
+        }
+      }
+    },
+    "User": {
+      "id": "User",
+      "description": "User",
+      "type": "object",
+      "uuidPrefix": "tpzed",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "etag": {
+          "type": "string",
+          "description": "Object version."
+        },
+        "owner_uuid": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "datetime"
+        },
+        "modified_by_client_uuid": {
+          "type": "string"
+        },
+        "modified_by_user_uuid": {
+          "type": "string"
+        },
+        "modified_at": {
+          "type": "datetime"
+        },
+        "email": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "identity_url": {
+          "type": "string"
+        },
+        "is_admin": {
+          "type": "boolean"
+        },
+        "prefs": {
+          "type": "Hash"
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "UserAgreementList": {
+      "id": "UserAgreementList",
+      "description": "UserAgreement list",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Object type. Always arvados#userAgreementList.",
+          "default": "arvados#userAgreementList"
+        },
+        "etag": {
+          "type": "string",
+          "description": "List version."
+        },
+        "items": {
+          "type": "array",
+          "description": "The list of UserAgreements.",
+          "items": {
+            "$ref": "UserAgreement"
+          }
+        },
+        "next_link": {
+          "type": "string",
+          "description": "A link to the next page of UserAgreements."
+        },
+        "next_page_token": {
+          "type": "string",
+          "description": "The page token for the next page of UserAgreements."
+        },
+        "selfLink": {
+          "type": "string",
+          "description": "A link back to this list."
+        }
+      }
+    },
+    "UserAgreement": {
+      "id": "UserAgreement",
+      "description": "UserAgreement",
+      "type": "object",
+      "uuidPrefix": "gv0sa",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "etag": {
+          "type": "string",
+          "description": "Object version."
+        },
+        "owner_uuid": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "datetime"
+        },
+        "modified_by_client_uuid": {
+          "type": "string"
+        },
+        "modified_by_user_uuid": {
+          "type": "string"
+        },
+        "modified_at": {
+          "type": "datetime"
+        },
+        "portable_data_hash": {
+          "type": "string"
+        },
+        "replication_desired": {
+          "type": "integer"
+        },
+        "replication_confirmed_at": {
+          "type": "datetime"
+        },
+        "replication_confirmed": {
+          "type": "integer"
+        },
+        "manifest_text": {
+          "type": "text"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "properties": {
+          "type": "Hash"
+        },
+        "delete_at": {
+          "type": "datetime"
+        },
+        "trash_at": {
+          "type": "datetime"
+        },
+        "is_trashed": {
+          "type": "boolean"
+        },
+        "storage_classes_desired": {
+          "type": "Array"
+        },
+        "storage_classes_confirmed": {
+          "type": "Array"
+        },
+        "storage_classes_confirmed_at": {
+          "type": "datetime"
+        },
+        "current_version_uuid": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "preserve_version": {
+          "type": "boolean"
+        },
+        "file_count": {
+          "type": "integer"
+        },
+        "file_size_total": {
+          "type": "integer"
+        }
+      }
+    },
     "VirtualMachineList": {
       "id": "VirtualMachineList",
       "description": "VirtualMachine list",
@@ -11170,128 +11292,6 @@
         },
         "definition": {
           "type": "text"
-        }
-      }
-    },
-    "UserAgreementList": {
-      "id": "UserAgreementList",
-      "description": "UserAgreement list",
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "Object type. Always arvados#userAgreementList.",
-          "default": "arvados#userAgreementList"
-        },
-        "etag": {
-          "type": "string",
-          "description": "List version."
-        },
-        "items": {
-          "type": "array",
-          "description": "The list of UserAgreements.",
-          "items": {
-            "$ref": "UserAgreement"
-          }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of UserAgreements."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of UserAgreements."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
-        }
-      }
-    },
-    "UserAgreement": {
-      "id": "UserAgreement",
-      "description": "UserAgreement",
-      "type": "object",
-      "uuidPrefix": "gv0sa",
-      "properties": {
-        "uuid": {
-          "type": "string"
-        },
-        "etag": {
-          "type": "string",
-          "description": "Object version."
-        },
-        "owner_uuid": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "datetime"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
-        "modified_by_user_uuid": {
-          "type": "string"
-        },
-        "modified_at": {
-          "type": "datetime"
-        },
-        "portable_data_hash": {
-          "type": "string"
-        },
-        "replication_desired": {
-          "type": "integer"
-        },
-        "replication_confirmed_at": {
-          "type": "datetime"
-        },
-        "replication_confirmed": {
-          "type": "integer"
-        },
-        "manifest_text": {
-          "type": "text"
-        },
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "properties": {
-          "type": "Hash"
-        },
-        "delete_at": {
-          "type": "datetime"
-        },
-        "trash_at": {
-          "type": "datetime"
-        },
-        "is_trashed": {
-          "type": "boolean"
-        },
-        "storage_classes_desired": {
-          "type": "Array"
-        },
-        "storage_classes_confirmed": {
-          "type": "Array"
-        },
-        "storage_classes_confirmed_at": {
-          "type": "datetime"
-        },
-        "current_version_uuid": {
-          "type": "string"
-        },
-        "version": {
-          "type": "integer"
-        },
-        "preserve_version": {
-          "type": "boolean"
-        },
-        "file_count": {
-          "type": "integer"
-        },
-        "file_size_total": {
-          "type": "integer"
         }
       }
     }

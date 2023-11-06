@@ -1149,15 +1149,6 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
-	// As of Arvados 2.6.2 (April 2023), this test was going down the
-	// `if outcoll.UUID == ""` branch, checking that FUSE reports a specific
-	// error.
-	// With increased PySDK/FUSE retries from #12684, this test now trips up
-	// on #20425. The test times out as FUSE spends a long time retrying a
-	// request that will never succeed.
-	// This early skip can be removed after #20425 is fixed.
-	c.Skip("blocked by <https://dev.arvados.org/issues/20425>")
-	return
 	conn := s.super.Conn("z1111")
 	rootctx, _, _ := s.super.RootClients("z1111")
 	userctx, ac, _, _ := s.super.UserClients("z1111", rootctx, c, conn, s.oidcprovider.AuthEmail, true)

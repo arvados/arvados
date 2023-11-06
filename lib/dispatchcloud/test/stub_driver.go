@@ -20,6 +20,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -45,13 +46,16 @@ type StubDriver struct {
 	Queue *Queue
 
 	// Frequency of artificially introduced errors on calls to
-	// Destroy. 0=always succeed, 1=always fail.
+	// Create and Destroy. 0=always succeed, 1=always fail.
+	ErrorRateCreate  float64
 	ErrorRateDestroy float64
 
 	// If Create() or Instances() is called too frequently, return
 	// rate-limiting errors.
 	MinTimeBetweenCreateCalls    time.Duration
 	MinTimeBetweenInstancesCalls time.Duration
+
+	QuotaMaxInstances int
 
 	// If true, Create and Destroy calls block until Release() is
 	// called.
@@ -62,7 +66,7 @@ type StubDriver struct {
 }
 
 // InstanceSet returns a new *StubInstanceSet.
-func (sd *StubDriver) InstanceSet(params json.RawMessage, id cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
+func (sd *StubDriver) InstanceSet(params json.RawMessage, id cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {
 	if sd.holdCloudOps == nil {
 		sd.holdCloudOps = make(chan bool)
 	}
@@ -119,6 +123,12 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	if sis.allowCreateCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowCreateCall}
+	}
+	if math_rand.Float64() < sis.driver.ErrorRateCreate {
+		return nil, fmt.Errorf("StubInstanceSet: rand < ErrorRateCreate %f", sis.driver.ErrorRateCreate)
+	}
+	if max := sis.driver.QuotaMaxInstances; max > 0 && len(sis.servers) >= max {
+		return nil, QuotaError{fmt.Errorf("StubInstanceSet: reached QuotaMaxInstances %d", max)}
 	}
 	sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	ak := sis.driver.AuthorizedKeys
@@ -485,3 +495,9 @@ func copyTags(src cloud.InstanceTags) cloud.InstanceTags {
 func (si stubInstance) PriceHistory(arvados.InstanceType) []cloud.InstancePrice {
 	return nil
 }
+
+type QuotaError struct {
+	error
+}
+
+func (QuotaError) IsQuotaError() bool { return true }

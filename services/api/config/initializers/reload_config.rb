@@ -29,7 +29,7 @@ def start_reload_thread
         # precision cannot represent multiple updates per second.
         if t.to_f != t_lastload.to_f || Time.now.to_f - t.to_f < 5
           Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-            confs = YAML.load(stdout, deserialize_symbols: false)
+            confs = YAML.safe_load(stdout)
             hash = confs["SourceSHA256"]
           rescue => e
             Rails.logger.info("reload_config: config file updated but could not be loaded: #{e}")

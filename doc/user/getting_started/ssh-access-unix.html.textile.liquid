@@ -37,15 +37,17 @@ Enter same passphrase again:
 * @-t@ specifies the key type (must be "rsa")
 * @-C@ specifies a comment (to remember which account the key is associated with)
 
-We strongly recommend that you protect your key with a passphrase.  This means that when the key is used, you will be required to enter the passphrase.  However, unlike logging into remote system using a password, the passphrase is never sent over the network, it is only used to decrypt your private key.
+We strongly recommend that you protect your key with a passphrase.  This means that when the key is used, you will be required to enter the passphrase.  However, unlike logging into remote system using a password, the passphrase is never sent over the network; it is only used to decrypt your private key locally.
 
-Display the contents of @~/.ssh/id_rsa.pub@ (this is your public key) using @cat@ and then copy it onto the clipboard:
+Display the contents of @~/.ssh/id_rsa.pub@ (this is your public key) using @cat@, and then copy it onto the clipboard. The content of the public key may look similar to the following example:
 
 <notextile>
 <pre><code>$ <span class="userinput">cat ~/.ssh/id_rsa.pub</span>
 ssh-rsa AAAAB3NzaC1ycEDoNotUseExampleKeyDoNotUseExampleKeyDoNotUseExampleKeyDoNotUse9lmzkpBq983bQradKGT3LuKda9QOGe8MatI6wzSrJLSGhHm3hk6D8OWWUG4SneuCtKIk2bH0pgBj1G29+uzDIez90WzfCTZKbz4RcVQmPkowSSUAQDwb0ffwvRDhCgcJ1loT1wQAJzqJmljQ7xEYaCOIMqnfYE0lX7B3MSvCV6Ie2rWL33YecLp48LVtqiCOZU4XRyO8RSDFRFLVW+mjkLirwtDHZCRtORScaIEN0jw51p+T+9X5iA9QH/Mn+xlgk7fCgH+JtpBj808N/Qds2Gpff+Kb6ulUrVVfMK6L you@example.com
 </code></pre>
 </notextile>
+
+* The above is a specimen that cannot be used as a valid public key.
 
 Now you can set up @ssh-agent@ (next) or proceed with "adding your key to the Arvados Workbench.":#workbench
 
@@ -55,13 +57,13 @@ If you find you are entering your passphrase frequently, you can use @ssh-agent@
 
 notextile. <pre><code>$ <span class="userinput">ssh-add -l</span></code></pre>
 
-If you get the error "Could not open a connection to your authentication agent" you will need to run @ssh-agent@ with the following command:
+If you get the error "_Could not open a connection to your authentication agent_", you will need to run @ssh-agent@ with the following command:
 
-notextile. <pre><code>$ <span class="userinput">eval $(ssh-agent -s)</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">eval "$(ssh-agent -s)"</span></code></pre>
 
-@ssh-agent -s@ prints out values for environment variables SSH_AUTH_SOCK and SSH_AGENT_PID and then runs in the background.  Using "eval" on the output as shown here causes those variables to be set in the current shell environment so that subsequent calls to SSH can discover how to access the agent process.
+@ssh-agent -s@ runs an agent process in the background to hold your SSH credentials, and it prints out the values of environment variables @SSH_AUTH_SOCK@ and @SSH_AGENT_PID@.  By applying the shell builtin @eval@ to this output, as we show here using the shell command-substitution syntax, we set those variables in the current shell environment. In this way, subsequent invocations of @ssh@ in this shell session will be able to access the agent process for the credentials without asking you each time.
 
-After running @ssh-agent@, or if @ssh-add -l@ prints "The agent has no identities", add your key using the following command.  The passphrase to decrypt the key is the same used to protect the key when it was created with @ssh-keygen@:
+After running @ssh-agent@, or if @ssh-add -l@ prints "_The agent has no identities_", add your private key to the SSH agent using the following command.  The passphrase to decrypt the key is the same one used to protect the key when it was created with @ssh-keygen@:
 
 <notextile>
 <pre><code>$ <span class="userinput">ssh-add</span>
@@ -70,7 +72,7 @@ Identity added: /home/example/.ssh/id_rsa (/home/example/.ssh/id_rsa)
 </code></pre>
 </notextile>
 
-When everything is set up, @ssh-add -l@ should yield output that looks something like this:
+When everything is set up, @ssh-add -l@ should yield output that looks like this:
 
 <notextile>
 <pre><code>$ <span class="userinput">ssh-add -l</span>
@@ -82,29 +84,29 @@ When everything is set up, @ssh-add -l@ should yield output that looks something
 
 h3. Connecting directly
 
-If the VM is available on the public Internet (or you are on the same private network as the VM) you can connect directly with @ssh@.  You can probably copy-and-paste the text from *Command line* column directly into a terminal.
+If the VM is available on the public Internet (or you are on the same private network as the VM), you can connect directly with @ssh@.  You can copy-and-paste the text from the *Command line* column (see the screenshot above) directly into a shell session.
 
-Use the following example command to connect as _you_ to the _shell.ClusterID.example.com_ VM instance.  Replace *<code>you@shell.ClusterID.example.com</code>* at the end of the following command with your *login* and *hostname* from Workbench.
+Use the following example command to connect, as the user "_you_" to the VM instance at the hostname "_shell.ClusterID.example.com_".  Replace *<code>you@shell.ClusterID.example.com</code>* at the end of the following command with your actual *login* and *hostname* from Workbench.
 
 notextile. <pre><code>$ <span class="userinput">ssh <b>you@shell.ClusterID.example.com</b></span></code></pre>
 
 h3. Connecting through switchyard
 
-Some Arvados installations use "switchyard" to isolate shell VMs from the public Internet.
+Some Arvados installations use "switchyard" to isolate shell VMs from the public Internet.  In such cases, you cannot log in directly to virtual machines over the public Internet.  Instead, you log into a "switchyard" server and then tell the switchyard which virtual machine you want to connect to.
 
 Use the following example command to connect to the _shell_ VM instance as _you_.  Replace *<code>you@shell</code>* at the end of the following command with your *login* and *hostname* from Workbench:
 
 notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -p2222 turnout@switchyard.ClusterID.example.com -x -a <b>shell</b>" -x <b>you@shell</b></span></code></pre>
 
-This command does several things at once. You usually cannot log in directly to virtual machines over the public Internet.  Instead, you log into a "switchyard" server and then tell the switchyard which virtual machine you want to connect to.
+This command does several things at once.
 
 * @-o "ProxyCommand ..."@ configures SSH to run the specified command to create a proxy and route your connection through it.
 * @-p2222@ specifies that the switchyard is running on non-standard port 2222.
 * <code>turnout@switchyard.{{ site.arvados_api_host }}</code> specifies the user (@turnout@) and hostname (@switchyard.{{ site.arvados_api_host }}@) of the switchyard server that will proxy our connection to the VM.
 * @-x@ tells SSH not to forward your X session to the switchyard.
 * @-a@ tells SSH not to forward your ssh-agent credentials to the switchyard.
-* *@shell@* is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an SSH command, and the switchyard server connects to the VM on our behalf.
-* After the ProxyCommand section, we repeat @-x@ to disable X session forwarding to the virtual machine.
+* *@shell@* is the host name of the VM that we want to connect to.  In summary, the string inside the quotation marks is sent to the switchyard server, as if it were an SSH command, and the switchyard server connects to the VM on our behalf.
+* After the @ProxyCommand@ section, we repeat @-x@ to disable X session forwarding to the virtual machine.
 * Finally, *<code>you@shell</code>* specifies your login name and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed in the previous section.
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html

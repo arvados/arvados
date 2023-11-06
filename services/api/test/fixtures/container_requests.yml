@@ -8,9 +8,9 @@ queued:
   name: queued
   state: Committed
   priority: 1
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -32,9 +32,9 @@ running:
   name: running
   state: Committed
   priority: 501
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -55,9 +55,9 @@ requester_for_running:
   name: requester_for_running_cr
   state: Committed
   priority: 1
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 2.minute.ago.to_s(:db) %>
-  modified_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 2.minute.ago.to_fs(:db) %>
+  modified_at: <%= 2.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -102,9 +102,9 @@ completed:
   name: completed container request
   state: Final
   priority: 1
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -124,7 +124,7 @@ completed-older:
   name: completed
   state: Final
   priority: 1
-  created_at: <%= 30.minute.ago.to_s(:db) %>
+  created_at: <%= 30.minute.ago.to_fs(:db) %>
   updated_at: 2016-01-11 11:11:11.111111111 Z
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -413,7 +413,7 @@ cr_for_requester2:
   name: requester_cr2
   state: Final
   priority: 1
-  created_at: <%= 30.minute.ago.to_s(:db) %>
+  created_at: <%= 30.minute.ago.to_fs(:db) %>
   updated_at: 2016-01-11 11:11:11.111111111 Z
   modified_at: 2016-01-11 11:11:11.111111111 Z
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -535,13 +535,13 @@ canceled_with_running_container:
 
 running_to_be_deleted:
   uuid: zzzzz-xvhdp-cr5runningcntnr
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-j7d0g-rew6elm53kancon
   name: running to be deleted
   state: Committed
   priority: 1
-  created_at: <%= 2.days.ago.to_s(:db) %>
-  updated_at: <%= 1.days.ago.to_s(:db) %>
-  modified_at: <%= 1.days.ago.to_s(:db) %>
+  created_at: <%= 2.days.ago.to_fs(:db) %>
+  updated_at: <%= 1.days.ago.to_fs(:db) %>
+  modified_at: <%= 1.days.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -562,9 +562,9 @@ completed_with_input_mounts:
   name: completed container request
   state: Final
   priority: 1
-  created_at: <%= 24.hour.ago.to_s(:db) %>
-  updated_at: <%= 24.hour.ago.to_s(:db) %>
-  modified_at: <%= 24.hour.ago.to_s(:db) %>
+  created_at: <%= 24.hour.ago.to_fs(:db) %>
+  updated_at: <%= 24.hour.ago.to_fs(:db) %>
+  modified_at: <%= 24.hour.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -598,9 +598,9 @@ uncommitted:
   uuid: zzzzz-xvhdp-cr4uncommittedc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: uncommitted
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   command: ["arvados-cwl-runner", "--local", "--api=containers",
             "/var/lib/cwl/workflow.json", "/var/lib/cwl/cwl.input.json"]
@@ -1019,9 +1019,9 @@ cr_in_trashed_project:
   name: completed container request
   state: Final
   priority: 1
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -1041,9 +1041,9 @@ runtime_token:
   name: queued
   state: Committed
   priority: 1
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  modified_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  modified_at: <%= 1.minute.ago.to_fs(:db) %>
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   container_image: test
   cwd: test
@@ -1065,7 +1065,7 @@ runtime_token:
 <% for i in 1..60 do %>
 cr_<%=i%>_of_60:
   uuid: zzzzz-xvhdp-oneof60crs<%= i.to_s.rjust(5, '0') %>
-  created_at: <%= ((i+5)/5).hour.ago.to_s(:db) %>
+  created_at: <%= ((i+5)/5).hour.ago.to_fs(:db) %>
   owner_uuid: zzzzz-j7d0g-nnncrspipelines
   name: cr-<%= i.to_s %>
   output_path: test

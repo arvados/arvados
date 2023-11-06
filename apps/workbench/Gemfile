@@ -5,8 +5,9 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 5.2.0'
-gem 'arvados', '~> 2.1.5'
+gem 'arvados', '~> 2.7.0.rc1'
 
+gem 'i18n'
 gem 'activerecord-nulldb-adapter', git: 'https://github.com/arvados/nulldb'
 gem 'multi_json'
 gem 'oj'
@@ -104,7 +105,3 @@ gem 'logstash-event'
 gem 'safe_yaml'
 
 gem 'npm-rails'
-
-# arvados-google-api-client and googleauth (and thus arvados) gems
-# depend on signet, but signet 0.12 is incompatible with ruby 2.3.
-gem 'signet', '< 0.12'

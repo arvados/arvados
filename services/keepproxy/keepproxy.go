@@ -509,9 +509,9 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 // ServeHTTP implementation for IndexHandler
 // Supports only GET requests for /index/{prefix:[0-9a-f]{0,32}}
 // For each keep server found in LocalRoots:
-//   Invokes GetIndex using keepclient
-//   Expects "complete" response (terminating with blank new line)
-//   Aborts on any errors
+// - Invokes GetIndex using keepclient
+// - Expects "complete" response (terminating with blank new line)
+// - Aborts on any errors
 // Concatenates responses from all those keep servers and returns
 func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 	setCORSHeaders(resp)

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -33,6 +34,20 @@ type QuotaError interface {
 	// instances are destroyed. If false, don't handle the error
 	// as a quota error.
 	IsQuotaError() bool
+	error
+}
+
+// A CapacityError should be returned by an InstanceSet's Create
+// method when the cloud service indicates it has insufficient
+// capacity to create new instances -- i.e., we shouldn't retry right
+// away.
+type CapacityError interface {
+	// If true, wait before trying to create more instances.
+	IsCapacityError() bool
+	// If true, the condition is specific to the requested
+	// instance types.  Wait before trying to create more
+	// instances of that same type.
+	IsInstanceTypeSpecific() bool
 	error
 }
 
@@ -191,7 +206,7 @@ type InitCommand string
 //
 //	type exampleDriver struct {}
 //
-//	func (*exampleDriver) InstanceSet(config json.RawMessage, id cloud.InstanceSetID, tags cloud.SharedResourceTags, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
+//	func (*exampleDriver) InstanceSet(config json.RawMessage, id cloud.InstanceSetID, tags cloud.SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {
 //		var is exampleInstanceSet
 //		if err := json.Unmarshal(config, &is); err != nil {
 //			return nil, err
@@ -199,20 +214,18 @@ type InitCommand string
 //		is.ownID = id
 //		return &is, nil
 //	}
-//
-//	var _ = registerCloudDriver("example", &exampleDriver{})
 type Driver interface {
-	InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)
+	InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error)
 }
 
 // DriverFunc makes a Driver using the provided function as its
 // InstanceSet method. This is similar to http.HandlerFunc.
-func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
+func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error)) Driver {
 	return driverFunc(fn)
 }
 
-type driverFunc func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)
+type driverFunc func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error)
 
-func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error) {
-	return df(config, id, tags, logger)
+func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error) {
+	return df(config, id, tags, logger, reg)
 }

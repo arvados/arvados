@@ -187,7 +187,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 
 func (e *dockerExecutor) Create(spec containerSpec) error {
 	cfg, hostCfg := e.config(spec)
-	created, err := e.dockerclient.ContainerCreate(context.TODO(), &cfg, &hostCfg, nil, e.containerUUID)
+	created, err := e.dockerclient.ContainerCreate(context.TODO(), &cfg, &hostCfg, nil, nil, e.containerUUID)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
@@ -195,8 +195,15 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 	return e.startIO(spec.Stdin, spec.Stdout, spec.Stderr)
 }
 
-func (e *dockerExecutor) CgroupID() string {
-	return e.containerID
+func (e *dockerExecutor) Pid() int {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+	defer cancel()
+	ctr, err := e.dockerclient.ContainerInspect(ctx, e.containerID)
+	if err == nil && ctr.State != nil {
+		return ctr.State.Pid
+	} else {
+		return 0
+	}
 }
 
 func (e *dockerExecutor) Start() error {

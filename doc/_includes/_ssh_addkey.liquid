@@ -9,19 +9,20 @@ You may now proceed to "adding your key to the Arvados Workbench.":#workbench
 
 h1(#workbench). Adding your key to Arvados Workbench
 
-h3. From the Workbench dashboard
+In the Workbench top navigation menu, click on the dropdown menu icon <i class="fa fa-lg fa-user"></i> to access the Account Management menu. Then, click on the menu item *Ssh keys* to go to the *SSH keys* page. Click on the <span class="btn btn-primary">+ ADD NEW SSH KEY</span> button in the upper-right on that page. You will see a popup as shown in this screenshot:
 
-In the Workbench top navigation menu, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> to access the user settings menu and click on the menu item *SSH keys* to go to the *SSH keys* page. Click on the <span class="btn btn-primary">*+* Add new SSH key</span> button in this page. This will open a popup as shown in this screenshot:
+!{width: 100%;}{{ site.baseurl }}/images/ssh-adding-public-key.png!
 
-!{{ site.baseurl }}/images/ssh-adding-public-key.png!
-Paste your public key into the text area labeled *Public Key*, and click on the <span class="btn btn-primary">Submit</span> button. You are now ready to "log into an Arvados VM":#login.
+Paste your _public_ key into the text area labeled *Public Key*, and click on the <span class="btn btn-sm btn-primary">ADD NEW SSH KEY</span> button in lower-right. You are now ready to "log into an Arvados VM":#login.
 
 h1(#login). Using SSH to log into an Arvados VM
 
-To see a list of virtual machines that you have access to, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, then click on the menu item *Virtual machines* to go to the Virtual machines page.
+To see a list of virtual machines that you have access to, click on the dropdown menu icon <i class="fa fa-lg fa-user"></i> in the upper right corner of the top navigation menu to access the Account Management menu. Then, click on the menu item *Virtual Machines*.
 
-This page lists the virtual machines you can access. The *Host name* column lists the name of each available VM.  The *Login name* column lists your login name on that VM.  The *Command line* column provides a sample @ssh@ command line.
+You will then see a page that lists the virtual machines you can access. The *Host name* column lists the name of each available VM.  The *Login name* column lists your login name on that VM.  The *Command line* column provides a sample @ssh@ command.
+
+!{width: 100%;}{{ site.baseurl }}/images/vm-access-with-webshell.png!
 
 At the bottom of the page there may be additional instructions for connecting your specific Arvados instance.  If so, follow your site-specific instructions.  If there are no site-specific instructions, you can probably connect directly with @ssh@.
 
-The following are generic instructions.  In the examples the login will be *_you_* and the hostname will be *_shell.ClusterID.example.com_* and .  Replace these with your login name and hostname as appropriate.
+The following are generic instructions.  In these examples, the login name will be *_you_* and the host domain will be *_ClusterID.example.com_*.  Replace these with your login name and hostname as appropriate.

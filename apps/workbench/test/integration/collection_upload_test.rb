@@ -21,7 +21,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   teardown do
     use_token :admin do
       @keep_services.each do |ks|
-        KeepService.find(ks.uuid).update_attributes(ks.attributes)
+        KeepService.find(ks.uuid).update(ks.attributes)
       end
     end
     testfiles.each do |filename, _|
@@ -80,7 +80,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     need_selenium "to make file uploads work"
     use_token :admin do
       KeepService.where(service_type: 'proxy').first.
-        update_attributes(service_ssl_flag: false)
+        update(service_ssl_flag: false)
     end
     visit page_with_token 'active', sandbox_path
     find('.nav-tabs a', text: 'Upload').click
@@ -99,7 +99,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
       # Even if port 0 is a thing, surely nx.example.net won't
       # respond
       KeepService.where(service_type: 'proxy').first.
-        update_attributes(service_host: 'nx.example.net',
+        update(service_host: 'nx.example.net',
                           service_port: 0)
     end
     visit page_with_token 'active', sandbox_path

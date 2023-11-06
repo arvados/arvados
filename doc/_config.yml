@@ -25,47 +25,45 @@ navbar:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
     - Walkthough:
-      - user/tutorials/wgs-tutorial.html.textile.liquid
-    - Using Workbench:
       - user/getting_started/workbench.html.textile.liquid
-      - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
-      - user/topics/workbench-migration.html.textile.liquid
+      - user/tutorials/wgs-tutorial.html.textile.liquid
     - Working at the Command Line:
       - user/getting_started/setup-cli.html.textile.liquid
       - user/reference/api-tokens.html.textile.liquid
       - user/getting_started/check-environment.html.textile.liquid
+    - Working with data sets:
+      - user/tutorials/tutorial-projects.html.textile.liquid
+      - user/tutorials/tutorial-keep.html.textile.liquid
+      - user/tutorials/tutorial-keep-get.html.textile.liquid
+      - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
+      - user/topics/arv-copy.html.textile.liquid
+      - user/tutorials/tutorial-keep-mount-gnu-linux.html.textile.liquid
+      - user/tutorials/tutorial-keep-mount-os-x.html.textile.liquid
+      - user/tutorials/tutorial-keep-mount-windows.html.textile.liquid
+      - user/topics/collection-versioning.html.textile.liquid
+      - user/topics/storage-classes.html.textile.liquid
+    - Data Analysis with Workflows:
+      - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
+      - user/cwl/cwl-runner.html.textile.liquid
+      - user/cwl/cwl-run-options.html.textile.liquid
+      - user/cwl/crunchstat-summary.html.textile.liquid
+      - user/debugging/container-shell-access.html.textile.liquid
+      - user/cwl/costanalyzer.html.textile.liquid
+      - user/cwl/federated-workflows.html.textile.liquid
+    - Common Workflow Language:
+      - user/cwl/rnaseq-cwl-training.html.textile.liquid
+      - user/cwl/arvados-vscode-training.html.md.liquid
+      - user/topics/arv-docker.html.textile.liquid
+      - user/cwl/cwl-style.html.textile.liquid
+      - user/tutorials/writing-cwl-workflow.html.textile.liquid
+      - user/cwl/cwl-extensions.html.textile.liquid
+      - user/cwl/cwl-versions.html.textile.liquid
     - Access an Arvados virtual machine:
       - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
       - user/getting_started/ssh-access-windows.html.textile.liquid
-    - Working with data sets:
-      - user/tutorials/tutorial-keep.html.textile.liquid
-      - user/tutorials/tutorial-keep-get.html.textile.liquid
-      - user/tutorials/tutorial-keep-mount-gnu-linux.html.textile.liquid
-      - user/tutorials/tutorial-keep-mount-os-x.html.textile.liquid
-      - user/tutorials/tutorial-keep-mount-windows.html.textile.liquid
-      - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
-      - user/topics/arv-copy.html.textile.liquid
-      - user/topics/collection-versioning.html.textile.liquid
-      - user/topics/storage-classes.html.textile.liquid
-    - Data Analysis with Workflows:
-      - user/cwl/arvados-vscode-training.html.md.liquid
-      - user/cwl/rnaseq-cwl-training.html.textile.liquid
-      - user/cwl/cwl-runner.html.textile.liquid
-      - user/cwl/cwl-run-options.html.textile.liquid
-      - user/tutorials/writing-cwl-workflow.html.textile.liquid
-      - user/topics/arv-docker.html.textile.liquid
-      - user/cwl/cwl-style.html.textile.liquid
-      - user/cwl/cwl-extensions.html.textile.liquid
-      - user/cwl/federated-workflows.html.textile.liquid
-      - user/cwl/cwl-versions.html.textile.liquid
-      - user/cwl/crunchstat-summary.html.textile.liquid
-      - user/cwl/costanalyzer.html.textile.liquid
-      - user/debugging/container-shell-access.html.textile.liquid
-    - Working with git repositories:
-      - user/tutorials/add-new-repository.html.textile.liquid
-      - user/tutorials/git-arvados-guide.html.textile.liquid
     - Reference:
+      - user/topics/workbench-migration.html.textile.liquid
       - user/topics/link-accounts.html.textile.liquid
       - user/reference/cookbook.html.textile.liquid
     - Arvados License:
@@ -111,19 +109,14 @@ navbar:
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
     - Permission and authentication:
-      - api/methods/api_client_authorizations.html.textile.liquid
-      - api/methods/api_clients.html.textile.liquid
-      - api/methods/authorized_keys.html.textile.liquid
-      - api/methods/groups.html.textile.liquid
       - api/methods/users.html.textile.liquid
-      - api/methods/user_agreements.html.textile.liquid
-    - System resources:
-      - api/methods/keep_services.html.textile.liquid
+      - api/methods/groups.html.textile.liquid
+      - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/links.html.textile.liquid
-      - api/methods/logs.html.textile.liquid
-      - api/methods/nodes.html.textile.liquid
+      - api/methods/authorized_keys.html.textile.liquid
+      - api/methods/api_clients.html.textile.liquid
+      - api/methods/user_agreements.html.textile.liquid
       - api/methods/virtual_machines.html.textile.liquid
-      - api/methods/keep_disks.html.textile.liquid
     - Data management:
       - api/keep-webdav.html.textile.liquid
       - api/keep-s3.html.textile.liquid
@@ -131,12 +124,12 @@ navbar:
       - api/projects.html.textile.liquid
       - api/properties.html.textile.liquid
       - api/methods/collections.html.textile.liquid
-      - api/methods/repositories.html.textile.liquid
+      - api/methods/logs.html.textile.liquid
+      - api/methods/keep_services.html.textile.liquid
     - Container engine:
       - api/methods/container_requests.html.textile.liquid
       - api/methods/containers.html.textile.liquid
       - api/methods/workflows.html.textile.liquid
-    - Management (admin/system):
       - api/dispatch.html.textile.liquid
     - Jobs engine (legacy):
       - api/crunch-scripts.html.textile.liquid
@@ -144,7 +137,10 @@ navbar:
       - api/methods/job_tasks.html.textile.liquid
       - api/methods/pipeline_instances.html.textile.liquid
       - api/methods/pipeline_templates.html.textile.liquid
-    - Metadata for bioinformatics (deprecated):
+      - api/methods/nodes.html.textile.liquid
+      - api/methods/repositories.html.textile.liquid
+      - api/methods/keep_disks.html.textile.liquid
+    - Metadata for bioinformatics (legacy):
       - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid

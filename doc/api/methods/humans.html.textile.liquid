@@ -11,7 +11,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-p=. *Deprecated, likely to be removed in a future version.  The recommended way to store metadata is "collection properties":collections.html*
+{% include 'notebox_begin_warning' %}
+This is a legacy API.  This endpoint is deprecated, disabled by default in new installations, and is slated to be removed entirely in a future major release of Arvados.  The recommended way to store metadata is with "'properties' field on collections and projects.":../properties.html
+{% include 'notebox_end' %}
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/humans@
 

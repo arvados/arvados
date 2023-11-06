@@ -138,7 +138,7 @@ func (rr *remoteRunner) Kill(reason string) {
 		termDeadline := time.Now().Add(rr.timeoutTERM)
 		t := time.NewTicker(rr.timeoutSignal)
 		defer t.Stop()
-		for range t.C {
+		for ; ; <-t.C {
 			switch {
 			case rr.isClosed():
 				return

@@ -494,3 +494,9 @@
   output: {}
   tool: oom/19975-oom3.cwl
   doc: "Test feature 19975 - retry on custom error"
+
+- job: null
+  output:
+    out: out
+  tool: wf/runseparate-wf.cwl
+  doc: "test arv:SeparateRunner"

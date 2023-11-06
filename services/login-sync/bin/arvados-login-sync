@@ -12,6 +12,18 @@ require 'yaml'
 require 'optparse'
 require 'open3'
 
+def ensure_dir(path, mode, owner, group)
+  begin
+    Dir.mkdir(path, mode)
+  rescue Errno::EEXIST
+    # No change needed
+    false
+  else
+    FileUtils.chown(owner, group, path)
+    true
+  end
+end
+
 req_envs = %w(ARVADOS_API_HOST ARVADOS_API_TOKEN ARVADOS_VIRTUAL_MACHINE_UUID)
 req_envs.each do |k|
   unless ENV[k]
@@ -34,6 +46,15 @@ exclusive_banner = "############################################################
 start_banner = "### BEGIN Arvados-managed keys -- changes between markers will be overwritten\n"
 end_banner = "### END Arvados-managed keys -- changes between markers will be overwritten\n"
 
+actions = {
+  # These names correspond to the names in the cluster Users configuration.
+  # Managing everything was the original behavior.
+  SyncUserAccounts: true,
+  SyncUserGroups: true,
+  SyncUserSSHKeys: true,
+  SyncUserAPITokens: true,
+}
+
 keys = ''
 
 begin
@@ -44,6 +65,17 @@ begin
   arv = Arvados.new({ :suppress_ssl_warnings => false })
   logincluster_host = ENV['ARVADOS_API_HOST']
   logincluster_name = arv.cluster_config['Login']['LoginCluster'] or ''
+
+  # Requiring the fuse group was previous hardcoded behavior
+  minimum_groups = arv.cluster_config['Users']['SyncRequiredGroups'] || ['fuse']
+  ignored_groups = arv.cluster_config['Users']['SyncIgnoredGroups'] || []
+  (minimum_groups & ignored_groups).each do |group_name|
+    STDERR.puts "WARNING: #{group_name} is listed in both SyncRequiredGroups and SyncIgnoredGroups. It will be ignored."
+  end
+
+  actions.each_pair do |key, default|
+    actions[key] = arv.cluster_config['Users'].fetch(key.to_s, default)
+  end
 
   if logincluster_name != '' and logincluster_name != arv.cluster_config['ClusterID']
     logincluster_host = arv.cluster_config['RemoteClusters'][logincluster_name]['Host']
@@ -112,11 +144,12 @@ begin
 
   seen = Hash.new()
 
-  current_user_groups = Hash.new
+  all_groups = []
+  current_user_groups = Hash.new { |hash, key| hash[key] = [] }
   while (ent = Etc.getgrent()) do
+    all_groups << ent.name
     ent.mem.each do |member|
-      current_user_groups[member] ||= Array.new
-      current_user_groups[member].push ent.name
+      current_user_groups[member] << ent.name
     end
   end
   Etc.endgrent()
@@ -128,6 +161,10 @@ begin
     username = l[:username]
 
     unless pwnam[l[:username]]
+      unless actions[:SyncUserAccounts]
+        STDERR.puts "User #{username} does not exist and SyncUserAccounts=false. Skipping."
+        next
+      end
       STDERR.puts "Creating account #{l[:username]}"
       # Create new user
       out, st = Open3.capture2e("useradd", "-m",
@@ -146,15 +183,21 @@ begin
       end
     end
 
-    existing_groups = current_user_groups[username] || []
-    groups = l[:groups] || []
-    # Adding users to the FUSE group has long been hardcoded behavior.
-    groups << "fuse"
-    groups << username
-    groups.select! { |g| Etc.getgrnam(g) rescue false }
+    user_gid = pwnam[username].gid
+    homedir = pwnam[l[:username]].dir
+    if !File.exist?(homedir)
+      STDERR.puts "Cannot set up user #{username} because their home directory #{homedir} does not exist. Skipping."
+      next
+    end
 
-    groups.each do |addgroup|
-      if existing_groups.index(addgroup).nil?
+    if actions[:SyncUserGroups]
+      have_groups = current_user_groups[username] - ignored_groups
+      want_groups = l[:groups] || []
+      want_groups |= minimum_groups
+      want_groups -= ignored_groups
+      want_groups &= all_groups
+
+      (want_groups - have_groups).each do |addgroup|
         # User should be in group, but isn't, so add them.
         STDERR.puts "Add user #{username} to #{addgroup} group"
         out, st = Open3.capture2e("usermod", "-aG", addgroup, username)
@@ -162,10 +205,8 @@ begin
           STDERR.puts "Failed to add #{username} to #{addgroup} group:\n#{out}"
         end
       end
-    end
 
-    existing_groups.each do |removegroup|
-      if groups.index(removegroup).nil?
+      (have_groups - want_groups).each do |removegroup|
         # User is in a group, but shouldn't be, so remove them.
         STDERR.puts "Remove user #{username} from #{removegroup} group"
         out, st = Open3.capture2e("gpasswd", "-d", username, removegroup)
@@ -175,96 +216,86 @@ begin
       end
     end
 
-    homedir = pwnam[l[:username]].dir
-    userdotssh = File.join(homedir, ".ssh")
-    Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
+    if actions[:SyncUserSSHKeys]
+      userdotssh = File.join(homedir, ".ssh")
+      ensure_dir(userdotssh, 0700, username, user_gid)
 
-    newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
+      newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
 
-    keysfile = File.join(userdotssh, "authorized_keys")
+      keysfile = File.join(userdotssh, "authorized_keys")
+      begin
+        oldkeys = File.read(keysfile)
+      rescue Errno::ENOENT
+        oldkeys = ""
+      end
 
-    if File.exist?(keysfile)
-      oldkeys = IO::read(keysfile)
-    else
-      oldkeys = ""
+      if options[:exclusive]
+        newkeys = exclusive_banner + newkeys
+      elsif oldkeys.start_with?(exclusive_banner)
+        newkeys = start_banner + newkeys + end_banner
+      elsif (m = /^(.*?\n|)#{start_banner}(.*?\n|)#{end_banner}(.*)/m.match(oldkeys))
+        newkeys = m[1] + start_banner + newkeys + end_banner + m[3]
+      else
+        newkeys = start_banner + newkeys + end_banner + oldkeys
+      end
+
+      if oldkeys != newkeys then
+        File.open(keysfile, 'w', 0600) do |f|
+          f.write(newkeys)
+        end
+        FileUtils.chown(username, user_gid, keysfile)
+      end
     end
 
-    if options[:exclusive]
-      newkeys = exclusive_banner + newkeys
-    elsif oldkeys.start_with?(exclusive_banner)
-      newkeys = start_banner + newkeys + end_banner
-    elsif (m = /^(.*?\n|)#{start_banner}(.*?\n|)#{end_banner}(.*)/m.match(oldkeys))
-      newkeys = m[1] + start_banner + newkeys + end_banner + m[3]
-    else
-      newkeys = start_banner + newkeys + end_banner + oldkeys
-    end
+    if actions[:SyncUserAPITokens]
+      userdotconfig = File.join(homedir, ".config")
+      ensure_dir(userdotconfig, 0755, username, user_gid)
+      configarvados = File.join(userdotconfig, "arvados")
+      ensure_dir(configarvados, 0700, username, user_gid)
 
-    if oldkeys != newkeys then
-      f = File.new(keysfile, 'w')
-      f.write(newkeys)
-      f.close()
-    end
+      tokenfile = File.join(configarvados, "settings.conf")
 
-    userdotconfig = File.join(homedir, ".config")
-    if !File.exist?(userdotconfig)
-      Dir.mkdir(userdotconfig)
-    end
-
-    configarvados = File.join(userdotconfig, "arvados")
-    Dir.mkdir(configarvados) if !File.exist?(configarvados)
-
-    tokenfile = File.join(configarvados, "settings.conf")
-
-    begin
-      STDERR.puts "Processing #{tokenfile} ..." if debug
-      newToken = false
-      if File.exist?(tokenfile)
-        # check if the token is still valid
-        myToken = ENV["ARVADOS_API_TOKEN"]
-        userEnv = IO::read(tokenfile)
-        if (m = /^ARVADOS_API_TOKEN=(.*?\n)/m.match(userEnv))
-          begin
-            tmp_arv = Arvados.new({ :api_host => logincluster_host,
-                                    :api_token => (m[1]),
-                                    :suppress_ssl_warnings => false })
-            tmp_arv.user.current
-          rescue Arvados::TransactionFailedError => e
-            if e.to_s =~ /401 Unauthorized/
-              STDERR.puts "Account #{l[:username]} token not valid, creating new token."
-              newToken = true
-            else
-              raise
+      begin
+        STDERR.puts "Processing #{tokenfile} ..." if debug
+        newToken = false
+        if File.exist?(tokenfile)
+          # check if the token is still valid
+          myToken = ENV["ARVADOS_API_TOKEN"]
+          userEnv = File.read(tokenfile)
+          if (m = /^ARVADOS_API_TOKEN=(.*?\n)/m.match(userEnv))
+            begin
+              tmp_arv = Arvados.new({ :api_host => logincluster_host,
+                                      :api_token => (m[1]),
+                                      :suppress_ssl_warnings => false })
+              tmp_arv.user.current
+            rescue Arvados::TransactionFailedError => e
+              if e.to_s =~ /401 Unauthorized/
+                STDERR.puts "Account #{l[:username]} token not valid, creating new token."
+                newToken = true
+              else
+                raise
+              end
             end
           end
+        elsif !File.exist?(tokenfile) || options[:"rotate-tokens"]
+          STDERR.puts "Account #{l[:username]} token file not found, creating new token."
+          newToken = true
         end
-      elsif !File.exist?(tokenfile) || options[:"rotate-tokens"]
-        STDERR.puts "Account #{l[:username]} token file not found, creating new token."
-        newToken = true
-      end
-      if newToken
-        aca_params = {owner_uuid: l[:user_uuid], api_client_id: 0}
-        if options[:"token-lifetime"] && options[:"token-lifetime"] > 0
-          aca_params.merge!(expires_at: (Time.now + options[:"token-lifetime"]))
+        if newToken
+          aca_params = {owner_uuid: l[:user_uuid], api_client_id: 0}
+          if options[:"token-lifetime"] && options[:"token-lifetime"] > 0
+            aca_params.merge!(expires_at: (Time.now + options[:"token-lifetime"]))
+          end
+          user_token = logincluster_arv.api_client_authorization.create(api_client_authorization: aca_params)
+          File.open(tokenfile, 'w', 0600) do |f|
+            f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
+            f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
+          end
+          FileUtils.chown(username, user_gid, tokenfile)
         end
-        user_token = logincluster_arv.api_client_authorization.create(api_client_authorization: aca_params)
-        f = File.new(tokenfile, 'w')
-        f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
-        f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
-        f.close()
+      rescue => e
+        STDERR.puts "Error setting token for #{l[:username]}: #{e}"
       end
-    rescue => e
-      STDERR.puts "Error setting token for #{l[:username]}: #{e}"
-    end
-
-    FileUtils.chown_R(l[:username], nil, userdotssh)
-    FileUtils.chown_R(l[:username], nil, userdotconfig)
-    File.chmod(0700, userdotssh)
-    File.chmod(0700, userdotconfig)
-    File.chmod(0700, configarvados)
-    File.chmod(0750, homedir)
-    File.chmod(0600, keysfile)
-    if File.exist?(tokenfile)
-      File.chmod(0600, tokenfile)
     end
   end
 

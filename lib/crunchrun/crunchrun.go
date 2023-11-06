@@ -12,6 +12,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net"
@@ -44,6 +45,8 @@ import (
 )
 
 type command struct{}
+
+var arvadosCertPath = "/etc/arvados/ca-certificates.crt"
 
 var Command = command{}
 
@@ -152,20 +155,12 @@ type ContainerRunner struct {
 	hoststatLogger   io.WriteCloser
 	hoststatReporter *crunchstat.Reporter
 	statInterval     time.Duration
-	cgroupRoot       string
-	// What we expect the container's cgroup parent to be.
-	expectCgroupParent string
 	// What we tell docker to use as the container's cgroup
-	// parent. Note: Ideally we would use the same field for both
-	// expectCgroupParent and setCgroupParent, and just make it
-	// default to "docker". However, when using docker < 1.10 with
-	// systemd, specifying a non-empty cgroup parent (even the
-	// default value "docker") hits a docker bug
-	// (https://github.com/docker/docker/issues/17126). Using two
-	// separate fields makes it possible to use the "expect cgroup
-	// parent to be X" feature even on sites where the "specify
-	// cgroup parent" feature breaks.
+	// parent.
 	setCgroupParent string
+	// Fake root dir where crunchstat.Reporter should read OS
+	// files, for testing.
+	crunchstatFakeFS fs.FS
 
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
@@ -501,7 +496,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 			}
 		}
 
-		if bind == "/etc/arvados/ca-certificates.crt" {
+		if bind == arvadosCertPath {
 			needCertMount = false
 		}
 
@@ -651,10 +646,19 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	}
 
 	if needCertMount && runner.Container.RuntimeConstraints.API {
-		for _, certfile := range arvadosclient.CertFiles {
-			_, err := os.Stat(certfile)
-			if err == nil {
-				bindmounts["/etc/arvados/ca-certificates.crt"] = bindmount{HostPath: certfile, ReadOnly: true}
+		for _, certfile := range []string{
+			// Populated by caller, or sdk/go/arvados init(), or test suite:
+			os.Getenv("SSL_CERT_FILE"),
+			// Copied from Go 1.21 stdlib (src/crypto/x509/root_linux.go):
+			"/etc/ssl/certs/ca-certificates.crt",                // Debian/Ubuntu/Gentoo etc.
+			"/etc/pki/tls/certs/ca-bundle.crt",                  // Fedora/RHEL 6
+			"/etc/ssl/ca-bundle.pem",                            // OpenSUSE
+			"/etc/pki/tls/cacert.pem",                           // OpenELEC
+			"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", // CentOS/RHEL 7
+			"/etc/ssl/cert.pem",                                 // Alpine Linux
+		} {
+			if _, err := os.Stat(certfile); err == nil {
+				bindmounts[arvadosCertPath] = bindmount{HostPath: certfile, ReadOnly: true}
 				break
 			}
 		}
@@ -749,8 +753,16 @@ func (runner *ContainerRunner) startHoststat() error {
 	}
 	runner.hoststatLogger = NewThrottledLogger(w)
 	runner.hoststatReporter = &crunchstat.Reporter{
-		Logger:     log.New(runner.hoststatLogger, "", 0),
-		CgroupRoot: runner.cgroupRoot,
+		Logger: log.New(runner.hoststatLogger, "", 0),
+		// Our own cgroup is the "host" cgroup, in the sense
+		// that it accounts for resource usage outside the
+		// container. It doesn't count _all_ resource usage on
+		// the system.
+		//
+		// TODO?: Use the furthest ancestor of our own cgroup
+		// that has stats available. (Currently crunchstat
+		// does not have that capability.)
+		Pid:        os.Getpid,
 		PollPeriod: runner.statInterval,
 	}
 	runner.hoststatReporter.Start()
@@ -765,10 +777,9 @@ func (runner *ContainerRunner) startCrunchstat() error {
 	}
 	runner.statLogger = NewThrottledLogger(w)
 	runner.statReporter = &crunchstat.Reporter{
-		CgroupParent: runner.expectCgroupParent,
-		CgroupRoot:   runner.cgroupRoot,
-		CID:          runner.executor.CgroupID(),
-		Logger:       log.New(runner.statLogger, "", 0),
+		Pid:    runner.executor.Pid,
+		FS:     runner.crunchstatFakeFS,
+		Logger: log.New(runner.statLogger, "", 0),
 		MemThresholds: map[string][]crunchstat.Threshold{
 			"rss": crunchstat.NewThresholdsFromPercentages(runner.Container.RuntimeConstraints.RAM, []int64{90, 95, 99}),
 		},
@@ -1909,9 +1920,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	log := log.New(stderr, "", 0)
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	statInterval := flags.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
-	cgroupRoot := flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
-	cgroupParent := flags.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
-	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
+	flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree (obsolete, ignored)")
+	flags.String("cgroup-parent", "docker", "name of container's parent cgroup (obsolete, ignored)")
+	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given `subsystem` as parent cgroup for container (subsystem argument is only relevant for cgroups v1; in cgroups v2 / unified mode, any non-empty value means use current cgroup); if empty, use the docker daemon's default cgroup parent. See https://doc.arvados.org/install/crunch2-slurm/install-dispatch.html#CrunchRunCommand-cgroups")
 	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
 	stdinConfig := flags.Bool("stdin-config", false, "Load config and environment variables from JSON message on stdin")
@@ -1996,7 +2007,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	time.Sleep(*sleep)
 
 	if *caCertsPath != "" {
-		arvadosclient.CertFiles = []string{*caCertsPath}
+		os.Setenv("SSL_CERT_FILE", *caCertsPath)
 	}
 
 	keepstore, err := startLocalKeepstore(conf, io.MultiWriter(&keepstoreLogbuf, stderr))
@@ -2135,19 +2146,16 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	cr.parentTemp = parentTemp
 	cr.statInterval = *statInterval
-	cr.cgroupRoot = *cgroupRoot
-	cr.expectCgroupParent = *cgroupParent
 	cr.enableMemoryLimit = *enableMemoryLimit
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
 	if *cgroupParentSubsystem != "" {
-		p, err := findCgroup(*cgroupParentSubsystem)
+		p, err := findCgroup(os.DirFS("/"), *cgroupParentSubsystem)
 		if err != nil {
 			log.Printf("fatal: cgroup parent subsystem: %s", err)
 			return 1
 		}
 		cr.setCgroupParent = p
-		cr.expectCgroupParent = p
 	}
 
 	if conf.EC2SpotCheck {

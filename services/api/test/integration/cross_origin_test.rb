@@ -5,10 +5,10 @@
 require 'test_helper'
 
 class CrossOriginTest < ActionDispatch::IntegrationTest
-  def options *args
+  def options path, **kwargs
     # Rails doesn't support OPTIONS the same way as GET, POST, etc.
     reset! unless integration_session
-    integration_session.__send__(:process, :options, *args).tap do
+    integration_session.__send__(:process, :options, path, **kwargs).tap do
       copy_session_variables!
     end
   end

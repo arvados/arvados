@@ -109,7 +109,7 @@ class LinkTest < ActiveSupport::TestCase
 
   test "updating permission causes any conflicting links to be deleted" do
     link1, link2 = create_overlapping_permissions(['can_read', 'can_manage'])
-    Link.find_by_uuid(link2).update_attributes!(name: 'can_write')
+    Link.find_by_uuid(link2).update!(name: 'can_write')
     assert_empty Link.where(uuid: link1)
   end
 
@@ -121,8 +121,8 @@ class LinkTest < ActiveSupport::TestCase
 
   test "updating login permission causes any conflicting links to be deleted" do
     link1, link2 = create_overlapping_permissions(['can_login', 'can_login'], {properties: {username: 'foo1'}})
-    Link.find_by_uuid(link1).update_attributes!(properties: {'username' => 'foo2'})
-    Link.find_by_uuid(link2).update_attributes!(properties: {'username' => 'foo2'})
+    Link.find_by_uuid(link1).update!(properties: {'username' => 'foo2'})
+    Link.find_by_uuid(link2).update!(properties: {'username' => 'foo2'})
     assert_empty Link.where(uuid: link1)
   end
 

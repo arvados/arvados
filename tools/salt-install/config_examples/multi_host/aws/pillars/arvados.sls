@@ -3,6 +3,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- set _workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus']*2)|int %}
+{%- set max_workers = [_workers, 8]|max %}
+{%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
+{%- set database_host = ("__DATABASE_EXTERNAL_SERVICE_HOST_OR_IP__" or "__DATABASE_INT_IP__") %}
+{%- set database_name = "__DATABASE_NAME__" %}
+{%- set database_user = "__DATABASE_USER__" %}
+{%- set database_password = "__DATABASE_PASSWORD__" %}
+
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
 # this formula will fail.
@@ -68,10 +76,10 @@ arvados:
     database:
       # max concurrent connections per arvados server daemon
       # connection_pool_max: 32
-      name: __CLUSTER___arvados
-      host: __DATABASE_INT_IP__
-      password: "__DATABASE_PASSWORD__"
-      user: __CLUSTER___arvados
+      name: {{ database_name }}
+      host: {{ database_host }}
+      password: {{ database_password }}
+      user: {{ database_user }}
       encoding: en_US.utf8
       client_encoding: UTF8
 
@@ -108,35 +116,30 @@ arvados:
             Password: __INITIAL_USER_PASSWORD__
 
     ### API
-    {%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
-    {%- if max_reqs != "" and max_reqs is number %}
     API:
-      MaxConcurrentRequests: max_reqs
-    {%- endif %}
+      MaxConcurrentRailsRequests: {{ max_workers * 2 }}
+      MaxConcurrentRequests: {{ max_reqs }}
+      MaxQueuedRequests: {{ max_reqs }}
 
     ### CONTAINERS
+    {%- set dispatcher_ssh_privkey = "__DISPATCHER_SSH_PRIVKEY__" %}
     Containers:
       MaxRetryAttempts: 10
       CloudVMs:
         ResourceTags:
           Name: __CLUSTER__-compute-node
         BootProbeCommand: 'systemctl is-system-running'
-        ImageID: ami-FIXMEFIXMEFIXMEFI
+        ImageID: __COMPUTE_AMI__
         Driver: ec2
         DriverParameters:
-          Region: FIXME
+          Region: __COMPUTE_AWS_REGION__
           EBSVolumeType: gp3
-          AdminUsername: FIXME
+          AdminUsername: __COMPUTE_USER__
           ### This SG should allow SSH from the dispatcher to the compute nodes
-          SecurityGroupIDs: ['sg-FIXMEFIXMEFIXMEFI']
-          SubnetID: subnet-FIXMEFIXMEFIXMEFI
+          SecurityGroupIDs: ['__COMPUTE_SG__']
+          SubnetID: __COMPUTE_SUBNET__
           IAMInstanceProfile: __CLUSTER__-compute-node-00-iam-role
-      DispatchPrivateKey: |
-        -----BEGIN OPENSSH PRIVATE KEY-----
-        Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair
-        for details on how to create this key.
-        FIXMEFIXMEFIXME replace this with your dispatcher ssh private key
-        -----END OPENSSH PRIVATE KEY-----
+      DispatchPrivateKey: {{ dispatcher_ssh_privkey|yaml_dquote }}
 
     ### VOLUMES
     ## This should usually match all your `keepstore` instances
@@ -147,9 +150,14 @@ arvados:
         Replication: 2
         Driver: S3
         DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-000000000000000-volume
-          IAMRole: __CLUSTER__-keepstore-00-iam-role
-          Region: FIXME
+          Bucket: __KEEP_AWS_S3_BUCKET__
+          IAMRole: __KEEP_AWS_IAM_ROLE__
+          Region: __KEEP_AWS_REGION__
+          # IMPORTANT: The default value for PrefixLength is 0, and should not
+          # be changed once the volume is in use. For new installations it's
+          # recommended to set it to 3 for better performance.
+          # See: https://doc.arvados.org/install/configure-s3-object-storage.html
+          PrefixLength: 3
 
     Users:
       NewUsersAreActive: true
@@ -164,10 +172,10 @@ arvados:
           'http://localhost:8003': {}
       DispatchCloud:
         InternalURLs:
-          'http://__CONTROLLER_INT_IP__:9006': {}
+          'http://__DISPATCHER_INT_IP__:9006': {}
       Keepbalance:
         InternalURLs:
-          'http://__CONTROLLER_INT_IP__:9005': {}
+          'http://__KEEPBALANCE_INT_IP__:9005': {}
       Keepproxy:
         ExternalURL: 'https://keep.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:

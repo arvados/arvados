@@ -58,7 +58,7 @@ class BigCollectionTest < ActiveSupport::TestCase
     end
     time_block 'update(name-only)' do
       manifest_text_length = c.manifest_text.length
-      c.update_attributes name: 'renamed during test case'
+      c.update name: 'renamed during test case'
       assert_equal c.manifest_text.length, manifest_text_length
     end
     time_block 'update' do

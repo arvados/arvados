@@ -16,11 +16,12 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Set up your infrastructure":#setup-infra
 ## "Create AWS infrastructure with Terraform":#terraform
 ## "Create required infrastructure manually":#inframanual
-# "Edit local.params":#localparams
+# "Edit local.params* files":#localparams
 # "Configure Keep storage":#keep
 # "Choose the SSL configuration":#certificates
 ## "Using a Let's Encrypt certificates":#lets-encrypt
 ## "Bring your own certificates":#bring-your-own
+### "Securing your TLS certificate keys":#secure-tls-keys
 # "Create a compute image":#create_a_compute_image
 # "Begin installation":#installation
 # "Further customization of the installation":#further_customization
@@ -30,6 +31,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Common problems and solutions":#common-problems
 # "Initial user and login":#initial_user
 # "Monitoring and Metrics":#monitoring
+# "Load balancing controllers":#load_balancing
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
@@ -114,14 +116,14 @@ h4. Set credentials
 
 You will need an AWS access key and secret key to create the infrastructure.
 
-<pre><code>$ export AWS_ACCESS_KEY_ID="anaccesskey"
-$ export AWS_SECRET_ACCESS_KEY="asecretkey"</code></pre>
+<pre><code class="userinput">export AWS_ACCESS_KEY_ID="anaccesskey"
+export AWS_SECRET_ACCESS_KEY="asecretkey"</code></pre>
 
 h4. Create the infrastructure
 
 Build the infrastructure by running @./installer.sh terraform@.  The last stage will output the information needed to set up the cluster's domain and continue with the installer. for example:
 
-<pre><code>$ ./installer.sh terraform
+<pre><code class="userinput">./installer.sh terraform
 ...
 Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
 
@@ -190,9 +192,9 @@ The certificates will be requested from Let's Encrypt when you run the installer
 
 * @cluster_int_cidr@ will be used to set @CLUSTER_INT_CIDR@
 
-* You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
+* You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @COMPUTE_SUBNET@ and @COMPUTE_SG@ in @local.params@ and when you "create a compute image":#create_a_compute_image.
 
-You can now proceed to "edit local.params":#localparams.
+You can now proceed to "edit local.params* files":#localparams.
 
 h3(#inframanual). Create required infrastructure manually
 
@@ -228,18 +230,17 @@ The installer will set up the Arvados services on your machines.  Here is the de
 ## postgresql server
 ## arvados api server
 ## arvados controller  (recommendend hostname @controller.${DOMAIN}@)
-## arvados websocket   (recommendend hostname @ws.${DOMAIN}@)
-## arvados cloud dispatcher
-## arvados keepbalance
 # KEEPSTORE nodes (at least 1 if using S3 as a Keep backend, else 2)
 ## arvados keepstore   (recommendend hostnames @keep0.${DOMAIN}@ and @keep1.${DOMAIN}@)
-# KEEPPROXY node
-## arvados keepproxy   (recommendend hostname @keep.${DOMAIN}@)
-## arvados keepweb     (recommendend hostname @download.${DOMAIN}@ and @*.collections.${DOMAIN}@)
 # WORKBENCH node
 ## arvados workbench   (recommendend hostname @workbench.${DOMAIN}@)
 ## arvados workbench2  (recommendend hostname @workbench2.${DOMAIN}@)
 ## arvados webshell    (recommendend hostname @webshell.${DOMAIN}@)
+## arvados websocket   (recommendend hostname @ws.${DOMAIN}@)
+## arvados cloud dispatcher
+## arvados keepbalance
+## arvados keepproxy   (recommendend hostname @keep.${DOMAIN}@)
+## arvados keepweb     (recommendend hostname @download.${DOMAIN}@ and @*.collections.${DOMAIN}@)
 # SHELL node  (optional)
 ## arvados shell       (recommended hostname @shell.${DOMAIN}@)
 
@@ -259,19 +260,26 @@ This usually means adding the account to the @sudo@ group and having a rule like
 
 If your infrastructure differs from the setup proposed above (ie, different hostnames), you can still use the installer, but "additional customization may be necessary":#further_customization .
 
-h2(#localparams). Edit @local.params@
+h2(#localparams). Edit @local.params*@ files
 
-This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
+The cluster configuration parameters are included in two files: @local.params@ and @local.params.secrets@. These files can be found wherever you choose to initialize the installation files (e.g., @~/setup-arvados-xarv1@ in these examples).
 
-# Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
-# Set @DOMAIN@ to the base DNS domain of the environment, e.g. "xarv1.example.com"
+The @local.params.secrets@ file is intended to store security-sensitive data such as passwords, private keys, tokens, etc. Depending on the security requirements of the cluster deployment, you may wish to store this file in a secrets store like AWS Secrets Manager or Jenkins credentials.
+
+h3. Parameters from @local.params@:
+
+# Set @CLUSTER@ to the 5-character cluster identifier. (e.g. "xarv1")
+# Set @DOMAIN@ to the base DNS domain of the environment. (e.g. "xarv1.example.com")
 # Set the @*_INT_IP@ variables with the internal (private) IP addresses of each host. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
 # Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.  If you used terraform, this is emitted as @cluster_int_cidr@.
 _CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network._
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
+
+h3. Parameters from @local.params.secrets@:
+
 # Set each @KEY@ / @TOKEN@ / @PASSWORD@ to a random string.  You can use @installer.sh generate-tokens@
-<pre><code>$ ./installer.sh generate-tokens
+<pre><code class="userinput">./installer.sh generate-tokens
 BLOB_SIGNING_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 MANAGEMENT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 SYSTEM_ROOT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -284,6 +292,13 @@ DATABASE_PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
    For example, if the password is @Lq&MZ<V']d?j@
    With backslash quoting the special characters it should appear like this in local.params:
 <pre><code>DATABASE_PASSWORD="Lq\&MZ\<V\'\]d\?j"</code></pre>
+# Set @DISPATCHER_SSH_PRIVKEY@ to a SSH private key that @arvados-dispatch-cloud@ will use to connect to the compute nodes:
+<pre><code>DISPATCHER_SSH_PRIVKEY="-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn
+...
+s4VY40kNxs6MsAAAAPbHVjYXNAaW5zdGFsbGVyAQIDBA==
+-----END OPENSSH PRIVATE KEY-----"
+</code></pre>You can create one by following the steps described on the "building a compute node documentation":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html#sshkeypair page.
 
 h3(#etchosts). Note on @/etc/hosts@
 
@@ -299,16 +314,14 @@ The @multi_host/aws@ template uses S3 for storage.  Arvados also supports "files
 
 h3. Object storage in S3 (AWS Specific)
 
-Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
+If you "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
 
-# In the @arvados.cluster.Volumes.DriverParameters@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
+If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters in @local.params@:
 
-If "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
+# Set @KEEP_AWS_S3_BUCKET@ to the value of "keepstore bucket you created earlier":#keep-bucket
+# Set @KEEP_AWS_IAM_ROLE@ to "keepstore role you created earlier":#keep-bucket
 
-If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters as well:
-
-# Set @Bucket@ to the value of "keepstore bucket you created earlier":#keep-bucket
-# Set @IAMRole@ to "keepstore role you created earlier":#keep-bucket
+You can also configure a specific AWS Region for the S3 bucket by setting @KEEP_AWS_REGION@.
 
 {% include 'ssl_config_multi' %}
 
@@ -324,15 +337,17 @@ Arvados requires a database that is compatible with PostgreSQL 9.5 or later.  Fo
 
 # In @local.params@, remove 'database' from the list of roles assigned to the controller node:
 <pre><code>NODES=(
-  [controller.${CLUSTER}.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
+  [controller.${DOMAIN}]=controller,websocket,dispatcher,keepbalance
   ...
 )
 </code></pre>
-# In @local.params@, set @DATABASE_INT_IP@ to the database endpoint (can be a hostname, does not have to be an IP address).
-<pre><code>DATABASE_INT_IP=...
+# In @local.params@, set @DATABASE_INT_IP@ to empty string and @DATABASE_EXTERNAL_SERVICE_HOST_OR_IP@ to the database endpoint (can be a hostname, does not have to be an IP address).
+<pre><code>DATABASE_INT_IP=""
+...
+DATABASE_EXTERNAL_SERVICE_HOST_OR_IP="arvados.xxxxxxx.eu-east-1.rds.amazonaws.com"
 </code></pre>
-# In @local.params@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
-# In @local_config_dir/pillars/arvados.sls@ you may need to adjust the database name and user.  This can be found in the section @arvados.cluster.database@.
+# In @local.params.secrets@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
+# In @local.params@ you may need to adjust the database name and user.
 
 h2(#further_customization). Further customization of the installation (optional)
 
@@ -356,16 +371,14 @@ Follow "the instructions to build a cloud compute node image":{{site.baseurl}}/i
 
 h3. Configure the compute image
 
-Once the image has been created, open @local_config_dir/pillars/arvados.sls@ and edit as follows (AWS specific settings described here, other cloud providers will have similar settings in their respective configuration section):
+Once the image has been created, open @local.params@ and edit as follows (AWS specific settings described here, you will need to make custom changes for other cloud providers):
 
-# In the @arvados.cluster.Containers.CloudVMs@ section:
-## Set @ImageID@ to the AMI produced by Packer
-## Set @DriverParameters.Region@ to the appropriate AWS region
-## Set @DriverParameters.AdminUsername@ to the admin user account on the image
-## Set the @DriverParameters.SecurityGroupIDs@ list to the VPC security group which you set up to allow SSH connections to these nodes
-## Set @DriverParameters.SubnetID@ to the value of SubnetId of your VPC
-# Update @arvados.cluster.Containers.DispatchPrivateKey@ and paste the contents of the @~/.ssh/id_dispatcher@ file you generated in an earlier step.
-# Update @arvados.cluster.InstanceTypes@ as necessary.  The example instance types are for AWS, other cloud providers will of course have different instance types with different names and specifications.
+# Set @COMPUTE_AMI@ to the AMI produced by Packer
+# Set @COMPUTE_AWS_REGION@ to the appropriate AWS region
+# Set @COMPUTE_USER@ to the admin user account on the image
+# Set the @COMPUTE_SG@ list to the VPC security group which you set up to allow SSH connections to these nodes
+# Set @COMPUTE_SUBNET@ to the value of SubnetId of your VPC
+# Update @arvados.cluster.InstanceTypes@ in @local_config_dir/pillars/arvados.sls@ as necessary.  The example instance types are for AWS, other cloud providers will of course have different instance types with different names and specifications.
 (AWS specific) If m5/c5 node types are not available, replace them with m4/c4. You'll need to double check the values for Price and IncludedScratch/AddedScratch for each type that is changed.
 
 h2(#installation). Begin installation
@@ -374,9 +387,7 @@ At this point, you are ready to run the installer script in deploy mode that wil
 
 Run this in the @~/arvados-setup-xarv1@ directory:
 
-<pre>
-./installer.sh deploy
-</pre>
+<pre><code class="userinput">./installer.sh deploy</code></pre>
 
 This will install and configure Arvados on all the nodes.  It will take a while and produce a lot of logging.  If it runs into an error, it will stop.
 
@@ -390,9 +401,7 @@ If you are running the diagnostics from one of the Arvados machines inside the p
 
 You are an "external client" if you running the diagnostics from your workstation outside of the private network.
 
-<pre>
-./installer.sh diagnostics (-internal-client|-external-client)
-</pre>
+<pre><code class="userinput">./installer.sh diagnostics (-internal-client|-external-client)</code></pre>
 
 h3(#debugging). Debugging issues
 
@@ -416,9 +425,7 @@ You can iterate on the config and maintain the cluster by making changes to @loc
 
 If you are debugging a configuration issue on a specific node, you can speed up the cycle a bit by deploying just one node:
 
-<pre>
-./installer.sh deploy keep0.xarv1.example.com
-</pre>
+<pre><code class="userinput">./installer.sh deploy keep0.xarv1.example.com</code></pre>
 
 However, once you have a final configuration, you should run a full deploy to ensure that the configuration has been synchronized on all the nodes.
 
@@ -439,7 +446,7 @@ If this happens, you need to
 1. correct the database information
 2. run @./installer.sh deploy xarv1.example.com@ to update the configuration on the API/controller node
 3. Log in to the API/controller server node, then run this command to re-run the post-install script, which will set up the database:
-<pre>dpkg-reconfigure arvados-api-server</pre>
+<pre><code class="userinput">dpkg-reconfigure arvados-api-server</code></pre>
 4. Re-run @./installer.sh deploy@ again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
 
 h4. Missing ENA support (AWS Specific)
@@ -450,9 +457,9 @@ h2(#initial_user). Initial user and login
 
 At this point you should be able to log into the Arvados cluster. The initial URL will be
 
-https://workbench.@${CLUSTER}.${DOMAIN}@
+@https://workbench.${DOMAIN}@
 
-If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
+If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ from the @local.params*@ file.
 
 If you *did* configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
 
@@ -460,9 +467,9 @@ h2(#monitoring). Monitoring and Metrics
 
 You can monitor the health and performance of the system using the admin dashboard:
 
-https://grafana.@${CLUSTER}.${DOMAIN}@
+@https://grafana.${DOMAIN}@
 
-To log in, use username "admin" and @${INITIAL_USER_PASSWORD}@ from @local.conf@.
+To log in, use username "admin" and @${INITIAL_USER_PASSWORD}@ from @local.params.secrets@.
 
 Once logged in, you will want to add the dashboards to the front page.
 
@@ -472,6 +479,50 @@ Once logged in, you will want to add the dashboards to the front page.
 # You should see three dashboards "Arvados cluster overview", "Node exporter" and "Postgres exporter"
 # Visit each dashboard, at the top of the page click on the star next to the title to "Mark as favorite"
 # They should now be linked on the front page.
+
+h2(#load_balancing). Load balancing controllers (optional)
+
+In order to handle high loads and perform rolling upgrades, the controller service can be scaled to a number of hosts and the installer make this implementation a fairly simple task.
+
+First, you should take care of the infrastructure deployment: if you use our Terraform code, you will need to set up the @terraform.tfvars@ in @terraform/vpc/@ so that in addition to the node named @controller@ (the load-balancer), a number of @controllerN@ nodes (backends) are defined as needed, and added to the @internal_service_hosts@ list.
+
+We suggest that the backend nodes just hold the controller service and nothing else, so they can be easily created or destroyed as needed without other service disruption.
+
+The following is an example @terraform/vpc/terraform.tfvars@ file that describes a cluster with a load-balancer, 2 backend nodes, a separate database node, a shell node, a keepstore node and a workbench node that will also hold other miscelaneous services:
+
+<pre><code>region_name = "us-east-1"
+cluster_name = "xarv1"
+domain_name = "xarv1.example.com"
+# Include controller nodes in this list so instances are assigned to the
+# private subnet. Only the balancer node should be connecting to them.
+internal_service_hosts = [ "keep0", "shell", "database", "controller1", "controller2" ]
+
+# Assign private IPs for the controller nodes. These will be used to create
+# internal DNS resolutions that will get used by the balancer and database nodes.
+private_ip = {
+  controller = "10.1.1.11"
+  workbench = "10.1.1.15"
+  database = "10.1.2.12"
+  controller1 = "10.1.2.21"
+  controller2 = "10.1.2.22"
+  shell = "10.1.2.17"
+  keep0 = "10.1.2.13"
+}</code></pre>
+
+Once the infrastructure is deployed, you'll then need to define which node will be using the @balancer@ role and which will be the @controller@ nodes in @local.params@, as it's being shown in this partial example:
+
+<pre><code>NODES=(
+  [controller.${DOMAIN}]=balancer
+  [controller1.${DOMAIN}]=controller
+  [controller2.${DOMAIN}]=controller
+  [database.${DOMAIN}]=database
+  ...
+)
+</code></pre>
+
+Note that we also set the @database@ role to its own node instead of just leaving it in a shared controller node.
+
+Each time you run @installer.sh deploy@, the system will automatically do rolling upgrades. This means it will make changes to one controller node at a time, after removing it from the balancer so that there's no downtime.
 
 h2(#post_install). After the installation
 

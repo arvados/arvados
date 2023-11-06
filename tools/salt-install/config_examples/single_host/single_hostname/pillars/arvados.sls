@@ -5,6 +5,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- set database_host = ("__DATABASE_EXTERNAL_SERVICE_HOST_OR_IP__" or "127.0.0.1") %}
+{%- set database_name = "__DATABASE_NAME__" %}
+{%- set database_user = "__DATABASE_USER__" %}
+{%- set database_password = "__DATABASE_PASSWORD__" %}
+
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
 # this formula will fail.
@@ -65,10 +70,10 @@ arvados:
     database:
       # max concurrent connections per arvados server daemon
       # connection_pool_max: 32
-      name: __CLUSTER___arvados
-      host: 127.0.0.1
-      password: "__DATABASE_PASSWORD__"
-      user: __CLUSTER___arvados
+      name: {{ database_name }}
+      host: {{ database_host }}
+      password: {{ database_password }}
+      user: {{ database_user }}
       extra_conn_params:
         client_encoding: UTF8
       # Centos7 does not enable SSL by default, so we disable

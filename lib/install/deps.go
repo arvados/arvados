@@ -30,18 +30,17 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const goversion = "1.18.8"
+const goversion = "1.20.6"
 
 const (
-	rubyversion             = "2.7.6"
+	rubyversion             = "2.7.7"
 	bundlerversion          = "2.2.19"
-	singularityversion      = "3.9.9"
+	singularityversion      = "3.10.4"
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.12"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "e30e54d674c95ee15e296c71e471c1555bdc5a38" // 2.4.3
 )
 
 //go:embed arvados.service
@@ -193,13 +192,18 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		if test {
 			if osv.Debian && osv.Major <= 10 {
 				pkgs = append(pkgs, "iceweasel")
+			} else if osv.Debian && osv.Major >= 11 {
+				pkgs = append(pkgs, "firefox-esr")
 			} else {
 				pkgs = append(pkgs, "firefox")
 			}
 		}
 		if dev || test {
-			pkgs = append(pkgs, "squashfs-tools") // for singularity
-			pkgs = append(pkgs, "gnupg")          // for docker install recipe
+			pkgs = append(pkgs,
+				"libglib2.0-dev", // singularity (conmon)
+				"libseccomp-dev", // singularity (seccomp)
+				"squashfs-tools", // singularity
+				"gnupg")          // docker install recipe
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
@@ -227,7 +231,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 
 	if dev || test {
-		if havedockerversion, err := exec.Command("docker", "--version").CombinedOutput(); err == nil {
+		if havedockerversion, err2 := exec.Command("docker", "--version").CombinedOutput(); err2 == nil {
 			logger.Printf("%s installed, assuming that version is ok", bytes.TrimSuffix(havedockerversion, []byte("\n")))
 		} else if osv.Debian {
 			var codename string
@@ -236,6 +240,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				codename = "buster"
 			case 11:
 				codename = "bullseye"
+			case 12:
+				codename = "bookworm"
 			default:
 				err = fmt.Errorf("don't know how to install docker-ce for debian %d", osv.Major)
 				return 1
@@ -253,6 +259,21 @@ DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install doc
 			}
 		} else {
 			err = fmt.Errorf("don't know how to install docker for osversion %v", osv)
+			return 1
+		}
+
+		err = inst.runBash(`
+key=fs.inotify.max_user_watches
+min=524288
+if [[ "$(sysctl --values "${key}")" -lt "${min}" ]]; then
+    sysctl "${key}=${min}"
+    # writing sysctl worked, so we should make it permanent
+    echo "${key}=${min}" | tee -a /etc/sysctl.conf
+    sysctl -p
+fi
+`, stdout, stderr)
+		if err != nil {
+			err = fmt.Errorf("couldn't set fs.inotify.max_user_watches value. (Is this a docker container? Fix this on the docker host by adding fs.inotify.max_user_watches=524288 to /etc/sysctl.conf and running `sysctl -p`)")
 			return 1
 		}
 	}
@@ -360,7 +381,7 @@ S=`+singularityversion+`
 tmp=/var/lib/arvados/tmp/singularity
 trap "rm -r ${tmp}" ERR EXIT
 cd /var/lib/arvados/tmp
-git clone https://github.com/sylabs/singularity
+git clone --recurse-submodules https://github.com/sylabs/singularity
 cd singularity
 git checkout v${S}
 ./mconfig --prefix=/var/lib/arvados
@@ -527,38 +548,6 @@ ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /us
 				return 1
 			}
 		}
-
-		if havewb2version, err := exec.Command("git", "--git-dir=/var/lib/arvados/arvados-workbench2/.git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil && string(havewb2version) == workbench2version+"\n" {
-			logger.Print("workbench2 repo is already at " + workbench2version)
-		} else {
-			err = inst.runBash(`
-V=`+workbench2version+`
-cd /var/lib/arvados
-if [[ ! -e arvados-workbench2 ]]; then
-  git clone https://git.arvados.org/arvados-workbench2.git
-  cd arvados-workbench2
-  git checkout $V
-else
-  cd arvados-workbench2
-  if ! git checkout $V; then
-    git fetch
-    git checkout yarn.lock
-    git checkout $V
-  fi
-fi
-rm -rf build
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-yarn install
-`, stdout, stderr); err != nil {
-			return 1
-		}
 	}
 
 	if prod || pkg {
@@ -568,7 +557,13 @@ yarn install
 			"cmd/arvados-server",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
+			// -buildvcs=false here avoids a fatal "error
+			// obtaining VCS status" when git refuses to
+			// run (for example) as root in a docker
+			// container using a non-root-owned git tree
+			// mounted from the host -- as in
+			// "arvados-package build".
+			cmd := exec.Command("go", "install", "-buildvcs=false", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
 			cmd.Env = append(cmd.Env, os.Environ()...)
 			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
@@ -688,8 +683,8 @@ done
 
 		// Install workbench2 app to /var/lib/arvados/workbench2/
 		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version[:9]+`" yarn build
+cd `+inst.SourcePath+`/services/workbench2
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
 rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
 			return 1

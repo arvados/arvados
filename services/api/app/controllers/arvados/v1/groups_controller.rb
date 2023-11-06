@@ -92,7 +92,7 @@ class Arvados::V1::GroupsController < ApplicationController
       attrs_to_update = resource_attrs.reject { |k, v|
         [:kind, :etag, :href].index k
       }.merge({async_permissions_update: true})
-      @object.update_attributes!(attrs_to_update)
+      @object.update!(attrs_to_update)
       @object.save!
       render_accepted
     else

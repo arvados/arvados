@@ -37,14 +37,10 @@ nginx:
             - server_name: workbench2.__DOMAIN__
             - listen:
               - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
-            - index: index.html index.htm
+
             - location /:
-              - root: /var/www/arvados-workbench2/workbench2
-              - try_files: '$uri $uri/ /index.html'
-              - 'if (-f $document_root/maintenance.html)':
-                - return: 503
-            - location /config.json:
-              - return: {{ "200 '" ~ '{"API_HOST":"__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__"}' ~ "'" }}
+              - return: '301 https://workbench.__DOMAIN__$request_uri'
+
             - include: snippets/ssl_hardening_default.conf
             - ssl_certificate: __CERT_PEM__
             - ssl_certificate_key: __CERT_KEY__

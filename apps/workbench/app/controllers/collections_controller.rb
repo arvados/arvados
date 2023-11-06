@@ -258,7 +258,7 @@ class CollectionsController < ApplicationController
       arv_coll.rm "."+p
     end
 
-    if @object.update_attributes manifest_text: arv_coll.manifest_text
+    if @object.update manifest_text: arv_coll.manifest_text
       show
     else
       self.render_error status: 422
@@ -289,7 +289,7 @@ class CollectionsController < ApplicationController
       else
         arv_coll.rename "./"+file_path, new_file_path
 
-        if @object.update_attributes manifest_text: arv_coll.manifest_text
+        if @object.update manifest_text: arv_coll.manifest_text
           show
         else
           self.render_error status: 422
@@ -376,7 +376,7 @@ class CollectionsController < ApplicationController
       uri.path += 't=' + opts[:path_token] + '/'
     end
     uri.path += '_/'
-    uri.path += URI.escape(file) if file
+    uri.path += ERB::Util.url_encode(file).gsub('%2F', '/') if file
 
     query = Hash[URI.decode_www_form(uri.query || '')]
     { query_token: 'api_token',

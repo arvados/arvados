@@ -374,7 +374,7 @@ class ApplicationController < ActionController::Base
         end
       end
     end
-    if @object.update_attributes @updates
+    if @object.update @updates
       show
     else
       self.render_error status: 422
@@ -400,7 +400,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
     @new_resource_attrs ||= {}
     @object = @object.dup
-    @object.update_attributes @new_resource_attrs
+    @object.update @new_resource_attrs
     if not @new_resource_attrs[:name] and @object.respond_to? :name
       if @object.name and @object.name != ''
         @object.name = "Copy of #{@object.name}"
@@ -588,7 +588,7 @@ class ApplicationController < ActionController::Base
   def set_current_request_id
     response.headers['X-Request-Id'] =
       Thread.current[:request_id] =
-      "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+      "req-" + Random.new.rand(2**128).to_s(36)[0..19]
     yield
     Thread.current[:request_id] = nil
   end

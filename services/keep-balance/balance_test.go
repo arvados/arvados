@@ -87,6 +87,8 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 			KeepMount: arvados.KeepMount{
 				UUID:           fmt.Sprintf("zzzzz-mount-%015x", i),
 				StorageClasses: map[string]bool{"default": true},
+				AllowWrite:     true,
+				AllowTrash:     true,
 			},
 			KeepService: srv,
 		}}
@@ -153,15 +155,53 @@ func (bal *balancerSuite) TestSkipReadonly(c *check.C) {
 		}})
 }
 
+func (bal *balancerSuite) TestAllowTrashWhenReadOnly(c *check.C) {
+	srvs := bal.srvList(0, slots{3})
+	srvs[0].mounts[0].KeepMount.AllowWrite = false
+	srvs[0].mounts[0].KeepMount.AllowTrash = true
+	// can't pull to slot 3, so pull to slot 4 instead
+	bal.try(c, tester{
+		desired:    map[string]int{"default": 4},
+		current:    slots{0, 1},
+		shouldPull: slots{2, 4},
+		expectBlockState: &balancedBlockState{
+			needed:  2,
+			pulling: 2,
+		}})
+	// expect to be able to trash slot 3 in future, so pull to
+	// slot 1
+	bal.try(c, tester{
+		desired:    map[string]int{"default": 2},
+		current:    slots{0, 3},
+		shouldPull: slots{1},
+		expectBlockState: &balancedBlockState{
+			needed:  2,
+			pulling: 1,
+		}})
+	// trash excess from slot 3
+	bal.try(c, tester{
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 3},
+		shouldTrash: slots{3},
+		expectBlockState: &balancedBlockState{
+			needed:   2,
+			unneeded: 1,
+		}})
+}
+
 func (bal *balancerSuite) TestMultipleViewsReadOnly(c *check.C) {
-	bal.testMultipleViews(c, true)
+	bal.testMultipleViews(c, false, false)
+}
+
+func (bal *balancerSuite) TestMultipleViewsReadOnlyAllowTrash(c *check.C) {
+	bal.testMultipleViews(c, false, true)
 }
 
 func (bal *balancerSuite) TestMultipleViews(c *check.C) {
-	bal.testMultipleViews(c, false)
+	bal.testMultipleViews(c, true, true)
 }
 
-func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
+func (bal *balancerSuite) testMultipleViews(c *check.C, allowWrite, allowTrash bool) {
 	for i, srv := range bal.srvs {
 		// Add a mount to each service
 		srv.mounts[0].KeepMount.DeviceID = fmt.Sprintf("writable-by-srv-%x", i)
@@ -169,7 +209,8 @@ func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
 			KeepMount: arvados.KeepMount{
 				DeviceID:       bal.srvs[(i+1)%len(bal.srvs)].mounts[0].KeepMount.DeviceID,
 				UUID:           bal.srvs[(i+1)%len(bal.srvs)].mounts[0].KeepMount.UUID,
-				ReadOnly:       readonly,
+				AllowWrite:     allowWrite,
+				AllowTrash:     allowTrash,
 				Replication:    1,
 				StorageClasses: map[string]bool{"default": true},
 			},
@@ -188,11 +229,12 @@ func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
 				desired:     map[string]int{"default": 1},
 				current:     slots{0, i, i},
 				shouldTrash: slots{i}})
-		} else if readonly {
+		} else if !allowTrash {
 			// Timestamps are all different, and the third
 			// replica can't be trashed because it's on a
-			// read-only mount, so the first two replicas
-			// should be trashed.
+			// read-only mount (with
+			// AllowTrashWhenReadOnly=false), so the first
+			// two replicas should be trashed.
 			bal.try(c, tester{
 				desired:     map[string]int{"default": 1},
 				current:     slots{0, i, i},
@@ -374,7 +416,7 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 }
 
 func (bal *balancerSuite) TestCleanupMounts(c *check.C) {
-	bal.srvs[3].mounts[0].KeepMount.ReadOnly = true
+	bal.srvs[3].mounts[0].KeepMount.AllowWrite = false
 	bal.srvs[3].mounts[0].KeepMount.DeviceID = "abcdef"
 	bal.srvs[14].mounts[0].KeepMount.UUID = bal.srvs[3].mounts[0].KeepMount.UUID
 	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
@@ -583,6 +625,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// classes=[special,special2].
 	bal.srvs[9].mounts = []*KeepMount{{
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"special": true},
 			UUID:           "zzzzz-mount-special00000009",
@@ -591,6 +635,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 		KeepService: bal.srvs[9],
 	}, {
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"special": true, "special2": true},
 			UUID:           "zzzzz-mount-special20000009",
@@ -603,6 +649,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 	// classes=[special3], one with classes=[default].
 	bal.srvs[13].mounts = []*KeepMount{{
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"special2": true},
 			UUID:           "zzzzz-mount-special2000000d",
@@ -611,6 +659,8 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 		KeepService: bal.srvs[13],
 	}, {
 		KeepMount: arvados.KeepMount{
+			AllowWrite:     true,
+			AllowTrash:     true,
 			Replication:    1,
 			StorageClasses: map[string]bool{"default": true},
 			UUID:           "zzzzz-mount-00000000000000d",

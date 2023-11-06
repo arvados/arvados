@@ -8,12 +8,15 @@
 {%- set tpldir = curr_tpldir %}
 
 #CRUDE, but functional
+
+{%- if "__DATABASE_INT_IP__" != "" %}
 extra_extra_hosts_entries_etc_hosts_database_host_present:
   host.present:
     - ip: __DATABASE_INT_IP__
     - names:
       - db.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
       - database.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
+{%- endif %}
 
 extra_extra_hosts_entries_etc_hosts_api_host_present:
   host.present:

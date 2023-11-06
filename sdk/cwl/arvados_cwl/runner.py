@@ -828,7 +828,8 @@ class Runner(Process):
                  priority=None, secret_store=None,
                  collection_cache_size=256,
                  collection_cache_is_default=True,
-                 git_info=None):
+                 git_info=None,
+                 reuse_runner=False):
 
         self.loadingContext = loadingContext.copy()
 
@@ -861,6 +862,7 @@ class Runner(Process):
         self.enable_dev = self.loadingContext.enable_dev
         self.git_info = git_info
         self.fast_parser = self.loadingContext.fast_parser
+        self.reuse_runner = reuse_runner
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB
@@ -946,3 +948,42 @@ class Runner(Process):
             self.arvrunner.output_callback({}, "permanentFail")
         else:
             self.arvrunner.output_callback(outputs, processStatus)
+
+
+def print_keep_deps_visitor(api, runtimeContext, references, doc_loader, tool):
+    def collect_locators(obj):
+        loc = obj.get("location", "")
+
+        g = arvados.util.keepuri_pattern.match(loc)
+        if g:
+            references.add(g[1])
+
+        if obj.get("class") == "http://arvados.org/cwl#WorkflowRunnerResources" and "acrContainerImage" in obj:
+            references.add(obj["acrContainerImage"])
+
+        if obj.get("class") == "DockerRequirement":
+            references.add(arvados_cwl.arvdocker.arv_docker_get_image(api, obj, False, runtimeContext))
+
+    sc_result = scandeps(tool["id"], tool,
+                         set(),
+                         set(("location", "id")),
+                         None, urljoin=doc_loader.fetcher.urljoin,
+                         nestdirs=False)
+
+    visit_class(sc_result, ("File", "Directory"), collect_locators)
+    visit_class(tool, ("DockerRequirement", "http://arvados.org/cwl#WorkflowRunnerResources"), collect_locators)
+
+
+def print_keep_deps(arvRunner, runtimeContext, merged_map, tool):
+    references = set()
+
+    tool.visit(partial(print_keep_deps_visitor, arvRunner.api, runtimeContext, references, tool.doc_loader))
+
+    for mm in merged_map:
+        for k, v in merged_map[mm].resolved.items():
+            g = arvados.util.keepuri_pattern.match(v)
+            if g:
+                references.add(g[1])
+
+    json.dump(sorted(references), arvRunner.stdout)
+    print(file=arvRunner.stdout)

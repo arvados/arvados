@@ -131,7 +131,7 @@ See "arvados-cwl-runner options":{{site.baseurl}}/user/cwl/cwl-run-options.html
 
 h2(#registering). Registering a workflow to use in Workbench
 
-Use @--create-workflow@ to register a CWL workflow with Arvados.  Use @--project-uuid@ to upload the workflow to a specific project, along with its dependencies.  You can share the workflow with other Arvados users by sharing that project.  You can run the workflow by clicking the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button on the Workbench Dashboard, and on the command line by UUID.
+Use @--create-workflow@ to register a CWL workflow with Arvados.  Use @--project-uuid@ to upload the workflow to a specific project, along with its dependencies.  You can share the workflow with other Arvados users by sharing that project.  You can run the workflow by clicking the <span class="btn btn-sm btn-primary">+ NEW</span> → <i class="fa fa-fw fa-gear"></i> *Run a process* menu items on the Workbench, and on the command line by UUID.
 
 <notextile>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --project-uuid zzzzz-j7d0g-p32bi47ogkjke11 --create-workflow bwa-mem.cwl</span>

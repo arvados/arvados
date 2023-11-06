@@ -314,7 +314,6 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 
 // Status returns a VolumeStatus struct describing the volume's
 // current state, or nil if an error occurs.
-//
 func (v *UnixVolume) Status() *VolumeStatus {
 	fi, err := v.os.Stat(v.Root)
 	if err != nil {
@@ -355,14 +354,13 @@ var blockFileRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
 //
 // Each block is given in the format
 //
-//     locator+size modification-time {newline}
+//	locator+size modification-time {newline}
 //
 // e.g.:
 //
-//     e4df392f86be161ca6ed3773a962b8f3+67108864 1388894303
-//     e4d41e6fd68460e0e3fc18cc746959d2+67108864 1377796043
-//     e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
-//
+//	e4df392f86be161ca6ed3773a962b8f3+67108864 1388894303
+//	e4d41e6fd68460e0e3fc18cc746959d2+67108864 1377796043
+//	e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
 func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 	rootdir, err := v.os.Open(v.Root)
 	if err != nil {
@@ -444,8 +442,7 @@ func (v *UnixVolume) Trash(loc string) error {
 	// be re-written), or (b) Touch() will update the file's timestamp and
 	// Trash() will read the correct up-to-date timestamp and choose not to
 	// trash the file.
-
-	if v.volume.ReadOnly || !v.cluster.Collections.BlobTrash {
+	if v.volume.ReadOnly && !v.volume.AllowTrashWhenReadOnly {
 		return MethodDisabledError
 	}
 	if err := v.lock(context.TODO()); err != nil {
@@ -532,7 +529,6 @@ func (v *UnixVolume) blockPath(loc string) string {
 
 // IsFull returns true if the free space on the volume is less than
 // MinFreeKilobytes.
-//
 func (v *UnixVolume) IsFull() (isFull bool) {
 	fullSymlink := v.Root + "/full"
 
@@ -563,7 +559,6 @@ func (v *UnixVolume) IsFull() (isFull bool) {
 
 // FreeDiskSpace returns the number of unused 1k blocks available on
 // the volume.
-//
 func (v *UnixVolume) FreeDiskSpace() (free uint64, err error) {
 	var fs syscall.Statfs_t
 	err = syscall.Statfs(v.Root, &fs)
@@ -651,10 +646,6 @@ var unixTrashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
 // EmptyTrash walks hierarchy looking for {hash}.trash.*
 // and deletes those with deadline < now.
 func (v *UnixVolume) EmptyTrash() {
-	if v.cluster.Collections.BlobDeleteConcurrency < 1 {
-		return
-	}
-
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int64
 

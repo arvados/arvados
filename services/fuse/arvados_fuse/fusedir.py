@@ -26,7 +26,7 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 # Match any character which FUSE or Linux cannot accommodate as part
 # of a filename. (If present in a collection filename, they will
 # appear as underscores in the fuse mount.)
-_disallowed_filename_characters = re.compile('[\x00/]')
+_disallowed_filename_characters = re.compile(r'[\x00/]')
 
 
 class Directory(FreshBase):

@@ -30,17 +30,22 @@ class Arvados::V1::UsersController < ApplicationController
       end
       if needupdate.length > 0
         begin
-          u.update_attributes!(needupdate)
+          u.update!(needupdate)
         rescue ActiveRecord::RecordInvalid
           loginCluster = Rails.configuration.Login.LoginCluster
           if u.uuid[0..4] == loginCluster && !needupdate[:username].nil?
             local_user = User.find_by_username(needupdate[:username])
-            # A cached user record from the LoginCluster is stale, reset its username
-            # and retry the update operation.
-            if local_user.andand.uuid[0..4] == loginCluster && local_user.uuid != u.uuid
-              new_username = "#{needupdate[:username]}conflict#{rand(99999999)}"
+            # The username of this record conflicts with an existing,
+            # different user record.  This can happen because the
+            # username changed upstream on the login cluster, or
+            # because we're federated with another cluster with a user
+            # by the same username.  The login cluster is the source
+            # of truth, so change the username on the conflicting
+            # record and retry the update operation.
+            if local_user.uuid != u.uuid
+              new_username = "#{needupdate[:username]}#{rand(99999999)}"
               Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
-              local_user.update_attributes!({username: new_username})
+              local_user.update!({username: new_username})
               retry
             end
           end
@@ -103,7 +108,7 @@ class Arvados::V1::UsersController < ApplicationController
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
         if todo_uuids.empty?
-          @object.update_attributes is_active: true
+          @object.update is_active: true
           logger.info "User #{@object.uuid} activated"
         else
           logger.warn "User #{@object.uuid} called users.activate " +

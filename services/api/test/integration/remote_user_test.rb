@@ -74,10 +74,15 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         end
         res.status = @stub_token_status
         if res.status == 200
-          res.body = {
+          body = {
             uuid: api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
+            owner_uuid: "#{clusterid}-tpzed-00000000000000z",
             scopes: @stub_token_scopes,
-          }.to_json
+          }
+          if @stub_content.is_a?(Hash) and owner_uuid = @stub_content[:uuid]
+            body[:owner_uuid] = owner_uuid
+          end
+          res.body = body.to_json
         end
       end
       Thread.new do
@@ -109,6 +114,15 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     end
   end
 
+  def uncache_token(src)
+    if match = src.match(/\b(?:[a-z0-9]{5}-){2}[a-z0-9]{15}\b/)
+      tokens = ApiClientAuthorization.where(uuid: match[0])
+    else
+      tokens = ApiClientAuthorization.where("uuid like ?", "#{src}-%")
+    end
+    tokens.update_all(expires_at: "1995-05-15T01:02:03Z")
+  end
+
   test 'authenticate with remote token that has limited scope' do
     get '/arvados/v1/collections',
         params: {format: 'json'},
@@ -123,15 +137,20 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         headers: auth(remote: 'zbbbb')
     assert_response :success
 
-    # simulate cache expiry
-    ApiClientAuthorization.where('uuid like ?', 'zbbbb-%').
-      update_all(expires_at: db_current_time - 1.minute)
-
+    uncache_token('zbbbb')
     # re-authorize after cache expires
     get '/arvados/v1/collections',
         params: {format: 'json'},
         headers: auth(remote: 'zbbbb')
     assert_response 403
+  end
+
+  test "authenticate with remote token with limited initial scope" do
+    @stub_token_scopes = ["GET /arvados/v1/users/"]
+    get "/arvados/v1/users/#{@stub_content[:uuid]}",
+        params: {format: "json"},
+        headers: auth(remote: "zbbbb")
+    assert_response :success
   end
 
   test 'authenticate with remote token' do
@@ -146,7 +165,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'barney', json_response['username']
 
     # revoke original token
-    @stub_status = 401
+    @stub_token_status = 401
 
     # re-authorize before cache expires
     get '/arvados/v1/users/current',
@@ -154,10 +173,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
 
-    # simulate cache expiry
-    ApiClientAuthorization.where('uuid like ?', 'zbbbb-%').
-      update_all(expires_at: db_current_time - 1.minute)
-
+    uncache_token('zbbbb')
     # re-authorize after cache expires
     get '/arvados/v1/users/current',
       params: {format: 'json'},
@@ -172,7 +188,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       update_all(user_id: users(:active).id)
 
     # revive original token and re-authorize
-    @stub_status = 200
+    @stub_token_status = 200
     @stub_content[:username] = 'blarney'
     @stub_content[:email] = 'blarney@example.com'
     get '/arvados/v1/users/current',
@@ -195,11 +211,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_content[:is_active] = false
     @stub_content[:is_invited] = false
 
-    # simulate cache expiry
-    ApiClientAuthorization.where(
-      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
-      update_all(expires_at: db_current_time - 1.minute)
-
+    uncache_token('zbbbb')
     # re-authorize after cache expires
     get '/arvados/v1/users/current',
       params: {format: 'json'},
@@ -445,11 +457,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
 
-    # Delete cached value.  User should be inactive now.
-    act_as_system_user do
-      ApiClientAuthorization.delete_all
-    end
-
+    uncache_token('zbbbb')
+    # User should be inactive now.
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
@@ -571,5 +580,40 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'zzzzz-tpzed-anonymouspublic', json_response['uuid']
   end
 
+  [401, 403, 422, 500, 502, 503].each do |status|
+    test "propagate #{status} response from getting remote token" do
+      @stub_token_status = status
+      get "/arvados/v1/users/#{@stub_content[:uuid]}",
+          params: {format: "json"},
+          headers: auth(remote: "zbbbb")
+      assert_response status
+    end
 
+    test "propagate #{status} response from getting uncached user" do
+      @stub_status = status
+      get "/arvados/v1/users/#{@stub_content[:uuid]}",
+          params: {format: "json"},
+          headers: auth(remote: "zbbbb")
+      assert_response status
+    end
+
+    test "use cached user after getting #{status} response" do
+      url_path = "/arvados/v1/users/#{@stub_content[:uuid]}"
+      params = {format: "json"}
+      headers = auth(remote: "zbbbb")
+
+      get url_path, params: params, headers: headers
+      assert_response :success
+
+      uncache_token(headers["HTTP_AUTHORIZATION"])
+      expect_email = @stub_content[:email]
+      @stub_content[:email] = "new#{expect_email}"
+      @stub_status = status
+      get url_path, params: params, headers: headers
+      assert_response :success
+      user = User.find_by_uuid(@stub_content[:uuid])
+      assert_not_nil user
+      assert_equal expect_email, user.email
+    end
+  end
 end

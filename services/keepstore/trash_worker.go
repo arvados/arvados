@@ -12,12 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RunTrashWorker is used by Keepstore to initiate trash worker channel goroutine.
-//	The channel will process trash list.
-//		For each (next) trash request:
-//      Delete the block indicated by the trash request Locator
-//		Repeat
-//
+// RunTrashWorker processes the trash request queue.
 func RunTrashWorker(volmgr *RRVolumeManager, logger logrus.FieldLogger, cluster *arvados.Cluster, trashq *WorkQueue) {
 	for item := range trashq.NextItem {
 		trashRequest := item.(TrashRequest)
@@ -41,10 +36,12 @@ func TrashItem(volmgr *RRVolumeManager, logger logrus.FieldLogger, cluster *arva
 
 	var volumes []*VolumeMount
 	if uuid := trashRequest.MountUUID; uuid == "" {
-		volumes = volmgr.AllWritable()
-	} else if mnt := volmgr.Lookup(uuid, true); mnt == nil {
+		volumes = volmgr.Mounts()
+	} else if mnt := volmgr.Lookup(uuid, false); mnt == nil {
 		logger.Warnf("trash request for nonexistent mount: %v", trashRequest)
 		return
+	} else if !mnt.KeepMount.AllowTrash {
+		logger.Warnf("trash request for mount with ReadOnly=true, AllowTrashWhenReadOnly=false: %v", trashRequest)
 	} else {
 		volumes = []*VolumeMount{mnt}
 	}

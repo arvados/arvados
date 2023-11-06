@@ -24,7 +24,6 @@ import (
 	"path"
 	"regexp"
 	"runtime/pprof"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -62,6 +61,20 @@ type TestSuite struct {
 	keepmountTmp             []string
 	testDispatcherKeepClient KeepTestClient
 	testContainerKeepClient  KeepTestClient
+	debian12MemoryCurrent    int64
+	debian12SwapCurrent      int64
+}
+
+func (s *TestSuite) SetUpSuite(c *C) {
+	buf, err := os.ReadFile("../crunchstat/testdata/debian12/sys/fs/cgroup/user.slice/user-1000.slice/session-4.scope/memory.current")
+	c.Assert(err, IsNil)
+	_, err = fmt.Sscanf(string(buf), "%d", &s.debian12MemoryCurrent)
+	c.Assert(err, IsNil)
+
+	buf, err = os.ReadFile("../crunchstat/testdata/debian12/sys/fs/cgroup/user.slice/user-1000.slice/session-4.scope/memory.swap.current")
+	c.Assert(err, IsNil)
+	_, err = fmt.Sscanf(string(buf), "%d", &s.debian12SwapCurrent)
+	c.Assert(err, IsNil)
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
@@ -150,9 +163,9 @@ func (e *stubExecutor) Start() error {
 	go func() { e.exit <- e.runFunc() }()
 	return e.startErr
 }
-func (e *stubExecutor) CgroupID() string { return "cgroupid" }
-func (e *stubExecutor) Stop() error      { e.stopped = true; go func() { e.exit <- -1 }(); return e.stopErr }
-func (e *stubExecutor) Close()           { e.closed = true }
+func (e *stubExecutor) Pid() int    { return 1115883 } // matches pid in ../crunchstat/testdata/debian12/proc/
+func (e *stubExecutor) Stop() error { e.stopped = true; go func() { e.exit <- -1 }(); return e.stopErr }
+func (e *stubExecutor) Close()      { e.closed = true }
 func (e *stubExecutor) Wait(context.Context) (int, error) {
 	return <-e.exit, e.waitErr
 }
@@ -966,6 +979,7 @@ func (s *TestSuite) TestContainerWaitFails(c *C) {
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
+	s.runner.crunchstatFakeFS = os.DirFS("../crunchstat/testdata/debian12")
 	s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "`+arvadostest.DockerImage112PDH+`",
@@ -984,18 +998,11 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	// We didn't actually start a container, so crunchstat didn't
-	// find accounting files and therefore didn't log any stats.
-	// It should have logged a "can't find accounting files"
-	// message after one poll interval, though, so we can confirm
-	// it's alive:
 	c.Assert(s.api.Logs["crunchstat"], NotNil)
-	c.Check(s.api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files have not appeared after 100ms.*`)
+	c.Check(s.api.Logs["crunchstat"].String(), Matches, `(?ms).*mem \d+ swap \d+ pgmajfault \d+ rss.*`)
 
-	// The "files never appeared" log assures us that we called
-	// (*crunchstat.Reporter)Stop(), and that we set it up with
-	// the correct container ID "abcde":
-	c.Check(s.api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files never appeared for cgroupid\n`)
+	// Check that we called (*crunchstat.Reporter)Stop().
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Maximum crunch-run memory rss usage was \d+ bytes\n.*`)
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
@@ -1055,8 +1062,8 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Using container runtime: stub.*`)
 }
 
-func (s *TestSuite) testLogRSSThresholds(c *C, ram int, expected []int, notExpected int) {
-	s.runner.cgroupRoot = "testdata/fakestat"
+func (s *TestSuite) testLogRSSThresholds(c *C, ram int64, expected []int, notExpected int) {
+	s.runner.crunchstatFakeFS = os.DirFS("../crunchstat/testdata/debian12")
 	s.fullRunHelper(c, `{
 		"command": ["true"],
 		"container_image": "`+arvadostest.DockerImage112PDH+`",
@@ -1065,35 +1072,36 @@ func (s *TestSuite) testLogRSSThresholds(c *C, ram int, expected []int, notExpec
 		"mounts": {"/tmp": {"kind": "tmp"} },
 		"output_path": "/tmp",
 		"priority": 1,
-		"runtime_constraints": {"ram": `+strconv.Itoa(ram)+`},
+		"runtime_constraints": {"ram": `+fmt.Sprintf("%d", ram)+`},
 		"state": "Locked"
 	}`, nil, func() int { return 0 })
+	c.Logf("=== crunchstat logs\n%s\n", s.api.Logs["crunchstat"].String())
 	logs := s.api.Logs["crunch-run"].String()
-	pattern := logLineStart + `Container using over %d%% of memory \(rss 734003200/%d bytes\)`
+	pattern := logLineStart + `Container using over %d%% of memory \(rss %d/%d bytes\)`
 	var threshold int
 	for _, threshold = range expected {
-		c.Check(logs, Matches, fmt.Sprintf(pattern, threshold, ram))
+		c.Check(logs, Matches, fmt.Sprintf(pattern, threshold, s.debian12MemoryCurrent, ram))
 	}
 	if notExpected > threshold {
-		c.Check(logs, Not(Matches), fmt.Sprintf(pattern, notExpected, ram))
+		c.Check(logs, Not(Matches), fmt.Sprintf(pattern, notExpected, s.debian12MemoryCurrent, ram))
 	}
 }
 
 func (s *TestSuite) TestLogNoRSSThresholds(c *C) {
-	s.testLogRSSThresholds(c, 7340032000, []int{}, 90)
+	s.testLogRSSThresholds(c, s.debian12MemoryCurrent*10, []int{}, 90)
 }
 
 func (s *TestSuite) TestLogSomeRSSThresholds(c *C) {
-	onePercentRSS := 7340032
+	onePercentRSS := s.debian12MemoryCurrent / 100
 	s.testLogRSSThresholds(c, 102*onePercentRSS, []int{90, 95}, 99)
 }
 
 func (s *TestSuite) TestLogAllRSSThresholds(c *C) {
-	s.testLogRSSThresholds(c, 734003299, []int{90, 95, 99}, 0)
+	s.testLogRSSThresholds(c, s.debian12MemoryCurrent, []int{90, 95, 99}, 0)
 }
 
 func (s *TestSuite) TestLogMaximaAfterRun(c *C) {
-	s.runner.cgroupRoot = "testdata/fakestat"
+	s.runner.crunchstatFakeFS = os.DirFS("../crunchstat/testdata/debian12")
 	s.runner.parentTemp = c.MkDir()
 	s.fullRunHelper(c, `{
         "command": ["true"],
@@ -1103,16 +1111,15 @@ func (s *TestSuite) TestLogMaximaAfterRun(c *C) {
         "mounts": {"/tmp": {"kind": "tmp"} },
         "output_path": "/tmp",
         "priority": 1,
-        "runtime_constraints": {"ram": 7340032000},
+        "runtime_constraints": {"ram": `+fmt.Sprintf("%d", s.debian12MemoryCurrent*10)+`},
         "state": "Locked"
     }`, nil, func() int { return 0 })
 	logs := s.api.Logs["crunch-run"].String()
 	for _, expected := range []string{
 		`Maximum disk usage was \d+%, \d+/\d+ bytes`,
-		`Maximum container memory cache usage was 73400320 bytes`,
-		`Maximum container memory swap usage was 320 bytes`,
-		`Maximum container memory pgmajfault usage was 20 faults`,
-		`Maximum container memory rss usage was 10%, 734003200/7340032000 bytes`,
+		fmt.Sprintf(`Maximum container memory swap usage was %d bytes`, s.debian12SwapCurrent),
+		`Maximum container memory pgmajfault usage was \d+ faults`,
+		fmt.Sprintf(`Maximum container memory rss usage was 10%%, %d/%d bytes`, s.debian12MemoryCurrent, s.debian12MemoryCurrent*10),
 		`Maximum crunch-run memory rss usage was \d+ bytes`,
 	} {
 		c.Check(logs, Matches, logLineStart+expected)
@@ -1406,11 +1413,11 @@ func (am *ArvMountCmdLine) ArvMountTest(c []string, token string) (*exec.Cmd, er
 	return nil, nil
 }
 
-func stubCert(temp string) string {
+func stubCert(c *C, temp string) string {
 	path := temp + "/ca-certificates.crt"
-	crt, _ := os.Create(path)
-	crt.Close()
-	arvadosclient.CertFiles = []string{path}
+	err := os.WriteFile(path, []byte{}, 0666)
+	c.Assert(err, IsNil)
+	os.Setenv("SSL_CERT_FILE", path)
 	return path
 }
 
@@ -1425,7 +1432,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	realTemp := c.MkDir()
 	certTemp := c.MkDir()
-	stubCertPath := stubCert(certTemp)
+	stubCertPath := stubCert(c, certTemp)
 	cr.parentTemp = realTemp
 
 	i := 0

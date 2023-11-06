@@ -6,19 +6,19 @@ new_pipeline:
   state: New
   uuid: zzzzz-d1hrv-f4gneyn6br1xize
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
 
 new_pipeline_in_subproject:
   state: New
   uuid: zzzzz-d1hrv-subprojpipeline
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
 
 has_component_with_no_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-1xfj6xkicf2muk2
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 10.minute.ago.to_s(:db) %>
+  created_at: <%= 10.minute.ago.to_fs(:db) %>
   components:
    foo:
     script: foo
@@ -29,7 +29,7 @@ has_component_with_empty_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-jq16l10gcsnyumo
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
   components:
    foo:
     script: foo
@@ -46,9 +46,9 @@ has_component_with_completed_jobs:
   state: Complete
   uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 11.minute.ago.to_s(:db) %>
-  started_at: <%= 10.minute.ago.to_s(:db) %>
-  finished_at: <%= 9.minute.ago.to_s(:db) %>
+  created_at: <%= 11.minute.ago.to_fs(:db) %>
+  started_at: <%= 10.minute.ago.to_fs(:db) %>
+  finished_at: <%= 9.minute.ago.to_fs(:db) %>
   components:
    foo:
     script: foo
@@ -57,9 +57,9 @@ has_component_with_completed_jobs:
     job:
       uuid: zzzzz-8i9sb-rft1xdewxkwgxnz
       script_version: main
-      created_at: <%= 10.minute.ago.to_s(:db) %>
-      started_at: <%= 10.minute.ago.to_s(:db) %>
-      finished_at: <%= 9.minute.ago.to_s(:db) %>
+      created_at: <%= 10.minute.ago.to_fs(:db) %>
+      started_at: <%= 10.minute.ago.to_fs(:db) %>
+      finished_at: <%= 9.minute.ago.to_fs(:db) %>
       state: Complete
       tasks_summary:
         failed: 0
@@ -73,8 +73,8 @@ has_component_with_completed_jobs:
     job:
       uuid: zzzzz-8i9sb-r2dtbzr6bfread7
       script_version: main
-      created_at: <%= 9.minute.ago.to_s(:db) %>
-      started_at: <%= 9.minute.ago.to_s(:db) %>
+      created_at: <%= 9.minute.ago.to_fs(:db) %>
+      started_at: <%= 9.minute.ago.to_fs(:db) %>
       state: Running
       tasks_summary:
         failed: 0
@@ -88,7 +88,7 @@ has_component_with_completed_jobs:
     job:
       uuid: zzzzz-8i9sb-c7408rni11o7r6s
       script_version: main
-      created_at: <%= 9.minute.ago.to_s(:db) %>
+      created_at: <%= 9.minute.ago.to_fs(:db) %>
       state: Queued
       tasks_summary: {}
 
@@ -97,7 +97,7 @@ has_job:
   state: Ready
   uuid: zzzzz-d1hrv-1yfj6xkidf2muk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 2.9.minute.ago.to_s(:db) %>
+  created_at: <%= 2.9.minute.ago.to_fs(:db) %>
   components:
    foo:
     script: foo
@@ -112,7 +112,7 @@ components_is_jobspec:
   # Helps test that clients cope with funny-shaped components.
   # For an example, see #3321.
   uuid: zzzzz-d1hrv-1yfj61234abcdk4
-  created_at: <%= 4.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -132,7 +132,7 @@ pipeline_with_tagged_collection_input:
   state: Ready
   uuid: zzzzz-d1hrv-1yfj61234abcdk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.2.minute.ago.to_s(:db) %>
+  created_at: <%= 3.2.minute.ago.to_fs(:db) %>
   components:
     part-one:
       script_parameters:
@@ -145,7 +145,7 @@ pipeline_to_merge_params:
   uuid: zzzzz-d1hrv-1yfj6dcba4321k3
   pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.3.minute.ago.to_fs(:db) %>
   components:
     part-one:
       script_parameters:
@@ -260,7 +260,7 @@ pipeline_in_publicly_accessible_project:
   name: Pipeline in publicly accessible project
   pipeline_template_uuid: zzzzz-p5p6p-tmpltpublicproj
   state: Complete
-  created_at: <%= 30.minute.ago.to_s(:db) %>
+  created_at: <%= 30.minute.ago.to_fs(:db) %>
   components:
     foo:
       script: foo
@@ -363,8 +363,8 @@ pipeline_in_running_state:
   name: running_with_job
   uuid: zzzzz-d1hrv-runningpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 2.8.minute.ago.to_s(:db) %>
-  started_at: <%= 2.8.minute.ago.to_s(:db) %>
+  created_at: <%= 2.8.minute.ago.to_fs(:db) %>
+  started_at: <%= 2.8.minute.ago.to_fs(:db) %>
   state: RunningOnServer
   components:
    foo:
@@ -379,7 +379,7 @@ running_pipeline_with_complete_job:
   uuid: zzzzz-d1hrv-partdonepipelin
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: RunningOnServer
-  created_at: <%= 15.minute.ago.to_s(:db) %>
+  created_at: <%= 15.minute.ago.to_fs(:db) %>
   components:
    previous:
     job:
@@ -393,9 +393,9 @@ complete_pipeline_with_two_jobs:
   uuid: zzzzz-d1hrv-twodonepipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Complete
-  created_at: <%= 2.5.minute.ago.to_s(:db) %>
-  started_at: <%= 2.minute.ago.to_s(:db) %>
-  finished_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.5.minute.ago.to_fs(:db) %>
+  started_at: <%= 2.minute.ago.to_fs(:db) %>
+  finished_at: <%= 1.minute.ago.to_fs(:db) %>
   components:
    ancient:
     job:
@@ -409,7 +409,7 @@ complete_pipeline_with_two_jobs:
 failed_pipeline_with_two_jobs:
   uuid: zzzzz-d1hrv-twofailpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 55.minute.ago.to_s(:db) %>
+  created_at: <%= 55.minute.ago.to_fs(:db) %>
   state: Failed
   components:
    ancient:
@@ -426,8 +426,8 @@ job_child_pipeline_with_components_at_level_2:
   state: RunningOnServer
   uuid: zzzzz-d1hrv-picomponentsl02
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 12.hour.ago.to_s(:db) %>
-  started_at: <%= 12.hour.ago.to_s(:db) %>
+  created_at: <%= 12.hour.ago.to_fs(:db) %>
+  started_at: <%= 12.hour.ago.to_fs(:db) %>
   components:
    foo:
     script: foo
@@ -436,8 +436,8 @@ job_child_pipeline_with_components_at_level_2:
     job:
       uuid: zzzzz-8i9sb-job1atlevel3noc
       script_version: main
-      created_at: <%= 12.hour.ago.to_s(:db) %>
-      started_at: <%= 12.hour.ago.to_s(:db) %>
+      created_at: <%= 12.hour.ago.to_fs(:db) %>
+      started_at: <%= 12.hour.ago.to_fs(:db) %>
       state: Running
       tasks_summary:
         failed: 0
@@ -451,8 +451,8 @@ job_child_pipeline_with_components_at_level_2:
     job:
       uuid: zzzzz-8i9sb-job2atlevel3noc
       script_version: main
-      created_at: <%= 12.hour.ago.to_s(:db) %>
-      started_at: <%= 12.hour.ago.to_s(:db) %>
+      created_at: <%= 12.hour.ago.to_fs(:db) %>
+      started_at: <%= 12.hour.ago.to_fs(:db) %>
       state: Running
       tasks_summary:
         failed: 0
@@ -470,9 +470,9 @@ pipeline_<%=i%>_of_10:
   name: pipeline_<%= i %>
   uuid: zzzzz-d1hrv-10pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000010pipelines
-  created_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
-  started_at: <%= (2*(i-1)).hour.ago.to_s(:db) %>
-  finished_at: <%= (i-1).minute.ago.to_s(:db) %>
+  created_at: <%= (2*(i-1)).hour.ago.to_fs(:db) %>
+  started_at: <%= (2*(i-1)).hour.ago.to_fs(:db) %>
+  finished_at: <%= (i-1).minute.ago.to_fs(:db) %>
   state: Failed
   components:
     foo:
@@ -494,7 +494,7 @@ pipeline_<%=i%>_of_2_pipelines_and_60_crs:
   state: New
   uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-nnncrspipelines
-  created_at: <%= i.minute.ago.to_s(:db) %>
+  created_at: <%= i.minute.ago.to_fs(:db) %>
   components:
     foo:
       script: foo
@@ -513,9 +513,9 @@ pipeline_<%=i%>_of_25:
   state: Failed
   uuid: zzzzz-d1hrv-25pipelines0<%= i.to_s.rjust(3, '0') %>
   owner_uuid: zzzzz-j7d0g-000025pipelines
-  created_at: <%= i.hour.ago.to_s(:db) %>
-  started_at: <%= i.hour.ago.to_s(:db) %>
-  finished_at: <%= i.minute.ago.to_s(:db) %>
+  created_at: <%= i.hour.ago.to_fs(:db) %>
+  started_at: <%= i.hour.ago.to_fs(:db) %>
+  finished_at: <%= i.minute.ago.to_fs(:db) %>
   components:
     foo:
       script: foo

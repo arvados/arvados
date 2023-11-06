@@ -24,7 +24,9 @@ package ec2
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -32,10 +34,14 @@ import (
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/config"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -45,6 +51,34 @@ var live = flag.String("live-ec2-cfg", "", "Test with real EC2 API, provide conf
 // Gocheck boilerplate
 func Test(t *testing.T) {
 	check.TestingT(t)
+}
+
+type sliceOrStringSuite struct{}
+
+var _ = check.Suite(&sliceOrStringSuite{})
+
+func (s *sliceOrStringSuite) TestUnmarshal(c *check.C) {
+	var conf ec2InstanceSetConfig
+	for _, trial := range []struct {
+		input  string
+		output sliceOrSingleString
+	}{
+		{``, nil},
+		{`""`, nil},
+		{`[]`, nil},
+		{`"foo"`, sliceOrSingleString{"foo"}},
+		{`["foo"]`, sliceOrSingleString{"foo"}},
+		{`[foo]`, sliceOrSingleString{"foo"}},
+		{`["foo", "bar"]`, sliceOrSingleString{"foo", "bar"}},
+		{`[foo-bar, baz]`, sliceOrSingleString{"foo-bar", "baz"}},
+	} {
+		c.Logf("trial: %+v", trial)
+		err := yaml.Unmarshal([]byte("SubnetID: "+trial.input+"\n"), &conf)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		c.Check(conf.SubnetID, check.DeepEquals, trial.output)
+	}
 }
 
 type EC2InstanceSetSuite struct{}
@@ -61,6 +95,10 @@ type ec2stub struct {
 	reftime               time.Time
 	importKeyPairCalls    []*ec2.ImportKeyPairInput
 	describeKeyPairsCalls []*ec2.DescribeKeyPairsInput
+	runInstancesCalls     []*ec2.RunInstancesInput
+	// {subnetID => error}: RunInstances returns error if subnetID
+	// matches.
+	subnetErrorOnRunInstances map[string]error
 }
 
 func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error) {
@@ -74,6 +112,13 @@ func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.Descr
 }
 
 func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
+	e.runInstancesCalls = append(e.runInstancesCalls, input)
+	if len(input.NetworkInterfaces) > 0 && input.NetworkInterfaces[0].SubnetId != nil {
+		err := e.subnetErrorOnRunInstances[*input.NetworkInterfaces[0].SubnetId]
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &ec2.Reservation{Instances: []*ec2.Instance{{
 		InstanceId:   aws.String("i-123"),
 		InstanceType: aws.String("t2.micro"),
@@ -154,7 +199,21 @@ func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.T
 	return nil, nil
 }
 
-func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster) {
+type ec2stubError struct {
+	code    string
+	message string
+}
+
+func (err *ec2stubError) Code() string    { return err.code }
+func (err *ec2stubError) Message() string { return err.message }
+func (err *ec2stubError) Error() string   { return fmt.Sprintf("%s: %s", err.code, err.message) }
+func (err *ec2stubError) OrigErr() error  { return errors.New("stub OrigErr") }
+
+// Ensure ec2stubError satisfies the aws.Error interface
+var _ = awserr.Error(&ec2stubError{})
+
+func GetInstanceSet(c *check.C, conf string) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster, *prometheus.Registry) {
+	reg := prometheus.NewRegistry()
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": {
@@ -190,21 +249,19 @@ func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster
 		err := config.LoadFile(&exampleCfg, *live)
 		c.Assert(err, check.IsNil)
 
-		ap, err := newEC2InstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger())
+		is, err := newEC2InstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger(), reg)
 		c.Assert(err, check.IsNil)
-		return ap.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
+		return is.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, reg
+	} else {
+		is, err := newEC2InstanceSet(json.RawMessage(conf), "test123", nil, ctxlog.TestLogger(c), reg)
+		c.Assert(err, check.IsNil)
+		is.(*ec2InstanceSet).client = &ec2stub{c: c, reftime: time.Now().UTC()}
+		return is.(*ec2InstanceSet), cloud.ImageID("blob"), cluster, reg
 	}
-	ap := ec2InstanceSet{
-		instanceSetID: "test123",
-		logger:        logrus.StandardLogger(),
-		client:        &ec2stub{c: c, reftime: time.Now().UTC()},
-		keys:          make(map[string]string),
-	}
-	return &ap, cloud.ImageID("blob"), cluster
 }
 
 func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
-	ap, img, cluster := GetInstanceSet(c)
+	ap, img, cluster, _ := GetInstanceSet(c, "{}")
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny"],
@@ -224,7 +281,7 @@ func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
-	ap, img, cluster := GetInstanceSet(c)
+	ap, img, cluster, _ := GetInstanceSet(c, "{}")
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-with-extra-scratch"],
 		img, map[string]string{
 			"TestTagName": "test tag value",
@@ -245,7 +302,7 @@ func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
-	ap, img, cluster := GetInstanceSet(c)
+	ap, img, cluster, _ := GetInstanceSet(c, "{}")
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"],
@@ -261,8 +318,89 @@ func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
 
 }
 
+func (*EC2InstanceSetSuite) TestCreateFailoverSecondSubnet(c *check.C) {
+	if *live != "" {
+		c.Skip("not applicable in live mode")
+		return
+	}
+
+	ap, img, cluster, reg := GetInstanceSet(c, `{"SubnetID":["subnet-full","subnet-good"]}`)
+	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
+		"subnet-full": &ec2stubError{
+			code:    "InsufficientFreeAddressesInSubnet",
+			message: "subnet is full",
+		},
+	}
+	inst, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.IsNil)
+	c.Check(inst, check.NotNil)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 2)
+	metrics := arvadostest.GatherMetricsAsString(reg)
+	c.Check(metrics, check.Matches, `(?ms).*`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="0"} 1\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="1"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-good",success="0"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-good",success="1"} 1\n`+
+		`.*`)
+
+	// Next RunInstances call should try the working subnet first
+	inst, err = ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.IsNil)
+	c.Check(inst, check.NotNil)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 3)
+	metrics = arvadostest.GatherMetricsAsString(reg)
+	c.Check(metrics, check.Matches, `(?ms).*`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="0"} 1\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="1"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-good",success="0"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-good",success="1"} 2\n`+
+		`.*`)
+}
+
+func (*EC2InstanceSetSuite) TestCreateAllSubnetsFailing(c *check.C) {
+	if *live != "" {
+		c.Skip("not applicable in live mode")
+		return
+	}
+
+	ap, img, cluster, reg := GetInstanceSet(c, `{"SubnetID":["subnet-full","subnet-broken"]}`)
+	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
+		"subnet-full": &ec2stubError{
+			code:    "InsufficientFreeAddressesInSubnet",
+			message: "subnet is full",
+		},
+		"subnet-broken": &ec2stubError{
+			code:    "InvalidSubnetId.NotFound",
+			message: "bogus subnet id",
+		},
+	}
+	_, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.NotNil)
+	c.Check(err, check.ErrorMatches, `.*InvalidSubnetId\.NotFound.*`)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 2)
+	metrics := arvadostest.GatherMetricsAsString(reg)
+	c.Check(metrics, check.Matches, `(?ms).*`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-broken",success="0"} 1\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-broken",success="1"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="0"} 1\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="1"} 0\n`+
+		`.*`)
+
+	_, err = ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.NotNil)
+	c.Check(err, check.ErrorMatches, `.*InsufficientFreeAddressesInSubnet.*`)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 4)
+	metrics = arvadostest.GatherMetricsAsString(reg)
+	c.Check(metrics, check.Matches, `(?ms).*`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-broken",success="0"} 2\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-broken",success="1"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="0"} 2\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="1"} 0\n`+
+		`.*`)
+}
+
 func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
-	ap, _, _ := GetInstanceSet(c)
+	ap, _, _, _ := GetInstanceSet(c, "{}")
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
@@ -274,7 +412,7 @@ func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
-	ap, _, _ := GetInstanceSet(c)
+	ap, _, _, reg := GetInstanceSet(c, "{}")
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
@@ -282,10 +420,15 @@ func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
 		tg := i.Tags()
 		c.Logf("%v %v %v", i.String(), i.Address(), tg)
 	}
+
+	metrics := arvadostest.GatherMetricsAsString(reg)
+	c.Check(metrics, check.Matches, `(?ms).*`+
+		`arvados_dispatchcloud_ec2_instances{subnet_id="[^"]*"} \d+\n`+
+		`.*`)
 }
 
 func (*EC2InstanceSetSuite) TestDestroyInstances(c *check.C) {
-	ap, _, _ := GetInstanceSet(c)
+	ap, _, _, _ := GetInstanceSet(c, "{}")
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
@@ -295,7 +438,7 @@ func (*EC2InstanceSetSuite) TestDestroyInstances(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
-	ap, img, cluster := GetInstanceSet(c)
+	ap, img, cluster, _ := GetInstanceSet(c, "{}")
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 	tags := cloud.InstanceTags{"arvados-ec2-driver": "test"}
 
@@ -365,8 +508,15 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 	_, ok := wrapped.(cloud.RateLimitError)
 	c.Check(ok, check.Equals, true)
 
-	quotaError := awserr.New("InsufficientInstanceCapacity", "", nil)
+	quotaError := awserr.New("InstanceLimitExceeded", "", nil)
 	wrapped = wrapError(quotaError, nil)
 	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
+
+	capacityError := awserr.New("InsufficientInstanceCapacity", "", nil)
+	wrapped = wrapError(capacityError, nil)
+	caperr, ok := wrapped.(cloud.CapacityError)
+	c.Check(ok, check.Equals, true)
+	c.Check(caperr.IsCapacityError(), check.Equals, true)
+	c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
 }

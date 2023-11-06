@@ -15,7 +15,6 @@ import sys
 import threading
 import _strptime
 
-from arvados.api import OrderedJsonModel
 from crunchstat_summary import logger
 
 # Recommend memory constraints that are this multiple of an integral
@@ -244,6 +243,27 @@ class Summarizer(object):
                         continue
                     self.job_tot[category][stat] += val
         logger.debug('%s: done totals', self.label)
+
+        missing_category = {
+            'cpu': 'CPU',
+            'mem': 'memory',
+            'net:': 'network I/O',
+            'statfs': 'storage space',
+        }
+        for task_stat in self.task_stats.values():
+            for category in task_stat.keys():
+                for checkcat in missing_category:
+                    if checkcat.endswith(':'):
+                        if category.startswith(checkcat):
+                            missing_category.pop(checkcat)
+                            break
+                    else:
+                        if category == checkcat:
+                            missing_category.pop(checkcat)
+                            break
+        for catlabel in missing_category.values():
+            logger.warning('%s: %s stats are missing -- possible cluster configuration issue',
+                        self.label, catlabel)
 
     def long_label(self):
         label = self.label
@@ -497,7 +517,7 @@ def NewSummarizer(process_or_uuid, **kwargs):
     else:
         uuid = process_or_uuid
         process = None
-        arv = arvados.api('v1', model=OrderedJsonModel())
+        arv = arvados.api('v1')
 
     if '-dz642-' in uuid:
         if process is None:
@@ -618,7 +638,7 @@ class MultiSummarizer(object):
 class JobTreeSummarizer(MultiSummarizer):
     """Summarizes a job and all children listed in its components field."""
     def __init__(self, job, label=None, **kwargs):
-        arv = arvados.api('v1', model=OrderedJsonModel())
+        arv = arvados.api('v1')
         label = label or job.get('name', job['uuid'])
         children = collections.OrderedDict()
         children[job['uuid']] = JobSummarizer(job, label=label, **kwargs)
@@ -662,7 +682,7 @@ class PipelineSummarizer(MultiSummarizer):
 
 class ContainerRequestTreeSummarizer(MultiSummarizer):
     def __init__(self, root, skip_child_jobs=False, **kwargs):
-        arv = arvados.api('v1', model=OrderedJsonModel())
+        arv = arvados.api('v1')
 
         label = kwargs.pop('label', None) or root.get('name') or root['uuid']
         root['name'] = label

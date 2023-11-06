@@ -11,10 +11,35 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Many operations in Arvados can be performed using either the web Workbench or through command line tools.  Some operations can only be done using the command line.
 
-To use the command line tools, you can either log into an Arvados-managed VM instance where those tools are pre-installed, or install the Arvados tools on your own system.
+To use the command line tools, you can either log into an Arvados virtual machine where those tools are pre-installed, or install the Arvados tools on your own system.
 
-To log into an Arvados-managed VM, see instructions for "Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html or "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html .
+h2. Option 1: Using an Arvados virtual machine
 
-To install the Arvados tools on your own system, you should install the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html (requires Ruby) and "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html (requires Python).  You may also want to install "arvados-cwl-runner":{{site.baseurl}}/sdk/python/arvados-cwl-runner.html to submit workflows and "arvados-fuse":{{site.baseurl}}/sdk/python/arvados-fuse.html to mount keep as a filesystem.
+This is the command line interface we recommend for most day-to-day work, because the tools are all preinstalled and preconfigured for you. You can log in to any virtual machine where you have permission by using:
 
-Once you are logged in or have command line tools installed, see "getting an API token":{{site.baseurl}}/user/reference/api-tokens.html and "check your environment":{{site.baseurl}}/user/getting_started/check-environment.html .
+* "the Webshell client":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html accessible through Arvados Workbench
+* "Unix SSH clients":{{site.baseurl}}/user/getting_started/ssh-access-unix.html
+* "Windows SSH clients":{{site.baseurl}}/user/getting_started/ssh-access-windows.html
+
+h2. Option 2: Installing Arvados tools on your own system
+
+This option gives you more flexibility in your work, but takes more time to set up.
+
+h3. Configure Arvados package repositories for your system
+
+Doing this isn't strictly required for most tools, but will streamline the installation process. Follow the "Arvados package repository instructions":{{site.baseurl}}/install/packages.html.
+
+h3. Install individual tool packages
+
+Here are the client packages you can install on your system. You can skip any you don't want or need except for the Python SDK (most other tools require it).
+
+* "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html: This provides an Arvados API client in Python, as well as low-level command line tools.
+* "Command-line SDK":{{site.baseurl}}/sdk/cli/install.html: This provides the high-level @arv@ command and user interface to the Arvados API.
+* "FUSE Driver":{{site.baseurl}}/sdk/python/arvados-fuse.html: This provides the @arv-mount@ command and FUSE driver that lets you access Keep using standard Linux filesystem tools.
+* "CWL Runner":{{site.baseurl}}/sdk/python/arvados-cwl-runner.html: This provides the @arvados-cwl-runner@ command to register and run workflows in Crunch.
+* "crunchstat-summary":{{site.baseurl}}/user/cwl/crunchstat-summary.html: This tool provides performance reports for Crunch containers.
+* "arvados-client":{{site.baseurl}}/user/debugging/container-shell-access.html: This tool provides subcommands for inspecting Crunch containers, both interactively while they're running and after they've finished.
+
+h2. After Installation: Check your environment
+
+Once you are logged in or have command line tools installed, move on to "getting an API token":{{site.baseurl}}/user/reference/api-tokens.html and "checking your environment":{{site.baseurl}}/user/getting_started/check-environment.html.

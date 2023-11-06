@@ -1,4 +1,45 @@
-Scripts in this directory:
+Prerequisites
+=============
+
+In order to build packages, you will need:
+
+* Docker installed
+* permission to run Docker commands
+* the `WORKSPACE` environment variable set to the absolute path of an
+  Arvados Git work tree
+
+Quickstart
+==========
+
+Build and test all the packages for debian10 on your architecture by
+running:
+
+    ./run-build-test-packages-one-target.sh
+
+This will build package build and test Docker images for debian10, build all
+packages in a build container, then test all packages in a test container.
+
+Use a different distro by adding the `--target TARGET` option.
+
+Limit the build to a single architecture by adding the `--arch ARCH`
+option. Supported architectures are amd64 and arm64. Note cross-compilation
+from amd64 to arm64 is currently only supported on Debian 11+.
+
+Limit the build to a single package by adding the `--only-build
+PACKAGE_NAME` option. This is helpful when a build is mostly in good shape
+and you're tracking down last bugs in one or two packages.
+
+Get more verbose output by adding the `--debug` option.
+
+By default the script avoids rebuilding or retesting packages that it
+detects have already been done in past runs. You can force the script to
+rebuild or retest package(s) with the `--force-build` and `--force-test`
+options, respectively.
+
+Run the script with `--help` for more information about other options.
+
+Scripts in this directory
+=========================
 
 run-tests.sh                             Run unit and integration test suite.
 
@@ -30,3 +71,29 @@ build-dev-docker-jobs-image.sh           Build developer arvados/jobs Docker ima
 run-library.sh                           A library of functions shared by the
                                          various scripts in this
                                          directory.
+
+Adding a new target
+===================
+
+In order to build packages on a new distribution, you MUST:
+
+* Add a rule for `TARGET/generated` to `package-build-dockerfiles/Makefile`.
+* Add the new `TARGET/generated` rule to the `all` target in
+  `package-build-dockerfiles/Makefile`.
+* Write `package-build-dockerfiles/TARGET/Dockerfile`.
+* Add a rule for `TARGET/generated` to `package-test-dockerfiles/Makefile`.
+* Add the new `TARGET/generated` rule to the `all` target in
+  `package-test-dockerfiles/Makefile`.
+* Write `package-test-dockerfiles/TARGET/Dockerfile`.
+* Create `package-testing/test-packages-TARGET.sh`, ideally by making it a
+  symlink to `FORMAT-common-test-packages.sh`.
+* Update the package download code near the bottom of `test_package_presence`
+  in `run-library.sh` so it can download packages for the new distribution.
+
+Of course, any part of our package build or test infrastructure may need to
+be updated to accommodate the process for new distributions. If you're
+having trouble building lots of packages, consider grepping these build
+scripts for the identifier of the closest working target, and see if you may
+need to add branches or similar hooks for your target. If you're having
+trouble building specific packages, consider doing the same for those
+packages' `fpm-info.sh` files.

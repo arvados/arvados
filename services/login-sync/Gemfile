@@ -5,7 +5,7 @@
 source 'https://rubygems.org'
 gemspec
 group :test, :performance do
-  gem 'minitest', '>= 5.0.0'
-  gem 'mocha', '>= 1.5.0', require: false
+  gem 'minitest', '>= 5'
+  gem 'mocha', '>= 2.1', require: false
   gem 'rake'
 end

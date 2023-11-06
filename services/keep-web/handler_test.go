@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -796,6 +797,34 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	c.Check(resp.Header().Get("Content-Disposition"), check.Equals, "attachment")
 }
 
+func (s *IntegrationSuite) TestVhostRedirectMultipleTokens(c *check.C) {
+	baseUrl := arvadostest.FooCollection + ".example.com/foo"
+	query := url.Values{}
+
+	// The intent of these tests is to check that requests are redirected
+	// correctly in the presence of multiple API tokens. The exact response
+	// codes and content are not closely considered: they're just how
+	// keep-web responded when we made the smallest possible fix. Changing
+	// those responses may be okay, but you should still test all these
+	// different cases and the associated redirect logic.
+	query["api_token"] = []string{arvadostest.ActiveToken, arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{arvadostest.ActiveToken, arvadostest.AnonymousToken, ""}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{arvadostest.ActiveToken, "", arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{"", arvadostest.ActiveToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+
+	expectContent := regexp.QuoteMeta(unauthorizedMessage + "\n")
+	query["api_token"] = []string{arvadostest.AnonymousToken, "invalidtoo"}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+	query["api_token"] = []string{arvadostest.AnonymousToken, ""}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+	query["api_token"] = []string{"", arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+}
+
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection+".example.com/foo",
@@ -998,20 +1027,36 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 
 	s.handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
+		attachment, _ := regexp.MatchString(`^attachment(;|$)`, resp.Header().Get("Content-Disposition"))
+		// Since we're not redirecting, check that any api_token in the URL is
+		// handled safely.
+		// If there is no token in the URL, then we're good.
+		// Otherwise, if the response code is an error, the body is expected to
+		// be static content, and nothing that might maliciously introspect the
+		// URL. It's considered safe and allowed.
+		// Otherwise, if the response content has attachment disposition,
+		// that's considered safe for all the reasons explained in the
+		// safeAttachment comment in handler.go.
+		c.Check(!u.Query().Has("api_token") || resp.Code >= 400 || attachment, check.Equals, true)
 		return resp
 	}
+
+	loc, err := url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Check(loc.Scheme, check.Equals, u.Scheme)
+	c.Check(loc.Host, check.Equals, u.Host)
+	c.Check(loc.RawPath, check.Equals, u.RawPath)
+	// If the response was a redirect, it should never include an API token.
+	c.Check(loc.Query().Has("api_token"), check.Equals, false)
 	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
-	c.Check(strings.Split(resp.Header().Get("Location"), "?")[0], check.Equals, "http://"+hostPath)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
-	u, err := u.Parse(resp.Header().Get("Location"))
-	c.Assert(err, check.IsNil)
 	c.Logf("following redirect to %s", u)
 	req = &http.Request{
 		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
+		Host:       loc.Host,
+		URL:        loc,
+		RequestURI: loc.RequestURI(),
 		Header:     reqHeader,
 	}
 	for _, c := range cookies {
@@ -1621,6 +1666,75 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 			}
 			s.checkUploadDownloadRequest(c, req, http.StatusCreated, "upload", userperm,
 				arvadostest.ActiveUserUUID, coll.UUID, "", "bar")
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
+	lockTidyInterval = time.Second
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveTokenV2
+	// Start small, and increase concurrency (2^2, 4^2, ...)
+	// only until hitting failure. Avoids unnecessarily long
+	// failure reports.
+	for n := 2; n < 16 && !c.Failed(); n = n * 2 {
+		c.Logf("%s: n=%d", c.TestName(), n)
+
+		var coll arvados.Collection
+		err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
+		c.Assert(err, check.IsNil)
+		defer client.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+
+		var wg sync.WaitGroup
+		for i := 0; i < n && !c.Failed(); i++ {
+			i := i
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
+				resp := httptest.NewRecorder()
+				req, err := http.NewRequest("MKCOL", u.String(), nil)
+				c.Assert(err, check.IsNil)
+				req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+				s.handler.ServeHTTP(resp, req)
+				c.Assert(resp.Code, check.Equals, http.StatusCreated)
+				for j := 0; j < n && !c.Failed(); j++ {
+					j := j
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						content := fmt.Sprintf("i=%d/j=%d", i, j)
+						u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
+
+						resp := httptest.NewRecorder()
+						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content))
+						c.Assert(err, check.IsNil)
+						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+						s.handler.ServeHTTP(resp, req)
+						c.Check(resp.Code, check.Equals, http.StatusCreated)
+
+						time.Sleep(time.Second)
+						resp = httptest.NewRecorder()
+						req, err = http.NewRequest("GET", u.String(), nil)
+						c.Assert(err, check.IsNil)
+						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+						s.handler.ServeHTTP(resp, req)
+						c.Check(resp.Code, check.Equals, http.StatusOK)
+						c.Check(resp.Body.String(), check.Equals, content)
+					}()
+				}
+			}()
+		}
+		wg.Wait()
+		for i := 0; i < n; i++ {
+			u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
+			resp := httptest.NewRecorder()
+			req, err := http.NewRequest("PROPFIND", u.String(), &bytes.Buffer{})
+			c.Assert(err, check.IsNil)
+			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+			s.handler.ServeHTTP(resp, req)
+			c.Assert(resp.Code, check.Equals, http.StatusMultiStatus)
 		}
 	}
 }

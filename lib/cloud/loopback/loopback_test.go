@@ -29,7 +29,7 @@ var _ = check.Suite(&suite{})
 
 func (*suite) TestCreateListExecDestroy(c *check.C) {
 	logger := ctxlog.TestLogger(c)
-	is, err := Driver.InstanceSet(json.RawMessage("{}"), "testInstanceSetID", cloud.SharedResourceTags{"sharedTag": "sharedTagValue"}, logger)
+	is, err := Driver.InstanceSet(json.RawMessage("{}"), "testInstanceSetID", cloud.SharedResourceTags{"sharedTag": "sharedTagValue"}, logger, nil)
 	c.Assert(err, check.IsNil)
 
 	clientRSAKey, err := rsa.GenerateKey(rand.Reader, 1024)

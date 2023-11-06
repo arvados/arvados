@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller"
 	"git.arvados.org/arvados.git/lib/crunchrun"
+	"git.arvados.org/arvados.git/lib/crunchstat"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/lib/lsf"
@@ -52,6 +53,7 @@ var (
 		"config-dump":        config.DumpCommand,
 		"controller":         controller.Command,
 		"crunch-run":         crunchrun.Command,
+		"crunchstat":         crunchstat.Command,
 		"dispatch-cloud":     dispatchcloud.Command,
 		"dispatch-lsf":       lsf.DispatchCommand,
 		"dispatch-slurm":     dispatchslurm.Command,

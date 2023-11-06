@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 case "$TARGET" in
-    centos*)
+    centos*|rocky*)
         fpm_depends+=(git bison make automake gcc gcc-c++ graphviz shared-mime-info)
         ;;
     ubuntu1804)

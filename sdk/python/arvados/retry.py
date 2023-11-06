@@ -49,34 +49,29 @@ class RetryLoop(object):
 
     Arguments:
 
-    num_retries: int
-    : The maximum number of times to retry the loop if it
-      doesn't succeed.  This means the loop body could run at most
+    * num_retries: int --- The maximum number of times to retry the loop if
+      it doesn't succeed.  This means the loop body could run at most
       `num_retries + 1` times.
 
-    success_check: Callable
-    : This is a function that will be called each
-      time the loop saves a result.  The function should return
-      `True` if the result indicates the code succeeded, `False` if it
-      represents a permanent failure, and `None` if it represents a
-      temporary failure.  If no function is provided, the loop will
-      end after any result is saved.
+    * success_check: Callable --- This is a function that will be called
+      each time the loop saves a result.  The function should return `True`
+      if the result indicates the code succeeded, `False` if it represents a
+      permanent failure, and `None` if it represents a temporary failure.
+      If no function is provided, the loop will end after any result is
+      saved.
 
-    backoff_start: float
-    : The number of seconds that must pass before the loop's second
-      iteration.  Default 0, which disables all waiting.
+    * backoff_start: float --- The number of seconds that must pass before
+      the loop's second iteration.  Default 0, which disables all waiting.
 
-    backoff_growth: float
-    : The wait time multiplier after each iteration.
-      Default 2 (i.e., double the wait time each time).
+    * backoff_growth: float --- The wait time multiplier after each
+      iteration.  Default 2 (i.e., double the wait time each time).
 
-    save_results: int
-    : Specify a number to store that many saved results from the loop.
-      These are available through the `results` attribute, oldest first.
-      Default 1.
+    * save_results: int --- Specify a number to store that many saved
+      results from the loop.  These are available through the `results`
+      attribute, oldest first.  Default 1.
 
-    max_wait: float
-    : Maximum number of seconds to wait between retries. Default 60.
+    * max_wait: float --- Maximum number of seconds to wait between
+      retries. Default 60.
     """
     def __init__(self, num_retries, success_check=lambda r: True,
                  backoff_start=0, backoff_growth=2, save_results=1,
@@ -138,8 +133,8 @@ class RetryLoop(object):
 
         Arguments:
 
-        result: Any
-        : The result from this loop attempt to check and save.
+        * result: Any --- The result from this loop attempt to check and
+        save.
         """
         if not self.running():
             raise arvados.errors.AssertionError(
@@ -207,8 +202,7 @@ def check_http_response_success(status_code):
 
     Arguments:
 
-    status_code: int
-    : A numeric HTTP response code
+    * status_code: int --- A numeric HTTP response code
     """
     if status_code in _HTTP_SUCCESSES:
         return True
@@ -229,8 +223,8 @@ def retry_method(orig_func):
 
     Arguments:
 
-    orig_func: Callable
-    : A class or instance method that accepts a `num_retries` keyword argument
+    * orig_func: Callable --- A class or instance method that accepts a
+    `num_retries` keyword argument
     """
     @functools.wraps(orig_func)
     def num_retries_setter(self, *args, **kwargs):

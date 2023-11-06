@@ -225,7 +225,17 @@ Clusters:
 
       # Maximum number of concurrent requests to process concurrently
       # in a single service process, or 0 for no limit.
+      #
+      # Note this applies to all Arvados services (controller, webdav,
+      # websockets, etc.). Concurrency in the controller service is
+      # also effectively limited by MaxConcurrentRailsRequests (see
+      # below) because most controller requests proxy through to the
+      # RailsAPI service.
       MaxConcurrentRequests: 64
+
+      # Maximum number of concurrent requests to process concurrently
+      # in a single RailsAPI service process, or 0 for no limit.
+      MaxConcurrentRailsRequests: 8
 
       # Maximum number of incoming requests to hold in a priority
       # queue waiting for one of the MaxConcurrentRequests slots to be
@@ -234,7 +244,11 @@ Clusters:
       #
       # If MaxQueuedRequests is 0, respond 503 immediately to
       # additional requests while at the MaxConcurrentRequests limit.
-      MaxQueuedRequests: 64
+      MaxQueuedRequests: 128
+
+      # Maximum time a "lock container" request is allowed to wait in
+      # the incoming request queue before returning 503.
+      MaxQueueTimeForLockRequests: 2s
 
       # Fraction of MaxConcurrentRequests that can be "log create"
       # messages at any given time.  This is to prevent logging
@@ -407,6 +421,48 @@ Clusters:
       #
       # Use 0 to disable activity logging.
       ActivityLoggingPeriod: 24h
+
+      # The SyncUser* options control what system resources are managed by
+      # arvados-login-sync on shell nodes. They correspond to:
+      # * SyncUserAccounts: The user's Unix account on the shell node
+      # * SyncUserGroups: The group memberships of that account
+      # * SyncUserSSHKeys: Whether to authorize the user's Arvados SSH keys
+      # * SyncUserAPITokens: Whether to set up the user's Arvados API token
+      # All default to true.
+      SyncUserAccounts: true
+      SyncUserGroups: true
+      SyncUserSSHKeys: true
+      SyncUserAPITokens: true
+
+      # If SyncUserGroups=true, then arvados-login-sync will ensure that all
+      # managed accounts are members of the Unix groups listed in
+      # SyncRequiredGroups, in addition to any groups listed in their Arvados
+      # login permission. The default list includes the "fuse" group so
+      # users can use arv-mount. You can require no groups by specifying an
+      # empty list (i.e., `SyncRequiredGroups: []`).
+      SyncRequiredGroups:
+        - fuse
+
+      # SyncIgnoredGroups is a list of group names. arvados-login-sync will
+      # never modify these groups. If user login permissions list any groups
+      # in SyncIgnoredGroups, they will be ignored. If a user's Unix account
+      # belongs to any of these groups, arvados-login-sync will not remove
+      # the account from that group. The default is a set of particularly
+      # security-sensitive groups across Debian- and Red Hat-based
+      # distributions.
+      SyncIgnoredGroups:
+        - adm
+        - disk
+        - kmem
+        - mem
+        - root
+        - shadow
+        - staff
+        - sudo
+        - sys
+        - utempter
+        - utmp
+        - wheel
 
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
@@ -1028,7 +1084,7 @@ Clusters:
 
       # Number of times a container can be unlocked before being
       # automatically cancelled.
-      MaxDispatchAttempts: 5
+      MaxDispatchAttempts: 10
 
       # Default value for container_count_max for container requests.  This is the
       # number of times Arvados will create a new container to satisfy a container
@@ -1166,11 +1222,14 @@ Clusters:
         # before being silenced until the end of the period.
         LogThrottleLines: 1024
 
-        # Maximum bytes that may be logged by a single job.  Log bytes that are
-        # silenced by throttling are not counted against this total.
-        # If you set this to zero, each container will only create a single
-        # log on the API server, noting for users that logging is throttled.
-        LimitLogBytesPerJob: 67108864
+        # Maximum bytes that may be logged as legacy log events
+        # (records posted to the "logs" table). Starting with Arvados
+        # 2.7, container live logging has migrated to a new system
+        # (polling the container request live log endpoint) and this
+        # value should be 0.  As of this writing, the container will
+        # still create a single log on the API server, noting for that
+        # log events are throttled.
+        LimitLogBytesPerJob: 0
 
         LogPartialLineThrottlePeriod: 5s
 
@@ -1367,10 +1426,31 @@ Clusters:
         # down.
         MaxInstances: 64
 
-        # Maximum fraction of CloudVMs.MaxInstances allowed to run
-        # "supervisor" containers at any given time. A supervisor is a
-        # container whose purpose is mainly to submit and manage other
-        # containers, such as arvados-cwl-runner workflow runner.
+        # The minimum number of instances expected to be runnable
+        # without reaching a provider-imposed quota.
+        #
+        # This is used as the initial value for the dispatcher's
+        # dynamic instance limit, which increases (up to MaxInstances)
+        # as containers start up successfully and decreases in
+        # response to high API load and cloud quota errors.
+        #
+        # Setting this to 0 means the dynamic instance limit will
+        # start at MaxInstances.
+        #
+        # Situations where you may want to set this (to a value less
+        # than MaxInstances) would be when there is significant
+        # variability or uncertainty in the actual cloud resources
+        # available.  Upon reaching InitialQuotaEstimate the
+        # dispatcher will switch to a more conservative behavior with
+        # slower instance start to avoid over-shooting cloud resource
+        # limits.
+        InitialQuotaEstimate: 0
+
+        # Maximum fraction of available instance capacity allowed to
+        # run "supervisor" containers at any given time. A supervisor
+        # is a container whose purpose is mainly to submit and manage
+        # other containers, such as arvados-cwl-runner workflow
+        # runner.
         #
         # If there is a hard limit on the amount of concurrent
         # containers that the cluster can run, it is important to
@@ -1378,9 +1458,9 @@ Clusters:
         # containers who just create more work.
         #
         # For example, with the default MaxInstances of 64, it will
-        # schedule at most floor(64*0.30) = 19 concurrent workflows,
-        # ensuring 45 slots are available for work.
-        SupervisorFraction: 0.30
+        # schedule at most floor(64*0.50) = 32 concurrent workflow
+        # runners, ensuring 32 slots are available for work.
+        SupervisorFraction: 0.50
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").
@@ -1465,10 +1545,23 @@ Clusters:
           SecretAccessKey: ""
 
           # (ec2) Instance configuration.
+
+          # (ec2) Region, like "us-east-1".
+          Region: ""
+
+          # (ec2) Security group IDs. Omit or use {} to use the
+          # default security group.
           SecurityGroupIDs:
             "SAMPLE": {}
+
+          # (ec2) One or more subnet IDs. Omit or leave empty to let
+          # AWS choose a default subnet from your default VPC. If
+          # multiple subnets are configured here (enclosed in brackets
+          # like [subnet-abc123, subnet-def456]) the cloud dispatcher
+          # will detect subnet-related errors and retry using a
+          # different subnet. Most sites specify one subnet.
           SubnetID: ""
-          Region: ""
+
           EBSVolumeType: gp2
           AdminUsername: debian
           # (ec2) name of the IAMInstanceProfile for instances started by
@@ -1601,6 +1694,11 @@ Clusters:
             ReadOnly: false
           "http://host1.example:25107": {}
         ReadOnly: false
+        # AllowTrashWhenReadOnly enables unused and overreplicated
+        # blocks to be trashed/deleted even when ReadOnly is
+        # true. Normally, this is false and ReadOnly prevents all
+        # trash/delete operations as well as writes.
+        AllowTrashWhenReadOnly: false
         Replication: 1
         StorageClasses:
           # If you have configured storage classes (see StorageClasses

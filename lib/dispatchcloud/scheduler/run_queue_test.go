@@ -29,19 +29,15 @@ var (
 	}()
 )
 
-type stubQuotaError struct {
-	error
-}
-
-func (stubQuotaError) IsQuotaError() bool { return true }
-
 type stubPool struct {
 	notify    <-chan struct{}
 	unalloc   map[arvados.InstanceType]int // idle+booting+unknown
+	busy      map[arvados.InstanceType]int
 	idle      map[arvados.InstanceType]int
 	unknown   map[arvados.InstanceType]int
 	running   map[string]time.Time
 	quota     int
+	capacity  map[string]int
 	canCreate int
 	creates   []arvados.InstanceType
 	starts    []string
@@ -60,6 +56,20 @@ func (p *stubPool) AtQuota() bool {
 		n += nn
 	}
 	return n >= p.quota
+}
+func (p *stubPool) AtCapacity(it arvados.InstanceType) bool {
+	supply, ok := p.capacity[it.ProviderType]
+	if !ok {
+		return false
+	}
+	for _, existing := range []map[arvados.InstanceType]int{p.unalloc, p.busy} {
+		for eit, n := range existing {
+			if eit.ProviderType == it.ProviderType {
+				supply -= n
+			}
+		}
+	}
+	return supply < 1
 }
 func (p *stubPool) Subscribe() <-chan struct{}  { return p.notify }
 func (p *stubPool) Unsubscribe(<-chan struct{}) {}
@@ -122,6 +132,7 @@ func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container
 	if p.idle[it] == 0 {
 		return false
 	}
+	p.busy[it]++
 	p.idle[it]--
 	p.unalloc[it]--
 	p.running[ctr.UUID] = time.Time{}
@@ -192,10 +203,11 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 			test.InstanceType(1): 1,
 			test.InstanceType(2): 2,
 		},
+		busy:      map[arvados.InstanceType]int{},
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1), test.InstanceType(1), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
@@ -242,12 +254,13 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			idle: map[arvados.InstanceType]int{
 				test.InstanceType(2): 2,
 			},
+			busy:      map[arvados.InstanceType]int{},
 			running:   map[string]time.Time{},
 			creates:   []arvados.InstanceType{},
 			starts:    []string{},
 			canCreate: 0,
 		}
-		sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+		sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 		sch.sync()
 		sch.runQueue()
 		sch.sync()
@@ -255,12 +268,12 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 		case 1, 2:
 			// Can't create a type3 node for ctr3, so we
 			// shutdown an unallocated node (type2), and
-			// unlock both containers.
+			// unlock the 2nd-in-line container, but not
+			// the 1st-in-line container.
 			c.Check(pool.starts, check.HasLen, 0)
 			c.Check(pool.shutdowns, check.Equals, 1)
 			c.Check(pool.creates, check.HasLen, 0)
 			c.Check(queue.StateChanges(), check.DeepEquals, []test.QueueStateChange{
-				{UUID: test.ContainerUUID(3), From: "Locked", To: "Queued"},
 				{UUID: test.ContainerUUID(2), From: "Locked", To: "Queued"},
 			})
 		case 3:
@@ -276,6 +289,85 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			panic("test not written for quota>3")
 		}
 	}
+}
+
+// If pool.AtCapacity(it) is true for one instance type, try running a
+// lower-priority container that uses a different node type.  Don't
+// lock/unlock/start any container that requires the affected instance
+// type.
+func (*SchedulerSuite) TestInstanceCapacity(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+
+	queue := test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			{
+				UUID:     test.ContainerUUID(1),
+				Priority: 1,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(2),
+				Priority: 2,
+				State:    arvados.ContainerStateQueued,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 4,
+					RAM:   4 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(3),
+				Priority: 3,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 4,
+					RAM:   4 << 30,
+				},
+			},
+			{
+				UUID:     test.ContainerUUID(4),
+				Priority: 4,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 4,
+					RAM:   4 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+	pool := stubPool{
+		quota:    99,
+		capacity: map[string]int{test.InstanceType(4).ProviderType: 1},
+		unalloc: map[arvados.InstanceType]int{
+			test.InstanceType(4): 1,
+		},
+		idle: map[arvados.InstanceType]int{
+			test.InstanceType(4): 1,
+		},
+		busy:      map[arvados.InstanceType]int{},
+		running:   map[string]time.Time{},
+		creates:   []arvados.InstanceType{},
+		starts:    []string{},
+		canCreate: 99,
+	}
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
+	sch.sync()
+	sch.runQueue()
+	sch.sync()
+
+	// Start container4, but then pool reports AtCapacity for
+	// type4, so we skip trying to create an instance for
+	// container3, skip locking container2, but do try to create a
+	// type1 instance for container1.
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(1)})
+	c.Check(pool.shutdowns, check.Equals, 0)
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
+	c.Check(queue.StateChanges(), check.HasLen, 0)
 }
 
 // Don't unlock containers or shutdown unalloc (booting/idle) nodes
@@ -353,6 +445,10 @@ func (*SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
 			test.InstanceType(2): 1,
 			test.InstanceType(3): 1,
 		},
+		busy: map[arvados.InstanceType]int{
+			test.InstanceType(2): 1,
+			test.InstanceType(3): 1,
+		},
 		running: map[string]time.Time{
 			test.ContainerUUID(1): {},
 			test.ContainerUUID(3): {},
@@ -361,7 +457,7 @@ func (*SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
 		starts:    []string{},
 		canCreate: 0,
 	}
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	sch.last503time = time.Now()
 	sch.maxConcurrency = 3
 	sch.sync()
@@ -406,6 +502,9 @@ func (*SchedulerSuite) TestUnlockExcessSupervisors(c *check.C) {
 		idle: map[arvados.InstanceType]int{
 			test.InstanceType(2): 1,
 		},
+		busy: map[arvados.InstanceType]int{
+			test.InstanceType(2): 4,
+		},
 		running: map[string]time.Time{
 			test.ContainerUUID(1): {},
 			test.ContainerUUID(2): {},
@@ -416,7 +515,7 @@ func (*SchedulerSuite) TestUnlockExcessSupervisors(c *check.C) {
 		starts:    []string{},
 		canCreate: 0,
 	}
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 8, 0.5)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 8, 0.5)
 	sch.sync()
 	sch.runQueue()
 	sch.sync()
@@ -467,6 +566,9 @@ func (*SchedulerSuite) TestExcessSupervisors(c *check.C) {
 		idle: map[arvados.InstanceType]int{
 			test.InstanceType(2): 1,
 		},
+		busy: map[arvados.InstanceType]int{
+			test.InstanceType(2): 2,
+		},
 		running: map[string]time.Time{
 			test.ContainerUUID(5): {},
 			test.ContainerUUID(6): {},
@@ -475,7 +577,7 @@ func (*SchedulerSuite) TestExcessSupervisors(c *check.C) {
 		starts:    []string{},
 		canCreate: 0,
 	}
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 8, 0.5)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 8, 0.5)
 	sch.sync()
 	sch.runQueue()
 	sch.sync()
@@ -521,12 +623,13 @@ func (*SchedulerSuite) TestEqualPriorityContainers(c *check.C) {
 		idle: map[arvados.InstanceType]int{
 			test.InstanceType(3): 2,
 		},
+		busy:      map[arvados.InstanceType]int{},
 		running:   map[string]time.Time{},
 		creates:   []arvados.InstanceType{},
 		starts:    []string{},
 		canCreate: 0,
 	}
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	for i := 0; i < 30; i++ {
 		sch.runQueue()
 		sch.sync()
@@ -559,6 +662,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 			test.InstanceType(1): 1,
 			test.InstanceType(2): 1,
 		},
+		busy:      map[arvados.InstanceType]int{},
 		running:   map[string]time.Time{},
 		canCreate: 4,
 	}
@@ -628,7 +732,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		},
 	}
 	queue.Update()
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(2), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
 	running := map[string]bool{}
@@ -652,6 +756,9 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 		idle: map[arvados.InstanceType]int{
 			test.InstanceType(2): 0,
 		},
+		busy: map[arvados.InstanceType]int{
+			test.InstanceType(2): 1,
+		},
 		running: map[string]time.Time{
 			test.ContainerUUID(2): {},
 		},
@@ -672,7 +779,7 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 		},
 	}
 	queue.Update()
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	c.Check(pool.running, check.HasLen, 1)
 	sch.sync()
 	for deadline := time.Now().Add(time.Second); len(pool.Running()) > 0 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
@@ -705,7 +812,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	pool := stubPool{
 		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
 	}
-	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -717,7 +824,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	// 'over quota' metric will be 1 because no workers are available and canCreate defaults
 	// to zero.
 	pool = stubPool{}
-	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -748,9 +855,10 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	pool = stubPool{
 		idle:    map[arvados.InstanceType]int{test.InstanceType(1): 1},
 		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
+		busy:    map[arvados.InstanceType]int{},
 		running: map[string]time.Time{},
 	}
-	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0)
+	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 0, 0)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -821,10 +929,11 @@ func (*SchedulerSuite) TestSkipSupervisors(c *check.C) {
 			test.InstanceType(1): 4,
 			test.InstanceType(2): 4,
 		},
+		busy:      map[arvados.InstanceType]int{},
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 10, 0.2).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0, 10, 0.2).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType(nil))
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(3), test.ContainerUUID(1)})
 }

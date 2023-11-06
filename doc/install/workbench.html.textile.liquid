@@ -68,6 +68,12 @@ The banner appears when a user loads workbench and have not yet viewed the curre
 
 The banner text (HTML formatted) is loaded from the file @banner.html@ in the collection provided in @BannerUUID@.
 
+The following HTML tags are allowed in banner.html: a, b, blockquote, br, code, del, dd, dl, dt, em, h1-h6, hr, i, img, kbd, li, ol, p, pre, s, del, section, span, strong, sub, sup, and ul. 
+
+The following attributes are allowed: src, width, height, href, alt, title, and style. 
+
+All styling must be made in-line with the style attribute. Disallowed tags and attributes will not render.
+
 h3. Tooltips
 
 You can provide a custom tooltip overlay to provide site-specific guidance for using workbench.  Users can opt-out by selecting *Disable Tooltips* from the *Notifications* menu.

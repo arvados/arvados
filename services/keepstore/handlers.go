@@ -449,11 +449,10 @@ func getWorkQueueStatus(q *WorkQueue) WorkQueueStatus {
 // Otherwise, the response code is 200 OK, with a response body
 // consisting of the JSON message
 //
-//    {"copies_deleted":d,"copies_failed":f}
+//	{"copies_deleted":d,"copies_failed":f}
 //
 // where d and f are integers representing the number of blocks that
 // were successfully and unsuccessfully deleted.
-//
 func (rtr *router) handleDELETE(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
@@ -476,8 +475,10 @@ func (rtr *router) handleDELETE(resp http.ResponseWriter, req *http.Request) {
 		Deleted int `json:"copies_deleted"`
 		Failed  int `json:"copies_failed"`
 	}
-	for _, vol := range rtr.volmgr.AllWritable() {
-		if err := vol.Trash(hash); err == nil {
+	for _, vol := range rtr.volmgr.Mounts() {
+		if !vol.KeepMount.AllowTrash {
+			continue
+		} else if err := vol.Trash(hash); err == nil {
 			result.Deleted++
 		} else if os.IsNotExist(err) {
 			continue
@@ -674,7 +675,6 @@ func (rtr *router) handleUntrash(resp http.ResponseWriter, req *http.Request) {
 //
 // If the block found does not have the correct MD5 hash, returns
 // DiskHashError.
-//
 func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []byte, resp http.ResponseWriter) (int, error) {
 	log := ctxlog.FromContext(ctx)
 
@@ -845,17 +845,24 @@ func newPutProgress(classes []string) putProgress {
 // following codes:
 //
 // 500 Collision
-//        A different block with the same hash already exists on this
-//        Keep server.
+//
+//	A different block with the same hash already exists on this
+//	Keep server.
+//
 // 422 MD5Fail
-//        The MD5 hash of the BLOCK does not match the argument HASH.
+//
+//	The MD5 hash of the BLOCK does not match the argument HASH.
+//
 // 503 Full
-//        There was not enough space left in any Keep volume to store
-//        the object.
+//
+//	There was not enough space left in any Keep volume to store
+//	the object.
+//
 // 500 Fail
-//        The object could not be stored for some other reason (e.g.
-//        all writes failed). The text of the error message should
-//        provide as much detail as possible.
+//
+//	The object could not be stored for some other reason (e.g.
+//	all writes failed). The text of the error message should
+//	provide as much detail as possible.
 func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string, wantStorageClasses []string) (putProgress, error) {
 	log := ctxlog.FromContext(ctx)
 
@@ -1004,10 +1011,9 @@ func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, 
 
 var validLocatorRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
 
-// IsValidLocator returns true if the specified string is a valid Keep locator.
-//   When Keep is extended to support hash types other than MD5,
-//   this should be updated to cover those as well.
-//
+// IsValidLocator returns true if the specified string is a valid Keep
+// locator.  When Keep is extended to support hash types other than
+// MD5, this should be updated to cover those as well.
 func IsValidLocator(loc string) bool {
 	return validLocatorRe.MatchString(loc)
 }

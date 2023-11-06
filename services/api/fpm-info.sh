@@ -5,7 +5,7 @@
 fpm_depends+=('git >= 1.7.10')
 
 case "$TARGET" in
-    centos*)
+    centos*|rocky*)
         fpm_depends+=(libcurl-devel postgresql-devel bison make automake gcc gcc-c++ postgresql shared-mime-info)
         ;;
     ubuntu1804)

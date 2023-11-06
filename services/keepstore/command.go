@@ -186,7 +186,7 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 
 	// Initialize the trashq and workers
 	h.trashq = NewWorkQueue()
-	for i := 0; i < 1 || i < h.Cluster.Collections.BlobTrashConcurrency; i++ {
+	for i := 0; i < h.Cluster.Collections.BlobTrashConcurrency; i++ {
 		go RunTrashWorker(h.volmgr, h.Logger, h.Cluster, h.trashq)
 	}
 
@@ -208,8 +208,10 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 	}
 	h.keepClient.Arvados.ApiToken = fmt.Sprintf("%x", rand.Int63())
 
-	if d := h.Cluster.Collections.BlobTrashCheckInterval.Duration(); d > 0 {
-		go emptyTrash(h.volmgr.writables, d)
+	if d := h.Cluster.Collections.BlobTrashCheckInterval.Duration(); d > 0 &&
+		h.Cluster.Collections.BlobTrash &&
+		h.Cluster.Collections.BlobDeleteConcurrency > 0 {
+		go emptyTrash(h.volmgr.mounts, d)
 	}
 
 	return nil

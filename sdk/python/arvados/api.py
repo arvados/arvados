@@ -19,6 +19,7 @@ import httplib2
 import json
 import logging
 import os
+import pathlib
 import re
 import socket
 import ssl
@@ -42,13 +43,12 @@ _logger = logging.getLogger('arvados.api')
 _googleapiclient_log_lock = threading.Lock()
 
 MAX_IDLE_CONNECTION_DURATION = 30
-
-# These constants supported our own retry logic that we've since removed in
-# favor of using googleapiclient's num_retries. They're kept here purely for
-# API compatibility, but set to 0 to indicate no retries happen.
-RETRY_DELAY_INITIAL = 0
-RETRY_DELAY_BACKOFF = 0
-RETRY_COUNT = 0
+"""
+Number of seconds that API client HTTP connections should be allowed to idle
+in keepalive state before they are forced closed. Client code can adjust this
+constant, and it will be used for all Arvados API clients constructed after
+that point.
+"""
 
 # An unused HTTP 5xx status code to request a retry internally.
 # See _intercept_http_request. This should not be user-visible.
@@ -56,26 +56,6 @@ _RETRY_4XX_STATUS = 545
 
 if sys.version_info >= (3,):
     httplib2.SSLHandshakeError = None
-
-class OrderedJsonModel(apiclient.model.JsonModel):
-    """Model class for JSON that preserves the contents' order.
-
-    API clients that care about preserving the order of fields in API
-    server responses can use this model to do so, like this:
-
-        from arvados.api import OrderedJsonModel
-        client = arvados.api('v1', ..., model=OrderedJsonModel())
-    """
-
-    def deserialize(self, content):
-        # This is a very slightly modified version of the parent class'
-        # implementation.  Copyright (c) 2010 Google.
-        content = content.decode('utf-8')
-        body = json.loads(content, object_pairs_hook=collections.OrderedDict)
-        if self._data_wrapper and isinstance(body, dict) and 'data' in body:
-            body = body['data']
-        return body
-
 
 _orig_retry_request = apiclient.http._retry_request
 def _retry_request(http, num_retries, *args, **kwargs):
@@ -173,15 +153,28 @@ def _new_http_error(cls, *args, **kwargs):
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
 def http_cache(data_type):
-    homedir = os.environ.get('HOME')
-    if not homedir or len(homedir) == 0:
-        return None
-    path = homedir + '/.cache/arvados/' + data_type
+    """Set up an HTTP file cache
+
+    This function constructs and returns an `arvados.cache.SafeHTTPCache`
+    backed by the filesystem under `~/.cache/arvados/`, or `None` if the
+    directory cannot be set up. The return value can be passed to
+    `httplib2.Http` as the `cache` argument.
+
+    Arguments:
+
+    * data_type: str --- The name of the subdirectory under `~/.cache/arvados`
+      where data is cached.
+    """
     try:
-        util.mkdir_dash_p(path)
+        homedir = pathlib.Path.home()
+    except RuntimeError:
+        return None
+    path = pathlib.Path(homedir, '.cache', 'arvados', data_type)
+    try:
+        path.mkdir(parents=True, exist_ok=True)
     except OSError:
         return None
-    return cache.SafeHTTPCache(path, max_age=60*60*24*2)
+    return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
         version,
@@ -205,45 +198,41 @@ def api_client(
 
     Arguments:
 
-    version: str
-    : A string naming the version of the Arvados API to use.
+    * version: str --- A string naming the version of the Arvados API to use.
 
-    discoveryServiceUrl: str
-    : The URL used to discover APIs passed directly to
-      `googleapiclient.discovery.build`.
+    * discoveryServiceUrl: str --- The URL used to discover APIs passed
+      directly to `googleapiclient.discovery.build`.
 
-    token: str
-    : The authentication token to send with each API call.
+    * token: str --- The authentication token to send with each API call.
 
     Keyword-only arguments:
 
-    cache: bool
-    : If true, loads the API discovery document from, or saves it to, a cache
-      on disk (located at `~/.cache/arvados/discovery`).
+    * cache: bool --- If true, loads the API discovery document from, or
+      saves it to, a cache on disk (located at
+      `~/.cache/arvados/discovery`).
 
-    http: httplib2.Http | None
-    : The HTTP client object the API client object will use to make requests.
-      If not provided, this function will build its own to use. Either way, the
-      object will be patched as part of the build process.
+    * http: httplib2.Http | None --- The HTTP client object the API client
+      object will use to make requests.  If not provided, this function will
+      build its own to use. Either way, the object will be patched as part
+      of the build process.
 
-    insecure: bool
-    : If true, ignore SSL certificate validation errors. Default `False`.
+    * insecure: bool --- If true, ignore SSL certificate validation
+      errors. Default `False`.
 
-    num_retries: int
-    : The number of times to retry each API request if it encounters a
-      temporary failure. Default 10.
+    * num_retries: int --- The number of times to retry each API request if
+      it encounters a temporary failure. Default 10.
 
-    request_id: str | None
-    : Default `X-Request-Id` header value for outgoing requests that
-      don't already provide one. If `None` or omitted, generate a random
-      ID. When retrying failed requests, the same ID is used on all
-      attempts.
+    * request_id: str | None --- Default `X-Request-Id` header value for
+      outgoing requests that don't already provide one. If `None` or
+      omitted, generate a random ID. When retrying failed requests, the same
+      ID is used on all attempts.
 
-    timeout: int
-    : A timeout value for HTTP requests in seconds. Default 300 (5 minutes).
+    * timeout: int --- A timeout value for HTTP requests in seconds. Default
+      300 (5 minutes).
 
     Additional keyword arguments will be passed directly to
     `googleapiclient.discovery.build`.
+
     """
     if http is None:
         http = httplib2.Http(
@@ -320,22 +309,19 @@ def normalize_api_kwargs(
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    discoveryServiceUrl: str | None
-    : The URL used to discover APIs passed directly to
-      `googleapiclient.discovery.build`. It is an error to pass both
-      `discoveryServiceUrl` and `host`.
+    * discoveryServiceUrl: str | None --- The URL used to discover APIs
+      passed directly to `googleapiclient.discovery.build`. It is an error
+      to pass both `discoveryServiceUrl` and `host`.
 
-    host: str | None
-    : The hostname and optional port number of the Arvados API server. Used to
-      build `discoveryServiceUrl`. It is an error to pass both
-      `discoveryServiceUrl` and `host`.
+    * host: str | None --- The hostname and optional port number of the
+      Arvados API server. Used to build `discoveryServiceUrl`. It is an
+      error to pass both `discoveryServiceUrl` and `host`.
 
-    token: str
-    : The authentication token to send with each API call.
+    * token: str --- The authentication token to send with each API call.
 
     Additional keyword arguments will be included in the return value.
     """
@@ -376,14 +362,15 @@ def api_kwargs_from_config(version=None, apiconfig=None, **kwargs):
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    apiconfig: Mapping[str, str] | None
-    : A mapping with entries for `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and
-      optionally `ARVADOS_API_HOST_INSECURE`. If not provided, calls
-      `arvados.config.settings` to get these parameters from user configuration.
+    * apiconfig: Mapping[str, str] | None --- A mapping with entries for
+      `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and optionally
+      `ARVADOS_API_HOST_INSECURE`. If not provided, calls
+      `arvados.config.settings` to get these parameters from user
+      configuration.
 
     Additional keyword arguments will be included in the return value.
     """
@@ -426,19 +413,18 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    host: str | None
-    : The hostname and optional port number of the Arvados API server.
+    * host: str | None --- The hostname and optional port number of the
+      Arvados API server.
 
-    token: str | None
-    : The authentication token to send with each API call.
+    * token: str | None --- The authentication token to send with each API
+      call.
 
-    discoveryServiceUrl: str | None
-    : The URL used to discover APIs passed directly to
-      `googleapiclient.discovery.build`.
+    * discoveryServiceUrl: str | None --- The URL used to discover APIs
+      passed directly to `googleapiclient.discovery.build`.
 
     If `host`, `token`, and `discoveryServiceUrl` are all omitted, `host` and
     `token` will be loaded from the user's configuration. Otherwise, you must
@@ -477,16 +463,63 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
 
     Arguments:
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      'v1'.
 
-    apiconfig: Mapping[str, str] | None
-    : A mapping with entries for `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and
-      optionally `ARVADOS_API_HOST_INSECURE`. If not provided, calls
-      `arvados.config.settings` to get these parameters from user configuration.
+    * apiconfig: Mapping[str, str] | None --- A mapping with entries for
+      `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and optionally
+      `ARVADOS_API_HOST_INSECURE`. If not provided, calls
+      `arvados.config.settings` to get these parameters from user
+      configuration.
 
     Other arguments are passed directly to `api_client`. See that function's
     docstring for more information about their meaning.
     """
     return api(**api_kwargs_from_config(version, apiconfig, **kwargs))
+
+class OrderedJsonModel(apiclient.model.JsonModel):
+    """Model class for JSON that preserves the contents' order
+
+    .. WARNING:: Deprecated
+       This model is redundant now that Python dictionaries preserve insertion
+       ordering. Code that passes this model to API constructors can remove it.
+
+    In Python versions before 3.6, API clients that cared about preserving the
+    order of fields in API server responses could use this model to do so.
+    Typical usage looked like:
+
+        from arvados.api import OrderedJsonModel
+        client = arvados.api('v1', ..., model=OrderedJsonModel())
+    """
+    @util._deprecated(preferred="the default model and rely on Python's built-in dictionary ordering")
+    def __init__(self, data_wrapper=False):
+        return super().__init__(data_wrapper)
+
+
+RETRY_DELAY_INITIAL = 0
+"""
+.. WARNING:: Deprecated
+   This constant was used by retry code in previous versions of the Arvados SDK.
+   Changing the value has no effect anymore.
+   Prefer passing `num_retries` to an API client constructor instead.
+   Refer to the constructor docstrings for details.
+"""
+
+RETRY_DELAY_BACKOFF = 0
+"""
+.. WARNING:: Deprecated
+   This constant was used by retry code in previous versions of the Arvados SDK.
+   Changing the value has no effect anymore.
+   Prefer passing `num_retries` to an API client constructor instead.
+   Refer to the constructor docstrings for details.
+"""
+
+RETRY_COUNT = 0
+"""
+.. WARNING:: Deprecated
+   This constant was used by retry code in previous versions of the Arvados SDK.
+   Changing the value has no effect anymore.
+   Prefer passing `num_retries` to an API client constructor instead.
+   Refer to the constructor docstrings for details.
+"""

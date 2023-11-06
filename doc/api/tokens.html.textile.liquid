@@ -73,6 +73,8 @@ Each entry in scopes consists of a @request_method@ and @request_path@.  The @re
 
 As a special case, a scope of @["all"]@ allows all resources.  This is the default if no scope is given.
 
+A valid token is always allowed to issue a request to "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current regardless of its scopes.
+
 Using scopes is also described on the "Securing API access with scoped tokens":{{site.baseurl}}/admin/scoped-tokens.html page of the admin documentation.
 
 h3. Scope examples
@@ -80,7 +82,7 @@ h3. Scope examples
 A scope of @GET /arvados/v1/collections@ permits listing collections.
 
 * Requests with different methods, such as creating a new collection using @POST /arvados/v1/collections@, will be rejected.
-* Requests to access other resources, such as @GET /arvados/v1/groups@, will be rejected.
+* Requests to access other resources, such as @GET /arvados/v1/groups@, will be rejected (except "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current, which is always allowed).
 * Be aware that requests for specific records, such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will also be rejected.  This is because the scope @GET /arvados/v1/collections@ does not end in @/@
 
 A scope of @GET /arvados/v1/collections/@ (with @/@ suffix) will permit access to individual collections.

@@ -5,7 +5,6 @@
 package keepweb
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -14,21 +13,12 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"github.com/prometheus/common/expfmt"
 	"gopkg.in/check.v1"
 )
 
 func (s *IntegrationSuite) checkCacheMetrics(c *check.C, regs ...string) {
 	s.handler.Cache.updateGauges()
-	reg := s.handler.Cache.registry
-	mfs, err := reg.Gather()
-	c.Check(err, check.IsNil)
-	buf := &bytes.Buffer{}
-	enc := expfmt.NewEncoder(buf, expfmt.FmtText)
-	for _, mf := range mfs {
-		c.Check(enc.Encode(mf), check.IsNil)
-	}
-	mm := buf.String()
+	mm := arvadostest.GatherMetricsAsString(s.handler.Cache.registry)
 	// Remove comments to make the "value vs. regexp" failure
 	// output easier to read.
 	mm = regexp.MustCompile(`(?m)^#.*\n`).ReplaceAllString(mm, "")

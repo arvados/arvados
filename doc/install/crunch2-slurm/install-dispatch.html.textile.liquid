@@ -125,7 +125,9 @@ If your Slurm cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunc
 </pre>
 </notextile>
 
-The choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in Slurm's @cgroup.conf@. Limits for other resource types will also be respected.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by Slurm.  When doing this, you should also set "ReserveExtraRAM":#ReserveExtraRAM .
+When using cgroups v1, the choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in Slurm's @cgroup.conf@.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by Slurm.  Limits for other resource types will also be respected.
+
+When doing this, you should also set "ReserveExtraRAM":#ReserveExtraRAM .
 
 {% include 'notebox_begin' %}
 

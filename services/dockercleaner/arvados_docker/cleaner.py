@@ -362,7 +362,7 @@ def main(arguments=sys.argv[1:]):
     config = load_config(arguments)
     configure_logging(config)
     try:
-        run(config, docker.Client(version='1.14'))
+        run(config, docker.APIClient(version='1.35'))
     except KeyboardInterrupt:
         sys.exit(1)
 

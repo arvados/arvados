@@ -51,8 +51,15 @@ class Container < ArvadosModel
   after_save :update_cr_logs
   after_save :handle_completed
 
-  has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
-  belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
+  has_many :container_requests,
+           class_name: 'ContainerRequest',
+           foreign_key: 'container_uuid',
+           primary_key: 'uuid'
+  belongs_to :auth,
+             class_name: 'ApiClientAuthorization',
+             foreign_key: 'auth_uuid',
+             primary_key: 'uuid',
+             optional: true
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -312,7 +319,7 @@ class Container < ArvadosModel
         resolved_runtime_constraints.delete('cuda')
       ].uniq
     end
-    reusable_runtime_constraints = hash_product(runtime_constraint_variations)
+    reusable_runtime_constraints = hash_product(**runtime_constraint_variations)
                                      .map { |v| resolved_runtime_constraints.merge(v) }
 
     candidates = candidates.where_serialized(:runtime_constraints, reusable_runtime_constraints, md5: true, multivalue: true)
@@ -343,7 +350,7 @@ class Container < ArvadosModel
     # Check for non-failing Running candidates and return the most likely to finish sooner.
     log_reuse_info { "checking for state=Running..." }
     running = candidates.where(state: Running).
-              where("(runtime_status->'error') is null").
+              where("(runtime_status->'error') is null and priority > 0").
               order('progress desc, started_at asc').
               limit(1).first
     if running
@@ -357,10 +364,15 @@ class Container < ArvadosModel
     locked_or_queued = candidates.
                        where("state IN (?)", [Locked, Queued]).
                        order('state asc, priority desc, created_at asc').
-                       limit(1).first
-    if locked_or_queued
-      log_reuse_info { "done, reusing container #{locked_or_queued.uuid} with state=#{locked_or_queued.state}" }
-      return locked_or_queued
+                       limit(1)
+    if !attrs[:scheduling_parameters]['preemptible']
+      locked_or_queued = locked_or_queued.
+                           where("not ((scheduling_parameters::jsonb)->>'preemptible')::boolean")
+    end
+    chosen = locked_or_queued.first
+    if chosen
+      log_reuse_info { "done, reusing container #{chosen.uuid} with state=#{chosen.state}" }
+      return chosen
     else
       log_reuse_info { "have no containers in Locked or Queued state" }
     end
@@ -374,7 +386,7 @@ class Container < ArvadosModel
       if self.state != Queued
         raise LockFailedError.new("cannot lock when #{self.state}")
       end
-      self.update_attributes!(state: Locked)
+      self.update!(state: Locked)
     end
   end
 
@@ -392,7 +404,7 @@ class Container < ArvadosModel
       if self.state != Locked
         raise InvalidStateTransitionError.new("cannot unlock when #{self.state}")
       end
-      self.update_attributes!(state: Queued)
+      self.update!(state: Queued)
     end
   end
 
@@ -637,7 +649,7 @@ class Container < ArvadosModel
       # ensure the token doesn't validate later in the same
       # transaction (e.g., in a test case) by satisfying expires_at >
       # transaction timestamp.
-      self.auth.andand.update_attributes(expires_at: db_transaction_time)
+      self.auth.andand.update(expires_at: db_transaction_time)
       self.auth = nil
       return
     elsif self.auth
@@ -741,6 +753,7 @@ class Container < ArvadosModel
                                    joins('left outer join containers as requesting_container on container_requests.requesting_container_uuid = requesting_container.uuid').
                                    where("container_requests.container_uuid = ? and "+
                                          "container_requests.priority > 0 and "+
+                                         "container_requests.owner_uuid not in (select group_uuid from trashed_groups) and "+
                                          "(requesting_container.priority is null or (requesting_container.state = 'Running' and requesting_container.priority > 0)) and "+
                                          "container_requests.state = 'Committed' and "+
                                          "container_requests.container_count < container_requests.container_count_max", uuid).
@@ -829,7 +842,7 @@ class Container < ArvadosModel
                 # Queued with priority 0.  (OTOH, if the child is already
                 # running, leave it alone so it can get cancelled the
                 # usual way, get a copy of the log collection, etc.)
-                cr.update_attributes!(state: ContainerRequest::Final)
+                cr.update!(state: ContainerRequest::Final)
               end
             end
           end

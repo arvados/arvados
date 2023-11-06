@@ -11,12 +11,13 @@ package manifest
 import (
 	"errors"
 	"fmt"
-	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 	"path"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 )
 
 var ErrInvalidToken = errors.New("Invalid token")
@@ -467,21 +468,21 @@ func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string 
 // If 'srcpath' and 'relocate' are '.' it simply returns an equivalent manifest
 // in normalized form.
 //
-//   Extract(".", ".")  // return entire normalized manfest text
+//	Extract(".", ".")  // return entire normalized manfest text
 //
 // If 'srcpath' points to a single file, it will return manifest text for just that file.
 // The value of "relocate" is can be used to rename the file or set the file stream.
 //
-//   Extract("./foo", ".")          // extract file "foo" and put it in stream "."
-//   Extract("./foo", "./bar")      // extract file "foo", rename it to "bar" in stream "."
-//   Extract("./foo", "./bar/")     // extract file "foo", rename it to "./bar/foo"
-//   Extract("./foo", "./bar/baz")  // extract file "foo", rename it to "./bar/baz")
+//	Extract("./foo", ".")          // extract file "foo" and put it in stream "."
+//	Extract("./foo", "./bar")      // extract file "foo", rename it to "bar" in stream "."
+//	Extract("./foo", "./bar/")     // extract file "foo", rename it to "./bar/foo"
+//	Extract("./foo", "./bar/baz")  // extract file "foo", rename it to "./bar/baz")
 //
 // Otherwise it will return the manifest text for all streams with the prefix in "srcpath" and place
 // them under the path in "relocate".
 //
-//   Extract("./stream", ".")      // extract "./stream" to "." and "./stream/subdir" to "./subdir")
-//   Extract("./stream", "./bar")  // extract "./stream" to "./bar" and "./stream/subdir" to "./bar/subdir")
+//	Extract("./stream", ".")      // extract "./stream" to "." and "./stream/subdir" to "./subdir")
+//	Extract("./stream", "./bar")  // extract "./stream" to "./bar" and "./stream/subdir" to "./bar/subdir")
 func (m Manifest) Extract(srcpath, relocate string) (ret Manifest) {
 	segmented, err := m.segment()
 	if err != nil {
