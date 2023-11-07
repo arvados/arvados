@@ -1,0 +1,30 @@
+---
+layout: default
+navsection: admin
+title: "Faster garbage collection in S3"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+When there is a large number of unneeded blocks stored in an S3 bucket, particularly when using @PrefixLength: 0@, the speed of garbage collection can be severely limited by AWS API rate limits and Arvados's multi-step trash/delete process.
+
+The multi-step trash/delete process can be short-circuited by setting @BlobTrashLifetime@ to zero and enabling @UnsafeDelete@ on S3-backed volumes. However, on an actively used cluster such a configuration *can result in data loss* in the rare case where a given block is trashed and then rewritten soon afterward, and S3 processes the write and delete requests in the opposite order.
+
+The following steps can be used to temporarily disable writes on an S3 bucket to enable faster garbage collection without data loss or service interruption. Note that garbage collection on other S3 volumes will be temporarily disabled during this procedure.
+# Create a new S3 bucket and configure it as an additional volume (this step may be skipped if the configuration already has enough writable volumes that clients will still be able to write blocks while the target volume is read-only). We recommend using @PrefixLength: 3@ for the new volume because this results in a much higher rate limit for I/O and garbage collection operations compared to the default @PrefixLength: 0@. If the target volume configuration specifies @StorageClasses@, use the same values for the new volume.
+# Shut down the @keep-balance@ service.
+# Update the target volume configuration with @ReadOnly: true@, @AllowTrashWhileReadOnly: true@, and @UnsafeDelete: true@.
+# In the @Collections@ configuration section, set @BlobTrashLifetime: 0@. Note this will effectively disable garbage collection on other S3-backed volumes, and garbage collection will delete blocks outright (bypassing the recoverable trash phase) on any non-S3 volumes.
+# Restart all @keepstore@ services with the updated configuration.
+# Run @keep-balance@ with command line options @-commit-pulls=false -commit-trash=true@. For example, use @sudo systemctl edit keep-balance@ to override the default command line: <notextile><pre><code>[Service]
+ExecStart=
+ExecStart=/usr/bin/keep-balance -commit-pulls=false -commit-trash=true</code></pre></notextile> ...and then start the service using @sudo systemctl start keep-balance@. Note that if you do not use @-commit-pulls=false@ here, keep-balance will also start copying data from the target volume to other volumes, which can slow down garbage collection progress.
+# Garbage collection should now proceed faster on the target volume. Monitor progress by watching @keep-balance@ logs and metrics. When garbage collection is complete, keep-balance logs will show an empty changeset: <notextile><pre><code>zzzzz-bi6l4-0123456789abcdef (keep0.zzzzz.arvadosapi.com:25107, disk): ChangeSet{Pulls:0, Trashes:0}</code></pre></notextile>
+# Revert @BlobTrashLifetime@ to its previous value (or the default value, @336h@) and set @UnsafeDelete: false@ on the target volume.
+# Optionally, revert to @ReadOnly: false@ and @AllowTrashWhileReadOnly: false@ on the target volume and/or set @ReadOnly: true@ and @AllowTrashWhileReadOnly: true@ on the new volume, depending on where you intend to store new data in future. If the target volume has @PrefixLength: 0@ and the new volume has @PrefixLength: 3@, you can skip this step: new data will be stored on the new volume, some existing data will be moved automatically to other volumes, and some will be left on the target volume as long as it's needed.
+# Revert the @-commit-pulls=false@ change to the @keep-balance@ startup script, and restart @keep-balance@.
+# Restart all @keepstore@ services with the updated configuration.
