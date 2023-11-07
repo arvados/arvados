@@ -35,11 +35,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 enum SidePanelCollapsedCategory {
     PROJECTS = 'Home Projects',
-    SHARED_WITH_ME = 'Shared with me',
-    PUBLIC_FAVORITES = 'Public Favorites',
     FAVORITES = 'My Favorites',
-    GROUPS = 'Groups',
+    PUBLIC_FAVORITES = 'Public Favorites',
+    SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
+    GROUPS = 'Groups',
     TRASH = 'Trash',
 }
 
@@ -56,9 +56,9 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
         navTarget: '',
     },
     {
-        name: SidePanelCollapsedCategory.SHARED_WITH_ME,
-        icon: <ShareMeIcon />,
-        navTarget: navigateToSharedWithMe,
+        name: SidePanelCollapsedCategory.FAVORITES,
+        icon: <FavoriteIcon />,
+        navTarget: navigateToFavorites,
     },
     {
         name: SidePanelCollapsedCategory.PUBLIC_FAVORITES,
@@ -66,19 +66,19 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
         navTarget: navigateToPublicFavorites,
     },
     {
-        name: SidePanelCollapsedCategory.FAVORITES,
-        icon: <FavoriteIcon />,
-        navTarget: navigateToFavorites,
-    },
-    {
-        name: SidePanelCollapsedCategory.GROUPS,
-        icon: <GroupsIcon />,
-        navTarget: navigateToGroups,
+        name: SidePanelCollapsedCategory.SHARED_WITH_ME,
+        icon: <ShareMeIcon />,
+        navTarget: navigateToSharedWithMe,
     },
     {
         name: SidePanelCollapsedCategory.ALL_PROCESSES,
         icon: <ProcessIcon />,
         navTarget: navigateToAllProcesses,
+    },
+    {
+        name: SidePanelCollapsedCategory.GROUPS,
+        icon: <GroupsIcon />,
+        navTarget: navigateToGroups,
     },
     {
         name: SidePanelCollapsedCategory.TRASH,

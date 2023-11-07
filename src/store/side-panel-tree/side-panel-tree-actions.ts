@@ -48,11 +48,11 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 
 let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.PROJECTS,
-    SidePanelTreeCategory.SHARED_WITH_ME,
-    SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.FAVORITES,
-    SidePanelTreeCategory.GROUPS,
+    SidePanelTreeCategory.PUBLIC_FAVORITES,
+    SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.ALL_PROCESSES,
+    SidePanelTreeCategory.GROUPS,
     SidePanelTreeCategory.TRASH
 ];
 
