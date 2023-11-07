@@ -1102,6 +1102,17 @@ Clusters:
       # A price factor of 1.0 is a reasonable starting point.
       PreemptiblePriceFactor: 0
 
+      # When the lowest-priced instance type for a given container is
+      # not available, try other instance types, up to the indicated
+      # maximum price factor.
+      #
+      # For example, with AvailabilityPriceFactor 1.5, if the
+      # lowest-cost instance type A suitable for a given container
+      # costs $2/h, Arvados may run the container on any instance type
+      # B costing $3/h or less when instance type A is not available
+      # or an idle instance of type B is already running.
+      MaximumPriceFactor: 1.5
+
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
       # cloud dispatcher for executing containers on worker VMs.
       # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
