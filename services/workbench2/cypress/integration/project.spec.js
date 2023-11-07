@@ -564,7 +564,7 @@ describe("Project tests", function () {
         );
     });
 
-    it.only("sorts displayed items correctly", () => {
+    it("sorts displayed items correctly", () => {
         cy.loginAs(activeUser);
 
         cy.get('[data-cy=project-panel] button[title="Select columns"]').click();
