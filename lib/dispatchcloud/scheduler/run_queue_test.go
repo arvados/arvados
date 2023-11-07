@@ -139,8 +139,8 @@ func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container
 	return true
 }
 
-func chooseType(ctr *arvados.Container) (arvados.InstanceType, error) {
-	return test.InstanceType(ctr.RuntimeConstraints.VCPUs), nil
+func chooseType(ctr *arvados.Container) ([]arvados.InstanceType, error) {
+	return []arvados.InstanceType{test.InstanceType(ctr.RuntimeConstraints.VCPUs)}, nil
 }
 
 var _ = check.Suite(&SchedulerSuite{})
@@ -364,7 +364,7 @@ func (*SchedulerSuite) TestInstanceCapacity(c *check.C) {
 	// type4, so we skip trying to create an instance for
 	// container3, skip locking container2, but do try to create a
 	// type1 instance for container1.
-	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4), test.ContainerUUID(1)})
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.shutdowns, check.Equals, 0)
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
 	c.Check(queue.StateChanges(), check.HasLen, 0)

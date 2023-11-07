@@ -93,12 +93,51 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 				KeepCacheRAM: 123456789,
 			},
 		})
-		c.Check(err, check.IsNil)
-		c.Check(best.Name, check.Equals, "best")
-		c.Check(best.RAM >= 1234567890, check.Equals, true)
-		c.Check(best.VCPUs >= 2, check.Equals, true)
-		c.Check(best.Scratch >= 2*GiB, check.Equals, true)
+		c.Assert(err, check.IsNil)
+		c.Assert(best, check.Not(check.HasLen), 0)
+		c.Check(best[0].Name, check.Equals, "best")
+		c.Check(best[0].RAM >= 1234567890, check.Equals, true)
+		c.Check(best[0].VCPUs >= 2, check.Equals, true)
+		c.Check(best[0].Scratch >= 2*GiB, check.Equals, true)
+		for i := range best {
+			// If multiple instance types are returned
+			// then they should all have the same price,
+			// because we didn't set MaximumPriceFactor>1.
+			c.Check(best[i].Price, check.Equals, best[0].Price)
+		}
 	}
+}
+
+func (*NodeSizeSuite) TestMaximumPriceFactor(c *check.C) {
+	menu := map[string]arvados.InstanceType{
+		"best+7":  {Price: 3.4, RAM: 8000000000, VCPUs: 8, Scratch: 64 * GiB, Name: "best+7"},
+		"best+5":  {Price: 3.0, RAM: 8000000000, VCPUs: 8, Scratch: 16 * GiB, Name: "best+5"},
+		"best+3":  {Price: 2.6, RAM: 4000000000, VCPUs: 8, Scratch: 16 * GiB, Name: "best+3"},
+		"best+2":  {Price: 2.4, RAM: 4000000000, VCPUs: 8, Scratch: 4 * GiB, Name: "best+2"},
+		"best+1":  {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 4 * GiB, Name: "best+1"},
+		"best":    {Price: 2.0, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+		"small+1": {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: 16 * GiB, Name: "small+1"},
+		"small":   {Price: 1.0, RAM: 2000000000, VCPUs: 2, Scratch: 1 * GiB, Name: "small"},
+	}
+	best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu, Containers: arvados.ContainersConfig{
+		MaximumPriceFactor: 1.5,
+	}}, &arvados.Container{
+		Mounts: map[string]arvados.Mount{
+			"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
+		},
+		RuntimeConstraints: arvados.RuntimeConstraints{
+			VCPUs:        2,
+			RAM:          987654321,
+			KeepCacheRAM: 123456789,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(best, check.HasLen, 5)
+	c.Check(best[0].Name, check.Equals, "best") // best price is $2
+	c.Check(best[1].Name, check.Equals, "best+1")
+	c.Check(best[2].Name, check.Equals, "best+2")
+	c.Check(best[3].Name, check.Equals, "best+3")
+	c.Check(best[4].Name, check.Equals, "best+5") // max price is $2 * 1.5 = $3
 }
 
 func (*NodeSizeSuite) TestChooseWithBlobBuffersOverhead(c *check.C) {
@@ -121,7 +160,8 @@ func (*NodeSizeSuite) TestChooseWithBlobBuffersOverhead(c *check.C) {
 		},
 	})
 	c.Check(err, check.IsNil)
-	c.Check(best.Name, check.Equals, "best")
+	c.Assert(best, check.HasLen, 1)
+	c.Check(best[0].Name, check.Equals, "best")
 }
 
 func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
@@ -145,11 +185,12 @@ func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
 		},
 	})
 	c.Check(err, check.IsNil)
-	c.Check(best.Name, check.Equals, "best")
-	c.Check(best.RAM >= 1234567890, check.Equals, true)
-	c.Check(best.VCPUs >= 2, check.Equals, true)
-	c.Check(best.Scratch >= 2*GiB, check.Equals, true)
-	c.Check(best.Preemptible, check.Equals, true)
+	c.Assert(best, check.HasLen, 1)
+	c.Check(best[0].Name, check.Equals, "best")
+	c.Check(best[0].RAM >= 1234567890, check.Equals, true)
+	c.Check(best[0].VCPUs >= 2, check.Equals, true)
+	c.Check(best[0].Scratch >= 2*GiB, check.Equals, true)
+	c.Check(best[0].Preemptible, check.Equals, true)
 }
 
 func (*NodeSizeSuite) TestScratchForDockerImage(c *check.C) {
@@ -252,9 +293,10 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				CUDA:         tc.CUDA,
 			},
 		})
-		if best.Name != "" {
+		if len(best) > 0 {
 			c.Check(err, check.IsNil)
-			c.Check(best.Name, check.Equals, tc.SelectedInstance)
+			c.Assert(best, check.HasLen, 1)
+			c.Check(best[0].Name, check.Equals, tc.SelectedInstance)
 		} else {
 			c.Check(err, check.Not(check.IsNil))
 		}
