@@ -5,7 +5,7 @@
 import React, { useCallback, useState } from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
+import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, ProcessIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classnames from "classnames";
@@ -28,7 +28,8 @@ type CssRules = 'list'
     | 'checkbox'
     | 'childItem'
     | 'childItemIcon'
-    | 'frozenIcon';
+    | 'frozenIcon'
+    | 'indentSpacer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
@@ -91,6 +92,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["600"],
         marginLeft: '10px',
     },
+    indentSpacer: {
+        width: '0.25rem'
+    }
 });
 
 export enum TreeItemStatus {
@@ -184,7 +188,7 @@ const FLAT_TREE_ACTIONS = {
     toggleActive: 'TOGGLE_ACTIVE',
 };
 
-const ItemIcon = React.memo(({ type, kind, active, groupClass, classes }: any) => {
+const ItemIcon = React.memo(({ type, kind, headKind, active, groupClass, classes }: any) => {
     let Icon = ProjectIcon;
 
     if (groupClass === GroupClass.FILTER) {
@@ -205,9 +209,13 @@ const ItemIcon = React.memo(({ type, kind, active, groupClass, classes }: any) =
     }
 
     if (kind) {
+        if(kind === ResourceKind.LINK && headKind) kind = headKind;
         switch (kind) {
             case ResourceKind.COLLECTION:
                 Icon = CollectionIcon;
+                break;
+            case ResourceKind.CONTAINER_REQUEST:
+                Icon = ProcessIcon;
                 break;
             default:
                 break;
@@ -247,11 +255,14 @@ const FlatTree = (props: FlatTreeProps) =>
                 .map((item: any) => <div key={item.id} data-id={item.id}
                     className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
                     style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
-                    {!isInFavoritesTree(props.it) && <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
-                        <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
-                            {props.getProperArrowAnimation(item.status, item.items!)}
-                        </ListItemIcon>
-                    </i>}
+                    {isInFavoritesTree(props.it) ? 
+                        <div className={props.classes.indentSpacer} />
+                        :
+                        <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
+                            <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
+                                {props.getProperArrowAnimation(item.status, item.items!)}
+                            </ListItemIcon> 
+                        </i>}
                     {props.showSelection(item) && !props.useRadioButtons &&
                         <Checkbox
                             checked={item.selected}
@@ -265,7 +276,7 @@ const FlatTree = (props: FlatTreeProps) =>
                             color="primary" />}
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer} ref={item.active ? props.selectedRef : undefined}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
-                            <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
+                            <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} headKind={item.data.headKind || null} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
                             <span style={{ fontSize: '0.875rem' }}>
                                 {item.data.name}
                             </span>

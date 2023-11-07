@@ -154,9 +154,9 @@ describe('Side panel tests', function() {
             'shared-with-me': '/shared-with-me',
             'public-favorites': '/public-favorites',
             'my-favorites': '/favorites',
-            groups: '/groups',
+            'groups': '/groups',
             'all-processes': '/all_processes',
-            trash: '/trash',
+            'trash': '/trash',
             'home-projects': `/projects/${activeUser.user.uuid}`,
         }
 
