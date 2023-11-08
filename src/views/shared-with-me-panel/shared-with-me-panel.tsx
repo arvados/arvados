@@ -10,7 +10,7 @@ import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ShareMeIcon } from 'components/icon/icon';
 import { ResourcesState, getResource } from 'store/resources/resources';
-import { ResourceKind, Resource } from 'models/resource';
+import { ResourceKind } from 'models/resource';
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { SHARED_WITH_ME_PANEL_ID } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
@@ -22,7 +22,7 @@ import {
     ResourceName,
     ProcessStatus as ResourceStatus,
     ResourceType,
-    ResourceOwnerWithName,
+    ResourceOwnerWithNameLink,
     ResourcePortableDataHash,
     ResourceFileSize,
     ResourceFileCount,
@@ -118,7 +118,7 @@ export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceOwnerWithName uuid={uuid} />,
+        render: (uuid) => <ResourceOwnerWithNameLink uuid={uuid} />,
     },
     {
         name: SharedWithMePanelColumnNames.PORTABLE_DATA_HASH,
