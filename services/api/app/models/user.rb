@@ -592,6 +592,84 @@ SELECT target_uuid, perm_level
     primary_user
   end
 
+  def self.update_remote_user remote_user
+    begin
+      user = User.find_or_create_by(uuid: remote_user['uuid'])
+    rescue ActiveRecord::RecordNotUnique
+      retry
+    end
+
+    user.lock do
+      needupdate = {}
+      nulled_attrs = nullify_attrs(remote_user)
+      [:email, :username, :first_name, :last_name, :prefs].each |k|
+        v = nulled_attrs[k]
+      if !v.nil? && user.send(k) != v
+        needupdate[k] = v
+      end
+
+      if needupdate.length > 0
+        begin
+          user.update!(needupdate)
+        rescue ActiveRecord::RecordInvalid
+          loginCluster = Rails.configuration.Login.LoginCluster
+          if user.uuid[0..4] == loginCluster && !needupdate[:username].nil?
+            local_user = User.find_by_username(needupdate[:username])
+            # The username of this record conflicts with an existing,
+            # different user record.  This can happen because the
+            # username changed upstream on the login cluster, or
+            # because we're federated with another cluster with a user
+            # by the same username.  The login cluster is the source
+            # of truth, so change the username on the conflicting
+            # record and retry the update operation.
+            if local_user.uuid != user.uuid
+              new_username = "#{needupdate[:username]}#{rand(99999999)}"
+              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
+              local_user.update!({username: new_username})
+              retry
+            end
+          end
+          raise # Not the issue we're handling above
+        end
+      end
+
+      if user.is_invited && !remote_user['is_invited']
+        # Remote user is not "invited" state, they should be unsetup, which
+        # also makes them inactive.
+        user.unsetup
+      else
+        if !user.is_invited && remote_user['is_invited'] and
+          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+           Rails.configuration.Users.AutoSetupNewUsers or
+           Rails.configuration.Users.NewUsersAreActive or
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+          # Remote user is 'invited' and should be set up
+          user.setup
+        end
+
+        if !user.is_active && remote_user['is_active'] && user.is_invited and
+          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+           Rails.configuration.Users.NewUsersAreActive or
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+          # remote user is active and invited, we need to activate them
+          user.update!(is_active: true)
+        elsif user.is_active && !remote_user['is_active']
+          # remote user is not active, we need to de-activate them
+          user.update!(is_active: false)
+        end
+
+        if remote_user_prefix == Rails.configuration.Login.LoginCluster and
+          user.is_active and
+          user.is_admin != remote_user['is_admin']
+          # Remote cluster controls our user database, including the
+          # admin flag.
+          user.update!(is_admin: remote_user['is_admin'])
+        end
+      end
+    end
+    user
+  end
+
   protected
 
   def self.attributes_required_columns
