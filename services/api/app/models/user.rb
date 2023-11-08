@@ -599,13 +599,20 @@ SELECT target_uuid, perm_level
       retry
     end
 
-    user.lock do
+    remote_user_prefix = user.uuid[0..4]
+
+    user.with_lock do
       needupdate = {}
-      nulled_attrs = nullify_attrs(remote_user)
-      [:email, :username, :first_name, :last_name, :prefs].each |k|
-        v = nulled_attrs[k]
-      if !v.nil? && user.send(k) != v
-        needupdate[k] = v
+      [:email, :username, :first_name, :last_name, :prefs].each do |k|
+        v = remote_user[k]
+        if !v.nil? && user.send(k) != v
+          needupdate[k] = v
+        end
+      end
+
+      if user.username == ""
+        user.set_initial_username(requested: remote_user['username'])
+        needupdate.delete 'username'
       end
 
       if needupdate.length > 0
@@ -613,7 +620,7 @@ SELECT target_uuid, perm_level
           user.update!(needupdate)
         rescue ActiveRecord::RecordInvalid
           loginCluster = Rails.configuration.Login.LoginCluster
-          if user.uuid[0..4] == loginCluster && !needupdate[:username].nil?
+          if remote_user_prefix == loginCluster && !needupdate[:username].nil?
             local_user = User.find_by_username(needupdate[:username])
             # The username of this record conflicts with an existing,
             # different user record.  This can happen because the
