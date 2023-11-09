@@ -23,8 +23,6 @@ ITERATION?=1
 
 TARGETS?=centos7 rocky8 debian10 debian11 ubuntu1804 ubuntu2004
 
-ARVADOS_DIRECTORY?=unset
-
 DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
 MAINTAINER=Arvados Package Maintainers <packaging@arvados.org>
 
@@ -39,6 +37,8 @@ RPM_FILE=$(APP_NAME)-$(VERSION)-$(ITERATION).x86_64.rpm
 
 GOPATH=$(shell go env GOPATH)
 export WORKSPACE?=$(shell pwd)
+
+ARVADOS_DIRECTORY?=$(shell env -C $(WORKSPACE) git rev-parse --show-toplevel)
 
 .PHONY: help clean* yarn-install test build packages packages-with-version integration-tests-in-docker
 
@@ -85,13 +85,35 @@ integration-tests: yarn-install check-arvados-directory
 	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
 
 integration-tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make arvados-server-install integration-tests
+	docker run -ti --rm \
+		--env ARVADOS_DIRECTORY=/usr/src/arvados \
+		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
+		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
+		-v $(ARVADOS_DIRECTORY):/usr/src/arvados \
+		-w /usr/src/arvados/services/workbench2 \
+		workbench2-build \
+		make arvados-server-install integration-tests
 
 unit-tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make arvados-server-install unit-tests
+	docker run -ti --rm \
+		--env ARVADOS_DIRECTORY=/usr/src/arvados \
+		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
+		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
+		-v $(ARVADOS_DIRECTORY):/usr/src/arvados \
+		-w /usr/src/arvados/services/workbench2 \
+		workbench2-build \
+		make arvados-server-install unit-tests
 
 tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -t -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados -e ci="${ci}" workbench2-build make test
+	docker run -ti --rm \
+		--env ARVADOS_DIRECTORY=/usr/src/arvados \
+		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
+		--env ci="${ci}" \
+		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
+		-v$(ARVADOS_DIRECTORY):/usr/src/arvados \
+		-w /usr/src/arvados/services/workbench2 \
+		workbench2-build \
+		make test
 
 test: unit-tests integration-tests
 
@@ -149,14 +171,16 @@ check-arvados-directory:
 	@if ! test -d "${ARVADOS_DIRECTORY}"; then echo "the environment variable ARVADOS_DIRECTORY does not point at a directory"; exit 1; fi
 
 packages-in-docker: check-arvados-directory workbench2-build-image
-	docker run --env ci="true" \
+	docker run -t --rm --env ci="true" \
 		--env ARVADOS_DIRECTORY=/tmp/arvados \
 		--env APP_NAME=${APP_NAME} \
 		--env ITERATION=${ITERATION} \
 		--env TARGETS="${TARGETS}" \
-		-w="/tmp/workbench2" \
-		-t -v ${WORKSPACE}:/tmp/workbench2 \
-		-v ${ARVADOS_DIRECTORY}:/tmp/arvados workbench2-build:latest \
+		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
+		-w "/tmp/workbench2" \
+		-v ${WORKSPACE}:/tmp/workbench2 \
+		-v ${ARVADOS_DIRECTORY}:/tmp/arvados \
+		workbench2-build:latest \
 		sh -c 'git config --global --add safe.directory /tmp/workbench2 && make packages'
 
 workbench2-build-image:
