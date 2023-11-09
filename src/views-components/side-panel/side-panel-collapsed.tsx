@@ -42,7 +42,7 @@ enum SidePanelCollapsedCategory {
     PUBLIC_FAVORITES = 'Public Favorites',
     SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
-    SHELL_ACCESS = 'Shell access',
+    SHELL_ACCESS = 'Shell Access',
     GROUPS = 'Groups',
     TRASH = 'Trash',
 }

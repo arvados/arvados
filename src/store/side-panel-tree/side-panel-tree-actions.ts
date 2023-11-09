@@ -20,12 +20,13 @@ import { LinkClass } from 'models/link';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
-    SHARED_WITH_ME = 'Shared with me',
-    PUBLIC_FAVORITES = 'Public Favorites',
     FAVORITES = 'My Favorites',
-    TRASH = 'Trash',
+    PUBLIC_FAVORITES = 'Public Favorites',
+    SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
+    SHELL_ACCESS = 'Shell access',
     GROUPS = 'Groups',
+    TRASH = 'Trash',
 }
 
 export const SIDE_PANEL_TREE = 'sidePanelTree';
@@ -52,6 +53,7 @@ let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.ALL_PROCESSES,
+    SidePanelTreeCategory.SHELL_ACCESS,
     SidePanelTreeCategory.GROUPS,
     SidePanelTreeCategory.TRASH
 ];

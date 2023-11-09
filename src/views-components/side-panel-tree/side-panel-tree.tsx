@@ -9,7 +9,7 @@ import { TreePicker, TreePickerProps } from "../tree-picker/tree-picker";
 import { TreeItem } from "components/tree/tree";
 import { ProjectResource } from "models/project";
 import { ListItemTextIcon } from "components/list-item-text-icon/list-item-text-icon";
-import { ProcessIcon, ProjectIcon, FilterGroupIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon';
+import { ProcessIcon, ProjectIcon, FilterGroupIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon } from 'components/icon/icon';
 import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
 import { openSidePanelContextMenu } from 'store/context-menu/context-menu-actions';
 import { noop } from 'lodash';
@@ -82,6 +82,8 @@ export const getSidePanelIcon = (category: string) => {
             return ProcessIcon;
         case SidePanelTreeCategory.GROUPS:
             return GroupsIcon;
+        case SidePanelTreeCategory.SHELL_ACCESS:
+            return TerminalIcon
         default:
             return ProjectIcon;
     }
