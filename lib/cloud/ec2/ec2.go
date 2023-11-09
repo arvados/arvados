@@ -327,7 +327,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		atomic.StoreInt32(&instanceSet.currentSubnetIDIndex, int32(tryIndex))
 		break
 	}
-	if rsv == nil {
+	if rsv == nil || len(rsv.Instances) == 0 {
 		return nil, wrapError(errToReturn, &instanceSet.throttleDelayCreate)
 	}
 	return &ec2Instance{
