@@ -20,6 +20,8 @@ import {
     navigateToAllProcesses,
     navigateToTrash,
 } from 'store/navigation/navigation-action'
+import { openUserVirtualMachines } from 'store/virtual-machines/virtual-machines-actions'
+import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
 
 type CssRules = 'root' | 'unselected' | 'selected'
@@ -27,7 +29,7 @@ type CssRules = 'root' | 'unselected' | 'selected'
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {},
     unselected: {
-        color: theme.customs.colors.grey700,
+        color: theme.customs.colors.grey600,
     },
     selected: {
         color: theme.palette.primary.main,
@@ -80,16 +82,16 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     {
         name: SidePanelCollapsedCategory.SHELL_ACCESS,
         icon: <TerminalIcon />,
-        navTarget: navigateToGroups,
+        navTarget: navigateToUserVirtualMachines,
     },
     {
         name: SidePanelCollapsedCategory.GROUPS,
-        icon: <GroupsIcon />,
+        icon: <GroupsIcon style={{marginLeft: '3px'}}/>,
         navTarget: navigateToGroups,
     },
     {
         name: SidePanelCollapsedCategory.TRASH,
-        icon: <TrashIcon style={{marginLeft: '-2px'}} />,
+        icon: <TrashIcon />,
         navTarget: navigateToTrash,
     },
 ]
