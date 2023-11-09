@@ -371,7 +371,7 @@ class ApiClientAuthorization < ArvadosModel
     # validate subsequent requests faster.
 
     act_as_system_user do
-      if remote_user
+      if remote_user && remote_user_uuid != anonymous_user_uuid
         # Sync user record if we loaded a remote user.
         user = User.update_remote_user remote_user
       end

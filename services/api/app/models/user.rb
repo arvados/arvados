@@ -593,14 +593,14 @@ SELECT target_uuid, perm_level
   end
 
   def self.update_remote_user remote_user
+    remote_user = remote_user.symbolize_keys
     begin
-      user = User.find_or_create_by(uuid: remote_user['uuid'])
+      user = User.find_or_create_by(uuid: remote_user[:uuid])
     rescue ActiveRecord::RecordNotUnique
       retry
     end
 
     remote_user_prefix = user.uuid[0..4]
-
     user.with_lock do
       needupdate = {}
       [:email, :username, :first_name, :last_name, :prefs].each do |k|
@@ -610,16 +610,24 @@ SELECT target_uuid, perm_level
         end
       end
 
-      if user.username == ""
-        user.set_initial_username(requested: remote_user['username'])
-        needupdate.delete 'username'
+      if user.username.nil? || user.username == ""
+        # Don't have a username yet, set one
+        user.set_initial_username(requested: remote_user[:username])
       end
+
+      loginCluster = Rails.configuration.Login.LoginCluster
+      if remote_user_prefix != loginCluster
+        # Will only try to change username if upstream is login cluster
+        needupdate.delete :username
+      end
+
+      needupdate[:is_admin] = false if user.is_admin.nil?
+      needupdate[:is_active] = false if user.is_active.nil?
 
       if needupdate.length > 0
         begin
           user.update!(needupdate)
         rescue ActiveRecord::RecordInvalid
-          loginCluster = Rails.configuration.Login.LoginCluster
           if remote_user_prefix == loginCluster && !needupdate[:username].nil?
             local_user = User.find_by_username(needupdate[:username])
             # The username of this record conflicts with an existing,
@@ -640,12 +648,12 @@ SELECT target_uuid, perm_level
         end
       end
 
-      if user.is_invited && !remote_user['is_invited']
+      if user.is_invited && !remote_user[:is_invited]
         # Remote user is not "invited" state, they should be unsetup, which
         # also makes them inactive.
         user.unsetup
       else
-        if !user.is_invited && remote_user['is_invited'] and
+        if !user.is_invited && remote_user[:is_invited] and
           (remote_user_prefix == Rails.configuration.Login.LoginCluster or
            Rails.configuration.Users.AutoSetupNewUsers or
            Rails.configuration.Users.NewUsersAreActive or
@@ -654,23 +662,23 @@ SELECT target_uuid, perm_level
           user.setup
         end
 
-        if !user.is_active && remote_user['is_active'] && user.is_invited and
+        if !user.is_active && remote_user[:is_active] && user.is_invited and
           (remote_user_prefix == Rails.configuration.Login.LoginCluster or
            Rails.configuration.Users.NewUsersAreActive or
            Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
           # remote user is active and invited, we need to activate them
           user.update!(is_active: true)
-        elsif user.is_active && !remote_user['is_active']
+        elsif user.is_active && !remote_user[:is_active]
           # remote user is not active, we need to de-activate them
           user.update!(is_active: false)
         end
 
         if remote_user_prefix == Rails.configuration.Login.LoginCluster and
           user.is_active and
-          user.is_admin != remote_user['is_admin']
+          user.is_admin != remote_user[:is_admin]
           # Remote cluster controls our user database, including the
           # admin flag.
-          user.update!(is_admin: remote_user['is_admin'])
+          user.update!(is_admin: remote_user[:is_admin])
         end
       end
     end
