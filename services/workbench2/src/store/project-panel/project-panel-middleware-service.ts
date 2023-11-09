@@ -69,7 +69,12 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                         rowsPerPage: dataExplorer.rowsPerPage,
                     })
                 );
-                api.dispatch(couldNotFetchProjectContents());
+                if (e.status === 404) {
+                    // It'll just show up as not found
+                }
+                else {
+                    api.dispatch(couldNotFetchProjectContents());
+                }
             } finally {
                 if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
             }
