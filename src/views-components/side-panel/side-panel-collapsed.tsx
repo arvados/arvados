@@ -20,7 +20,6 @@ import {
     navigateToAllProcesses,
     navigateToTrash,
 } from 'store/navigation/navigation-action'
-import { openUserVirtualMachines } from 'store/virtual-machines/virtual-machines-actions'
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
 
@@ -97,10 +96,14 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
 ]
 
 const mapStateToProps = ({auth, properties }: RootState) => {
-    return {
-        user: auth.user,
-        selectedPath: properties.breadcrumbs ? properties.breadcrumbs[0].label : SidePanelCollapsedCategory.PROJECTS,
-    }
+        return {
+            user: auth.user,
+            selectedPath: properties.breadcrumbs
+                ? properties.breadcrumbs[0].label !== 'Virtual Machines'
+                ? properties.breadcrumbs[0].label
+                : SidePanelCollapsedCategory.SHELL_ACCESS
+                : SidePanelCollapsedCategory.PROJECTS,
+        }
 }
 
 const mapDispatchToProps = (dispatch: Dispatch) => {
