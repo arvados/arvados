@@ -24,7 +24,7 @@ export enum SidePanelTreeCategory {
     PUBLIC_FAVORITES = 'Public Favorites',
     SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
-    SHELL_ACCESS = 'Shell access',
+    SHELL_ACCESS = 'Shell Access',
     GROUPS = 'Groups',
     TRASH = 'Trash',
 }
@@ -188,9 +188,9 @@ export const activateSidePanelTreeItem = (id: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const node = getSidePanelTreeNode(id)(getState().treePicker);
         if (node && !node.active) {
-            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
-        }
-        if (!isSidePanelTreeCategory(id)) {
+        dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id, pickerId: SIDE_PANEL_TREE }));
+    }
+    if (!isSidePanelTreeCategory(id)) {
             await dispatch<any>(activateSidePanelTreeProject(id));
         }
     };
