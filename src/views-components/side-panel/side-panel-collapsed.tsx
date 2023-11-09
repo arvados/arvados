@@ -5,6 +5,7 @@
 import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
+import { TerminalIcon } from 'components/icon/icon'
 import { List, ListItem, Tooltip } from '@material-ui/core'
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles'
 import { ArvadosTheme } from 'common/custom-theme'
@@ -39,6 +40,7 @@ enum SidePanelCollapsedCategory {
     PUBLIC_FAVORITES = 'Public Favorites',
     SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
+    SHELL_ACCESS = 'Shell access',
     GROUPS = 'Groups',
     TRASH = 'Trash',
 }
@@ -76,13 +78,18 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
         navTarget: navigateToAllProcesses,
     },
     {
+        name: SidePanelCollapsedCategory.SHELL_ACCESS,
+        icon: <TerminalIcon />,
+        navTarget: navigateToGroups,
+    },
+    {
         name: SidePanelCollapsedCategory.GROUPS,
         icon: <GroupsIcon />,
         navTarget: navigateToGroups,
     },
     {
         name: SidePanelCollapsedCategory.TRASH,
-        icon: <TrashIcon />,
+        icon: <TrashIcon style={{marginLeft: '-2px'}} />,
         navTarget: navigateToTrash,
     },
 ]
