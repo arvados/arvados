@@ -148,4 +148,4 @@ echo "Running tests..."
 CYPRESS_system_token=systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy \
     CYPRESS_controller_url=${controllerURL} \
     CYPRESS_BASE_URL=https://127.0.0.1:${WB2_PORT} \
-    yarn run cypress ${CYPRESS_MODE}
+    yarn run cypress ${CYPRESS_MODE} "$@"
