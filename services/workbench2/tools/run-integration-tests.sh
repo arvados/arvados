@@ -10,9 +10,6 @@ cleanup() {
     set +e +o pipefail
     kill ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID}
     wait ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID} || true
-    if [ ${CLEANUP_ARVADOS_DIR} -eq 1 ]; then
-        rm -rf ${ARVADOS_DIR}
-    fi
     echo >&2 "done"
 }
 
@@ -37,7 +34,6 @@ usage() {
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 ARVADOS_DIR="unset"
-CLEANUP_ARVADOS_DIR=0
 CYPRESS_MODE="run"
 WB2_DIR=`pwd`
 
@@ -62,8 +58,8 @@ done
 shift $((OPTIND-1))
 
 if [ "${ARVADOS_DIR}" = "unset" ]; then
-  echo "ARVADOS_DIR is unset, creating a temporary directory for new checkout"
-  ARVADOS_DIR=`mktemp -d`
+  echo "ARVADOS_DIR is unset, using git working dir"
+  ARVADOS_DIR=$(env -C "$WB2_DIR" git rev-parse --show-toplevel)
 fi
 
 echo "ARVADOS_DIR is ${ARVADOS_DIR}"
@@ -87,14 +83,9 @@ if [ -f "${WB2_DIR}/public/config.json" ]; then
     exit 1
 fi
 
-if [ ! -d "${ARVADOS_DIR}/.git" ]; then
-    mkdir -p ${ARVADOS_DIR} || exit 1
-    CLEANUP_ARVADOS_DIR=1
-    echo "Downloading arvados..."
-    git clone https://git.arvados.org/arvados.git ${ARVADOS_DIR} || exit 1
-fi
+GOPATH="$(go env GOPATH)"
 
-if [ ! -x ${GOPATH:-${HOME}/go}/bin/arvados-server ]; then
+if [ ! -x ${GOPATH}/bin/arvados-server ]; then
     echo "Building & installing arvados-server..."
     cd ${ARVADOS_DIR}
     GOFLAGS=-buildvcs=false go mod download || exit 1
@@ -103,7 +94,7 @@ if [ ! -x ${GOPATH:-${HOME}/go}/bin/arvados-server ]; then
     cd -
 
     echo "Installing dev dependencies..."
-    ${GOPATH:-${HOME}/go}/bin/arvados-server install -type test || exit 1
+    ${GOPATH}/bin/arvados-server install -type test || exit 1
 fi
 
 echo "Launching arvados in test mode..."
@@ -112,7 +103,7 @@ TMPDIR=/tmp/${TMPSUBDIR}
 cp ${VOCABULARY_CONF} ${TMPDIR}/voc.json
 cp ${ARVADOS_CONF} ${TMPDIR}/arvados.yml
 sed -i "s/VocabularyPath: \".*\"/VocabularyPath: \"\/tmp\/${TMPSUBDIR}\/voc.json\"/" ${TMPDIR}/arvados.yml
-coproc arvboot (${GOPATH:-${HOME}/go}/bin/arvados-server boot \
+coproc arvboot (${GOPATH}/bin/arvados-server boot \
     -type test \
     -source "${ARVADOS_DIR}" \
     -config ${TMPDIR}/arvados.yml \
