@@ -154,6 +154,16 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
             path = os.path.realpath(path)
             continue
         elif not mounted:
+            if was_mounted:
+                # This appears to avoid a race condition where we
+                # return control to the caller after running
+                # "fusermount -u -z" (see below), the caller (e.g.,
+                # arv-mount --replace) immediately tries to attach a
+                # new fuse mount at the same mount point, the
+                # lazy-unmount process unmounts that _new_ mount while
+                # it is being initialized, and the setup code waits
+                # forever for the new mount to be initialized.
+                time.sleep(1)
             return was_mounted
 
         if attempted:
