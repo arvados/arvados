@@ -13,7 +13,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { Resource, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
-import { ContextMenuActionItem, ContextMenuActionItemSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
 import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
@@ -42,7 +42,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     resources: ResourcesState;
-    executeMulti: (action: ContextMenuActionItem, checkedList: TCheckedList, resources: ResourcesState) => void;
+    executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 export const MultiselectToolbar = connect(
@@ -130,14 +130,14 @@ function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Reco
     return result;
 }
 
-function filterActions(actionArray: ContextMenuActionItemSet, filters: Set<string>): Array<ContextMenuActionItem> {
+function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>): Array<ContextMenuAction> {
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
-    const rawResult: Set<ContextMenuActionItem> = new Set();
+    const rawResult: Set<ContextMenuAction> = new Set();
     const resultNames = new Set();
-    const allFiltersArray: ContextMenuActionItem[][] = [];
+    const allFiltersArray: ContextMenuAction[][] = [];
     currentResourceKinds.forEach(kind => {
         if (filterSet[kind]) {
             const actions = filterActions(...filterSet[kind]);
@@ -188,7 +188,7 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        executeMulti: (selectedAction: ContextMenuActionItem, checkedList: TCheckedList, resources: ResourcesState): void => {
+        executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
             switch (selectedAction.name) {
                 case contextMenuActionConsts.MOVE_TO:

@@ -6,8 +6,8 @@ import { Dispatch } from "redux";
 import { ContextMenuItem } from "components/context-menu/context-menu";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
-export interface ContextMenuActionItem extends ContextMenuItem {
+export interface ContextMenuAction extends ContextMenuItem {
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
 }
 
-export type ContextMenuActionItemSet = Array<Array<ContextMenuActionItem>>;
+export type ContextMenuActionSet = Array<Array<ContextMenuAction>>;

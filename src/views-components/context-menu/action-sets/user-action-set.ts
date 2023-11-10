@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionItemSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
 import {
     AdvancedIcon,
     ProjectIcon,
@@ -26,7 +26,7 @@ import {
     isOtherUser,
 } from 'store/context-menu/context-menu-filters';
 
-export const userActionSet: ContextMenuActionItemSet = [
+export const userActionSet: ContextMenuActionSet = [
     [
         {
             name: 'Attributes',

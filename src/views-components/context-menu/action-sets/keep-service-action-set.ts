@@ -4,10 +4,10 @@
 
 import { openKeepServiceAttributesDialog, openKeepServiceRemoveDialog } from 'store/keep-services/keep-services-actions';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { ContextMenuActionItemSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
 import { AdvancedIcon, RemoveIcon, AttributesIcon } from 'components/icon/icon';
 
-export const keepServiceActionSet: ContextMenuActionItemSet = [
+export const keepServiceActionSet: ContextMenuActionSet = [
     [
         {
             name: 'Attributes',

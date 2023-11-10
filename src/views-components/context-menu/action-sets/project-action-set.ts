@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionItemSet } from "../context-menu-action-set";
+import { ContextMenuActionSet } from "../context-menu-action-set";
 import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
@@ -123,11 +123,11 @@ export const newProjectAction: any = {
     },
 };
 
-export const readOnlyProjectActionSet: ContextMenuActionItemSet = [
+export const readOnlyProjectActionSet: ContextMenuActionSet = [
     [toggleFavoriteAction, openInNewTabMenuAction, copyToClipboardMenuAction, viewDetailsAction, advancedAction, openWith3rdPartyClientAction],
 ];
 
-export const filterGroupActionSet: ContextMenuActionItemSet = [
+export const filterGroupActionSet: ContextMenuActionSet = [
     [
         toggleFavoriteAction,
         openInNewTabMenuAction,
@@ -142,7 +142,7 @@ export const filterGroupActionSet: ContextMenuActionItemSet = [
     ],
 ];
 
-export const frozenActionSet: ContextMenuActionItemSet = [
+export const frozenActionSet: ContextMenuActionSet = [
     [
         shareAction,
         toggleFavoriteAction,
@@ -155,7 +155,7 @@ export const frozenActionSet: ContextMenuActionItemSet = [
     ],
 ];
 
-export const projectActionSet: ContextMenuActionItemSet = [
+export const projectActionSet: ContextMenuActionSet = [
     [
         toggleFavoriteAction,
         openInNewTabMenuAction,

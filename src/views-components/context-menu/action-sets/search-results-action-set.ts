@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionItemSet } from '../context-menu-action-set';
+import { ContextMenuActionSet } from '../context-menu-action-set';
 import { DetailsIcon, AdvancedIcon, OpenIcon, Link } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
-export const searchResultsActionSet: ContextMenuActionItemSet = [
+export const searchResultsActionSet: ContextMenuActionSet = [
     [
         {
             icon: OpenIcon,

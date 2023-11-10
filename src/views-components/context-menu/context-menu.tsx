@@ -7,7 +7,7 @@ import { RootState } from "store/store";
 import { contextMenuActions, ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { ContextMenu as ContextMenuComponent, ContextMenuProps, ContextMenuItem } from "components/context-menu/context-menu";
 import { createAnchorAt } from "components/popover/helpers";
-import { ContextMenuActionItemSet, ContextMenuActionItem } from "./context-menu-action-set";
+import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
 import { sortByProperty } from "common/array-utils";
@@ -41,7 +41,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
     onClose: () => {
         dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
     },
-    onItemClick: (action: ContextMenuActionItem, resource?: ContextMenuResource) => {
+    onItemClick: (action: ContextMenuAction, resource?: ContextMenuResource) => {
         dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
         if (resource) {
             action.execute(dispatch, [resource]);
@@ -64,15 +64,15 @@ const mergeProps = ({ resource, ...dataProps }: DataProps, actionProps: ActionPr
 
 export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergeProps)(ContextMenuComponent);
 
-const menuActionSets = new Map<string, ContextMenuActionItemSet>();
+const menuActionSets = new Map<string, ContextMenuActionSet>();
 
-export const addMenuActionSet = (name: string, itemSet: ContextMenuActionItemSet) => {
+export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) => {
     const sorted = itemSet.map(items => items.sort(sortByProperty("name")));
     menuActionSets.set(name, sorted);
 };
 
-const emptyActionSet: ContextMenuActionItemSet = [];
-const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionItemSet =>
+const emptyActionSet: ContextMenuActionSet = [];
+const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet =>
     resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
 
 export enum ContextMenuKind {
