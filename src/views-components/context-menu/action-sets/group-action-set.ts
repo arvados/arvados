@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionItemSet } from 'views-components/context-menu/context-menu-action-set';
 import { RenameIcon, AdvancedIcon, RemoveIcon, AttributesIcon } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openGroupAttributes, openRemoveGroupDialog, openGroupUpdateDialog } from 'store/groups-panel/groups-panel-actions';
 
-export const groupActionSet: ContextMenuActionSet = [
+export const groupActionSet: ContextMenuActionItemSet = [
     [
         {
             name: 'Rename',

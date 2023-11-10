@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionItemSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
@@ -32,7 +32,7 @@ import { publicFavoritePanelActions } from "store/public-favorites-panel/public-
 import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { cancelRunningWorkflow } from "store/processes/processes-actions";
 
-export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
+export const readOnlyProcessResourceActionSet: ContextMenuActionItemSet = [
     [
         {
             component: ToggleFavoriteAction,
@@ -82,7 +82,7 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const processResourceActionSet: ContextMenuActionSet = [
+export const processResourceActionSet: ContextMenuActionItemSet = [
     [
         ...readOnlyProcessResourceActionSet.reduce((prev, next) => prev.concat(next), []),
         {
@@ -116,7 +116,7 @@ export const processResourceActionSet: ContextMenuActionSet = [
     ],
 ];
 
-const runningProcessOnlyActionSet: ContextMenuActionSet = [
+const runningProcessOnlyActionSet: ContextMenuActionItemSet = [
     [
         {
             name: "CANCEL",
@@ -128,7 +128,7 @@ const runningProcessOnlyActionSet: ContextMenuActionSet = [
     ]
 ];
 
-export const processResourceAdminActionSet: ContextMenuActionSet = [
+export const processResourceAdminActionSet: ContextMenuActionItemSet = [
     [
         ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
         {
@@ -150,7 +150,7 @@ export const runningProcessResourceActionSet = [
     ],
 ];
 
-export const runningProcessResourceAdminActionSet: ContextMenuActionSet = [
+export const runningProcessResourceAdminActionSet: ContextMenuActionItemSet = [
     [
         ...processResourceAdminActionSet.reduce((prev, next) => prev.concat(next), []),
         ...runningProcessOnlyActionSet.reduce((prev, next) => prev.concat(next), []),

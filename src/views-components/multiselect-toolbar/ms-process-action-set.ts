@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuActionItemSet } from "views-components/context-menu/context-menu-action-set";
 import { MoveToIcon, RemoveIcon, ReRunProcessIcon } from "components/icon/icon";
 import { openMoveProcessDialog } from "store/processes/process-move-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
 
-export const msProcessActionSet: ContextMenuActionSet = [
+export const msProcessActionSet: ContextMenuActionItemSet = [
     [
         {
             icon: ReRunProcessIcon,

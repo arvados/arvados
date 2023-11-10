@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionItemSet } from "../context-menu-action-set";
 import { FileCopyIcon, FileMoveIcon, RemoveIcon, RenameIcon } from "components/icon/icon";
 import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
 import { openFileRemoveDialog, openRenameFileDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
@@ -17,7 +17,7 @@ import {
     openCollectionPartialCopyToNewCollectionDialog,
 } from "store/collections/collection-partial-copy-actions";
 
-export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
+export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionItemSet = [
     [
         {
             name: "Copy item into new collection",
@@ -48,7 +48,7 @@ export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const readOnlyCollectionFileItemActionSet: ContextMenuActionSet = [
+export const readOnlyCollectionFileItemActionSet: ContextMenuActionItemSet = [
     [
         {
             component: DownloadCollectionFileAction,
@@ -60,7 +60,7 @@ export const readOnlyCollectionFileItemActionSet: ContextMenuActionSet = [
     ],
 ];
 
-const writableActionSet: ContextMenuActionSet = [
+const writableActionSet: ContextMenuActionItemSet = [
     [
         {
             name: "Move item into new collection",
@@ -99,6 +99,6 @@ const writableActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const collectionDirectoryItemActionSet: ContextMenuActionSet = readOnlyCollectionDirectoryItemActionSet.concat(writableActionSet);
+export const collectionDirectoryItemActionSet: ContextMenuActionItemSet = readOnlyCollectionDirectoryItemActionSet.concat(writableActionSet);
 
-export const collectionFileItemActionSet: ContextMenuActionSet = readOnlyCollectionFileItemActionSet.concat(writableActionSet);
+export const collectionFileItemActionSet: ContextMenuActionItemSet = readOnlyCollectionFileItemActionSet.concat(writableActionSet);

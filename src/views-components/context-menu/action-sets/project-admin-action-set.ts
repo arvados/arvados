@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionItemSet } from "../context-menu-action-set";
 import { TogglePublicFavoriteAction } from "views-components/context-menu/actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
@@ -32,7 +32,7 @@ export const togglePublicFavoriteAction = {
     },
 };
 
-export const projectAdminActionSet: ContextMenuActionSet = [
+export const projectAdminActionSet: ContextMenuActionItemSet = [
     [
         toggleFavoriteAction,
         openInNewTabMenuAction,
@@ -50,7 +50,7 @@ export const projectAdminActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const filterGroupAdminActionSet: ContextMenuActionSet = [
+export const filterGroupAdminActionSet: ContextMenuActionItemSet = [
     [
         toggleFavoriteAction,
         openInNewTabMenuAction,
@@ -66,7 +66,7 @@ export const filterGroupAdminActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const frozenAdminActionSet: ContextMenuActionSet = [
+export const frozenAdminActionSet: ContextMenuActionItemSet = [
     [
         shareAction,
         togglePublicFavoriteAction,

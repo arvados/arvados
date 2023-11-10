@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionItemSet } from 'views-components/context-menu/context-menu-action-set';
 import { CanReadIcon, CanManageIcon, CanWriteIcon } from 'components/icon/icon';
 import { editPermissionLevel } from 'store/group-details-panel/group-details-panel-actions';
 import { PermissionLevel } from 'models/permission';
 
-export const permissionEditActionSet: ContextMenuActionSet = [
+export const permissionEditActionSet: ContextMenuActionItemSet = [
     [
         {
             name: 'Read',

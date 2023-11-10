@@ -7,10 +7,10 @@ import {
     openApiClientAuthorizationRemoveDialog,
 } from "store/api-client-authorizations/api-client-authorizations-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuActionItemSet } from "views-components/context-menu/context-menu-action-set";
 import { AdvancedIcon, RemoveIcon, AttributesIcon } from "components/icon/icon";
 
-export const apiClientAuthorizationActionSet: ContextMenuActionSet = [
+export const apiClientAuthorizationActionSet: ContextMenuActionItemSet = [
     [
         {
             name: "Attributes",

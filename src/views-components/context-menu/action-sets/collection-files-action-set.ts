@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuActionItem, ContextMenuActionItemSet } from "views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import {
     openCollectionPartialCopyMultipleToNewCollectionDialog,
@@ -12,7 +12,7 @@ import {
 import { openCollectionPartialMoveMultipleToExistingCollectionDialog, openCollectionPartialMoveMultipleToNewCollectionDialog, openCollectionPartialMoveToSeparateCollectionsDialog } from "store/collections/collection-partial-move-actions";
 import { FileCopyIcon, FileMoveIcon, RemoveIcon, SelectAllIcon, SelectNoneIcon } from "components/icon/icon";
 
-const copyActions: ContextMenuAction[] = [
+const copyActions: ContextMenuActionItem[] = [
     {
         name: "Copy selected into new collection",
         icon: FileCopyIcon,
@@ -29,7 +29,7 @@ const copyActions: ContextMenuAction[] = [
     },
 ];
 
-const copyActionsMultiple: ContextMenuAction[] = [
+const copyActionsMultiple: ContextMenuActionItem[] = [
     ...copyActions,
     {
         name: "Copy selected into separate collections",
@@ -40,7 +40,7 @@ const copyActionsMultiple: ContextMenuAction[] = [
     }
 ];
 
-const moveActions: ContextMenuAction[] = [
+const moveActions: ContextMenuActionItem[] = [
     {
         name: "Move selected into new collection",
         icon: FileMoveIcon,
@@ -57,7 +57,7 @@ const moveActions: ContextMenuAction[] = [
     },
 ];
 
-const moveActionsMultiple: ContextMenuAction[] = [
+const moveActionsMultiple: ContextMenuActionItem[] = [
     ...moveActions,
     {
         name: "Move selected into separate collections",
@@ -68,7 +68,7 @@ const moveActionsMultiple: ContextMenuAction[] = [
     }
 ];
 
-const selectActions: ContextMenuAction[] = [
+const selectActions: ContextMenuActionItem[] = [
     {
         name: "Select all",
         icon: SelectAllIcon,
@@ -85,7 +85,7 @@ const selectActions: ContextMenuAction[] = [
     },
 ];
 
-const removeAction: ContextMenuAction = {
+const removeAction: ContextMenuActionItem = {
     name: "Remove selected",
     icon: RemoveIcon,
     execute: dispatch => {
@@ -94,22 +94,22 @@ const removeAction: ContextMenuAction = {
 };
 
 // These action sets are used on the multi-select actions button.
-export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [
+export const readOnlyCollectionFilesActionSet: ContextMenuActionItemSet = [
     selectActions,
     copyActions,
 ];
 
-export const readOnlyCollectionFilesMultipleActionSet: ContextMenuActionSet = [
+export const readOnlyCollectionFilesMultipleActionSet: ContextMenuActionItemSet = [
     selectActions,
     copyActionsMultiple,
 ];
 
-export const collectionFilesActionSet: ContextMenuActionSet = readOnlyCollectionFilesActionSet.concat([[
+export const collectionFilesActionSet: ContextMenuActionItemSet = readOnlyCollectionFilesActionSet.concat([[
     removeAction,
     ...moveActions
 ]]);
 
-export const collectionFilesMultipleActionSet: ContextMenuActionSet = readOnlyCollectionFilesMultipleActionSet.concat([[
+export const collectionFilesMultipleActionSet: ContextMenuActionItemSet = readOnlyCollectionFilesMultipleActionSet.concat([[
     removeAction,
     ...moveActionsMultiple
 ]]);

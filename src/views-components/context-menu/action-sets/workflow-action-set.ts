@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuActionItemSet } from "views-components/context-menu/context-menu-action-set";
 import { openRunProcess, deleteWorkflow } from "store/workflow-panel/workflow-panel-actions";
 import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon, TrashIcon } from "components/icon/icon";
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 
-export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
+export const readOnlyWorkflowActionSet: ContextMenuActionItemSet = [
     [
         {
             icon: OpenIcon,
@@ -49,7 +49,7 @@ export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const workflowActionSet: ContextMenuActionSet = [
+export const workflowActionSet: ContextMenuActionItemSet = [
     [
         ...readOnlyWorkflowActionSet[0],
         {

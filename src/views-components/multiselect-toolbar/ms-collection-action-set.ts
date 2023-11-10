@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuActionItemSet } from "views-components/context-menu/context-menu-action-set";
 import { MoveToIcon, CopyIcon } from "components/icon/icon";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
@@ -10,7 +10,7 @@ import { ToggleTrashAction } from "views-components/context-menu/actions/trash-a
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
-export const msCollectionActionSet: ContextMenuActionSet = [
+export const msCollectionActionSet: ContextMenuActionItemSet = [
     [
         {
             icon: CopyIcon,

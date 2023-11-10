@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from '../context-menu-action-set';
+import { ContextMenuActionItemSet } from '../context-menu-action-set';
 import { openCollectionCreateDialog } from 'store/collections/collection-create-actions';
 import { NewProjectIcon, CollectionIcon } from 'components/icon/icon';
 import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 
-export const rootProjectActionSet: ContextMenuActionSet = [
+export const rootProjectActionSet: ContextMenuActionItemSet = [
     [
         {
             icon: NewProjectIcon,

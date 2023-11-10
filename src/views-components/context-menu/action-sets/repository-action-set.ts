@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionItemSet } from 'views-components/context-menu/context-menu-action-set';
 import { AdvancedIcon, RemoveIcon, ShareIcon, AttributesIcon } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openRepositoryAttributes, openRemoveRepositoryDialog } from 'store/repositories/repositories-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 
-export const repositoryActionSet: ContextMenuActionSet = [
+export const repositoryActionSet: ContextMenuActionItemSet = [
     [
         {
             name: 'Attributes',

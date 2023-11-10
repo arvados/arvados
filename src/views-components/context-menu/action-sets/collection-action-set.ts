@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuAction, ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionItem, ContextMenuActionItemSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
@@ -34,7 +34,7 @@ import { togglePublicFavorite } from "store/public-favorites/public-favorites-ac
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
-const toggleFavoriteAction: ContextMenuAction = {
+const toggleFavoriteAction: ContextMenuActionItem = {
     component: ToggleFavoriteAction,
     name: "ToggleFavoriteAction",
     execute: (dispatch, resources) => {
@@ -45,7 +45,7 @@ const toggleFavoriteAction: ContextMenuAction = {
         }
     },
 };
-const commonActionSet: ContextMenuActionSet = [
+const commonActionSet: ContextMenuActionItemSet = [
     [
         {
             icon: OpenIcon,
@@ -86,7 +86,7 @@ const commonActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const readOnlyCollectionActionSet: ContextMenuActionSet = [
+export const readOnlyCollectionActionSet: ContextMenuActionItemSet = [
     [
         ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
         toggleFavoriteAction,
@@ -100,7 +100,7 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const collectionActionSet: ContextMenuActionSet = [
+export const collectionActionSet: ContextMenuActionItemSet = [
     [
         ...readOnlyCollectionActionSet.reduce((prev, next) => prev.concat(next), []),
         {
@@ -134,7 +134,7 @@ export const collectionActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const collectionAdminActionSet: ContextMenuActionSet = [
+export const collectionAdminActionSet: ContextMenuActionItemSet = [
     [
         ...collectionActionSet.reduce((prev, next) => prev.concat(next), []),
         {
@@ -151,7 +151,7 @@ export const collectionAdminActionSet: ContextMenuActionSet = [
     ],
 ];
 
-export const oldCollectionVersionActionSet: ContextMenuActionSet = [
+export const oldCollectionVersionActionSet: ContextMenuActionItemSet = [
     [
         ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
         {

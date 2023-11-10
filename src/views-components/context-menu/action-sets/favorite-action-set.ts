@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from '../context-menu-action-set';
+import { ContextMenuActionItemSet } from '../context-menu-action-set';
 import { ToggleFavoriteAction } from '../actions/favorite-action';
 import { toggleFavorite } from 'store/favorites/favorites-actions';
 import { favoritePanelActions } from 'store/favorite-panel/favorite-panel-action';
 
-export const favoriteActionSet: ContextMenuActionSet = [
+export const favoriteActionSet: ContextMenuActionItemSet = [
     [
         {
             component: ToggleFavoriteAction,
