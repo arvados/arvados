@@ -592,7 +592,7 @@ setup_virtualenv() {
     elif [[ -n "$short" ]]; then
         return
     fi
-    "$venvdest/bin/pip3" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
+    "$venvdest/bin/pip3" install --no-cache-dir 'setuptools>=68' 'pip>=20'
 }
 
 initialize() {

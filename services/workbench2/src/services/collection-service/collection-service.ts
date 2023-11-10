@@ -53,11 +53,14 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     async files(uuid: string) {
-        const request = await this.keepWebdavClient.propfind(`c=${uuid}`);
-        if (request.responseXML != null) {
-            return extractFilesData(request.responseXML);
+        try {
+            const request = await this.keepWebdavClient.propfind(`c=${uuid}`);
+            if (request.responseXML != null) {
+                return extractFilesData(request.responseXML);
+            }
+        } catch (e) {
+            return Promise.reject(e);
         }
-
         return Promise.reject();
     }
 

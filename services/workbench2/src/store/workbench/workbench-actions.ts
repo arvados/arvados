@@ -109,6 +109,12 @@ export const isWorkbenchLoading = (state: RootState) => {
 export const handleFirstTimeLoad = (action: any) => async (dispatch: Dispatch<any>, getState: () => RootState) => {
     try {
         await dispatch(action);
+    } catch (e) {
+        snackbarActions.OPEN_SNACKBAR({
+            message: "Error " + e,
+            hideDuration: 8000,
+            kind: SnackbarKind.WARNING,
+        })
     } finally {
         if (isWorkbenchLoading(getState())) {
             dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
