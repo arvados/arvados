@@ -38,8 +38,6 @@ services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.r
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
                Restrict Python SDK tests to the given class
-apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
-               Restrict Workbench tests to the given file
 services/githttpd_test="-check.vv"
                Show all log messages, even when tests pass (also works
                with services/keepstore_test etc.)
@@ -62,12 +60,6 @@ https://dev.arvados.org/projects/arvados/wiki/Running_tests
 
 Available tests:
 
-apps/workbench (*)
-apps/workbench_units (*)
-apps/workbench_functionals (*)
-apps/workbench_integration (*)
-apps/workbench_benchmark
-apps/workbench_profile
 cmd/arvados-client
 cmd/arvados-package
 cmd/arvados-server
@@ -135,9 +127,6 @@ tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
 
-(*) apps/workbench is shorthand for apps/workbench_units +
-    apps/workbench_functionals + apps/workbench_integration
-
 EOF
 
 # First make sure to remove any ARVADOS_ variables from the calling
@@ -184,10 +173,6 @@ fatal() {
 
 exit_cleanly() {
     trap - INT
-    if which create-plot-data-from-log.sh >/dev/null; then
-        create-plot-data-from-log.sh $BUILD_NUMBER "$WORKSPACE/apps/workbench/log/test.log" "$WORKSPACE/apps/workbench/log/"
-    fi
-    rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
     stop_services
     rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
     report_outcomes
@@ -289,7 +274,7 @@ sanity_checks() {
 }
 
 rotate_logfile() {
-  # i.e.  rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
+  # i.e.  rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
   # $BUILD_NUMBER is set by Jenkins if this script is being called as part of a Jenkins run
   if [[ -f "$1/$2" ]]; then
     THEDATE=`date +%Y%m%d%H%M%S`
@@ -302,7 +287,6 @@ declare -a failures
 declare -A skip
 declare -A only
 declare -A testargs
-skip[apps/workbench_profile]=1
 
 while [[ -n "$1" ]]
 do
@@ -690,9 +674,6 @@ retry() {
 
 do_test() {
     case "${1}" in
-        apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
-            suite=apps/workbench
-            ;;
         services/workbench2_units | services/workbench2_integration)
             suite=services/workbench2
             ;;
@@ -989,13 +970,6 @@ pythonstuff=(
 declare -a gostuff
 gostuff=($(cd "$WORKSPACE" && git ls-files | grep '\.go$' | sed -e 's/\/[^\/]*$//' | sort -u))
 
-install_apps/workbench() {
-    cd "$WORKSPACE/apps/workbench" \
-        && mkdir -p tmp/cache \
-        && RAILS_ENV=test bundle_install_trylocal \
-        && RAILS_ENV=test RAILS_GROUPS=assets "$bundle" exec rake npm:install
-}
-
 install_services/workbench2() {
     cd "$WORKSPACE/services/workbench2" \
         && make yarn-install ARVADOS_DIRECTORY="${WORKSPACE}"
@@ -1064,36 +1038,6 @@ test_services/workbench2_integration() {
     cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
 }
 
-test_apps/workbench_units() {
-    local TASK="test:units"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
-}
-
-test_apps/workbench_functionals() {
-    local TASK="test:functionals"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
-}
-
-test_apps/workbench_integration() {
-    local TASK="test:integration"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
-}
-
-test_apps/workbench_benchmark() {
-    local TASK="test:benchmark"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
-}
-
-test_apps/workbench_profile() {
-    local TASK="test:profile"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_profile]}
-}
-
 install_deps() {
     # Install parts needed by test suites
     do_install env
@@ -1127,7 +1071,6 @@ install_all() {
         do_install "$g" go
     done
     do_install services/api
-    do_install apps/workbench
     do_install services/workbench2
 }
 
@@ -1162,11 +1105,6 @@ test_all() {
     do
         do_test "$g" go
     done
-    do_test apps/workbench_units
-    do_test apps/workbench_functionals
-    do_test apps/workbench_integration
-    do_test apps/workbench_benchmark
-    do_test apps/workbench_profile
     do_test services/workbench2_units
     do_test services/workbench2_integration
 }
@@ -1209,11 +1147,6 @@ done
 testfuncargs["sdk/cli"]="sdk/cli"
 testfuncargs["sdk/R"]="sdk/R"
 testfuncargs["sdk/java-v2"]="sdk/java-v2"
-testfuncargs["apps/workbench_units"]="apps/workbench_units"
-testfuncargs["apps/workbench_functionals"]="apps/workbench_functionals"
-testfuncargs["apps/workbench_integration"]="apps/workbench_integration"
-testfuncargs["apps/workbench_benchmark"]="apps/workbench_benchmark"
-testfuncargs["apps/workbench_profile"]="apps/workbench_profile"
 
 if [[ -z ${interactive} ]]; then
     install_all

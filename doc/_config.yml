@@ -4,11 +4,9 @@
 
 # baseurl is the location of the generated site from the browser's
 # perspective (e.g., http://doc.arvados.org or
-# file:///tmp/arvados/doc/.site). To make docs show up inside
-# workbench, use /doc here and add a symlink at
-# apps/workbench/public/doc pointing to ../../../doc/.site
-# You can also set these on the command line:
-# $ rake generate baseurl=/example arvados_api_host=example.com
+# file:///tmp/arvados/doc/.site).  You can also set these on the
+# command line: $ rake generate baseurl=/example
+# arvados_api_host=example.com
 
 baseurl:
 current_version:

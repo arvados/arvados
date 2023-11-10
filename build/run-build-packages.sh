@@ -14,7 +14,7 @@ Syntax:
 Options:
 
 --build-bundle-packages  (default: false)
-    Build api server and workbench packages with vendor/bundle included
+    Build api server package with vendor/bundle included
 --debug
     Output debug information (default: false)
 --target <target>
@@ -309,8 +309,6 @@ debug_echo -e "\nRails packages\n"
 
 # The rails api server package
 handle_api_server "$ARCH"
-# The rails workbench package
-handle_workbench "$ARCH"
 
 # clean up temporary GOPATH
 rm -rf "$GOPATH"
