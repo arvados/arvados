@@ -49,6 +49,7 @@ var arvadosServiceFile []byte
 type installCommand struct {
 	ClusterType    string
 	SourcePath     string
+	Commit         string
 	PackageVersion string
 	EatMyData      bool
 }
@@ -71,6 +72,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&inst.ClusterType, "type", "production", "cluster `type`: development, test, production, or package")
 	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
+	flags.StringVar(&inst.Commit, "commit", "", "source commit `hash` to embed (blank means use 'git log' or all-zero placeholder)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 
@@ -78,6 +80,14 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+	}
+
+	if inst.Commit == "" {
+		if commit, err := exec.Command("env", "-C", inst.SourcePath, "git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil {
+			inst.Commit = strings.TrimSpace(string(commit))
+		} else {
+			inst.Commit = "0000000000000000000000000000000000000000"
+		}
 	}
 
 	var dev, test, prod, pkg bool
@@ -563,7 +573,10 @@ ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /us
 			// container using a non-root-owned git tree
 			// mounted from the host -- as in
 			// "arvados-package build".
-			cmd := exec.Command("go", "install", "-buildvcs=false", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
+			cmd := exec.Command("go", "install", "-buildvcs=false",
+				"-ldflags", "-s -w"+
+					" -X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+
+					" -X git.arvados.org/arvados.git/lib/cmd.commit="+inst.Commit)
 			cmd.Env = append(cmd.Env, os.Environ()...)
 			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
@@ -683,8 +696,8 @@ done
 
 		// Install workbench2 app to /var/lib/arvados/workbench2/
 		if err = inst.runBash(`
-cd `+inst.SourcePath+`/services/workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
+cd "`+inst.SourcePath+`/services/workbench2"
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+inst.Commit[:9]+`" yarn build
 rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
 			return 1

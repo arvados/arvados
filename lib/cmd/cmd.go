@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -35,12 +36,29 @@ func (f HandlerFunc) RunCommand(prog string, args []string, stdin io.Reader, std
 // 0.
 var Version versionCommand
 
-var version = "dev"
+var (
+	// These default version/commit strings should be set at build
+	// time: `go install -buildvcs=false -ldflags "-X
+	// git.arvados.org/arvados.git/lib/cmd.version=1.2.3"`
+	version = "dev"
+	commit  = "0000000000000000000000000000000000000000"
+)
 
 type versionCommand struct{}
 
 func (versionCommand) String() string {
 	return fmt.Sprintf("%s (%s)", version, runtime.Version())
+}
+
+func (versionCommand) Commit() string {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, bs := range bi.Settings {
+			if bs.Key == "vcs.revision" {
+				return bs.Value
+			}
+		}
+	}
+	return commit
 }
 
 func (versionCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
