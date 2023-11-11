@@ -670,7 +670,6 @@ def run_nginx():
     nginxconf['HEALTHSSLPORT'] = external_port_from_config("Health")
     nginxconf['WSPORT'] = internal_port_from_config("Websocket")
     nginxconf['WSSSLPORT'] = external_port_from_config("Websocket")
-    nginxconf['WORKBENCH1PORT'] = internal_port_from_config("Workbench1")
     nginxconf['WORKBENCH1SSLPORT'] = external_port_from_config("Workbench1")
     nginxconf['WORKBENCH2PORT'] = internal_port_from_config("Workbench2")
     nginxconf['WORKBENCH2SSLPORT'] = external_port_from_config("Workbench2")
@@ -706,7 +705,6 @@ def setup_config():
     controller_external_port = find_available_port()
     websocket_port = find_available_port()
     websocket_external_port = find_available_port()
-    workbench1_port = find_available_port()
     workbench1_external_port = find_available_port()
     workbench2_port = find_available_port()
     workbench2_external_port = find_available_port()
@@ -758,9 +756,6 @@ def setup_config():
         },
         "Workbench1": {
             "ExternalURL": "https://%s:%s/" % (localhost, workbench1_external_port),
-            "InternalURLs": {
-                "http://%s:%s"%(localhost, workbench1_port): {},
-            },
         },
         "Workbench2": {
             "ExternalURL": "https://%s:%s/" % (localhost, workbench2_external_port),
