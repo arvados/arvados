@@ -241,14 +241,10 @@ sanity_checks() {
         || fatal "No libpam pam_appl.h. Try: apt-get install libpam0g-dev"
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
-    echo -n 'phantomjs: '
-    phantomjs --version || fatal "No phantomjs. Try: apt-get install phantomjs"
     echo -n 'xvfb: '
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
-    echo -n 'geckodriver: '
-    geckodriver --version | grep ^geckodriver || echo "No geckodriver. Try: arvados-server install"
     echo -n 'singularity: '
     singularity --version || fatal "No singularity. Try: arvados-server install"
     echo -n 'docker client: '

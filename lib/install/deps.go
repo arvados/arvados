@@ -36,8 +36,6 @@ const (
 	rubyversion             = "2.7.7"
 	bundlerversion          = "2.2.19"
 	singularityversion      = "3.10.4"
-	pjsversion              = "1.9.8"
-	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.12"
 	devtestDatabasePassword = "insecure_arvados_test"
@@ -340,32 +338,6 @@ ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 	}
 
 	if !prod && !pkg {
-		if havepjsversion, err := exec.Command("/usr/local/bin/phantomjs", "--version").CombinedOutput(); err == nil && string(havepjsversion) == "1.9.8\n" {
-			logger.Print("phantomjs " + pjsversion + " already installed")
-		} else {
-			err = inst.runBash(`
-PJS=phantomjs-`+pjsversion+`-linux-x86_64
-wget --progress=dot:giga -O- https://cache.arvados.org/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
-ln -sfv /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		if havegeckoversion, err := exec.Command("/usr/local/bin/geckodriver", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegeckoversion), " "+geckoversion+" ") {
-			logger.Print("geckodriver " + geckoversion + " already installed")
-		} else {
-			err = inst.runBash(`
-GD=v`+geckoversion+`
-wget --progress=dot:giga -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
-ln -sfv /var/lib/arvados/bin/geckodriver /usr/local/bin/
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
 		if havegradleversion, err := exec.Command("/usr/local/bin/gradle", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegradleversion), "Gradle "+gradleversion+"\n") {
 			logger.Print("gradle " + gradleversion + " already installed")
 		} else {
