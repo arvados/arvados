@@ -696,9 +696,12 @@ done
 
 		// Install workbench2 app to /var/lib/arvados/workbench2/
 		if err = inst.runBash(`
-cd "`+inst.SourcePath+`/services/workbench2"
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+inst.Commit[:9]+`" yarn build
-rsync -a --delete-after build/ /var/lib/arvados/workbench2/
+src="`+inst.SourcePath+`/services/workbench2"
+tmp=/var/lib/arvados/tmp/workbench2
+dst=/var/lib/arvados/workbench2
+rsync -a --delete-after "$src/" "$tmp/"
+env -C "$tmp" VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+inst.Commit[:9]+`" yarn build
+rsync -a --delete-after "$tmp/build/" "$dst/"
 `, stdout, stderr); err != nil {
 			return 1
 		}
