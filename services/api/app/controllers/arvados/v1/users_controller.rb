@@ -16,7 +16,12 @@ class Arvados::V1::UsersController < ApplicationController
   # records from LoginCluster.
   def batch_update
     @objects = []
-    params[:updates].andand.each do |uuid, attrs|
+    # update_remote_user takes a row lock on the User record, so sort
+    # the keys so we always lock them in the same order.
+    sorted = params[:updates].keys.sort
+    sorted.each do |uuid|
+      attrs = params[:updates][uuid]
+      attrs[:uuid] = uuid
       u = User.update_remote_user nullify_attrs(attrs)
       @objects << u
     end

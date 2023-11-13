@@ -34,6 +34,7 @@ class User < ArvadosModel
   before_create :set_initial_username, :if => Proc.new {
     username.nil? and email
   }
+  before_create :active_is_not_nil
   after_create :after_ownership_change
   after_create :setup_on_activate
   after_create :add_system_group_permission_link
@@ -382,7 +383,7 @@ SELECT target_uuid, perm_level
   end
 
   def set_initial_username(requested: false)
-    if !requested.is_a?(String) || requested.empty?
+    if (!requested.is_a?(String) || requested.empty?) and email
       email_parts = email.partition("@")
       local_parts = email_parts.first.partition("+")
       if email_parts.any?(&:empty?)
@@ -393,11 +394,18 @@ SELECT target_uuid, perm_level
         requested = email_parts.first
       end
     end
-    requested.sub!(/^[^A-Za-z]+/, "")
-    requested.gsub!(/[^A-Za-z0-9]/, "")
-    unless requested.empty?
+    if requested
+      requested.sub!(/^[^A-Za-z]+/, "")
+      requested.gsub!(/[^A-Za-z0-9]/, "")
+    end
+    unless !requested || requested.empty?
       self.username = find_usable_username_from(requested)
     end
+  end
+
+  def active_is_not_nil
+    self.is_active = false if self.is_active.nil?
+    self.is_admin = false if self.is_admin.nil?
   end
 
   # Move this user's (i.e., self's) owned items to new_owner_uuid and
@@ -610,19 +618,17 @@ SELECT target_uuid, perm_level
         end
       end
 
-      if user.username.nil? || user.username == ""
-        # Don't have a username yet, set one
-        user.set_initial_username(requested: remote_user[:username])
-      end
+      user.email = needupdate[:email] if needupdate[:email]
 
       loginCluster = Rails.configuration.Login.LoginCluster
-      if remote_user_prefix != loginCluster
-        # Will only try to change username if upstream is login cluster
+      if user.username.nil? || user.username == ""
+        # Don't have a username yet, set one
+        needupdate[:username] = user.set_initial_username(requested: remote_user[:username])
+      elsif remote_user_prefix != loginCluster
+        # Upstream is not login cluster, don't try to change the
+        # username once set.
         needupdate.delete :username
       end
-
-      needupdate[:is_admin] = false if user.is_admin.nil?
-      needupdate[:is_active] = false if user.is_active.nil?
 
       if needupdate.length > 0
         begin

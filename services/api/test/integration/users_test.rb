@@ -303,15 +303,15 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_response :success
     rp = json_response
     assert_not_nil rp["uuid"]
-    assert_not_nil rp["is_active"]
-    assert_nil rp["is_admin"]
+    assert_equal true, rp["is_active"]
+    assert_equal false, rp["is_admin"]
 
     get "/arvados/v1/users/#{rp['uuid']}",
       params: {format: 'json'},
       headers: auth(:admin)
     assert_response :success
     assert_equal rp["uuid"], json_response['uuid']
-    assert_nil json_response['is_admin']
+    assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
