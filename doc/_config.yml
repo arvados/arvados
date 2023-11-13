@@ -235,7 +235,6 @@ navbar:
     - User interface:
       - install/setup-login.html.textile.liquid
       - install/install-ws.html.textile.liquid
-      - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
       - install/workbench.html.textile.liquid
 #      - install/install-composer.html.textile.liquid
