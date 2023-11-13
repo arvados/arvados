@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useState } from "react";
-import { StyleRulesCallback, Typography, WithStyles, withStyles } from "@material-ui/core";
+import { StyleRulesCallback, Tooltip, WithStyles, withStyles } from "@material-ui/core";
 import { CProgressStacked, CProgress } from '@coreui/react';
 import { useAsyncInterval } from "common/use-async-interval";
 import { Process, isProcessRunning } from "store/processes/process";
@@ -16,10 +16,13 @@ type CssRules = 'progressWrapper' | 'progressStacked' ;
 
 const styles: StyleRulesCallback<CssRules> = (theme) => ({
     progressWrapper: {
-        margin: "0 20px",
+        margin: "25px 0 0",
+        flexGrow: 1,
+        flexBasis: "100px",
     },
     progressStacked: {
         border: "1px solid gray",
+        height: "10px",
         // Override stripe color to be close to white
         "& .progress-bar-striped": {
             backgroundImage:
@@ -71,18 +74,23 @@ export const SubprocessProgressBar = connect(null, mapDispatchToProps)(withStyle
 
         return progressData !== undefined && getStatusTotal(progressData) > 0 ? <div className={classes.progressWrapper}>
             <CProgressStacked className={classes.progressStacked}>
-                <CProgress height={20} color="success" title="Completed"
-                    value={getStatusPercent(progressData, ProcessStatusFilter.COMPLETED)} />
-                <CProgress height={20} color="success" title="Running" variant="striped" animated
-                    value={getStatusPercent(progressData, ProcessStatusFilter.RUNNING)} />
-                <CProgress height={20} color="danger" title="Failed"
-                    value={getStatusPercent(progressData, ProcessStatusFilter.FAILED)} />
-                <CProgress height={20} color="secondary" title="Queued" variant="striped" animated
-                    value={getStatusPercent(progressData, ProcessStatusFilter.QUEUED)} />
+                <Tooltip title={`${progressData[ProcessStatusFilter.COMPLETED]} Completed`}>
+                    <CProgress height={10} color="success"
+                        value={getStatusPercent(progressData, ProcessStatusFilter.COMPLETED)} />
+                </Tooltip>
+                <Tooltip title={`${progressData[ProcessStatusFilter.RUNNING]} Running`}>
+                    <CProgress height={10} color="success" variant="striped"
+                        value={getStatusPercent(progressData, ProcessStatusFilter.RUNNING)} />
+                </Tooltip>
+                <Tooltip title={`${progressData[ProcessStatusFilter.FAILED]} Failed`}>
+                    <CProgress height={10} color="danger"
+                        value={getStatusPercent(progressData, ProcessStatusFilter.FAILED)} />
+                </Tooltip>
+                <Tooltip title={`${progressData[ProcessStatusFilter.QUEUED]} Queued`}>
+                    <CProgress height={10} color="secondary" variant="striped"
+                        value={getStatusPercent(progressData, ProcessStatusFilter.QUEUED)} />
+                </Tooltip>
             </CProgressStacked>
-            <Typography variant="body2">
-                {progressData[ProcessStatusFilter.COMPLETED]} Completed, {progressData[ProcessStatusFilter.RUNNING]} Running, {progressData[ProcessStatusFilter.FAILED]} Failed, {progressData[ProcessStatusFilter.QUEUED]} Queued
-            </Typography>
         </div> : <></>;
     }
 ));
