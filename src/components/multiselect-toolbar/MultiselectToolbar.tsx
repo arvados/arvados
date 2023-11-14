@@ -13,8 +13,9 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { Resource, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
-import { ContextMenuAction, ContextMenuActionSet, MultiSelectMenuAction } from "views-components/context-menu/context-menu-action-set";
-import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from "./ms-toolbar-action-filters";
+import { MultiSelectMenuAction, MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-action-set";
+import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
@@ -74,7 +75,7 @@ export const MultiselectToolbar = connect(
                                     disableFocusListener
                                 >
                                     <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
-                                        {!currentPathIsTrash ? btn.defaultIcon && btn.defaultIcon({}) : btn.altIcon && btn.altIcon({})}
+                                        {!currentPathIsTrash ? btn.icon({}) : btn.altIcon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
@@ -188,13 +189,13 @@ function mapDispatchToProps(dispatch: Dispatch) {
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
             switch (selectedAction.name) {
-                case contextMenuActionConsts.MOVE_TO:
-                case contextMenuActionConsts.REMOVE:
+                case MultiSelectMenuActionNames.MOVE_TO:
+                case MultiSelectMenuActionNames.REMOVE:
                     const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as ContainerRequestResource | Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
-                case contextMenuActionConsts.COPY_TO_CLIPBOARD:
+                case MultiSelectMenuActionNames.COPY_TO_CLIPBOARD:
                     const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
                     dispatch<any>(copyToClipboardAction(selectedResources));
                     break;
