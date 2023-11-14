@@ -11,7 +11,7 @@ export interface ContextMenuAction extends ContextMenuItem {
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
 }
 
-export interface DynamicContextMenuAction extends ContextMenuAction {
+export interface MultiSelectMenuAction extends ContextMenuAction {
     defaultText?: string
     defaultIcon?: IconType
     altText?: string
@@ -19,4 +19,4 @@ export interface DynamicContextMenuAction extends ContextMenuAction {
 }
 
 export type ContextMenuActionSet = Array<Array<ContextMenuAction>>;
-export type DynamicContextMenuActionSet = Array<Array<DynamicContextMenuAction>>;
+export type MultiSelectMenuActionSet = Array<Array<MultiSelectMenuAction>>;

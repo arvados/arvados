@@ -13,8 +13,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { Resource, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
-import { ContextMenuAction, ContextMenuActionSet, DynamicContextMenuAction } from "views-components/context-menu/context-menu-action-set";
-import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
+import { ContextMenuAction, ContextMenuActionSet, MultiSelectMenuAction } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
@@ -70,12 +69,12 @@ export const MultiselectToolbar = connect(
                             btn.defaultText ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={!currentPathIsTrash ? btn.defaultText: btn.altText}
+                                    title={!currentPathIsTrash ? btn.defaultText : btn.altText}
                                     key={i}
                                     disableFocusListener
                                 >
                                     <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
-                                        {currentPathIsTrash ? <RestoreFromTrashIcon /> : <TrashIcon />}
+                                        {!currentPathIsTrash ? btn.defaultIcon && btn.defaultIcon({}) : btn.altIcon && btn.altIcon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
@@ -133,9 +132,9 @@ function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>):
 }
 
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
-    const rawResult: Set<DynamicContextMenuAction> = new Set();
+    const rawResult: Set<MultiSelectMenuAction> = new Set();
     const resultNames = new Set();
-    const allFiltersArray: DynamicContextMenuAction[][] = []
+    const allFiltersArray: MultiSelectMenuAction[][] = []
     currentResourceKinds.forEach(kind => {
         if (filterSet[kind]) {
             const actions = filterActions(...filterSet[kind]);
