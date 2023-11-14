@@ -73,8 +73,14 @@ describe("<SubprocessProgressBar />", () => {
         statusResponse = {
             [ProcessStatusFilter.COMPLETED]: 100,
             [ProcessStatusFilter.RUNNING]: 200,
-            [ProcessStatusFilter.FAILED]: 300,
-            [ProcessStatusFilter.QUEUED]: 400,
+
+            // Combined into failed segment
+            [ProcessStatusFilter.FAILED]: 200,
+            [ProcessStatusFilter.CANCELLED]: 100,
+
+            // Combined into queued segment
+            [ProcessStatusFilter.QUEUED]: 300,
+            [ProcessStatusFilter.ONHOLD]: 100,
         };
 
         services.containerRequestService.list = createMockListFunc(process.containerRequest.containerUuid);
@@ -88,12 +94,14 @@ describe("<SubprocessProgressBar />", () => {
         });
         await progressBar.update();
 
-        // expects 4 subprocess status list requests
+        // expects 6 subprocess status list requests
         const expectedFilters = [
             ProcessStatusFilter.COMPLETED,
             ProcessStatusFilter.RUNNING,
             ProcessStatusFilter.FAILED,
+            ProcessStatusFilter.CANCELLED,
             ProcessStatusFilter.QUEUED,
+            ProcessStatusFilter.ONHOLD,
         ].map((state) =>
             buildProcessStatusFilters(
                 new FilterBuilder().addEqual(
@@ -128,8 +136,12 @@ describe("<SubprocessProgressBar />", () => {
         statusResponse = {
             [ProcessStatusFilter.COMPLETED]: 50,
             [ProcessStatusFilter.RUNNING]: 55,
-            [ProcessStatusFilter.FAILED]: 60,
-            [ProcessStatusFilter.QUEUED]: 335,
+
+            [ProcessStatusFilter.FAILED]: 30,
+            [ProcessStatusFilter.CANCELLED]: 30,
+
+            [ProcessStatusFilter.QUEUED]: 235,
+            [ProcessStatusFilter.ONHOLD]: 100,
         };
 
         services.containerRequestService.list = createMockListFunc(process.containerRequest.containerUuid);
