@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ResourceKind } from "models/resource";
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { DynamicContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { msCollectionActionSet } from "views-components/multiselect-toolbar/ms-collection-action-set";
 import { msProjectActionSet } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { msProcessActionSet } from "views-components/multiselect-toolbar/ms-process-action-set";
 
-export type TMultiselectActionsFilters = Record<string, [ContextMenuActionSet, Set<string>]>;
+export type TMultiselectActionsFilters = Record<string, [DynamicContextMenuActionSet, Set<string>]>;
 
 export const contextMenuActionConsts = {
     MAKE_A_COPY: "Make a copy",

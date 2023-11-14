@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { DynamicContextMenuActionSet, DynamicContextMenuAction } from "views-components/context-menu/context-menu-action-set";
 import { MoveToIcon, Link } from "components/icon/icon";
 import { openMoveProjectDialog } from "store/projects/project-move-actions";
 import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
@@ -11,12 +11,19 @@ import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.act
 import { ToggleFavoriteAction } from "views-components/context-menu/actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
+import { AddFavoriteIcon, RemoveFavoriteIcon } from "components/icon/icon";
+import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
 
-export const msToggleFavoriteAction = {
-    component: ToggleFavoriteAction,
+
+export const msToggleFavoriteAction: DynamicContextMenuAction = {
     name: "ToggleFavoriteAction",
+    defaultText: 'Add to Favorites',
+    altText: 'Remove from Favorites',
+    defaultIcon: AddFavoriteIcon,
+    altIcon: RemoveFavoriteIcon,
+
     execute: (dispatch, resources) => {
-        dispatch(toggleFavorite(resources[0])).then(() => {
+        dispatch<any>(toggleFavorite(resources[0])).then(() => {
             dispatch(favoritePanelActions.REQUEST_ITEMS());
         });
     },
@@ -38,14 +45,17 @@ export const msMoveToAction = {
     },
 };
 
-export const msToggleTrashAction = {
-    component: ToggleTrashAction,
+export const msToggleTrashAction: DynamicContextMenuAction = {
     name: "ToggleTrashAction",
+    defaultText: 'Add to Trash',
+    altText: 'Restore from Trash',
+    defaultIcon: TrashIcon,
+    altIcon: RestoreFromTrashIcon,
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
-            dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
+            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
         }
     },
 };
 
-export const msProjectActionSet: ContextMenuActionSet = [[msCopyToClipboardMenuAction, msMoveToAction, msToggleTrashAction, msToggleFavoriteAction]];
+export const msProjectActionSet: DynamicContextMenuAction[][] = [[msCopyToClipboardMenuAction, msMoveToAction, msToggleTrashAction, msToggleFavoriteAction]];
