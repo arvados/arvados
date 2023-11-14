@@ -11,8 +11,9 @@ import { toggleFavorite } from "store/favorites/favorites-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { AddFavoriteIcon, RemoveFavoriteIcon } from "components/icon/icon";
 import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
-
-
+import { getResource } from "store/resources/resources";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { checkFavorite } from "store/favorites/favorites-reducer";
 
 export const msToggleFavoriteAction = {
     name: MultiSelectMenuActionNames.TOGGLE_FAVORITE_ACTION,
@@ -20,6 +21,9 @@ export const msToggleFavoriteAction = {
     altText: 'Remove from Favorites',
     icon: AddFavoriteIcon,
     altIcon: RemoveFavoriteIcon,
+    isDefault: (uuid, resources, favorites)=>{
+        return !checkFavorite(uuid, favorites);
+    },
     execute: (dispatch, resources) => {
         dispatch(toggleFavorite(resources[0])).then(() => {
             dispatch(favoritePanelActions.REQUEST_ITEMS());
@@ -49,6 +53,9 @@ export const msToggleTrashAction = {
     altText: 'Restore from Trash',
     icon: TrashIcon,
     altIcon: RestoreFromTrashIcon,
+    isDefault: (uuid, resources, favorites = []) => {
+        return uuid ? !(getResource(uuid)(resources) as any).isTrashed : true;
+    },
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
             dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));

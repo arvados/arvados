@@ -4,6 +4,7 @@
 
 import { IconType } from "components/icon/icon";
 import { ContextMenuAction } from "../context-menu/context-menu-action-set";
+import { ResourcesState } from "store/resources/resources";
 
 export const MultiSelectMenuActionNames = {
   MAKE_A_COPY: "Make a copy",
@@ -19,7 +20,7 @@ export interface MultiSelectMenuAction extends ContextMenuAction {
     defaultText?: string;
     altText?: string;
     altIcon?: IconType;
-    isDefault?: () => boolean;
+    isDefault?: (uuid: string | null, resources: ResourcesState, favorites) => boolean;
 }
 
 export type MultiSelectMenuActionSet = Array<Array<MultiSelectMenuAction>>;

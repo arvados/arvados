@@ -41,8 +41,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
+    selectedUuid: string | null
     resources: ResourcesState;
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
+    favorites: any
 };
 
 export const MultiselectToolbar = connect(
@@ -50,15 +52,13 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList } = props;
+        const { classes, checkedList, resources, selectedUuid, favorites } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
 
-        const currentPathIsTrash = window.location.pathname === "/trash";
-        const buttons =
-            currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
+        const buttons = selectedToKindSet(checkedList).size
+            ? selectActionsByKind(currentResourceKinds, multiselectActionsFilters) : []
 
+console.log(buttons)
         return (
             <React.Fragment>
                 <Toolbar
@@ -67,15 +67,15 @@ export const MultiselectToolbar = connect(
                 >
                     {buttons.length ? (
                         buttons.map((btn, i) =>
-                            btn.defaultText ? (
+                            btn.isDefault ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={!currentPathIsTrash ? btn.defaultText : btn.altText}
+                                    title={btn.isDefault(selectedUuid, resources, favorites) ? btn.defaultText : btn.altText}
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
-                                        {!currentPathIsTrash ? btn.icon({}) : btn.altIcon({})}
+                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, resources)}>
+                                        {btn.isDefault(selectedUuid, resources, favorites) ? btn.icon && btn.icon({}) : btn.altIcon && btn.altIcon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
@@ -85,7 +85,7 @@ export const MultiselectToolbar = connect(
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>{btn.icon ? btn.icon({}) : <></>}</IconButton>
+                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, resources)}>{btn.icon ? btn.icon({}) : <></>}</IconButton>
                                 </Tooltip>
                             )
                         )
@@ -175,12 +175,26 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
     });
 }
 
+const isExactlyOneSelected = (checkedList: TCheckedList) => {
+    let tally = 0;
+    let current = '';
+    for (const uuid in checkedList) {
+        if (checkedList[uuid] === true) {
+            tally++;
+            current = uuid;
+        }
+    }
+    return tally === 1 ? current : null
+};
+
 //--------------------------------------------------//
 
 function mapStateToProps(state: RootState) {
     return {
         checkedList: state.multiselect.checkedList as TCheckedList,
+        selectedUuid: isExactlyOneSelected(state.multiselect.checkedList),
         resources: state.resources,
+        favorites: state.favorites
     };
 }
 
