@@ -57,7 +57,7 @@ export const MultiselectToolbar = connect(
 
         const currentPathIsTrash = window.location.pathname === "/trash";
 
-        const buttons =
+        const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size 
             ? [msToggleTrashAction] 
             : selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
@@ -66,29 +66,29 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={classes.root}
-                    style={{ width: `${buttons.length * 2.5}rem` }}
+                    style={{ width: `${actions.length * 2.5}rem` }}
                 >
-                    {buttons.length ? (
-                        buttons.map((btn, i) =>
-                            btn.isDefault ? (
+                    {actions.length ? (
+                        actions.map((action, i) =>
+                            action.isDefault ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={btn.isDefault(selectedUuid, resources, favorites) ? btn.defaultText : btn.altText}
+                                    title={action.isDefault(selectedUuid, resources, favorites) ? action.name : action.altText}
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, resources)}>
-                                        {btn.isDefault(selectedUuid, resources, favorites) ? btn.icon && btn.icon({}) : btn.altIcon && btn.altIcon({})}
+                                    <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>
+                                        {action.isDefault(selectedUuid, resources, favorites) ? action.icon && action.icon({}) : action.altIcon && action.altIcon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
                                 <Tooltip
                                     className={classes.button}
-                                    title={btn.name}
+                                    title={action.name}
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, resources)}>{btn.icon ? btn.icon({}) : <></>}</IconButton>
+                                    <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>{action.icon ? action.icon({}) : <></>}</IconButton>
                                 </Tooltip>
                             )
                         )
@@ -153,14 +153,14 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
     });
 
     const filteredNameSet = allFiltersArray.map(filterArray => {
-        const resultSet = new Set();
-        filterArray.forEach(action => resultSet.add(action.name || ""));
+        const resultSet = new Set<string>();
+        filterArray.forEach(action => resultSet.add(action.name as string || ""));
         return resultSet;
     });
 
     const filteredResult = Array.from(rawResult).filter(action => {
         for (let i = 0; i < filteredNameSet.length; i++) {
-            if (!filteredNameSet[i].has(action.name)) return false;
+            if (!filteredNameSet[i].has(action.name as string)) return false;
         }
         return true;
     });

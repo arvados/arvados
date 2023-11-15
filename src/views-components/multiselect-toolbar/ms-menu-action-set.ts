@@ -9,8 +9,8 @@ import { ResourcesState } from "store/resources/resources";
 export const MultiSelectMenuActionNames = {
   MAKE_A_COPY: "Make a copy",
   MOVE_TO: "Move to",
-  TOGGLE_TRASH_ACTION: "ToggleTrashAction",
-  TOGGLE_FAVORITE_ACTION: "ToggleFavoriteAction",
+  ADD_TO_TRASH: "Add to Trash",
+  ADD_TO_FAVORITES: "Add to Favorites",
   COPY_TO_CLIPBOARD: "Copy to clipboard",
   COPY_AND_RERUN_PROCESS: "Copy and re-run process",
   REMOVE: "Remove",
@@ -24,4 +24,4 @@ export interface MultiSelectMenuAction extends ContextMenuAction {
     isForMulti: boolean;
 }
 
-export type MultiSelectMenuActionSet = Array<Array<MultiSelectMenuAction>>;
+export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];

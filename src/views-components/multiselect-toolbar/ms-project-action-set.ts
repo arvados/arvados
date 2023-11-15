@@ -15,8 +15,7 @@ import { getResource } from "store/resources/resources";
 import { checkFavorite } from "store/favorites/favorites-reducer";
 
 export const msToggleFavoriteAction = {
-    name: MultiSelectMenuActionNames.TOGGLE_FAVORITE_ACTION,
-    defaultText: 'Add to Favorites',
+    name: MultiSelectMenuActionNames.ADD_TO_FAVORITES,
     altText: 'Remove from Favorites',
     icon: AddFavoriteIcon,
     altIcon: RemoveFavoriteIcon,
@@ -50,8 +49,7 @@ export const msMoveToAction = {
 };
 
 export const msToggleTrashAction = {
-    name: MultiSelectMenuActionNames.TOGGLE_TRASH_ACTION,
-    defaultText: 'Add to Trash',
+    name: MultiSelectMenuActionNames.ADD_TO_TRASH,
     altText: 'Restore from Trash',
     icon: TrashIcon,
     altIcon: RestoreFromTrashIcon,

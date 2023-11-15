@@ -8,13 +8,13 @@ import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/c
 import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { MultiSelectMenuActionSet } from "./ms-menu-action-set";
+import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-action-set";
 
 export const msCollectionActionSet: MultiSelectMenuActionSet = [
     [
         {
             icon: CopyIcon,
-            name: "Make a copy",
+            name: MultiSelectMenuActionNames.MAKE_A_COPY,
             isForMulti: true,
             execute: (dispatch, [...resources]) => {
                 if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
@@ -23,13 +23,13 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
         },
         {
             icon: MoveToIcon,
-            name: "Move to",
+            name: MultiSelectMenuActionNames.MOVE_TO,
             isForMulti: true,
             execute: (dispatch, resources) => dispatch<any>(openMoveCollectionDialog(resources[0])),
         },
         {
             component: ToggleTrashAction,
-            name: "ToggleTrashAction",
+            name: MultiSelectMenuActionNames.ADD_TO_TRASH,
             isForMulti: true,
             execute: (dispatch, resources: ContextMenuResource[]) => {
                 for (const resource of [...resources]) {
