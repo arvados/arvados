@@ -6,7 +6,7 @@ import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
-import { List, ListItem, Tooltip } from '@material-ui/core'
+import { IconButton, List, ListItem, Tooltip } from '@material-ui/core'
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles'
 import { ArvadosTheme } from 'common/custom-theme'
 import { navigateTo } from 'store/navigation/navigation-action'
@@ -26,7 +26,14 @@ import { RouterAction } from 'react-router-redux'
 type CssRules = 'root' | 'unselected' | 'selected'
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {},
+    root: {
+        width: '40px',
+        height: '40px',
+        // padding: '1rem'
+        paddingLeft: '-1rem',
+        marginLeft: '-0.3rem',
+        marginBottom: '-1rem'
+    },
     unselected: {
         color: theme.customs.colors.grey600,
     },
@@ -85,7 +92,7 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
     {
         name: SidePanelCollapsedCategory.GROUPS,
-        icon: <GroupsIcon style={{marginLeft: '3px'}}/>,
+        icon: <GroupsIcon style={{marginLeft: '2px', scale: '85%'}}/>,
         navTarget: navigateToGroups,
     },
     {
@@ -125,17 +132,20 @@ export const SidePanelCollapsed = withStyles(styles)(
         return (
             <List data-cy="side-panel-collapsed" className={root}>
                 {sidePanelCollapsedCategories.map((cat) => (
+                    
                     <ListItem
                         key={cat.name}
                         data-cy={`collapsed-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
                         className={selectedPath === cat.name ? selected : unselected}
                         onClick={() => handleClick(cat)}
-                    >
+                        >
                         <Tooltip
                             title={cat.name}
                             disableFocusListener
-                        >
+                            >
+                    <IconButton className={root}>
                             {cat.icon}
+                            </IconButton>
                         </Tooltip>
                     </ListItem>
                 ))}

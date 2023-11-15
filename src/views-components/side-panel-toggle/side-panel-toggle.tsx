@@ -22,6 +22,8 @@ const SidePanelToggle = (props: collapseButtonProps) => {
             height: `${COLLAPSE_ICON_SIZE}px`,
             marginTop: '0.4rem',
             marginLeft: '0.7rem',
+            paddingTop: '1rem',
+            paddingRight: '1rem'
         },
         icon: {
             opacity: '0.5',
@@ -32,7 +34,7 @@ const SidePanelToggle = (props: collapseButtonProps) => {
         <IconButton data-cy="side-panel-toggle" style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
             <div>
                 {props.isCollapsed ?
-                    <img style={collapseButtonIconStyles.icon} src='/mui-start-icon.svg' alt='an arrow pointing right'/>
+                    <img style={{...collapseButtonIconStyles.icon, marginLeft:'0.25rem'}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>
                     :
                     <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)"}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>}
             </div>
