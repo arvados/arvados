@@ -21,6 +21,7 @@ export const MultiSelectMenuActionNames = {
 export type MultiSelectMenuAction = {
     name: string;
     icon: IconType;
+    hasAlts: boolean;
     altText?: string;
     altIcon?: IconType;
     isForMulti: boolean;

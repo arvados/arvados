@@ -13,8 +13,9 @@ import { TrashIcon } from "components/icon/icon";
 export const msCollectionActionSet: MultiSelectMenuActionSet = [
     [
         {
-            icon: CopyIcon,
             name: MultiSelectMenuActionNames.MAKE_A_COPY,
+            icon: CopyIcon,
+            hasAlts: false,
             isForMulti: true,
             execute: (dispatch, [...resources]) => {
                 if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
@@ -22,8 +23,9 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
             },
         },
         {
-            icon: MoveToIcon,
             name: MultiSelectMenuActionNames.MOVE_TO,
+            icon: MoveToIcon,
+            hasAlts: false,
             isForMulti: true,
             execute: (dispatch, resources) => dispatch<any>(openMoveCollectionDialog(resources[0])),
         },
@@ -31,6 +33,7 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
             name: MultiSelectMenuActionNames.ADD_TO_TRASH,
             icon: TrashIcon,
             isForMulti: true,
+            hasAlts: false,
             execute: (dispatch, resources: ContextMenuResource[]) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));

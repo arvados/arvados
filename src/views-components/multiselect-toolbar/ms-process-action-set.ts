@@ -11,9 +11,10 @@ import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-
 export const msProcessActionSet: MultiSelectMenuActionSet = [
     [
         {
-            icon: ReRunProcessIcon,
             name: MultiSelectMenuActionNames.COPY_AND_RERUN_PROCESS,
-            isForMulti: true,
+            icon: ReRunProcessIcon,
+            hasAlts: false,
+            isForMulti: false,
             execute: (dispatch, resources) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(openCopyProcessDialog(resource));
@@ -21,8 +22,9 @@ export const msProcessActionSet: MultiSelectMenuActionSet = [
             },
         },
         {
-            icon: MoveToIcon,
             name: MultiSelectMenuActionNames.MOVE_TO,
+            icon: MoveToIcon,
+            hasAlts: false,
             isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openMoveProcessDialog(resources[0]));
@@ -31,6 +33,7 @@ export const msProcessActionSet: MultiSelectMenuActionSet = [
         {
             name: MultiSelectMenuActionNames.REMOVE,
             icon: RemoveIcon,
+            hasAlts: false,
             isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));

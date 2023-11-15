@@ -16,8 +16,9 @@ import { checkFavorite } from "store/favorites/favorites-reducer";
 
 export const msToggleFavoriteAction = {
     name: MultiSelectMenuActionNames.ADD_TO_FAVORITES,
-    altText: 'Remove from Favorites',
     icon: AddFavoriteIcon,
+    hasAlts: true,
+    altText: 'Remove from Favorites',
     altIcon: RemoveFavoriteIcon,
     isForMulti: false,
     isDefault: (uuid, resources, favorites)=>{
@@ -31,8 +32,9 @@ export const msToggleFavoriteAction = {
 };
 
 export const msCopyToClipboardMenuAction = {
-    icon: Link,
     name: MultiSelectMenuActionNames.COPY_TO_CLIPBOARD,
+    icon: Link,
+    hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch(copyToClipboardAction(resources));
@@ -40,8 +42,9 @@ export const msCopyToClipboardMenuAction = {
 };
 
 export const msMoveToAction = {
-    icon: MoveToIcon,
     name: MultiSelectMenuActionNames.MOVE_TO,
+    icon: MoveToIcon,
+    hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resource) => {
         dispatch(openMoveProjectDialog(resource[0]));
@@ -50,8 +53,9 @@ export const msMoveToAction = {
 
 export const msToggleTrashAction = {
     name: MultiSelectMenuActionNames.ADD_TO_TRASH,
-    altText: 'Restore from Trash',
     icon: TrashIcon,
+    hasAlts: true,
+    altText: 'Restore from Trash',
     altIcon: RestoreFromTrashIcon,
     isForMulti: true,
     isDefault: (uuid, resources, favorites = []) => {
