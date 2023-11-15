@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -33,7 +34,7 @@ var Command cmd.Handler = &installCommand{}
 const goversion = "1.20.6"
 
 const (
-	rubyversion             = "3.2.2"
+	defaultRubyVersion      = "3.2.2"
 	bundlerversion          = "2.2.19"
 	singularityversion      = "3.10.4"
 	pjsversion              = "1.9.8"
@@ -51,6 +52,7 @@ type installCommand struct {
 	SourcePath     string
 	Commit         string
 	PackageVersion string
+	RubyVersion    string
 	EatMyData      bool
 }
 
@@ -74,6 +76,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
 	flags.StringVar(&inst.Commit, "commit", "", "source commit `hash` to embed (blank means use 'git log' or all-zero placeholder)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
+	flags.StringVar(&inst.RubyVersion, "ruby-version", defaultRubyVersion, "Ruby `version` to install (do not override in production mode)")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -108,6 +111,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	if prod {
 		err = errors.New("production install is not yet implemented")
 		return 1
+	}
+
+	if ok, _ := regexp.MatchString(`^\d\.\d+\.\d+$`, inst.RubyVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -ruby-version\n", inst.RubyVersion)
+		return 64
 	}
 
 	osv, err := identifyOS()
@@ -305,20 +313,24 @@ fi
 			return 1
 		}
 	}
-	rubymajorversion := rubyversion[:strings.LastIndex(rubyversion, ".")]
-	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
-		logger.Print("ruby " + rubyversion + " already installed")
+	rubyminorversion := inst.RubyVersion[:strings.LastIndex(inst.RubyVersion, ".")]
+	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+inst.RubyVersion)) {
+		logger.Print("ruby " + inst.RubyVersion + " already installed")
 	} else {
 		err = inst.runBash(`
+rubyversion="`+inst.RubyVersion+`"
+rubyminorversion="`+rubyminorversion+`"
 tmp="$(mktemp -d)"
 trap 'rm -r "${tmp}"' ERR EXIT
-wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/`+rubymajorversion+`/ruby-`+rubyversion+`.tar.gz | tar -C "${tmp}" -xzf -
-cd "${tmp}/ruby-`+rubyversion+`"
+wget --progress=dot:giga -O- "https://cache.ruby-lang.org/pub/ruby/$rubyminorversion/ruby-$rubyversion.tar.gz" | tar -C "${tmp}" -xzf -
+cd "${tmp}/ruby-$rubyversion"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
 rm -f /var/lib/arvados/bin/erb
 make install
-/var/lib/arvados/bin/gem update --no-document --system 3.4.21
+if [[ "$rubyversion" > "3" ]]; then
+  /var/lib/arvados/bin/gem update --no-document --system 3.4.21
+fi
 /var/lib/arvados/bin/gem install bundler --no-document
 `, stdout, stderr)
 		if err != nil {
