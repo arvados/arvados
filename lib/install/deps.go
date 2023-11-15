@@ -34,27 +34,28 @@ var Command cmd.Handler = &installCommand{}
 const goversion = "1.20.6"
 
 const (
-	defaultRubyVersion      = "3.2.2"
-	defaultBundlerVersion   = "2.2.19"
-	singularityversion      = "3.10.4"
-	pjsversion              = "1.9.8"
-	geckoversion            = "0.24.0"
-	gradleversion           = "5.3.1"
-	nodejsversion           = "v12.22.12"
-	devtestDatabasePassword = "insecure_arvados_test"
+	defaultRubyVersion        = "3.2.2"
+	defaultBundlerVersion     = "2.2.19"
+	defaultSingularityVersion = "3.10.4"
+	pjsversion                = "1.9.8"
+	geckoversion              = "0.24.0"
+	gradleversion             = "5.3.1"
+	nodejsversion             = "v12.22.12"
+	devtestDatabasePassword   = "insecure_arvados_test"
 )
 
 //go:embed arvados.service
 var arvadosServiceFile []byte
 
 type installCommand struct {
-	ClusterType    string
-	SourcePath     string
-	Commit         string
-	PackageVersion string
-	RubyVersion    string
-	BundlerVersion string
-	EatMyData      bool
+	ClusterType        string
+	SourcePath         string
+	Commit             string
+	PackageVersion     string
+	RubyVersion        string
+	BundlerVersion     string
+	SingularityVersion string
+	EatMyData          bool
 }
 
 func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -79,6 +80,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
 	flags.StringVar(&inst.RubyVersion, "ruby-version", defaultRubyVersion, "Ruby `version` to install (do not override in production mode)")
 	flags.StringVar(&inst.BundlerVersion, "bundler-version", defaultBundlerVersion, "Bundler `version` to install (do not override in production mode)")
+	flags.StringVar(&inst.SingularityVersion, "singularity-version", defaultSingularityVersion, "Singularity `version` to install (do not override in production mode)")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -121,6 +123,10 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	if ok, _ := regexp.MatchString(`^\d`, inst.BundlerVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -bundler-version\n", inst.BundlerVersion)
+		return 64
+	}
+	if ok, _ := regexp.MatchString(`^\d`, inst.SingularityVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -singularity-version\n", inst.SingularityVersion)
 		return 64
 	}
 
@@ -404,11 +410,11 @@ rm ${zip}
 			}
 		}
 
-		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
-			logger.Print("singularity " + singularityversion + " already installed")
+		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), inst.SingularityVersion) {
+			logger.Print("singularity " + inst.SingularityVersion + " already installed")
 		} else if dev || test {
 			err = inst.runBash(`
-S=`+singularityversion+`
+S=`+inst.SingularityVersion+`
 tmp=/var/lib/arvados/tmp/singularity
 trap "rm -r ${tmp}" ERR EXIT
 cd /var/lib/arvados/tmp
