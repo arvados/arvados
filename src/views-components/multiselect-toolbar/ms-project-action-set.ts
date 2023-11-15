@@ -12,7 +12,6 @@ import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action
 import { AddFavoriteIcon, RemoveFavoriteIcon } from "components/icon/icon";
 import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
 import { getResource } from "store/resources/resources";
-import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { checkFavorite } from "store/favorites/favorites-reducer";
 
 export const msToggleFavoriteAction = {

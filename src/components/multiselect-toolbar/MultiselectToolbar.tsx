@@ -55,10 +55,13 @@ export const MultiselectToolbar = connect(
         const { classes, checkedList, resources, selectedUuid, favorites } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
 
-        const buttons = selectedToKindSet(checkedList).size
-            ? selectActionsByKind(currentResourceKinds, multiselectActionsFilters) : []
+        const currentPathIsTrash = window.location.pathname === "/trash";
 
-console.log(buttons)
+        const buttons =
+            currentPathIsTrash && selectedToKindSet(checkedList).size 
+            ? [msToggleTrashAction] 
+            : selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
+
         return (
             <React.Fragment>
                 <Toolbar

@@ -41,7 +41,7 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     };
 };
 
-const mapDispatchToProps = dispatchFn => {
+const mapDispatchToProps = () => {
     return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
         onSetColumns: (columns: DataColumns<any, any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
