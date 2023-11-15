@@ -23,15 +23,14 @@ import {
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
 
-type CssRules = 'root' | 'unselected' | 'selected'
+type CssRules = 'button' | 'unselected' | 'selected'
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
+    button: {
         width: '40px',
         height: '40px',
-        // padding: '1rem'
-        paddingLeft: '-1rem',
-        marginLeft: '-0.3rem',
+        paddingLeft: '-2rem',
+        marginLeft: '-0.6rem',
         marginBottom: '-1rem'
     },
     unselected: {
@@ -128,24 +127,22 @@ export const SidePanelCollapsed = withStyles(styles)(
             else navTo(cat.navTarget)
         }
 
-        const { root, unselected, selected } = classes
+        const { button, unselected, selected } = classes
         return (
-            <List data-cy="side-panel-collapsed" className={root}>
+            <List data-cy="side-panel-collapsed">
                 {sidePanelCollapsedCategories.map((cat) => (
                     
                     <ListItem
                         key={cat.name}
                         data-cy={`collapsed-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
-                        className={selectedPath === cat.name ? selected : unselected}
                         onClick={() => handleClick(cat)}
                         >
                         <Tooltip
+                            className={selectedPath === cat.name ? selected : unselected}
                             title={cat.name}
                             disableFocusListener
                             >
-                    <IconButton className={root}>
-                            {cat.icon}
-                            </IconButton>
+                            <IconButton className={button}>{cat.icon}</IconButton>
                         </Tooltip>
                     </ListItem>
                 ))}
