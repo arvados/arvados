@@ -710,7 +710,21 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker | services/workbench2_units | services/workbench2_integration)
+        gofmt \
+            | cmd/arvados-package \
+            | doc \
+            | lib/boot \
+            | lib/cli \
+            | lib/cloud/azure \
+            | lib/cloud/cloudtest \
+            | lib/cloud/ec2 \
+            | lib/cmd \
+            | lib/dispatchcloud/sshexecutor \
+            | lib/dispatchcloud/worker \
+            | lib/install \
+            | services/workbench2_integration \
+            | services/workbench2_units \
+            )
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
