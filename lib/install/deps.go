@@ -35,7 +35,7 @@ const goversion = "1.20.6"
 
 const (
 	defaultRubyVersion      = "3.2.2"
-	bundlerversion          = "2.2.19"
+	defaultBundlerVersion   = "2.2.19"
 	singularityversion      = "3.10.4"
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
@@ -53,6 +53,7 @@ type installCommand struct {
 	Commit         string
 	PackageVersion string
 	RubyVersion    string
+	BundlerVersion string
 	EatMyData      bool
 }
 
@@ -77,6 +78,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.Commit, "commit", "", "source commit `hash` to embed (blank means use 'git log' or all-zero placeholder)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
 	flags.StringVar(&inst.RubyVersion, "ruby-version", defaultRubyVersion, "Ruby `version` to install (do not override in production mode)")
+	flags.StringVar(&inst.BundlerVersion, "bundler-version", defaultBundlerVersion, "Bundler `version` to install (do not override in production mode)")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -115,6 +117,10 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 
 	if ok, _ := regexp.MatchString(`^\d\.\d+\.\d+$`, inst.RubyVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -ruby-version\n", inst.RubyVersion)
+		return 64
+	}
+	if ok, _ := regexp.MatchString(`^\d`, inst.BundlerVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -bundler-version\n", inst.BundlerVersion)
 		return 64
 	}
 
@@ -661,7 +667,7 @@ done
 			{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
 			{"touch", "log/production.log"},
 			{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
-			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + inst.BundlerVersion},
 			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
 			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
 			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
