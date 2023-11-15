@@ -399,6 +399,37 @@ func (*EC2InstanceSetSuite) TestCreateAllSubnetsFailing(c *check.C) {
 		`.*`)
 }
 
+func (*EC2InstanceSetSuite) TestCreateOneSubnetFailingCapacity(c *check.C) {
+	if *live != "" {
+		c.Skip("not applicable in live mode")
+		return
+	}
+	ap, img, cluster, reg := GetInstanceSet(c, `{"SubnetID":["subnet-full","subnet-broken"]}`)
+	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
+		"subnet-full": &ec2stubError{
+			code:    "InsufficientFreeAddressesInSubnet",
+			message: "subnet is full",
+		},
+		"subnet-broken": &ec2stubError{
+			code:    "InsufficientInstanceCapacity",
+			message: "insufficient capacity",
+		},
+	}
+	for i := 0; i < 3; i++ {
+		_, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+		c.Check(err, check.NotNil)
+		c.Check(err, check.ErrorMatches, `.*InsufficientInstanceCapacity.*`)
+	}
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 6)
+	metrics := arvadostest.GatherMetricsAsString(reg)
+	c.Check(metrics, check.Matches, `(?ms).*`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-broken",success="0"} 3\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-broken",success="1"} 0\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="0"} 3\n`+
+		`arvados_dispatchcloud_ec2_instance_starts_total{subnet_id="subnet-full",success="1"} 0\n`+
+		`.*`)
+}
+
 func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
 	ap, _, _, _ := GetInstanceSet(c, "{}")
 	l, err := ap.Instances(nil)
@@ -513,10 +544,18 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
 
-	capacityError := awserr.New("InsufficientInstanceCapacity", "", nil)
-	wrapped = wrapError(capacityError, nil)
-	caperr, ok := wrapped.(cloud.CapacityError)
-	c.Check(ok, check.Equals, true)
-	c.Check(caperr.IsCapacityError(), check.Equals, true)
-	c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
+	for _, trial := range []struct {
+		code string
+		msg  string
+	}{
+		{"InsufficientInstanceCapacity", ""},
+		{"Unsupported", "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f."},
+	} {
+		capacityError := awserr.New(trial.code, trial.msg, nil)
+		wrapped = wrapError(capacityError, nil)
+		caperr, ok := wrapped.(cloud.CapacityError)
+		c.Check(ok, check.Equals, true)
+		c.Check(caperr.IsCapacityError(), check.Equals, true)
+		c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
+	}
 }

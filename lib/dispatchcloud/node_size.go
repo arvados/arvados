@@ -6,6 +6,7 @@ package dispatchcloud
 
 import (
 	"errors"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -99,12 +100,16 @@ func versionLess(vs1 string, vs2 string) (bool, error) {
 	return v1 < v2, nil
 }
 
-// ChooseInstanceType returns the cheapest available
-// arvados.InstanceType big enough to run ctr.
-func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvados.InstanceType, err error) {
+// ChooseInstanceType returns the arvados.InstanceTypes eligible to
+// run ctr, i.e., those that have enough RAM, VCPUs, etc., and are not
+// too expensive according to cluster configuration.
+//
+// The returned types are sorted with lower prices first.
+//
+// The error is non-nil if and only if the returned slice is empty.
+func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) ([]arvados.InstanceType, error) {
 	if len(cc.InstanceTypes) == 0 {
-		err = ErrInstanceTypesNotConfigured
-		return
+		return nil, ErrInstanceTypesNotConfigured
 	}
 
 	needScratch := EstimateScratchSpace(ctr)
@@ -121,31 +126,33 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 	}
 	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
 
-	ok := false
+	maxPriceFactor := math.Max(cc.Containers.MaximumPriceFactor, 1)
+	var types []arvados.InstanceType
+	var maxPrice float64
 	for _, it := range cc.InstanceTypes {
 		driverInsuff, driverErr := versionLess(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDA.DriverVersion)
 		capabilityInsuff, capabilityErr := versionLess(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDA.HardwareCapability)
 
 		switch {
 		// reasons to reject a node
-		case ok && it.Price > best.Price: // already selected a node, and this one is more expensive
+		case maxPrice > 0 && it.Price > maxPrice: // too expensive
 		case int64(it.Scratch) < needScratch: // insufficient scratch
 		case int64(it.RAM) < needRAM: // insufficient RAM
 		case it.VCPUs < needVCPUs: // insufficient VCPUs
 		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
-		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs): // same price, worse specs
 		case it.CUDA.DeviceCount < ctr.RuntimeConstraints.CUDA.DeviceCount: // insufficient CUDA devices
 		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && (driverInsuff || driverErr != nil): // insufficient driver version
 		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && (capabilityInsuff || capabilityErr != nil): // insufficient hardware capability
 			// Don't select this node
 		default:
 			// Didn't reject the node, so select it
-			// Lower price || (same price && better specs)
-			best = it
-			ok = true
+			types = append(types, it)
+			if newmax := it.Price * maxPriceFactor; newmax < maxPrice || maxPrice == 0 {
+				maxPrice = newmax
+			}
 		}
 	}
-	if !ok {
+	if len(types) == 0 {
 		availableTypes := make([]arvados.InstanceType, 0, len(cc.InstanceTypes))
 		for _, t := range cc.InstanceTypes {
 			availableTypes = append(availableTypes, t)
@@ -153,11 +160,39 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 		sort.Slice(availableTypes, func(a, b int) bool {
 			return availableTypes[a].Price < availableTypes[b].Price
 		})
-		err = ConstraintsNotSatisfiableError{
+		return nil, ConstraintsNotSatisfiableError{
 			errors.New("constraints not satisfiable by any configured instance type"),
 			availableTypes,
 		}
-		return
 	}
-	return
+	sort.Slice(types, func(i, j int) bool {
+		if types[i].Price != types[j].Price {
+			// prefer lower price
+			return types[i].Price < types[j].Price
+		}
+		if types[i].RAM != types[j].RAM {
+			// if same price, prefer more RAM
+			return types[i].RAM > types[j].RAM
+		}
+		if types[i].VCPUs != types[j].VCPUs {
+			// if same price and RAM, prefer more VCPUs
+			return types[i].VCPUs > types[j].VCPUs
+		}
+		if types[i].Scratch != types[j].Scratch {
+			// if same price and RAM and VCPUs, prefer more scratch
+			return types[i].Scratch > types[j].Scratch
+		}
+		// no preference, just sort the same way each time
+		return types[i].Name < types[j].Name
+	})
+	// Truncate types at maxPrice. We rejected it.Price>maxPrice
+	// in the loop above, but at that point maxPrice wasn't
+	// necessarily the final (lowest) maxPrice.
+	for i, it := range types {
+		if i > 0 && it.Price > maxPrice {
+			types = types[:i]
+			break
+		}
+	}
+	return types, nil
 }

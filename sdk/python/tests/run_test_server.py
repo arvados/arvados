@@ -41,6 +41,15 @@ if __name__ == '__main__' and os.path.exists(
 import arvados
 import arvados.config
 
+# This module starts subprocesses and records them in pidfiles so they
+# can be managed by other processes (incl. after this process
+# exits). But if we don't keep a reference to each subprocess object
+# somewhere, the subprocess destructor runs, and we get a lot of
+# ResourceWarning noise in test logs. This is our bucket of subprocess
+# objects whose destructors we don't want to run but are otherwise
+# unneeded.
+_detachedSubprocesses = []
+
 ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))
 SERVICES_SRC_DIR = os.path.join(ARVADOS_DIR, 'services')
 
@@ -248,14 +257,17 @@ def _logfilename(label):
         stdbuf+['cat', fifo],
         stdin=open('/dev/null'),
         stdout=subprocess.PIPE)
+    _detachedSubprocesses.append(cat)
     tee = subprocess.Popen(
         stdbuf+['tee', '-a', logfilename],
         stdin=cat.stdout,
         stdout=subprocess.PIPE)
-    subprocess.Popen(
+    _detachedSubprocesses.append(tee)
+    sed = subprocess.Popen(
         stdbuf+['sed', '-e', 's/^/['+label+'] /'],
         stdin=tee.stdout,
         stdout=sys.stderr)
+    _detachedSubprocesses.append(sed)
     return fifo
 
 def run(leave_running_atexit=False):
@@ -367,6 +379,7 @@ def run(leave_running_atexit=False):
          '--ssl-certificate', 'tmp/self-signed.pem',
          '--ssl-certificate-key', 'tmp/self-signed.key'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
+    _detachedSubprocesses.append(railsapi)
 
     if not leave_running_atexit:
         atexit.register(kill_server_pid, pid_file, passenger_root=api_src_dir)
@@ -444,6 +457,7 @@ def run_controller():
     controller = subprocess.Popen(
         ["arvados-server", "controller"],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+    _detachedSubprocesses.append(controller)
     with open(_pidfile('controller'), 'w') as f:
         f.write(str(controller.pid))
     _wait_until_port_listens(port)
@@ -463,6 +477,7 @@ def run_ws():
     ws = subprocess.Popen(
         ["arvados-server", "ws"],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+    _detachedSubprocesses.append(ws)
     with open(_pidfile('ws'), 'w') as f:
         f.write(str(ws.pid))
     _wait_until_port_listens(port)
@@ -496,6 +511,7 @@ def _start_keep(n, blob_signing=False):
         with open('/dev/null') as _stdin:
             child = subprocess.Popen(
                 keep_cmd, stdin=_stdin, stdout=logf, stderr=logf, close_fds=True)
+            _detachedSubprocesses.append(child)
 
     print('child.pid is %d'%child.pid, file=sys.stderr)
     with open(_pidfile('keep{}'.format(n)), 'w') as f:
@@ -562,6 +578,7 @@ def run_keep_proxy():
     logf = open(_logfilename('keepproxy'), WRITE_MODE)
     kp = subprocess.Popen(
         ['arvados-server', 'keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+    _detachedSubprocesses.append(kp)
 
     with open(_pidfile('keepproxy'), 'w') as f:
         f.write(str(kp.pid))
@@ -601,6 +618,7 @@ def run_arv_git_httpd():
     logf = open(_logfilename('githttpd'), WRITE_MODE)
     agh = subprocess.Popen(['arvados-server', 'git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
+    _detachedSubprocesses.append(agh)
     with open(_pidfile('githttpd'), 'w') as f:
         f.write(str(agh.pid))
     _wait_until_port_listens(gitport)
@@ -621,6 +639,7 @@ def run_keep_web():
     keepweb = subprocess.Popen(
         ['arvados-server', 'keep-web'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
+    _detachedSubprocesses.append(keepweb)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
     _wait_until_port_listens(keepwebport)
@@ -678,6 +697,7 @@ def run_nginx():
          '-g', 'error_log stderr info; pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
+    _detachedSubprocesses.append(nginx)
     _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'])
 
 def setup_config():

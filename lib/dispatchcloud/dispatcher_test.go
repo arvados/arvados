@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -72,6 +73,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			StaleLockTimeout:       arvados.Duration(5 * time.Millisecond),
 			RuntimeEngine:          "stub",
 			MaxDispatchAttempts:    10,
+			MaximumPriceFactor:     1.5,
 			CloudVMs: arvados.CloudVMsConfig{
 				Driver:               "test",
 				SyncInterval:         arvados.Duration(10 * time.Millisecond),
@@ -160,7 +162,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	s.disp.setupOnce.Do(s.disp.initialize)
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
-		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
 			return ChooseInstanceType(s.cluster, ctr)
 		},
 		Logger: ctxlog.TestLogger(c),
@@ -205,9 +207,15 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		finishContainer(ctr)
 		return int(rand.Uint32() & 0x3)
 	}
+	var countCapacityErrors int64
 	n := 0
 	s.stubDriver.Queue = queue
-	s.stubDriver.SetupVM = func(stubvm *test.StubVM) {
+	s.stubDriver.SetupVM = func(stubvm *test.StubVM) error {
+		if pt := stubvm.Instance().ProviderType(); pt == test.InstanceType(6).ProviderType {
+			c.Logf("test: returning capacity error for instance type %s", pt)
+			atomic.AddInt64(&countCapacityErrors, 1)
+			return test.CapacityError{InstanceTypeSpecific: true}
+		}
 		n++
 		stubvm.Boot = time.Now().Add(time.Duration(rand.Int63n(int64(5 * time.Millisecond))))
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
@@ -235,6 +243,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.CrunchRunCrashRate = 0.1
 			stubvm.ArvMountDeadlockRate = 0.1
 		}
+		return nil
 	}
 	s.stubDriver.Bugf = c.Errorf
 
@@ -269,6 +278,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			c.Fatalf("timed out with %d containers (%v), %d instances (%+v)", len(ents), ents, len(insts), insts)
 		}
 	}
+
+	c.Check(countCapacityErrors, check.Not(check.Equals), int64(0))
 
 	req := httptest.NewRequest("GET", "/metrics", nil)
 	req.Header.Set("Authorization", "Bearer "+s.cluster.ManagementToken)

@@ -103,8 +103,15 @@ sync() {
     # from that.
 
     $SSH $DEPLOY_USER@$NODE git init --bare --shared=0600 ${GITTARGET}.git
-    $GIT push $NODE $BRANCH
-    $SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout ${BRANCH}"
+    if [[ "$BRANCH" == "HEAD" ]]; then
+      # When deploying from an individual commit instead of a branch. This can
+      # happen when deploying from a Jenkins pipeline.
+      $GIT push $NODE HEAD:refs/heads/HEAD
+      $SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout remotes/origin/HEAD"
+    else
+      $GIT push $NODE $BRANCH
+      $SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout ${BRANCH}"
+    fi
   fi
 }
 

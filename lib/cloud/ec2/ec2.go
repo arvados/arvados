@@ -288,7 +288,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 
 	var rsv *ec2.Reservation
-	var err error
+	var errToReturn error
 	subnets := instanceSet.ec2config.SubnetID
 	currentSubnetIDIndex := int(atomic.LoadInt32(&instanceSet.currentSubnetIDIndex))
 	for tryOffset := 0; ; tryOffset++ {
@@ -299,8 +299,15 @@ func (instanceSet *ec2InstanceSet) Create(
 			trySubnet = subnets[tryIndex]
 			rii.NetworkInterfaces[0].SubnetId = aws.String(trySubnet)
 		}
+		var err error
 		rsv, err = instanceSet.client.RunInstances(&rii)
 		instanceSet.mInstanceStarts.WithLabelValues(trySubnet, boolLabelValue[err == nil]).Add(1)
+		if !isErrorCapacity(errToReturn) || isErrorCapacity(err) {
+			// We want to return the last capacity error,
+			// if any; otherwise the last non-capacity
+			// error.
+			errToReturn = err
+		}
 		if isErrorSubnetSpecific(err) &&
 			tryOffset < len(subnets)-1 {
 			instanceSet.logger.WithError(err).WithField("SubnetID", subnets[tryIndex]).
@@ -320,9 +327,8 @@ func (instanceSet *ec2InstanceSet) Create(
 		atomic.StoreInt32(&instanceSet.currentSubnetIDIndex, int32(tryIndex))
 		break
 	}
-	err = wrapError(err, &instanceSet.throttleDelayCreate)
-	if err != nil {
-		return nil, err
+	if rsv == nil || len(rsv.Instances) == 0 {
+		return nil, wrapError(errToReturn, &instanceSet.throttleDelayCreate)
 	}
 	return &ec2Instance{
 		provider: instanceSet,
@@ -711,7 +717,22 @@ func isErrorSubnetSpecific(err error) bool {
 	code := aerr.Code()
 	return strings.Contains(code, "Subnet") ||
 		code == "InsufficientInstanceCapacity" ||
-		code == "InsufficientVolumeCapacity"
+		code == "InsufficientVolumeCapacity" ||
+		code == "Unsupported"
+}
+
+// isErrorCapacity returns true if the error indicates lack of
+// capacity (either temporary or permanent) to run a specific instance
+// type -- i.e., retrying with a different instance type might
+// succeed.
+func isErrorCapacity(err error) bool {
+	aerr, ok := err.(awserr.Error)
+	if !ok {
+		return false
+	}
+	code := aerr.Code()
+	return code == "InsufficientInstanceCapacity" ||
+		(code == "Unsupported" && strings.Contains(aerr.Message(), "requested instance type"))
 }
 
 type ec2QuotaError struct {
@@ -737,7 +758,7 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
 	} else if isErrorQuota(err) {
 		return &ec2QuotaError{err}
-	} else if aerr, ok := err.(awserr.Error); ok && aerr != nil && aerr.Code() == "InsufficientInstanceCapacity" {
+	} else if isErrorCapacity(err) {
 		return &capacityError{err, true}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))
