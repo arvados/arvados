@@ -5,10 +5,10 @@
 import { MoveToIcon, CopyIcon } from "components/icon/icon";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
-import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-action-set";
+import { TrashIcon } from "components/icon/icon";
 
 export const msCollectionActionSet: MultiSelectMenuActionSet = [
     [
@@ -28,8 +28,8 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
             execute: (dispatch, resources) => dispatch<any>(openMoveCollectionDialog(resources[0])),
         },
         {
-            component: ToggleTrashAction,
             name: MultiSelectMenuActionNames.ADD_TO_TRASH,
+            icon: TrashIcon,
             isForMulti: true,
             execute: (dispatch, resources: ContextMenuResource[]) => {
                 for (const resource of [...resources]) {

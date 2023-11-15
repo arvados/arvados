@@ -20,6 +20,7 @@ import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiat
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { ContainerRequestResource } from "models/container-request";
+import { FavoritesState } from "store/favorites/favorites-reducer";
 
 type CssRules = "root" | "button";
 
@@ -44,7 +45,7 @@ export type MultiselectToolbarProps = {
     selectedUuid: string | null
     resources: ResourcesState;
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
-    favorites: any
+    favorites: FavoritesState
 };
 
 export const MultiselectToolbar = connect(
@@ -78,7 +79,7 @@ export const MultiselectToolbar = connect(
                                     disableFocusListener
                                 >
                                     <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>
-                                        {action.isDefault(selectedUuid, resources, favorites) ? action.icon && action.icon({}) : action.altIcon && action.altIcon({})}
+                                        {action.isDefault(selectedUuid, resources, favorites) ? action.icon({}) : action.altIcon && action.altIcon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
@@ -88,7 +89,7 @@ export const MultiselectToolbar = connect(
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>{action.icon ? action.icon({}) : <></>}</IconButton>
+                                    <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>{action.icon({})}</IconButton>
                                 </Tooltip>
                             )
                         )

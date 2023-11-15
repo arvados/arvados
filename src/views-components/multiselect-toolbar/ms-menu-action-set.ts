@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Dispatch } from "redux";
 import { IconType } from "components/icon/icon";
-import { ContextMenuAction } from "../context-menu/context-menu-action-set";
 import { ResourcesState } from "store/resources/resources";
+import { FavoritesState } from "store/favorites/favorites-reducer";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export const MultiSelectMenuActionNames = {
   MAKE_A_COPY: "Make a copy",
@@ -16,12 +18,15 @@ export const MultiSelectMenuActionNames = {
   REMOVE: "Remove",
 };
 
-export interface MultiSelectMenuAction extends ContextMenuAction {
-    defaultText?: string;
+export type MultiSelectMenuAction = {
+    name: string;
+    icon: IconType;
     altText?: string;
     altIcon?: IconType;
-    isDefault?: (uuid: string | null, resources: ResourcesState, favorites) => boolean;
     isForMulti: boolean;
-}
+    isDefault?: (uuid: string | null, resources: ResourcesState, favorites: FavoritesState) => boolean;
+    execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
+    adminOnly?: boolean;
+};
 
 export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];
