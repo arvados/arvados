@@ -33,7 +33,7 @@ func (s *CommandSuite) SetUpSuite(c *check.C) {
 func (s *CommandSuite) TestDump_BadArg(c *check.C) {
 	var stderr bytes.Buffer
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-badarg"}, bytes.NewBuffer(nil), bytes.NewBuffer(nil), &stderr)
-	c.Check(code, check.Equals, 2)
+	c.Check(code, check.Equals, cmd.EX_USAGE)
 	c.Check(stderr.String(), check.Equals, "error parsing command line arguments: flag provided but not defined: -badarg (try -help)\n")
 }
 
