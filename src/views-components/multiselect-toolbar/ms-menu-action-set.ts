@@ -21,6 +21,7 @@ export interface MultiSelectMenuAction extends ContextMenuAction {
     altText?: string;
     altIcon?: IconType;
     isDefault?: (uuid: string | null, resources: ResourcesState, favorites) => boolean;
+    isForMulti: boolean;
 }
 
 export type MultiSelectMenuActionSet = Array<Array<MultiSelectMenuAction>>;

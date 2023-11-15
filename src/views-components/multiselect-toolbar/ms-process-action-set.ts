@@ -2,17 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { MoveToIcon, RemoveIcon, ReRunProcessIcon } from "components/icon/icon";
 import { openMoveProcessDialog } from "store/processes/process-move-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
+import { MultiSelectMenuActionSet } from "./ms-menu-action-set";
 
-export const msProcessActionSet: ContextMenuActionSet = [
+export const msProcessActionSet: MultiSelectMenuActionSet = [
     [
         {
             icon: ReRunProcessIcon,
             name: "Copy and re-run process",
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(openCopyProcessDialog(resource));
@@ -22,6 +23,7 @@ export const msProcessActionSet: ContextMenuActionSet = [
         {
             icon: MoveToIcon,
             name: "Move to",
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openMoveProcessDialog(resources[0]));
             },
@@ -29,6 +31,7 @@ export const msProcessActionSet: ContextMenuActionSet = [
         {
             name: "Remove",
             icon: RemoveIcon,
+            isForMulti: true,
             execute: (dispatch, resources) => {
                 dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
             },

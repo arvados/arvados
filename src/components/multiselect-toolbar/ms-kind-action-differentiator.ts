@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ResourceKind } from "models/resource";
-import { MultiSelectMenuAction , MultiSelectMenuActionSet} from "views-components/multiselect-toolbar/ms-menu-action-set";
+import { MultiSelectMenuActionSet} from "views-components/multiselect-toolbar/ms-menu-action-set";
 import { msCollectionActionSet } from "views-components/multiselect-toolbar/ms-collection-action-set";
 import { msProjectActionSet } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { msProcessActionSet } from "views-components/multiselect-toolbar/ms-process-action-set";

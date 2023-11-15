@@ -13,8 +13,8 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { Resource, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
-import { MultiSelectMenuAction, MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-action-set";
-import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-action-set";
+import { ContextMenuAction } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
@@ -131,7 +131,7 @@ function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Reco
     return result;
 }
 
-function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>): Array<ContextMenuAction> {
+function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<string>): Array<MultiSelectMenuAction> {
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 

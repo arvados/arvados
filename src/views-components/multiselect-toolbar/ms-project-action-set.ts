@@ -20,6 +20,7 @@ export const msToggleFavoriteAction = {
     altText: 'Remove from Favorites',
     icon: AddFavoriteIcon,
     altIcon: RemoveFavoriteIcon,
+    isForMulti: false,
     isDefault: (uuid, resources, favorites)=>{
         return !checkFavorite(uuid, favorites);
     },
@@ -33,6 +34,7 @@ export const msToggleFavoriteAction = {
 export const msCopyToClipboardMenuAction = {
     icon: Link,
     name: MultiSelectMenuActionNames.COPY_TO_CLIPBOARD,
+    isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch(copyToClipboardAction(resources));
     },
@@ -41,6 +43,7 @@ export const msCopyToClipboardMenuAction = {
 export const msMoveToAction = {
     icon: MoveToIcon,
     name: MultiSelectMenuActionNames.MOVE_TO,
+    isForMulti: true,
     execute: (dispatch, resource) => {
         dispatch(openMoveProjectDialog(resource[0]));
     },
@@ -52,6 +55,7 @@ export const msToggleTrashAction = {
     altText: 'Restore from Trash',
     icon: TrashIcon,
     altIcon: RestoreFromTrashIcon,
+    isForMulti: true,
     isDefault: (uuid, resources, favorites = []) => {
         return uuid ? !(getResource(uuid)(resources) as any).isTrashed : true;
     },
