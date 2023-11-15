@@ -40,7 +40,7 @@ const (
 	pjsversion                = "1.9.8"
 	geckoversion              = "0.24.0"
 	gradleversion             = "5.3.1"
-	nodejsversion             = "v12.22.12"
+	defaultNodejsVersion      = "v12.22.12"
 	devtestDatabasePassword   = "insecure_arvados_test"
 )
 
@@ -55,6 +55,7 @@ type installCommand struct {
 	RubyVersion        string
 	BundlerVersion     string
 	SingularityVersion string
+	NodejsVersion      string
 	EatMyData          bool
 }
 
@@ -81,6 +82,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.RubyVersion, "ruby-version", defaultRubyVersion, "Ruby `version` to install (do not override in production mode)")
 	flags.StringVar(&inst.BundlerVersion, "bundler-version", defaultBundlerVersion, "Bundler `version` to install (do not override in production mode)")
 	flags.StringVar(&inst.SingularityVersion, "singularity-version", defaultSingularityVersion, "Singularity `version` to install (do not override in production mode)")
+	flags.StringVar(&inst.NodejsVersion, "nodejs-version", defaultNodejsVersion, "Nodejs `version` to install (not applicable in production mode)")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -127,6 +129,10 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	if ok, _ := regexp.MatchString(`^\d`, inst.SingularityVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -singularity-version\n", inst.SingularityVersion)
+		return 64
+	}
+	if ok, _ := regexp.MatchString(`^v\d`, inst.NodejsVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -nodejs-version\n", inst.NodejsVersion)
 		return 64
 	}
 
@@ -560,11 +566,11 @@ setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
 	}
 
 	if !prod {
-		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
-			logger.Print("nodejs " + nodejsversion + " already installed")
+		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == inst.NodejsVersion+"\n" {
+			logger.Print("nodejs " + inst.NodejsVersion + " already installed")
 		} else {
 			err = inst.runBash(`
-NJS=`+nodejsversion+`
+NJS=`+inst.NodejsVersion+`
 rm -rf /var/lib/arvados/node-*-linux-x64
 wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
 ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
@@ -579,7 +585,7 @@ ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		} else {
 			err = inst.runBash(`
 npm install -g yarn
-ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
+ln -sfv /var/lib/arvados/node-`+inst.NodejsVersion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
