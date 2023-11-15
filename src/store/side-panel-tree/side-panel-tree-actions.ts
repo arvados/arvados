@@ -114,7 +114,7 @@ const loadProject = (projectUuid: string) =>
                 .addEqual('owner_uuid', projectUuid)
                 .getFilters(),
             order: new OrderBuilder<ProjectResource>()
-                .addAsc('name')
+                .addDesc('createdAt')
                 .getOrder()
         };
 
