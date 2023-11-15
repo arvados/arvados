@@ -22,6 +22,7 @@ import {
 } from 'store/navigation/navigation-action'
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
+import { User } from 'models/user'
 
 type CssRules = 'button' | 'unselected' | 'selected'
 
@@ -101,6 +102,13 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
     },
 ]
 
+type SidePanelCollapsedProps = {
+    user: User,
+    selectedPath: string,
+    navToHome: (uuid: string)=>void,
+    navTo: (navTarget: RouterAction | '')=>void,
+}
+
 const mapStateToProps = ({auth, properties }: RootState) => {
         return {
             user: auth.user,
@@ -120,7 +128,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 }
 
 export const SidePanelCollapsed = withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & any) => {
+    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & SidePanelCollapsedProps) => {
 
         const handleClick = (cat: TCollapsedCategory) => {
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
@@ -129,9 +137,8 @@ export const SidePanelCollapsed = withStyles(styles)(
 
         const { button, unselected, selected } = classes
         return (
-            <List data-cy="side-panel-collapsed">
+            <List data-cy='side-panel-collapsed'>
                 {sidePanelCollapsedCategories.map((cat) => (
-                    
                     <ListItem
                         key={cat.name}
                         data-cy={`collapsed-${cat.name.toLowerCase().replace(/\s+/g, '-')}`}
@@ -147,6 +154,6 @@ export const SidePanelCollapsed = withStyles(styles)(
                     </ListItem>
                 ))}
             </List>
-        )
+        );
     })
 )
