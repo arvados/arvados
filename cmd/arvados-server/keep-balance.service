@@ -14,7 +14,7 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/keep-balance -commit-pulls -commit-trash
+ExecStart=/usr/bin/keep-balance
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536
 Restart=always

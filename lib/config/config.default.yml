@@ -638,6 +638,15 @@ Clusters:
       # once.
       BalanceUpdateLimit: 100000
 
+      # Maximum number of "pull block from other server" and "trash
+      # block" requests to send to each keepstore server at a
+      # time. Smaller values use less memory in keepstore and
+      # keep-balance. Larger values allow more progress per
+      # keep-balance iteration. Setting both limits to zero amounts
+      # to a "dry run".
+      BalancePullLimit: 100000
+      BalanceTrashLimit: 100000
+
       # Default lifetime for ephemeral collections: 2 weeks. This must not
       # be less than BlobSigningTTL.
       DefaultTrashLifetime: 336h
