@@ -53,15 +53,16 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, resources, selectedUuid, favorites } = props;
+        const { classes, checkedList, resources, selectedUuid: singleSelectedUuid, favorites } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
 
         const currentPathIsTrash = window.location.pathname === "/trash";
 
         const actions =
-            currentPathIsTrash && selectedToKindSet(checkedList).size 
-            ? [msToggleTrashAction] 
-            : selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
+            currentPathIsTrash && selectedToKindSet(checkedList).size
+                ? [msToggleTrashAction]
+                : selectActionsByKind(currentResourceKinds, multiselectActionsFilters)
+                .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
 
         return (
             <React.Fragment>
@@ -74,12 +75,12 @@ export const MultiselectToolbar = connect(
                             action.hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={action.useAlts(selectedUuid, resources, favorites) ? action.altName: action.name}
+                                    title={action.useAlts(singleSelectedUuid, resources, favorites) ? action.altName: action.name}
                                     key={i}
                                     disableFocusListener
                                 >
                                     <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>
-                                        {action.useAlts(selectedUuid, resources, favorites) ? action.altIcon && action.altIcon({}):  action.icon({})}
+                                        {action.useAlts(singleSelectedUuid, resources, favorites) ? action.altIcon && action.altIcon({}):  action.icon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
