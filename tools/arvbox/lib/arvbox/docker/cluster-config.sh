@@ -56,11 +56,6 @@ if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
 fi
 psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
 
-if ! test -s $ARVADOS_CONTAINER_PATH/workbench_secret_token ; then
-  ruby -e 'puts rand(2**400).to_s(36)' > $ARVADOS_CONTAINER_PATH/workbench_secret_token
-fi
-workbench_secret_key_base=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
-
 if test -s $ARVADOS_CONTAINER_PATH/api_rails_env ; then
   database_env=$(cat $ARVADOS_CONTAINER_PATH/api_rails_env)
 else
@@ -138,9 +133,6 @@ Clusters:
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true
-    Workbench:
-      SecretKeyBase: $workbench_secret_key_base
-      ArvadosDocsite: http://$localip:${services[doc]}/
     Git:
       GitCommand: /usr/share/gitolite3/gitolite-shell
       GitoliteHome: $ARVADOS_CONTAINER_PATH/git
@@ -175,7 +167,6 @@ chmod og-rw \
       $ARVADOS_CONTAINER_PATH/management_token \
       $ARVADOS_CONTAINER_PATH/system_root_token \
       $ARVADOS_CONTAINER_PATH/api_database_pw \
-      $ARVADOS_CONTAINER_PATH/workbench_secret_token \
       $ARVADOS_CONTAINER_PATH/superuser_token \
 set -e
 

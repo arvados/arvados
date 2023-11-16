@@ -292,7 +292,6 @@ var whitelist = map[string]bool{
 	"Workbench.Repositories":                              false,
 	"Workbench.RepositoryCache":                           false,
 	"Workbench.RunningJobLogRecordsToFetch":               true,
-	"Workbench.SecretKeyBase":                             false,
 	"Workbench.ShowRecentCollectionsOnDashboard":          true,
 	"Workbench.ShowUserAgreementInline":                   true,
 	"Workbench.ShowUserNotifications":                     true,
