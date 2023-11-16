@@ -41,8 +41,8 @@ export const msToggleFavoriteAction = {
     altName: 'Remove from Favorites',
     altIcon: RemoveFavoriteIcon,
     isForMulti: false,
-    useAlts: (uuid, resources, favorites) => {
-        return checkFavorite(uuid, favorites);
+    useAlts: (uuid, iconProps) => {
+        return checkFavorite(uuid, iconProps.favorites);
     },
     execute: (dispatch, resources) => {
         dispatch(toggleFavorite(resources[0])).then(() => {
@@ -138,8 +138,8 @@ export const msToggleTrashAction = {
     altName: 'Restore from Trash',
     altIcon: RestoreFromTrashIcon,
     isForMulti: true,
-    useAlts: (uuid, resources, favorites = []) => {
-        return uuid ? (getResource(uuid)(resources) as any).isTrashed : false;
+    useAlts: (uuid, iconProps) => {
+        return uuid ? (getResource(uuid)(iconProps.resources) as any).isTrashed : false;
     },
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
@@ -155,9 +155,11 @@ export const msFreezeProjectAction = {
     altName: 'Unfreeze Project',
     altIcon: UnfreezeIcon,
     isForMulti: false,
-    useAlts: () => false,
+    useAlts: (uuid, iconProps) => {
+        return uuid ? !!(getResource(uuid)(iconProps.resources) as any).frozenByUuid : false;
+    },
     execute: (dispatch, resources) => {
-        if (resources[0].isFrozen) {
+        if (resources[0].frozenByUuid) {
             dispatch(unfreezeProject(resources[0].uuid));
         } else {
             dispatch(freezeProject(resources[0].uuid));

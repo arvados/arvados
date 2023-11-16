@@ -43,17 +43,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     selectedUuid: string | null
-    resources: ResourcesState;
+    iconProps: IconProps
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
-    favorites: FavoritesState
 };
+
+type IconProps = {
+    resources: ResourcesState;
+    favorites: FavoritesState
+}
 
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, resources, selectedUuid: singleSelectedUuid, favorites } = props;
+        const { classes, checkedList, selectedUuid: singleSelectedUuid, iconProps } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
 
         const currentPathIsTrash = window.location.pathname === "/trash";
@@ -75,12 +79,12 @@ export const MultiselectToolbar = connect(
                             action.hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={action.useAlts(singleSelectedUuid, resources, favorites) ? action.altName: action.name}
+                                    title={action.useAlts(singleSelectedUuid, iconProps) ? action.altName: action.name}
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>
-                                        {action.useAlts(singleSelectedUuid, resources, favorites) ? action.altIcon && action.altIcon({}):  action.icon({})}
+                                    <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
+                                        {action.useAlts(singleSelectedUuid, iconProps) ? action.altIcon && action.altIcon({}):  action.icon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
@@ -90,7 +94,7 @@ export const MultiselectToolbar = connect(
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>{action.icon({})}</IconButton>
+                                    <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>{action.icon({})}</IconButton>
                                 </Tooltip>
                             )
                         )
@@ -194,13 +198,15 @@ const isExactlyOneSelected = (checkedList: TCheckedList) => {
 
 //--------------------------------------------------//
 
-function mapStateToProps(state: RootState) {
+function mapStateToProps({multiselect, resources, favorites}: RootState) {
     return {
-        checkedList: state.multiselect.checkedList as TCheckedList,
-        selectedUuid: isExactlyOneSelected(state.multiselect.checkedList),
-        resources: state.resources,
-        favorites: state.favorites
-    };
+        checkedList: multiselect.checkedList as TCheckedList,
+        selectedUuid: isExactlyOneSelected(multiselect.checkedList),
+        iconProps: {
+            resources,
+            favorites
+        }
+    }
 }
 
 function mapDispatchToProps(dispatch: Dispatch) {
