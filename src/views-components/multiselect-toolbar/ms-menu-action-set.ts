@@ -9,13 +9,21 @@ import { FavoritesState } from "store/favorites/favorites-reducer";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export const MultiSelectMenuActionNames = {
+  ADD_TO_FAVORITES: "Add to Favorites",
+  ADD_TO_TRASH: "Add to Trash",
+  API_DETAILS: 'API Details',
+  COPY_AND_RERUN_PROCESS: "Copy and re-run process",
+  COPY_TO_CLIPBOARD: "Copy to clipboard",
+  EDIT_PPROJECT: 'Edit project',
+  FREEZE_PROJECT: 'Freeze Project',
   MAKE_A_COPY: "Make a copy",
   MOVE_TO: "Move to",
-  ADD_TO_TRASH: "Add to Trash",
-  ADD_TO_FAVORITES: "Add to Favorites",
-  COPY_TO_CLIPBOARD: "Copy to clipboard",
-  COPY_AND_RERUN_PROCESS: "Copy and re-run process",
+  NEW_PROJECT: 'New project',
+  OPEN_IN_NEW_TAB: 'Open in new tab',
+  OPEN_W_3RD_PARTY_CLIENT: 'Open with 3rd party client',
   REMOVE: "Remove",
+  SHARE: 'Share',
+  VIEW_DETAILS: 'View details',
 };
 
 export type MultiSelectMenuAction = {
