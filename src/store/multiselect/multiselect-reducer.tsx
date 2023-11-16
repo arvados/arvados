@@ -15,7 +15,7 @@ const multiselectToolbarInitialState = {
     checkedList: {},
 };
 
-const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, DESELECT_ONE } = multiselectActionContants;
+const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, SELECT_ONE, DESELECT_ONE } = multiselectActionContants;
 
 export const multiselectReducer = (state: MultiselectToolbarState = multiselectToolbarInitialState, action) => {
     switch (action.type) {
@@ -23,6 +23,8 @@ export const multiselectReducer = (state: MultiselectToolbarState = multiselectT
             return { ...state, isVisible: action.payload };
         case SET_CHECKEDLIST:
             return { ...state, checkedList: action.payload };
+        case SELECT_ONE:
+            return { ...state, checkedList: { ...state.checkedList, [action.payload]: true } };
         case DESELECT_ONE:
             return { ...state, checkedList: { ...state.checkedList, [action.payload]: false } };
         default:

@@ -7,6 +7,7 @@ import { TCheckedList } from "components/data-table/data-table";
 export const multiselectActionContants = {
     TOGGLE_VISIBLITY: "TOGGLE_VISIBLITY",
     SET_CHECKEDLIST: "SET_CHECKEDLIST",
+    SELECT_ONE: 'SELECT_ONE',
     DESELECT_ONE: "DESELECT_ONE",
 };
 
@@ -22,6 +23,12 @@ export const setCheckedListOnStore = (checkedList: TCheckedList) => {
     };
 };
 
+export const selectOne = (uuid: string) => {
+    return dispatch => {
+        dispatch({ type: multiselectActionContants.SELECT_ONE, payload: uuid });
+    };
+};
+
 export const deselectOne = (uuid: string) => {
     return dispatch => {
         dispatch({ type: multiselectActionContants.DESELECT_ONE, payload: uuid });
@@ -31,5 +38,6 @@ export const deselectOne = (uuid: string) => {
 export const multiselectActions = {
     toggleMSToolbar,
     setCheckedListOnStore,
+    selectOne,
     deselectOne,
 };
