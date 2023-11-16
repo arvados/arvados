@@ -103,11 +103,11 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
 ]
 
 type SidePanelCollapsedProps = {
-    user: User,
-    selectedPath: string,
-    navToHome: (uuid: string)=>void,
-    navTo: (navTarget: RouterAction | '')=>void,
-}
+    user: User;
+    selectedPath: string;
+    navToHome: (uuid: string) => void;
+    navTo: (navTarget: RouterAction | '') => void;
+};
 
 const mapStateToProps = ({auth, properties }: RootState) => {
         return {
