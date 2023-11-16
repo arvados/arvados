@@ -57,7 +57,7 @@ func (s *CmdSuite) TestUsage(c *check.C) {
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
 	exited := testCmd.RunCommand("prog", []string{"nosuchcommand", "hi"}, bytes.NewReader(nil), stdout, stderr)
-	c.Check(exited, check.Equals, 64)
+	c.Check(exited, check.Equals, 2)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Check(stderr.String(), check.Matches, `(?ms)^prog: unrecognized command "nosuchcommand"\n.*echo.*\n`)
 }

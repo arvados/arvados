@@ -26,8 +26,7 @@ var defaultFlagSet = flag.NewFlagSet("none", flag.ContinueOnError)
 // running normally, or false if it should exit now.
 //
 // If ok is false, the second return value is an appropriate exit
-// code: 0 if "-help" was given, EX_USAGE (64) if there was a usage
-// error.
+// code: 0 if "-help" was given, 2 if there was a usage error.
 func ParseFlags(f FlagSet, prog string, args []string, positional string, stderr io.Writer) (ok bool, exitCode int) {
 	f.Init(prog, flag.ContinueOnError)
 	f.SetOutput(io.Discard)
@@ -36,7 +35,7 @@ func ParseFlags(f FlagSet, prog string, args []string, positional string, stderr
 	case nil:
 		if f.NArg() > 0 && positional == "" {
 			fmt.Fprintf(stderr, "unrecognized command line arguments: %v (try -help)\n", f.Args())
-			return false, EX_USAGE
+			return false, EXIT_INVALIDARGUMENT
 		}
 		return true, 0
 	case flag.ErrHelp:
@@ -56,6 +55,6 @@ func ParseFlags(f FlagSet, prog string, args []string, positional string, stderr
 		return false, 0
 	default:
 		fmt.Fprintf(stderr, "error parsing command line arguments: %s (try -help)\n", err)
-		return false, EX_USAGE
+		return false, EXIT_INVALIDARGUMENT
 	}
 }

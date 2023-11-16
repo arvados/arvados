@@ -59,7 +59,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		fmt.Fprint(stderr,
 			"Usage error: the -commit-pulls or -commit-trash command line flags are no longer supported.\n",
 			"Use Collections.BalancePullLimit and Collections.BalanceTrashLimit instead.\n")
-		return cmd.EX_USAGE
+		return cmd.EXIT_INVALIDARGUMENT
 	}
 
 	// Drop our custom args that would be rejected by the generic
