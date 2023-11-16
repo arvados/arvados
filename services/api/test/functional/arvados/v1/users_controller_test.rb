@@ -1101,7 +1101,7 @@ The Arvados team.
     assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
   end
 
-  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
+  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "is_admin", "is_invited", "email", "first_name",
                          "last_name", "username", "can_write", "can_manage"].sort
 
   def check_non_admin_index

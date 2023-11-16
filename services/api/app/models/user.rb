@@ -105,6 +105,10 @@ class User < ArvadosModel
        self.groups_i_can(:read).select { |x| x.match(/-f+$/) }.first)
   end
 
+  def self.ignored_select_attributes
+    super + ["full_name", "is_invited"]
+  end
+
   def groups_i_can(verb)
     my_groups = self.group_permissions(VAL_FOR_PERM[verb]).keys
     if verb == :read
@@ -654,7 +658,7 @@ SELECT target_uuid, perm_level
         end
       end
 
-      if user.is_invited && !remote_user[:is_invited]
+      if user.is_invited && remote_user[:is_invited] == false
         # Remote user is not "invited" state, they should be unsetup, which
         # also makes them inactive.
         user.unsetup
@@ -674,13 +678,14 @@ SELECT target_uuid, perm_level
            Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
           # remote user is active and invited, we need to activate them
           user.update!(is_active: true)
-        elsif user.is_active && !remote_user[:is_active]
+        elsif user.is_active && remote_user[:is_active] == false
           # remote user is not active, we need to de-activate them
           user.update!(is_active: false)
         end
 
         if remote_user_prefix == Rails.configuration.Login.LoginCluster and
           user.is_active and
+          !remote_user[:is_admin].nil? and
           user.is_admin != remote_user[:is_admin]
           # Remote cluster controls our user database, including the
           # admin flag.
