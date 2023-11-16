@@ -22,10 +22,10 @@ export type MultiSelectMenuAction = {
     name: string;
     icon: IconType;
     hasAlts: boolean;
-    altText?: string;
+    altName?: string;
     altIcon?: IconType;
     isForMulti: boolean;
-    isDefault?: (uuid: string | null, resources: ResourcesState, favorites: FavoritesState) => boolean;
+    useAlts?: (uuid: string | null, resources: ResourcesState, favorites: FavoritesState) => boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
     adminOnly?: boolean;
 };

@@ -71,15 +71,15 @@ export const MultiselectToolbar = connect(
                 >
                     {actions.length ? (
                         actions.map((action, i) =>
-                            action.isDefault ? (
+                            action.hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={action.isDefault(selectedUuid, resources, favorites) ? action.name : action.altText}
+                                    title={action.useAlts(selectedUuid, resources, favorites) ? action.altName: action.name}
                                     key={i}
                                     disableFocusListener
                                 >
                                     <IconButton onClick={() => props.executeMulti(action, checkedList, resources)}>
-                                        {action.isDefault(selectedUuid, resources, favorites) ? action.icon({}) : action.altIcon && action.altIcon({})}
+                                        {action.useAlts(selectedUuid, resources, favorites) ? action.altIcon && action.altIcon({}):  action.icon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (

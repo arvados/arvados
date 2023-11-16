@@ -18,11 +18,11 @@ export const msToggleFavoriteAction = {
     name: MultiSelectMenuActionNames.ADD_TO_FAVORITES,
     icon: AddFavoriteIcon,
     hasAlts: true,
-    altText: 'Remove from Favorites',
+    altName: 'Remove from Favorites',
     altIcon: RemoveFavoriteIcon,
     isForMulti: false,
-    isDefault: (uuid, resources, favorites)=>{
-        return !checkFavorite(uuid, favorites);
+    useAlts: (uuid, resources, favorites)=>{
+        return checkFavorite(uuid, favorites);
     },
     execute: (dispatch, resources) => {
         dispatch(toggleFavorite(resources[0])).then(() => {
@@ -55,11 +55,11 @@ export const msToggleTrashAction = {
     name: MultiSelectMenuActionNames.ADD_TO_TRASH,
     icon: TrashIcon,
     hasAlts: true,
-    altText: 'Restore from Trash',
+    altName: 'Restore from Trash',
     altIcon: RestoreFromTrashIcon,
     isForMulti: true,
-    isDefault: (uuid, resources, favorites = []) => {
-        return uuid ? !(getResource(uuid)(resources) as any).isTrashed : true;
+    useAlts: (uuid, resources, favorites = []) => {
+        return uuid ? (getResource(uuid)(resources) as any).isTrashed : false;
     },
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
