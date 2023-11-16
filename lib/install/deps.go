@@ -121,19 +121,19 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 
 	if ok, _ := regexp.MatchString(`^\d\.\d+\.\d+$`, inst.RubyVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -ruby-version\n", inst.RubyVersion)
-		return 64
+		return 2
 	}
 	if ok, _ := regexp.MatchString(`^\d`, inst.BundlerVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -bundler-version\n", inst.BundlerVersion)
-		return 64
+		return 2
 	}
 	if ok, _ := regexp.MatchString(`^\d`, inst.SingularityVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -singularity-version\n", inst.SingularityVersion)
-		return 64
+		return 2
 	}
 	if ok, _ := regexp.MatchString(`^v\d`, inst.NodejsVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -nodejs-version\n", inst.NodejsVersion)
-		return 64
+		return 2
 	}
 
 	osv, err := identifyOS()
