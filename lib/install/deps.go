@@ -40,7 +40,7 @@ const (
 	pjsversion                = "1.9.8"
 	geckoversion              = "0.24.0"
 	gradleversion             = "5.3.1"
-	defaultNodejsVersion      = "v12.22.12"
+	defaultNodejsVersion      = "12.22.12"
 	devtestDatabasePassword   = "insecure_arvados_test"
 )
 
@@ -131,7 +131,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		fmt.Fprintf(stderr, "invalid argument %q for -singularity-version\n", inst.SingularityVersion)
 		return 2
 	}
-	if ok, _ := regexp.MatchString(`^v\d`, inst.NodejsVersion); !ok {
+	if ok, _ := regexp.MatchString(`^\d`, inst.NodejsVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -nodejs-version\n", inst.NodejsVersion)
 		return 2
 	}
@@ -566,11 +566,11 @@ setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
 	}
 
 	if !prod {
-		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == inst.NodejsVersion+"\n" {
+		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == "v"+inst.NodejsVersion+"\n" {
 			logger.Print("nodejs " + inst.NodejsVersion + " already installed")
 		} else {
 			err = inst.runBash(`
-NJS=`+inst.NodejsVersion+`
+NJS=v`+inst.NodejsVersion+`
 rm -rf /var/lib/arvados/node-*-linux-x64
 wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
 ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
@@ -585,7 +585,7 @@ ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		} else {
 			err = inst.runBash(`
 npm install -g yarn
-ln -sfv /var/lib/arvados/node-`+inst.NodejsVersion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
+ln -sfv /var/lib/arvados/node-v`+inst.NodejsVersion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
