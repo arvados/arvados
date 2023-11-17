@@ -31,7 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: 0,
         padding: 0,
         margin: "1rem auto auto 0.5rem",
-        overflow: "hidden",
+        overflowY: 'scroll',
         transition: "width 150ms",
     },
     button: {
