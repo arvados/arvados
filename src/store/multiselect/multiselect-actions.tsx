@@ -9,6 +9,7 @@ export const multiselectActionContants = {
     SET_CHECKEDLIST: "SET_CHECKEDLIST",
     SELECT_ONE: 'SELECT_ONE',
     DESELECT_ONE: "DESELECT_ONE",
+    TOGGLE_ONE: 'TOGGLE_ONE'
 };
 
 export const toggleMSToolbar = (isVisible: boolean) => {
@@ -32,6 +33,12 @@ export const selectOne = (uuid: string) => {
 export const deselectOne = (uuid: string) => {
     return dispatch => {
         dispatch({ type: multiselectActionContants.DESELECT_ONE, payload: uuid });
+    };
+};
+
+export const toggleOne = (uuid: string) => {
+    return dispatch => {
+        dispatch({ type: multiselectActionContants.TOGGLE_ONE, payload: uuid });
     };
 };
 

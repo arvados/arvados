@@ -13,7 +13,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { OrderBuilder } from 'services/api/order-builder';
 import { CollectionResource } from 'models/collection';
 import { extractUuidKind, ResourceKind } from 'models/resource';
-import { selectOne } from 'store/multiselect/multiselect-actions';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 
 export const SLIDE_TIMEOUT = 500;
 
@@ -37,7 +37,7 @@ export const loadDetailsPanel = (uuid: string) =>
                     break;
             }
         }
-        dispatch<any>(selectOne(uuid))
+        dispatch<any>(toggleOne(uuid))
         dispatch(detailsPanelActions.LOAD_DETAILS_PANEL(uuid));
     };
 
