@@ -38,7 +38,6 @@ table(table table-bordered table-condensed).
 |keep-balance   |no                     |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
 |keep-web       |yes                    |yes|yes ^5^|InternalURLs used by reverse proxy and container log API|
 |websocket      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
-|workbench1     |yes                    |no|no     ||
 |workbench2     |yes                    |no|no     ||
 </div>
 
@@ -148,38 +147,6 @@ server {
 </code></pre></notextile>
 
 If a client connects to the @Keepproxy@ service, it will talk to Nginx which will reverse proxy the traffic to the @Keepproxy@ service.
-
-h3. Workbench
-
-Consider this section for the @Workbench@ service:
-
-{% codeblock as yaml %}
-  Workbench1:
-    ExternalURL: "https://workbench.ClusterID.example.com"
-{% endcodeblock %}
-
-The @ExternalURL@ advertised is @https://workbench.ClusterID.example.com@. There is no value for @InternalURLs@ because Workbench1 is a Rails application served by Passenger. The only client connecting to the Passenger process is the reverse proxy (e.g. Nginx), and the listening host/post is configured in its configuration:
-
-<notextile><pre><code>
-server {
-  listen       443 ssl;
-  server_name  workbench.ClusterID.example.com;
-
-  ssl_certificate     /YOUR/PATH/TO/cert.pem;
-  ssl_certificate_key /YOUR/PATH/TO/cert.key;
-
-  root /var/www/arvados-workbench/current/public;
-  index  index.html;
-
-  passenger_enabled on;
-  # If you're using RVM, uncomment the line below.
-  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
-
-  # `client_max_body_size` should match the corresponding setting in
-  # the API.MaxRequestSize and Controller's server's Nginx configuration.
-  client_max_body_size 128m;
-}
-</code></pre></notextile>
 
 h3. API server
 
