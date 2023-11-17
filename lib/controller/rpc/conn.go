@@ -44,10 +44,10 @@ type Conn struct {
 	SendHeader         http.Header
 	RedactHostInErrors bool
 
-	clusterID     string
-	httpClient    http.Client
-	baseURL       url.URL
-	tokenProvider TokenProvider
+	clusterID         string
+	httpClient        http.Client
+	baseURL           url.URL
+	tokenProvider     TokenProvider
 	discoveryDocument *arvados.DiscoveryDocument
 }
 
