@@ -349,7 +349,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 		return sshconn, err
 	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
-	if !user.IsAdmin || !conn.cluster.Containers.ShellAccess.Admin {
+	if !*user.IsAdmin || !conn.cluster.Containers.ShellAccess.Admin {
 		if !conn.cluster.Containers.ShellAccess.User {
 			return sshconn, httpserver.ErrorWithStatus(errors.New("shell access is disabled in config"), http.StatusServiceUnavailable)
 		}

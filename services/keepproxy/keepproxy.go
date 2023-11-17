@@ -151,7 +151,7 @@ func (h *proxyHandler) checkAuthorizationHeader(req *http.Request) (pass bool, t
 		return false, "", nil
 	}
 
-	if userCurrentError == nil && user.IsAdmin {
+	if userCurrentError == nil && *user.IsAdmin {
 		// checking userCurrentError is probably redundant,
 		// IsAdmin would be false anyway. But can't hurt.
 		if op == "read" && !h.cluster.Collections.KeepproxyPermission.Admin.Download {

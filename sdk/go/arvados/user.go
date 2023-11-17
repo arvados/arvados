@@ -11,14 +11,14 @@ type User struct {
 	UUID                 string                 `json:"uuid"`
 	Etag                 string                 `json:"etag"`
 	IsActive             bool                   `json:"is_active"`
-	IsAdmin              bool                   `json:"is_admin"`
+	IsAdmin              *bool                  `json:"is_admin,omitempty"`
 	Username             string                 `json:"username"`
 	Email                string                 `json:"email"`
 	FullName             string                 `json:"full_name"`
 	FirstName            string                 `json:"first_name"`
 	LastName             string                 `json:"last_name"`
 	IdentityURL          string                 `json:"identity_url"`
-	IsInvited            bool                   `json:"is_invited"`
+	IsInvited            *bool                  `json:"is_invited,omitempty"`
 	OwnerUUID            string                 `json:"owner_uuid"`
 	CreatedAt            time.Time              `json:"created_at"`
 	ModifiedAt           time.Time              `json:"modified_at"`
