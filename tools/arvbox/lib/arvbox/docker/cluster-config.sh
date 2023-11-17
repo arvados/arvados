@@ -72,7 +72,7 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[api]}": {}
       Workbench1:
-        ExternalURL: "https://$localip:${services[workbench]}"
+        ExternalURL: "https://$localip:${services[workbench2-ssl]}"
       Workbench2:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
       Keepproxy:

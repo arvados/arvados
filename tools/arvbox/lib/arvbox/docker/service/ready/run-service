@@ -84,7 +84,6 @@ fi
 
 echo
 echo "Your Arvados-in-a-box is ready!"
-echo "Workbench is hosted at https://$localip:${services[workbench]}"
 echo "Workbench2 is hosted at https://$localip:${services[workbench2-ssl]}"
 echo "Documentation is hosted at http://$localip:${services[doc]}"
 
