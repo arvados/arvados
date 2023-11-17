@@ -48,6 +48,7 @@ type Conn struct {
 	httpClient    http.Client
 	baseURL       url.URL
 	tokenProvider TokenProvider
+	discoveryDocument *arvados.DiscoveryDocument
 }
 
 func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *Conn {
@@ -187,6 +188,19 @@ func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error)
 	var resp arvados.Vocabulary
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
 	return resp, err
+}
+
+func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	if conn.discoveryDocument != nil {
+		return *conn.discoveryDocument, nil
+	}
+	var dd arvados.DiscoveryDocument
+	err := conn.requestAndDecode(ctx, &dd, arvados.EndpointDiscoveryDocument, nil, nil)
+	if err != nil {
+		return dd, err
+	}
+	conn.discoveryDocument = &dd
+	return *conn.discoveryDocument, nil
 }
 
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {

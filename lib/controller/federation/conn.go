@@ -228,6 +228,10 @@ func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error)
 	return conn.chooseBackend(conn.cluster.ClusterID).VocabularyGet(ctx)
 }
 
+func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	return conn.chooseBackend(conn.cluster.ClusterID).DiscoveryDocument(ctx)
+}
+
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
 		// defer entire login procedure to designated cluster
