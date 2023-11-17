@@ -13,7 +13,7 @@ ARG BUILDTYPE
 # tree, and use the $arvados_version commit (passed in via an argument).
 
 ###########################################################################################################
-FROM debian:12-slim as dev
+FROM debian:11-slim as dev
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
@@ -42,7 +42,7 @@ RUN --mount=type=bind,target=/usr/src/arvados \
     go install
 
 ###########################################################################################################
-FROM debian:12-slim as demo
+FROM debian:11-slim as demo
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
@@ -75,7 +75,7 @@ RUN cd /usr/src && \
 FROM ${BUILDTYPE} as base
 
 ###########################################################################################################
-FROM debian:12
+FROM debian:11
 ENV DEBIAN_FRONTEND noninteractive
 
 # The arvbox-specific dependencies are
