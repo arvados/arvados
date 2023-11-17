@@ -267,7 +267,7 @@ func (bal *Balancer) CheckSanityEarly(c *arvados.Client) error {
 	if err != nil {
 		return fmt.Errorf("CurrentUser(): %v", err)
 	}
-	if !u.IsActive || !*u.IsAdmin {
+	if !u.IsActive || !u.IsAdmin {
 		return fmt.Errorf("current user (%s) is not an active admin user", u.UUID)
 	}
 	for _, srv := range bal.KeepServices {

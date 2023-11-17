@@ -851,7 +851,7 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arvados.User) bool {
 	var permitDownload bool
 	var permitUpload bool
-	if tokenUser != nil && tokenUser.IsAdmin != nil && *tokenUser.IsAdmin {
+	if tokenUser != nil && tokenUser.IsAdmin {
 		permitUpload = h.Cluster.Collections.WebDAVPermission.Admin.Upload
 		permitDownload = h.Cluster.Collections.WebDAVPermission.Admin.Download
 	} else {
