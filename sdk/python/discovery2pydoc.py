@@ -96,24 +96,24 @@ to list the specific keys you need. Refer to the API documentation for details.
 
 _MODULE_PRELUDE = '''
 import sys
+from typing import Any, Dict, List
 if sys.version_info < (3, 8):
-    from typing import Any
     from typing_extensions import TypedDict
 else:
-    from typing import Any, TypedDict
+    from typing import TypedDict
 '''
 
 _TYPE_MAP = {
     # Map the API's JavaScript-based type names to Python annotations.
     # Some of these may disappear after Arvados issue #19795 is fixed.
-    'Array': 'list',
-    'array': 'list',
+    'Array': 'List',
+    'array': 'List',
     'boolean': 'bool',
     # datetime fields are strings in ISO 8601 format.
     'datetime': 'str',
-    'Hash': 'dict[str, Any]',
+    'Hash': 'Dict[str, Any]',
     'integer': 'int',
-    'object': 'dict[str, Any]',
+    'object': 'Dict[str, Any]',
     'string': 'str',
     'text': 'str',
 }
@@ -221,7 +221,7 @@ class Method:
         try:
             returns = get_type_annotation(self._spec['response']['$ref'])
         except KeyError:
-            returns = 'dict[str, Any]'
+            returns = 'Dict[str, Any]'
         return inspect.Signature(parameters, return_annotation=returns)
 
     def doc(self, doc_slice: slice=slice(None)) -> str:
