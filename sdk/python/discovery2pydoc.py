@@ -95,6 +95,7 @@ to list the specific keys you need. Refer to the API documentation for details.
 '''
 
 _MODULE_PRELUDE = '''
+import googleapiclient.discovery
 import sys
 from typing import Any, Dict, List
 if sys.version_info < (3, 8):
@@ -354,7 +355,7 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
     for name, resource_spec in resources:
         print(document_resource(name, resource_spec), file=args.out_file)
 
-    print('''class ArvadosAPIClient:''', file=args.out_file)
+    print('''class ArvadosAPIClient(googleapiclient.discovery.Resource):''', file=args.out_file)
     for name, _ in resources:
         class_name = classify_name(name)
         docstring = f"Return an instance of `{class_name}` to call methods via this client"
