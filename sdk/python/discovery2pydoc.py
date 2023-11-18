@@ -96,15 +96,51 @@ to list the specific keys you need. Refer to the API documentation for details.
 
 _MODULE_PRELUDE = '''
 import googleapiclient.discovery
+import googleapiclient.http
+import httplib2
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 if sys.version_info < (3, 8):
     from typing_extensions import TypedDict
 else:
     from typing import TypedDict
+
+# ST represents an API response type
+ST = TypeVar('ST', bound=TypedDict)
+'''
+_REQUEST_CLASS = '''
+class ArvadosAPIRequest(googleapiclient.http.HttpRequest, Generic[ST]):
+    """Generic API request object
+
+    When you call an API method in the Arvados Python SDK, it returns a
+    request object. You usually call `execute()` on this object to submit the
+    request to your Arvados API server and retrieve the response. `execute()`
+    will return the type of object annotated in the subscript of
+    `ArvadosAPIRequest`.
+    """
+
+    def execute(self, http: Optional[httplib2.Http]=None, num_retries: int=0) -> ST:
+        """Execute this request and return the response
+
+        Arguments:
+
+        * http: httplib2.Http | None --- The HTTP client object to use to
+          execute the request. If not specified, uses the HTTP client object
+          created with the API client object.
+
+        * num_retries: int --- The maximum number of times to retry this
+          request if the server returns a retryable failure. The API client
+          object also has a maximum number of retries specified when it is
+          instantiated (see `arvados.api.api_client`). This request is run
+          with the larger of that number and this argument. Default 0.
+        """
+
 '''
 
-_TYPE_MAP = {
+# Annotation represents a valid Python type annotation. Future development
+# could expand this to include other valid types like `type`.
+Annotation = str
+_TYPE_MAP: Mapping[str, Annotation] = {
     # Map the API's JavaScript-based type names to Python annotations.
     # Some of these may disappear after Arvados issue #19795 is fixed.
     'Array': 'List',
@@ -198,9 +234,15 @@ class Parameter(inspect.Parameter):
 
 
 class Method:
-    def __init__(self, name: str, spec: Mapping[str, Any]) -> None:
+    def __init__(
+            self,
+            name: str,
+            spec: Mapping[str, Any],
+            annotate: Callable[[Annotation], Annotation]=str,
+    ) -> None:
         self.name = name
         self._spec = spec
+        self._annotate = annotate
         self._required_params = []
         self._optional_params = []
         for param_name, param_spec in spec['parameters'].items():
@@ -223,6 +265,7 @@ class Method:
             returns = get_type_annotation(self._spec['response']['$ref'])
         except KeyError:
             returns = 'Dict[str, Any]'
+        returns = self._annotate(returns)
         return inspect.Signature(parameters, return_annotation=returns)
 
     def doc(self, doc_slice: slice=slice(None)) -> str:
@@ -286,7 +329,7 @@ def document_resource(name: str, spec: Mapping[str, Any]) -> str:
     if class_name in _DEPRECATED_RESOURCES:
         docstring += _DEPRECATED_NOTICE
     methods = [
-        Method(key, meth_spec)
+        Method(key, meth_spec, 'ArvadosAPIRequest[{}]'.format)
         for key, meth_spec in spec['methods'].items()
         if key not in _ALIASED_METHODS
     ]
@@ -355,7 +398,11 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
     for name, resource_spec in resources:
         print(document_resource(name, resource_spec), file=args.out_file)
 
-    print('''class ArvadosAPIClient(googleapiclient.discovery.Resource):''', file=args.out_file)
+    print(
+        _REQUEST_CLASS,
+        '''class ArvadosAPIClient(googleapiclient.discovery.Resource):''',
+        sep='\n', file=args.out_file,
+    )
     for name, _ in resources:
         class_name = classify_name(name)
         docstring = f"Return an instance of `{class_name}` to call methods via this client"
