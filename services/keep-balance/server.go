@@ -112,7 +112,7 @@ func (srv *Server) runForever(ctx context.Context) error {
 	for {
 		if srv.Cluster.Collections.BalancePullLimit < 1 && srv.Cluster.Collections.BalanceTrashLimit < 1 {
 			logger.Print("WARNING: Will scan periodically, but no changes will be committed.")
-			logger.Print("=======  Consider using non-zero BalancePullLimit and BalanceTrashLimit configs.")
+			logger.Print("=======  To commit changes, set BalancePullLimit and BalanceTrashLimit values greater than zero.")
 		}
 
 		if !dblock.KeepBalanceService.Check() {

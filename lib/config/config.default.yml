@@ -642,8 +642,8 @@ Clusters:
       # block" requests to send to each keepstore server at a
       # time. Smaller values use less memory in keepstore and
       # keep-balance. Larger values allow more progress per
-      # keep-balance iteration. Setting both limits to zero amounts
-      # to a "dry run".
+      # keep-balance iteration. A zero value computes all of the
+      # needed changes but does not apply any.
       BalancePullLimit: 100000
       BalanceTrashLimit: 100000
 
