@@ -396,9 +396,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	_, err := s.db.Exec(`delete from collections`)
 	c.Assert(err, check.IsNil)
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
@@ -416,8 +414,6 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 
 func (s *runSuite) TestRefuseBadIndex(c *check.C) {
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
 		ChunkPrefix: "abc",
 		Logger:      ctxlog.TestLogger(c),
 	}
@@ -439,9 +435,7 @@ func (s *runSuite) TestRefuseBadIndex(c *check.C) {
 
 func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserNotAdmin()
 	s.stub.serveZeroCollections()
@@ -468,8 +462,6 @@ func (s *runSuite) TestInvalidChunkPrefix(c *check.C) {
 		s.SetUpTest(c)
 		c.Logf("trying invalid prefix %q", trial.prefix)
 		opts := RunOptions{
-			CommitPulls: true,
-			CommitTrash: true,
 			ChunkPrefix: trial.prefix,
 			Logger:      ctxlog.TestLogger(c),
 		}
@@ -489,9 +481,7 @@ func (s *runSuite) TestInvalidChunkPrefix(c *check.C) {
 
 func (s *runSuite) TestRefuseSameDeviceDifferentVolumes(c *check.C) {
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
@@ -519,9 +509,7 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	s.config.Collections.BlobMissingReport = lostf.Name()
 	defer os.Remove(lostf.Name())
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -540,10 +528,10 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 }
 
 func (s *runSuite) TestDryRun(c *check.C) {
+	s.config.Collections.BalanceTrashLimit = 0
+	s.config.Collections.BalancePullLimit = 0
 	opts := RunOptions{
-		CommitPulls: false,
-		CommitTrash: false,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	collReqs := s.stub.serveFooBarFileCollections()
@@ -561,7 +549,10 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	}
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
-	c.Check(bal.stats.pulls, check.Not(check.Equals), 0)
+	c.Check(bal.stats.pulls, check.Equals, 0)
+	c.Check(bal.stats.pullsDeferred, check.Not(check.Equals), 0)
+	c.Check(bal.stats.trashes, check.Equals, 0)
+	c.Check(bal.stats.trashesDeferred, check.Not(check.Equals), 0)
 	c.Check(bal.stats.underrep.replicas, check.Not(check.Equals), 0)
 	c.Check(bal.stats.overrep.replicas, check.Not(check.Equals), 0)
 }
@@ -570,10 +561,8 @@ func (s *runSuite) TestCommit(c *check.C) {
 	s.config.Collections.BlobMissingReport = c.MkDir() + "/keep-balance-lost-blocks-test-"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
-		Dumper:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
+		Dumper: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -608,8 +597,6 @@ func (s *runSuite) TestCommit(c *check.C) {
 func (s *runSuite) TestChunkPrefix(c *check.C) {
 	s.config.Collections.BlobMissingReport = c.MkDir() + "/keep-balance-lost-blocks-test-"
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
 		ChunkPrefix: "ac", // catch "foo" but not "bar"
 		Logger:      ctxlog.TestLogger(c),
 		Dumper:      ctxlog.TestLogger(c),
@@ -639,10 +626,8 @@ func (s *runSuite) TestChunkPrefix(c *check.C) {
 func (s *runSuite) TestRunForever(c *check.C) {
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
-		Dumper:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
+		Dumper: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
