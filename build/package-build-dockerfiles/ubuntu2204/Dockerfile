@@ -59,7 +59,7 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
 
 RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
-ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
+ENV MAKE "make --jobs 8"
 
 # Preseed the go module cache and the ruby gems, using the currently checked
 # out branch of the source tree. This avoids potential compatibility issues
