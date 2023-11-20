@@ -1,6 +1,23 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+"""Arvados Python SDK
+
+This module provides the entire Python SDK for Arvados. The most useful modules
+include:
+
+* arvados.api - After you `import arvados`, you can call `arvados.api.api` as
+  `arvados.api` to construct a client object.
+
+* arvados.collection - The `arvados.collection.Collection` class provides a
+  high-level interface to read and write collections. It coordinates sending
+  data to and from Keep, and synchronizing updates with the collection object.
+
+* arvados.util - Utility functions to use mostly in conjunction with the API
+  client object and the results it returns.
+
+Other submodules provide lower-level functionality.
+"""
 
 import logging as stdliblog
 import os
