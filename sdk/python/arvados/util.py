@@ -1,7 +1,11 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+"""Arvados utilities
 
+This module provides functions and constants that are useful across a variety
+of Arvados resource types, or extend the Arvados API client (see `arvados.api`).
+"""
 
 import errno
 import fcntl
@@ -17,24 +21,57 @@ import warnings
 
 import arvados.errors
 
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    TypeVar,
+    Union,
+)
+
+T = TypeVar('T')
+
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
+"""Regular expression to match a hexadecimal string (case-insensitive)"""
 CR_UNCOMMITTED = 'Uncommitted'
+"""Constant `state` value for uncommited container requests"""
 CR_COMMITTED = 'Committed'
+"""Constant `state` value for committed container requests"""
 CR_FINAL = 'Final'
+"""Constant `state` value for finalized container requests"""
 
 keep_locator_pattern = re.compile(r'[0-9a-f]{32}\+[0-9]+(\+\S+)*')
+"""Regular expression to match any Keep block locator"""
 signed_locator_pattern = re.compile(r'[0-9a-f]{32}\+[0-9]+(\+\S+)*\+A\S+(\+\S+)*')
+"""Regular expression to match any Keep block locator with an access token hint"""
 portable_data_hash_pattern = re.compile(r'[0-9a-f]{32}\+[0-9]+')
+"""Regular expression to match any collection portable data hash"""
 uuid_pattern = re.compile(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}')
+"""Regular expression to match any Arvados object UUID"""
 collection_uuid_pattern = re.compile(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}')
+"""Regular expression to match any Arvados collection UUID"""
 group_uuid_pattern = re.compile(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}')
+"""Regular expression to match any Arvados group UUID"""
 user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
+"""Regular expression to match any Arvados user UUID"""
 link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
+"""Regular expression to match any Arvados link UUID"""
 job_uuid_pattern = re.compile(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}')
+"""Regular expression to match any Arvados job UUID
+
+.. WARNING:: Deprecated
+   Arvados job resources are deprecated and will be removed in a future
+   release. Prefer the containers API instead.
+"""
 container_uuid_pattern = re.compile(r'[a-z0-9]{5}-dz642-[a-z0-9]{15}')
+"""Regular expression to match any Arvados container UUID"""
 manifest_pattern = re.compile(r'((\S+)( +[a-f0-9]{32}(\+[0-9]+)(\+\S+)*)+( +[0-9]+:[0-9]+:\S+)+$)+', flags=re.MULTILINE)
+"""Regular expression to match an Arvados collection manifest text"""
 keep_file_locator_pattern = re.compile(r'([0-9a-f]{32}\+[0-9]+)/(.*)')
+"""Regular expression to match a file path from a collection identified by portable data hash"""
 keepuri_pattern = re.compile(r'keep:([0-9a-f]{32}\+[0-9]+)/(.*)')
+"""Regular expression to match a `keep:` URI with a collection identified by portable data hash"""
 
 def _deprecated(version=None, preferred=None):
     """Mark a callable as deprecated in the SDK
@@ -88,15 +125,23 @@ def _deprecated(version=None, preferred=None):
         return deprecated_wrapper
     return deprecated_decorator
 
-def is_hex(s, *length_args):
-    """is_hex(s[, length[, max_length]]) -> boolean
+def is_hex(s: str, *length_args: int) -> bool:
+    """Indicate whether a string is a hexadecimal number
 
-    Return True if s is a string of hexadecimal digits.
-    If one length argument is given, the string must contain exactly
-    that number of digits.
-    If two length arguments are given, the string must contain a number of
-    digits between those two lengths, inclusive.
-    Return False otherwise.
+    This method returns true if all characters in the string are hexadecimal
+    digits. It is case-insensitive.
+
+    You can also pass optional length arguments to check that the string has
+    the expected number of digits. If you pass one integer, the string must
+    have that length exactly, otherwise the method returns False. If you
+    pass two integers, the string's length must fall within that minimum and
+    maximum (inclusive), otherwise the method returns False.
+
+    Arguments:
+
+    * s: str --- The string to check
+
+    * length_args: int --- Optional length limit(s) for the string to check
     """
     num_length_args = len(length_args)
     if num_length_args > 2:
@@ -110,7 +155,45 @@ def is_hex(s, *length_args):
         good_len = True
     return bool(good_len and HEX_RE.match(s))
 
-def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, **kwargs):
+def keyset_list_all(
+        fn: Callable[..., 'arvados.api_resources.ArvadosAPIRequest'],
+        order_key: str="created_at",
+        num_retries: int=0,
+        ascending: bool=True,
+        **kwargs: Any,
+) -> Iterator[Dict[str, Any]]:
+    """Iterate all Arvados resources from an API list call
+
+    This method takes a method that represents an Arvados API list call, and
+    iterates the objects returned by the API server. It can make multiple API
+    calls to retrieve and iterate all objects available from the API server.
+
+    Arguments:
+
+    * fn: Callable[..., arvados.api_resources.ArvadosAPIRequest] --- A
+      function that wraps an Arvados API method that returns a list of
+      objects. If you have an Arvados API client named `arv`, examples
+      include `arv.collections().list` and `arv.groups().contents`. Note
+      that you should pass the function *without* calling it.
+
+    * order_key: str --- The name of the primary object field that objects
+      should be sorted by. This name is used to build an `order` argument
+      for `fn`. Default `'created_at'`.
+
+    * num_retries: int --- This argument is passed through to
+      `arvados.api_resources.ArvadosAPIRequest.execute` for each API call. See
+      that method's docstring for details. Default 0 (meaning API calls will
+      use the `num_retries` value set when the Arvados API client was
+      constructed).
+
+    * ascending: bool --- Used to build an `order` argument for `fn`. If True,
+      all fields will be sorted in `'asc'` (ascending) order. Otherwise, all
+      fields will be sorted in `'desc'` (descending) order.
+
+    Additional keyword arguments will be passed directly to `fn` for each API
+    call. Note that this function sets `count`, `limit`, and `order` as part of
+    its work.
+    """
     pagesize = 1000
     kwargs["limit"] = pagesize
     kwargs["count"] = 'none'
@@ -177,12 +260,28 @@ def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, *
             nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
             prev_page_all_same_order_key = False
 
-def ca_certs_path(fallback=httplib2.CA_CERTS):
-    """Return the path of the best available CA certs source.
+def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
+    """Return the path of the best available source of CA certificates
 
-    This function searches for various distribution sources of CA
-    certificates, and returns the first it finds.  If it doesn't find any,
-    it returns the value of `fallback` (httplib2's CA certs by default).
+    This function checks various known paths that provide trusted CA
+    certificates, and returns the first one that exists. It checks:
+
+    * the path in the `SSL_CERT_FILE` environment variable (used by OpenSSL)
+    * `/etc/arvados/ca-certificates.crt`, respected by all Arvados software
+    * `/etc/ssl/certs/ca-certificates.crt`, the default store on Debian-based
+      distributions
+    * `/etc/pki/tls/certs/ca-bundle.crt`, the default store on Red Hat-based
+      distributions
+
+    If none of these paths exist, this function returns the value of `fallback`.
+
+    Arguments:
+
+    * fallback: T --- The value to return if none of the known paths exist.
+      The default value is the certificate store of Mozilla's trusted CAs
+      included with the Python [certifi][] package.
+
+    [certifi]: https://pypi.org/project/certifi/
     """
     for ca_certs_path in [
         # SSL_CERT_FILE and SSL_CERT_DIR are openssl overrides - note
@@ -199,7 +298,12 @@ def ca_certs_path(fallback=httplib2.CA_CERTS):
             return ca_certs_path
     return fallback
 
-def new_request_id():
+def new_request_id() -> str:
+    """Return a random request ID
+
+    This function generates and returns a random string suitable for use as a
+    `X-Request-Id` header value in the Arvados API.
+    """
     rid = "req-"
     # 2**104 > 36**20 > 2**103
     n = random.getrandbits(104)
@@ -212,7 +316,18 @@ def new_request_id():
         n = n // 36
     return rid
 
-def get_config_once(svc):
+def get_config_once(svc: 'arvados.api_resources.ArvadosAPIClient') -> Dict[str, Any]:
+    """Return an Arvados cluster's configuration, with caching
+
+    This function gets and returns the Arvados configuration from the API
+    server. It caches the result on the client object and reuses it on any
+    future calls.
+
+    Arguments:
+
+    * svc: arvados.api_resources.ArvadosAPIClient --- The Arvados API client
+      object to use to retrieve and cache the Arvados cluster configuration.
+    """
     if not svc._rootDesc.get('resources').get('configs', False):
         # Old API server version, no config export endpoint
         return {}
@@ -220,7 +335,22 @@ def get_config_once(svc):
         svc._cached_config = svc.configs().get().execute()
     return svc._cached_config
 
-def get_vocabulary_once(svc):
+def get_vocabulary_once(svc: 'arvados.api_resources.ArvadosAPIClient') -> Dict[str, Any]:
+    """Return an Arvados cluster's vocabulary, with caching
+
+    This function gets and returns the Arvados vocabulary from the API
+    server. It caches the result on the client object and reuses it on any
+    future calls.
+
+    .. HINT:: Low-level method
+       This is a relatively low-level wrapper around the Arvados API. Most
+       users will prefer to use `arvados.vocabulary.load_vocabulary`.
+
+    Arguments:
+
+    * svc: arvados.api_resources.ArvadosAPIClient --- The Arvados API client
+      object to use to retrieve and cache the Arvados cluster vocabulary.
+    """
     if not svc._rootDesc.get('resources').get('vocabularies', False):
         # Old API server version, no vocabulary export endpoint
         return {}
@@ -228,14 +358,20 @@ def get_vocabulary_once(svc):
         svc._cached_vocabulary = svc.vocabularies().get().execute()
     return svc._cached_vocabulary
 
-def trim_name(collectionname):
-    """
-    trim_name takes a record name (collection name, project name, etc)
-    and trims it to fit the 255 character name limit, with additional
-    space for the timestamp added by ensure_unique_name, by removing
-    excess characters from the middle and inserting an ellipse
-    """
+def trim_name(collectionname: str) -> str:
+    """Limit the length of a name to fit within Arvados API limits
 
+    This function ensures that a string is short enough to use as an object
+    name in the Arvados API, leaving room for text that may be added by the
+    `ensure_unique_name` argument. If the source name is short enough, it is
+    returned unchanged. Otherwise, this function returns a string with excess
+    characters removed from the middle of the source string and replaced with
+    an ellipsis.
+
+    Arguments:
+
+    * collectionname: str --- The desired source name
+    """
     max_name_len = 254 - 28
 
     if len(collectionname) > max_name_len:
