@@ -47,16 +47,25 @@ signed_locator_pattern = re.compile(r'[0-9a-f]{32}\+[0-9]+(\+\S+)*\+A\S+(\+\S+)*
 """Regular expression to match any Keep block locator with an access token hint"""
 portable_data_hash_pattern = re.compile(r'[0-9a-f]{32}\+[0-9]+')
 """Regular expression to match any collection portable data hash"""
+manifest_pattern = re.compile(r'((\S+)( +[a-f0-9]{32}(\+[0-9]+)(\+\S+)*)+( +[0-9]+:[0-9]+:\S+)+$)+', flags=re.MULTILINE)
+"""Regular expression to match an Arvados collection manifest text"""
+keep_file_locator_pattern = re.compile(r'([0-9a-f]{32}\+[0-9]+)/(.*)')
+"""Regular expression to match a file path from a collection identified by portable data hash"""
+keepuri_pattern = re.compile(r'keep:([0-9a-f]{32}\+[0-9]+)/(.*)')
+"""Regular expression to match a `keep:` URI with a collection identified by portable data hash"""
+
 uuid_pattern = re.compile(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}')
 """Regular expression to match any Arvados object UUID"""
 collection_uuid_pattern = re.compile(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}')
 """Regular expression to match any Arvados collection UUID"""
+container_uuid_pattern = re.compile(r'[a-z0-9]{5}-dz642-[a-z0-9]{15}')
+"""Regular expression to match any Arvados container UUID"""
 group_uuid_pattern = re.compile(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}')
 """Regular expression to match any Arvados group UUID"""
-user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
-"""Regular expression to match any Arvados user UUID"""
 link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
 """Regular expression to match any Arvados link UUID"""
+user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
+"""Regular expression to match any Arvados user UUID"""
 job_uuid_pattern = re.compile(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}')
 """Regular expression to match any Arvados job UUID
 
@@ -64,14 +73,6 @@ job_uuid_pattern = re.compile(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}')
    Arvados job resources are deprecated and will be removed in a future
    release. Prefer the containers API instead.
 """
-container_uuid_pattern = re.compile(r'[a-z0-9]{5}-dz642-[a-z0-9]{15}')
-"""Regular expression to match any Arvados container UUID"""
-manifest_pattern = re.compile(r'((\S+)( +[a-f0-9]{32}(\+[0-9]+)(\+\S+)*)+( +[0-9]+:[0-9]+:\S+)+$)+', flags=re.MULTILINE)
-"""Regular expression to match an Arvados collection manifest text"""
-keep_file_locator_pattern = re.compile(r'([0-9a-f]{32}\+[0-9]+)/(.*)')
-"""Regular expression to match a file path from a collection identified by portable data hash"""
-keepuri_pattern = re.compile(r'keep:([0-9a-f]{32}\+[0-9]+)/(.*)')
-"""Regular expression to match a `keep:` URI with a collection identified by portable data hash"""
 
 def _deprecated(version=None, preferred=None):
     """Mark a callable as deprecated in the SDK
