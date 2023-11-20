@@ -26,6 +26,7 @@ type CssRules = "root" | "button";
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
+        flexShrink: 0,
         flexDirection: "row",
         width: 0,
         padding: 0,
