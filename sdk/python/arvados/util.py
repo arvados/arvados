@@ -45,12 +45,11 @@ def _deprecated(version=None, preferred=None):
     If the following arguments are given, they'll be included in the
     notices:
 
-    preferred: str | None
-    : The name of an alternative that users should use instead.
+    * preferred: str | None --- The name of an alternative that users should
+      use instead.
 
-    version: str | None
-    : The version of Arvados when the callable is scheduled to be
-      removed.
+    * version: str | None --- The version of Arvados when the callable is
+      scheduled to be removed.
     """
     if version is None:
         version = ''
