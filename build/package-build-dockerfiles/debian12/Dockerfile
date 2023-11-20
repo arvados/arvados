@@ -42,9 +42,6 @@ SHELL ["/bin/bash", "-c"]
 # Install dependencies.
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-setuptools python3-pip libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev unzip python3-venv python3-dev libpam-dev equivs
 
-# Install virtualenv
-RUN /usr/bin/pip3 install 'virtualenv<20'
-
 # Install RVM
 ADD generated/mpapis.asc /tmp/
 ADD generated/pkuczynski.asc /tmp/
