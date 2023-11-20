@@ -221,7 +221,6 @@ if test -z "$packages" ; then
         arvados-src
         arvados-sync-groups
         arvados-sync-users
-        arvados-workbench
         arvados-workbench2
         arvados-ws
         crunch-dispatch-local
@@ -249,16 +248,13 @@ FINAL_EXITCODE=0
 
 package_fails=""
 
-mkdir -p "$WORKSPACE/apps/workbench/vendor/cache-$TARGET"
 mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
 
 docker_volume_args=(
     -v "$JENKINS_DIR:/jenkins"
     -v "$WORKSPACE:/arvados"
     -v /arvados/services/api/vendor/bundle
-    -v /arvados/apps/workbench/vendor/bundle
     -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
-    -v "$WORKSPACE/apps/workbench/vendor/cache-$TARGET:/arvados/apps/workbench/vendor/cache"
 )
 
 if [[ -n "$test_packages" ]]; then

@@ -309,8 +309,6 @@ debug_echo -e "\nRails packages\n"
 
 # The rails api server package
 handle_api_server "$ARCH"
-# The rails workbench package
-handle_workbench "$ARCH"
 
 # clean up temporary GOPATH
 rm -rf "$GOPATH"
