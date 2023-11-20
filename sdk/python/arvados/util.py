@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import division
-from builtins import range
 
+import errno
 import fcntl
 import functools
 import hashlib
@@ -13,7 +12,6 @@ import os
 import random
 import re
 import subprocess
-import errno
 import sys
 import warnings
 
