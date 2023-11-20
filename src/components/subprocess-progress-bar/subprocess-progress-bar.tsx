@@ -16,7 +16,7 @@ type CssRules = 'progressWrapper' | 'progressStacked' ;
 
 const styles: StyleRulesCallback<CssRules> = (theme) => ({
     progressWrapper: {
-        margin: "25px 0 0",
+        margin: "28px 0 0",
         flexGrow: 1,
         flexBasis: "100px",
     },
