@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -253,30 +254,51 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 	return conn.local.Login(ctx, options)
 }
 
+var v2TokenRegexp = regexp.MustCompile(`^v2/[a-z0-9]{5}-gj3su-[a-z0-9]{15}/`)
+
 func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	// If the logout request comes with an API token from a known
-	// remote cluster, redirect to that cluster's logout handler
-	// so it has an opportunity to clear sessions, expire tokens,
-	// etc. Otherwise use the local endpoint.
-	reqauth, ok := auth.FromContext(ctx)
-	if !ok || len(reqauth.Tokens) == 0 || len(reqauth.Tokens[0]) < 8 || !strings.HasPrefix(reqauth.Tokens[0], "v2/") {
-		return conn.local.Logout(ctx, options)
+	// If the token was issued by another cluster, we want to issue a logout
+	// request to the issuing instance to invalidate the token federation-wide.
+	// If this federation has a login cluster, that's always considered the
+	// issuing cluster.
+	// Otherwise, if this is a v2 token, use the UUID to find the issuing
+	// cluster.
+	// Note that remoteBE may still be conn.local even *after* one of these
+	// conditions is true.
+	var remoteBE backend = conn.local
+	if conn.cluster.Login.LoginCluster != "" {
+		remoteBE = conn.chooseBackend(conn.cluster.Login.LoginCluster)
+	} else {
+		reqauth, ok := auth.FromContext(ctx)
+		if ok && len(reqauth.Tokens) > 0 && v2TokenRegexp.MatchString(reqauth.Tokens[0]) {
+			remoteBE = conn.chooseBackend(reqauth.Tokens[0][3:8])
+		}
 	}
-	id := reqauth.Tokens[0][3:8]
-	if id == conn.cluster.ClusterID {
-		return conn.local.Logout(ctx, options)
+
+	// We always want to invalidate the token locally. Start that process.
+	var localResponse arvados.LogoutResponse
+	var localErr error
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		localResponse, localErr = conn.local.Logout(ctx, options)
+		wg.Done()
+	}()
+
+	// If the token was issued by another cluster, log out there too.
+	if remoteBE != conn.local {
+		response, err := remoteBE.Logout(ctx, options)
+		// If the issuing cluster returns a redirect or error, that's more
+		// important to return to the user than anything that happens locally.
+		if response.RedirectLocation != "" || err != nil {
+			return response, err
+		}
 	}
-	remote, ok := conn.remotes[id]
-	if !ok {
-		return conn.local.Logout(ctx, options)
-	}
-	baseURL := remote.BaseURL()
-	target, err := baseURL.Parse(arvados.EndpointLogout.Path)
-	if err != nil {
-		return arvados.LogoutResponse{}, fmt.Errorf("internal error getting redirect target: %s", err)
-	}
-	target.RawQuery = url.Values{"return_to": {options.ReturnTo}}.Encode()
-	return arvados.LogoutResponse{RedirectLocation: target.String()}, nil
+
+	// Either the local cluster is the issuing cluster, or the issuing cluster's
+	// response was uninteresting.
+	wg.Wait()
+	return localResponse, localErr
 }
 
 func (conn *Conn) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {

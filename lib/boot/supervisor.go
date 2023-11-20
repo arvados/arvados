@@ -371,10 +371,7 @@ func (super *Supervisor) runCluster() error {
 		}},
 	}
 	if !super.NoWorkbench1 {
-		tasks = append(tasks,
-			installPassenger{src: "apps/workbench", varlibdir: "workbench1", depends: []supervisedTask{railsDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
-			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench", varlibdir: "workbench1"}}},
-		)
+		return errors.New("workbench1 is no longer supported")
 	}
 	if !super.NoWorkbench2 {
 		tasks = append(tasks,

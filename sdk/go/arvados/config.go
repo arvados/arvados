@@ -150,6 +150,8 @@ type Cluster struct {
 		BalanceCollectionBuffers int
 		BalanceTimeout           Duration
 		BalanceUpdateLimit       int
+		BalancePullLimit         int
+		BalanceTrashLimit        int
 
 		WebDAVCache WebDAVCacheConfig
 
@@ -517,6 +519,7 @@ type ContainersConfig struct {
 	SupportedDockerImageFormats   StringSet
 	AlwaysUsePreemptibleInstances bool
 	PreemptiblePriceFactor        float64
+	MaximumPriceFactor            float64
 	RuntimeEngine                 string
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string

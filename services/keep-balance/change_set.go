@@ -60,22 +60,35 @@ func (t Trash) MarshalJSON() ([]byte, error) {
 // ChangeSet is a set of change requests that will be sent to a
 // keepstore server.
 type ChangeSet struct {
-	Pulls   []Pull
-	Trashes []Trash
-	mutex   sync.Mutex
+	PullLimit  int
+	TrashLimit int
+
+	Pulls           []Pull
+	PullsDeferred   int // number that weren't added because of PullLimit
+	Trashes         []Trash
+	TrashesDeferred int // number that weren't added because of TrashLimit
+	mutex           sync.Mutex
 }
 
 // AddPull adds a Pull operation.
 func (cs *ChangeSet) AddPull(p Pull) {
 	cs.mutex.Lock()
-	cs.Pulls = append(cs.Pulls, p)
+	if len(cs.Pulls) < cs.PullLimit {
+		cs.Pulls = append(cs.Pulls, p)
+	} else {
+		cs.PullsDeferred++
+	}
 	cs.mutex.Unlock()
 }
 
 // AddTrash adds a Trash operation
 func (cs *ChangeSet) AddTrash(t Trash) {
 	cs.mutex.Lock()
-	cs.Trashes = append(cs.Trashes, t)
+	if len(cs.Trashes) < cs.TrashLimit {
+		cs.Trashes = append(cs.Trashes, t)
+	} else {
+		cs.TrashesDeferred++
+	}
 	cs.mutex.Unlock()
 }
 
@@ -83,5 +96,5 @@ func (cs *ChangeSet) AddTrash(t Trash) {
 func (cs *ChangeSet) String() string {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
-	return fmt.Sprintf("ChangeSet{Pulls:%d, Trashes:%d}", len(cs.Pulls), len(cs.Trashes))
+	return fmt.Sprintf("ChangeSet{Pulls:%d, Trashes:%d} Deferred{Pulls:%d Trashes:%d}", len(cs.Pulls), len(cs.Trashes), cs.PullsDeferred, cs.TrashesDeferred)
 }

@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
-import { DefaultView } from "components/default-view/default-view";
+import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
 import { ProcessIcon } from "components/icon/icon";
 import { Process } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
@@ -24,6 +23,7 @@ import { AuthState } from "store/auth/auth-reducer";
 import { ProcessCmdCard } from "./process-cmd-card";
 import { ContainerRequestResource } from "models/container-request";
 import { OutputDetails, NodeInstanceType } from "store/process-panel/process-panel";
+import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
 type CssRules = "root";
 
@@ -209,16 +209,10 @@ export const ProcessPanelRoot = withStyles(styles)(
                 </MPVPanelContent>
             </MPVContainer>
         ) : (
-            <Grid
-                container
-                alignItems="center"
-                justify="center"
-                style={{ minHeight: "100%" }}>
-                <DefaultView
-                    icon={ProcessIcon}
-                    messages={["Process not found"]}
-                />
-            </Grid>
+            <NotFoundView
+                icon={ProcessIcon}
+                messages={["Process not found"]}
+            />
         );
     }
 );
