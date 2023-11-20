@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
-from __future__ import division
-from builtins import str
-from builtins import range
 import argparse
 import atexit
 import errno
@@ -18,7 +14,6 @@ import shlex
 import shutil
 import signal
 import socket
-import string
 import subprocess
 import sys
 import tempfile
@@ -26,10 +21,7 @@ import time
 import unittest
 import yaml
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
+from urllib.parse import urlparse
 
 MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
 if __name__ == '__main__' and os.path.exists(
