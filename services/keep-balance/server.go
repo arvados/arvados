@@ -27,8 +27,6 @@ import (
 // RunOptions fields are controlled by command line flags.
 type RunOptions struct {
 	Once                  bool
-	CommitPulls           bool
-	CommitTrash           bool
 	CommitConfirmedFields bool
 	ChunkPrefix           string
 	Logger                logrus.FieldLogger
@@ -112,9 +110,9 @@ func (srv *Server) runForever(ctx context.Context) error {
 	logger.Printf("starting up: will scan every %v and on SIGUSR1", srv.Cluster.Collections.BalancePeriod)
 
 	for {
-		if !srv.RunOptions.CommitPulls && !srv.RunOptions.CommitTrash {
+		if srv.Cluster.Collections.BalancePullLimit < 1 && srv.Cluster.Collections.BalanceTrashLimit < 1 {
 			logger.Print("WARNING: Will scan periodically, but no changes will be committed.")
-			logger.Print("=======  Consider using -commit-pulls and -commit-trash flags.")
+			logger.Print("=======  To commit changes, set BalancePullLimit and BalanceTrashLimit values greater than zero.")
 		}
 
 		if !dblock.KeepBalanceService.Check() {

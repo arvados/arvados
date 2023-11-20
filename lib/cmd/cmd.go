@@ -20,6 +20,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const EXIT_INVALIDARGUMENT = 2
+
 type Handler interface {
 	RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int
 }
@@ -86,13 +88,13 @@ func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	} else if len(args) < 1 {
 		fmt.Fprintf(stderr, "usage: %s command [args]\n", prog)
 		m.Usage(stderr)
-		return 2
+		return EXIT_INVALIDARGUMENT
 	} else if cmd, ok = m[args[0]]; ok {
 		return cmd.RunCommand(prog+" "+args[0], args[1:], stdin, stdout, stderr)
 	} else {
 		fmt.Fprintf(stderr, "%s: unrecognized command %q\n", prog, args[0])
 		m.Usage(stderr)
-		return 2
+		return EXIT_INVALIDARGUMENT
 	}
 }
 
