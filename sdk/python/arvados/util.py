@@ -91,6 +91,177 @@ def _deprecated(version=None, preferred=None):
         return deprecated_wrapper
     return deprecated_decorator
 
+def is_hex(s, *length_args):
+    """is_hex(s[, length[, max_length]]) -> boolean
+
+    Return True if s is a string of hexadecimal digits.
+    If one length argument is given, the string must contain exactly
+    that number of digits.
+    If two length arguments are given, the string must contain a number of
+    digits between those two lengths, inclusive.
+    Return False otherwise.
+    """
+    num_length_args = len(length_args)
+    if num_length_args > 2:
+        raise arvados.errors.ArgumentError(
+            "is_hex accepts up to 3 arguments ({} given)".format(1 + num_length_args))
+    elif num_length_args == 2:
+        good_len = (length_args[0] <= len(s) <= length_args[1])
+    elif num_length_args == 1:
+        good_len = (len(s) == length_args[0])
+    else:
+        good_len = True
+    return bool(good_len and HEX_RE.match(s))
+
+def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, **kwargs):
+    pagesize = 1000
+    kwargs["limit"] = pagesize
+    kwargs["count"] = 'none'
+    asc = "asc" if ascending else "desc"
+    kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
+    other_filters = kwargs.get("filters", [])
+
+    try:
+        select = set(kwargs['select'])
+    except KeyError:
+        pass
+    else:
+        select.add(order_key)
+        select.add('uuid')
+        kwargs['select'] = list(select)
+
+    nextpage = []
+    tot = 0
+    expect_full_page = True
+    seen_prevpage = set()
+    seen_thispage = set()
+    lastitem = None
+    prev_page_all_same_order_key = False
+
+    while True:
+        kwargs["filters"] = nextpage+other_filters
+        items = fn(**kwargs).execute(num_retries=num_retries)
+
+        if len(items["items"]) == 0:
+            if prev_page_all_same_order_key:
+                nextpage = [[order_key, ">" if ascending else "<", lastitem[order_key]]]
+                prev_page_all_same_order_key = False
+                continue
+            else:
+                return
+
+        seen_prevpage = seen_thispage
+        seen_thispage = set()
+
+        for i in items["items"]:
+            # In cases where there's more than one record with the
+            # same order key, the result could include records we
+            # already saw in the last page.  Skip them.
+            if i["uuid"] in seen_prevpage:
+                continue
+            seen_thispage.add(i["uuid"])
+            yield i
+
+        firstitem = items["items"][0]
+        lastitem = items["items"][-1]
+
+        if firstitem[order_key] == lastitem[order_key]:
+            # Got a page where every item has the same order key.
+            # Switch to using uuid for paging.
+            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">" if ascending else "<", lastitem["uuid"]]]
+            prev_page_all_same_order_key = True
+        else:
+            # Start from the last order key seen, but skip the last
+            # known uuid to avoid retrieving the same row twice.  If
+            # there are multiple rows with the same order key it is
+            # still likely we'll end up retrieving duplicate rows.
+            # That's handled by tracking the "seen" rows for each page
+            # so they can be skipped if they show up on the next page.
+            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
+            prev_page_all_same_order_key = False
+
+def ca_certs_path(fallback=httplib2.CA_CERTS):
+    """Return the path of the best available CA certs source.
+
+    This function searches for various distribution sources of CA
+    certificates, and returns the first it finds.  If it doesn't find any,
+    it returns the value of `fallback` (httplib2's CA certs by default).
+    """
+    for ca_certs_path in [
+        # SSL_CERT_FILE and SSL_CERT_DIR are openssl overrides - note
+        # that httplib2 itself also supports HTTPLIB2_CA_CERTS.
+        os.environ.get('SSL_CERT_FILE'),
+        # Arvados specific:
+        '/etc/arvados/ca-certificates.crt',
+        # Debian:
+        '/etc/ssl/certs/ca-certificates.crt',
+        # Red Hat:
+        '/etc/pki/tls/certs/ca-bundle.crt',
+        ]:
+        if ca_certs_path and os.path.exists(ca_certs_path):
+            return ca_certs_path
+    return fallback
+
+def new_request_id():
+    rid = "req-"
+    # 2**104 > 36**20 > 2**103
+    n = random.getrandbits(104)
+    for _ in range(20):
+        c = n % 36
+        if c < 10:
+            rid += chr(c+ord('0'))
+        else:
+            rid += chr(c+ord('a')-10)
+        n = n // 36
+    return rid
+
+def get_config_once(svc):
+    if not svc._rootDesc.get('resources').get('configs', False):
+        # Old API server version, no config export endpoint
+        return {}
+    if not hasattr(svc, '_cached_config'):
+        svc._cached_config = svc.configs().get().execute()
+    return svc._cached_config
+
+def get_vocabulary_once(svc):
+    if not svc._rootDesc.get('resources').get('vocabularies', False):
+        # Old API server version, no vocabulary export endpoint
+        return {}
+    if not hasattr(svc, '_cached_vocabulary'):
+        svc._cached_vocabulary = svc.vocabularies().get().execute()
+    return svc._cached_vocabulary
+
+def trim_name(collectionname):
+    """
+    trim_name takes a record name (collection name, project name, etc)
+    and trims it to fit the 255 character name limit, with additional
+    space for the timestamp added by ensure_unique_name, by removing
+    excess characters from the middle and inserting an ellipse
+    """
+
+    max_name_len = 254 - 28
+
+    if len(collectionname) > max_name_len:
+        over = len(collectionname) - max_name_len
+        split = int(max_name_len/2)
+        collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
+
+    return collectionname
+
+@_deprecated('3.0', 'arvados.util.keyset_list_all')
+def list_all(fn, num_retries=0, **kwargs):
+    # Default limit to (effectively) api server's MAX_LIMIT
+    kwargs.setdefault('limit', sys.maxsize)
+    items = []
+    offset = 0
+    items_available = sys.maxsize
+    while len(items) < items_available:
+        c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
+        items += c['items']
+        items_available = c['items_available']
+        offset = c['offset'] + len(c['items'])
+    return items
+
 @_deprecated('3.0')
 def clear_tmpdir(path=None):
     """
@@ -428,174 +599,3 @@ def listdir_recursive(dirname, base=None, max_depth=None):
         else:
             allfiles += [ent_base]
     return allfiles
-
-def is_hex(s, *length_args):
-    """is_hex(s[, length[, max_length]]) -> boolean
-
-    Return True if s is a string of hexadecimal digits.
-    If one length argument is given, the string must contain exactly
-    that number of digits.
-    If two length arguments are given, the string must contain a number of
-    digits between those two lengths, inclusive.
-    Return False otherwise.
-    """
-    num_length_args = len(length_args)
-    if num_length_args > 2:
-        raise arvados.errors.ArgumentError(
-            "is_hex accepts up to 3 arguments ({} given)".format(1 + num_length_args))
-    elif num_length_args == 2:
-        good_len = (length_args[0] <= len(s) <= length_args[1])
-    elif num_length_args == 1:
-        good_len = (len(s) == length_args[0])
-    else:
-        good_len = True
-    return bool(good_len and HEX_RE.match(s))
-
-@_deprecated('3.0', 'arvados.util.keyset_list_all')
-def list_all(fn, num_retries=0, **kwargs):
-    # Default limit to (effectively) api server's MAX_LIMIT
-    kwargs.setdefault('limit', sys.maxsize)
-    items = []
-    offset = 0
-    items_available = sys.maxsize
-    while len(items) < items_available:
-        c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
-        items += c['items']
-        items_available = c['items_available']
-        offset = c['offset'] + len(c['items'])
-    return items
-
-def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, **kwargs):
-    pagesize = 1000
-    kwargs["limit"] = pagesize
-    kwargs["count"] = 'none'
-    asc = "asc" if ascending else "desc"
-    kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
-    other_filters = kwargs.get("filters", [])
-
-    try:
-        select = set(kwargs['select'])
-    except KeyError:
-        pass
-    else:
-        select.add(order_key)
-        select.add('uuid')
-        kwargs['select'] = list(select)
-
-    nextpage = []
-    tot = 0
-    expect_full_page = True
-    seen_prevpage = set()
-    seen_thispage = set()
-    lastitem = None
-    prev_page_all_same_order_key = False
-
-    while True:
-        kwargs["filters"] = nextpage+other_filters
-        items = fn(**kwargs).execute(num_retries=num_retries)
-
-        if len(items["items"]) == 0:
-            if prev_page_all_same_order_key:
-                nextpage = [[order_key, ">" if ascending else "<", lastitem[order_key]]]
-                prev_page_all_same_order_key = False
-                continue
-            else:
-                return
-
-        seen_prevpage = seen_thispage
-        seen_thispage = set()
-
-        for i in items["items"]:
-            # In cases where there's more than one record with the
-            # same order key, the result could include records we
-            # already saw in the last page.  Skip them.
-            if i["uuid"] in seen_prevpage:
-                continue
-            seen_thispage.add(i["uuid"])
-            yield i
-
-        firstitem = items["items"][0]
-        lastitem = items["items"][-1]
-
-        if firstitem[order_key] == lastitem[order_key]:
-            # Got a page where every item has the same order key.
-            # Switch to using uuid for paging.
-            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">" if ascending else "<", lastitem["uuid"]]]
-            prev_page_all_same_order_key = True
-        else:
-            # Start from the last order key seen, but skip the last
-            # known uuid to avoid retrieving the same row twice.  If
-            # there are multiple rows with the same order key it is
-            # still likely we'll end up retrieving duplicate rows.
-            # That's handled by tracking the "seen" rows for each page
-            # so they can be skipped if they show up on the next page.
-            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
-            prev_page_all_same_order_key = False
-
-def ca_certs_path(fallback=httplib2.CA_CERTS):
-    """Return the path of the best available CA certs source.
-
-    This function searches for various distribution sources of CA
-    certificates, and returns the first it finds.  If it doesn't find any,
-    it returns the value of `fallback` (httplib2's CA certs by default).
-    """
-    for ca_certs_path in [
-        # SSL_CERT_FILE and SSL_CERT_DIR are openssl overrides - note
-        # that httplib2 itself also supports HTTPLIB2_CA_CERTS.
-        os.environ.get('SSL_CERT_FILE'),
-        # Arvados specific:
-        '/etc/arvados/ca-certificates.crt',
-        # Debian:
-        '/etc/ssl/certs/ca-certificates.crt',
-        # Red Hat:
-        '/etc/pki/tls/certs/ca-bundle.crt',
-        ]:
-        if ca_certs_path and os.path.exists(ca_certs_path):
-            return ca_certs_path
-    return fallback
-
-def new_request_id():
-    rid = "req-"
-    # 2**104 > 36**20 > 2**103
-    n = random.getrandbits(104)
-    for _ in range(20):
-        c = n % 36
-        if c < 10:
-            rid += chr(c+ord('0'))
-        else:
-            rid += chr(c+ord('a')-10)
-        n = n // 36
-    return rid
-
-def get_config_once(svc):
-    if not svc._rootDesc.get('resources').get('configs', False):
-        # Old API server version, no config export endpoint
-        return {}
-    if not hasattr(svc, '_cached_config'):
-        svc._cached_config = svc.configs().get().execute()
-    return svc._cached_config
-
-def get_vocabulary_once(svc):
-    if not svc._rootDesc.get('resources').get('vocabularies', False):
-        # Old API server version, no vocabulary export endpoint
-        return {}
-    if not hasattr(svc, '_cached_vocabulary'):
-        svc._cached_vocabulary = svc.vocabularies().get().execute()
-    return svc._cached_vocabulary
-
-def trim_name(collectionname):
-    """
-    trim_name takes a record name (collection name, project name, etc)
-    and trims it to fit the 255 character name limit, with additional
-    space for the timestamp added by ensure_unique_name, by removing
-    excess characters from the middle and inserting an ellipse
-    """
-
-    max_name_len = 254 - 28
-
-    if len(collectionname) > max_name_len:
-        over = len(collectionname) - max_name_len
-        split = int(max_name_len/2)
-        collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
-
-    return collectionname
