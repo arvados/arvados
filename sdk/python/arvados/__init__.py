@@ -2,31 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-import bz2
-import fcntl
-import hashlib
-import http.client
-import httplib2
-import json
 import logging as stdliblog
 import os
-import pprint
-import re
-import string
 import sys
-import time
 import types
-import zlib
 
-if sys.version_info >= (3, 0):
-    from collections import UserDict
-else:
-    from UserDict import UserDict
+from collections import UserDict
 
 from .api import api, api_from_config, http_cache
 from .collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
