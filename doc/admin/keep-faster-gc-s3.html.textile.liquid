@@ -19,12 +19,11 @@ The following steps can be used to temporarily disable writes on an S3 bucket to
 # Shut down the @keep-balance@ service.
 # Update the target volume configuration with @ReadOnly: true@, @AllowTrashWhileReadOnly: true@, and @UnsafeDelete: true@.
 # In the @Collections@ configuration section, set @BlobTrashLifetime: 0@. Note this will effectively disable garbage collection on other S3-backed volumes, and garbage collection will delete blocks outright (bypassing the recoverable trash phase) on any non-S3 volumes.
+# In the @Collections@ configuration section, set @BalancePullLimit: 0@.
 # Restart all @keepstore@ services with the updated configuration.
-# Run @keep-balance@ with command line options @-commit-pulls=false -commit-trash=true@. For example, use @sudo systemctl edit keep-balance@ to override the default command line: <notextile><pre><code>[Service]
-ExecStart=
-ExecStart=/usr/bin/keep-balance -commit-pulls=false -commit-trash=true</code></pre></notextile> ...and then start the service using @sudo systemctl start keep-balance@. Note that if you do not use @-commit-pulls=false@ here, keep-balance will also start copying data from the target volume to other volumes, which can slow down garbage collection progress.
+# Start the @keep-balance@ service.
 # Garbage collection should now proceed faster on the target volume. Monitor progress by watching @keep-balance@ logs and metrics. When garbage collection is complete, keep-balance logs will show an empty changeset: <notextile><pre><code>zzzzz-bi6l4-0123456789abcdef (keep0.zzzzz.arvadosapi.com:25107, disk): ChangeSet{Pulls:0, Trashes:0}</code></pre></notextile>
 # Revert @BlobTrashLifetime@ to its previous value (or the default value, @336h@) and set @UnsafeDelete: false@ on the target volume.
 # Optionally, revert to @ReadOnly: false@ and @AllowTrashWhileReadOnly: false@ on the target volume and/or set @ReadOnly: true@ and @AllowTrashWhileReadOnly: true@ on the new volume, depending on where you intend to store new data in future. If the target volume has @PrefixLength: 0@ and the new volume has @PrefixLength: 3@, you can skip this step: new data will be stored on the new volume, some existing data will be moved automatically to other volumes, and some will be left on the target volume as long as it's needed.
-# Revert the @-commit-pulls=false@ change to the @keep-balance@ startup script, and restart @keep-balance@.
+# Remove the @BalancePullLimit@ configuration entry (or restore its previous value), and restart @keep-balance@.
 # Restart all @keepstore@ services with the updated configuration.
