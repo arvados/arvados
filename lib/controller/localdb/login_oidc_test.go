@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -149,9 +150,11 @@ func (s *OIDCLoginSuite) TestRPInitiatedLogoutWithReturnTo(c *check.C) {
 
 func (s *OIDCLoginSuite) TestEndSessionEndpointBadScheme(c *check.C) {
 	// RP-Initiated Logout 1.0 says: "This URL MUST use the https scheme..."
-	s.fakeProvider.EndSessionEndpoint = &url.URL{Scheme: "http", Host: "example.com"}
+	u := url.URL{Scheme: "http", Host: "example.com"}
+	s.fakeProvider.EndSessionEndpoint = &u
 	_, err := s.localdb.Logout(s.ctx, arvados.LogoutOptions{})
-	c.Check(err, check.NotNil)
+	c.Check(err, check.ErrorMatches,
+		`.*\bend_session_endpoint MUST use HTTPS but does not: `+regexp.QuoteMeta(u.String()))
 }
 
 func (s *OIDCLoginSuite) TestNoRPInitiatedLogoutWithoutToken(c *check.C) {
