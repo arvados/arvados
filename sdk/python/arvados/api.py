@@ -9,12 +9,7 @@ niceties such as caching, X-Request-Id header for tracking, and more. The main
 client constructors are `api` and `api_from_config`.
 """
 
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 import collections
-import http.client
 import httplib2
 import json
 import logging
