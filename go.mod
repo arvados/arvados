@@ -74,7 +74,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gliderlabs/ssh v0.2.2 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.4.1 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
