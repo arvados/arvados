@@ -14,7 +14,7 @@ if test "$1" != "--only-deps" ; then
   done
 fi
 
-cd /usr/src/workbench2
+cd /usr/src/arvados/services/workbench2
 
 yarn install
 
@@ -24,11 +24,11 @@ fi
 
 API_HOST=${localip}:${services[controller-ssl]}
 
-if test -f /usr/src/workbench2/public/API_HOST ; then
-    API_HOST=$(cat /usr/src/workbench2/public/API_HOST)
+if test -f /usr/src/arvados/services/workbench2/public/API_HOST ; then
+    API_HOST=$(cat /usr/src/arvados/services/workbench2/public/API_HOST)
 fi
 
-cat <<EOF > /usr/src/workbench2/public/config.json
+cat <<EOF > /usr/src/arvados/services/workbench2/public/config.json
 {
   "API_HOST": "$API_HOST"
 }
@@ -58,7 +58,7 @@ fi
 # Can't use "yarn start", need to run the dev server script
 # directly so that the TERM signal from "sv restart" gets to the
 # right process.
-export VERSION=$(./version-at-commit.sh)
+export VERSION=$(./version-at-commit.sh HEAD)
 export BROWSER=none
 export CI=true
 export HTTPS=false
