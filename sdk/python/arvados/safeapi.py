@@ -7,9 +7,6 @@ This module provides `ThreadSafeApiCache`, a thread-safe, API-compatible
 Arvados API client.
 """
 
-from __future__ import absolute_import
-
-from builtins import object
 import sys
 import threading
 
