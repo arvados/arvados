@@ -23,6 +23,14 @@ import threading
 import time
 import types
 
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+)
+
 import apiclient
 import apiclient.http
 from apiclient import discovery as apiclient_discovery
@@ -147,7 +155,7 @@ def _new_http_error(cls, *args, **kwargs):
         errors.ApiError, *args, **kwargs)
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
-def http_cache(data_type):
+def http_cache(data_type: str) -> cache.SafeHTTPCache:
     """Set up an HTTP file cache
 
     This function constructs and returns an `arvados.cache.SafeHTTPCache`
@@ -172,18 +180,18 @@ def http_cache(data_type):
     return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
-        version,
-        discoveryServiceUrl,
-        token,
+        version: str,
+        discoveryServiceUrl: str,
+        token: str,
         *,
-        cache=True,
-        http=None,
-        insecure=False,
-        num_retries=10,
-        request_id=None,
-        timeout=5*60,
-        **kwargs,
-):
+        cache: bool=True,
+        http: Optional[httplib2.Http]=None,
+        insecure: bool=False,
+        num_retries: int=10,
+        request_id: Optional[str]=None,
+        timeout: int=5*60,
+        **kwargs: Any,
+) -> apiclient_discovery.Resource:
     """Build an Arvados API client
 
     This function returns a `googleapiclient.discovery.Resource` object
@@ -227,7 +235,6 @@ def api_client(
 
     Additional keyword arguments will be passed directly to
     `googleapiclient.discovery.build`.
-
     """
     if http is None:
         http = httplib2.Http(
@@ -289,12 +296,12 @@ def api_client(
     return svc
 
 def normalize_api_kwargs(
-        version=None,
-        discoveryServiceUrl=None,
-        host=None,
-        token=None,
-        **kwargs,
-):
+        version: Optional[str]=None,
+        discoveryServiceUrl: Optional[str]=None,
+        host: Optional[str]=None,
+        token: Optional[str]=None,
+        **kwargs: Any,
+) -> Dict[str, Any]:
     """Validate kwargs from `api` and build kwargs for `api_client`
 
     This method takes high-level keyword arguments passed to the `api`
@@ -347,7 +354,11 @@ def normalize_api_kwargs(
         **kwargs,
     }
 
-def api_kwargs_from_config(version=None, apiconfig=None, **kwargs):
+def api_kwargs_from_config(
+        version: Optional[str]=None,
+        apiconfig: Optional[Mapping[str, str]]=None,
+        **kwargs: Any
+) -> Dict[str, Any]:
     """Build `api_client` keyword arguments from configuration
 
     This function accepts a mapping with Arvados configuration settings like
@@ -390,9 +401,18 @@ def api_kwargs_from_config(version=None, apiconfig=None, **kwargs):
         **kwargs,
     )
 
-def api(version=None, cache=True, host=None, token=None, insecure=False,
-        request_id=None, timeout=5*60, *,
-        discoveryServiceUrl=None, **kwargs):
+def api(
+        version: Optional[str]=None,
+        cache: bool=True,
+        host: Optional[str]=None,
+        token: Optional[str]=None,
+        insecure: bool=False,
+        request_id: Optional[str]=None,
+        timeout: int=5*60,
+        *,
+        discoveryServiceUrl: Optional[str]=None,
+        **kwargs: Any,
+) -> 'arvados.safeapi.ThreadSafeApiCache':
     """Dynamically build an Arvados API client
 
     This function provides a high-level "do what I mean" interface to build an
@@ -444,7 +464,11 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
     from .safeapi import ThreadSafeApiCache
     return ThreadSafeApiCache({}, {}, kwargs, version)
 
-def api_from_config(version=None, apiconfig=None, **kwargs):
+def api_from_config(
+        version: Optional[str]=None,
+        apiconfig: Optional[Mapping[str, str]]=None,
+        **kwargs: Any
+) -> 'arvados.safeapi.ThreadSafeApiCache':
     """Build an Arvados API client from a configuration mapping
 
     This function builds an Arvados API client from a mapping with user
