@@ -1204,6 +1204,8 @@ fpm_build() {
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
+  echo "fpm: exit code $FPM_EXIT_CODE" >>$STDOUT_IF_DEBUG
+  echo "$FPM_RESULTS" >>$STDOUT_IF_DEBUG
 
   fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
 
