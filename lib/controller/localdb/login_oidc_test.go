@@ -132,7 +132,6 @@ func (s *OIDCLoginSuite) checkRPInitiatedLogout(c *check.C, returnTo string) {
 	}
 	values := loc.Query()
 	c.Check(values.Get("client_id"), check.Equals, s.cluster.Login.Google.ClientID)
-	c.Check(values.Get("id_token_hint"), check.Equals, accessToken)
 	c.Check(values.Get("post_logout_redirect_uri"), check.Equals, expReturn)
 }
 

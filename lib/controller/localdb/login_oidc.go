@@ -134,10 +134,6 @@ func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.Logout
 		values := ctrl.endSessionURL.Query()
 		values.Set("client_id", ctrl.ClientID)
 		values.Set("post_logout_redirect_uri", resp.RedirectLocation)
-		values.Del("id_token_hint")
-		for _, token := range creds.Tokens {
-			values.Add("id_token_hint", token)
-		}
 		u := *ctrl.endSessionURL
 		u.RawQuery = values.Encode()
 		resp.RedirectLocation = u.String()
