@@ -33,26 +33,24 @@ class ThreadSafeApiCache(object):
 
     Arguments:
 
-    apiconfig: Mapping[str, str] | None
-    : A mapping with entries for `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`,
-      and optionally `ARVADOS_API_HOST_INSECURE`. If not provided, uses
+    * apiconfig: Mapping[str, str] | None --- A mapping with entries for
+      `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and optionally
+      `ARVADOS_API_HOST_INSECURE`. If not provided, uses
       `arvados.config.settings` to get these parameters from user
       configuration.  You can pass an empty mapping to build the client
       solely from `api_params`.
 
-    keep_params: Mapping[str, Any]
-    : Keyword arguments used to construct an associated
-      `arvados.keep.KeepClient`.
+    * keep_params: Mapping[str, Any] --- Keyword arguments used to construct
+      an associated `arvados.keep.KeepClient`.
 
-    api_params: Mapping[str, Any]
-    : Keyword arguments used to construct each thread's API client. These
-      have the same meaning as in the `arvados.api.api` function.
+    * api_params: Mapping[str, Any] --- Keyword arguments used to construct
+      each thread's API client. These have the same meaning as in the
+      `arvados.api.api` function.
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      `'v1'`.
     """
-
     def __init__(
             self,
             apiconfig: Optional[Mapping[str, str]]=None,
