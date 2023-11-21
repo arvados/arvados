@@ -27,7 +27,6 @@ sourcepath="$(realpath ../..)"
 docker run -i --rm --workdir /arvados \
        -v ${tmp}/arvados-server:/arvados-server:ro \
        -v ${sourcepath}:/arvados:ro \
-       -v /arvados/apps/workbench/.bundle \
        -v /arvados/services/api/.bundle \
        -v /arvados/services/api/tmp \
        --env http_proxy \

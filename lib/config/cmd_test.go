@@ -69,8 +69,6 @@ Clusters:
         Type: select
         Options:
           fuchsia: {}
-    ApplicationMimetypesWithViewIcon:
-      whitespace: {}
 `
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
@@ -124,8 +122,6 @@ Clusters:
         Type: select
         Options:
           fuchsia: {}
-    ApplicationMimetypesWithViewIcon:
-      whitespace: {}
 `
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 1)

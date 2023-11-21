@@ -271,31 +271,15 @@ type Cluster struct {
 	StorageClasses map[string]StorageClassConfig
 	Volumes        map[string]Volume
 	Workbench      struct {
-		ActivationContactLink            string
-		APIClientConnectTimeout          Duration
-		APIClientReceiveTimeout          Duration
-		APIResponseCompression           bool
-		ApplicationMimetypesWithViewIcon StringSet
-		ArvadosDocsite                   string
-		ArvadosPublicDataDocURL          string
-		DefaultOpenIdPrefix              string
-		DisableSharingURLsUI             bool
-		EnableGettingStartedPopup        bool
-		EnablePublicProjectsPage         bool
-		FileViewersConfigURL             string
-		LogViewerMaxBytes                ByteSize
-		MultiSiteSearch                  string
-		ProfilingEnabled                 bool
-		Repositories                     bool
-		RepositoryCache                  string
-		RunningJobLogRecordsToFetch      int
-		SecretKeyBase                    string
-		ShowRecentCollectionsOnDashboard bool
-		ShowUserAgreementInline          bool
-		ShowUserNotifications            bool
-		SiteName                         string
-		Theme                            string
-		UserProfileFormFields            map[string]struct {
+		ActivationContactLink   string
+		ArvadosDocsite          string
+		ArvadosPublicDataDocURL string
+		DisableSharingURLsUI    bool
+		FileViewersConfigURL    string
+		ShowUserAgreementInline bool
+		SiteName                string
+		Theme                   string
+		UserProfileFormFields   map[string]struct {
 			Type                 string
 			FormFieldTitle       string
 			FormFieldDescription string

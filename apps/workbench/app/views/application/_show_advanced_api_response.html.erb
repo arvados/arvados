@@ -1,7 +1,0 @@
-<%# Copyright (C) The Arvados Authors. All rights reserved.
-
-SPDX-License-Identifier: AGPL-3.0 %>
-
-<pre>
-<%= JSON.pretty_generate(object.attributes.reject { |k,v| k == 'id' }) rescue nil %>
-</pre>

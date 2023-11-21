@@ -1831,17 +1831,11 @@ Clusters:
       ArvadosDocsite: https://doc.arvados.org
       ArvadosPublicDataDocURL: https://playground.arvados.org/projects/public
       ShowUserAgreementInline: false
-      SecretKeyBase: ""
 
       # Set this configuration to true to avoid providing an easy way for users
       # to share data with unauthenticated users; this may be necessary on
       # installations where strict data access controls are needed.
       DisableSharingURLsUI: false
-
-      # Scratch directory used by the remote repository browsing
-      # feature. If it doesn't exist, it (and any missing parents) will be
-      # created using mkdir_p.
-      RepositoryCache: /var/www/arvados-workbench/current/tmp/git
 
       # Below is a sample setting of user_profile_form_fields config parameter.
       # This configuration parameter should be set to either false (to disable) or
@@ -1889,71 +1883,7 @@ Clusters:
       # to display on the profile page.
       UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
 
-      # Mimetypes of applications for which the view icon
-      # would be enabled in a collection's show page.
-      # It is sufficient to list only applications here.
-      # No need to list text and image types.
-      ApplicationMimetypesWithViewIcon:
-        cwl: {}
-        fasta: {}
-        go: {}
-        javascript: {}
-        json: {}
-        pdf: {}
-        python: {}
-        x-python: {}
-        r: {}
-        rtf: {}
-        sam: {}
-        x-sh: {}
-        vnd.realvnc.bed: {}
-        xml: {}
-        xsl: {}
-        SAMPLE: {}
-
-      # The maximum number of bytes to load in the log viewer
-      LogViewerMaxBytes: 1M
-
-      # When anonymous_user_token is configured, show public projects page
-      EnablePublicProjectsPage: true
-
-      # By default, disable the "Getting Started" popup which is specific to Arvados playground
-      EnableGettingStartedPopup: false
-
-      # Ask Arvados API server to compress its response payloads.
-      APIResponseCompression: true
-
-      # Timeouts for API requests.
-      APIClientConnectTimeout: 2m
-      APIClientReceiveTimeout: 5m
-
-      # Maximum number of historic log records of a running job to fetch
-      # and display in the Log tab, while subscribing to web sockets.
-      RunningJobLogRecordsToFetch: 2000
-
-      # In systems with many shared projects, loading of dashboard and topnav
-      # can be slow due to collections indexing; use the following parameters
-      # to suppress these properties
-      ShowRecentCollectionsOnDashboard: true
-      ShowUserNotifications: true
-
-      # Enable/disable "multi-site search" in top nav ("true"/"false"), or
-      # a link to the multi-site search page on a "home" Workbench site.
-      #
-      # Example:
-      #   https://workbench.zzzzz.arvadosapi.com/collections/multisite
-      MultiSiteSearch: ""
-
-      # Should workbench allow management of local git repositories? Set to false if
-      # the jobs api is disabled and there are no local git repositories.
-      Repositories: true
-
       SiteName: Arvados Workbench
-      ProfilingEnabled: false
-
-      # This is related to obsolete Google OpenID 1.0 login
-      # but some workbench stuff still expects it to be set.
-      DefaultOpenIdPrefix: "https://www.google.com/accounts/o8/id"
 
       # Workbench2 configs
       FileViewersConfigURL: ""

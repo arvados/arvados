@@ -35,7 +35,6 @@ server_cert_key=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.key
 
 declare -A services
 services=(
-  [workbench]=3001
   [workbench2]=3000
   [workbench2-ssl]=443
   [api]=8004
@@ -75,7 +74,7 @@ run_bundler() {
     fi
     BUNDLER=bundle
     if test -x $PWD/bin/bundle ; then
-	# If present, use the one associated with rails workbench or API
+	# If present, use the one associated with rails API
 	BUNDLER=$PWD/bin/bundle
     fi
 

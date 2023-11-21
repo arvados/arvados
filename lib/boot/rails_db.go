@@ -106,6 +106,9 @@ func migrationList(dir string, log logrus.FieldLogger) (map[string]bool, error) 
 			return nil
 		}
 		fnm := d.Name()
+		if strings.HasSuffix(fnm, "~") {
+			return nil
+		}
 		if !strings.HasSuffix(fnm, ".rb") {
 			log.Warnf("unexpected file in db/migrate dir: %s", fnm)
 			return nil

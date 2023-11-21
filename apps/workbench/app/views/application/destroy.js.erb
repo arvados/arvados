@@ -1,8 +1,0 @@
-<%# Copyright (C) The Arvados Authors. All rights reserved.
-
-SPDX-License-Identifier: AGPL-3.0 %>
-
-$(document).trigger('count-change');
-$('[data-object-uuid=<%= @object.uuid %>]').hide('slow', function() {
-    $(this).remove();
-});

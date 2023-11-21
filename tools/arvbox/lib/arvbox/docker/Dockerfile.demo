@@ -20,7 +20,6 @@ ADD service/ /var/lib/arvbox/service
 RUN ln -sf /var/lib/arvbox/service /etc
 RUN mkdir -p $ARVADOS_CONTAINER_PATH
 RUN echo "production" > $ARVADOS_CONTAINER_PATH/api_rails_env
-RUN echo "production" > $ARVADOS_CONTAINER_PATH/workbench_rails_env
 
 # for the federation tests, the dev server watches a lot of files,
 # and we run three instances of the docker container. Bump up the
@@ -38,7 +37,6 @@ RUN /usr/local/lib/arvbox/createusers.sh
 RUN sudo -u arvbox /var/lib/arvbox/service/api/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/workbench2/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keep-web/run-service --only-deps
-RUN sudo -u arvbox /var/lib/arvbox/service/workbench/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/doc/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/vm/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keepproxy/run-service --only-deps

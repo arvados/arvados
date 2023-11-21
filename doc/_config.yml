@@ -4,11 +4,9 @@
 
 # baseurl is the location of the generated site from the browser's
 # perspective (e.g., http://doc.arvados.org or
-# file:///tmp/arvados/doc/.site). To make docs show up inside
-# workbench, use /doc here and add a symlink at
-# apps/workbench/public/doc pointing to ../../../doc/.site
-# You can also set these on the command line:
-# $ rake generate baseurl=/example arvados_api_host=example.com
+# file:///tmp/arvados/doc/.site).  You can also set these on the
+# command line: $ rake generate baseurl=/example
+# arvados_api_host=example.com
 
 baseurl:
 current_version:
@@ -237,7 +235,6 @@ navbar:
     - User interface:
       - install/setup-login.html.textile.liquid
       - install/install-ws.html.textile.liquid
-      - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
       - install/workbench.html.textile.liquid
 #      - install/install-composer.html.textile.liquid
