@@ -77,12 +77,19 @@ If you work with this raw object, the keys of the dictionary are documented
 below, along with their types. The `items` key maps to a list of matching
 `{cls_name}` objects.
 '''
-_MODULE_PYDOC = '''Arvados API client documentation skeleton
+_MODULE_PYDOC = '''Arvados API client reference documentation
 
-This module documents the methods and return types provided by the Arvados API
-client. Start with `ArvadosAPIClient`, which documents the methods available
-from the API client objects constructed by `arvados.api`. The implementation is
-generated dynamically at runtime when the client object is built.
+This module provides reference documentation for the interface of the
+Arvados API client, including method signatures and type information for
+returned objects. However, the functions in `arvados.api` will return
+different classes at runtime that are generated dynamically from the Arvados
+API discovery document. The classes in this module do not have any
+implementation, and you should not instantiate them in your code.
+
+If you're just starting out, `ArvadosAPIClient` documents the methods
+available from the client object. From there, you can follow the trail into
+resource methods, request objects, and finally the data dictionaries returned
+by the API server.
 '''
 _SCHEMA_PYDOC = '''
 
