@@ -223,7 +223,7 @@ sanity_checks() {
         || fatal "No gitolite. Try: apt-get install gitolite3"
     echo -n 'npm: '
     npm --version \
-        || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v10.23.1/node-v10.23.1-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v10.23.1-linux-x64/bin/{node,npm} /usr/local/bin/"
+        || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v12.22.12-linux-x64/bin/{node,npm} /usr/local/bin/"
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
