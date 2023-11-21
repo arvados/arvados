@@ -10,6 +10,12 @@ Arvados API client.
 import sys
 import threading
 
+from typing import (
+    Any,
+    Mapping,
+    Optional,
+)
+
 from . import config
 from . import keep
 from . import util
@@ -47,7 +53,13 @@ class ThreadSafeApiCache(object):
       the code will log a warning and fall back to 'v1'.
     """
 
-    def __init__(self, apiconfig=None, keep_params={}, api_params={}, version=None):
+    def __init__(
+            self,
+            apiconfig: Optional[Mapping[str, str]]=None,
+            keep_params: Optional[Mapping[str, Any]]={},
+            api_params: Optional[Mapping[str, Any]]={},
+            version: Optional[str]=None,
+    ) -> None:
         if apiconfig or apiconfig is None:
             self._api_kwargs = api.api_kwargs_from_config(version, apiconfig, **api_params)
         else:
@@ -57,7 +69,7 @@ class ThreadSafeApiCache(object):
         self.local = threading.local()
         self.keep = keep.KeepClient(api_client=self, **keep_params)
 
-    def localapi(self):
+    def localapi(self) -> 'googleapiclient.discovery.Resource':
         try:
             client = self.local.api
         except AttributeError:
@@ -66,6 +78,6 @@ class ThreadSafeApiCache(object):
             self.local.api = client
         return client
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         # Proxy nonexistent attributes to the thread-local API client.
         return getattr(self.localapi(), name)
