@@ -115,6 +115,24 @@ handle_ruby_gem() {
     fi
 }
 
+# Usage: package_workbench2
+package_workbench2() {
+    local pkgname=arvados-workbench2
+    local src=services/workbench2
+    local dst=/var/www/arvados-workbench2/workbench2
+    local description="Arvados Workbench 2"
+    local version="$(version_from_git)"
+    cd "$WORKSPACE/$src"
+    rm -rf ./build
+    VERSION="$VERSION" BUILD_NUMBER="$(default_iteration "$pkgname" "$version" yarn)" GIT_COMMIT="$(git rev-parse HEAD | head -c9)" yarn build
+    cd "$WORKSPACE/packages/$TARGET"
+    fpm_build "${WORKSPACE}/$src" "${WORKSPACE}/$src/build/=$dst" "$pkgname" dir "$version" \
+              --license="GNU Affero General Public License, version 3.0" \
+              --description="${description}" \
+              --config-files="/etc/arvados/$pkgname/workbench2.example.json" \
+              "$WORKSPACE/services/workbench2/etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$pkgname/workbench2.example.json"
+}
+
 calculate_go_package_version() {
   # $__returnvar has the nameref attribute set, which means it is a reference
   # to another variable that is passed in as the first argument to this function.
@@ -1066,7 +1084,7 @@ EOF
 }
 
 # Build packages for everything
-fpm_build () {
+fpm_build() {
   # Source dir where fpm-info.sh (if any) will be found.
   SRC_DIR=$1
   shift
