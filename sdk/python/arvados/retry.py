@@ -15,8 +15,6 @@ It also provides utility functions for common operations with `RetryLoop`:
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import range
-from builtins import object
 import functools
 import inspect
 import pycurl
