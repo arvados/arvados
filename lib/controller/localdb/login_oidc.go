@@ -129,8 +129,11 @@ func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.Logout
 		return arvados.LogoutResponse{}, fmt.Errorf("error setting up OpenID Connect provider: %s", err)
 	}
 	resp, err := logout(ctx, ctrl.Cluster, opts)
+	if err != nil {
+		return arvados.LogoutResponse{}, err
+	}
 	creds, credsOK := auth.FromContext(ctx)
-	if err == nil && ctrl.endSessionURL != nil && credsOK && len(creds.Tokens) > 0 {
+	if ctrl.endSessionURL != nil && credsOK && len(creds.Tokens) > 0 {
 		values := ctrl.endSessionURL.Query()
 		values.Set("client_id", ctrl.ClientID)
 		values.Set("post_logout_redirect_uri", resp.RedirectLocation)
