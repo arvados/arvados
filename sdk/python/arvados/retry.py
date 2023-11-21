@@ -21,13 +21,22 @@ import pycurl
 import time
 
 from collections import deque
+from typing import (
+    Callable,
+    Generic,
+    Optional,
+    TypeVar,
+)
 
 import arvados.errors
 
 _HTTP_SUCCESSES = set(range(200, 300))
 _HTTP_CAN_RETRY = set([408, 409, 423, 500, 502, 503, 504])
 
-class RetryLoop(object):
+CT = TypeVar('CT', bound=Callable)
+T = TypeVar('T')
+
+class RetryLoop(Generic[T]):
     """Coordinate limited retries of code.
 
     `RetryLoop` coordinates a loop that runs until it records a
@@ -51,12 +60,12 @@ class RetryLoop(object):
       it doesn't succeed.  This means the loop body could run at most
       `num_retries + 1` times.
 
-    * success_check: Callable --- This is a function that will be called
-      each time the loop saves a result.  The function should return `True`
-      if the result indicates the code succeeded, `False` if it represents a
-      permanent failure, and `None` if it represents a temporary failure.
-      If no function is provided, the loop will end after any result is
-      saved.
+    * success_check: Callable[[T], bool | None] --- This is a function that
+      will be called each time the loop saves a result.  The function should
+      return `True` if the result indicates the code succeeded, `False` if
+      it represents a permanent failure, and `None` if it represents a
+      temporary failure.  If no function is provided, the loop will end
+      after any result is saved.
 
     * backoff_start: float --- The number of seconds that must pass before
       the loop's second iteration.  Default 0, which disables all waiting.
@@ -71,9 +80,15 @@ class RetryLoop(object):
     * max_wait: float --- Maximum number of seconds to wait between
       retries. Default 60.
     """
-    def __init__(self, num_retries, success_check=lambda r: True,
-                 backoff_start=0, backoff_growth=2, save_results=1,
-                 max_wait=60):
+    def __init__(
+            self,
+            num_retries: int,
+            success_check: Callable[[T], Optional[bool]]=lambda r: True,
+            backoff_start: float=0,
+            backoff_growth: float=2,
+            save_results: int=1,
+            max_wait: float=60
+    ) -> None:
         self.tries_left = num_retries + 1
         self.check_result = success_check
         self.backoff_wait = backoff_start
@@ -85,11 +100,11 @@ class RetryLoop(object):
         self._running = None
         self._success = None
 
-    def __iter__(self):
+    def __iter__(self) -> 'RetryLoop':
         """Return an iterator of retries."""
         return self
 
-    def running(self):
+    def running(self) -> Optional[bool]:
         """Return whether this loop is running.
 
         Returns `None` if the loop has never run, `True` if it is still running,
@@ -98,7 +113,7 @@ class RetryLoop(object):
         """
         return self._running and (self._success is None)
 
-    def __next__(self):
+    def __next__(self) -> int:
         """Record a loop attempt.
 
         If the loop is still running, decrements the number of tries left and
@@ -119,7 +134,7 @@ class RetryLoop(object):
         self.tries_left -= 1
         return self.tries_left
 
-    def save_result(self, result):
+    def save_result(self, result: T) -> None:
         """Record a loop result.
 
         Save the given result, and end the loop if it indicates
@@ -131,8 +146,7 @@ class RetryLoop(object):
 
         Arguments:
 
-        * result: Any --- The result from this loop attempt to check and
-        save.
+        * result: T --- The result from this loop attempt to check and save.
         """
         if not self.running():
             raise arvados.errors.AssertionError(
@@ -141,7 +155,7 @@ class RetryLoop(object):
         self._success = self.check_result(result)
         self._attempts += 1
 
-    def success(self):
+    def success(self) -> Optional[bool]:
         """Return the loop's end state.
 
         Returns `True` if the loop recorded a successful result, `False` if it
@@ -149,7 +163,7 @@ class RetryLoop(object):
         """
         return self._success
 
-    def last_result(self):
+    def last_result(self) -> T:
         """Return the most recent result the loop saved.
 
         Raises `arvados.errors.AssertionError` if called before any result has
@@ -161,7 +175,7 @@ class RetryLoop(object):
             raise arvados.errors.AssertionError(
                 "queried loop results before any were recorded")
 
-    def attempts(self):
+    def attempts(self) -> int:
         """Return the number of results that have been saved.
 
         This count includes all kinds of results: success, permanent failure,
@@ -169,7 +183,7 @@ class RetryLoop(object):
         """
         return self._attempts
 
-    def attempts_str(self):
+    def attempts_str(self) -> str:
         """Return a human-friendly string counting saved results.
 
         This method returns '1 attempt' or 'N attempts', where the number
@@ -181,7 +195,7 @@ class RetryLoop(object):
             return '{} attempts'.format(self._attempts)
 
 
-def check_http_response_success(status_code):
+def check_http_response_success(status_code: int) -> Optional[bool]:
     """Convert a numeric HTTP status code to a loop control flag.
 
     This method takes a numeric HTTP status code and returns `True` if
@@ -211,7 +225,7 @@ def check_http_response_success(status_code):
     else:
         return None  # Get well soon, server.
 
-def retry_method(orig_func):
+def retry_method(orig_func: CT) -> CT:
     """Provide a default value for a method's num_retries argument.
 
     This is a decorator for instance and class methods that accept a
