@@ -201,7 +201,6 @@ apply_var_substitutions() {
        s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION:-}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
@@ -280,7 +279,7 @@ VERSION="latest"
 # An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
 # ARVADOS_TAG="2.2.0"
-# BRANCH="main"
+BRANCH="20690-remove-wb1-from-installer"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
@@ -457,7 +456,7 @@ test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git
 
 # If we want to try a specific branch of the formula
 if [[ ! -z "${BRANCH:-}" && "x${BRANCH}" != "xmain" ]]; then
-  ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
+  ( cd ${F_DIR}/arvados && git fetch && git checkout --quiet "${BRANCH}" || git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
 elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi

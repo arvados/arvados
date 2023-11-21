@@ -106,7 +106,6 @@ arvados:
     ### KEYS
     secrets:
       blob_signing_key: __BLOB_SIGNING_KEY__
-      workbench_secret_key: __WORKBENCH_SECRET_KEY__
 
     Login:
       Test:
