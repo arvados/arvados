@@ -17,13 +17,25 @@ The multi-step trash/delete process can be short-circuited by setting @BlobTrash
 The following steps can be used to temporarily disable writes on an S3 bucket to enable faster garbage collection without data loss or service interruption. Note that garbage collection on other S3 volumes will be temporarily disabled during this procedure.
 # Create a new S3 bucket and configure it as an additional volume (this step may be skipped if the configuration already has enough writable volumes that clients will still be able to write blocks while the target volume is read-only). We recommend using @PrefixLength: 3@ for the new volume because this results in a much higher rate limit for I/O and garbage collection operations compared to the default @PrefixLength: 0@. If the target volume configuration specifies @StorageClasses@, use the same values for the new volume.
 # Shut down the @keep-balance@ service.
-# Update the target volume configuration with @ReadOnly: true@, @AllowTrashWhileReadOnly: true@, and @UnsafeDelete: true@.
-# In the @Collections@ configuration section, set @BlobTrashLifetime: 0@. Note this will effectively disable garbage collection on other S3-backed volumes, and garbage collection will delete blocks outright (bypassing the recoverable trash phase) on any non-S3 volumes.
-# In the @Collections@ configuration section, set @BalancePullLimit: 0@.
+# Update your configuration as follows: <notextile><pre>
+  Collections:
+    BlobTrashLifetime: 0
+    BalancePullLimit: 0
+  [...]
+  Volumes:
+    <span class="userinput">target-volume-uuid</span>:
+      ReadOnly: true
+      AllowTrashWhileReadOnly: true
+      DriverParameters:
+        UnsafeDelete: true
+</pre></notextile> Note that @BlobTrashLifetime: 0@ instructs keepstore to delete unneeded blocks outright (bypassing the recoverable trash phase); however, in this mode it will normally not trash any blocks at all on an S3 volume due to the safety issue mentioned above, unless the volume is configured with @UnsafeDelete: true@.
 # Restart all @keepstore@ services with the updated configuration.
 # Start the @keep-balance@ service.
-# Garbage collection should now proceed faster on the target volume. Monitor progress by watching @keep-balance@ logs and metrics. When garbage collection is complete, keep-balance logs will show an empty changeset: <notextile><pre><code>zzzzz-bi6l4-0123456789abcdef (keep0.zzzzz.arvadosapi.com:25107, disk): ChangeSet{Pulls:0, Trashes:0}</code></pre></notextile>
-# Revert @BlobTrashLifetime@ to its previous value (or the default value, @336h@) and set @UnsafeDelete: false@ on the target volume.
-# Optionally, revert to @ReadOnly: false@ and @AllowTrashWhileReadOnly: false@ on the target volume and/or set @ReadOnly: true@ and @AllowTrashWhileReadOnly: true@ on the new volume, depending on where you intend to store new data in future. If the target volume has @PrefixLength: 0@ and the new volume has @PrefixLength: 3@, you can skip this step: new data will be stored on the new volume, some existing data will be moved automatically to other volumes, and some will be left on the target volume as long as it's needed.
+# Objects will be deleted immediately instead of being first copied to trash on the S3 volume, which should significantly speed up cleanup of trashed objects. Monitor progress by watching @keep-balance@ logs and metrics. When garbage collection is complete, keep-balance logs will show an empty changeset: <notextile><pre><code>zzzzz-bi6l4-0123456789abcdef (keep0.zzzzz.arvadosapi.com:25107, disk): ChangeSet{Pulls:0, Trashes:0}</code></pre></notextile>
+# Remove the @UnsafeDelete@ configuration entry on the target volume.
+# Remove the @BlobTrashLifetime@ configuration entry (or restore it to its previous value).
+# If the target volume has @PrefixLength: 0@ and the new volume has @PrefixLength: 3@, skip the next two steps: new data will be stored on the new volume, some existing data will be moved automatically to other volumes, and some will be left on the target volume as long as it's needed.
+# If you want to resume writing new data to the target volume, revert to @ReadOnly: false@ and @AllowTrashWhileReadOnly: false@ on the target volume.
+# If you want to stop writing new data to the newly created volume, set @ReadOnly: true@ and @AllowTrashWhileReadOnly: true@ on the new volume.
 # Remove the @BalancePullLimit@ configuration entry (or restore its previous value), and restart @keep-balance@.
 # Restart all @keepstore@ services with the updated configuration.
