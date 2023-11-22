@@ -2,32 +2,27 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import object
-import arvados
-from . import config
-from . import errors
-from .retry import RetryLoop
-
-import logging
 import json
-import _thread
-import threading
-import time
+import logging
 import os
 import re
 import ssl
+import _thread
+import threading
+import time
+
+from . import config
+from . import errors
+from . import util
+from .retry import RetryLoop
+
 from ws4py.client.threadedclient import WebSocketClient
 
 _logger = logging.getLogger('arvados.events')
 
-
 class _EventClient(WebSocketClient):
     def __init__(self, url, filters, on_event, last_log_id, on_closed):
-        ssl_options = {'ca_certs': arvados.util.ca_certs_path()}
+        ssl_options = {'ca_certs': util.ca_certs_path()}
         if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
             ssl_options['cert_reqs'] = ssl.CERT_NONE
         else:
