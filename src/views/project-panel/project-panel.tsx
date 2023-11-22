@@ -52,6 +52,7 @@ import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
+import { selectOne } from 'store/multiselect/multiselect-actions';
 
 type CssRules = 'root' | 'button';
 
@@ -323,6 +324,7 @@ export const ProjectPanel = withStyles(styles)(
             };
 
             handleRowClick = (uuid: string) => {
+                this.props.dispatch<any>(selectOne(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));
             };
         }

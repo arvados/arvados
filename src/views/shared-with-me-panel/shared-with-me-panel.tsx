@@ -18,6 +18,7 @@ import {
     resourceUuidToContextMenuKind
 } from 'store/context-menu/context-menu-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { selectOne } from 'store/multiselect/multiselect-actions';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -82,6 +83,7 @@ export const SharedWithMePanel = withStyles(styles)(
             }
 
             handleRowClick = (uuid: string) => {
+                this.props.dispatch<any>(selectOne(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
         }

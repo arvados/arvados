@@ -184,7 +184,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
     });
 }
 
-const isExactlyOneSelected = (checkedList: TCheckedList) => {
+export const isExactlyOneSelected = (checkedList: TCheckedList) => {
     let tally = 0;
     let current = '';
     for (const uuid in checkedList) {

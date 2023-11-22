@@ -27,7 +27,8 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : "";
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
-    const currentItemUuid = currentRoute === "/workflows" ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
+    const isDetailsResourceChecked = state.multiselect.checkedList[state.detailsPanel.resourceUuid]
+    const currentItemUuid = currentRoute === "/workflows" ? state.properties.workflowPanelDetailsUuid : isDetailsResourceChecked ? state.detailsPanel.resourceUuid : state.multiselect.selectedUuid;
     const isMSToolbarVisible = state.multiselect.isVisible;
     return {
         ...dataExplorerState,
