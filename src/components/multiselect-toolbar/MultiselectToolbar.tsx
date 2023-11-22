@@ -62,6 +62,9 @@ export const MultiselectToolbar = connect(
 
         const currentPathIsTrash = window.location.pathname === "/trash";
 
+console.log(currentPathIsTrash && selectedToKindSet(checkedList).size)
+
+
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
@@ -79,12 +82,12 @@ export const MultiselectToolbar = connect(
                             action.hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={action.useAlts(singleSelectedUuid, iconProps) ? action.altName: action.name}
+                                    title={currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altName : action.name}
                                     key={i}
                                     disableFocusListener
                                 >
                                     <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
-                                        {action.useAlts(singleSelectedUuid, iconProps) ? action.altIcon && action.altIcon({}):  action.icon({})}
+                                        {currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altIcon && action.altIcon({}) :  action.icon({})}
                                     </IconButton>
                                 </Tooltip>
                             ) : (
