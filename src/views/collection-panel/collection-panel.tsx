@@ -350,7 +350,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Storage classes' value={item.storageClassesDesired.join(', ')} />
+                label='Storage classes' value={item.storageClassesDesired ? item.storageClassesDesired.join(', ') : ["default"]} />
         </Grid>
 
         {/*

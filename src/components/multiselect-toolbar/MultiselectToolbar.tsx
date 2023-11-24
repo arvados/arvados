@@ -62,9 +62,6 @@ export const MultiselectToolbar = connect(
 
         const currentPathIsTrash = window.location.pathname === "/trash";
 
-console.log(currentPathIsTrash && selectedToKindSet(checkedList).size)
-
-
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
