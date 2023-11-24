@@ -129,7 +129,8 @@ setup(name='arvados-python-client',
           'setuptools >=40.3.0',
           # As of 4.8.0rc1, typing_extensions does not parse in Python 3.7
           'typing_extensions >=3.7.4, <4.8; python_version<"3.8"',
-          'ws4py >=0.4.2',
+          'websockets >=11.0',
+          'websockets ~=11.0; python_version<"3.8"',
       ],
       classifiers=[
           'Programming Language :: Python :: 3',

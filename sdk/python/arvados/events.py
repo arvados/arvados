@@ -2,145 +2,170 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import enum
 import json
 import logging
 import os
 import re
 import ssl
+import sys
 import _thread
 import threading
 import time
+
+import websockets.exceptions as ws_exc
+import websockets.sync.client as ws_client
 
 from . import config
 from . import errors
 from . import util
 from .retry import RetryLoop
+from ._version import __version__
 
-from ws4py.client.threadedclient import WebSocketClient
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Union,
+)
+
+Filter = List[Union[None, bool, float, str, 'Filter']]
+Filters = List[Filter]
 
 _logger = logging.getLogger('arvados.events')
 
-class _EventClient(WebSocketClient):
-    def __init__(self, url, filters, on_event, last_log_id, on_closed):
-        ssl_options = {'ca_certs': util.ca_certs_path()}
-        if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
-            ssl_options['cert_reqs'] = ssl.CERT_NONE
-        else:
-            ssl_options['cert_reqs'] = ssl.CERT_REQUIRED
-
-        # Warning: If the host part of url resolves to both IPv6 and
-        # IPv4 addresses (common with "localhost"), only one of them
-        # will be attempted -- and it might not be the right one. See
-        # ws4py's WebSocketBaseClient.__init__.
-        super(_EventClient, self).__init__(url, ssl_options=ssl_options)
-
-        self.filters = filters
-        self.on_event = on_event
-        self.last_log_id = last_log_id
-        self._closing_lock = threading.RLock()
-        self._closing = False
-        self._closed = threading.Event()
-        self.on_closed = on_closed
-
-    def opened(self):
-        for f in self.filters:
-            self.subscribe(f, self.last_log_id)
-
-    def closed(self, code, reason=None):
-        self._closed.set()
-        self.on_closed()
-
-    def received_message(self, m):
-        with self._closing_lock:
-            if not self._closing:
-                self.on_event(json.loads(str(m)))
-
-    def close(self, code=1000, reason='', timeout=0):
-        """Close event client and optionally wait for it to finish.
-
-        :timeout: is the number of seconds to wait for ws4py to
-        indicate that the connection has closed.
-        """
-        super(_EventClient, self).close(code, reason)
-        with self._closing_lock:
-            # make sure we don't process any more messages.
-            self._closing = True
-        # wait for ws4py to tell us the connection is closed.
-        self._closed.wait(timeout=timeout)
-
-    def subscribe(self, f, last_log_id=None):
-        m = {"method": "subscribe", "filters": f}
-        if last_log_id is not None:
-            m["last_log_id"] = last_log_id
-        self.send(json.dumps(m))
-
-    def unsubscribe(self, f):
-        self.send(json.dumps({"method": "unsubscribe", "filters": f}))
+class WSMethod(enum.Enum):
+    SUBSCRIBE = 'subscribe'
+    SUB = SUBSCRIBE
+    UNSUBSCRIBE = 'unsubscribe'
+    UNSUB = UNSUBSCRIBE
 
 
-class EventClient(object):
-    def __init__(self, url, filters, on_event_cb, last_log_id):
+class EventClient(threading.Thread):
+    _USER_AGENT = 'Python/{}.{}.{} arvados.events/{}'.format(
+        *sys.version_info[:3],
+        __version__,
+    )
+
+    def __init__(
+            self,
+            url: str,
+            filters: Optional[Filters],
+            on_event_cb: Callable[[Dict[str, Any]], object],
+            last_log_id: Optional[int]=None,
+            insecure: Optional[bool]=None,
+    ) -> None:
+        # FIXME set up client factory
         self.url = url
-        if filters:
-            self.filters = [filters]
-        else:
-            self.filters = [[]]
+        self.filters = [filters or []]
         self.on_event_cb = on_event_cb
         self.last_log_id = last_log_id
         self.is_closed = threading.Event()
-        self._setup_event_client()
+        self._logger = _logger
+        self._ssl_ctx = ssl.create_default_context(
+            purpose=ssl.Purpose.SERVER_AUTH,
+            cafile=util.ca_certs_path(),
+        )
+        if insecure is None:
+            insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
+        if insecure:
+            self._ssl_ctx.check_hostname = False
+            self._ssl_ctx.verify_mode = ssl.CERT_NONE
+        self.connect()
+        super().__init__(daemon=True)
+        self.start()
 
-    def _setup_event_client(self):
-        self.ec = _EventClient(self.url, self.filters, self.on_event,
-                               self.last_log_id, self.on_closed)
-        self.ec.daemon = True
-        try:
-            self.ec.connect()
-        except Exception:
-            self.ec.close_connection()
-            raise
+    def _subscribe(self, f: Filters, last_log_id: Optional[int]) -> None:
+        extra = {}
+        if last_log_id is not None:
+            extra['last_log_id'] = last_log_id
+        return self._update_sub(WSMethod.SUBSCRIBE, f, **extra)
 
-    def subscribe(self, f, last_log_id=None):
-        self.filters.append(f)
-        self.ec.subscribe(f, last_log_id)
+    def _update_sub(self, method: WSMethod, f: Filter, **extra: Any) -> None:
+        msg = json.dumps({
+            'method': method.value,
+            'filters': f,
+            **extra,
+        })
+        self._client.send(msg)
 
-    def unsubscribe(self, f):
-        del self.filters[self.filters.index(f)]
-        self.ec.unsubscribe(f)
-
-    def close(self, code=1000, reason='', timeout=0):
+    def close(self, code: int=1000, reason: str='', timeout: float=0) -> None:
         self.is_closed.set()
-        self.ec.close(code, reason, timeout)
+        self._client.close_timeout = timeout or None
+        self._client.close(code, reason)
 
-    def on_event(self, m):
-        if m.get('id') != None:
-            self.last_log_id = m.get('id')
-        try:
-            self.on_event_cb(m)
-        except Exception as e:
-            _logger.exception("Unexpected exception from event callback.")
-            _thread.interrupt_main()
+    def connect(self) -> None:
+        self._client = ws_client.connect(
+            self.url,
+            logger=self._logger,
+            ssl_context=self._ssl_ctx,
+            user_agent_header=self._USER_AGENT,
+        )
+        self._client_ok = True
 
-    def on_closed(self):
-        if not self.is_closed.is_set():
-            _logger.warning("Unexpected close. Reconnecting.")
-            for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
-                try:
-                    self._setup_event_client()
-                    _logger.warning("Reconnect successful.")
-                    break
-                except Exception as e:
-                    _logger.warning("Error '%s' during websocket reconnect.", e)
-            if tries_left == 0:
-                _logger.exception("EventClient thread could not contact websocket server.")
-                self.is_closed.set()
-                _thread.interrupt_main()
-                return
-
-    def run_forever(self):
+    def run_forever(self) -> None:
         # Have to poll here to let KeyboardInterrupt get raised.
         while not self.is_closed.wait(1):
             pass
+
+    def subscribe(self, f: Filters, last_log_id: Optional[int]=None) -> None:
+        self._subscribe(f, last_log_id)
+        self.filters.append(f)
+
+    def unsubscribe(self, f: Filters) -> None:
+        try:
+            index = self.filters.index(f)
+        except ValueError:
+            raise ValueError(f"filter not subscribed: {f!r}") from None
+        self._update_sub(WSMethod.UNSUBSCRIBE, f)
+        del self.filters[index]
+
+    def on_closed(self) -> None:
+        if self.is_closed.is_set():
+            return
+        self._logger.warning("Unexpected close. Reconnecting.")
+        for _ in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
+            try:
+                self.connect()
+            except Exception as e:
+                _logger.warning("Error '%s' during websocket reconnect.", e)
+            else:
+                _logger.warning("Reconnect successful.")
+                break
+        else:
+            _logger.error("EventClient thread could not contact websocket server.")
+            self.is_closed.set()
+            _thread.interrupt_main()
+
+    def on_event(self, m: Dict[str, Any]) -> None:
+        try:
+            self.last_log_id = m['id']
+        except KeyError:
+            pass
+        try:
+            self.on_event_cb(m)
+        except Exception:
+            self._logger.exception("Unexpected exception from event callback.")
+            _thread.interrupt_main()
+
+    def run(self) -> None:
+        name = f'ArvadosWebsockets-{self.ident}'
+        self.setName(name)
+        self._logger = _logger.getChild(name)
+        while self._client_ok and not self.is_closed.is_set():
+            try:
+                for f in self.filters:
+                    self._subscribe(f, self.last_log_id)
+                for msg_s in self._client:
+                    if not self.is_closed.is_set():
+                        msg = json.loads(msg_s)
+                        self.on_event(msg)
+            except ws_exc.ConnectionClosed:
+                self._client_ok = False
+                self.on_closed()
 
 
 class PollClient(threading.Thread):

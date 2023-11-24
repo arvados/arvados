@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 import mock
 import queue
@@ -193,7 +194,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
 
         # close (im)properly
         if close_unexpected:
-            self.ws.ec.close_connection()
+            self.ws._client.close()
         else:
             self.ws.close()
 
@@ -232,10 +233,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         self._test_websocket_reconnect(False)
 
     # Test websocket reconnection retry
-    @mock.patch('arvados.events._EventClient.connect')
-    def test_websocket_reconnect_retry(self, event_client_connect):
-        event_client_connect.side_effect = [None, Exception('EventClient.connect error'), None]
-
+    def test_websocket_reconnect_retry(self):
         logstream = tutil.StringIO()
         rootLogger = logging.getLogger()
         streamHandler = logging.StreamHandler(logstream)
@@ -253,6 +251,11 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         self.assertIsInstance(self.ws, arvados.events.EventClient)
 
         # simulate improper close
+        self.ws.connect = mock.Mock()
+        self.ws.connect.side_effect = [
+            Exception('EventClient.connect error'),
+            None,
+        ]
         self.ws.on_closed()
 
         # verify log messages to ensure retry happened
@@ -261,40 +264,49 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         self.assertNotEqual(found, -1)
         rootLogger.removeHandler(streamHandler)
 
-    @mock.patch('arvados.events._EventClient')
+    @mock.patch('arvados.events.ws_client.connect')
     def test_subscribe_method(self, websocket_client):
         filters = [['object_uuid', 'is_a', 'arvados#human']]
         client = arvados.events.EventClient(
             self.MOCK_WS_URL, [], lambda event: None, None)
         client.subscribe(filters[:], 99)
-        websocket_client().subscribe.assert_called_with(filters, 99)
+        websocket_client().send.assert_called()
+        actual = json.loads(websocket_client().send.call_args[0][0])
+        expected = {
+            'method': 'subscribe',
+            'filters': filters,
+            'last_log_id': 99,
+        }
+        self.assertEqual(actual, expected)
 
-    @mock.patch('arvados.events._EventClient')
+    @mock.patch('arvados.events.ws_client.connect')
     def test_unsubscribe(self, websocket_client):
         filters = [['object_uuid', 'is_a', 'arvados#human']]
         client = arvados.events.EventClient(
             self.MOCK_WS_URL, filters[:], lambda event: None, None)
         client.unsubscribe(filters[:])
-        websocket_client().unsubscribe.assert_called_with(filters)
+        websocket_client().send.assert_called()
+        actual = json.loads(websocket_client().send.call_args[0][0])
+        expected = {
+            'method': 'unsubscribe',
+            'filters': filters,
+        }
+        self.assertEqual(actual, expected)
 
-    @mock.patch('arvados.events._EventClient')
+    @mock.patch('arvados.events.ws_client.connect')
     def test_run_forever_survives_reconnects(self, websocket_client):
-        connected = threading.Event()
-        websocket_client().connect.side_effect = connected.set
         client = arvados.events.EventClient(
             self.MOCK_WS_URL, [], lambda event: None, None)
         forever_thread = threading.Thread(target=client.run_forever)
         forever_thread.start()
         # Simulate an unexpected disconnect, and wait for reconnect.
-        close_thread = threading.Thread(target=client.on_closed)
-        close_thread.start()
-        self.assertTrue(connected.wait(timeout=self.TEST_TIMEOUT))
-        close_thread.join()
-        run_forever_alive = forever_thread.is_alive()
-        client.close()
-        forever_thread.join()
-        self.assertTrue(run_forever_alive)
-        self.assertEqual(2, websocket_client().connect.call_count)
+        try:
+            client.on_closed()
+            self.assertTrue(forever_thread.is_alive())
+            self.assertEqual(2, websocket_client.call_count)
+        finally:
+            client.close()
+            forever_thread.join()
 
 
 class PollClientTestCase(unittest.TestCase):
