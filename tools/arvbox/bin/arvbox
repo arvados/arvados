@@ -44,16 +44,8 @@ if test -z "$ARVADOS_ROOT" ; then
     ARVADOS_ROOT="$ARVBOX_DATA/arvados"
 fi
 
-if test -z "$WORKBENCH2_ROOT" ; then
-    WORKBENCH2_ROOT="$ARVBOX_DATA/workbench2"
-fi
-
 if test -z "$ARVADOS_BRANCH" ; then
     ARVADOS_BRANCH=main
-fi
-
-if test -z "$WORKBENCH2_BRANCH" ; then
-    WORKBENCH2_BRANCH=main
 fi
 
 # Update this to the docker tag for the version on releases.
@@ -134,7 +126,6 @@ wait_for_arvbox() {
 docker_run_dev() {
     docker run \
            "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-           "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
            "--volume=$VAR_DATA:$ARVADOS_CONTAINER_PATH:rw" \
            "--volume=$PASSENGER:/var/lib/passenger:rw" \
@@ -251,10 +242,6 @@ run() {
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
 	    git -C "$ARVADOS_ROOT" checkout $ARVADOS_BRANCH
-        fi
-        if ! test -d "$WORKBENCH2_ROOT" ; then
-            git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
-	    git -C "$ARVADOS_ROOT" checkout $WORKBENCH2_BRANCH
         fi
 
         if [[ "$CONFIG" = test ]] ; then
@@ -405,7 +392,6 @@ build() {
     docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE \
 	   --build-arg=go_version=$GO_VERSION \
 	   --build-arg=arvados_version=$ARVADOS_BRANCH \
-	   --build-arg=workbench2_version=$WORKBENCH2_BRANCH \
 	   --build-arg=workdir=/tools/arvbox/lib/arvbox/docker \
 	   -t arvados/arvbox-base:$GITHEAD \
 	   -f "$ARVBOX_DOCKER/Dockerfile.base" \
@@ -414,7 +400,6 @@ build() {
     docker build $NO_CACHE \
 	   --build-arg=go_version=$GO_VERSION \
 	   --build-arg=arvados_version=$ARVADOS_BRANCH \
-	   --build-arg=workbench2_version=$WORKBENCH2_BRANCH \
 	   -t arvados/arvbox-$BUILDTYPE:$GITHEAD \
 	   -f "$ARVBOX_DOCKER/Dockerfile.$BUILDTYPE" \
 	   "$ARVBOX_DOCKER"
@@ -604,7 +589,6 @@ case "$subcmd" in
                "$ARVBOX_BASE/$1/gopath" \
                "$ARVBOX_BASE/$1/Rlibs" \
                "$ARVBOX_BASE/$1/arvados" \
-               "$ARVBOX_BASE/$1/workbench2" \
                "$ARVBOX_BASE/$2"
             echo "Created new arvbox $2"
             echo "export ARVBOX_CONTAINER=$2"
