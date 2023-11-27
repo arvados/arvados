@@ -208,7 +208,7 @@ func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocum
 		return dd, err
 	}
 	conn.discoveryDocument = &dd
-	discoveryDocumentExpires = time.Now().Add(time.Hour)
+	conn.discoveryDocumentExpires = time.Now().Add(time.Hour)
 	return *conn.discoveryDocument, nil
 }
 
