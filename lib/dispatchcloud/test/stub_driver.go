@@ -34,7 +34,10 @@ type StubDriver struct {
 	// SetupVM, if set, is called upon creation of each new
 	// StubVM. This is the caller's opportunity to customize the
 	// VM's error rate and other behaviors.
-	SetupVM func(*StubVM)
+	//
+	// If SetupVM returns an error, that error will be returned to
+	// the caller of Create(), and the new VM will be discarded.
+	SetupVM func(*StubVM) error
 
 	// Bugf, if set, is called if a bug is detected in the caller
 	// or stub. Typically set to (*check.C)Errorf. If unset,
@@ -152,7 +155,10 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 		Exec:           svm.Exec,
 	}
 	if setup := sis.driver.SetupVM; setup != nil {
-		setup(svm)
+		err := setup(svm)
+		if err != nil {
+			return nil, err
+		}
 	}
 	sis.servers[svm.id] = svm
 	return svm.Instance(), nil
@@ -194,6 +200,12 @@ type RateLimitError struct{ Retry time.Time }
 
 func (e RateLimitError) Error() string            { return fmt.Sprintf("rate limited until %s", e.Retry) }
 func (e RateLimitError) EarliestRetry() time.Time { return e.Retry }
+
+type CapacityError struct{ InstanceTypeSpecific bool }
+
+func (e CapacityError) Error() string                { return "insufficient capacity" }
+func (e CapacityError) IsCapacityError() bool        { return true }
+func (e CapacityError) IsInstanceTypeSpecific() bool { return e.InstanceTypeSpecific }
 
 // StubVM is a fake server that runs an SSH service. It represents a
 // VM running in a fake cloud.

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
@@ -26,6 +27,7 @@ var _ = check.Suite(&balancerSuite{})
 
 type balancerSuite struct {
 	Balancer
+	config          *arvados.Cluster
 	srvs            []*KeepService
 	blks            map[string]tester
 	knownRendezvous [][]int
@@ -72,6 +74,11 @@ func (bal *balancerSuite) SetUpSuite(c *check.C) {
 
 	bal.signatureTTL = 3600
 	bal.Logger = ctxlog.TestLogger(c)
+
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	c.Assert(err, check.Equals, nil)
+	bal.config, err = cfg.GetCluster("")
+	c.Assert(err, check.Equals, nil)
 }
 
 func (bal *balancerSuite) SetUpTest(c *check.C) {
@@ -743,16 +750,13 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 // the appropriate changes for that block have been added to the
 // changesets.
 func (bal *balancerSuite) try(c *check.C, t tester) {
-	bal.setupLookupTables()
+	bal.setupLookupTables(bal.config)
 	blk := &BlockState{
 		Replicas: bal.replList(t.known, t.current),
 		Desired:  t.desired,
 	}
 	for i, t := range t.timestamps {
 		blk.Replicas[i].Mtime = t
-	}
-	for _, srv := range bal.srvs {
-		srv.ChangeSet = &ChangeSet{}
 	}
 	result := bal.balanceBlock(knownBlkid(t.known), blk)
 

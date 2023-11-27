@@ -63,8 +63,6 @@ RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
-    cd /tmp/arvados/apps/workbench && \
-    /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados && \
     go mod download
 

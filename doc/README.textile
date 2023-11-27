@@ -71,12 +71,6 @@ You can set @baseurl@ (the URL prefix for all internal links), @arvados_cluster_
 arvados/doc$ bundle exec rake generate baseurl=/doc arvados_api_host=xyzzy.arvadosapi.com
 </pre>
 
-Make the docs appear at {workbench_host}/doc by creating a symbolic link in Workbench's @public@ directory, pointing to the generated HTML tree.
-
-<pre>
-arvados/doc$ ln -sn ../../../doc/.site ../apps/workbench/public/doc
-</pre>
-
 h2. Delete generated files
 
 <pre>

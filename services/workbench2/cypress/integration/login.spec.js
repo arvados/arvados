@@ -27,17 +27,10 @@ describe('Login tests', function() {
             .as('inactiveUser').then(function() {
                 inactiveUser = this.inactiveUser;
             }
-        );
-        randomUser.username = `randomuser${Math.floor(Math.random() * 999999)}`;
-        randomUser.password = {
-            crypt: 'zpAReoZzPnwmQ',
-            clear: 'topsecret',
-        };
-        cy.exec(`useradd ${randomUser.username} -p ${randomUser.password.crypt}`);
-    })
-
-    after(function() {
-        cy.exec(`userdel ${randomUser.username}`);
+                                    );
+        // Username/password match Login.Test section of arvados_config.yml
+        randomUser.username = 'randomuser1234';
+        randomUser.password = 'topsecret';
     })
 
     beforeEach(function() {
@@ -128,14 +121,14 @@ describe('Login tests', function() {
         cy.get('#username').type(randomUser.username);
         cy.get('#password').type('wrong password');
         cy.get("button span:contains('Log in')").click();
-        cy.get('p#password-helper-text').should('contain', 'PAM: Authentication failure');
+        cy.get('p#password-helper-text').should('contain', 'authentication failed');
         cy.url().should('not.contain', '/projects/');
     })
 
     it('successfully authenticates using the login form', function() {
         cy.visit('/');
         cy.get('#username').type(randomUser.username);
-        cy.get('#password').type(randomUser.password.clear);
+        cy.get('#password').type(randomUser.password);
         cy.get("button span:contains('Log in')").click();
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');

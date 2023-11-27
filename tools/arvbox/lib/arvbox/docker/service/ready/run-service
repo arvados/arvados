@@ -64,15 +64,10 @@ fi
 if ! [[ -z "$waiting" ]] ; then
     if ps x | grep -v grep | grep "bundle install" > /dev/null; then
         gemcount=$(ls /var/lib/arvados/lib/ruby/gems/*/gems /var/lib/arvados-arvbox/.gem/ruby/*/gems 2>/dev/null | wc -l)
-
-        gemlockcount=0
-        for l in /usr/src/arvados/services/api/Gemfile.lock \
-                     /usr/src/arvados/apps/workbench/Gemfile.lock ; do
-            gc=$(cat $l \
-                        | grep -vE "(GEM|PLATFORMS|DEPENDENCIES|BUNDLED|GIT|$^|remote:|specs:|revision:)" \
-                        | sed 's/^ *//' | sed 's/(.*)//' | sed 's/ *$//' | sort | uniq | wc -l)
-            gemlockcount=$(($gemlockcount + $gc))
-        done
+        lockfile=/usr/src/arvados/services/api/Gemfile.lock
+        gemlockcount=$(cat $lockfile \
+                           | grep -vE "(GEM|PLATFORMS|DEPENDENCIES|BUNDLED|GIT|$^|remote:|specs:|revision:)" \
+                           | sed 's/^ *//' | sed 's/(.*)//' | sed 's/ *$//' | sort | uniq | wc -l)
         waiting="$waiting (installing ruby gems $gemcount of about $gemlockcount)"
     fi
 
@@ -89,7 +84,6 @@ fi
 
 echo
 echo "Your Arvados-in-a-box is ready!"
-echo "Workbench is hosted at https://$localip:${services[workbench]}"
 echo "Workbench2 is hosted at https://$localip:${services[workbench2-ssl]}"
 echo "Documentation is hosted at http://$localip:${services[doc]}"
 

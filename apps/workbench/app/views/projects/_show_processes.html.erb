@@ -1,9 +1,0 @@
-<%# Copyright (C) The Arvados Authors. All rights reserved.
-
-SPDX-License-Identifier: AGPL-3.0 %>
-
-<%= render_pane 'tab_contents', to_string: true, locals: {
-      limit: 50,
-      filters: [['uuid', 'is_a', ["arvados#containerRequest"]]],
-      sortable_columns: { 'name' => 'container_requests.name', 'description' => 'container_requests.description' }
-    }.merge(local_assigns) %>

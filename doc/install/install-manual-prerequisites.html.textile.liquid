@@ -43,7 +43,7 @@ table(table table-bordered table-condensed).
 |"Keep-web":install-keep-web.html |Gateway service providing read/write HTTP and WebDAV support on top of Keep.|Required to access files from Workbench.|
 |"Keep-balance":install-keep-balance.html |Storage cluster maintenance daemon responsible for moving blocks to their optimal server location, adjusting block replication levels, and trashing unreferenced blocks.|Required to free deleted data from underlying storage, and to ensure proper replication and block distribution (including support for storage classes).|
 |\3=. *User interface*|
-|"Workbench":install-workbench-app.html, "Workbench2":install-workbench2-app.html |Primary graphical user interface for working with file collections and running containers.|Optional.  Depends on API server, keep-web, websockets server.|
+|"Workbench2":install-workbench2-app.html |Primary graphical user interface for working with file collections and running containers.|Optional.  Depends on API server, keep-web, websockets server.|
 |\3=. *Additional services*|
 |"Websockets server":install-ws.html |Event distribution server.|Required to view streaming container logs in Workbench.|
 |"Shell server":install-shell-server.html |Grant Arvados users access to Unix shell accounts on dedicated shell nodes.|Optional.|

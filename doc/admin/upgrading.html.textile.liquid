@@ -32,6 +32,25 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.0":#v2_7_0
 
+h3. Remove Workbench1 packages and configuration
+
+The Workbench1 application has been removed from the Arvados distribution. We recommend the following follow-up steps.
+* Remove the Workbench1 package from any service node where it is installed (e.g., @apt remove arvados-workbench@).
+* In your Nginx configuration, add your Workbench1 URL host (from @Services.Workbench1.ExternalURL@) to the @server_name@ directive in the Workbench2 section. For example: <notextile><pre>server {
+  listen 443 ssl;
+  server_name workbench.ClusterID.example.com workbench2.ClusterID.example.com;
+  ...
+}</pre></notextile>
+* In your Nginx configuration, remove the @upstream@ and @server@ sections for Workbench1.
+* Remove the @Services.Workbench1.InternalURLs@ section of your configuration file. (Do not remove @ExternalURL@.)
+* Run @arvados-server config-check@ to identify any Workbench1-specific entries in your configuration file, and remove them.
+
+h3. Check implications of Containers.MaximumPriceFactor 1.5
+
+When scheduling a container, Arvados now considers using instance types other than the lowest-cost type consistent with the container's resource constraints. If a larger instance is already running and idle, or the cloud provider reports that the optimal instance type is not currently available, Arvados will select a larger instance type, provided the cost does not exceed 1.5x the optimal instance type cost.
+
+This will typically reduce overall latency for containers and reduce instance booting/shutdown overhead, but may increase costs depending on workload and instance availability. To avoid this behavior, configure @Containers.MaximumPriceFactor: 1.0@.
+
 h3. Synchronize keepstore and keep-balance upgrades
 
 The internal communication between keepstore and keep-balance about read-only volumes has changed. After keep-balance is upgraded, old versions of keepstore will be treated as read-only. We recommend upgrading and restarting all keepstore services first, then upgrading and restarting keep-balance.

@@ -21,7 +21,7 @@ h2(#introduction). Introduction
 
 The Keepproxy server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is suitable for clients located elsewhere on the internet. Specifically, in contrast to Keepstore:
 * A client writing through Keepproxy sends a single copy of a data block, and Keepproxy distributes copies to the appropriate Keepstore servers.
-* A client can write through Keepproxy without precomputing content hashes. Notably, the browser-based upload feature in Workbench requires Keepproxy.
+* A client can write through Keepproxy without precomputing content hashes.
 * Keepproxy checks API token validity before processing requests. (Clients that can connect directly to Keepstore can use it as scratch space even without a valid API token.)
 
 By convention, we use the following hostname for the Keepproxy server:

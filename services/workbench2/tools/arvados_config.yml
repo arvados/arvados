@@ -18,8 +18,12 @@ Clusters:
         original_owner_uuid: {Function: original_owner, Protected: true}
     Login:
       TrustPrivateNetworks: true
-      PAM:
+      Test:
         Enable: true
+        Users:
+          randomuser1234:
+            Email: randomuser1234@example.invalid
+            Password: topsecret
     StorageClasses:
       default:
         Default: true

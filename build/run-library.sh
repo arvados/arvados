@@ -159,12 +159,8 @@ package_go_binary() {
   local license_file="${1:-agpl-3.0.txt}"; shift
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
-    # arvados-workbench depends on arvados-server at build time, so even when
-    # only arvados-workbench is being built, we need to build arvados-server too
-    if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
       debug_echo -e "Skipping build of $prog package."
       return 0
-    fi
   fi
 
   native_arch=$(get_native_arch)
@@ -330,7 +326,7 @@ rails_package_version() {
         return
     fi
     local version="$(version_from_git)"
-    if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
+    if [ $pkgname = "arvados-api-server" ] ; then
         calculate_go_package_version version cmd/arvados-server "$srcdir"
     fi
     echo $version
@@ -410,11 +406,7 @@ test_package_presence() {
     local iteration="$1"; shift
     local arch="$1"; shift
     if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
-      # arvados-workbench depends on arvados-server at build time, so even when
-      # only arvados-workbench is being built, we need to build arvados-server too
-      if [[ "$pkgname" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
         return 1
-      fi
     fi
 
     local full_pkgname
@@ -516,13 +508,10 @@ handle_rails_package() {
     fi
     # For some reason fpm excludes need to not start with /.
     local exclude_root="${railsdir#/}"
-    local -a exclude_list=(tmp log coverage Capfile\* \
-                           config/deploy\* config/application.yml)
-    # for arvados-workbench, we need to have the (dummy) config/database.yml in the package
-    if  [[ "$pkgname" != "arvados-workbench" ]]; then
-      exclude_list+=('config/database.yml')
-    fi
-    for exclude in ${exclude_list[@]}; do
+    for exclude in tmp log coverage Capfile\* \
+                       config/deploy\* \
+                       config/application.yml \
+                       config/database.yml; do
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
@@ -556,89 +545,6 @@ handle_api_server () {
         "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
         --description="Arvados API server - Arvados is a free and open source platform for big data science." \
         --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
-  fi
-}
-
-# Usage: handle_workbench [amd64|arm64]
-handle_workbench () {
-  local target_arch="${1:-amd64}"; shift
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "arvados-workbench" ]] ; then
-    debug_echo -e "Skipping build of arvados-workbench package."
-    return 0
-  fi
-
-  native_arch=$(get_native_arch)
-  if [[ "$target_arch" != "$native_arch" ]]; then
-    echo "Error: no cross compilation support for Rails yet, can not build arvados-workbench for $native_arch"
-    echo
-    exit 1
-  fi
-
-  if [[ "$native_arch" != "amd64" ]]; then
-    echo "Error: building the arvados-workbench package is not yet supported on this architecture ($native_arch)."
-    echo
-    exit 1
-  fi
-
-  # Build the workbench server package
-  test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
-  if [[ "$?" == "0" ]] ; then
-    calculate_go_package_version arvados_server_version cmd/arvados-server
-    arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
-
-    (
-        set -e
-
-        # The workbench package has a build-time dependency on the arvados-server
-        # package for config manipulation, so install it first.
-        cd $WORKSPACE/cmd/arvados-server
-        get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
-
-        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
-        if [[ ! -e ${arvados_server_pkg_path} ]]; then
-          arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
-        fi
-        if [[ "$FORMAT" == "deb" ]]; then
-          dpkg -i ${arvados_server_pkg_path}
-        else
-          rpm -i ${arvados_server_pkg_path}
-        fi
-
-        cd "$WORKSPACE/apps/workbench"
-
-        # We need to bundle to be ready even when we build a package without vendor directory
-        # because asset compilation requires it.
-        bundle config set --local system 'true' >"$STDOUT_IF_DEBUG"
-        bundle install >"$STDOUT_IF_DEBUG"
-
-        # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
-        # and we want that in the package, so it's easier to not exclude the tmp directory
-        # from the package - empty it instead.
-        rm -rf tmp
-        mkdir tmp
-
-        # Set up an appropriate config.yml
-        arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
-        mkdir -p /etc/arvados/
-        mv /tmp/x /etc/arvados/config.yml
-        perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
-
-        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
-        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
-
-        # Remove generated configuration files so they don't go in the package.
-        rm -rf /etc/arvados/
-    )
-
-    if [[ "$?" != "0" ]]; then
-      echo "ERROR: Asset precompilation failed"
-      EXITCODE=1
-    else
-      handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
-          "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
-          --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-          --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
-    fi
   fi
 }
 
@@ -1180,11 +1086,7 @@ fpm_build () {
   shift
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PACKAGE_NAME" != "$ONLY_BUILD" ]] && [[ "$PACKAGE" != "$ONLY_BUILD" ]] ; then
-    # arvados-workbench depends on arvados-server at build time, so even when
-    # only arvados-workbench is being built, we need to build arvados-server too
-    if [[ "$PACKAGE_NAME" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
       return 0
-    fi
   fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"

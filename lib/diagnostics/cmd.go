@@ -649,35 +649,6 @@ func (diag *diagnoser) runtests() {
 		return nil
 	})
 
-	diag.dotest(140, "getting workbench1 webshell page", func() error {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
-		defer cancel()
-		if vm.UUID == "" {
-			diag.warnf("skipping, no vm available")
-			return nil
-		}
-		webshelltermurl := cluster.Services.Workbench1.ExternalURL.String() + "virtual_machines/" + vm.UUID + "/webshell/testusername"
-		diag.debugf("url %s", webshelltermurl)
-		req, err := http.NewRequestWithContext(ctx, "GET", webshelltermurl, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("reading response: %s", err)
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("unexpected response status: %s %q", resp.Status, body)
-		}
-		return nil
-	})
-
 	diag.dotest(150, "connecting to webshell service", func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()

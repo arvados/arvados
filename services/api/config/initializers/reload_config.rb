@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# When updating this, please make the same changes in
-# apps/workbench/config/initializers/reload_config.rb as well.
-
 def start_reload_thread
   Thread.new do
     lockfile = Rails.root.join('tmp', 'reload_config.lock')

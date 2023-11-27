@@ -30,12 +30,12 @@ func (getCmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 	flags.SetOutput(stderr)
 	err = flags.Parse(args)
 	if err != nil {
-		return 2
+		return cmd.EXIT_INVALIDARGUMENT
 	}
 	if len(flags.Args()) != 1 {
 		fmt.Fprintf(stderr, "usage of %s:\n", prog)
 		flags.PrintDefaults()
-		return 2
+		return cmd.EXIT_INVALIDARGUMENT
 	}
 	if opts.Short {
 		opts.Format = "uuid"

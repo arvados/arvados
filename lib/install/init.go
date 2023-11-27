@@ -301,8 +301,6 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         DriverParameters:
           Root: /var/lib/arvados/keep
         Replication: 2
-    Workbench:
-      SecretKeyBase: {{printf "%q" ( .RandomHex 50 )}}
     {{if .LoginPAM}}
     Login:
       PAM:

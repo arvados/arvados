@@ -371,10 +371,7 @@ func (super *Supervisor) runCluster() error {
 		}},
 	}
 	if !super.NoWorkbench1 {
-		tasks = append(tasks,
-			installPassenger{src: "apps/workbench", varlibdir: "workbench1", depends: []supervisedTask{railsDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
-			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench", varlibdir: "workbench1"}}},
-		)
+		return errors.New("workbench1 is no longer supported")
 	}
 	if !super.NoWorkbench2 {
 		tasks = append(tasks,
@@ -848,7 +845,7 @@ func (super *Supervisor) autofillConfig() error {
 		if super.NoWorkbench1 && svc == &super.cluster.Services.Workbench1 ||
 			super.NoWorkbench2 && svc == &super.cluster.Services.Workbench2 ||
 			!super.cluster.Containers.CloudVMs.Enable && svc == &super.cluster.Services.DispatchCloud {
-			// When workbench1 is disabled, it gets an
+			// When Workbench is disabled, it gets an
 			// ExternalURL (so we have a valid listening
 			// port to write in our Nginx config) but no
 			// InternalURLs (so health checker doesn't
