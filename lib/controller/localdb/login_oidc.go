@@ -68,10 +68,11 @@ type oidcLoginController struct {
 	// https://people.googleapis.com/)
 	peopleAPIBasePath string
 
-	provider   *oidc.Provider        // initialized by setup()
-	oauth2conf *oauth2.Config        // initialized by setup()
-	verifier   *oidc.IDTokenVerifier // initialized by setup()
-	mu         sync.Mutex            // protects setup()
+	provider      *oidc.Provider        // initialized by setup()
+	endSessionURL *url.URL              // initialized by setup()
+	oauth2conf    *oauth2.Config        // initialized by setup()
+	verifier      *oidc.IDTokenVerifier // initialized by setup()
+	mu            sync.Mutex            // protects setup()
 }
 
 // Initialize ctrl.provider and ctrl.oauth2conf.
@@ -101,11 +102,46 @@ func (ctrl *oidcLoginController) setup() error {
 		ClientID: ctrl.ClientID,
 	})
 	ctrl.provider = provider
+	var claims struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	err = provider.Claims(&claims)
+	if err != nil {
+		return fmt.Errorf("error parsing OIDC discovery metadata: %v", err)
+	} else if claims.EndSessionEndpoint == "" {
+		ctrl.endSessionURL = nil
+	} else {
+		u, err := url.Parse(claims.EndSessionEndpoint)
+		if err != nil {
+			return fmt.Errorf("OIDC end_session_endpoint is not a valid URL: %v", err)
+		} else if u.Scheme != "https" {
+			return fmt.Errorf("OIDC end_session_endpoint MUST use HTTPS but does not: %v", u.String())
+		} else {
+			ctrl.endSessionURL = u
+		}
+	}
 	return nil
 }
 
 func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return logout(ctx, ctrl.Cluster, opts)
+	err := ctrl.setup()
+	if err != nil {
+		return arvados.LogoutResponse{}, fmt.Errorf("error setting up OpenID Connect provider: %s", err)
+	}
+	resp, err := logout(ctx, ctrl.Cluster, opts)
+	if err != nil {
+		return arvados.LogoutResponse{}, err
+	}
+	creds, credsOK := auth.FromContext(ctx)
+	if ctrl.endSessionURL != nil && credsOK && len(creds.Tokens) > 0 {
+		values := ctrl.endSessionURL.Query()
+		values.Set("client_id", ctrl.ClientID)
+		values.Set("post_logout_redirect_uri", resp.RedirectLocation)
+		u := *ctrl.endSessionURL
+		u.RawQuery = values.Encode()
+		resp.RedirectLocation = u.String()
+	}
+	return resp, err
 }
 
 func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
