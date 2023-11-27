@@ -157,6 +157,10 @@ export const DataTable = withStyles(styles)(
             }
         }
 
+        componentWillUnmount(): void {
+            this.initializeCheckedList([])
+        }
+
         checkBoxColumn: DataColumn<any, any> = {
             name: "checkBoxColumn",
             selected: true,
