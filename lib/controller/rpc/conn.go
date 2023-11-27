@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -44,12 +45,12 @@ type Conn struct {
 	SendHeader         http.Header
 	RedactHostInErrors bool
 
-	clusterID         string
-	httpClient        http.Client
-	baseURL           url.URL
-	tokenProvider     TokenProvider
-	discoveryDocument *arvados.DiscoveryDocument
-	discoveryDocumentMtx sync.Mutex
+	clusterID                string
+	httpClient               http.Client
+	baseURL                  url.URL
+	tokenProvider            TokenProvider
+	discoveryDocument        *arvados.DiscoveryDocument
+	discoveryDocumentMtx     sync.Mutex
 	discoveryDocumentExpires time.Time
 }
 
