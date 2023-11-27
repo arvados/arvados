@@ -31,8 +31,10 @@ const {
     VIEW_DETAILS,
 } = MultiSelectMenuActionNames;
 
-//these sets govern what actions are on the ms toolbar for each resource kind
-const collectionMSActionsFilter = new Set([MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH]);
+const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new Set(actionSet[0].map((action) => action.name));
+
+//use allActionNames or filter manually below
+
 const processResourceMSActionsFilter = new Set([MOVE_TO, REMOVE]);
 const projectMSActionsFilter = new Set([
     ADD_TO_FAVORITES,
@@ -56,7 +58,7 @@ const workflowMSActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW
 const { COLLECTION, PROCESS, PROJECT, WORKFLOW } = ResourceKind;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
-    [COLLECTION]: [msCollectionActionSet, collectionMSActionsFilter],
+    [COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
     [PROJECT]: [msProjectActionSet, projectMSActionsFilter],
     [WORKFLOW]: [msWorkflowActionSet, workflowMSActionFilter]
