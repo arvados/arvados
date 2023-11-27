@@ -5,13 +5,16 @@
 package keepclient
 
 import (
-	"fmt"
+	"bytes"
+	"context"
 	"io"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 var DefaultBlockCache = &BlockCache{}
@@ -54,8 +57,8 @@ func (c *BlockCache) Sweep() {
 
 // ReadAt returns data from the cache, first retrieving it from Keep if
 // necessary.
-func (c *BlockCache) ReadAt(kc *KeepClient, locator string, p []byte, off int) (int, error) {
-	buf, err := c.Get(kc, locator)
+func (c *BlockCache) ReadAt(upstream arvados.KeepGateway, locator string, p []byte, off int) (int, error) {
+	buf, err := c.get(upstream, locator)
 	if err != nil {
 		return 0, err
 	}
@@ -65,9 +68,9 @@ func (c *BlockCache) ReadAt(kc *KeepClient, locator string, p []byte, off int) (
 	return copy(p, buf[off:]), nil
 }
 
-// Get returns data from the cache, first retrieving it from Keep if
+// Get a block from the cache, first retrieving it from Keep if
 // necessary.
-func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
+func (c *BlockCache) get(upstream arvados.KeepGateway, locator string) ([]byte, error) {
 	cacheKey := locator[:32]
 	bufsize := BLOCKSIZE
 	if parts := strings.SplitN(locator, "+", 3); len(parts) >= 2 {
@@ -88,21 +91,10 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 		}
 		c.cache[cacheKey] = b
 		go func() {
-			rdr, size, _, err := kc.Get(locator)
-			var data []byte
-			if err == nil {
-				data = make([]byte, size, bufsize)
-				_, err = io.ReadFull(rdr, data)
-				err2 := rdr.Close()
-				if err == nil && err2 != nil {
-					err = fmt.Errorf("close(): %w", err2)
-				}
-				if err != nil {
-					err = fmt.Errorf("Get %s: %w", locator, err)
-				}
-			}
+			buf := bytes.NewBuffer(make([]byte, 0, bufsize))
+			_, err := upstream.BlockRead(context.Background(), arvados.BlockReadOptions{Locator: locator, WriteTo: buf})
 			c.mtx.Lock()
-			b.data, b.err = data, err
+			b.data, b.err = buf.Bytes(), err
 			c.mtx.Unlock()
 			close(b.fetched)
 			go c.Sweep()

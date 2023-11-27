@@ -16,6 +16,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -118,6 +120,8 @@ type KeepClient struct {
 
 	// Disable automatic discovery of keep services
 	disableDiscovery bool
+
+	gatewayStack arvados.KeepGateway
 }
 
 func (kc *KeepClient) loadDefaultClasses() error {
@@ -332,6 +336,45 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 	return nil, 0, "", nil, err
 }
 
+// upstreamGateway creates/returns the KeepGateway stack used to read
+// and write data: a memory cache, a disk-backed cache if available,
+// and an http backend.
+func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
+	kc.lock.Lock()
+	defer kc.lock.Unlock()
+	if kc.gatewayStack != nil {
+		return kc.gatewayStack
+	}
+	var stack arvados.KeepGateway = &keepViaHTTP{kc}
+
+	// Wrap with a disk cache, if cache dir is writable
+	home := os.Getenv("HOME")
+	if fi, err := os.Stat(home); home != "" && err == nil && fi.IsDir() {
+		var err error
+		dir := home
+		for _, part := range []string{".cache", "arvados", "keep"} {
+			dir = filepath.Join(dir, part)
+			err = os.Mkdir(dir, 0700)
+		}
+		if err == nil || os.IsExist(err) {
+			os.Mkdir(filepath.Join(dir, "tmp"), 0700)
+			err = os.WriteFile(filepath.Join(dir, "tmp", "check.tmp"), nil, 0600)
+			if err == nil {
+				stack = &arvados.DiskCache{
+					Dir:         dir,
+					KeepGateway: stack,
+				}
+			}
+		}
+	}
+	stack = &keepViaBlockCache{
+		kc:          kc,
+		KeepGateway: stack,
+	}
+	kc.gatewayStack = stack
+	return stack
+}
+
 // LocalLocator returns a locator equivalent to the one supplied, but
 // with a valid signature from the local cluster. If the given locator
 // already has a local signature, it is returned unchanged.
@@ -369,7 +412,7 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 // ReadAt retrieves a portion of block from the cache if it's
 // present, otherwise from the network.
 func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
-	return kc.cache().ReadAt(kc, locator, p, off)
+	return kc.upstreamGateway().ReadAt(locator, p, off)
 }
 
 // Ask verifies that a block with the given hash is available and

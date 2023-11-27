@@ -240,11 +240,16 @@ type LogoutOptions struct {
 	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
 }
 
+type BlockReadOptions struct {
+	Locator string
+	WriteTo io.Writer
+}
+
 type BlockWriteOptions struct {
 	Hash           string
 	Data           []byte
-	Reader         io.Reader
-	DataSize       int // Must be set if Data is nil.
+	Reader         io.Reader // Must be set if Data is nil.
+	DataSize       int       // Must be set if Data is nil.
 	RequestID      string
 	StorageClasses []string
 	Replicas       int

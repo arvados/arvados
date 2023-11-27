@@ -237,7 +237,15 @@ func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 }
 
 func (s *CollectionReaderUnit) TestCollectionReaderCloseEarly(c *check.C) {
+	// Disable disk cache
+	defer func(home string) {
+		os.Setenv("HOME", home)
+	}(os.Getenv("HOME"))
+	os.Setenv("HOME", "")
+
+	// Disable memory cache
 	s.kc.BlockCache = &BlockCache{}
+
 	s.kc.PutB([]byte("foo"))
 	s.kc.PutB([]byte("bar"))
 	s.kc.PutB([]byte("baz"))
