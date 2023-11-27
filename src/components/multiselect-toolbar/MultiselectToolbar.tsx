@@ -10,17 +10,18 @@ import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { TCheckedList } from "components/data-table/data-table";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { Resource, extractUuidKind } from "models/resource";
+import { Resource, ResourceKind, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction } from "views-components/context-menu/context-menu-action-set";
-import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
+import { multiselectActionsFilters, TMultiselectActionsFilters, msResourceKind } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
+import { resourceIsFrozen } from "common/frozen-resources";
 
 type CssRules = "root" | "button";
 
@@ -58,14 +59,16 @@ export const MultiselectToolbar = connect(
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, selectedUuid: singleSelectedUuid, iconProps } = props;
-        const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
+        const singleProjectKind = singleSelectedUuid ? resourceSubKind(singleSelectedUuid, iconProps.resources) : ''
+        const currentResourceKinds = singleProjectKind ? singleProjectKind :Array.from(selectedToKindSet(checkedList));
 
         const currentPathIsTrash = window.location.pathname === "/trash";
+
 
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds, multiselectActionsFilters)
+                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
                 .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
 
         return (
@@ -140,6 +143,17 @@ function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Reco
 function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<string>): Array<MultiSelectMenuAction> {
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
+
+const resourceSubKind = (uuid: string, resources: ResourcesState) => {
+    const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
+    switch (resource.kind) {
+        case ResourceKind.PROJECT:
+            if(resourceIsFrozen(resource, resources)) return [msResourceKind.PROJECT_FROZEN]
+            return [msResourceKind.PROJECT]
+        default:
+            return resource.kind
+    }
+}; 
 
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
     const rawResult: Set<MultiSelectMenuAction> = new Set();

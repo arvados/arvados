@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind } from 'models/resource';
 import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from 'views-components/multiselect-toolbar/ms-menu-actions';
 import { msCollectionActionSet } from 'views-components/multiselect-toolbar/ms-collection-action-set';
-import { msProjectActionSet } from 'views-components/multiselect-toolbar/ms-project-action-set';
+import { msProjectActionSet, msReadOnlyProjectActionSet, msFilterGroupActionSet, msFrozenActionSet } from 'views-components/multiselect-toolbar/ms-project-action-set';
 import { msProcessActionSet } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 
@@ -55,12 +54,34 @@ const projectMSActionsFilter = new Set([
 ]);
 const workflowMSActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW]);
 
-const { COLLECTION, PROCESS, PROJECT, WORKFLOW } = ResourceKind;
+
+export enum msResourceKind {
+    API_CLIENT_AUTHORIZATION = "arvados#apiClientAuthorization",
+    COLLECTION = "arvados#collection",
+    CONTAINER = "arvados#container",
+    CONTAINER_REQUEST = "arvados#containerRequest",
+    GROUP = "arvados#group",
+    LINK = "arvados#link",
+    LOG = "arvados#log",
+    PROCESS = "arvados#containerRequest",
+    PROJECT = "arvados#group",
+    PROJECT_FROZEN = "arvados#group_frozen",
+    REPOSITORY = "arvados#repository",
+    SSH_KEY = "arvados#authorizedKeys",
+    KEEP_SERVICE = "arvados#keepService",
+    USER = "arvados#user",
+    VIRTUAL_MACHINE = "arvados#virtualMachine",
+    WORKFLOW = "arvados#workflow",
+    NONE = "arvados#none"
+}
+
+const { COLLECTION, PROCESS, PROJECT, PROJECT_FROZEN, WORKFLOW } = msResourceKind;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
     [PROJECT]: [msProjectActionSet, projectMSActionsFilter],
+    [PROJECT_FROZEN]: [msProjectActionSet, allActionNames(msFrozenActionSet)],
     [WORKFLOW]: [msWorkflowActionSet, workflowMSActionFilter]
 };
 

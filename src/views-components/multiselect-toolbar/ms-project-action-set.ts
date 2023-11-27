@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MultiSelectMenuAction, MultiSelectMenuActionNames } from 'views-components/multiselect-toolbar/ms-menu-actions';
+import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from 'views-components/multiselect-toolbar/ms-menu-actions';
 import { openMoveProjectDialog } from 'store/projects/project-move-actions';
 import { toggleProjectTrashed } from 'store/trash/trash-actions';
 import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
@@ -177,9 +177,8 @@ export const msNewProjectAction: any = {
     },
 };
 
-export const msProjectActionSet: MultiSelectMenuAction[][] = [
+export const msProjectActionSet: MultiSelectMenuActionSet = [
     [
-        msCopyToClipboardMenuAction,
         msToggleFavoriteAction,
         msOpenInNewTabMenuAction,
         msCopyToClipboardMenuAction,
@@ -190,7 +189,39 @@ export const msProjectActionSet: MultiSelectMenuAction[][] = [
         msShareAction,
         msMoveToAction,
         msToggleTrashAction,
-        msFreezeProjectAction,
         msNewProjectAction,
+        msFreezeProjectAction,
+    ],
+];
+
+export const msReadOnlyProjectActionSet: MultiSelectMenuActionSet = [
+    [msToggleFavoriteAction, msOpenInNewTabMenuAction, msCopyToClipboardMenuAction, msViewDetailsAction, msAdvancedAction, msOpenWith3rdPartyClientAction],
+];
+
+export const msFilterGroupActionSet: MultiSelectMenuActionSet = [
+    [
+        msToggleFavoriteAction,
+        msOpenInNewTabMenuAction,
+        msCopyToClipboardMenuAction,
+        msViewDetailsAction,
+        msAdvancedAction,
+        msOpenWith3rdPartyClientAction,
+        msEditProjectAction,
+        msShareAction,
+        msMoveToAction,
+        msToggleTrashAction,
+    ],
+];
+
+export const msFrozenActionSet: MultiSelectMenuActionSet = [
+    [
+        msShareAction,
+        msToggleFavoriteAction,
+        msOpenInNewTabMenuAction,
+        msCopyToClipboardMenuAction,
+        msViewDetailsAction,
+        msAdvancedAction,
+        msOpenWith3rdPartyClientAction,
+        msFreezeProjectAction,
     ],
 ];
