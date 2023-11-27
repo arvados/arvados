@@ -705,7 +705,6 @@ func (conn *Conn) batchUpdateUsers(ctx context.Context,
 			delete(updates, "is_admin")
 			delete(updates, "is_invited")
 		}
-		fmt.Printf("updates %v", updates)
 		batchOpts.Updates[user.UUID] = updates
 	}
 	if len(batchOpts.Updates) > 0 {
@@ -725,6 +724,10 @@ func (conn *Conn) includeAdminAndInvitedInBatchUpdate(ctx context.Context, be ba
 	// fields aren't actually valid then we don't want to
 	// send them in the batch update.
 	dd, err := be.DiscoveryDocument(ctx)
+	if err != nil {
+		// couldn't get discovery document
+		return false, err
+	}
 	if dd.Revision >= "20231117" {
 		// newer version, fields are valid.
 		return true, nil
