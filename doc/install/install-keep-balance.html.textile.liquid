@@ -24,7 +24,7 @@ Keep-balance can be installed anywhere with network access to Keep services, arv
 
 {% include 'notebox_begin' %}
 
-If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, edit your keep-balance startup script to use the flags @-commit-pulls=false -commit-trash=false -commit-confirmed-fields=false@.
+If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, set the @Collections.BalancePullLimit@ and @Collections.BalanceTrashLimit@ configuration entries to zero.
 
 {% include 'notebox_end' %}
 
