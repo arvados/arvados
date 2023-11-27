@@ -6,7 +6,7 @@ import { MoveToIcon, RemoveIcon, ReRunProcessIcon } from "components/icon/icon";
 import { openMoveProcessDialog } from "store/processes/process-move-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
-import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-action-set";
+import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-actions";
 
 export const msProcessActionSet: MultiSelectMenuActionSet = [
     [

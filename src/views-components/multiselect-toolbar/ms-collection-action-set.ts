@@ -7,7 +7,7 @@ import { openMoveCollectionDialog } from "store/collections/collection-move-acti
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
-import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-action-set";
+import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "./ms-menu-actions";
 import { TrashIcon } from "components/icon/icon";
 
 export const msCollectionActionSet: MultiSelectMenuActionSet = [
