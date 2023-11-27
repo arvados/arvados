@@ -124,6 +124,7 @@ package_workbench2() {
     local version="$(version_from_git)"
     cd "$WORKSPACE/$src"
     rm -rf ./build
+    NODE_ENV=production yarn install
     VERSION="$VERSION" BUILD_NUMBER="$(default_iteration "$pkgname" "$version" yarn)" GIT_COMMIT="$(git rev-parse HEAD | head -c9)" yarn build
     cd "$WORKSPACE/packages/$TARGET"
     fpm_build "${WORKSPACE}/$src" "${WORKSPACE}/$src/build/=$dst" "$pkgname" dir "$version" \
