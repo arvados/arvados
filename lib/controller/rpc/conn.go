@@ -49,6 +49,8 @@ type Conn struct {
 	baseURL           url.URL
 	tokenProvider     TokenProvider
 	discoveryDocument *arvados.DiscoveryDocument
+	discoveryDocumentMtx sync.Mutex
+	discoveryDocumentExpires time.Time
 }
 
 func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *Conn {
@@ -194,7 +196,9 @@ func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error)
 }
 
 func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
-	if conn.discoveryDocument != nil {
+	conn.discoveryDocumentMtx.Lock()
+	defer conn.discoveryDocumentMtx.Unlock()
+	if conn.discoveryDocument != nil && time.Now().Before(conn.discoveryDocumentExpires) {
 		return *conn.discoveryDocument, nil
 	}
 	var dd arvados.DiscoveryDocument
@@ -203,6 +207,7 @@ func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocum
 		return dd, err
 	}
 	conn.discoveryDocument = &dd
+	discoveryDocumentExpires = time.Now().Add(time.Hour)
 	return *conn.discoveryDocument, nil
 }
 

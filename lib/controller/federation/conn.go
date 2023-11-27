@@ -225,11 +225,11 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 }
 
 func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
-	return conn.chooseBackend(conn.cluster.ClusterID).VocabularyGet(ctx)
+	return conn.local.VocabularyGet(ctx)
 }
 
 func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
-	return conn.chooseBackend(conn.cluster.ClusterID).DiscoveryDocument(ctx)
+	return conn.local.DiscoveryDocument(ctx)
 }
 
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
