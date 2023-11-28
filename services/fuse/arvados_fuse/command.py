@@ -135,6 +135,12 @@ class Mount(object):
             self.args.logfile = os.path.realpath(self.args.logfile)
 
         try:
+            self._setup_logging()
+        except Exception as e:
+            self.logger.exception("arv-mount: exception during setup: %s", e)
+            exit(1)
+
+        try:
             nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
 
             minlimit = 10240
@@ -143,7 +149,7 @@ class Mount(object):
                 # the desired cache size. Multiply by 8 because the
                 # number of 64 MiB cache slots that keepclient
                 # allocates is RLIMIT_NOFILE / 8
-                minlimit = (self.args.file_cache/(64*1024*1024)) * 8
+                minlimit = int((self.args.file_cache/(64*1024*1024)) * 8)
 
             if nofile_limit[0] < minlimit:
                 resource.setrlimit(resource.RLIMIT_NOFILE, (min(minlimit, nofile_limit[1]), nofile_limit[1]))
@@ -153,7 +159,6 @@ class Mount(object):
         self.logger.info("arv-mount: RLIMIT_NOFILE is %s", resource.getrlimit(resource.RLIMIT_NOFILE))
 
         try:
-            self._setup_logging()
             self._setup_api()
             self._setup_mount()
         except Exception as e:
