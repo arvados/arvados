@@ -598,7 +598,18 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - postgres" >> ${STATES_TOP}
   echo "    - logrotate" >> ${STATES_TOP}
   echo "    - docker.software" >> ${STATES_TOP}
-  echo "    - arvados" >> ${STATES_TOP}
+  echo "    - arvados.repo" >> ${STATES_TOP}
+  echo "    - arvados.config" >> ${STATES_TOP}
+  echo "    - arvados.ruby" >> ${STATES_TOP}
+  echo "    - arvados.api" >> ${STATES_TOP}
+  echo "    - arvados.controller" >> ${STATES_TOP}
+  echo "    - arvados.keepstore" >> ${STATES_TOP}
+  echo "    - arvados.websocket" >> ${STATES_TOP}
+  echo "    - arvados.keepweb" >> ${STATES_TOP}
+  echo "    - arvados.workbench2" >> ${STATES_TOP}
+  echo "    - arvados.keepproxy" >> ${STATES_TOP}
+  echo "    - arvados.shell" >> ${STATES_TOP}
+  echo "    - arvados.dispatcher" >> ${STATES_TOP}
   echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
   echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
   echo "    - extra.passenger_rvm" >> ${STATES_TOP}
