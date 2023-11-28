@@ -54,7 +54,8 @@ arvados:
     #     - ruby-dev
     #     - zlib1g-dev
 
-  # config:
+  config:
+    check_command: /usr/bin/arvados-server config-check -strict=false -config
   #   file: /etc/arvados/config.yml
   #   user: root
   ## IMPORTANT!!!!!
@@ -105,6 +106,7 @@ arvados:
     ### KEYS
     secrets:
       blob_signing_key: __BLOB_SIGNING_KEY__
+      workbench_secret_key: "deprecated"
 
     Login:
       Test:
