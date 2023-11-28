@@ -151,6 +151,7 @@ const resourceSubKind = (uuid: string, resources: ResourcesState) => {
         case ResourceKind.PROJECT:
             if(resourceIsFrozen(resource, resources)) return [msResourceKind.PROJECT_FROZEN]
             if((resource as ProjectResource).canWrite === false) return [msResourceKind.PROJECT_READONLY]
+            if((resource as ProjectResource).groupClass === "filter") return [msResourceKind.PROJECT_FILTER]
             return [msResourceKind.PROJECT]
         default:
             return [resource.kind]

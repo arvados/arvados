@@ -67,6 +67,7 @@ export enum msResourceKind {
     PROJECT = "arvados#group",
     PROJECT_FROZEN = "arvados#group_frozen",
     PROJECT_READONLY = "arvados#group_readonly",
+    PROJECT_FILTER = "arvados#group_filter",
     REPOSITORY = "arvados#repository",
     SSH_KEY = "arvados#authorizedKeys",
     KEEP_SERVICE = "arvados#keepService",
@@ -76,7 +77,7 @@ export enum msResourceKind {
     NONE = "arvados#none"
 }
 
-const { COLLECTION, PROCESS, PROJECT, PROJECT_FROZEN, PROJECT_READONLY, WORKFLOW } = msResourceKind;
+const { COLLECTION, PROCESS, PROJECT, PROJECT_FROZEN, PROJECT_READONLY,PROJECT_FILTER, WORKFLOW } = msResourceKind;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
@@ -84,6 +85,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [PROJECT]: [msProjectActionSet, projectMSActionsFilter],
     [PROJECT_FROZEN]: [msProjectActionSet, allActionNames(msFrozenActionSet)],
     [PROJECT_READONLY]: [msProjectActionSet, allActionNames(msReadOnlyProjectActionSet)],
+    [PROJECT_FILTER]: [msProjectActionSet, allActionNames(msFilterGroupActionSet)],
     [WORKFLOW]: [msWorkflowActionSet, workflowMSActionFilter]
 };
 
