@@ -225,7 +225,11 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 }
 
 func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
-	return conn.chooseBackend(conn.cluster.ClusterID).VocabularyGet(ctx)
+	return conn.local.VocabularyGet(ctx)
+}
+
+func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	return conn.local.DiscoveryDocument(ctx)
 }
 
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
@@ -627,6 +631,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"first_name":  true,
 	"is_active":   true,
 	"is_admin":    true,
+	"is_invited":  true,
 	"last_name":   true,
 	"modified_at": true,
 	"prefs":       true,
@@ -636,7 +641,6 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"etag":                    false,
 	"full_name":               false,
 	"identity_url":            false,
-	"is_invited":              false,
 	"modified_by_client_uuid": false,
 	"modified_by_user_uuid":   false,
 	"owner_uuid":              false,
@@ -648,7 +652,8 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 
 func (conn *Conn) batchUpdateUsers(ctx context.Context,
 	options arvados.ListOptions,
-	items []arvados.User) (err error) {
+	items []arvados.User,
+	includeAdminAndInvited bool) (err error) {
 
 	id := conn.cluster.Login.LoginCluster
 	logger := ctxlog.FromContext(ctx)
@@ -695,6 +700,11 @@ func (conn *Conn) batchUpdateUsers(ctx context.Context,
 				}
 			}
 		}
+		if !includeAdminAndInvited {
+			// make sure we don't send these fields.
+			delete(updates, "is_admin")
+			delete(updates, "is_invited")
+		}
 		batchOpts.Updates[user.UUID] = updates
 	}
 	if len(batchOpts.Updates) > 0 {
@@ -707,13 +717,47 @@ func (conn *Conn) batchUpdateUsers(ctx context.Context,
 	return nil
 }
 
+func (conn *Conn) includeAdminAndInvitedInBatchUpdate(ctx context.Context, be backend, updateUserUUID string) (bool, error) {
+	// API versions prior to 20231117 would only include the
+	// is_invited and is_admin fields if the current user is an
+	// admin, or is requesting their own user record.  If those
+	// fields aren't actually valid then we don't want to
+	// send them in the batch update.
+	dd, err := be.DiscoveryDocument(ctx)
+	if err != nil {
+		// couldn't get discovery document
+		return false, err
+	}
+	if dd.Revision >= "20231117" {
+		// newer version, fields are valid.
+		return true, nil
+	}
+	selfuser, err := be.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		// couldn't get our user record
+		return false, err
+	}
+	if selfuser.IsAdmin || selfuser.UUID == updateUserUUID {
+		// we are an admin, or the current user is the same as
+		// the user that we are updating.
+		return true, nil
+	}
+	// Better safe than sorry.
+	return false, nil
+}
+
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
 	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.BypassFederation {
-		resp, err := conn.chooseBackend(id).UserList(ctx, options)
+		be := conn.chooseBackend(id)
+		resp, err := be.UserList(ctx, options)
 		if err != nil {
 			return resp, err
 		}
-		err = conn.batchUpdateUsers(ctx, options, resp.Items)
+		includeAdminAndInvited, err := conn.includeAdminAndInvitedInBatchUpdate(ctx, be, "")
+		if err != nil {
+			return arvados.UserList{}, err
+		}
+		err = conn.batchUpdateUsers(ctx, options, resp.Items, includeAdminAndInvited)
 		if err != nil {
 			return arvados.UserList{}, err
 		}
@@ -730,13 +774,18 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	if options.BypassFederation {
 		return conn.local.UserUpdate(ctx, options)
 	}
-	resp, err := conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	be := conn.chooseBackend(options.UUID)
+	resp, err := be.UserUpdate(ctx, options)
 	if err != nil {
 		return resp, err
 	}
 	if !strings.HasPrefix(options.UUID, conn.cluster.ClusterID) {
+		includeAdminAndInvited, err := conn.includeAdminAndInvitedInBatchUpdate(ctx, be, options.UUID)
+		if err != nil {
+			return arvados.User{}, err
+		}
 		// Copy the updated user record to the local cluster
-		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp}, includeAdminAndInvited)
 		if err != nil {
 			return arvados.User{}, err
 		}
@@ -783,7 +832,8 @@ func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (
 }
 
 func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	resp, err := conn.chooseBackend(options.UUID).UserGet(ctx, options)
+	be := conn.chooseBackend(options.UUID)
+	resp, err := be.UserGet(ctx, options)
 	if err != nil {
 		return resp, err
 	}
@@ -791,7 +841,11 @@ func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arva
 		return arvados.User{}, httpErrorf(http.StatusBadGateway, "Had requested %v but response was for %v", options.UUID, resp.UUID)
 	}
 	if options.UUID[:5] != conn.cluster.ClusterID {
-		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{Select: options.Select}, []arvados.User{resp})
+		includeAdminAndInvited, err := conn.includeAdminAndInvitedInBatchUpdate(ctx, be, options.UUID)
+		if err != nil {
+			return arvados.User{}, err
+		}
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{Select: options.Select}, []arvados.User{resp}, includeAdminAndInvited)
 		if err != nil {
 			return arvados.User{}, err
 		}

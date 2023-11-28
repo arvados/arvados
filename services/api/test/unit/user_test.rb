@@ -153,12 +153,12 @@ class UserTest < ActiveSupport::TestCase
     assert_equal("active/foo", repositories(:foo).name)
   end
 
-  [[false, 'foo@example.com', true, nil],
-   [false, 'bar@example.com', nil, true],
-   [true, 'foo@example.com', true, nil],
+  [[false, 'foo@example.com', true, false],
+   [false, 'bar@example.com', false, true],
+   [true, 'foo@example.com', true, false],
    [true, 'bar@example.com', true, true],
-   [false, '', nil, nil],
-   [true, '', true, nil]
+   [false, '', false, false],
+   [true, '', true, false]
   ].each do |auto_admin_first_user_config, auto_admin_user_config, foo_should_be_admin, bar_should_be_admin|
     # In each case, 'foo' is created first, then 'bar', then 'bar2', then 'baz'.
     test "auto admin with auto_admin_first=#{auto_admin_first_user_config} auto_admin=#{auto_admin_user_config}" do

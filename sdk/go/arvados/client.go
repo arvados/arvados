@@ -630,6 +630,7 @@ type DiscoveryDocument struct {
 	GitURL                       string              `json:"gitUrl"`
 	Schemas                      map[string]Schema   `json:"schemas"`
 	Resources                    map[string]Resource `json:"resources"`
+	Revision                     string              `json:"revision"`
 }
 
 type Resource struct {

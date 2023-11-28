@@ -25,6 +25,7 @@ type APIEndpoint struct {
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
 	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
+	EndpointDiscoveryDocument             = APIEndpoint{"GET", "discovery/v1/apis/arvados/v1/rest", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
 	EndpointAuthorizedKeyCreate           = APIEndpoint{"POST", "arvados/v1/authorized_keys", "authorized_key"}
@@ -347,4 +348,5 @@ type API interface {
 	APIClientAuthorizationDelete(ctx context.Context, options DeleteOptions) (APIClientAuthorization, error)
 	APIClientAuthorizationUpdate(ctx context.Context, options UpdateOptions) (APIClientAuthorization, error)
 	APIClientAuthorizationGet(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
+	DiscoveryDocument(ctx context.Context) (DiscoveryDocument, error)
 }

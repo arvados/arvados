@@ -1063,23 +1063,28 @@ The Arvados team.
                 'is_active' => true,
                 'is_admin' => true,
                 'prefs' => {'foo' => 'bar'},
+                'is_invited' => true
               },
               newuuid => {
                 'first_name' => 'noot',
                 'email' => 'root@remot.example.com',
                 'username' => '',
+                'is_invited' => true
               },
               unchanginguuid => {
                 'email' => 'root@unchanging.example.com',
                 'prefs' => {'foo' => {'bar' => 'baz'}},
+                'is_invited' => true
               },
               conflictinguuid1 => {
                 'email' => 'root@conflictingname1.example.com',
-                'username' => 'active'
+                'username' => 'active',
+                'is_invited' => true
               },
               conflictinguuid2 => {
                 'email' => 'root@conflictingname2.example.com',
-                'username' => 'federatedactive'
+                'username' => 'federatedactive',
+                'is_invited' => true
               },
             }})
     assert_response(:success)
@@ -1096,7 +1101,7 @@ The Arvados team.
     assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
   end
 
-  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
+  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "is_admin", "is_invited", "email", "first_name",
                          "last_name", "username", "can_write", "can_manage"].sort
 
   def check_non_admin_index

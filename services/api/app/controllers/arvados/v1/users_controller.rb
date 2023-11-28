@@ -16,42 +16,13 @@ class Arvados::V1::UsersController < ApplicationController
   # records from LoginCluster.
   def batch_update
     @objects = []
-    params[:updates].andand.each do |uuid, attrs|
-      begin
-        u = User.find_or_create_by(uuid: uuid)
-      rescue ActiveRecord::RecordNotUnique
-        retry
-      end
-      needupdate = {}
-      nullify_attrs(attrs).each do |k,v|
-        if !v.nil? && u.send(k) != v
-          needupdate[k] = v
-        end
-      end
-      if needupdate.length > 0
-        begin
-          u.update_attributes!(needupdate)
-        rescue ActiveRecord::RecordInvalid
-          loginCluster = Rails.configuration.Login.LoginCluster
-          if u.uuid[0..4] == loginCluster && !needupdate[:username].nil?
-            local_user = User.find_by_username(needupdate[:username])
-            # The username of this record conflicts with an existing,
-            # different user record.  This can happen because the
-            # username changed upstream on the login cluster, or
-            # because we're federated with another cluster with a user
-            # by the same username.  The login cluster is the source
-            # of truth, so change the username on the conflicting
-            # record and retry the update operation.
-            if local_user.uuid != u.uuid
-              new_username = "#{needupdate[:username]}#{rand(99999999)}"
-              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
-              local_user.update_attributes!({username: new_username})
-              retry
-            end
-          end
-          raise # Not the issue we're handling above
-        end
-      end
+    # update_remote_user takes a row lock on the User record, so sort
+    # the keys so we always lock them in the same order.
+    sorted = params[:updates].keys.sort
+    sorted.each do |uuid|
+      attrs = params[:updates][uuid]
+      attrs[:uuid] = uuid
+      u = User.update_remote_user nullify_attrs(attrs)
       @objects << u
     end
     @offset = 0
@@ -279,7 +250,7 @@ class Arvados::V1::UsersController < ApplicationController
     return super if @read_users.any?(&:is_admin)
     if params[:uuid] != current_user.andand.uuid
       # Non-admin index/show returns very basic information about readable users.
-      safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name", "username", "can_write", "can_manage", "kind"]
+      safe_attrs = ["uuid", "is_active", "is_admin", "is_invited", "email", "first_name", "last_name", "username", "can_write", "can_manage", "kind"]
       if @select
         @select = @select & safe_attrs
       else
