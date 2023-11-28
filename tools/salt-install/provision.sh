@@ -279,7 +279,7 @@ VERSION="latest"
 # An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
 # ARVADOS_TAG="2.2.0"
-BRANCH="20690-remove-wb1-from-installer"
+# BRANCH="main"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
@@ -752,6 +752,7 @@ else
         for SVC in grafana prometheus; do
           grep -q "nginx_${SVC}_configuration" ${PILLARS_TOP} || echo "    - nginx_${SVC}_configuration" >> ${PILLARS_TOP}
         done
+        grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
           for SVC in grafana prometheus; do
@@ -844,6 +845,7 @@ else
         grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
         grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
         grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
+        grep -q "nginx_snippets" ${PILLARS_TOP}           || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
         grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
 
@@ -874,17 +876,7 @@ else
       ;;
       "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         ### States ###
-        if [ "${R}" = "workbench" ]; then
-          grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
-          NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-          if grep -q "    - nginx$" ${STATES_TOP}; then
-            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
-          else
-            echo "    - nginx.passenger" >> ${STATES_TOP}
-          fi
-        else
-          grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
-        fi
+        grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
@@ -906,16 +898,14 @@ else
         fi
 
         # webshell role is just a nginx vhost, so it has no state
-        if [ "${R}" != "webshell" ]; then
+        # workbench role is deprecated since 2.7.0
+        if [[ "${R}" != "webshell" && "${R}" != "workbench" ]]; then
           grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
         fi
 
         ### Pillars ###
-        if [ "${R}" = "workbench" ]; then
-          grep -q "logrotate_wb1" ${PILLARS_TOP} || echo "    - logrotate_wb1" >> ${PILLARS_TOP}
-        fi
-        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
         grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
+        grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         # Special case for keepweb
         if [ ${R} = "keepweb" ]; then
           grep -q "nginx_download_configuration" ${PILLARS_TOP} || echo "    - nginx_download_configuration" >> ${PILLARS_TOP}
