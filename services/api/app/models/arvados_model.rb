@@ -473,7 +473,7 @@ class ArvadosModel < ApplicationRecord
   def save_with_unique_name!
     uuid_was = uuid
     name_was = name
-    max_retries = 2
+    max_retries = 3
     transaction do
       conn = ActiveRecord::Base.connection
       conn.exec_query 'SAVEPOINT save_with_unique_name'
@@ -503,16 +503,6 @@ class ArvadosModel < ApplicationRecord
 
         conn.exec_query 'ROLLBACK TO SAVEPOINT save_with_unique_name'
 
-        new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
-        if new_name == name
-          # If the database is fast enough to do two attempts in the
-          # same millisecond, we need to wait to ensure we try a
-          # different timestamp on each attempt.
-          sleep 0.002
-          new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
-        end
-
-        self[:name] = new_name
         if uuid_was.nil? && !uuid.nil?
           self[:uuid] = nil
           if self.is_a? Collection
@@ -521,6 +511,19 @@ class ArvadosModel < ApplicationRecord
           end
         end
 
+        # make sure we have a uuid
+        self.assign_uuid
+
+        # new_name used to have a timestamp added to it, but it turns
+        # out that timestamps with 1ms precision and 2 retries wasn't
+        # enough to avoid collisions (as well as being inherently
+        # limited to 1000 collection creations per second).  So to
+        # scale better, append the final part of the uuid.
+        #
+        # The name field has a limit of 256 characters, so also
+        # truncate if necessary to avoid throwing a "field too big"
+        # exception.
+        self[:name] = "#{name_was[0..236]} (#{self.uuid[-15..-1]]})"
         retry
       end
     end
