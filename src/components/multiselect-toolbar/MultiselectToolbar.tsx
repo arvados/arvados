@@ -22,6 +22,7 @@ import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.act
 import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
 import { resourceIsFrozen } from "common/frozen-resources";
+import { ProjectResource } from "models/project";
 
 type CssRules = "root" | "button";
 
@@ -60,7 +61,7 @@ export const MultiselectToolbar = connect(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, selectedUuid: singleSelectedUuid, iconProps } = props;
         const singleProjectKind = singleSelectedUuid ? resourceSubKind(singleSelectedUuid, iconProps.resources) : ''
-        const currentResourceKinds = singleProjectKind ? singleProjectKind :Array.from(selectedToKindSet(checkedList));
+        const currentResourceKinds = singleProjectKind ? singleProjectKind : Array.from(selectedToKindSet(checkedList));
 
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -68,7 +69,7 @@ export const MultiselectToolbar = connect(
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
-                : selectActionsByKind([currentResourceKinds] as string[], multiselectActionsFilters)
+                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
                 .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
 
         return (
@@ -149,9 +150,10 @@ const resourceSubKind = (uuid: string, resources: ResourcesState) => {
     switch (resource.kind) {
         case ResourceKind.PROJECT:
             if(resourceIsFrozen(resource, resources)) return [msResourceKind.PROJECT_FROZEN]
+            if((resource as ProjectResource).canWrite === false) return [msResourceKind.PROJECT_READONLY]
             return [msResourceKind.PROJECT]
         default:
-            return resource.kind
+            return [resource.kind]
     }
 }; 
 
