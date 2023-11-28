@@ -136,12 +136,21 @@ class Mount(object):
 
         try:
             nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
-            if nofile_limit[0] < 10240:
-                resource.setrlimit(resource.RLIMIT_NOFILE, (min(10240, nofile_limit[1]), nofile_limit[1]))
+
+            minlimit = 10240
+            if self.args.file_cache:
+                # Adjust the file handle limit so it can meet
+                # the desired cache size. Multiply by 8 because the
+                # number of 64 MiB cache slots that keepclient
+                # allocates is RLIMIT_NOFILE / 8
+                minlimit = (self.args.file_cache/(64*1024*1024)) * 8
+
+            if nofile_limit[0] < minlimit:
+                resource.setrlimit(resource.RLIMIT_NOFILE, (min(minlimit, nofile_limit[1]), nofile_limit[1]))
         except Exception as e:
             self.logger.warning("arv-mount: unable to adjust file handle limit: %s", e)
 
-        self.logger.debug("arv-mount: file handle limit is %s", resource.getrlimit(resource.RLIMIT_NOFILE))
+        self.logger.info("arv-mount: RLIMIT_NOFILE is %s", resource.getrlimit(resource.RLIMIT_NOFILE))
 
         try:
             self._setup_logging()
