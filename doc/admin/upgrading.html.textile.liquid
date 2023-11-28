@@ -32,6 +32,10 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.0":#v2_7_0
 
+h3. Remove Workbench1 packages after upgrading the salt installer
+
+If you have an Arvados cluster deployed with a previous version of the installer and you're planning on upgrading the installer, please take into consideration that the already installed workbench1 package will need to be uninstalled manually from the workbench instance.
+
 h3. Remove Workbench1 packages and configuration
 
 The Workbench1 application has been removed from the Arvados distribution. We recommend the following follow-up steps.
