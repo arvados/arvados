@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -44,10 +45,13 @@ type Conn struct {
 	SendHeader         http.Header
 	RedactHostInErrors bool
 
-	clusterID     string
-	httpClient    http.Client
-	baseURL       url.URL
-	tokenProvider TokenProvider
+	clusterID                string
+	httpClient               http.Client
+	baseURL                  url.URL
+	tokenProvider            TokenProvider
+	discoveryDocument        *arvados.DiscoveryDocument
+	discoveryDocumentMtx     sync.Mutex
+	discoveryDocumentExpires time.Time
 }
 
 func NewConn(clusterID string, url *url.URL, insecure bool, tp TokenProvider) *Conn {
@@ -146,10 +150,13 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 	}
 
 	if len(tokens) > 1 {
+		if params == nil {
+			params = make(map[string]interface{})
+		}
 		params["reader_tokens"] = tokens[1:]
 	}
 	path := ep.Path
-	if strings.Contains(ep.Path, "/{uuid}") {
+	if strings.Contains(ep.Path, "/{uuid}") && params != nil {
 		uuid, _ := params["uuid"].(string)
 		path = strings.Replace(path, "/{uuid}", "/"+uuid, 1)
 		delete(params, "uuid")
@@ -187,6 +194,22 @@ func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error)
 	var resp arvados.Vocabulary
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
 	return resp, err
+}
+
+func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	conn.discoveryDocumentMtx.Lock()
+	defer conn.discoveryDocumentMtx.Unlock()
+	if conn.discoveryDocument != nil && time.Now().Before(conn.discoveryDocumentExpires) {
+		return *conn.discoveryDocument, nil
+	}
+	var dd arvados.DiscoveryDocument
+	err := conn.requestAndDecode(ctx, &dd, arvados.EndpointDiscoveryDocument, nil, nil)
+	if err != nil {
+		return dd, err
+	}
+	conn.discoveryDocument = &dd
+	conn.discoveryDocumentExpires = time.Now().Add(time.Hour)
+	return *conn.discoveryDocument, nil
 }
 
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
