@@ -68,7 +68,7 @@ export const MultiselectToolbar = connect(
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
+                : selectActionsByKind([currentResourceKinds] as string[], multiselectActionsFilters)
                 .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
 
         return (
