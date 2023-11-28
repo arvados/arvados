@@ -2,107 +2,39 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from 'views-components/multiselect-toolbar/ms-menu-actions';
+import { MultiSelectMenuActionSet, MultiSelectMenuActionNames, msCommonActionSet } from 'views-components/multiselect-toolbar/ms-menu-actions';
 import { openMoveProjectDialog } from 'store/projects/project-move-actions';
 import { toggleProjectTrashed } from 'store/trash/trash-actions';
-import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
-import { toggleFavorite } from 'store/favorites/favorites-actions';
-import { favoritePanelActions } from 'store/favorite-panel/favorite-panel-action';
 import {
-    AddFavoriteIcon,
-    AdvancedIcon,
-    DetailsIcon,
     FreezeIcon,
-    FolderSharedIcon,
-    Link,
     MoveToIcon,
     NewProjectIcon,
-    OpenIcon,
-    RemoveFavoriteIcon,
     RenameIcon,
-    ShareIcon,
     UnfreezeIcon,
 } from 'components/icon/icon';
 import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
 import { getResource } from 'store/resources/resources';
-import { checkFavorite } from 'store/favorites/favorites-reducer';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
-import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { openWebDavS3InfoDialog } from 'store/collections/collection-info-actions';
-import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 import { openProjectUpdateDialog } from 'store/projects/project-update-actions';
 import { freezeProject, unfreezeProject } from 'store/projects/project-lock-actions';
 
-export const msToggleFavoriteAction = {
-    name: MultiSelectMenuActionNames.ADD_TO_FAVORITES,
-    icon: AddFavoriteIcon,
-    hasAlts: true,
-    altName: 'Remove from Favorites',
-    altIcon: RemoveFavoriteIcon,
-    isForMulti: false,
-    useAlts: (uuid, iconProps) => {
-        return checkFavorite(uuid, iconProps.favorites);
-    },
-    execute: (dispatch, resources) => {
-        dispatch(toggleFavorite(resources[0])).then(() => {
-            dispatch(favoritePanelActions.REQUEST_ITEMS());
-        });
-    },
-};
+const {
+    ADD_TO_FAVORITES,
+    OPEN_IN_NEW_TAB,
+    COPY_TO_CLIPBOARD,
+    VIEW_DETAILS,
+    API_DETAILS,
+    OPEN_W_3RD_PARTY_CLIENT,
+    EDIT_PPROJECT,
+    SHARE,
+    MOVE_TO,
+    ADD_TO_TRASH,
+    FREEZE_PROJECT,
+    NEW_PROJECT,
+} = MultiSelectMenuActionNames;
 
-export const msOpenInNewTabMenuAction = {
-    name: MultiSelectMenuActionNames.OPEN_IN_NEW_TAB,
-    icon: OpenIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch(openInNewTabAction(resources[0]));
-    },
-};
-
-export const msCopyToClipboardMenuAction = {
-    name: MultiSelectMenuActionNames.COPY_TO_CLIPBOARD,
-    icon: Link,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch(copyToClipboardAction(resources));
-    },
-};
-
-export const msViewDetailsAction = {
-    name: MultiSelectMenuActionNames.VIEW_DETAILS,
-    icon: DetailsIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch) => {
-        dispatch(toggleDetailsPanel());
-    },
-};
-
-export const msAdvancedAction = {
-    name: MultiSelectMenuActionNames.API_DETAILS,
-    icon: AdvancedIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch(openAdvancedTabDialog(resources[0].uuid));
-    },
-};
-
-export const msOpenWith3rdPartyClientAction = {
-    name: MultiSelectMenuActionNames.OPEN_W_3RD_PARTY_CLIENT,
-    icon: FolderSharedIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch(openWebDavS3InfoDialog(resources[0].uuid));
-    },
-};
-
-export const msEditProjectAction = {
-    name: MultiSelectMenuActionNames.EDIT_PPROJECT,
+const msEditProjectAction = {
+    name: EDIT_PPROJECT,
     icon: RenameIcon,
     hasAlts: false,
     isForMulti: false,
@@ -111,18 +43,8 @@ export const msEditProjectAction = {
     },
 };
 
-export const msShareAction = {
-    name: MultiSelectMenuActionNames.SHARE,
-    icon: ShareIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch(openSharingDialog(resources[0].uuid));
-    },
-};
-
-export const msMoveToAction = {
-    name: MultiSelectMenuActionNames.MOVE_TO,
+const msMoveToAction = {
+    name: MOVE_TO,
     icon: MoveToIcon,
     hasAlts: false,
     isForMulti: true,
@@ -132,7 +54,7 @@ export const msMoveToAction = {
 };
 
 export const msToggleTrashAction = {
-    name: MultiSelectMenuActionNames.ADD_TO_TRASH,
+    name: ADD_TO_TRASH,
     icon: TrashIcon,
     hasAlts: true,
     altName: 'Restore from Trash',
@@ -148,8 +70,8 @@ export const msToggleTrashAction = {
     },
 };
 
-export const msFreezeProjectAction = {
-    name: MultiSelectMenuActionNames.FREEZE_PROJECT,
+const msFreezeProjectAction = {
+    name: FREEZE_PROJECT,
     icon: FreezeIcon,
     hasAlts: true,
     altName: 'Unfreeze Project',
@@ -167,8 +89,8 @@ export const msFreezeProjectAction = {
     },
 };
 
-export const msNewProjectAction: any = {
-    name: MultiSelectMenuActionNames.NEW_PROJECT,
+const msNewProjectAction: any = {
+    name: NEW_PROJECT,
     icon: NewProjectIcon,
     hasAlts: false,
     isForMulti: false,
@@ -179,14 +101,8 @@ export const msNewProjectAction: any = {
 
 export const msProjectActionSet: MultiSelectMenuActionSet = [
     [
-        msToggleFavoriteAction,
-        msOpenInNewTabMenuAction,
-        msCopyToClipboardMenuAction,
-        msViewDetailsAction,
-        msAdvancedAction,
-        msOpenWith3rdPartyClientAction,
+        ...msCommonActionSet,
         msEditProjectAction,
-        msShareAction,
         msMoveToAction,
         msToggleTrashAction,
         msNewProjectAction,
@@ -194,34 +110,20 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
     ],
 ];
 
-export const msReadOnlyProjectActionSet: MultiSelectMenuActionSet = [
-    [msToggleFavoriteAction, msOpenInNewTabMenuAction, msCopyToClipboardMenuAction, msViewDetailsAction, msAdvancedAction, msOpenWith3rdPartyClientAction],
-];
-
-export const msFilterGroupActionSet: MultiSelectMenuActionSet = [
-    [
-        msToggleFavoriteAction,
-        msOpenInNewTabMenuAction,
-        msCopyToClipboardMenuAction,
-        msViewDetailsAction,
-        msAdvancedAction,
-        msOpenWith3rdPartyClientAction,
-        msEditProjectAction,
-        msShareAction,
-        msMoveToAction,
-        msToggleTrashAction,
-    ],
-];
-
-export const msFrozenActionSet: MultiSelectMenuActionSet = [
-    [
-        msShareAction,
-        msToggleFavoriteAction,
-        msOpenInNewTabMenuAction,
-        msCopyToClipboardMenuAction,
-        msViewDetailsAction,
-        msAdvancedAction,
-        msOpenWith3rdPartyClientAction,
-        msFreezeProjectAction,
-    ],
-];
+export const msProjectActionFilter = new Set<string>([
+    ADD_TO_FAVORITES,
+    ADD_TO_TRASH,
+    API_DETAILS,
+    COPY_TO_CLIPBOARD,
+    EDIT_PPROJECT,
+    FREEZE_PROJECT,
+    MOVE_TO,
+    NEW_PROJECT,
+    OPEN_IN_NEW_TAB,
+    OPEN_W_3RD_PARTY_CLIENT,
+    SHARE,
+    VIEW_DETAILS,
+]);
+export const msReadOnlyProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT]);
+export const msFrozenActionFilter = new Set<string>([ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, SHARE, FREEZE_PROJECT])
+export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_PPROJECT, SHARE, MOVE_TO, ADD_TO_TRASH])

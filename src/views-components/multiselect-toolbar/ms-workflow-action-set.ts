@@ -9,10 +9,12 @@ import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from './ms-menu-actions';
 
+const { OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW } = MultiSelectMenuActionNames;
+
 export const msReadOnlyWorkflowActionSet: MultiSelectMenuActionSet = [
     [
         {
-            name: MultiSelectMenuActionNames.OPEN_IN_NEW_TAB,
+            name: OPEN_IN_NEW_TAB,
             icon: OpenIcon,
             hasAlts: false,
             isForMulti: false,
@@ -21,7 +23,7 @@ export const msReadOnlyWorkflowActionSet: MultiSelectMenuActionSet = [
             },
         },
         {
-            name: MultiSelectMenuActionNames.COPY_TO_CLIPBOARD,
+            name: COPY_TO_CLIPBOARD,
             icon: Link,
 
             hasAlts: false,
@@ -31,7 +33,7 @@ export const msReadOnlyWorkflowActionSet: MultiSelectMenuActionSet = [
             },
         },
         {
-            name: MultiSelectMenuActionNames.VIEW_DETAILS,
+            name: VIEW_DETAILS,
             icon: DetailsIcon,
             hasAlts: false,
             isForMulti: false,
@@ -40,7 +42,7 @@ export const msReadOnlyWorkflowActionSet: MultiSelectMenuActionSet = [
             },
         },
         {
-            name: MultiSelectMenuActionNames.API_DETAILS,
+            name: API_DETAILS,
             icon: AdvancedIcon,
             hasAlts: false,
             isForMulti: false,
@@ -49,7 +51,7 @@ export const msReadOnlyWorkflowActionSet: MultiSelectMenuActionSet = [
             },
         },
         {
-            name: MultiSelectMenuActionNames.RUN_WORKFLOW,
+            name: RUN_WORKFLOW,
             icon: StartIcon,
             hasAlts: false,
             isForMulti: false,
@@ -64,7 +66,7 @@ export const msWorkflowActionSet: MultiSelectMenuActionSet = [
     [
         ...msReadOnlyWorkflowActionSet[0],
         {
-            name: MultiSelectMenuActionNames.DELETE_WORKFLOW,
+            name: DELETE_WORKFLOW,
             icon: TrashIcon,
             hasAlts: false,
             isForMulti: false,
@@ -74,3 +76,5 @@ export const msWorkflowActionSet: MultiSelectMenuActionSet = [
         },
     ],
 ];
+
+export const msWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW]);
