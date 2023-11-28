@@ -23,7 +23,7 @@ export const MultiSelectMenuActionNames: Record<string, string> = {
     API_DETAILS: 'API Details',
     COPY_AND_RERUN_PROCESS: 'Copy and re-run process',
     COPY_TO_CLIPBOARD: 'Copy to clipboard',
-    DELETE_WORKFLOW: 'DELETE_WORKFLOW',
+    DELETE_WORKFLOW: 'Delete Worflow',
     EDIT_PPROJECT: 'Edit project',
     FREEZE_PROJECT: 'Freeze Project',
     MAKE_A_COPY: 'Make a copy',
@@ -32,7 +32,7 @@ export const MultiSelectMenuActionNames: Record<string, string> = {
     OPEN_IN_NEW_TAB: 'Open in new tab',
     OPEN_W_3RD_PARTY_CLIENT: 'Open with 3rd party client',
     REMOVE: 'Remove',
-    RUN_WORKFLOW: 'RUN_WORKFLOW',
+    RUN_WORKFLOW: 'Run Workflow',
     SHARE: 'Share',
     VIEW_DETAILS: 'View details',
 };

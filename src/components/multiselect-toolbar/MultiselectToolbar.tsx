@@ -145,7 +145,7 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceSubKind = (uuid: string, resources: ResourcesState) => {
+const resourceSubKind = (uuid: string, resources: ResourcesState): (msResourceKind | ResourceKind)[] => {
     const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
     switch (resource.kind) {
         case ResourceKind.PROJECT:
@@ -153,6 +153,9 @@ const resourceSubKind = (uuid: string, resources: ResourcesState) => {
             if((resource as ProjectResource).canWrite === false) return [msResourceKind.PROJECT_READONLY]
             if((resource as ProjectResource).groupClass === "filter") return [msResourceKind.PROJECT_FILTER]
             return [msResourceKind.PROJECT]
+        case ResourceKind.WORKFLOW:
+            if((resource as ProjectResource).canWrite === false) return [msResourceKind.WORKFLOW_READONLY]
+            return [msResourceKind.WORKFLOW]
         default:
             return [resource.kind]
     }

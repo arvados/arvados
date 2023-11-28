@@ -6,7 +6,7 @@ import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from 'views-comp
 import { msCollectionActionSet } from 'views-components/multiselect-toolbar/ms-collection-action-set';
 import { msProjectActionSet, msProjectActionFilter, msReadOnlyProjectActionFilter, msFilterGroupActionFilter, msFrozenActionFilter } from 'views-components/multiselect-toolbar/ms-project-action-set';
 import { msProcessActionSet } from 'views-components/multiselect-toolbar/ms-process-action-set';
-import { msWorkflowActionSet, msWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
+import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
@@ -20,8 +20,6 @@ const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new
 //use allActionNames or filter manually below
 
 const processResourceMSActionsFilter = new Set([MOVE_TO, REMOVE]);
-
-
 
 export enum msResourceKind {
     API_CLIENT_AUTHORIZATION = "arvados#apiClientAuthorization",
@@ -42,10 +40,11 @@ export enum msResourceKind {
     USER = "arvados#user",
     VIRTUAL_MACHINE = "arvados#virtualMachine",
     WORKFLOW = "arvados#workflow",
+    WORKFLOW_READONLY = "arvados#workflow_readonly",
     NONE = "arvados#none"
 }
 
-const { COLLECTION, PROCESS, PROJECT, PROJECT_FROZEN, PROJECT_READONLY,PROJECT_FILTER, WORKFLOW } = msResourceKind;
+const { COLLECTION, PROCESS, PROJECT, PROJECT_FROZEN, PROJECT_READONLY, PROJECT_FILTER, WORKFLOW, WORKFLOW_READONLY } = msResourceKind;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
@@ -54,6 +53,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [PROJECT_FROZEN]: [msProjectActionSet, msFrozenActionFilter],
     [PROJECT_READONLY]: [msProjectActionSet, msReadOnlyProjectActionFilter],
     [PROJECT_FILTER]: [msProjectActionSet, msFilterGroupActionFilter],
-    [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter]
+    [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
+    [WORKFLOW_READONLY]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter]
 };
 
