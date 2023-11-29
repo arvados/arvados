@@ -431,8 +431,10 @@ test_package_presence() {
       declare -A dd
       dd[debian10]=buster
       dd[debian11]=bullseye
+      dd[debian12]=bookworm
       dd[ubuntu1804]=bionic
       dd[ubuntu2004]=focal
+      dd[ubuntu2204]=jammy
       D=${dd[$TARGET]}
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
