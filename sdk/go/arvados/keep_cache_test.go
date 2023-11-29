@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -169,4 +170,63 @@ func (s *keepCacheSuite) TestConcurrentReaders(c *check.C) {
 		}()
 	}
 	wg.Wait()
+}
+
+const benchReadSize = 1000
+
+// BenchmarkOpenClose and BenchmarkKeepOpen can be used to measure the
+// potential performance improvement of caching filehandles rather
+// than opening/closing the cache file for each read.
+//
+// Results from a development machine indicate a ~3x throughput
+// improvement: ~636 MB/s when opening/closing the file for each
+// 1000-byte read vs. ~2 GB/s when opening the file once and doing
+// concurrent reads using the same file descriptor.
+func (s *keepCacheSuite) BenchmarkOpenClose(c *check.C) {
+	fnm := c.MkDir() + "/testfile"
+	os.WriteFile(fnm, make([]byte, 64000000), 0700)
+	var wg sync.WaitGroup
+	for i := 0; i < c.N; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f, err := os.OpenFile(fnm, os.O_CREATE|os.O_RDWR, 0700)
+			if err != nil {
+				c.Fail()
+				return
+			}
+			_, err = f.ReadAt(make([]byte, benchReadSize), (int64(i)*1000000)%63123123)
+			if err != nil {
+				c.Fail()
+				return
+			}
+			f.Close()
+		}()
+	}
+	wg.Wait()
+}
+
+func (s *keepCacheSuite) BenchmarkKeepOpen(c *check.C) {
+	fnm := c.MkDir() + "/testfile"
+	os.WriteFile(fnm, make([]byte, 64000000), 0700)
+	f, err := os.OpenFile(fnm, os.O_CREATE|os.O_RDWR, 0700)
+	if err != nil {
+		c.Fail()
+		return
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < c.N; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err = f.ReadAt(make([]byte, benchReadSize), (int64(i)*1000000)%63123123)
+			if err != nil {
+				c.Fail()
+				return
+			}
+		}()
+	}
+	wg.Wait()
+	f.Close()
 }
