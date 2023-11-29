@@ -409,7 +409,7 @@ EOS
         ensure_unique_name: true
       }
       assert_response :success
-      assert_match /^owned_by_active \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+      assert_match /^owned_by_active \(#{json_response['uuid'][-15..-1]}\)$/, json_response['name']
     end
   end
 
@@ -1271,7 +1271,7 @@ EOS
     assert_equal false, json_response['is_trashed']
     assert_nil json_response['trash_at']
     assert_nil json_response['delete_at']
-    assert_match /^same name for trashed and persisted collections \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+    assert_match /^same name for trashed and persisted collections \(#{json_response['uuid'][-15..-1]}\)$/, json_response['name']
   end
 
   test 'cannot show collection in trashed subproject' do

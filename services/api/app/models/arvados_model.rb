@@ -24,6 +24,7 @@ class ArvadosModel < ApplicationRecord
   before_destroy :ensure_owner_uuid_is_permitted
   before_destroy :ensure_permission_to_destroy
   before_create :update_modified_by_fields
+  before_create :add_uuid_to_name, :if => Proc.new { @_add_uuid_to_name }
   before_update :maybe_update_modified_by_fields
   after_create :log_create
   after_update :log_update
@@ -470,8 +471,6 @@ class ArvadosModel < ApplicationRecord
   end
 
   def save_with_unique_name!
-    uuid_was = uuid
-    name_was = name
     max_retries = 2
     transaction do
       conn = ActiveRecord::Base.connection
@@ -502,24 +501,20 @@ class ArvadosModel < ApplicationRecord
 
         conn.exec_query 'ROLLBACK TO SAVEPOINT save_with_unique_name'
 
-        new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
-        if new_name == name
-          # If the database is fast enough to do two attempts in the
-          # same millisecond, we need to wait to ensure we try a
-          # different timestamp on each attempt.
-          sleep 0.002
-          new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
-        end
-
-        self[:name] = new_name
-        if uuid_was.nil? && !uuid.nil?
+        if uuid_was.nil?
+          # new record, the uuid caused a name collision (very
+          # unlikely but possible), so generate new uuid
           self[:uuid] = nil
           if self.is_a? Collection
-            # Reset so that is assigned to the new UUID
+            # Also needs to be reset
             self[:current_version_uuid] = nil
           end
+          # need to adjust the name after the uuid has been generated
+          add_uuid_to_make_unique_name
+        else
+          # existing record, just update the name directly.
+          add_uuid_to_name
         end
-
         retry
       end
     end
@@ -578,6 +573,26 @@ class ArvadosModel < ApplicationRecord
     end
     query.where('(' + ft[:cond_out].join(') AND (') + ')',
                           *ft[:param_out])
+  end
+
+  @_add_uuid_to_name = false
+  def add_uuid_to_make_unique_name
+    @_add_uuid_to_name = true
+  end
+
+  def add_uuid_to_name
+    # Incorporate the random part of the UUID into the name.  This
+    # lets us prevent name collision but the part we add to the name
+    # is still somewhat meaningful (instead of generating a second
+    # random meaningless string).
+    #
+    # Because ArvadosModel is an abstract class and assign_uuid is
+    # part of HasUuid (which is included by the other concrete
+    # classes) the assign_uuid hook gets added (and run) after this
+    # one.  So we need to call assign_uuid here to make sure we have a
+    # uuid.
+    assign_uuid
+    self.name = "#{self.name[0..236]} (#{self.uuid[-15..-1]})"
   end
 
   protected
