@@ -1131,7 +1131,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal ContainerRequest::Final, cr.state
     output_coll = Collection.find_by_uuid(cr.output_uuid)
     # Make sure the resulting output collection name include the original name
-    # plus the date
+    # plus the last 15 characters of uuid
     assert_not_equal output_name, output_coll.name,
                      "more than one collection with the same owner and name"
     assert output_coll.name.include?(output_name),
