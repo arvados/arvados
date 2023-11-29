@@ -7,11 +7,14 @@ This module provides `ThreadSafeApiCache`, a thread-safe, API-compatible
 Arvados API client.
 """
 
-from __future__ import absolute_import
-
-from builtins import object
 import sys
 import threading
+
+from typing import (
+    Any,
+    Mapping,
+    Optional,
+)
 
 from . import config
 from . import keep
@@ -30,27 +33,31 @@ class ThreadSafeApiCache(object):
 
     Arguments:
 
-    apiconfig: Mapping[str, str] | None
-    : A mapping with entries for `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`,
-      and optionally `ARVADOS_API_HOST_INSECURE`. If not provided, uses
+    * apiconfig: Mapping[str, str] | None --- A mapping with entries for
+      `ARVADOS_API_HOST`, `ARVADOS_API_TOKEN`, and optionally
+      `ARVADOS_API_HOST_INSECURE`. If not provided, uses
       `arvados.config.settings` to get these parameters from user
       configuration.  You can pass an empty mapping to build the client
       solely from `api_params`.
 
-    keep_params: Mapping[str, Any]
-    : Keyword arguments used to construct an associated
-      `arvados.keep.KeepClient`.
+    * keep_params: Mapping[str, Any] --- Keyword arguments used to construct
+      an associated `arvados.keep.KeepClient`.
 
-    api_params: Mapping[str, Any]
-    : Keyword arguments used to construct each thread's API client. These
-      have the same meaning as in the `arvados.api.api` function.
+    * api_params: Mapping[str, Any] --- Keyword arguments used to construct
+      each thread's API client. These have the same meaning as in the
+      `arvados.api.api` function.
 
-    version: str | None
-    : A string naming the version of the Arvados API to use. If not specified,
-      the code will log a warning and fall back to 'v1'.
+    * version: str | None --- A string naming the version of the Arvados API
+      to use. If not specified, the code will log a warning and fall back to
+      `'v1'`.
     """
-
-    def __init__(self, apiconfig=None, keep_params={}, api_params={}, version=None):
+    def __init__(
+            self,
+            apiconfig: Optional[Mapping[str, str]]=None,
+            keep_params: Optional[Mapping[str, Any]]={},
+            api_params: Optional[Mapping[str, Any]]={},
+            version: Optional[str]=None,
+    ) -> None:
         if apiconfig or apiconfig is None:
             self._api_kwargs = api.api_kwargs_from_config(version, apiconfig, **api_params)
         else:
@@ -60,7 +67,7 @@ class ThreadSafeApiCache(object):
         self.local = threading.local()
         self.keep = keep.KeepClient(api_client=self, **keep_params)
 
-    def localapi(self):
+    def localapi(self) -> 'googleapiclient.discovery.Resource':
         try:
             client = self.local.api
         except AttributeError:
@@ -69,6 +76,6 @@ class ThreadSafeApiCache(object):
             self.local.api = client
         return client
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         # Proxy nonexistent attributes to the thread-local API client.
         return getattr(self.localapi(), name)
