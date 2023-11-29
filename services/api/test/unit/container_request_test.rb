@@ -1136,8 +1136,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
                      "more than one collection with the same owner and name"
     assert output_coll.name.include?(output_name),
            "New name should include original name"
-    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/, output_coll.name,
-                 "New name should include ISO8601 date"
+    assert_match /#{output_coll.uuid[-15..-1]}/, output_coll.name,
+                 "New name should include last 15 characters of uuid"
   end
 
   [[0, :check_output_ttl_0],
