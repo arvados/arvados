@@ -1,32 +1,30 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+"""Arvados Python SDK
 
-from __future__ import print_function
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-import bz2
-import fcntl
-import hashlib
-import http.client
-import httplib2
-import json
+This module provides the entire Python SDK for Arvados. The most useful modules
+include:
+
+* arvados.api - After you `import arvados`, you can call `arvados.api.api` as
+  `arvados.api` to construct a client object.
+
+* arvados.collection - The `arvados.collection.Collection` class provides a
+  high-level interface to read and write collections. It coordinates sending
+  data to and from Keep, and synchronizing updates with the collection object.
+
+* arvados.util - Utility functions to use mostly in conjunction with the API
+  client object and the results it returns.
+
+Other submodules provide lower-level functionality.
+"""
+
 import logging as stdliblog
 import os
-import pprint
-import re
-import string
 import sys
-import time
 import types
-import zlib
 
-if sys.version_info >= (3, 0):
-    from collections import UserDict
-else:
-    from UserDict import UserDict
+from collections import UserDict
 
 from .api import api, api_from_config, http_cache
 from .collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
