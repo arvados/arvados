@@ -523,7 +523,7 @@ class ArvadosModel < ApplicationRecord
         # The name field has a limit of 256 characters, so also
         # truncate if necessary to avoid throwing a "field too big"
         # exception.
-        self[:name] = "#{name_was[0..236]} (#{self.uuid[-15..-1]]})"
+        self[:name] = "#{name_was[0..236]} (#{self.uuid[-15..-1]})"
         retry
       end
     end
