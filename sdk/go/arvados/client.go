@@ -238,6 +238,8 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 
 var nopCancelFunc context.CancelFunc = func() {}
 
+var reqErrorRe = regexp.MustCompile(`net/http: invalid header `)
+
 // Do augments (*http.Client)Do(): adds Authorization and X-Request-Id
 // headers, delays in order to comply with rate-limiting restrictions,
 // and retries failed requests when appropriate.
@@ -274,6 +276,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	var lastResp *http.Response
 	var lastRespBody io.ReadCloser
 	var lastErr error
+	var checkRetryCalled int
 
 	rclient := retryablehttp.NewClient()
 	rclient.HTTPClient = c.httpClient()
@@ -287,11 +290,15 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		rclient.RetryMax = 0
 	}
 	rclient.CheckRetry = func(ctx context.Context, resp *http.Response, respErr error) (bool, error) {
+		checkRetryCalled++
 		if c.requestLimiter.Report(resp, respErr) {
 			c.last503.Store(time.Now())
 		}
 		if c.Timeout == 0 {
-			return false, err
+			return false, nil
+		}
+		if respErr != nil && reqErrorRe.MatchString(respErr.Error()) {
+			return false, nil
 		}
 		retrying, err := retryablehttp.DefaultRetryPolicy(ctx, resp, respErr)
 		if retrying {
@@ -322,7 +329,14 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 	resp, err := rclient.Do(rreq)
 	if (errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)) && (lastResp != nil || lastErr != nil) {
-		resp, err = lastResp, lastErr
+		resp = lastResp
+		err = lastErr
+		if checkRetryCalled > 0 && err != nil {
+			// Mimic retryablehttp's "giving up after X
+			// attempts" message, even if we gave up
+			// because of time rather than maxretries.
+			err = fmt.Errorf("%s %s giving up after %d attempt(s): %w", req.Method, req.URL.String(), checkRetryCalled, err)
+		}
 		if resp != nil {
 			resp.Body = lastRespBody
 		}
