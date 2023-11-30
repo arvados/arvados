@@ -4,56 +4,90 @@
 
 import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from 'views-components/multiselect-toolbar/ms-menu-actions';
 import { msCollectionActionSet } from 'views-components/multiselect-toolbar/ms-collection-action-set';
-import { msProjectActionSet, msProjectActionFilter, msReadOnlyProjectActionFilter, msFilterGroupActionFilter, msFrozenActionFilter } from 'views-components/multiselect-toolbar/ms-project-action-set';
+import {
+    msProjectActionSet,
+    msProjectActionFilter,
+    msReadOnlyProjectActionFilter,
+    msFilterGroupActionFilter,
+    msFrozenProjectActionFilter,
+} from 'views-components/multiselect-toolbar/ms-project-action-set';
 import { msProcessActionSet } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
+import { ResourceKind } from 'models/resource';
 
-export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
-const {
-    MOVE_TO,
-    REMOVE,
-} = MultiSelectMenuActionNames;
+const { MOVE_TO, REMOVE } = MultiSelectMenuActionNames;
 
 const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new Set(actionSet[0].map((action) => action.name));
 
-//use allActionNames or filter manually below
-
 const processResourceMSActionsFilter = new Set([MOVE_TO, REMOVE]);
 
-export enum msResourceKind {
-    API_CLIENT_AUTHORIZATION = "arvados#apiClientAuthorization",
-    COLLECTION = "arvados#collection",
-    CONTAINER = "arvados#container",
-    CONTAINER_REQUEST = "arvados#containerRequest",
-    GROUP = "arvados#group",
-    LINK = "arvados#link",
-    LOG = "arvados#log",
-    PROCESS = "arvados#containerRequest",
-    PROJECT = "arvados#group",
-    PROJECT_FROZEN = "arvados#group_frozen",
-    PROJECT_READONLY = "arvados#group_readonly",
-    PROJECT_FILTER = "arvados#group_filter",
-    REPOSITORY = "arvados#repository",
-    SSH_KEY = "arvados#authorizedKeys",
-    KEEP_SERVICE = "arvados#keepService",
-    USER = "arvados#user",
-    VIRTUAL_MACHINE = "arvados#virtualMachine",
-    WORKFLOW = "arvados#workflow",
-    WORKFLOW_READONLY = "arvados#workflow_readonly",
-    NONE = "arvados#none"
+export enum msMenuResourceKind {
+    API_CLIENT_AUTHORIZATION = 'ApiClientAuthorization',
+    ROOT_PROJECT = 'RootProject',
+    PROJECT = 'Project',
+    FILTER_GROUP = 'FilterGroup',
+    READONLY_PROJECT = 'ReadOnlyProject',
+    FROZEN_PROJECT = 'FrozenProject',
+    FROZEN_PROJECT_ADMIN = 'FrozenProjectAdmin',
+    PROJECT_ADMIN = 'ProjectAdmin',
+    FILTER_GROUP_ADMIN = 'FilterGroupAdmin',
+    RESOURCE = 'Resource',
+    FAVORITE = 'Favorite',
+    TRASH = 'Trash',
+    COLLECTION_FILES = 'CollectionFiles',
+    COLLECTION_FILES_MULTIPLE = 'CollectionFilesMultiple',
+    READONLY_COLLECTION_FILES = 'ReadOnlyCollectionFiles',
+    READONLY_COLLECTION_FILES_MULTIPLE = 'ReadOnlyCollectionFilesMultiple',
+    COLLECTION_FILES_NOT_SELECTED = 'CollectionFilesNotSelected',
+    COLLECTION_FILE_ITEM = 'CollectionFileItem',
+    COLLECTION_DIRECTORY_ITEM = 'CollectionDirectoryItem',
+    READONLY_COLLECTION_FILE_ITEM = 'ReadOnlyCollectionFileItem',
+    READONLY_COLLECTION_DIRECTORY_ITEM = 'ReadOnlyCollectionDirectoryItem',
+    COLLECTION = 'Collection',
+    COLLECTION_ADMIN = 'CollectionAdmin',
+    READONLY_COLLECTION = 'ReadOnlyCollection',
+    OLD_VERSION_COLLECTION = 'OldVersionCollection',
+    TRASHED_COLLECTION = 'TrashedCollection',
+    PROCESS = 'Process',
+    RUNNING_PROCESS_ADMIN = 'RunningProcessAdmin',
+    PROCESS_ADMIN = 'ProcessAdmin',
+    RUNNING_PROCESS_RESOURCE = 'RunningProcessResource',
+    PROCESS_RESOURCE = 'ProcessResource',
+    READONLY_PROCESS_RESOURCE = 'ReadOnlyProcessResource',
+    PROCESS_LOGS = 'ProcessLogs',
+    REPOSITORY = 'Repository',
+    SSH_KEY = 'SshKey',
+    VIRTUAL_MACHINE = 'VirtualMachine',
+    KEEP_SERVICE = 'KeepService',
+    USER = 'User',
+    GROUPS = 'Group',
+    GROUP_MEMBER = 'GroupMember',
+    PERMISSION_EDIT = 'PermissionEdit',
+    LINK = 'Link',
+    WORKFLOW = 'Workflow',
+    READONLY_WORKFLOW = 'ReadOnlyWorkflow',
+    SEARCH_RESULTS = 'SearchResults',
 }
 
-const { COLLECTION, PROCESS, PROJECT, PROJECT_FROZEN, PROJECT_READONLY, PROJECT_FILTER, WORKFLOW, WORKFLOW_READONLY } = msResourceKind;
+const { COLLECTION, COLLECTION_ADMIN, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
+
+export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
+    [ResourceKind.COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
+    [COLLECTION_ADMIN]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
+    [ResourceKind.PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
+    [PROCESS_ADMIN]: [msProcessActionSet, processResourceMSActionsFilter],
     [PROJECT]: [msProjectActionSet, msProjectActionFilter],
-    [PROJECT_FROZEN]: [msProjectActionSet, msFrozenActionFilter],
-    [PROJECT_READONLY]: [msProjectActionSet, msReadOnlyProjectActionFilter],
-    [PROJECT_FILTER]: [msProjectActionSet, msFilterGroupActionFilter],
+    [ResourceKind.PROJECT]: [msProjectActionSet, msProjectActionFilter],
+    [PROJECT_ADMIN]: [msProjectActionSet, allActionNames(msProjectActionSet)],
+    [FROZEN_PROJECT]: [msProjectActionSet, msFrozenProjectActionFilter],
+    [FROZEN_PROJECT_ADMIN]: [msProjectActionSet, msFrozenProjectActionFilter], 
+    [READONLY_PROJECT]: [msProjectActionSet, msReadOnlyProjectActionFilter],
+    [FILTER_GROUP]: [msProjectActionSet, msFilterGroupActionFilter],
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
-    [WORKFLOW_READONLY]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter]
+    [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
 };
-

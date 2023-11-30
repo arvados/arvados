@@ -15,7 +15,7 @@ import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction } from "views-components/context-menu/context-menu-action-set";
-import { multiselectActionsFilters, TMultiselectActionsFilters, msResourceKind } from "./ms-toolbar-action-filters";
+import { multiselectActionsFilters, TMultiselectActionsFilters, msMenuResourceKind } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
@@ -23,6 +23,15 @@ import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
 import { resourceIsFrozen } from "common/frozen-resources";
 import { ProjectResource } from "models/project";
+import { getResourceWithEditableStatus } from "store/resources/resources";
+import { GroupResource } from "models/group";
+import { EditableResource } from "models/resource";
+import { User } from "models/user";
+import { GroupClass } from "models/group";
+import { isProcessCancelable } from "store/processes/process";
+import { CollectionResource } from "models/collection";
+import { getProcess } from "store/processes/process";
+import { Process } from "store/processes/process";
 
 type CssRules = "root" | "button";
 
@@ -46,6 +55,7 @@ export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     selectedUuid: string | null
     iconProps: IconProps
+    user: User
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -59,12 +69,10 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, selectedUuid: singleSelectedUuid, iconProps } = props;
-        const singleProjectKind = singleSelectedUuid ? resourceSubKind(singleSelectedUuid, iconProps.resources) : ''
-        const currentResourceKinds = singleProjectKind ? singleProjectKind : Array.from(selectedToKindSet(checkedList));
-
+        const { classes, checkedList, selectedUuid: singleSelectedUuid, iconProps, user } = props;
+        const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
+        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
-
 
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
@@ -145,19 +153,63 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceSubKind = (uuid: string, resources: ResourcesState): (msResourceKind | ResourceKind)[] => {
-    const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
-    switch (resource.kind) {
+const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User, readonly = false): (msMenuResourceKind | ResourceKind) | undefined => {
+    const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
+    const { isAdmin } = user;
+    const kind = extractUuidKind(uuid);
+
+    const isFrozen = resourceIsFrozen(resource, resources);
+    const isEditable = (user.isAdmin || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
+
+    switch (kind) {
         case ResourceKind.PROJECT:
-            if(resourceIsFrozen(resource, resources)) return [msResourceKind.PROJECT_FROZEN]
-            if((resource as ProjectResource).canWrite === false) return [msResourceKind.PROJECT_READONLY]
-            if((resource as ProjectResource).groupClass === "filter") return [msResourceKind.PROJECT_FILTER]
-            return [msResourceKind.PROJECT]
+            if (isFrozen) {
+                return isAdmin ? msMenuResourceKind.FROZEN_PROJECT_ADMIN : msMenuResourceKind.FROZEN_PROJECT;
+            }
+
+            return isAdmin && !readonly
+                ? resource && resource.groupClass !== GroupClass.FILTER
+                    ? msMenuResourceKind.PROJECT_ADMIN
+                    : msMenuResourceKind.FILTER_GROUP_ADMIN
+                : isEditable
+                ? resource && resource.groupClass !== GroupClass.FILTER
+                    ? msMenuResourceKind.PROJECT
+                    : msMenuResourceKind.FILTER_GROUP
+                : msMenuResourceKind.READONLY_PROJECT;
+        case ResourceKind.COLLECTION:
+            const c = getResource<CollectionResource>(uuid)(resources);
+            if (c === undefined) {
+                return;
+            }
+            const isOldVersion = c.uuid !== c.currentVersionUuid;
+            const isTrashed = c.isTrashed;
+            return isOldVersion
+                ? msMenuResourceKind.OLD_VERSION_COLLECTION
+                : isTrashed && isEditable
+                ? msMenuResourceKind.TRASHED_COLLECTION
+                : isAdmin && isEditable
+                ? msMenuResourceKind.COLLECTION_ADMIN
+                : isEditable
+                ? msMenuResourceKind.COLLECTION
+                : msMenuResourceKind.READONLY_COLLECTION;
+        case ResourceKind.PROCESS:
+            return isAdmin && isEditable
+                ? resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
+                    ? msMenuResourceKind.RUNNING_PROCESS_ADMIN
+                    : msMenuResourceKind.PROCESS_ADMIN
+                : readonly
+                ? msMenuResourceKind.READONLY_PROCESS_RESOURCE
+                : resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
+                ? msMenuResourceKind.RUNNING_PROCESS_RESOURCE
+                : msMenuResourceKind.PROCESS_RESOURCE;
+        case ResourceKind.USER:
+            return msMenuResourceKind.ROOT_PROJECT;
+        case ResourceKind.LINK:
+            return msMenuResourceKind.LINK;
         case ResourceKind.WORKFLOW:
-            if((resource as ProjectResource).canWrite === false) return [msResourceKind.WORKFLOW_READONLY]
-            return [msResourceKind.WORKFLOW]
+            return isEditable ? msMenuResourceKind.WORKFLOW : msMenuResourceKind.READONLY_WORKFLOW;
         default:
-            return [resource.kind]
+            return;
     }
 }; 
 
@@ -177,7 +229,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
             });
         }
     });
-
+console.log(currentResourceKinds,allFiltersArray)
     const filteredNameSet = allFiltersArray.map(filterArray => {
         const resultSet = new Set<string>();
         filterArray.forEach(action => resultSet.add(action.name as string || ""));
@@ -218,10 +270,11 @@ export const isExactlyOneSelected = (checkedList: TCheckedList) => {
 
 //--------------------------------------------------//
 
-function mapStateToProps({multiselect, resources, favorites}: RootState) {
+function mapStateToProps({auth, multiselect, resources, favorites}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         selectedUuid: isExactlyOneSelected(multiselect.checkedList),
+        user: auth.user,
         iconProps: {
             resources,
             favorites
