@@ -83,7 +83,7 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={classes.root}
-                    style={{ width: `${actions.length * 2.5}rem` }}
+                    style={{ width: `${(actions.length * 2.5) + 1}rem` }}
                 >
                     {actions.length ? (
                         actions.map((action, i) =>
@@ -229,7 +229,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
             });
         }
     });
-console.log(currentResourceKinds,allFiltersArray)
+
     const filteredNameSet = allFiltersArray.map(filterArray => {
         const resultSet = new Set<string>();
         filterArray.forEach(action => resultSet.add(action.name as string || ""));

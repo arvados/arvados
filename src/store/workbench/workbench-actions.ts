@@ -334,7 +334,7 @@ export const moveProject =
                 } catch (e) {
                     dispatch(
                         snackbarActions.OPEN_SNACKBAR({
-                            message: e.message,
+                            message: !!(project as any).frozenByUuid ? 'Could not move frozen project.' : e.message,
                             hideDuration: 2000,
                             kind: SnackbarKind.ERROR,
                         })
