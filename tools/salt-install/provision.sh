@@ -201,7 +201,6 @@ apply_var_substitutions() {
        s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION:-}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
@@ -457,7 +456,7 @@ test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git
 
 # If we want to try a specific branch of the formula
 if [[ ! -z "${BRANCH:-}" && "x${BRANCH}" != "xmain" ]]; then
-  ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
+  ( cd ${F_DIR}/arvados && git fetch && git checkout --quiet "${BRANCH}" || git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
 elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
@@ -599,7 +598,18 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - postgres" >> ${STATES_TOP}
   echo "    - logrotate" >> ${STATES_TOP}
   echo "    - docker.software" >> ${STATES_TOP}
-  echo "    - arvados" >> ${STATES_TOP}
+  echo "    - arvados.repo" >> ${STATES_TOP}
+  echo "    - arvados.config" >> ${STATES_TOP}
+  echo "    - arvados.ruby" >> ${STATES_TOP}
+  echo "    - arvados.api" >> ${STATES_TOP}
+  echo "    - arvados.controller" >> ${STATES_TOP}
+  echo "    - arvados.keepstore" >> ${STATES_TOP}
+  echo "    - arvados.websocket" >> ${STATES_TOP}
+  echo "    - arvados.keepweb" >> ${STATES_TOP}
+  echo "    - arvados.workbench2" >> ${STATES_TOP}
+  echo "    - arvados.keepproxy" >> ${STATES_TOP}
+  echo "    - arvados.shell" >> ${STATES_TOP}
+  echo "    - arvados.dispatcher" >> ${STATES_TOP}
   echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
   echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
   echo "    - extra.passenger_rvm" >> ${STATES_TOP}
@@ -753,6 +763,7 @@ else
         for SVC in grafana prometheus; do
           grep -q "nginx_${SVC}_configuration" ${PILLARS_TOP} || echo "    - nginx_${SVC}_configuration" >> ${PILLARS_TOP}
         done
+        grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
           for SVC in grafana prometheus; do
@@ -845,6 +856,7 @@ else
         grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
         grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
         grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
+        grep -q "nginx_snippets" ${PILLARS_TOP}           || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
         grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
 
@@ -875,17 +887,7 @@ else
       ;;
       "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         ### States ###
-        if [ "${R}" = "workbench" ]; then
-          grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
-          NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-          if grep -q "    - nginx$" ${STATES_TOP}; then
-            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
-          else
-            echo "    - nginx.passenger" >> ${STATES_TOP}
-          fi
-        else
-          grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
-        fi
+        grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
@@ -907,16 +909,14 @@ else
         fi
 
         # webshell role is just a nginx vhost, so it has no state
-        if [ "${R}" != "webshell" ]; then
+        # workbench role is deprecated since 2.7.0
+        if [[ "${R}" != "webshell" && "${R}" != "workbench" ]]; then
           grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
         fi
 
         ### Pillars ###
-        if [ "${R}" = "workbench" ]; then
-          grep -q "logrotate_wb1" ${PILLARS_TOP} || echo "    - logrotate_wb1" >> ${PILLARS_TOP}
-        fi
-        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
         grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
+        grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         # Special case for keepweb
         if [ ${R} = "keepweb" ]; then
           grep -q "nginx_download_configuration" ${PILLARS_TOP} || echo "    - nginx_download_configuration" >> ${PILLARS_TOP}
