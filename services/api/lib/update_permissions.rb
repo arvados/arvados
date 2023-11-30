@@ -112,26 +112,6 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil,
     if perm_origin_uuid[5..11] == '-tpzed-' && !update_all_users
       # Modifying permission granted to a user, recompute the all permissions for that user
 
-      if true
-      puts "*********** #{perm_origin_uuid}, #{starting_uuid}, #{perm_level}, #{edge_id}"
-
-      ActiveRecord::Base.connection.exec_query(%{
-    select pq.origin_uuid as user_uuid, target_uuid, pq.val, pq.traverse_owned from (
-    #{PERM_QUERY_TEMPLATE % {:base_case => %{
-        select '#{perm_origin_uuid}'::varchar(255), '#{perm_origin_uuid}'::varchar(255), 3, true, true
-},
-:edge_perm => %{
-case (edges.edge_id = '#{edge_id}')
-                               when true then #{perm_level}
-                               else edges.val
-                            end
-}
-} }) as pq
-}).each do |pr|
-        puts pr
-      end
-      end
-
       ActiveRecord::Base.connection.exec_query %{
 with origin_user_perms as (
     select pq.origin_uuid as user_uuid, target_uuid, pq.val, pq.traverse_owned from (

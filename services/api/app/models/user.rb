@@ -511,7 +511,6 @@ SELECT target_uuid, perm_level
       if redirect_to_new_user
         update!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
-      puts "self #{self.uuid} new #{new_user.uuid} owner #{new_user.owner_uuid}"
       skip_check_permissions_against_full_refresh do
         update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM, nil, true
         update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
