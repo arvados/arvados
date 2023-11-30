@@ -281,7 +281,7 @@ terraform-destroy)
   ;;
 
 generate-tokens)
-  for i in BLOB_SIGNING_KEY MANAGEMENT_TOKEN SYSTEM_ROOT_TOKEN ANONYMOUS_USER_TOKEN WORKBENCH_SECRET_KEY DATABASE_PASSWORD; do
+  for i in BLOB_SIGNING_KEY MANAGEMENT_TOKEN SYSTEM_ROOT_TOKEN ANONYMOUS_USER_TOKEN DATABASE_PASSWORD; do
     echo ${i}=$(
       tr -dc A-Za-z0-9 </dev/urandom | head -c 32
       echo ''
