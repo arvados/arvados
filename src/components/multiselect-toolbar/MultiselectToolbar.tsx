@@ -22,7 +22,6 @@ import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.act
 import { ContainerRequestResource } from "models/container-request";
 import { FavoritesState } from "store/favorites/favorites-reducer";
 import { resourceIsFrozen } from "common/frozen-resources";
-import { ProjectResource } from "models/project";
 import { getResourceWithEditableStatus } from "store/resources/resources";
 import { GroupResource } from "models/group";
 import { EditableResource } from "models/resource";
@@ -55,7 +54,7 @@ export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     selectedUuid: string | null
     iconProps: IconProps
-    user: User
+    user: User | null
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -153,7 +152,8 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User, readonly = false): (msMenuResourceKind | ResourceKind) | undefined => {
+const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, readonly = false): (msMenuResourceKind | ResourceKind) | undefined => {
+    if (!user) return;
     const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
     const { isAdmin } = user;
     const kind = extractUuidKind(uuid);
@@ -274,7 +274,7 @@ function mapStateToProps({auth, multiselect, resources, favorites}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         selectedUuid: isExactlyOneSelected(multiselect.checkedList),
-        user: auth.user,
+        user: auth && auth.user ? auth.user : null,
         iconProps: {
             resources,
             favorites
