@@ -155,6 +155,9 @@ export const DataTable = withStyles(styles)(
                 if (items.length) this.initializeCheckedList(items);
                 else setCheckedListOnStore({});
             }
+            if (prevProps.currentRoute !== this.props.currentRoute) {
+                this.initializeCheckedList([])
+            }
         }
 
         componentWillUnmount(): void {
