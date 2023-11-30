@@ -442,8 +442,10 @@ test_package_presence() {
       declare -A dd
       dd[debian10]=buster
       dd[debian11]=bullseye
+      dd[debian12]=bookworm
       dd[ubuntu1804]=bionic
       dd[ubuntu2004]=focal
+      dd[ubuntu2204]=jammy
       D=${dd[$TARGET]}
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
@@ -709,10 +711,17 @@ fpm_build_virtualenv_worker () {
 
   rm -rf dist/*
 
-  # Get the latest setuptools
-  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
+  # Get the latest setuptools.
+  #
+  # Note "pip3 install setuptools" fails on debian12 ("error:
+  # externally-managed-environment") even if that requirement is
+  # already satisfied, so we parse "pip3 list" output instead to check
+  # whether we need to do anything.
+  if [[ "$($pip list | grep -P -o '^setuptools\s+\K[0-9]+')" -ge 66 ]]; then
+    : # OK, already installed
+  elif ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools>=66'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
+    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools>=66'"
     exit 1
   fi
   # filter a useless warning (when building the cwltest package) from the stderr output
