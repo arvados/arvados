@@ -328,9 +328,10 @@ func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
 func authzViaAuthzHeaderOAuth2(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "Bearer "+tok)
+	r.Header.Add("Authorization", "OAuth2 "+tok)
 	return http.StatusUnauthorized
 }
+
 func (s *IntegrationSuite) TestVhostViaAuthzHeaderBearer(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderBearer)
 }
