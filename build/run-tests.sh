@@ -1000,6 +1000,7 @@ test_gofmt() {
     cd "$WORKSPACE" || return 1
     dirs=$(ls -d */ | egrep -v 'vendor|tmp')
     [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
+    go vet -composites=false ./...
 }
 
 test_services/api() {
