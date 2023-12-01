@@ -468,12 +468,15 @@ class PollClient(threading.Thread):
             # to do so raises the same exception."
             pass
 
-    def subscribe(self, f: Filter) -> None:
+    def subscribe(self, f: Filter, last_log_id: Optional[int]=None) -> None:
         """Subscribe to another set of events from the server
 
         Arguments:
 
         * f: arvados.events.Filter | None --- One filter to subscribe to.
+
+        * last_log_id: Optional[int] --- Ignored; this argument exists for
+          API compatibility with `EventClient.subscribe`.
         """
         self.on_event({'status': 200})
         self.filters.append(f)
