@@ -31,6 +31,7 @@ import { isProcessCancelable } from "store/processes/process";
 import { CollectionResource } from "models/collection";
 import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
+import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 
 type CssRules = "root" | "button";
 
@@ -60,7 +61,8 @@ export type MultiselectToolbarProps = {
 
 type IconProps = {
     resources: ResourcesState;
-    favorites: FavoritesState
+    favorites: FavoritesState;
+    publicFavorites: PublicFavoritesState;
 }
 
 export const MultiselectToolbar = connect(
@@ -270,14 +272,15 @@ export const isExactlyOneSelected = (checkedList: TCheckedList) => {
 
 //--------------------------------------------------//
 
-function mapStateToProps({auth, multiselect, resources, favorites}: RootState) {
+function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         selectedUuid: isExactlyOneSelected(multiselect.checkedList),
         user: auth && auth.user ? auth.user : null,
         iconProps: {
             resources,
-            favorites
+            favorites,
+            publicFavorites
         }
     }
 }

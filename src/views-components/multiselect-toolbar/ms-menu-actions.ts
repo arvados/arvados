@@ -18,6 +18,7 @@ import { openWebDavS3InfoDialog } from 'store/collections/collection-info-action
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
+import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
 
 export const MultiSelectMenuActionNames: Record<string, string> = {
     ADD_TO_FAVORITES: 'Add to Favorites',
@@ -47,7 +48,7 @@ export type MultiSelectMenuAction = {
     altName?: string;
     altIcon?: IconType;
     isForMulti: boolean;
-    useAlts?: (uuid: string, iconProps: {resources: ResourcesState, favorites: FavoritesState}) => boolean;
+    useAlts?: (uuid: string, iconProps: {resources: ResourcesState, favorites: FavoritesState, publicFavorites: PublicFavoritesState}) => boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
     adminOnly?: boolean;
 };
@@ -136,13 +137,14 @@ const msShareAction: MultiSelectMenuAction  = {
 const msTogglePublicFavoriteAction: MultiSelectMenuAction = {
     name: ADD_TO_PUBLIC_FAVORITES,
     icon: PublicFavoriteIcon,
-    hasAlts: false,
+    hasAlts: true,
     altName: 'Remove from public favorites',
     altIcon: PublicFavoriteIcon,
     isForMulti: false,
-    useAlts: (uuid: string, iconProps: {resources: ResourcesState, favorites: FavoritesState}) => false,
+    useAlts: (uuid: string, iconProps) => {
+        return iconProps.publicFavorites[uuid] === true
+    },
     execute: (dispatch, resources) => {
-        console.log(resources)
         dispatch<any>(togglePublicFavorite(resources[0])).then(() => {
             dispatch(publicFavoritePanelActions.REQUEST_ITEMS());
         });
