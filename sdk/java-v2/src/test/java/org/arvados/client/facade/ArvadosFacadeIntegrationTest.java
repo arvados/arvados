@@ -223,6 +223,9 @@ public class ArvadosFacadeIntegrationTest extends ArvadosClientIntegrationTest {
                 .fileSplitDirectory(CONFIG.getFileSplitDirectory())
                 .numberOfCopies(CONFIG.getNumberOfCopies())
                 .numberOfRetries(CONFIG.getNumberOfRetries())
+                .connectTimeout(CONFIG.getConnectTimeout())
+                .readTimeout(CONFIG.getReadTimeout())
+                .writeTimeout(CONFIG.getWriteTimeout())
                 .build();
     }
 
