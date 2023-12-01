@@ -633,7 +633,11 @@ func (c *Client) apiURL(path string) string {
 	if scheme == "" {
 		scheme = "https"
 	}
-	return scheme + "://" + c.APIHost + "/" + path
+	// Double-slash in URLs tend to cause subtle hidden problems
+	// (e.g., they can behave differently when a load balancer is
+	// in the picture). Here we ensure exactly one "/" regardless
+	// of whether the given APIHost or path has a superfluous one.
+	return scheme + "://" + strings.TrimSuffix(c.APIHost, "/") + "/" + strings.TrimPrefix(path, "/")
 }
 
 // DiscoveryDocument is the Arvados server's description of itself.
