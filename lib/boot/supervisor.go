@@ -111,7 +111,7 @@ func (super *Supervisor) Start(ctx context.Context) {
 	super.ctx, super.cancel = context.WithCancel(ctx)
 	super.done = make(chan struct{})
 
-	sigch := make(chan os.Signal)
+	sigch := make(chan os.Signal, 1)
 	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
 		defer signal.Stop(sigch)

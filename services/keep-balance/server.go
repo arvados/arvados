@@ -98,9 +98,7 @@ func (srv *Server) runForever(ctx context.Context) error {
 
 	ticker := time.NewTicker(time.Duration(srv.Cluster.Collections.BalancePeriod))
 
-	// The unbuffered channel here means we only hear SIGUSR1 if
-	// it arrives while we're waiting in select{}.
-	sigUSR1 := make(chan os.Signal)
+	sigUSR1 := make(chan os.Signal, 1)
 	signal.Notify(sigUSR1, syscall.SIGUSR1)
 
 	logger.Info("acquiring service lock")
