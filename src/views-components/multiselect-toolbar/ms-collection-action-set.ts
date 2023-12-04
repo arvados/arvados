@@ -11,10 +11,10 @@ import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuActionNames
 import { TrashIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 
-const { MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH, EDIT_COLLECTION } = MultiSelectMenuActionNames;
+const { MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW , ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.MAKE_A_COPY,
+    name: MAKE_A_COPY,
     icon: CopyIcon,
     hasAlts: false,
     isForMulti: true,
@@ -25,7 +25,7 @@ const msCopyCollection: MultiSelectMenuAction = {
 }
 
 const msMoveCollection: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.MOVE_TO,
+    name: MOVE_TO,
     icon: MoveToIcon,
     hasAlts: false,
     isForMulti: true,
@@ -33,7 +33,7 @@ const msMoveCollection: MultiSelectMenuAction = {
 }
 
 const msToggleTrashAction: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.ADD_TO_TRASH,
+    name: ADD_TO_TRASH,
     icon: TrashIcon,
     isForMulti: true,
     hasAlts: false,
@@ -64,4 +64,6 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
     ],
 ];
 
-//edit collection
+export const msReadOnlyCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, OPEN_W_3RD_PARTY_CLIENT]);
+export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_TRASH])
+export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_TRASH])

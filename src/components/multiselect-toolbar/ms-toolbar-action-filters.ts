@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from 'views-components/multiselect-toolbar/ms-menu-actions';
-import { msCollectionActionSet } from 'views-components/multiselect-toolbar/ms-collection-action-set';
+import { msCollectionActionSet, msCommonCollectionActionFilter, msReadOnlyCollectionActionFilter } from 'views-components/multiselect-toolbar/ms-collection-action-set';
 import {
     msProjectActionSet,
-    msProjectActionFilter,
+    msCommonProjectActionFilter,
     msReadOnlyProjectActionFilter,
     msFilterGroupActionFilter,
     msFrozenProjectActionFilter,
@@ -70,19 +70,20 @@ export enum msMenuResourceKind {
     SEARCH_RESULTS = 'SearchResults',
 }
 
-const { COLLECTION, COLLECTION_ADMIN, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
+const { COLLECTION, COLLECTION_ADMIN, READONLY_COLLECTION_FILES, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
-    [COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
-    [ResourceKind.COLLECTION]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
+    [COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
+    [READONLY_COLLECTION_FILES]: [msCollectionActionSet, msReadOnlyCollectionActionFilter],
+    [ResourceKind.COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
     [COLLECTION_ADMIN]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
     [ResourceKind.PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
     [PROCESS_ADMIN]: [msProcessActionSet, processResourceMSActionsFilter],
-    [PROJECT]: [msProjectActionSet, msProjectActionFilter],
-    [ResourceKind.PROJECT]: [msProjectActionSet, msProjectActionFilter],
+    [PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
+    [ResourceKind.PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
     [PROJECT_ADMIN]: [msProjectActionSet, allActionNames(msProjectActionSet)],
     [FROZEN_PROJECT]: [msProjectActionSet, msFrozenProjectActionFilter],
     [FROZEN_PROJECT_ADMIN]: [msProjectActionSet, msFrozenProjectActionFilter], 

@@ -110,7 +110,7 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
     ],
 ];
 
-export const msProjectActionFilter = new Set<string>([
+export const msCommonProjectActionFilter = new Set<string>([
     ADD_TO_FAVORITES,
     ADD_TO_TRASH,
     API_DETAILS,
