@@ -31,6 +31,7 @@ import {
     setUsersBreadcrumbs,
     setMyAccountBreadcrumbs,
     setUserProfileBreadcrumbs,
+    setInstanceTypesBreadcrumbs,
 } from "store/breadcrumbs/breadcrumbs-actions";
 import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
@@ -757,6 +758,10 @@ export const loadRepositories = handleFirstTimeLoad(async (dispatch: Dispatch<an
 
 export const loadSshKeys = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadSshKeysPanel());
+});
+
+export const loadInstanceTypes = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
+    dispatch(setInstanceTypesBreadcrumbs());
 });
 
 export const loadSiteManager = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
