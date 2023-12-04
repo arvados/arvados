@@ -33,7 +33,7 @@ import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 
-type CssRules = "root" | "button";
+type CssRules = "root" | "button" | "iconContainer";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -49,13 +49,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: "2.5rem",
         height: "2.5rem ",
     },
+    iconContainer: {
+        height: '100%'
+    }
 });
 
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
-    selectedUuid: string | null
+    singleSelectedUuid: string | null
     iconProps: IconProps
     user: User | null
+    disabledButtons: Set<string>
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -70,35 +74,37 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, selectedUuid: singleSelectedUuid, iconProps, user } = props;
+        const { classes, checkedList, singleSelectedUuid, iconProps, user , disabledButtons} = props;
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
-
+        
         const actions =
-            currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
-                .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
-
+        currentPathIsTrash && selectedToKindSet(checkedList).size
+        ? [msToggleTrashAction]
+        : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
+        .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
+        
         return (
             <React.Fragment>
                 <Toolbar
                     className={classes.root}
                     style={{ width: `${(actions.length * 2.5) + 1}rem` }}
-                >
+                    >
                     {actions.length ? (
                         actions.map((action, i) =>
-                            action.hasAlts ? (
-                                <Tooltip
-                                    className={classes.button}
-                                    title={currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altName : action.name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
-                                        {currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altIcon && action.altIcon({}) :  action.icon({})}
-                                    </IconButton>
+                        action.hasAlts ? (
+                            <Tooltip
+                            className={classes.button}
+                            title={currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altName : action.name}
+                            key={i}
+                            disableFocusListener
+                            >
+                                    <span className={classes.iconContainer}>
+                                        <IconButton disabled={disabledButtons.has(action.name)} onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
+                                            {currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altIcon && action.altIcon({}) :  action.icon({})}
+                                        </IconButton>
+                                    </span>
                                 </Tooltip>
                             ) : (
                                 <Tooltip
@@ -107,7 +113,9 @@ export const MultiselectToolbar = connect(
                                     key={i}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>{action.icon({})}</IconButton>
+                                    <span className={classes.iconContainer}>
+                                        <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>{action.icon({})}</IconButton>
+                                    </span>
                                 </Tooltip>
                             )
                         )
@@ -275,8 +283,9 @@ export const isExactlyOneSelected = (checkedList: TCheckedList) => {
 function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
-        selectedUuid: isExactlyOneSelected(multiselect.checkedList),
+        singleSelectedUuid: isExactlyOneSelected(multiselect.checkedList),
         user: auth && auth.user ? auth.user : null,
+        disabledButtons: new Set<string>(multiselect.disabledButtons),
         iconProps: {
             resources,
             favorites,

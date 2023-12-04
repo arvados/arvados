@@ -9,15 +9,17 @@ type MultiselectToolbarState = {
     isVisible: boolean;
     checkedList: TCheckedList;
     selectedUuid: string;
+    disabledButtons: string[]
 };
 
 const multiselectToolbarInitialState = {
     isVisible: false,
     checkedList: {},
     selectedUuid: '',
+    disabledButtons: []
 };
 
-const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, SELECT_ONE, DESELECT_ONE, TOGGLE_ONE, SET_SELECTED_UUID } = multiselectActionContants;
+const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, SELECT_ONE, DESELECT_ONE, TOGGLE_ONE, SET_SELECTED_UUID, ADD_DISABLED, REMOVE_DISABLED } = multiselectActionContants;
 
 export const multiselectReducer = (state: MultiselectToolbarState = multiselectToolbarInitialState, action) => {
     switch (action.type) {
@@ -33,6 +35,10 @@ export const multiselectReducer = (state: MultiselectToolbarState = multiselectT
             return { ...state, checkedList: { ...state.checkedList, [action.payload]: !state.checkedList[action.payload] } };
         case SET_SELECTED_UUID:
             return {...state, selectedUuid: action.payload || ''}
+        case ADD_DISABLED:
+            return { ...state, disabledButtons: [...state.disabledButtons, action.payload]}
+        case REMOVE_DISABLED:
+            return { ...state, disabledButtons: state.disabledButtons.filter((button) => button !== action.payload) };
         default:
             return state;
     }

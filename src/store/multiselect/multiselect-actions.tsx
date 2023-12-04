@@ -11,7 +11,9 @@ export const multiselectActionContants = {
     SELECT_ONE: 'SELECT_ONE',
     DESELECT_ONE: "DESELECT_ONE",
     TOGGLE_ONE: 'TOGGLE_ONE',
-    SET_SELECTED_UUID: 'SET_SELECTED_UUID'
+    SET_SELECTED_UUID: 'SET_SELECTED_UUID',
+    ADD_DISABLED: 'ADD_DISABLED',
+    REMOVE_DISABLED: 'REMOVE_DISABLED',
 };
 
 export const toggleMSToolbar = (isVisible: boolean) => {
@@ -51,11 +53,25 @@ export const setSelectedUuid = (uuid: string | null) => {
     };
 };
 
+export const setDisabledButton = (buttonName: string) => {
+    return dispatch => {
+        dispatch({ type: multiselectActionContants.ADD_DISABLED, payload: buttonName });
+    };
+};
+
+export const removeDisabledButton = (buttonName: string) => {
+    return dispatch => {
+        dispatch({ type: multiselectActionContants.REMOVE_DISABLED, payload: buttonName });
+    };
+};
+
 export const multiselectActions = {
     toggleMSToolbar,
     setCheckedListOnStore,
     selectOne,
     deselectOne,
     toggleOne,
-    setSelectedUuid
+    setSelectedUuid,
+    setDisabledButton,
+    removeDisabledButton,
 };
