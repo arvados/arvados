@@ -20,6 +20,7 @@ from . import run_test_server
 import sys
 import tempfile
 import unittest
+import resource
 
 def noexit(func):
     """If argparse or arvados_fuse tries to exit, fail the test instead"""
@@ -260,6 +261,35 @@ class MountArgsTest(unittest.TestCase):
                         '--mount-tmp', name,
                         '--foreground', self.mntdir])
                     arvados_fuse.command.Mount(args)
+
+    @noexit
+    @mock.patch('resource.setrlimit')
+    @mock.patch('resource.getrlimit')
+    def test_file_cache(self, getrlimit, setrlimit):
+        args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--foreground', '--file-cache=256000000000', self.mntdir])
+        self.assertEqual(args.mode, None)
+
+        getrlimit.return_value = (1024, 1048576)
+
+        self.mnt = arvados_fuse.command.Mount(args)
+
+        setrlimit.assert_called_with(resource.RLIMIT_NOFILE, (30517, 1048576))
+
+
+    @noexit
+    @mock.patch('resource.setrlimit')
+    @mock.patch('resource.getrlimit')
+    def test_file_cache_hard_limit(self, getrlimit, setrlimit):
+        args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--foreground', '--file-cache=256000000000', self.mntdir])
+        self.assertEqual(args.mode, None)
+
+        getrlimit.return_value = (1024, 2048)
+
+        self.mnt = arvados_fuse.command.Mount(args)
+
+        setrlimit.assert_called_with(resource.RLIMIT_NOFILE, (2048, 2048))
 
 class MountErrorTest(unittest.TestCase):
     def setUp(self):

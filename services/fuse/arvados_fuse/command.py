@@ -137,7 +137,7 @@ class Mount(object):
         try:
             self._setup_logging()
         except Exception as e:
-            self.logger.exception("arv-mount: exception during setup: %s", e)
+            self.logger.exception("exception during setup: %s", e)
             exit(1)
 
         try:
@@ -153,16 +153,21 @@ class Mount(object):
 
             if nofile_limit[0] < minlimit:
                 resource.setrlimit(resource.RLIMIT_NOFILE, (min(minlimit, nofile_limit[1]), nofile_limit[1]))
-        except Exception as e:
-            self.logger.warning("arv-mount: unable to adjust file handle limit: %s", e)
 
-        self.logger.info("arv-mount: RLIMIT_NOFILE is %s", resource.getrlimit(resource.RLIMIT_NOFILE))
+            if minlimit > nofile_limit[1]:
+                self.logger.warning("file handles required to meet --file-cache (%s) exceeds hard file handle limit (%s), cache size will be smaller than requested", minlimit, nofile_limit[1])
+
+        except Exception as e:
+            self.logger.warning("unable to adjust file handle limit: %s", e)
+
+        nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+        self.logger.info("file cache capped at %s bytes or less based on available disk (RLIMIT_NOFILE is %s)", ((nofile_limit[0]//8)*64*1024*1024), nofile_limit)
 
         try:
             self._setup_api()
             self._setup_mount()
         except Exception as e:
-            self.logger.exception("arv-mount: exception during setup: %s", e)
+            self.logger.exception("exception during setup: %s", e)
             exit(1)
 
     def __enter__(self):
