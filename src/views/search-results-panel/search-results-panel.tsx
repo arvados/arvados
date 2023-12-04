@@ -13,7 +13,7 @@ import { SearchBarAdvancedFormData } from 'models/search-bar';
 import { User } from "models/user";
 import { Config } from 'common/config';
 import { Session } from "models/session";
-import { selectOne } from "store/multiselect/multiselect-actions";
+import { toggleOne } from "store/multiselect/multiselect-actions";
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;
@@ -47,7 +47,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (resourceUuid: string) => {
-        dispatch<any>(selectOne(resourceUuid))
+        dispatch<any>(toggleOne(resourceUuid))
         dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onItemDoubleClick: uuid => {

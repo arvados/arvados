@@ -36,7 +36,7 @@ import { PublicFavoritesState } from 'store/public-favorites/public-favorites-re
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
-import { selectOne } from 'store/multiselect/multiselect-actions';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -146,7 +146,7 @@ const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps 
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (uuid: string) => {
-                dispatch<any>(selectOne(uuid))
+                dispatch<any>(toggleOne(uuid))
                 dispatch<any>(loadDetailsPanel(uuid));
     },
     onItemDoubleClick: uuid => {
