@@ -265,17 +265,35 @@ class MountArgsTest(unittest.TestCase):
     @noexit
     @mock.patch('resource.setrlimit')
     @mock.patch('resource.getrlimit')
-    def test_file_cache(self, getrlimit, setrlimit):
+    def test_default_file_cache(self, getrlimit, setrlimit):
+        args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--foreground', self.mntdir])
+        self.assertEqual(args.mode, None)
+        getrlimit.return_value = (1024, 1048576)
+        self.mnt = arvados_fuse.command.Mount(args)
+        setrlimit.assert_called_with(resource.RLIMIT_NOFILE, (10240, 1048576))
+
+    @noexit
+    @mock.patch('resource.setrlimit')
+    @mock.patch('resource.getrlimit')
+    def test_small_file_cache(self, getrlimit, setrlimit):
+        args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--foreground', '--file-cache=256000000', self.mntdir])
+        self.assertEqual(args.mode, None)
+        getrlimit.return_value = (1024, 1048576)
+        self.mnt = arvados_fuse.command.Mount(args)
+        setrlimit.assert_not_called()
+
+    @noexit
+    @mock.patch('resource.setrlimit')
+    @mock.patch('resource.getrlimit')
+    def test_large_file_cache(self, getrlimit, setrlimit):
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--foreground', '--file-cache=256000000000', self.mntdir])
         self.assertEqual(args.mode, None)
-
         getrlimit.return_value = (1024, 1048576)
-
         self.mnt = arvados_fuse.command.Mount(args)
-
         setrlimit.assert_called_with(resource.RLIMIT_NOFILE, (30517, 1048576))
-
 
     @noexit
     @mock.patch('resource.setrlimit')
@@ -284,11 +302,8 @@ class MountArgsTest(unittest.TestCase):
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--foreground', '--file-cache=256000000000', self.mntdir])
         self.assertEqual(args.mode, None)
-
         getrlimit.return_value = (1024, 2048)
-
         self.mnt = arvados_fuse.command.Mount(args)
-
         setrlimit.assert_called_with(resource.RLIMIT_NOFILE, (2048, 2048))
 
 class MountErrorTest(unittest.TestCase):
