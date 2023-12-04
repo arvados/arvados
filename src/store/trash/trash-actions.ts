@@ -77,6 +77,8 @@ export const toggleCollectionTrashed =
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
             let errorMessage = "";
             let successMessage = "";
+            console.log('hi')
+            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.ADD_TO_TRASH))
             try {
                 if (isTrashed) {
                     const { location } = getState().router;
