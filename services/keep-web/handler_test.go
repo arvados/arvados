@@ -328,9 +328,10 @@ func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
 func authzViaAuthzHeaderOAuth2(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "Bearer "+tok)
+	r.Header.Add("Authorization", "OAuth2 "+tok)
 	return http.StatusUnauthorized
 }
+
 func (s *IntegrationSuite) TestVhostViaAuthzHeaderBearer(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderBearer)
 }
@@ -348,6 +349,27 @@ func authzViaCookieValue(r *http.Request, tok string) int {
 		Value: auth.EncodeTokenCookie([]byte(tok)),
 	})
 	return http.StatusUnauthorized
+}
+
+func (s *IntegrationSuite) TestVhostViaHTTPBasicAuth(c *check.C) {
+	s.doVhostRequests(c, authzViaHTTPBasicAuth)
+}
+func authzViaHTTPBasicAuth(r *http.Request, tok string) int {
+	r.AddCookie(&http.Cookie{
+		Name:  "arvados_api_token",
+		Value: auth.EncodeTokenCookie([]byte(tok)),
+	})
+	return http.StatusUnauthorized
+}
+
+func (s *IntegrationSuite) TestVhostViaHTTPBasicAuthWithExtraSpaceChars(c *check.C) {
+	s.doVhostRequests(c, func(r *http.Request, tok string) int {
+		r.AddCookie(&http.Cookie{
+			Name:  "arvados_api_token",
+			Value: auth.EncodeTokenCookie([]byte(" " + tok + "\n")),
+		})
+		return http.StatusUnauthorized
+	})
 }
 
 func (s *IntegrationSuite) TestVhostViaPath(c *check.C) {
