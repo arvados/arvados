@@ -17,7 +17,8 @@ import {
     navigateToSiteManager,
     navigateToSshKeysUser,
     navigateToMyAccount,
-    navigateToLinkAccount
+    navigateToLinkAccount,
+    navigateToInstanceTypes
 } from 'store/navigation/navigation-action';
 import { openUserVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { pluginConfig } from 'plugins';
@@ -58,6 +59,7 @@ export const AccountMenuComponent =
                 dispatch(openTokenDialog);
             }}>Get API token</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
+            <MenuItem onClick={() => dispatch(navigateToInstanceTypes)}>Instance Types</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
