@@ -53,7 +53,7 @@ export const setSelectedUuid = (uuid: string | null) => {
     };
 };
 
-export const setDisabledButton = (buttonName: string) => {
+export const addDisabledButton = (buttonName: string) => {
     return dispatch => {
         dispatch({ type: multiselectActionContants.ADD_DISABLED, payload: buttonName });
     };
@@ -72,6 +72,6 @@ export const multiselectActions = {
     deselectOne,
     toggleOne,
     setSelectedUuid,
-    setDisabledButton,
+    addDisabledButton,
     removeDisabledButton,
 };

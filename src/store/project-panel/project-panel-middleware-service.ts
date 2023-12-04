@@ -35,6 +35,8 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -76,7 +78,10 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     api.dispatch(couldNotFetchProjectContents());
                 }
             } finally {
-                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
+                if (!background) { 
+                    api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                    api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.ADD_TO_TRASH))
+                }
             }
         }
     }

@@ -10,6 +10,8 @@ import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),
@@ -26,6 +28,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
             return Promise.reject("No user");
         }
         dispatch(progressIndicatorActions.START_WORKING("toggleFavorite"));
+        dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.ADD_TO_FAVORITES))
         dispatch(favoritesActions.TOGGLE_FAVORITE({ resourceUuid: resource.uuid }));
         const isFavorite = checkFavorite(resource.uuid, getState().favorites);
         dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -50,6 +53,7 @@ export const toggleFavorite = (resource: { uuid: string; name: string }) =>
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
+                dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.ADD_TO_FAVORITES))
                 dispatch(progressIndicatorActions.STOP_WORKING("toggleFavorite"));
             })
             .catch((e: any) => {

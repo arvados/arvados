@@ -20,25 +20,25 @@ import { togglePublicFavorite } from "store/public-favorites/public-favorites-ac
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
 
-export const MultiSelectMenuActionNames: Record<string, string> = {
-    ADD_TO_FAVORITES: 'Add to Favorites',
-    ADD_TO_TRASH: 'Add to Trash',
-    ADD_TO_PUBLIC_FAVORITES: 'Add to public favorites',
-    API_DETAILS: 'API Details',
-    COPY_AND_RERUN_PROCESS: 'Copy and re-run process',
-    COPY_TO_CLIPBOARD: 'Copy to clipboard',
-    DELETE_WORKFLOW: 'Delete Worflow',
-    EDIT_PPROJECT: 'Edit project',
-    FREEZE_PROJECT: 'Freeze Project',
-    MAKE_A_COPY: 'Make a copy',
-    MOVE_TO: 'Move to',
-    NEW_PROJECT: 'New project',
-    OPEN_IN_NEW_TAB: 'Open in new tab',
-    OPEN_W_3RD_PARTY_CLIENT: 'Open with 3rd party client',
-    REMOVE: 'Remove',
-    RUN_WORKFLOW: 'Run Workflow',
-    SHARE: 'Share',
-    VIEW_DETAILS: 'View details',
+export enum MultiSelectMenuActionNames {
+    ADD_TO_FAVORITES = 'Add to Favorites',
+    ADD_TO_TRASH = 'Add to Trash',
+    ADD_TO_PUBLIC_FAVORITES = 'Add to public favorites',
+    API_DETAILS = 'API Details',
+    COPY_AND_RERUN_PROCESS = 'Copy and re-run process',
+    COPY_TO_CLIPBOARD = 'Copy to clipboard',
+    DELETE_WORKFLOW = 'Delete Worflow',
+    EDIT_PPROJECT = 'Edit project',
+    FREEZE_PROJECT = 'Freeze Project',
+    MAKE_A_COPY = 'Make a copy',
+    MOVE_TO = 'Move to',
+    NEW_PROJECT = 'New project',
+    OPEN_IN_NEW_TAB = 'Open in new tab',
+    OPEN_W_3RD_PARTY_CLIENT = 'Open with 3rd party client',
+    REMOVE = 'Remove',
+    RUN_WORKFLOW = 'Run Workflow',
+    SHARE = 'Share',
+    VIEW_DETAILS = 'View details',
 };
 
 export type MultiSelectMenuAction = {
