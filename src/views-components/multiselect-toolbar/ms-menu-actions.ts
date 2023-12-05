@@ -7,14 +7,13 @@ import { IconType } from 'components/icon/icon';
 import { ResourcesState } from 'store/resources/resources';
 import { FavoritesState } from 'store/favorites/favorites-reducer';
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { AddFavoriteIcon, AdvancedIcon, DetailsIcon, FolderSharedIcon, Link, OpenIcon, PublicFavoriteIcon, RemoveFavoriteIcon, ShareIcon } from 'components/icon/icon';
+import { AddFavoriteIcon, AdvancedIcon, DetailsIcon, OpenIcon, PublicFavoriteIcon, RemoveFavoriteIcon, ShareIcon } from 'components/icon/icon';
 import { checkFavorite } from 'store/favorites/favorites-reducer';
 import { toggleFavorite } from 'store/favorites/favorites-actions';
 import { favoritePanelActions } from 'store/favorite-panel/favorite-panel-action';
-import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
+import { openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { openWebDavS3InfoDialog } from 'store/collections/collection-info-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
@@ -56,7 +55,7 @@ export type MultiSelectMenuAction = {
 
 export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];
 
-const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, SHARE } = MultiSelectMenuActionNames;
+const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE } = MultiSelectMenuActionNames;
 
 const msToggleFavoriteAction: MultiSelectMenuAction = {
     name: ADD_TO_FAVORITES,
