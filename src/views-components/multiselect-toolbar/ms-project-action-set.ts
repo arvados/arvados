@@ -30,7 +30,7 @@ const {
     EDIT_PROJECT,
     SHARE,
     MOVE_TO,
-    ADD_TO_TRASH,
+    MOVE_TO_TRASH,
     FREEZE_PROJECT,
     NEW_PROJECT,
 } = MultiSelectMenuActionNames;
@@ -76,7 +76,7 @@ const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
 };
 
 export const msToggleTrashAction: MultiSelectMenuAction = {
-    name: ADD_TO_TRASH,
+    name: MOVE_TO_TRASH,
     icon: TrashIcon,
     hasAlts: true,
     altName: 'Restore from Trash',
@@ -136,7 +136,7 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
 
 export const msCommonProjectActionFilter = new Set<string>([
     ADD_TO_FAVORITES,
-    ADD_TO_TRASH,
+    MOVE_TO_TRASH,
     API_DETAILS,
     COPY_TO_CLIPBOARD,
     EDIT_PROJECT,
@@ -150,4 +150,4 @@ export const msCommonProjectActionFilter = new Set<string>([
 ]);
 export const msReadOnlyProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS,]);
 export const msFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT])
-export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, ADD_TO_TRASH, EDIT_PROJECT, MOVE_TO])
+export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO])

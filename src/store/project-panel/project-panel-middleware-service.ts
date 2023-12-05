@@ -80,7 +80,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             } finally {
                 if (!background) { 
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-                    api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.ADD_TO_TRASH))
+                    api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
                 }
             }
         }

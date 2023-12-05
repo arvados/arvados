@@ -13,7 +13,7 @@ import { openCollectionUpdateDialog } from "store/collections/collection-update-
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 
-const { MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
+const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
@@ -35,7 +35,7 @@ const msMoveCollection: MultiSelectMenuAction = {
 }
 
 const msToggleTrashAction: MultiSelectMenuAction = {
-    name: ADD_TO_TRASH,
+    name: MOVE_TO_TRASH,
     icon: TrashIcon,
     isForMulti: true,
     hasAlts: false,
@@ -89,5 +89,5 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
 ];
 
 export const msReadOnlyCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, OPEN_W_3RD_PARTY_CLIENT]);
-export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, ADD_TO_TRASH])
-export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, ADD_TO_TRASH])
+export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
+export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])

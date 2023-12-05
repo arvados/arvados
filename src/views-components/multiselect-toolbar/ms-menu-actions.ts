@@ -22,7 +22,7 @@ import { PublicFavoritesState } from 'store/public-favorites/public-favorites-re
 
 export enum MultiSelectMenuActionNames {
     ADD_TO_FAVORITES = 'Add to Favorites',
-    ADD_TO_TRASH = 'Add to Trash',
+    MOVE_TO_TRASH = 'Move to trash',
     ADD_TO_PUBLIC_FAVORITES = 'Add to public favorites',
     API_DETAILS = 'API Details',
     COPY_AND_RERUN_PROCESS = 'Copy and re-run process',

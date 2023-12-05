@@ -22,7 +22,7 @@ export const toggleProjectTrashed =
             let errorMessage = "";
             let successMessage = "";
             let untrashedResource;
-            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.ADD_TO_TRASH))
+            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
             try {
                 if (isTrashed) {
                     errorMessage = "Could not restore project from trash";
@@ -78,7 +78,7 @@ export const toggleCollectionTrashed =
             let errorMessage = "";
             let successMessage = "";
             console.log('hi')
-            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.ADD_TO_TRASH))
+            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
             try {
                 if (isTrashed) {
                     const { location } = getState().router;

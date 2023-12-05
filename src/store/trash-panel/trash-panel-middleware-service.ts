@@ -85,7 +85,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             }));
             api.dispatch(couldNotFetchTrashContents());
         }
-        api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.ADD_TO_TRASH))
+        api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
     }
 }
 
