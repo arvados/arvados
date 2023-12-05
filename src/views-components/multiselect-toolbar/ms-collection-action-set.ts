@@ -11,7 +11,7 @@ import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuActionNames
 import { TrashIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 
-const { MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW , ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
+const { MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,

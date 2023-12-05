@@ -70,13 +70,13 @@ export enum msMenuResourceKind {
     SEARCH_RESULTS = 'SearchResults',
 }
 
-const { COLLECTION, COLLECTION_ADMIN, READONLY_COLLECTION_FILES, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
+const { COLLECTION, COLLECTION_ADMIN, READONLY_COLLECTION, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
-    [READONLY_COLLECTION_FILES]: [msCollectionActionSet, msReadOnlyCollectionActionFilter],
+    [READONLY_COLLECTION]: [msCollectionActionSet, msReadOnlyCollectionActionFilter],
     [ResourceKind.COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
     [COLLECTION_ADMIN]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
