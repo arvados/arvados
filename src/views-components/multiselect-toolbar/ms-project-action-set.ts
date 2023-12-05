@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MultiSelectMenuActionSet, MultiSelectMenuActionNames, msCommonActionSet } from 'views-components/multiselect-toolbar/ms-menu-actions';
+import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames, msCommonActionSet } from 'views-components/multiselect-toolbar/ms-menu-actions';
 import { openMoveProjectDialog } from 'store/projects/project-move-actions';
 import { toggleProjectTrashed } from 'store/trash/trash-actions';
 import {
@@ -12,11 +12,13 @@ import {
     RenameIcon,
     UnfreezeIcon,
 } from 'components/icon/icon';
-import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
+import { RestoreFromTrashIcon, TrashIcon, FolderSharedIcon, Link } from 'components/icon/icon';
 import { getResource } from 'store/resources/resources';
 import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 import { openProjectUpdateDialog } from 'store/projects/project-update-actions';
 import { freezeProject, unfreezeProject } from 'store/projects/project-lock-actions';
+import { openWebDavS3InfoDialog } from 'store/collections/collection-info-actions';
+import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 const {
     ADD_TO_FAVORITES,
@@ -33,27 +35,47 @@ const {
     NEW_PROJECT,
 } = MultiSelectMenuActionNames;
 
-const msEditProjectAction = {
+const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
+    name: COPY_TO_CLIPBOARD,
+    icon: Link,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(copyToClipboardAction(resources));
+    },
+};
+
+const msEditProjectAction: MultiSelectMenuAction = {
     name: EDIT_PROJECT,
     icon: RenameIcon,
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
-        dispatch(openProjectUpdateDialog(resources[0]));
+        dispatch<any>(openProjectUpdateDialog(resources[0]));
     },
 };
 
-const msMoveToAction = {
+const msMoveToAction: MultiSelectMenuAction = {
     name: MOVE_TO,
     icon: MoveToIcon,
     hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resource) => {
-        dispatch(openMoveProjectDialog(resource[0]));
+        dispatch<any>(openMoveProjectDialog(resource[0]));
     },
 };
 
-export const msToggleTrashAction = {
+const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
+    name: OPEN_W_3RD_PARTY_CLIENT,
+    icon: FolderSharedIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
+    },
+};
+
+export const msToggleTrashAction: MultiSelectMenuAction = {
     name: ADD_TO_TRASH,
     icon: TrashIcon,
     hasAlts: true,
@@ -65,12 +87,12 @@ export const msToggleTrashAction = {
     },
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
-            dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
+            dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
         }
     },
 };
 
-const msFreezeProjectAction = {
+const msFreezeProjectAction: MultiSelectMenuAction = {
     name: FREEZE_PROJECT,
     icon: FreezeIcon,
     hasAlts: true,
@@ -81,21 +103,21 @@ const msFreezeProjectAction = {
         return uuid ? !!(getResource(uuid)(iconProps.resources) as any).frozenByUuid : false;
     },
     execute: (dispatch, resources) => {
-        if (resources[0].frozenByUuid) {
-            dispatch(unfreezeProject(resources[0].uuid));
+        if ((resources[0] as any).frozenByUuid) {
+            dispatch<any>(unfreezeProject(resources[0].uuid));
         } else {
-            dispatch(freezeProject(resources[0].uuid));
+            dispatch<any>(freezeProject(resources[0].uuid));
         }
     },
 };
 
-const msNewProjectAction: any = {
+const msNewProjectAction: MultiSelectMenuAction = {
     name: NEW_PROJECT,
     icon: NewProjectIcon,
     hasAlts: false,
     isForMulti: false,
-    execute: (dispatch, resource): void => {
-        dispatch(openProjectCreateDialog(resource.uuid));
+    execute: (dispatch, resources): void => {
+        dispatch<any>(openProjectCreateDialog(resources[0].uuid));
     },
 };
 
@@ -107,6 +129,8 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
         msToggleTrashAction,
         msNewProjectAction,
         msFreezeProjectAction,
+        msOpenWith3rdPartyClientAction,
+        msCopyToClipboardMenuAction
     ],
 ];
 

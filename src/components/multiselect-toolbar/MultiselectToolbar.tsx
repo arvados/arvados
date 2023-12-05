@@ -92,17 +92,18 @@ export const MultiselectToolbar = connect(
                     style={{ width: `${(actions.length * 2.5) + 1}rem` }}
                     >
                     {actions.length ? (
-                        actions.map((action, i) =>
-                        action.hasAlts ? (
+                        actions.map((action, i) =>{
+                            const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
+                        return hasAlts ? (
                             <Tooltip
                             className={classes.button}
-                            title={currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altName : action.name}
+                            title={currentPathIsTrash || useAlts && useAlts(singleSelectedUuid, iconProps) ? action.altName : action.name}
                             key={i}
                             disableFocusListener
                             >
                                     <span className={classes.iconContainer}>
-                                        <IconButton disabled={disabledButtons.has(action.name)} onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
-                                            {currentPathIsTrash || action.useAlts(singleSelectedUuid, iconProps) ? action.altIcon && action.altIcon({}) :  action.icon({})}
+                                        <IconButton disabled={disabledButtons.has(name)} onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
+                                            {currentPathIsTrash || useAlts &&  useAlts(singleSelectedUuid, iconProps) ? altIcon && altIcon({}) : icon({})}
                                         </IconButton>
                                     </span>
                                 </Tooltip>
@@ -118,7 +119,7 @@ export const MultiselectToolbar = connect(
                                     </span>
                                 </Tooltip>
                             )
-                        )
+                        })
                     ) : (
                         <></>
                     )}

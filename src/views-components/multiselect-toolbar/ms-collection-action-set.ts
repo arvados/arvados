@@ -8,8 +8,10 @@ import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/c
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuActionNames, MultiSelectMenuAction } from "./ms-menu-actions";
-import { TrashIcon } from "components/icon/icon";
+import { TrashIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
+import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 
 const { MAKE_A_COPY, MOVE_TO, ADD_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
 
@@ -54,13 +56,35 @@ const msEditCollection: MultiSelectMenuAction = {
     },
 }
 
+const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
+    name: COPY_TO_CLIPBOARD,
+    icon: Link,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(copyToClipboardAction(resources));
+    },
+};
+
+const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
+    name: OPEN_W_3RD_PARTY_CLIENT,
+    icon: FolderSharedIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
+    },
+};
+
 export const msCollectionActionSet: MultiSelectMenuActionSet = [
     [
         ...msCommonActionSet,
         msCopyCollection,
         msMoveCollection,
         msToggleTrashAction,
-        msEditCollection
+        msEditCollection,
+        msCopyToClipboardMenuAction,
+        msOpenWith3rdPartyClientAction
     ],
 ];
 

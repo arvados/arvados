@@ -11,16 +11,9 @@ import {
     msFilterGroupActionFilter,
     msFrozenProjectActionFilter,
 } from 'views-components/multiselect-toolbar/ms-project-action-set';
-import { msProcessActionSet } from 'views-components/multiselect-toolbar/ms-process-action-set';
+import { msProcessActionSet, processResourceMSActionsFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 import { ResourceKind } from 'models/resource';
-
-
-const { MOVE_TO, REMOVE } = MultiSelectMenuActionNames;
-
-const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new Set(actionSet[0].map((action) => action.name));
-
-const processResourceMSActionsFilter = new Set([MOVE_TO, REMOVE]);
 
 export enum msMenuResourceKind {
     API_CLIENT_AUTHORIZATION = 'ApiClientAuthorization',
@@ -73,6 +66,8 @@ export enum msMenuResourceKind {
 const { COLLECTION, COLLECTION_ADMIN, READONLY_COLLECTION, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
+
+const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new Set(actionSet[0].map((action) => action.name));
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],

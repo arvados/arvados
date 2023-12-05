@@ -49,7 +49,7 @@ export type MultiSelectMenuAction = {
     altName?: string;
     altIcon?: IconType;
     isForMulti: boolean;
-    useAlts?: (uuid: string, iconProps: {resources: ResourcesState, favorites: FavoritesState, publicFavorites: PublicFavoritesState}) => boolean;
+    useAlts?: (uuid: string | null, iconProps: {resources: ResourcesState, favorites: FavoritesState, publicFavorites: PublicFavoritesState}) => boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
     adminOnly?: boolean;
 };
@@ -65,7 +65,7 @@ const msToggleFavoriteAction: MultiSelectMenuAction = {
     altName: 'Remove from Favorites',
     altIcon: RemoveFavoriteIcon,
     isForMulti: false,
-    useAlts: (uuid, iconProps) => {
+    useAlts: (uuid: string, iconProps) => {
         return checkFavorite(uuid, iconProps.favorites);
     },
     execute: (dispatch, resources) => {
@@ -82,16 +82,6 @@ const msOpenInNewTabMenuAction: MultiSelectMenuAction  = {
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openInNewTabAction(resources[0]));
-    },
-};
-
-const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
-    name: COPY_TO_CLIPBOARD,
-    icon: Link,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch<any>(copyToClipboardAction(resources));
     },
 };
 
@@ -112,16 +102,6 @@ const msAdvancedAction: MultiSelectMenuAction  = {
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
-    },
-};
-
-const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
-    name: OPEN_W_3RD_PARTY_CLIENT,
-    icon: FolderSharedIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
     },
 };
 
@@ -155,10 +135,8 @@ const msTogglePublicFavoriteAction: MultiSelectMenuAction = {
 export const msCommonActionSet = [
     msToggleFavoriteAction,
     msOpenInNewTabMenuAction,
-    msCopyToClipboardMenuAction,
     msViewDetailsAction,
     msAdvancedAction,
-    msOpenWith3rdPartyClientAction,
     msShareAction,
     msTogglePublicFavoriteAction
 ];
