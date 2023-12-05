@@ -16,7 +16,6 @@ import (
 var (
 	requestLimiterQuietPeriod        = time.Second
 	requestLimiterInitialLimit int64 = 8
-	requestLimiterMinimumLimit int64 = 4
 )
 
 type requestLimiter struct {
@@ -145,12 +144,6 @@ func (rl *requestLimiter) Report(resp *http.Response, err error) bool {
 		rl.limit += increase
 		if max := rl.current * 2; max < rl.limit {
 			rl.limit = max
-		}
-		if min := requestLimiterMinimumLimit; min > rl.limit {
-			// If limit is too low, programs like
-			// controller and test suites can end up with
-			// too few slots to complete a single request.
-			rl.limit = min
 		}
 		if rl.maxlimit > 0 && rl.maxlimit < rl.limit {
 			rl.limit = rl.maxlimit

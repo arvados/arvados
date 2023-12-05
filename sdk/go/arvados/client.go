@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -356,17 +357,28 @@ func (c *Client) Last503() time.Time {
 	return t
 }
 
-// globalRequestLimiter doesn't have a maximum number of outgoing
-// connections, but is just used to backoff after 503 errors.
-var globalRequestLimiter requestLimiter
+// globalRequestLimiter entries (one for each APIHost) don't have a
+// hard limit on outgoing connections, but do add a delay and reduce
+// concurrency after 503 errors.
+var (
+	globalRequestLimiter     = map[string]*requestLimiter{}
+	globalRequestLimiterLock sync.Mutex
+)
 
-// Get this client's requestLimiter, or the global requestLimiter
-// singleton if the client doesn't have its own.
+// Get this client's requestLimiter, or a global requestLimiter
+// singleton for c's APIHost if this client doesn't have its own.
 func (c *Client) getRequestLimiter() *requestLimiter {
 	if c.requestLimiter != nil {
 		return c.requestLimiter
 	}
-	return &globalRequestLimiter
+	globalRequestLimiterLock.Lock()
+	defer globalRequestLimiterLock.Unlock()
+	limiter := globalRequestLimiter[c.APIHost]
+	if limiter == nil {
+		limiter = &requestLimiter{}
+		globalRequestLimiter[c.APIHost] = limiter
+	}
+	return limiter
 }
 
 // cancelOnClose calls a provided CancelFunc when its wrapped
