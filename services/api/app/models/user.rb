@@ -512,11 +512,11 @@ SELECT target_uuid, perm_level
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
-        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM
-        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
-        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM
+        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM, nil, true
+        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
+        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
       end
-      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM, nil, true
     end
   end
 

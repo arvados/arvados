@@ -7,7 +7,7 @@ require '20200501150153_permission_table_constants'
 REVOKE_PERM = 0
 CAN_MANAGE_PERM = 3
 
-def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
+def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil, update_all_users=false
   return if Thread.current[:suppress_update_permissions]
 
   #
@@ -109,6 +109,70 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
     # Disable merge join for just this query (also local for this transaction), then reenable it.
     ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to false;"
 
+    if perm_origin_uuid[5..11] == '-tpzed-' && !update_all_users
+      # Modifying permission granted to a user, recompute the all permissions for that user
+
+      ActiveRecord::Base.connection.exec_query %{
+with origin_user_perms as (
+    select pq.origin_uuid as user_uuid, target_uuid, pq.val, pq.traverse_owned from (
+    #{PERM_QUERY_TEMPLATE % {:base_case => %{
+        select '#{perm_origin_uuid}'::varchar(255), '#{perm_origin_uuid}'::varchar(255), 3, true, true
+               where exists (select uuid from users where uuid='#{perm_origin_uuid}')
+},
+:edge_perm => %{
+case (edges.edge_id = '#{edge_id}')
+                               when true then #{perm_level}
+                               else edges.val
+                            end
+}
+} }) as pq),
+
+/*
+     Because users always have permission on themselves, this
+     query also makes sure those permission rows are always
+     returned.
+*/
+temptable_perms as (
+      select * from origin_user_perms
+    union all
+      select target_uuid as user_uuid, target_uuid, 3, true
+        from origin_user_perms
+        where origin_user_perms.target_uuid like '_____-tpzed-_______________' and
+              origin_user_perms.target_uuid != '#{perm_origin_uuid}'
+),
+
+/*
+    Now that we have recomputed a set of permissions, delete any
+    rows from the materialized_permissions table where (target_uuid,
+    user_uuid) is not present or has perm_level=0 in the recomputed
+    set.
+*/
+delete_rows as (
+  delete from #{PERMISSION_VIEW} where
+    user_uuid='#{perm_origin_uuid}' and
+    not exists (select 1 from temptable_perms
+                where target_uuid=#{PERMISSION_VIEW}.target_uuid and
+                      user_uuid='#{perm_origin_uuid}' and
+                      val>0)
+)
+
+/*
+  Now insert-or-update permissions in the recomputed set.  The
+  WHERE clause is important to avoid redundantly updating rows
+  that haven't actually changed.
+*/
+insert into #{PERMISSION_VIEW} (user_uuid, target_uuid, perm_level, traverse_owned)
+  select user_uuid, target_uuid, val as perm_level, traverse_owned from temptable_perms where val>0
+on conflict (user_uuid, target_uuid) do update
+set perm_level=EXCLUDED.perm_level, traverse_owned=EXCLUDED.traverse_owned
+where #{PERMISSION_VIEW}.user_uuid=EXCLUDED.user_uuid and
+      #{PERMISSION_VIEW}.target_uuid=EXCLUDED.target_uuid and
+       (#{PERMISSION_VIEW}.perm_level != EXCLUDED.perm_level or
+        #{PERMISSION_VIEW}.traverse_owned != EXCLUDED.traverse_owned);
+
+}
+    else
+      # Modifying permission granted to a group, recompute permissions for everything accessible through that group
     ActiveRecord::Base.connection.exec_query %{
 with temptable_perms as (
   select * from compute_permission_subgraph($1, $2, $3, $4)),
@@ -147,6 +211,7 @@ where #{PERMISSION_VIEW}.user_uuid=EXCLUDED.user_uuid and
                                               [nil, starting_uuid],
                                               [nil, perm_level],
                                               [nil, edge_id]]
+    end
 
     if perm_level>0
       check_permissions_against_full_refresh
