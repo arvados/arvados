@@ -135,4 +135,41 @@ describe('Side panel tests', function() {
             });
         });
     });
+
+    it('collapses and un-collapses', () => {
+
+        cy.loginAs(activeUser)
+        cy.get('[data-cy=side-panel-tree]').should('exist')
+        cy.get('[data-cy=side-panel-toggle]').click()
+        cy.get('[data-cy=side-panel-tree]').should('not.exist')
+        cy.get('[data-cy=side-panel-collapsed]').should('exist')
+        cy.get('[data-cy=side-panel-toggle]').click()
+        cy.get('[data-cy=side-panel-tree]').should('exist')
+        cy.get('[data-cy=side-panel-collapsed]').should('not.exist')
+    })
+
+    it('can navigate from collapsed panel', () => {
+
+        const collapsedCategories = {
+            'shared-with-me': '/shared-with-me',
+            'public-favorites': '/public-favorites',
+            'my-favorites': '/favorites',
+            'groups': '/groups',
+            'all-processes': '/all_processes',
+            'trash': '/trash',
+            'shell-access': '/virtual-machines-user',
+            'home-projects': `/projects/${activeUser.user.uuid}`,
+        }
+
+        cy.loginAs(activeUser)
+        cy.get('[data-cy=side-panel-tree]').should('exist')
+        cy.get('[data-cy=side-panel-toggle]').click()
+        cy.get('[data-cy=side-panel-collapsed]').should('exist')
+
+        for (const cat in collapsedCategories) {
+            cy.get(`[data-cy=collapsed-${cat}]`).should('exist').click()
+            cy.url().should('include', collapsedCategories[cat])
+        }
+    })
 })
+

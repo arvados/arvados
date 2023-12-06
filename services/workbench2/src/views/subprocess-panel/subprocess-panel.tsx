@@ -26,7 +26,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SubprocessPanelActionProps => (
     },
 });
 
-const mapStateToProps = (state: RootState): SubprocessPanelDataProps => ({
+const mapStateToProps = (state: RootState): Omit<SubprocessPanelDataProps,'process'> => ({
     resources: state.resources,
 });
 

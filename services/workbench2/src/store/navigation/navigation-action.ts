@@ -69,6 +69,9 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
         case SidePanelTreeCategory.ALL_PROCESSES:
             dispatch(navigateToAllProcesses);
             return;
+        case SidePanelTreeCategory.SHELL_ACCESS:
+            dispatch(navigateToUserVirtualMachines)
+            return;
         case USERS_PANEL_LABEL:
             dispatch(navigateToUsers);
             return;
