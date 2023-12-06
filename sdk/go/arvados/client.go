@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -88,7 +89,10 @@ type Client struct {
 	// differs from an outgoing connection limit (a feature
 	// provided by http.Transport) when concurrent calls are
 	// multiplexed on a single http2 connection.
-	requestLimiter requestLimiter
+	//
+	// getRequestLimiter() should always be used, because this can
+	// be nil.
+	requestLimiter *requestLimiter
 
 	last503 atomic.Value
 }
@@ -150,7 +154,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		APIHost:        ctrlURL.Host,
 		Insecure:       cluster.TLS.Insecure,
 		Timeout:        5 * time.Minute,
-		requestLimiter: requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
+		requestLimiter: &requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
 	}, nil
 }
 
@@ -291,7 +295,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 	rclient.CheckRetry = func(ctx context.Context, resp *http.Response, respErr error) (bool, error) {
 		checkRetryCalled++
-		if c.requestLimiter.Report(resp, respErr) {
+		if c.getRequestLimiter().Report(resp, respErr) {
 			c.last503.Store(time.Now())
 		}
 		if c.Timeout == 0 {
@@ -321,9 +325,10 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 	rclient.Logger = nil
 
-	c.requestLimiter.Acquire(ctx)
+	limiter := c.getRequestLimiter()
+	limiter.Acquire(ctx)
 	if ctx.Err() != nil {
-		c.requestLimiter.Release()
+		limiter.Release()
 		cancel()
 		return nil, ctx.Err()
 	}
@@ -342,7 +347,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		}
 	}
 	if err != nil {
-		c.requestLimiter.Release()
+		limiter.Release()
 		cancel()
 		return nil, err
 	}
@@ -352,7 +357,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	resp.Body = cancelOnClose{
 		ReadCloser: resp.Body,
 		cancel: func() {
-			c.requestLimiter.Release()
+			limiter.Release()
 			cancel()
 		},
 	}
@@ -364,6 +369,30 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 func (c *Client) Last503() time.Time {
 	t, _ := c.last503.Load().(time.Time)
 	return t
+}
+
+// globalRequestLimiter entries (one for each APIHost) don't have a
+// hard limit on outgoing connections, but do add a delay and reduce
+// concurrency after 503 errors.
+var (
+	globalRequestLimiter     = map[string]*requestLimiter{}
+	globalRequestLimiterLock sync.Mutex
+)
+
+// Get this client's requestLimiter, or a global requestLimiter
+// singleton for c's APIHost if this client doesn't have its own.
+func (c *Client) getRequestLimiter() *requestLimiter {
+	if c.requestLimiter != nil {
+		return c.requestLimiter
+	}
+	globalRequestLimiterLock.Lock()
+	defer globalRequestLimiterLock.Unlock()
+	limiter := globalRequestLimiter[c.APIHost]
+	if limiter == nil {
+		limiter = &requestLimiter{}
+		globalRequestLimiter[c.APIHost] = limiter
+	}
+	return limiter
 }
 
 // cancelOnClose calls a provided CancelFunc when its wrapped

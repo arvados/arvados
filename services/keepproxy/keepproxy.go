@@ -175,13 +175,18 @@ func (h *proxyHandler) checkAuthorizationHeader(req *http.Request) (pass bool, t
 	return true, tok, user
 }
 
-// We need to make a private copy of the default http transport early
-// in initialization, then make copies of our private copy later. It
-// won't be safe to copy http.DefaultTransport itself later, because
-// its private mutexes might have already been used. (Without this,
-// the test suite sometimes panics "concurrent map writes" in
-// net/http.(*Transport).removeIdleConnLocked().)
-var defaultTransport = *(http.DefaultTransport.(*http.Transport))
+// We can't copy the default http transport because http.Transport has
+// a mutex field, so we make our own using the values of the exported
+// fields.
+var defaultTransport = http.Transport{
+	Proxy:                 http.DefaultTransport.(*http.Transport).Proxy,
+	DialContext:           http.DefaultTransport.(*http.Transport).DialContext,
+	ForceAttemptHTTP2:     http.DefaultTransport.(*http.Transport).ForceAttemptHTTP2,
+	MaxIdleConns:          http.DefaultTransport.(*http.Transport).MaxIdleConns,
+	IdleConnTimeout:       http.DefaultTransport.(*http.Transport).IdleConnTimeout,
+	TLSHandshakeTimeout:   http.DefaultTransport.(*http.Transport).TLSHandshakeTimeout,
+	ExpectContinueTimeout: http.DefaultTransport.(*http.Transport).ExpectContinueTimeout,
+}
 
 type proxyHandler struct {
 	http.Handler
@@ -195,14 +200,23 @@ type proxyHandler struct {
 func newHandler(ctx context.Context, kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster) (service.Handler, error) {
 	rest := mux.NewRouter()
 
-	transport := defaultTransport
-	transport.DialContext = (&net.Dialer{
-		Timeout:   keepclient.DefaultConnectTimeout,
-		KeepAlive: keepclient.DefaultKeepAlive,
-		DualStack: true,
-	}).DialContext
-	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
-	transport.TLSHandshakeTimeout = keepclient.DefaultTLSHandshakeTimeout
+	// We can't copy the default http transport because
+	// http.Transport has a mutex field, so we copy the fields
+	// that we know have non-zero values in http.DefaultTransport.
+	transport := &http.Transport{
+		Proxy:                 http.DefaultTransport.(*http.Transport).Proxy,
+		ForceAttemptHTTP2:     http.DefaultTransport.(*http.Transport).ForceAttemptHTTP2,
+		MaxIdleConns:          http.DefaultTransport.(*http.Transport).MaxIdleConns,
+		IdleConnTimeout:       http.DefaultTransport.(*http.Transport).IdleConnTimeout,
+		ExpectContinueTimeout: http.DefaultTransport.(*http.Transport).ExpectContinueTimeout,
+		DialContext: (&net.Dialer{
+			Timeout:   keepclient.DefaultConnectTimeout,
+			KeepAlive: keepclient.DefaultKeepAlive,
+			DualStack: true,
+		}).DialContext,
+		TLSClientConfig:     arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure),
+		TLSHandshakeTimeout: keepclient.DefaultTLSHandshakeTimeout,
+	}
 
 	cacheQ, err := lru.New2Q(500)
 	if err != nil {
@@ -213,7 +227,7 @@ func newHandler(ctx context.Context, kc *keepclient.KeepClient, timeout time.Dur
 		Handler:    rest,
 		KeepClient: kc,
 		timeout:    timeout,
-		transport:  &transport,
+		transport:  transport,
 		apiTokenCache: &apiTokenCache{
 			tokens:     cacheQ,
 			expireTime: 300,
@@ -566,7 +580,7 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient {
-	kc := *h.KeepClient
+	kc := h.KeepClient.Clone()
 	kc.RequestID = req.Header.Get("X-Request-Id")
 	kc.HTTPClient = &proxyClient{
 		client: &http.Client{
@@ -575,5 +589,5 @@ func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient 
 		},
 		proto: req.Proto,
 	}
-	return &kc
+	return kc
 }

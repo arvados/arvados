@@ -130,14 +130,14 @@ func (rp *remoteProxy) remoteClient(remoteID string, remoteCluster arvados.Remot
 	}
 	accopy := *kc.Arvados
 	accopy.ApiToken = token
-	kccopy := *kc
+	kccopy := kc.Clone()
 	kccopy.Arvados = &accopy
 	token, err := auth.SaltToken(token, remoteID)
 	if err != nil {
 		return nil, err
 	}
 	kccopy.Arvados.ApiToken = token
-	return &kccopy, nil
+	return kccopy, nil
 }
 
 var localOrRemoteSignature = regexp.MustCompile(`\+[AR][^\+]*`)
