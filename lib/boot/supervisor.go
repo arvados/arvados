@@ -112,7 +112,7 @@ func (super *Supervisor) Start(ctx context.Context) {
 	super.ctx, super.cancel = context.WithCancel(ctx)
 	super.done = make(chan struct{})
 
-	sigch := make(chan os.Signal)
+	sigch := make(chan os.Signal, 1)
 	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
 		defer signal.Stop(sigch)
@@ -205,15 +205,24 @@ func (super *Supervisor) Wait() error {
 func (super *Supervisor) startFederation(cfg *arvados.Config) {
 	super.children = map[string]*Supervisor{}
 	for id, cc := range cfg.Clusters {
-		super2 := *super
 		yaml, err := json.Marshal(arvados.Config{Clusters: map[string]arvados.Cluster{id: cc}})
 		if err != nil {
 			panic(fmt.Sprintf("json.Marshal partial config: %s", err))
 		}
-		super2.ConfigYAML = string(yaml)
-		super2.ConfigPath = "-"
-		super2.children = nil
-
+		super2 := &Supervisor{
+			ConfigPath:           "-",
+			ConfigYAML:           string(yaml),
+			SourcePath:           super.SourcePath,
+			SourceVersion:        super.SourceVersion,
+			ClusterType:          super.ClusterType,
+			ListenHost:           super.ListenHost,
+			ControllerAddr:       super.ControllerAddr,
+			NoWorkbench1:         super.NoWorkbench1,
+			NoWorkbench2:         super.NoWorkbench2,
+			OwnTemporaryDatabase: super.OwnTemporaryDatabase,
+			Stdin:                super.Stdin,
+			Stderr:               super.Stderr,
+		}
 		if super2.ClusterType == "test" {
 			super2.Stderr = &service.LogPrefixer{
 				Writer: super.Stderr,
@@ -221,7 +230,7 @@ func (super *Supervisor) startFederation(cfg *arvados.Config) {
 			}
 		}
 		super2.Start(super.ctx)
-		super.children[id] = &super2
+		super.children[id] = super2
 	}
 }
 

@@ -120,6 +120,27 @@ type KeepClient struct {
 	disableDiscovery bool
 }
 
+func (kc *KeepClient) Clone() *KeepClient {
+	kc.lock.Lock()
+	defer kc.lock.Unlock()
+	return &KeepClient{
+		Arvados:               kc.Arvados,
+		Want_replicas:         kc.Want_replicas,
+		localRoots:            kc.localRoots,
+		writableLocalRoots:    kc.writableLocalRoots,
+		gatewayRoots:          kc.gatewayRoots,
+		HTTPClient:            kc.HTTPClient,
+		Retries:               kc.Retries,
+		BlockCache:            kc.BlockCache,
+		RequestID:             kc.RequestID,
+		StorageClasses:        kc.StorageClasses,
+		DefaultStorageClasses: kc.DefaultStorageClasses,
+		replicasPerService:    kc.replicasPerService,
+		foundNonDiskSvc:       kc.foundNonDiskSvc,
+		disableDiscovery:      kc.disableDiscovery,
+	}
+}
+
 func (kc *KeepClient) loadDefaultClasses() error {
 	scData, err := kc.Arvados.ClusterConfig("StorageClasses")
 	if err != nil {

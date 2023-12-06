@@ -204,6 +204,7 @@ func (s *containerSuite) TestUpdatePriorityMultiLevelWorkflow(c *C) {
 	defer deadlockCancel()
 	for _, cr := range allcrs {
 		if strings.Contains(cr.Command[2], " j ") && !strings.Contains(cr.Command[2], " k ") {
+			cr := cr
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
