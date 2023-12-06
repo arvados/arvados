@@ -9,6 +9,7 @@ ARG GOVERSION
 ## dont use debian:11 here since the word 'bullseye' is used for rvm precompiled binaries
 FROM debian:bullseye as build_x86_64
 # Install go
+ONBUILD ARG BRANCH
 ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-amd64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
@@ -26,6 +27,7 @@ ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediat
 
 FROM debian:bullseye as build_aarch64
 # Install go
+ONBUILD ARG BRANCH
 ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-arm64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
@@ -68,7 +70,7 @@ ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 # Preseed the go module cache and the ruby gems, using the currently checked
 # out branch of the source tree. This avoids potential compatibility issues
 # between the version of Ruby and certain gems.
-RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
+RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \

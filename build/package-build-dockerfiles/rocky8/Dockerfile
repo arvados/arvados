@@ -7,6 +7,7 @@ ARG BRANCH
 ARG GOVERSION
 
 FROM rockylinux:8.6-minimal as build_x86_64
+ONBUILD ARG BRANCH
 # Install go
 ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-amd64.tar.gz /usr/local/
@@ -18,6 +19,7 @@ ONBUILD RUN npm install -g yarn
 ONBUILD RUN ln -sf /usr/local/node-v12.22.12-linux-x64/bin/* /usr/local/bin/
 
 FROM rockylinux:8.6-minimal as build_aarch64
+ONBUILD ARG BRANCH
 # Install go
 ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-arm64.tar.gz /usr/local/
@@ -87,7 +89,7 @@ ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 # Preseed the go module cache and the ruby gems, using the currently checked
 # out branch of the source tree. This avoids potential compatibility issues
 # between the version of Ruby and certain gems.
-RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
+RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
