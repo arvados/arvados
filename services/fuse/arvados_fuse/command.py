@@ -135,20 +135,39 @@ class Mount(object):
             self.args.logfile = os.path.realpath(self.args.logfile)
 
         try:
-            nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
-            if nofile_limit[0] < 10240:
-                resource.setrlimit(resource.RLIMIT_NOFILE, (min(10240, nofile_limit[1]), nofile_limit[1]))
+            self._setup_logging()
         except Exception as e:
-            self.logger.warning("arv-mount: unable to adjust file handle limit: %s", e)
-
-        self.logger.debug("arv-mount: file handle limit is %s", resource.getrlimit(resource.RLIMIT_NOFILE))
+            self.logger.exception("exception during setup: %s", e)
+            exit(1)
 
         try:
-            self._setup_logging()
+            nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+
+            minlimit = 10240
+            if self.args.file_cache:
+                # Adjust the file handle limit so it can meet
+                # the desired cache size. Multiply by 8 because the
+                # number of 64 MiB cache slots that keepclient
+                # allocates is RLIMIT_NOFILE / 8
+                minlimit = int((self.args.file_cache/(64*1024*1024)) * 8)
+
+            if nofile_limit[0] < minlimit:
+                resource.setrlimit(resource.RLIMIT_NOFILE, (min(minlimit, nofile_limit[1]), nofile_limit[1]))
+
+            if minlimit > nofile_limit[1]:
+                self.logger.warning("file handles required to meet --file-cache (%s) exceeds hard file handle limit (%s), cache size will be smaller than requested", minlimit, nofile_limit[1])
+
+        except Exception as e:
+            self.logger.warning("unable to adjust file handle limit: %s", e)
+
+        nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+        self.logger.info("file cache capped at %s bytes or less based on available disk (RLIMIT_NOFILE is %s)", ((nofile_limit[0]//8)*64*1024*1024), nofile_limit)
+
+        try:
             self._setup_api()
             self._setup_mount()
         except Exception as e:
-            self.logger.exception("arv-mount: exception during setup: %s", e)
+            self.logger.exception("exception during setup: %s", e)
             exit(1)
 
     def __enter__(self):
