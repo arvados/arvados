@@ -4,7 +4,8 @@
 
 import { openRunProcess, deleteWorkflow } from 'store/workflow-panel/workflow-panel-actions';
 import { StartIcon, TrashIcon } from 'components/icon/icon';
-import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames, msCommonActionSet } from './ms-menu-actions';
+import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from './ms-menu-actions';
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 
 const { OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW } = MultiSelectMenuActionNames;
 

@@ -3,7 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { TCheckedList } from "components/data-table/data-table";
-import { isExactlyOneSelected } from "components/multiselect-toolbar/MultiselectToolbar";
+import { ContainerRequestResource } from "models/container-request";
+import { Dispatch } from "redux";
+import { navigateTo } from "store/navigation/navigation-action";
+import { snackbarActions } from "store/snackbar/snackbar-actions";
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { SnackbarKind } from "store/snackbar/snackbar-actions";
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 
 export const multiselectActionContants = {
     TOGGLE_VISIBLITY: "TOGGLE_VISIBLITY",
@@ -14,6 +21,27 @@ export const multiselectActionContants = {
     SET_SELECTED_UUID: 'SET_SELECTED_UUID',
     ADD_DISABLED: 'ADD_DISABLED',
     REMOVE_DISABLED: 'REMOVE_DISABLED',
+};
+
+export const msNavigateToOutput = (resource: ContextMenuResource | ContainerRequestResource) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    try {
+        await services.collectionService.get(resource.outputUuid || '');
+        dispatch<any>(navigateTo(resource.outputUuid || ''));
+    } catch {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 4000, kind: SnackbarKind.WARNING }));
+    }
+};
+
+export const isExactlyOneSelected = (checkedList: TCheckedList) => {
+    let tally = 0;
+    let current = '';
+    for (const uuid in checkedList) {
+        if (checkedList[uuid] === true) {
+            tally++;
+            current = uuid;
+        }
+    }
+    return tally === 1 ? current : null
 };
 
 export const toggleMSToolbar = (isVisible: boolean) => {

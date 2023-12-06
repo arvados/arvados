@@ -13,7 +13,8 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { Resource, ResourceKind, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
-import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters, msMenuResourceKind } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
@@ -32,6 +33,7 @@ import { CollectionResource } from "models/collection";
 import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
+import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 
 type CssRules = "root" | "button" | "iconContainer";
 
@@ -267,17 +269,6 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
     });
 }
 
-export const isExactlyOneSelected = (checkedList: TCheckedList) => {
-    let tally = 0;
-    let current = '';
-    for (const uuid in checkedList) {
-        if (checkedList[uuid] === true) {
-            tally++;
-            current = uuid;
-        }
-    }
-    return tally === 1 ? current : null
-};
 
 //--------------------------------------------------//
 

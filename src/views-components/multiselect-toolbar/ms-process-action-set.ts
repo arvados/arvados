@@ -6,9 +6,10 @@ import { MoveToIcon, RemoveIcon, ReRunProcessIcon, OutputIcon, RenameIcon } from
 import { openMoveProcessDialog } from "store/processes/process-move-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
-import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames, msCommonActionSet } from "./ms-menu-actions";
-import { navigateToOutput } from "store/process-panel/process-panel-actions";
+import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from "./ms-menu-actions";
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
+import { msNavigateToOutput } from "store/multiselect/multiselect-actions";
 
 const msCopyAndRerunProcess: MultiSelectMenuAction = {
     name: MultiSelectMenuActionNames.COPY_AND_RERUN_PROCESS,
@@ -48,8 +49,8 @@ const msViewOutputs: MultiSelectMenuAction = {
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
-        if (resources[0].outputUuid) {
-            dispatch<any>(navigateToOutput(resources[0].outputUuid));
+                if (resources[0]) {
+            dispatch<any>(msNavigateToOutput(resources[0]));
         }
     },
 }

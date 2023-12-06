@@ -60,8 +60,8 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
             icon: OutputIcon,
             name: "Outputs",
             execute: (dispatch, resources) => {
-                if (resources[0].outputUuid) {
-                    dispatch<any>(navigateToOutput(resources[0].outputUuid));
+                if (resources[0]) {
+                    dispatch<any>(navigateToOutput(resources[0]));
                 }
             },
         },
