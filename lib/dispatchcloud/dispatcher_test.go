@@ -208,7 +208,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		return int(rand.Uint32() & 0x3)
 	}
 	var countCapacityErrors int64
-	n := 0
+	vmCount := int32(0)
 	s.stubDriver.Queue = queue
 	s.stubDriver.SetupVM = func(stubvm *test.StubVM) error {
 		if pt := stubvm.Instance().ProviderType(); pt == test.InstanceType(6).ProviderType {
@@ -216,7 +216,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			atomic.AddInt64(&countCapacityErrors, 1)
 			return test.CapacityError{InstanceTypeSpecific: true}
 		}
-		n++
+		n := atomic.AddInt32(&vmCount, 1)
 		stubvm.Boot = time.Now().Add(time.Duration(rand.Int63n(int64(5 * time.Millisecond))))
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
 		stubvm.ExecuteContainer = executeContainer
