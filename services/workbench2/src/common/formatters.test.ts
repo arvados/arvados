@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { formatUploadSpeed, formatContainerCost } from "./formatters";
+import { formatUploadSpeed, formatCost } from "./formatters";
 
 describe('formatUploadSpeed', () => {
     it('should show speed less than 1MB/s', () => {
@@ -30,16 +30,16 @@ describe('formatUploadSpeed', () => {
 
 describe('formatContainerCost', () => {
     it('should correctly round to tenth of a cent', () => {
-        expect(formatContainerCost(0.0)).toBe('$0');
-        expect(formatContainerCost(0.125)).toBe('$0.125');
-        expect(formatContainerCost(0.1254)).toBe('$0.125');
-        expect(formatContainerCost(0.1255)).toBe('$0.126');
+        expect(formatCost(0.0)).toBe('$0');
+        expect(formatCost(0.125)).toBe('$0.125');
+        expect(formatCost(0.1254)).toBe('$0.125');
+        expect(formatCost(0.1255)).toBe('$0.126');
     });
 
     it('should round up any smaller value to 0.001', () => {
-        expect(formatContainerCost(0.0)).toBe('$0');
-        expect(formatContainerCost(0.001)).toBe('$0.001');
-        expect(formatContainerCost(0.0001)).toBe('$0.001');
-        expect(formatContainerCost(0.00001)).toBe('$0.001');
+        expect(formatCost(0.0)).toBe('$0');
+        expect(formatCost(0.001)).toBe('$0.001');
+        expect(formatCost(0.0001)).toBe('$0.001');
+        expect(formatCost(0.00001)).toBe('$0.001');
     });
 });
