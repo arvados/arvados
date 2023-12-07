@@ -9,6 +9,7 @@ import {
     msCommonProjectActionFilter,
     msReadOnlyProjectActionFilter,
     msFilterGroupActionFilter,
+    msAdminFilterGroupActionFilter,
     msFrozenProjectActionFilter,
     msAdminFrozenProjectActionFilter
 } from 'views-components/multiselect-toolbar/ms-project-action-set';
@@ -78,6 +79,7 @@ const {
     FROZEN_PROJECT_ADMIN,
     READONLY_PROJECT,
     FILTER_GROUP,
+    FILTER_GROUP_ADMIN,
     WORKFLOW,
     READONLY_WORKFLOW,
 } = msMenuResourceKind;
@@ -106,6 +108,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [ResourceKind.PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
     
     [FILTER_GROUP]: [msProjectActionSet, msFilterGroupActionFilter],
+    [FILTER_GROUP_ADMIN]: [msProjectActionSet, msAdminFilterGroupActionFilter],
     
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
