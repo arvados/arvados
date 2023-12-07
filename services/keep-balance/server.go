@@ -100,6 +100,7 @@ func (srv *Server) runForever(ctx context.Context) error {
 
 	sigUSR1 := make(chan os.Signal, 1)
 	signal.Notify(sigUSR1, syscall.SIGUSR1)
+	defer signal.Stop(sigUSR1)
 
 	logger.Info("acquiring service lock")
 	dblock.KeepBalanceService.Lock(ctx, func(context.Context) (*sqlx.DB, error) { return srv.DB, nil })
@@ -126,7 +127,6 @@ func (srv *Server) runForever(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
-			signal.Stop(sigUSR1)
 			return nil
 		case <-ticker.C:
 			logger.Print("timer went off")
@@ -135,8 +135,7 @@ func (srv *Server) runForever(ctx context.Context) error {
 			// Reset the timer so we don't start the N+1st
 			// run too soon after the Nth run is triggered
 			// by SIGUSR1.
-			ticker.Stop()
-			ticker = time.NewTicker(time.Duration(srv.Cluster.Collections.BalancePeriod))
+			ticker.Reset(time.Duration(srv.Cluster.Collections.BalancePeriod))
 		}
 		logger.Print("starting next run")
 	}
