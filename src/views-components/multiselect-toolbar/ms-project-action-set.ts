@@ -23,6 +23,7 @@ import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.act
 
 const {
     ADD_TO_FAVORITES,
+    ADD_TO_PUBLIC_FAVORITES,
     OPEN_IN_NEW_TAB,
     COPY_TO_CLIPBOARD,
     VIEW_DETAILS,
@@ -151,4 +152,5 @@ export const msCommonProjectActionFilter = new Set<string>([
 ]);
 export const msReadOnlyProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS,]);
 export const msFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT])
+export const msAdminFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT, ADD_TO_PUBLIC_FAVORITES])
 export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO])

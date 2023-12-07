@@ -10,6 +10,7 @@ import {
     msReadOnlyProjectActionFilter,
     msFilterGroupActionFilter,
     msFrozenProjectActionFilter,
+    msAdminFrozenProjectActionFilter
 } from 'views-components/multiselect-toolbar/ms-project-action-set';
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
@@ -100,7 +101,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
     [PROJECT_ADMIN]: [msProjectActionSet, allActionNames(msProjectActionSet)],
     [FROZEN_PROJECT]: [msProjectActionSet, msFrozenProjectActionFilter],
-    [FROZEN_PROJECT_ADMIN]: [msProjectActionSet, msFrozenProjectActionFilter], 
+    [FROZEN_PROJECT_ADMIN]: [msProjectActionSet, msAdminFrozenProjectActionFilter], 
     [READONLY_PROJECT]: [msProjectActionSet, msReadOnlyProjectActionFilter],
     [ResourceKind.PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
     
