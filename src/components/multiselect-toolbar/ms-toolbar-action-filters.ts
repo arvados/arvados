@@ -11,7 +11,7 @@ import {
     msFilterGroupActionFilter,
     msFrozenProjectActionFilter,
 } from 'views-components/multiselect-toolbar/ms-project-action-set';
-import { msProcessActionSet, msCommonProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
+import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 import { ResourceKind } from 'models/resource';
 
@@ -63,7 +63,23 @@ export enum msMenuResourceKind {
     SEARCH_RESULTS = 'SearchResults',
 }
 
-const { COLLECTION, COLLECTION_ADMIN, READONLY_COLLECTION, PROCESS, PROCESS_ADMIN, PROJECT, PROJECT_ADMIN, FROZEN_PROJECT, FROZEN_PROJECT_ADMIN, READONLY_PROJECT, FILTER_GROUP, WORKFLOW, READONLY_WORKFLOW } = msMenuResourceKind;
+const {
+    COLLECTION,
+    COLLECTION_ADMIN,
+    READONLY_COLLECTION,
+    PROCESS_RESOURCE,
+    RUNNING_PROCESS_RESOURCE,
+    RUNNING_PROCESS_ADMIN,
+    PROCESS_ADMIN,
+    PROJECT,
+    PROJECT_ADMIN,
+    FROZEN_PROJECT,
+    FROZEN_PROJECT_ADMIN,
+    READONLY_PROJECT,
+    FILTER_GROUP,
+    WORKFLOW,
+    READONLY_WORKFLOW,
+} = msMenuResourceKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
 
@@ -71,19 +87,25 @@ const allActionNames = (actionSet: MultiSelectMenuActionSet): Set<string> => new
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
+    [COLLECTION_ADMIN]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [READONLY_COLLECTION]: [msCollectionActionSet, msReadOnlyCollectionActionFilter],
     [ResourceKind.COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
-    [COLLECTION_ADMIN]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
-    [PROCESS]: [msProcessActionSet, msCommonProcessActionFilter],
+
+    [PROCESS_RESOURCE]: [msProcessActionSet, msCommonProcessActionFilter],
+    [PROCESS_ADMIN]: [msProcessActionSet, msAdminProcessActionFilter],
+    [RUNNING_PROCESS_RESOURCE]: [msProcessActionSet, msRunningProcessActionFilter],
+    [RUNNING_PROCESS_ADMIN]: [msProcessActionSet, allActionNames(msProcessActionSet)],
     [ResourceKind.PROCESS]: [msProcessActionSet, msCommonProcessActionFilter],
-    [PROCESS_ADMIN]: [msProcessActionSet, msCommonProcessActionFilter],
+    
     [PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
-    [ResourceKind.PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
     [PROJECT_ADMIN]: [msProjectActionSet, allActionNames(msProjectActionSet)],
     [FROZEN_PROJECT]: [msProjectActionSet, msFrozenProjectActionFilter],
     [FROZEN_PROJECT_ADMIN]: [msProjectActionSet, msFrozenProjectActionFilter], 
     [READONLY_PROJECT]: [msProjectActionSet, msReadOnlyProjectActionFilter],
+    [ResourceKind.PROJECT]: [msProjectActionSet, msCommonProjectActionFilter],
+    
     [FILTER_GROUP]: [msProjectActionSet, msFilterGroupActionFilter],
+    
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
 };
