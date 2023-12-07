@@ -66,8 +66,9 @@ ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 # Preseed the go module cache and the ruby gems, using the currently checked
 # out branch of the source tree. This avoids potential compatibility issues
 # between the version of Ruby and certain gems.
-RUN git clone --depth 1 --branch ${BRANCH} git://git.arvados.org/arvados.git /tmp/arvados && \
+RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
+    if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados/apps/workbench && \

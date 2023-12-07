@@ -203,7 +203,7 @@ if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
     cd $TARGET
     time docker build --tag "$IMAGE" \
 	 --build-arg HOSTTYPE=$HOSTTYPE \
-	 --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+	 --build-arg BRANCH=$(git rev-parse HEAD) \
 	 --build-arg GOVERSION=$GOVERSION --no-cache .
     popd
 fi
