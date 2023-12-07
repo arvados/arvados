@@ -42,10 +42,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         flexDirection: "row",
         width: 0,
+        height: '2.7rem',
         padding: 0,
         margin: "1rem auto auto 0.5rem",
-        overflowY: 'scroll',
+        overflowY: 'auto',
         transition: "width 150ms",
+        scrollBehavior: 'smooth',
+        '&::-webkit-scrollbar': {
+            width: 0,
+            height: 2
+        },
+        '&::-webkit-scrollbar-track': {
+            width: 0,
+            height: 2
+        },
+        '&::-webkit-scrollbar-thumb': {
+            backgroundColor: theme.customs.colors.grey600,
+            borderRadius: 2
+        }
     },
     button: {
         width: "2.5rem",
