@@ -33,6 +33,12 @@ type FileWithProgress = {
     lastByte: number;
 }
 
+type SortableLine = {
+    logType: LogEventType,
+    timestamp: string;
+    contents: string;
+}
+
 export type ProcessLogsPanelAction = UnionOf<typeof processLogsPanelActions>;
 
 export const setProcessLogsPanelFilter = (filter: string) =>
@@ -257,18 +263,61 @@ const mergeMultilineLoglines = (logFragments: LogFragment[]) => (
  * @returns string[] of merged and sorted log lines
  */
 const mergeSortLogFragments = (logFragments: LogFragment[]): string[] => {
-    const sortableLines = fragmentsToLines(logFragments
-        .filter((fragment) => (!NON_SORTED_LOG_TYPES.includes(fragment.logType))));
+    const sortableFragments = logFragments
+        .filter((fragment) => (!NON_SORTED_LOG_TYPES.includes(fragment.logType)));
 
     const nonSortableLines = fragmentsToLines(logFragments
         .filter((fragment) => (NON_SORTED_LOG_TYPES.includes(fragment.logType)))
         .sort((a, b) => (a.logType.localeCompare(b.logType))));
 
-    return [...nonSortableLines, ...sortableLines.sort(sortLogLines)]
+    return [...nonSortableLines, ...sortLogFragments(sortableFragments)];
 };
 
-const sortLogLines = (a: string, b: string) => {
-    return a.localeCompare(b);
+/**
+ * Performs merge and sort of input log fragment lines
+ * @param logFragments set of sortable log fragments to be merged and sorted
+ * @returns A string array containing all lines, sorted by timestamp and
+ *          preserving line ordering and type grouping when timestamps match
+ */
+const sortLogFragments = (logFragments: LogFragment[]): string[] => {
+    const linesWithType: SortableLine[] = logFragments
+        // Map each logFragment into an array of SortableLine
+        .map((fragment: LogFragment): SortableLine[] => (
+            fragment.contents.map((singleLine: string) => {
+                const timestampMatch = singleLine.match(LOG_TIMESTAMP_PATTERN);
+                const timestamp = timestampMatch && timestampMatch[0] ? timestampMatch[0] : "";
+                return {
+                    logType: fragment.logType,
+                    timestamp: timestamp,
+                    contents: singleLine,
+                };
+            })
+        // Merge each array of SortableLine into single array
+        )).reduce((acc: SortableLine[], lines: SortableLine[]) => (
+            [...acc, ...lines]
+        ), [] as SortableLine[]);
+
+    return linesWithType
+        .sort(sortableLineSortFunc)
+        .map(lineWithType => lineWithType.contents);
+};
+
+/**
+ * Sort func to sort lines
+ *   Preserves original ordering of lines from the same source
+ *   Stably orders lines of differing type but same timestamp
+ *     (produces a block of same-timestamped lines of one type before a block
+ *     of same timestamped lines of another type for readability)
+ *   Sorts all other lines by contents (ie by timestamp)
+ */
+const sortableLineSortFunc = (a: SortableLine, b: SortableLine) => {
+    if (a.logType === b.logType) {
+        return 0;
+    } else if (a.timestamp === b.timestamp) {
+        return a.logType.localeCompare(b.logType);
+    } else {
+        return a.contents.localeCompare(b.contents);
+    }
 };
 
 const fragmentsToLines = (fragments: LogFragment[]): string[] => (
