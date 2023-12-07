@@ -57,7 +57,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             height: 2
         },
         '&::-webkit-scrollbar-thumb': {
-            backgroundColor: theme.customs.colors.grey600,
+            backgroundColor: '#757575',
             borderRadius: 2
         }
     },
