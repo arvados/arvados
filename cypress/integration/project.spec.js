@@ -473,7 +473,7 @@ describe("Project tests", function () {
             });
         });
 
-        it("should be able to froze own project", () => {
+        it("should be able to freeze own project", () => {
             cy.getAll("@mainProject").then(([mainProject]) => {
                 cy.loginAs(activeUser);
 
@@ -503,7 +503,7 @@ describe("Project tests", function () {
             });
         });
 
-        it("should be able to froze not owned project", () => {
+        it("should be able to freeze not owned project", () => {
             cy.getAll("@adminProject").then(([adminProject]) => {
                 cy.loginAs(activeUser);
 
@@ -515,7 +515,7 @@ describe("Project tests", function () {
             });
         });
 
-        it("should be able to unfroze project if user is an admin", () => {
+        it("should be able to unfreeze project if user is an admin", () => {
             cy.getAll("@adminProject").then(([adminProject]) => {
                 cy.loginAs(adminUser);
 
