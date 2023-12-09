@@ -44,10 +44,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     title: {
         display: "inline-block",
         paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 3,
+        paddingTop: theme.spacing.unit * 2,
         fontSize: "18px",
         paddingRight: "10px",
-        marginBottom: '-50px'
     },
     subProcessTitle: {
         display: "inline-block",
@@ -196,6 +195,7 @@ export const DataExplorer = withStyles(styles)(
                 paperKey,
                 fetchMode,
                 currentItemUuid,
+                currentRoute,
                 title,
                 progressBar,
                 doHidePanel,
@@ -221,7 +221,7 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        <div className={classes.titleWrapper}>
+                        <div className={classes.titleWrapper} style={currentRoute?.includes('search-results') ? {marginBottom: '-20px'} : {}}>
                             {title && (
                                 <Grid
                                     item
@@ -303,6 +303,7 @@ export const DataExplorer = withStyles(styles)(
                             item
                             xs="auto"
                             className={classes.dataTable}
+                            style={currentRoute?.includes('search-results') ? {marginTop: '-10px'} : {}}
                         >
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
