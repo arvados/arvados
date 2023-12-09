@@ -97,6 +97,12 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupConten
 				filter.Operand = tmp[2]
 				options.Filters = append(options.Filters, filter)
 			}
+			// Prevent infinite-depth trees caused by a
+			// filter group whose filters match [other
+			// filter groups that match] itself. Such
+			// cycles are supported by sitefs, but they
+			// cause havoc in webdav. See #21214.
+			options.Filters = append(options.Filters, arvados.Filter{"groups.group_class", "=", "project"})
 		} else {
 			return resp, fmt.Errorf("filter unparsable: not an array\n")
 		}
