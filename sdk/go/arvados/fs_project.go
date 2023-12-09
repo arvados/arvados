@@ -23,6 +23,20 @@ func (fs *customFileSystem) defaultUUID(uuid string) (string, error) {
 	return resp.UUID, nil
 }
 
+// The groups content endpoint returns Collection and Group (project)
+// objects. This struct lets us load the common Items fields for both
+// types (UUID, Name, ModifiedAt, and Properties), and GroupClass for
+// groups, into one struct.
+type groupContentsResponse struct {
+	Items []struct {
+		UUID       string                 `json:"uuid"`
+		Name       string                 `json:"name"`
+		ModifiedAt time.Time              `json:"modified_at"`
+		GroupClass string                 `json:"group_class"`
+		Properties map[string]interface{} `json:"properties"`
+	}
+}
+
 // loadOneChild loads only the named child, if it exists.
 func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (inode, error) {
 	uuid, err := fs.defaultUUID(uuid)
@@ -30,22 +44,22 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 		return nil, err
 	}
 
-	var contents CollectionList
+	var resp groupContentsResponse
 	for _, subst := range []string{"/", fs.forwardSlashNameSubstitution} {
-		contents = CollectionList{}
-		err = fs.RequestAndDecode(&contents, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, ResourceListParams{
+		resp = groupContentsResponse{}
+		err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, ResourceListParams{
 			Count: "none",
 			Filters: []Filter{
 				{"name", "=", strings.Replace(name, subst, "/", -1)},
 				{"uuid", "is_a", []string{"arvados#collection", "arvados#group"}},
-				{"groups.group_class", "=", "project"},
+				{"groups.group_class", "in", []string{"project", "filter"}},
 			},
-			Select: []string{"uuid", "name", "modified_at", "properties"},
+			Select: []string{"uuid", "name", "modified_at", "properties", "group_class"},
 		})
 		if err != nil {
 			return nil, err
 		}
-		if len(contents.Items) > 0 || fs.forwardSlashNameSubstitution == "/" || fs.forwardSlashNameSubstitution == "" || !strings.Contains(name, fs.forwardSlashNameSubstitution) {
+		if len(resp.Items) > 0 || fs.forwardSlashNameSubstitution == "/" || fs.forwardSlashNameSubstitution == "" || !strings.Contains(name, fs.forwardSlashNameSubstitution) {
 			break
 		}
 		// If the requested name contains the configured "/"
@@ -58,28 +72,28 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 		// Note this doesn't handle items whose names contain
 		// both "/" and the substitution string.
 	}
-	if len(contents.Items) == 0 {
+	if len(resp.Items) == 0 {
 		return nil, nil
 	}
-	coll := contents.Items[0]
-
-	if strings.Contains(coll.UUID, "-j7d0g-") {
-		// Group item was loaded into a Collection var -- but
-		// we only need the Name and UUID anyway, so it's OK.
+	item := resp.Items[0]
+	isGroup := strings.Contains(item.UUID, "-j7d0g-")
+	if strings.Contains(item.UUID, "-4zz18-") {
+		return fs.newDeferredCollectionDir(parent, name, item.UUID, item.ModifiedAt, item.Properties), nil
+	} else if isGroup && item.GroupClass == "filter" {
+		return fs.newCollectionOrProjectSymlink(parent, name, item.UUID, item.ModifiedAt, item.Properties)
+	} else if isGroup && item.GroupClass == "project" {
 		return &hardlink{
-			inode: fs.projectSingleton(coll.UUID, &Group{
-				UUID:       coll.UUID,
-				Name:       coll.Name,
-				ModifiedAt: coll.ModifiedAt,
-				Properties: coll.Properties,
+			inode: fs.projectSingleton(item.UUID, &Group{
+				UUID:       item.UUID,
+				Name:       item.Name,
+				ModifiedAt: item.ModifiedAt,
+				Properties: item.Properties,
 			}),
 			parent: parent,
-			name:   coll.Name,
+			name:   item.Name,
 		}, nil
-	} else if strings.Contains(coll.UUID, "-4zz18-") {
-		return fs.newDeferredCollectionDir(parent, name, coll.UUID, coll.ModifiedAt, coll.Properties), nil
 	} else {
-		log.Printf("group contents: unrecognized UUID in response: %q", coll.UUID)
+		log.Printf("group contents: unrecognized UUID in response: %q", item.UUID)
 		return nil, ErrInvalidArgument
 	}
 }
@@ -104,27 +118,19 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 			{"uuid", "is_a", class},
 		}
 		if class == "arvados#group" {
-			filters = append(filters, Filter{"group_class", "=", "project"})
+			filters = append(filters, Filter{"groups.group_class", "in", []string{"project", "filter"}})
 		}
 
 		params := ResourceListParams{
 			Count:   "none",
 			Filters: filters,
 			Order:   "uuid",
-			Select:  []string{"uuid", "name", "modified_at", "properties"},
+			Select:  []string{"uuid", "name", "modified_at", "properties", "group_class"},
 			Limit:   &pagesize,
 		}
 
 		for {
-			// The groups content endpoint returns
-			// Collection and Group (project)
-			// objects. This function only accesses the
-			// UUID, Name, and ModifiedAt fields. Both
-			// collections and groups have those fields,
-			// so it is easier to just treat the
-			// ObjectList that comes back as a
-			// CollectionList.
-			var resp CollectionList
+			var resp groupContentsResponse
 			err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, params)
 			if err != nil {
 				return nil, err
@@ -139,15 +145,24 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 				if !permittedName(i.Name) {
 					continue
 				}
-				if strings.Contains(i.UUID, "-j7d0g-") {
+				isGroup := strings.Contains(i.UUID, "-j7d0g-")
+				if strings.Contains(i.UUID, "-4zz18-") {
+					inodes = append(inodes, fs.newDeferredCollectionDir(parent, i.Name, i.UUID, i.ModifiedAt, i.Properties))
+				} else if isGroup && i.GroupClass == "filter" {
+					inode, err := fs.newCollectionOrProjectSymlink(parent, i.Name, i.UUID, i.ModifiedAt, i.Properties)
+					if err != nil {
+						return nil, err
+					}
+					if inode != nil {
+						inodes = append(inodes, inode)
+					}
+				} else if isGroup && i.GroupClass == "project" {
 					inodes = append(inodes, fs.newProjectDir(parent, i.Name, i.UUID, &Group{
 						UUID:       i.UUID,
 						Name:       i.Name,
 						ModifiedAt: i.ModifiedAt,
 						Properties: i.Properties,
 					}))
-				} else if strings.Contains(i.UUID, "-4zz18-") {
-					inodes = append(inodes, fs.newDeferredCollectionDir(parent, i.Name, i.UUID, i.ModifiedAt, i.Properties))
 				} else {
 					log.Printf("group contents: unrecognized UUID in response: %q", i.UUID)
 					return nil, ErrInvalidArgument
@@ -157,6 +172,29 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 		}
 	}
 	return inodes, nil
+}
+
+// create a symlink to the given collection or project. If it's not
+// possible to create a symlink because the filesystem does not have a
+// "by_id" mount point to put the target in, return (nil, nil).
+func (fs *customFileSystem) newCollectionOrProjectSymlink(parent inode, name, targetUUID string, modTime time.Time, props map[string]interface{}) (inode, error) {
+	fs.root.treenode.Lock()
+	byIDPath := fs.byIDPath
+	fs.root.treenode.Unlock()
+	if byIDPath == "" {
+		return nil, nil
+	}
+	targetPath := []byte("/" + byIDPath + "/" + targetUUID)
+	return &getternode{
+		Getter: func() ([]byte, error) { return targetPath, nil },
+		treenode: treenode{
+			fileinfo: fileinfo{
+				name:    name,
+				modTime: modTime,
+				mode:    os.ModeSymlink,
+			},
+		},
+	}, nil
 }
 
 func (fs *customFileSystem) newProjectDir(parent inode, name, uuid string, proj *Group) inode {

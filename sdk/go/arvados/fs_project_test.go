@@ -51,7 +51,7 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	_, err = s.fs.OpenFile("/fg/A Project", 0, 0)
-	c.Assert(err, check.Not(check.IsNil))
+	c.Assert(err, check.Equals, os.ErrNotExist)
 
 	// An empty filter means everything that is visible should be returned.
 	s.fs.MountProject("fg2", fixtureAFilterGroupTwoUUID)
@@ -72,7 +72,7 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	_, err = s.fs.OpenFile("/fg3/A Subproject", 0, 0)
-	c.Assert(err, check.Not(check.IsNil))
+	c.Assert(err, check.Equals, os.ErrNotExist)
 
 	// An 'exists' 'arvados#collection' filter means only collections with certain properties should be returned.
 	s.fs.MountProject("fg4", fixtureAFilterGroupFourUUID)
@@ -93,10 +93,64 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	_, err = s.fs.Stat("/fg5/collection with prop2 5")
-	c.Assert(err, check.Not(check.IsNil))
+	c.Assert(err, check.Equals, os.ErrNotExist)
 
 	_, err = s.fs.Stat("/fg5/collection with list property with even values")
-	c.Assert(err, check.Not(check.IsNil))
+	c.Assert(err, check.Equals, os.ErrNotExist)
+}
+
+func (s *SiteFSSuite) TestFilterGroupByName(c *check.C) {
+	f, err := s.fs.Open("/users/active/This filter group/A Subproject")
+	if c.Check(err, check.IsNil) {
+		ents, err := f.Readdir(-1)
+		c.Check(err, check.IsNil)
+		c.Check(len(ents) > 0, check.Equals, true)
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+
+	f, err = s.fs.Open("/users/active/This filter group/A Project")
+	c.Check(err, check.Equals, os.ErrNotExist)
+
+	f, err = s.fs.Open("/users/active/This filter group")
+	if c.Check(err, check.IsNil) {
+		ents, err := f.Readdir(-1)
+		c.Check(err, check.IsNil)
+		c.Check(len(ents) > 0, check.Equals, true)
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+
+	fi, err := s.fs.Lstat("/users/active/This filter group")
+	if c.Check(err, check.IsNil) {
+		c.Check(fi.Mode()&os.ModeSymlink, check.Not(check.Equals), os.FileMode(0))
+	}
+
+	fi, err = s.fs.Lstat("/users/active/This filter group/.")
+	if c.Check(err, check.IsNil) {
+		c.Check(fi.Mode()&os.ModeSymlink, check.Equals, os.FileMode(0))
+	}
+
+	target, err := s.fs.Readlink("/users/active/This filter group/")
+	c.Check(err, check.NotNil)
+	target, err = s.fs.Readlink("/users/active/This filter group")
+	c.Check(err, check.IsNil)
+	c.Check(target, check.Equals, "../../by_id/"+fixtureThisFilterGroupUUID)
+	target, err = s.fs.Readlink("users/active/This filter group")
+	c.Check(err, check.IsNil)
+	c.Check(target, check.Equals, "../../by_id/"+fixtureThisFilterGroupUUID)
+
+	f, err = s.fs.Open("/users/active/This filter group/baz_file/baz")
+	if c.Check(err, check.IsNil) {
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
+
+	f, err = s.fs.Open("/by_id/" + fixtureThisFilterGroupUUID + "/baz_file/baz")
+	if c.Check(err, check.IsNil) {
+		err = f.Close()
+		c.Check(err, check.IsNil)
+	}
 }
 
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {

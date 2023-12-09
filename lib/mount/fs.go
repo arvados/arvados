@@ -274,6 +274,8 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 	var m uint32
 	if fi.IsDir() {
 		m = m | fuse.S_IFDIR
+	} else if fi.Mod()&os.ModeSymlink != 0 {
+		m = m | fuse.S_IFLNK
 	} else {
 		m = m | fuse.S_IFREG
 	}
@@ -294,6 +296,15 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 	if fs.Gid > 0 && int64(fs.Gid) < 1<<31 {
 		stat.Gid = uint32(fs.Gid)
 	}
+}
+
+func (fs *keepFS) Readlink(path string) (n int, target string) {
+	defer fs.debugPanics()
+	target, err := fs.root.Readlink(path)
+	if err != nil {
+		return fs.errCode(err), ""
+	}
+	return 0, target
 }
 
 func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) {

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -117,8 +118,9 @@ type FileSystem interface {
 	// create a new node with nil parent.
 	newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error)
 
-	// analogous to os.Stat()
+	// analogous to os.Stat() and os.Lstat()
 	Stat(name string) (os.FileInfo, error)
+	Lstat(name string) (os.FileInfo, error)
 
 	// analogous to os.Create(): create/truncate a file and open it O_RDWR.
 	Create(name string) (File, error)
@@ -142,6 +144,7 @@ type FileSystem interface {
 	Remove(name string) error
 	RemoveAll(name string) error
 	Rename(oldname, newname string) error
+	Readlink(name string) (string, error)
 
 	// Write buffered data from memory to storage, returning when
 	// all updates have been saved to persistent storage.
@@ -387,10 +390,11 @@ func (n *treenode) Size() int64 {
 }
 
 func (n *treenode) FileInfo() os.FileInfo {
-	n.Lock()
-	defer n.Unlock()
-	n.fileinfo.size = int64(len(n.inodes))
-	return n.fileinfo
+	n.RLock()
+	defer n.RUnlock()
+	fi := n.fileinfo
+	fi.size = int64(len(n.inodes))
+	return fi
 }
 
 func (n *treenode) Readdir() (fi []os.FileInfo, err error) {
@@ -466,6 +470,24 @@ func (fs *fileSystem) OpenFile(name string, flag int, perm os.FileMode) (File, e
 func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*filehandle, error) {
 	if flag&os.O_SYNC != 0 {
 		return nil, ErrSyncNotSupported
+	}
+	if node, _ := rlookupNoCycle(fs.root, name, map[inode]bool{}, false); node != nil && node.FileInfo().Mode()&os.ModeSymlink != 0 {
+		// Currently the only supported symlinks are ones that
+		// point to a /by_id/{uuid} directory, so here we only
+		// need to deal with that case.
+		if flag != os.O_RDONLY {
+			return nil, ErrInvalidArgument
+		}
+		node, err := rlookup(fs.root, name)
+		if err != nil {
+			return nil, err
+		}
+		return &filehandle{
+			inode:    node,
+			append:   false,
+			readable: true,
+			writable: false,
+		}, nil
 	}
 	dirname, name := path.Split(name)
 	parent, err := rlookup(fs.root, dirname)
@@ -580,6 +602,43 @@ func (fs *fileSystem) Stat(name string) (os.FileInfo, error) {
 		return nil, err
 	}
 	return node.FileInfo(), nil
+}
+
+func (fs *fileSystem) Lstat(name string) (os.FileInfo, error) {
+	node, err := rlookupNoCycle(fs.root, name, map[inode]bool{}, false)
+	if err != nil {
+		return nil, err
+	}
+	return node.FileInfo(), nil
+}
+
+func (fs *fileSystem) Readlink(name string) (string, error) {
+	node, err := rlookupNoCycle(fs.root, name, map[inode]bool{}, false)
+	if err != nil {
+		return "", err
+	}
+	if node.FileInfo().Mode()&os.ModeSymlink == 0 {
+		return "", ErrInvalidArgument
+	}
+	target, err := fs.readlink(node)
+	if err != nil {
+		return "", nil
+	}
+	// Returned symlinks must be relative.  Internally, a filter
+	// group in "/users/active/fgname" is a symlink to
+	// "/by_id/{fguuid}"; we expose that externally as a symlink
+	// to "../../by_id/{fguuid}".
+	dirname, _ := filepath.Split(name)
+	return filepath.Rel("/"+dirname, target)
+}
+
+func (fs *fileSystem) readlink(node inode) (string, error) {
+	gn, ok := node.(*getternode)
+	if !ok {
+		return "", fmt.Errorf("unimplemented symlink type %T", node)
+	}
+	target, err := gn.Getter()
+	return string(target), err
 }
 
 func (fs *fileSystem) Rename(oldname, newname string) error {
@@ -742,8 +801,13 @@ func (fs *fileSystem) MemorySize() int64 {
 // with the given name (which may contain "/" separators). If no such
 // file/directory exists, the returned node is nil.
 func rlookup(start inode, path string) (node inode, err error) {
+	return rlookupNoCycle(start, path, map[inode]bool{}, true)
+}
+
+func rlookupNoCycle(start inode, path string, followed map[inode]bool, resolveSymlink bool) (node inode, err error) {
 	node = start
-	for _, name := range strings.Split(path, "/") {
+	names := strings.Split(path, "/")
+	for idx, name := range names {
 		if node.IsDir() {
 			if name == "." || name == "" {
 				continue
@@ -753,13 +817,31 @@ func rlookup(start inode, path string) (node inode, err error) {
 				continue
 			}
 		}
-		node, err = func() (inode, error) {
-			node.Lock()
-			defer node.Unlock()
-			return node.Child(name, nil)
-		}()
+		node.Lock()
+		child, err := node.Child(name, nil)
+		node.Unlock()
+		node = child
 		if node == nil || err != nil {
 			break
+		}
+		if node.FileInfo().Mode()&os.ModeSymlink != 0 && (idx < len(names)-1 || resolveSymlink) {
+			if followed[node] {
+				return nil, fmt.Errorf("symlink cycle detected in path %q at %q (%d)", path, node.FileInfo().Name(), idx)
+			}
+			gn, ok := node.(*getternode)
+			if !ok {
+				return nil, fmt.Errorf("unimplemented symlink type %T", node)
+			}
+			target, err := gn.Getter()
+			if err != nil {
+				return nil, err
+			}
+			followed[node] = true
+			if len(target) > 0 && target[0] == '/' {
+				node, err = rlookupNoCycle(start, string(target), followed, resolveSymlink)
+			} else {
+				node, err = rlookupNoCycle(node, string(target), followed, resolveSymlink)
+			}
 		}
 	}
 	if node == nil && err == nil {

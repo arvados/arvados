@@ -30,9 +30,16 @@ type customFileSystem struct {
 
 	forwardSlashNameSubstitution string
 
+	// invisible directory containing singleton
+	// projects/collections
 	byID     map[string]inode
 	byIDLock sync.Mutex
 	byIDRoot *treenode
+
+	// visible directory containing hardlinks to singleton
+	// projects/collections, typically "by_id" but can be empty if
+	// MountByID() has not been used.
+	byIDPath string
 }
 
 func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
@@ -72,6 +79,7 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 func (fs *customFileSystem) MountByID(mount string) {
 	fs.root.treenode.Lock()
 	defer fs.root.treenode.Unlock()
+	fs.byIDPath = mount
 	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &vdirnode{
 			treenode: treenode{
@@ -385,4 +393,8 @@ func (hl *hardlink) FileInfo() os.FileInfo {
 		return fi
 	}
 	return fi
+}
+
+func (hl *hardlink) MemorySize() int64 {
+	return 64
 }
