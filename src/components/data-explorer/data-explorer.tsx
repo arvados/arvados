@@ -221,7 +221,7 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        <div className={classes.titleWrapper} style={currentRoute?.includes('search-results') ? {marginBottom: '-20px'} : {}}>
+                        <div className={classes.titleWrapper} style={currentRoute?.includes('search-results') || !!progressBar ? {marginBottom: '-20px'} : {}}>
                             {title && (
                                 <Grid
                                     item
@@ -303,7 +303,7 @@ export const DataExplorer = withStyles(styles)(
                             item
                             xs="auto"
                             className={classes.dataTable}
-                            style={currentRoute?.includes('search-results') ? {marginTop: '-10px'} : {}}
+                            style={currentRoute?.includes('search-results')  || !!progressBar ? {marginTop: '-10px'} : {}}
                         >
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
