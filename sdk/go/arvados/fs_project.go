@@ -38,7 +38,7 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 			Filters: []Filter{
 				{"name", "=", strings.Replace(name, subst, "/", -1)},
 				{"uuid", "is_a", []string{"arvados#collection", "arvados#group"}},
-				{"groups.group_class", "=", "project"},
+				{"groups.group_class", "in", []string{"project", "filter"}},
 			},
 			Select: []string{"uuid", "name", "modified_at", "properties"},
 		})
@@ -104,7 +104,7 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 			{"uuid", "is_a", class},
 		}
 		if class == "arvados#group" {
-			filters = append(filters, Filter{"group_class", "=", "project"})
+			filters = append(filters, Filter{"groups.group_class", "in", []string{"project", "filter"}})
 		}
 
 		params := ResourceListParams{
