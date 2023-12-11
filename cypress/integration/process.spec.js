@@ -556,6 +556,53 @@ describe("Process tests", function () {
             });
         });
 
+        it("preserves original ordering of lines within the same log type", function () {
+            const crName = "test_container_request";
+            createContainerRequest(activeUser, crName, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (containerRequest) {
+                cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", [
+                    // Should come first
+                    "2023-07-18T20:14:46.000000000Z A out 1",
+                    // Comes fourth in a contiguous block
+                    "2023-07-18T20:14:48.128642814Z A out 2",
+                    "2023-07-18T20:14:48.128642814Z X out 3",
+                    "2023-07-18T20:14:48.128642814Z A out 4",
+                ]).as("stdout");
+
+                cy.appendLog(adminUser.token, containerRequest.uuid, "stderr.txt", [
+                    // Comes second
+                    "2023-07-18T20:14:47.000000000Z Z err 1",
+                    // Comes third in a contiguous block
+                    "2023-07-18T20:14:48.128642814Z B err 2",
+                    "2023-07-18T20:14:48.128642814Z C err 3",
+                    "2023-07-18T20:14:48.128642814Z Y err 4",
+                    "2023-07-18T20:14:48.128642814Z Z err 5",
+                    "2023-07-18T20:14:48.128642814Z A err 6",
+                ]).as("stderr");
+
+                cy.loginAs(activeUser);
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.get("[data-cy=process-details]").should("contain", crName);
+                cy.get("[data-cy=process-logs]").should("contain", "No logs yet");
+
+                cy.getAll("@stdout", "@stderr").then(() => {
+                    // Switch to All logs
+                    cy.get("[data-cy=process-logs-filter]").click();
+                    cy.get("body").contains("li", "All logs").click();
+                    // Verify sorted logs
+                    cy.get("[data-cy=process-logs] pre").eq(0).should("contain", "2023-07-18T20:14:46.000000000Z A out 1");
+                    cy.get("[data-cy=process-logs] pre").eq(1).should("contain", "2023-07-18T20:14:47.000000000Z Z err 1");
+                    cy.get("[data-cy=process-logs] pre").eq(2).should("contain", "2023-07-18T20:14:48.128642814Z B err 2");
+                    cy.get("[data-cy=process-logs] pre").eq(3).should("contain", "2023-07-18T20:14:48.128642814Z C err 3");
+                    cy.get("[data-cy=process-logs] pre").eq(4).should("contain", "2023-07-18T20:14:48.128642814Z Y err 4");
+                    cy.get("[data-cy=process-logs] pre").eq(5).should("contain", "2023-07-18T20:14:48.128642814Z Z err 5");
+                    cy.get("[data-cy=process-logs] pre").eq(6).should("contain", "2023-07-18T20:14:48.128642814Z A err 6");
+                    cy.get("[data-cy=process-logs] pre").eq(7).should("contain", "2023-07-18T20:14:48.128642814Z A out 2");
+                    cy.get("[data-cy=process-logs] pre").eq(8).should("contain", "2023-07-18T20:14:48.128642814Z X out 3");
+                    cy.get("[data-cy=process-logs] pre").eq(9).should("contain", "2023-07-18T20:14:48.128642814Z A out 4");
+                });
+            });
+        });
+
         it("correctly generates sniplines", function () {
             const SNIPLINE = `================ ✀ ================ ✀ ========= Some log(s) were skipped ========= ✀ ================ ✀ ================`;
             const crName = "test_container_request";
