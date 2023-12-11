@@ -630,6 +630,8 @@ sv stop keepproxy
 cd /usr/src/arvados/services/api
 export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
 export RAILS_ENV=development
+export GEM_HOME=/var/lib/arvados-arvbox/.gem
+env
 bin/bundle exec rake db:drop
 rm $ARVADOS_CONTAINER_PATH/api_database_setup
 rm $ARVADOS_CONTAINER_PATH/superuser_token
