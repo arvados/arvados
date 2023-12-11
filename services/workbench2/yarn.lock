@@ -1646,23 +1646,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@coreui/coreui@npm:next":
-  version: 5.0.0-alpha.3
-  resolution: "@coreui/coreui@npm:5.0.0-alpha.3"
+"@coreui/coreui@npm:^4.3.2":
+  version: 4.3.2
+  resolution: "@coreui/coreui@npm:4.3.2"
+  dependencies:
+    postcss-combine-duplicated-selectors: ^10.0.3
   peerDependencies:
-    "@popperjs/core": ^2.11.8
-  checksum: 2363ad6be775c6a895a49126a5b9062ffa9ebd0bea6dfb835c1300cd122fb1cf18d85fe647a9c08a3a384caa871e761d8ffb28ea45c7872cb2b034df6527da20
+    "@popperjs/core": ^2.11.6
+  checksum: 88fc70f4f681bb796e1d81ca8472a3d36bfcf92866fc7c6810ead850bc371c99bca123a94abb0fafdf2935972d130005cd62b485406631cfd9abd8f38e14be15
   languageName: node
   linkType: hard
 
-"@coreui/react@npm:next":
-  version: 5.0.0-alpha.3
-  resolution: "@coreui/react@npm:5.0.0-alpha.3"
+"@coreui/react@npm:^4.11.0":
+  version: 4.11.0
+  resolution: "@coreui/react@npm:4.11.0"
   peerDependencies:
-    "@coreui/coreui": ^5.0.0-alpha.2
+    "@coreui/coreui": 4.3.0
     react: ">=17"
     react-dom: ">=17"
-  checksum: efd333cc346307219dcf7fe183eed65305b12e71984bcb940d80a55509d7b92523082e37045bfcb8c4b334920ca185128a9f72f3e8bec69d15cad889cbeda4b4
+  checksum: 75c9394125e41e24fb5855b82cba93c9abeea080f9ee5bcc063ff2e581318b85c5bbef6f2c5300f5fd7a3450743488daa29b4baee6feabec38a009a452876a88
   languageName: node
   linkType: hard
 
@@ -3820,8 +3822,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "arvados-workbench-2@workspace:."
   dependencies:
-    "@coreui/coreui": next
-    "@coreui/react": next
+    "@coreui/coreui": ^4.3.2
+    "@coreui/react": ^4.11.0
     "@date-io/date-fns": 1
     "@fortawesome/fontawesome-svg-core": 1.2.28
     "@fortawesome/free-solid-svg-icons": 5.13.0
@@ -14138,6 +14140,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"postcss-combine-duplicated-selectors@npm:^10.0.3":
+  version: 10.0.3
+  resolution: "postcss-combine-duplicated-selectors@npm:10.0.3"
+  dependencies:
+    postcss-selector-parser: ^6.0.4
+  peerDependencies:
+    postcss: ^8.1.0
+  checksum: 45c3dff41d0cddb510752ed92fe8c7fc66e5cf88f4988314655419d3ecdf1dc66f484a25ee73f4f292da5da851a0fdba0ec4d59bdedeee935d05b26d31d997ed
+  languageName: node
+  linkType: hard
+
 "postcss-convert-values@npm:^4.0.1":
   version: 4.0.1
   resolution: "postcss-convert-values@npm:4.0.1"
@@ -14779,6 +14792,16 @@ __metadata:
     cssesc: ^3.0.0
     util-deprecate: ^1.0.2
   checksum: 3602758798048bffbd6a97d6f009b32a993d6fd2cc70775bb59593e803d7fa8738822ecffb2fafc745edf7fad297dad53c30d2cfe78446a7d3f4a4a258cb15b2
+  languageName: node
+  linkType: hard
+
+"postcss-selector-parser@npm:^6.0.4":
+  version: 6.0.13
+  resolution: "postcss-selector-parser@npm:6.0.13"
+  dependencies:
+    cssesc: ^3.0.0
+    util-deprecate: ^1.0.2
+  checksum: f89163338a1ce3b8ece8e9055cd5a3165e79a15e1c408e18de5ad8f87796b61ec2d48a2902d179ae0c4b5de10fccd3a325a4e660596549b040bc5ad1b465f096
   languageName: node
   linkType: hard
 
