@@ -17,7 +17,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | "dataTable" | "container";
+type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -42,6 +42,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: 0,
     },
     title: {
+        display: "inline-block",
+        paddingLeft: theme.spacing.unit * 2,
+        paddingTop: theme.spacing.unit * 2,
+        fontSize: "18px",
+        paddingRight: "10px",
+    },
+    subProcessTitle: {
         display: "inline-block",
         paddingLeft: theme.spacing.unit * 2,
         paddingTop: theme.spacing.unit * 2,
@@ -188,6 +195,7 @@ export const DataExplorer = withStyles(styles)(
                 paperKey,
                 fetchMode,
                 currentItemUuid,
+                currentRoute,
                 title,
                 progressBar,
                 doHidePanel,
@@ -213,12 +221,12 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        <div className={classes.titleWrapper}>
+                        <div className={classes.titleWrapper} style={currentRoute?.includes('search-results') || !!progressBar ? {marginBottom: '-20px'} : {}}>
                             {title && (
                                 <Grid
                                     item
                                     xs
-                                    className={classes.title}
+                                    className={!!progressBar ? classes.subProcessTitle : classes.title}
                                 >
                                     {title}
                                 </Grid>
@@ -295,6 +303,7 @@ export const DataExplorer = withStyles(styles)(
                             item
                             xs="auto"
                             className={classes.dataTable}
+                            style={currentRoute?.includes('search-results')  || !!progressBar ? {marginTop: '-10px'} : {}}
                         >
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
