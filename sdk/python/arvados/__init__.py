@@ -42,8 +42,7 @@ from .retry import RetryLoop
 # module and you can import it normally, but we make that module callable so
 # all the existing code that says `arvados.api('v1', ...)` still works.
 class _CallableAPIModule(api.__class__):
-    def __call__(self, *args, **kwargs):
-        return self.api(*args, **kwargs)
+    __call__ = staticmethod(api.api)
 api.__class__ = _CallableAPIModule
 
 # Override logging module pulled in via `from ... import *`
