@@ -386,3 +386,7 @@ func (hl *hardlink) FileInfo() os.FileInfo {
 	}
 	return fi
 }
+
+func (hl *hardlink) MemorySize() int64 {
+	return 64 + int64(len(hl.name))
+}

@@ -54,6 +54,31 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 		}
 	}
 
+	checkDirContains := func(parent, child string, exists bool) {
+		f, err := s.fs.Open(parent)
+		if !c.Check(err, check.IsNil) {
+			return
+		}
+		ents, err := f.Readdir(-1)
+		if !c.Check(err, check.IsNil) {
+			return
+		}
+		for _, ent := range ents {
+			if !exists {
+				c.Check(ent.Name(), check.Not(check.Equals), child)
+				if child == "" {
+					// no children are expected
+					c.Errorf("child %q found in parent %q", child, parent)
+				}
+			} else if ent.Name() == child {
+				return
+			}
+		}
+		if exists {
+			c.Errorf("child %q not found in parent %q", child, parent)
+		}
+	}
+
 	checkOpen("/users/active/This filter group/baz_file", true)
 	checkOpen("/users/active/This filter group/A Subproject", true)
 	checkOpen("/users/active/This filter group/A Project", false)
@@ -75,6 +100,13 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 	checkOpen("/fg2/baz_file", true)
 	checkOpen("/fg2/A Subproject", true)
 	checkOpen("/fg2/A Project", true)
+
+	// If a filter group matches itself or one of its ancestors,
+	// the matched item appears as an empty directory.
+	checkDirContains("/users/active/A filter group without filters", "A filter group without filters", true)
+	checkOpen("/users/active/A filter group without filters/A filter group without filters", true)
+	checkOpen("/users/active/A filter group without filters/A filter group without filters/baz_file", false)
+	checkDirContains("/users/active/A filter group without filters/A filter group without filters", "", false)
 
 	// An 'is_a' 'arvados#collection' filter means only collections should be returned.
 	checkOpen("/users/active/A filter group with an is_a collection filter/baz_file", true)

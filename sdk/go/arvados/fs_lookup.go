@@ -48,7 +48,19 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 			return nil, err
 		}
 		for _, child := range all {
-			_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
+			var name string
+			if hl, ok := child.(*hardlink); ok && hl.inode == ln {
+				// If child is a hardlink to its
+				// parent, FileInfo()->RLock() will
+				// deadlock, because we already have
+				// the write lock. In this situation
+				// we can safely access the hardlink's
+				// name directly.
+				name = hl.name
+			} else {
+				name = child.FileInfo().Name()
+			}
+			_, err = ln.treenode.Child(name, func(inode) (inode, error) {
 				return child, nil
 			})
 			if err != nil {

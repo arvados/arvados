@@ -35,6 +35,7 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 		contents = CollectionList{}
 		err = fs.RequestAndDecode(&contents, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, ResourceListParams{
 			Count: "none",
+			Order: "uuid",
 			Filters: []Filter{
 				{"name", "=", strings.Replace(name, subst, "/", -1)},
 				{"uuid", "is_a", []string{"arvados#collection", "arvados#group"}},

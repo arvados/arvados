@@ -1277,7 +1277,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			cutDirs: 3,
 		},
 	} {
-		comment := check.Commentf("HTML: %q => %q", trial.uri, trial.expect)
+		comment := check.Commentf("HTML: %q redir %q => %q", trial.uri, trial.redirect, trial.expect)
 		resp := httptest.NewRecorder()
 		u := mustParseURL("//" + trial.uri)
 		req := &http.Request{
@@ -1346,6 +1346,12 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		}
 		resp = httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
+		// This check avoids logging a big XML document in the
+		// event webdav throws a 500 error after sending
+		// headers for a 207.
+		if !c.Check(strings.HasSuffix(resp.Body.String(), "Internal Server Error"), check.Equals, false) {
+			continue
+		}
 		if trial.expect == nil {
 			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
