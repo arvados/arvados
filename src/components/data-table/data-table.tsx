@@ -173,6 +173,7 @@ export const DataTable = withStyles(styles)(
                 const { classes, checkedList } = this.props;
                 return (
                     <input
+                        data-cy={`multiselect-checkbox-${uuid}`}
                         type="checkbox"
                         name={uuid}
                         className={classes.checkBox}
@@ -374,6 +375,7 @@ export const DataTable = withStyles(styles)(
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
             return (
                 <TableRow
+                    data-cy={'data-table-row'}
                     hover
                     key={extractKey ? extractKey(item) : index}
                     onClick={event => onRowClick && onRowClick(event, item)}

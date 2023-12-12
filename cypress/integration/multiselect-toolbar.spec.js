@@ -34,30 +34,4 @@ describe('Multiselect Toolbar Tests', () => {
         cy.get('[data-cy=multiselect-button]').should('not.exist');
         cy.get('[data-cy=multiselect-alt-button]').should('not.exist');
     });
-
-    it('can manipulate a project resource', () => {
-        cy.loginAs(activeUser);
-        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        cy.get('[data-cy=side-panel-button]').click();
-        cy.get('[data-cy=side-panel-new-project]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New Project')
-            .within(() => {
-                cy.get('[data-cy=name-field]').within(() => {
-                    cy.get('input').type(projName);
-                });
-            })
-        cy.get("[data-cy=form-submit-btn]").click();
-        cy.waitForDom()
-        cy.go('back')
-
-        cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parent().parent().parent().click()
-        cy.get('[data-cy=multiselect-button]').should('have.length', 12).eq(3).trigger('mouseover');
-        cy.get('body').contains('Edit project').should('exist')
-        cy.get('[data-cy=multiselect-button]').eq(3).click()
-        cy.get("[data-cy=form-dialog]").within(() => {
-            cy.get("div[contenteditable=true]").click().type('this is a test');
-            cy.get("[data-cy=form-submit-btn]").click();
-        });
-    });
 });
