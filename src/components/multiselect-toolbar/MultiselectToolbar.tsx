@@ -90,7 +90,7 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, singleSelectedUuid, iconProps, user , disabledButtons} = props;
+        const { classes, checkedList, singleSelectedUuid, iconProps, user, disabledButtons } = props;
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
@@ -106,35 +106,45 @@ export const MultiselectToolbar = connect(
                 <Toolbar
                     className={classes.root}
                     style={{ width: `${(actions.length * 2.5) + 1}rem` }}
+                    data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
                         actions.map((action, i) =>{
                             const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
                         return hasAlts ? (
                             <Tooltip
-                            className={classes.button}
-                            title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
-                            key={i}
-                            disableFocusListener
+                                className={classes.button}
+                                title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
+                                key={i}
+                                disableFocusListener
                             >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton disabled={disabledButtons.has(name)} onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>
-                                            {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-                            ) : (
-                                <Tooltip
-                                    className={classes.button}
-                                    title={action.name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}>{action.icon({})}</IconButton>
-                                    </span>
-                                </Tooltip>
-                            )
+                                <span className={classes.iconContainer}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        disabled={disabledButtons.has(name)}
+                                        onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                    >
+                                        {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        ) : (
+                            <Tooltip
+                                className={classes.button}
+                                title={action.name}
+                                key={i}
+                                disableFocusListener
+                            >
+                                <span className={classes.iconContainer}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                    >
+                                        {action.icon({})}
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        );
                         })
                     ) : (
                         <></>
