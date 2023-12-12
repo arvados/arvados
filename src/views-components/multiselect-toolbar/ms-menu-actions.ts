@@ -27,7 +27,7 @@ export enum MultiSelectMenuActionNames {
     CANCEL = 'CANCEL',
     COPY_AND_RERUN_PROCESS = 'Copy and re-run process',
     COPY_TO_CLIPBOARD = 'Copy to clipboard',
-    DELETE_WORKFLOW = 'Delete Worflow',
+    DELETE_WORKFLOW = 'Delete Workflow',
     EDIT_COLLECTION = 'Edit collection',
     EDIT_PROJECT = 'Edit project',
     EDIT_PROCESS = 'Edit process',
