@@ -28,10 +28,9 @@ describe('Multiselect Toolbar Tests', () => {
         cy.clearLocalStorage();
     });
 
-    it('exists in DOM', () => {
+    it('exists in DOM in neutral state', () => {
         cy.loginAs(activeUser);
         cy.get('[data-cy=multiselect-toolbar]').should('exist');
         cy.get('[data-cy=multiselect-button]').should('not.exist');
-        cy.get('[data-cy=multiselect-alt-button]').should('not.exist');
     });
 });

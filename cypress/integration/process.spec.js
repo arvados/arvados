@@ -90,6 +90,49 @@ describe("Process tests", function () {
         });
     }
 
+    describe('Multiselect Toolbar', () => {
+        it('shows the appropriate buttons for process resource', () => {
+
+            const msButtonTooltips = [
+                'API Details',
+                'Add to Favorites',
+                'CANCEL',
+                'Copy and re-run process',
+                'Edit process',
+                'Move to',
+                'Open in new tab',
+                'Outputs',
+                'Remove',
+                'Share',
+                'View details',
+            ];
+    
+            createContainerRequest(
+                activeUser,
+                `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                "arvados/jobs",
+                ["echo", "hello world"],
+                false,
+                "Committed"
+            ).then(function (containerRequest) {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
+                cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
+                cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
+                cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
+                cy.waitForDom()
+                cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parent().parent().parent().parent().click()
+                cy.get('[data-cy=multiselect-button]').should('have.length', 11).eq(3)
+                for (let i = 0; i < 11; i++) {
+                    cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+                    cy.get('body').contains(msButtonTooltips[i]).should('exist')
+                    cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
+                }
+            });
+        })
+    })
+
     describe("Details panel", function () {
         it("shows process details", function () {
             createContainerRequest(
