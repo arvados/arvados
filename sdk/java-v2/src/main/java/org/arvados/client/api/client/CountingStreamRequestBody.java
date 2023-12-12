@@ -12,20 +12,18 @@ import okio.Okio;
 import okio.Source;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
-/**
- * Based on:
- * {@link} https://gist.github.com/eduardb/dd2dc530afd37108e1ac
- */
-public class CountingFileRequestBody extends CountingRequestBody<File> {
+public class CountingStreamRequestBody extends CountingRequestBody<InputStream> {
 
-    CountingFileRequestBody(final File file, final ProgressListener listener) {
-        super(file, listener);
+    CountingStreamRequestBody(final InputStream inputStream, final ProgressListener listener) {
+        super(inputStream, listener);
     }
 
     @Override
-    public long contentLength() {
-        return requestBodyData.length();
+    public long contentLength() throws IOException {
+        return requestBodyData.available();
     }
 
     @Override
