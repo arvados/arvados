@@ -91,7 +91,7 @@ describe("Process tests", function () {
     }
 
     describe('Multiselect Toolbar', () => {
-        it('shows the appropriate buttons for process resource', () => {
+        it('shows the appropriate buttons in the toolbar', () => {
 
             const msButtonTooltips = [
                 'API Details',
@@ -123,8 +123,8 @@ describe("Process tests", function () {
                 cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
                 cy.waitForDom()
                 cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parent().parent().parent().parent().click()
-                cy.get('[data-cy=multiselect-button]').should('have.length', 11).eq(3)
-                for (let i = 0; i < 11; i++) {
+                cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
+                for (let i = 0; i < msButtonTooltips.length; i++) {
                     cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
                     cy.get('body').contains(msButtonTooltips[i]).should('exist')
                     cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');

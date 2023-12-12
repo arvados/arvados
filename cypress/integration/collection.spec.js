@@ -32,6 +32,45 @@ describe("Collection panel tests", function () {
         cy.clearLocalStorage();
     });
 
+    it('shows the appropriate buttons in the toolbar', () => {
+
+        const msButtonTooltips = [
+            'API Details',
+            'Add to Favorites',
+            'Copy to clipboard',
+            'Edit collection',
+            'Make a copy',
+            'Move to',
+            'Move to trash',
+            'Open in new tab',
+            'Open with 3rd party client',
+            'Share',
+            'View details',
+        ];
+
+        cy.loginAs(activeUser);
+        const name = `Test collection ${Math.floor(Math.random() * 999999)}`;
+        cy.get("[data-cy=side-panel-button]").click({force: true});
+        cy.get("[data-cy=side-panel-new-collection]").click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "New collection")
+            .within(() => {
+                cy.get("[data-cy=name-field]").within(() => {
+                    cy.get("input").type(name);
+                });
+                cy.get("[data-cy=form-submit-btn]").click();
+            });
+            cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
+            cy.waitForDom()
+            cy.get('[data-cy=data-table-row]').contains(name).should('exist').parent().parent().parent().parent().click()
+            cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
+            for (let i = 0; i < msButtonTooltips.length; i++) {
+                cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+                cy.get('body').contains(msButtonTooltips[i]).should('exist')
+                cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
+            }
+    })
+
     it("allows to download mountain duck config for a collection", () => {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
@@ -125,6 +164,8 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]").should("exist").and("contain", "Collection with the same name already exists");
     });
 
+    
+
     it("uses the property editor (from edit dialog) with vocabulary terms", function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
@@ -167,6 +208,8 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=collection-info-panel").should("contain", this.testCollection.name).and("contain", "Color: Magenta");
             });
     });
+
+    
 
     it("uses the editor (from details panel) with vocabulary terms", function () {
         cy.createCollection(adminUser.token, {
