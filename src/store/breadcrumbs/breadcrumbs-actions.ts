@@ -270,7 +270,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
                 || await services.userService.get(userUuid, false);
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
-                { label: user ? user.username : userUuid, uuid: userUuid },
+                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
             ];
             dispatch(setBreadcrumbs(breadcrumbs));
         } catch (e) {
