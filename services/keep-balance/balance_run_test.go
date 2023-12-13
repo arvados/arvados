@@ -15,6 +15,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -639,7 +640,7 @@ func (s *runSuite) TestRunForever(c *check.C) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	s.config.Collections.BalancePeriod = arvados.Duration(time.Millisecond)
+	s.config.Collections.BalancePeriod = arvados.Duration(100 * time.Millisecond)
 	srv := s.newServer(&opts)
 
 	done := make(chan bool)
@@ -648,13 +649,33 @@ func (s *runSuite) TestRunForever(c *check.C) {
 		close(done)
 	}()
 
+	procself, err := os.FindProcess(os.Getpid())
+	c.Assert(err, check.IsNil)
+
 	// Each run should send 4 pull lists + 4 trash lists. The
 	// first run should also send 4 empty trash lists at
 	// startup. We should complete all four runs in much less than
 	// a second.
+	completedRuns := 0
 	for t0 := time.Now(); time.Since(t0) < 10*time.Second; {
-		if pullReqs.Count() >= 16 && trashReqs.Count() == pullReqs.Count()+4 {
+		pulls := pullReqs.Count()
+		if pulls >= 16 && trashReqs.Count() == pulls+4 {
 			break
+		}
+		if pulls > 4 {
+			// Once the 2nd run has started automatically
+			// (indicating that our BalancePeriod is
+			// working) we switch to a long wait time to
+			// effectively stop the timed runs, and
+			// instead start sending a single SIGUSR1 at
+			// the end of each (2nd or 3rd) run, to ensure
+			// we get exactly 4 runs in total.
+			srv.Cluster.Collections.BalancePeriod = arvados.Duration(time.Minute)
+			if pulls%4 == 0 && pulls <= 12 && pulls/4 > completedRuns {
+				completedRuns = pulls / 4
+				c.Logf("completed run %d, sending SIGUSR1 to trigger next run", completedRuns)
+				procself.Signal(syscall.SIGUSR1)
+			}
 		}
 		time.Sleep(time.Millisecond)
 	}
