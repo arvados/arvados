@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement } from 'react'
+import React, { ReactElement, useEffect } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
@@ -113,7 +113,7 @@ const mapStateToProps = ({auth, properties }: RootState) => {
         return {
             user: auth.user,
             selectedPath: properties.breadcrumbs
-                ? properties.breadcrumbs[0].label !== 'Virtual Machines'
+                ? properties.breadcrumbs[0].label !== 'Shell Access'
                 ? properties.breadcrumbs[0].label
                 : SidePanelCollapsedCategory.SHELL_ACCESS
                 : SidePanelCollapsedCategory.PROJECTS,

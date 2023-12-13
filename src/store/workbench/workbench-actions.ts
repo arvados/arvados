@@ -95,7 +95,7 @@ import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-
 import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
 import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
-import { AdminMenuIcon } from "components/icon/icon";
+import { TerminalIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { multiselectActions } from "store/multiselect/multiselect-actions";
@@ -742,12 +742,12 @@ export const loadLinks = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => 
 
 export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
-    dispatch(setBreadcrumbs([{ label: "Virtual Machines" }]));
+    dispatch(setBreadcrumbs([{ label: "Shell Access", icon: TerminalIcon }]));
 });
 
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
-    dispatch(setBreadcrumbs([{ label: "Virtual Machines Admin", icon: AdminMenuIcon }]));
+    dispatch(setBreadcrumbs([{ label: "Shell Access Admin", icon: TerminalIcon }]));
 });
 
 export const loadRepositories = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
