@@ -787,7 +787,15 @@ func rlookup(start inode, path string, visited map[inode]bool) (node inode, err 
 		visited = map[inode]bool{}
 	}
 	node = start
-	for _, name := range strings.Split(filepath.Clean(path), "/") {
+	// Clean up ./ and ../ and double-slashes, but (unlike
+	// filepath.Clean) retain a trailing slash, because looking up
+	// ".../regularfile/" should fail.
+	trailingSlash := strings.HasSuffix(path, "/")
+	path = filepath.Clean(path)
+	if trailingSlash && path != "/" {
+		path += "/"
+	}
+	for _, name := range strings.Split(path, "/") {
 		visited[node] = true
 		if node.IsDir() {
 			if name == "." || name == "" {
