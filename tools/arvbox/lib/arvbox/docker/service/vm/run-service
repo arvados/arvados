@@ -16,7 +16,8 @@ if test "$1" != "--only-deps" ; then
 fi
 
 cd /usr/src/arvados/services/login-sync
-run_bundler --binstubs=binstubs
+run_bundler
+bundler_binstubs
 
 if test "$1" = "--only-deps" ; then
     exit

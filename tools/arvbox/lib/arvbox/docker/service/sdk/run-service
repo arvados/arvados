@@ -15,10 +15,12 @@ download_cache = /var/lib/pip
 EOF
 
 cd /usr/src/arvados/sdk/ruby
-run_bundler --binstubs=binstubs
+run_bundler
+bundler_binstubs
 
 cd /usr/src/arvados/sdk/cli
-run_bundler --binstubs=binstubs
+run_bundler
+bundler_binstubs
 
 export PYCMD=python3
 
