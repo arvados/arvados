@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -42,6 +43,19 @@ type DiskCache struct {
 	tidying        int32 // see tidy()
 	tidyHoldUntil  time.Time
 	defaultMaxSize int64
+
+	// The "heldopen" fields are used to open cache files for
+	// reading, and leave them open for future/concurrent ReadAt
+	// operations. See quickReadAt.
+	heldopen     map[string]*openFileEnt
+	heldopenMax  int
+	heldopenLock sync.Mutex
+}
+
+type openFileEnt struct {
+	sync.RWMutex
+	f   *os.File
+	err error // if err is non-nil, f should not be used.
 }
 
 const (
@@ -194,6 +208,9 @@ func (cache *DiskCache) BlockWrite(ctx context.Context, opts BlockWriteOptions) 
 func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, error) {
 	cache.gotidy()
 	cachefilename := cache.cacheFile(locator)
+	if n, err := cache.quickReadAt(cachefilename, dst, offset); err == nil {
+		return n, err
+	}
 	f, err := cache.openFile(cachefilename, os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		cache.debugf("ReadAt: open(%s) failed: %s", cachefilename, err)
@@ -241,8 +258,114 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 	return f.ReadAt(dst, int64(offset))
 }
 
-// ReadAt reads the entire block from the wrapped KeepGateway into the
-// cache if needed, and writes it to the provided writer.
+var quickReadAtLostRace = errors.New("quickReadAt: lost race")
+
+func (cache *DiskCache) deleteHeldopen(cachefilename string, heldopen *openFileEnt) {
+	cache.heldopenLock.Lock()
+	if cache.heldopen[cachefilename] == heldopen {
+		delete(cache.heldopen, cachefilename)
+	}
+	cache.heldopenLock.Unlock()
+}
+
+// quickReadAt attempts to use a cached-filehandle approach to read
+// from the indicated file. The expectation is that the caller
+// (ReadAt) will try a more robust approach when this fails, so
+// quickReadAt doesn't try especially hard to ensure success in
+// races. In particular, when there are concurrent calls, and one
+// fails, that can cause others to fail too.
+func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int) (int, error) {
+	isnew := false
+	cache.heldopenLock.Lock()
+	if cache.heldopenMax == 0 {
+		// Choose a reasonable limit on open cache files based
+		// on RLIMIT_NOFILE. Note Go automatically raises
+		// softlimit to hardlimit, so it's typically 1048576,
+		// not 1024.
+		lim := syscall.Rlimit{}
+		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &lim)
+		if err != nil {
+			cache.heldopenMax = 256
+		} else if lim.Cur > 40000 {
+			cache.heldopenMax = 10000
+		} else {
+			cache.heldopenMax = int(lim.Cur / 4)
+		}
+	}
+	heldopen := cache.heldopen[cachefilename]
+	if heldopen == nil {
+		isnew = true
+		heldopen = &openFileEnt{}
+		if cache.heldopen == nil {
+			cache.heldopen = make(map[string]*openFileEnt, cache.heldopenMax)
+		} else if len(cache.heldopen) > cache.heldopenMax {
+			// Rather than go to the trouble of tracking
+			// last access time, just close all files, and
+			// open again as needed. Even in the worst
+			// pathological case, this causes one extra
+			// open+close per read, which is not
+			// especially bad (see benchmarks).
+			go func(m map[string]*openFileEnt) {
+				for _, heldopen := range m {
+					heldopen.Lock()
+					defer heldopen.Unlock()
+					if heldopen.f != nil {
+						heldopen.f.Close()
+						heldopen.f = nil
+					}
+				}
+			}(cache.heldopen)
+			cache.heldopen = nil
+		}
+		cache.heldopen[cachefilename] = heldopen
+		heldopen.Lock()
+	}
+	cache.heldopenLock.Unlock()
+
+	if isnew {
+		// Open and flock the file, then call wg.Done() to
+		// unblock any other goroutines that are waiting in
+		// the !isnew case above.
+		f, err := os.Open(cachefilename)
+		if err == nil {
+			err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
+			if err == nil {
+				heldopen.f = f
+			} else {
+				f.Close()
+			}
+		}
+		if err != nil {
+			heldopen.err = err
+			go cache.deleteHeldopen(cachefilename, heldopen)
+		}
+		heldopen.Unlock()
+	}
+	// Acquire read lock to ensure (1) initialization is complete,
+	// if it's done by a different goroutine, and (2) any "delete
+	// old/unused entries" waits for our read to finish before
+	// closing the file.
+	heldopen.RLock()
+	defer heldopen.RUnlock()
+	if heldopen.err != nil {
+		// Other goroutine encountered an error during setup
+		return 0, heldopen.err
+	} else if heldopen.f == nil {
+		// Other goroutine closed the file before we got RLock
+		return 0, quickReadAtLostRace
+	}
+	n, err := heldopen.f.ReadAt(dst, int64(offset))
+	if err != nil {
+		// wait for any concurrent users to finish, then
+		// delete this cache entry in case reopening the
+		// backing file helps.
+		go cache.deleteHeldopen(cachefilename, heldopen)
+	}
+	return n, err
+}
+
+// BlockRead reads the entire block from the wrapped KeepGateway into
+// the cache if needed, and writes it to the provided writer.
 func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (int, error) {
 	cache.gotidy()
 	cachefilename := cache.cacheFile(opts.Locator)
