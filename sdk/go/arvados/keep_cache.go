@@ -44,9 +44,10 @@ type DiskCache struct {
 	defaultMaxSize int64
 }
 
-var (
-	cacheFileSuffix = ".keepcacheblock"
-	tmpFileSuffix   = ".tmp"
+const (
+	cacheFileSuffix  = ".keepcacheblock"
+	tmpFileSuffix    = ".tmp"
+	tidyHoldDuration = 10 * time.Second
 )
 
 func (cache *DiskCache) cacheFile(locator string) string {
@@ -306,7 +307,7 @@ func (cache *DiskCache) gotidy() {
 	}
 	go func() {
 		cache.tidy()
-		cache.tidyHoldUntil = time.Now().Add(10 * time.Second)
+		cache.tidyHoldUntil = time.Now().Add(tidyHoldDuration)
 		atomic.AddInt32(&cache.tidying, -1)
 	}()
 }
