@@ -624,7 +624,7 @@ func (s *runSuite) TestChunkPrefix(c *check.C) {
 	c.Check(string(lost), check.Equals, "")
 }
 
-func (s *runSuite) TestRunForever(c *check.C) {
+func (s *runSuite) TestRunForever_TriggeredByTimer(c *check.C) {
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		Logger: ctxlog.TestLogger(c),
@@ -640,7 +640,57 @@ func (s *runSuite) TestRunForever(c *check.C) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	s.config.Collections.BalancePeriod = arvados.Duration(100 * time.Millisecond)
+	s.config.Collections.BalancePeriod = arvados.Duration(10 * time.Millisecond)
+	srv := s.newServer(&opts)
+
+	done := make(chan bool)
+	go func() {
+		srv.runForever(ctx)
+		close(done)
+	}()
+
+	// Each run should send 4 pull lists + 4 trash lists. The
+	// first run should also send 4 empty trash lists at
+	// startup. We should complete at least four runs in much less
+	// than 10s.
+	for t0 := time.Now(); time.Since(t0) < 10*time.Second; {
+		pulls := pullReqs.Count()
+		if pulls >= 16 && trashReqs.Count() == pulls+4 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	cancel()
+	<-done
+	c.Check(pullReqs.Count() >= 16, check.Equals, true)
+	c.Check(trashReqs.Count() >= 20, check.Equals, true)
+
+	// We should have completed 4 runs before calling cancel().
+	// But the next run might also have started before we called
+	// cancel(), in which case the extra run will be included in
+	// the changeset_compute_seconds_count metric.
+	completed := pullReqs.Count() / 4
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, fmt.Sprintf(`(?ms).*\narvados_keepbalance_changeset_compute_seconds_count (%d|%d)\n.*`, completed, completed+1))
+}
+
+func (s *runSuite) TestRunForever_TriggeredBySignal(c *check.C) {
+	s.config.ManagementToken = "xyzzy"
+	opts := RunOptions{
+		Logger: ctxlog.TestLogger(c),
+		Dumper: ctxlog.TestLogger(c),
+	}
+	s.stub.serveCurrentUserAdmin()
+	s.stub.serveFooBarFileCollections()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
+	s.stub.serveKeepstoreIndexFoo4Bar1()
+	trashReqs := s.stub.serveKeepstoreTrash()
+	pullReqs := s.stub.serveKeepstorePull()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Minute)
 	srv := s.newServer(&opts)
 
 	done := make(chan bool)
@@ -654,36 +704,29 @@ func (s *runSuite) TestRunForever(c *check.C) {
 
 	// Each run should send 4 pull lists + 4 trash lists. The
 	// first run should also send 4 empty trash lists at
-	// startup. We should complete all four runs in much less than
-	// a second.
+	// startup. We should be able to complete four runs in much
+	// less than 10s.
 	completedRuns := 0
 	for t0 := time.Now(); time.Since(t0) < 10*time.Second; {
 		pulls := pullReqs.Count()
 		if pulls >= 16 && trashReqs.Count() == pulls+4 {
 			break
 		}
-		if pulls > 4 {
-			// Once the 2nd run has started automatically
-			// (indicating that our BalancePeriod is
-			// working) we switch to a long wait time to
-			// effectively stop the timed runs, and
-			// instead start sending a single SIGUSR1 at
-			// the end of each (2nd or 3rd) run, to ensure
-			// we get exactly 4 runs in total.
-			srv.Cluster.Collections.BalancePeriod = arvados.Duration(time.Minute)
-			if pulls%4 == 0 && pulls <= 12 && pulls/4 > completedRuns {
-				completedRuns = pulls / 4
-				c.Logf("completed run %d, sending SIGUSR1 to trigger next run", completedRuns)
-				procself.Signal(syscall.SIGUSR1)
-			}
+		// Once the 1st run has started automatically, we
+		// start sending a single SIGUSR1 at the end of each
+		// run, to ensure we get exactly 4 runs in total.
+		if pulls > 0 && pulls%4 == 0 && pulls <= 12 && pulls/4 > completedRuns {
+			completedRuns = pulls / 4
+			c.Logf("completed run %d, sending SIGUSR1 to trigger next run", completedRuns)
+			procself.Signal(syscall.SIGUSR1)
 		}
 		time.Sleep(time.Millisecond)
 	}
 	cancel()
 	<-done
-	c.Check(pullReqs.Count() >= 16, check.Equals, true)
-	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
+	c.Check(pullReqs.Count(), check.Equals, 16)
+	c.Check(trashReqs.Count(), check.Equals, 20)
 
 	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 4\n.*`)
 }
