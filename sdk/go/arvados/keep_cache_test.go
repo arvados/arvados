@@ -172,7 +172,72 @@ func (s *keepCacheSuite) TestConcurrentReaders(c *check.C) {
 	wg.Wait()
 }
 
+var _ = check.Suite(&keepCacheBenchSuite{})
+
+type keepCacheBenchSuite struct {
+	blksize  int
+	blkcount int
+	backend  *keepGatewayMemoryBacked
+	cache    *DiskCache
+	locators []string
+}
+
+func (s *keepCacheBenchSuite) SetUpTest(c *check.C) {
+	s.blksize = 64000000
+	s.blkcount = 8
+	s.backend = &keepGatewayMemoryBacked{}
+	s.cache = &DiskCache{
+		KeepGateway: s.backend,
+		MaxSize:     int64(s.blksize),
+		Dir:         c.MkDir(),
+		Logger:      ctxlog.TestLogger(c),
+	}
+	s.locators = make([]string, s.blkcount)
+	data := make([]byte, s.blksize)
+	for b := 0; b < s.blkcount; b++ {
+		for i := range data {
+			data[i] = byte(b)
+		}
+		resp, err := s.cache.BlockWrite(context.Background(), BlockWriteOptions{
+			Data: data,
+		})
+		c.Assert(err, check.IsNil)
+		s.locators[b] = resp.Locator
+	}
+}
+
+func (s *keepCacheBenchSuite) BenchmarkConcurrentReads(c *check.C) {
+	var wg sync.WaitGroup
+	for i := 0; i < c.N; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			buf := make([]byte, benchReadSize)
+			_, err := s.cache.ReadAt(s.locators[i%s.blkcount], buf, int((int64(i)*1234)%int64(s.blksize-benchReadSize)))
+			if err != nil {
+				c.Fail()
+			}
+		}()
+	}
+	wg.Wait()
+}
+
+func (s *keepCacheBenchSuite) BenchmarkSequentialReads(c *check.C) {
+	buf := make([]byte, benchReadSize)
+	for i := 0; i < c.N; i++ {
+		_, err := s.cache.ReadAt(s.locators[i%s.blkcount], buf, int((int64(i)*1234)%int64(s.blksize-benchReadSize)))
+		if err != nil {
+			c.Fail()
+		}
+	}
+}
+
 const benchReadSize = 1000
+
+var _ = check.Suite(&fileOpsSuite{})
+
+type fileOpsSuite struct{}
 
 // BenchmarkOpenClose and BenchmarkKeepOpen can be used to measure the
 // potential performance improvement of caching filehandles rather
@@ -182,7 +247,7 @@ const benchReadSize = 1000
 // improvement: ~636 MB/s when opening/closing the file for each
 // 1000-byte read vs. ~2 GB/s when opening the file once and doing
 // concurrent reads using the same file descriptor.
-func (s *keepCacheSuite) BenchmarkOpenClose(c *check.C) {
+func (s *fileOpsSuite) BenchmarkOpenClose(c *check.C) {
 	fnm := c.MkDir() + "/testfile"
 	os.WriteFile(fnm, make([]byte, 64000000), 0700)
 	var wg sync.WaitGroup
@@ -206,7 +271,7 @@ func (s *keepCacheSuite) BenchmarkOpenClose(c *check.C) {
 	wg.Wait()
 }
 
-func (s *keepCacheSuite) BenchmarkKeepOpen(c *check.C) {
+func (s *fileOpsSuite) BenchmarkKeepOpen(c *check.C) {
 	fnm := c.MkDir() + "/testfile"
 	os.WriteFile(fnm, make([]byte, 64000000), 0700)
 	f, err := os.OpenFile(fnm, os.O_CREATE|os.O_RDWR, 0700)
