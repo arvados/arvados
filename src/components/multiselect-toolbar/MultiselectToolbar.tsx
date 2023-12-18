@@ -117,9 +117,7 @@ export const MultiselectToolbar = connect(
         }
         
         useEffect(()=>{
-            if(!isTransitioning){
                 handleTransition()
-            }
         }, [checkedList])
 
         const actions =
