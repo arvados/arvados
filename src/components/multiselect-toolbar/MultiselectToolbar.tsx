@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
 import { ArvadosTheme } from "common/custom-theme";
@@ -35,7 +35,9 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 
-type CssRules = "root" | "button" | "iconContainer";
+const WIDTH_TRANSITION = 150
+
+type CssRules = "root" | "transition" | "button" | "iconContainer";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -46,7 +48,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: 0,
         margin: "1rem auto auto 0.5rem",
         overflowY: 'auto',
-        transition: "width 150ms",
         scrollBehavior: 'smooth',
         '&::-webkit-scrollbar': {
             width: 0,
@@ -60,6 +61,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             backgroundColor: '#757575',
             borderRadius: 2
         }
+    },
+    transition: {
+        display: "flex",
+        flexDirection: "row",
+        width: 0,
+        height: '2.7rem',
+        padding: 0,
+        margin: "1rem auto auto 0.5rem",
+        overflow: 'hidden',
+        transition: `width ${WIDTH_TRANSITION}ms`,
     },
     button: {
         width: "2.5rem",
@@ -94,6 +105,7 @@ export const MultiselectToolbar = connect(
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
+        const [isTransitioning, setIsTransitioning] = useState(false);
         
         const actions =
         currentPathIsTrash && selectedToKindSet(checkedList).size
@@ -101,10 +113,21 @@ export const MultiselectToolbar = connect(
         : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
         .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
         
+        const handleTransition = () => {
+            setIsTransitioning(true)
+            setTimeout(() => {
+                setIsTransitioning(false)
+            }, WIDTH_TRANSITION);
+        }
+
+        useEffect(()=>{
+            handleTransition()
+        }, [checkedList])
+
         return (
             <React.Fragment>
                 <Toolbar
-                    className={classes.root}
+                    className={isTransitioning ? classes.transition: classes.root}
                     style={{ width: `${(actions.length * 2.5) + 1}rem` }}
                     data-cy='multiselect-toolbar'
                     >
