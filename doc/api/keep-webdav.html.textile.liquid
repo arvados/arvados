@@ -35,6 +35,12 @@ The @users@ folder will return a listing of the users for whom the client has pe
 
 In addition to the @/by_id/@ path prefix, the collection or project can be specified using a path prefix of @/c=<uuid or pdh>/@ or (if the cluster is properly configured) as a virtual host.  This is described on "Keep-web URLs":keep-web-urls.html
 
+It is possible for a project or a "filter group":methods/groups.html#filter to appear as its own descendant in the @by_id@ and @users@ tree (a filter group may match itself, its own ancestor, another filter group that matches its ancestor, etc). When this happens, the descendant appears as an empty read-only directory. For example, if filter group @f@ matches its own parent @p@:
+* @/users/example/p/f@ will show the filter group's contents (matched projects and collections).
+* @/users/example/p/f/p@ will appear as an empty directory.
+* @/by_id/uuid_of_f/p@ will show the parent project's contents, including @f@.
+* @/by_id/uuid_of_f/p/f@ will appear as an empty directory.
+
 h3(#auth). Authentication mechanisms
 
 A token can be provided in an Authorization header as a @Bearer@ token:
