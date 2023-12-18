@@ -87,7 +87,7 @@ export interface SubprocessPanelDataProps {
 }
 
 export interface SubprocessPanelActionProps {
-    onItemClick: (item: string) => void;
+    onRowClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
     onItemDoubleClick: (item: string) => void;
 }
@@ -114,7 +114,7 @@ const SubProcessesTitle = withStyles(styles)(
 export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
-        onRowClick={props.onItemClick}
+        onRowClick={props.onRowClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
         contextMenuColumn={true}

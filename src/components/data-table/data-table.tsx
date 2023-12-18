@@ -144,7 +144,7 @@ export const DataTable = withStyles(styles)(
         };
 
         componentDidMount(): void {
-            this.initializeCheckedList(this.props.items);
+            this.initializeCheckedList([]);
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {

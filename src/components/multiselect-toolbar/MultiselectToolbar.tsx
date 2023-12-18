@@ -48,6 +48,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '2.7rem',
         padding: 0,
         margin: "1rem auto auto 0.5rem",
+        transition: `width ${WIDTH_TRANSITION}ms`,
         overflowY: 'auto',
         scrollBehavior: 'smooth',
         '&::-webkit-scrollbar': {
@@ -108,22 +109,25 @@ export const MultiselectToolbar = connect(
         const currentPathIsTrash = window.location.pathname === "/trash";
         const [isTransitioning, setIsTransitioning] = useState(false);
         
-        const actions =
-        currentPathIsTrash && selectedToKindSet(checkedList).size
-        ? [msToggleTrashAction]
-        : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
-        .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true));
-        
         const handleTransition = () => {
             setIsTransitioning(true)
             setTimeout(() => {
                 setIsTransitioning(false)
             }, WIDTH_TRANSITION);
         }
-
+        
         useEffect(()=>{
-            handleTransition()
+            if(!isTransitioning){
+                handleTransition()
+            }
         }, [checkedList])
+
+        const actions =
+            currentPathIsTrash && selectedToKindSet(checkedList).size
+                ? [msToggleTrashAction]
+                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
+                        singleSelectedUuid === null ? action.isForMulti : true
+                    );
 
         return (
             <React.Fragment>
