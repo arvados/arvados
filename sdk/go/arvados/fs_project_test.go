@@ -42,61 +42,94 @@ func (sc *spyingClient) RequestAndDecode(dst interface{}, method, path string, b
 func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 	// Make sure that a collection and group that match the filter are present,
 	// and that a group that does not match the filter is not present.
+
+	checkOpen := func(path string, exists bool) {
+		f, err := s.fs.Open(path)
+		if exists {
+			if c.Check(err, check.IsNil) {
+				c.Check(f.Close(), check.IsNil)
+			}
+		} else {
+			c.Check(err, check.Equals, os.ErrNotExist)
+		}
+	}
+
+	checkDirContains := func(parent, child string, exists bool) {
+		f, err := s.fs.Open(parent)
+		if !c.Check(err, check.IsNil) {
+			return
+		}
+		ents, err := f.Readdir(-1)
+		if !c.Check(err, check.IsNil) {
+			return
+		}
+		for _, ent := range ents {
+			if !exists {
+				c.Check(ent.Name(), check.Not(check.Equals), child)
+				if child == "" {
+					// no children are expected
+					c.Errorf("child %q found in parent %q", child, parent)
+				}
+			} else if ent.Name() == child {
+				return
+			}
+		}
+		if exists {
+			c.Errorf("child %q not found in parent %q", child, parent)
+		}
+	}
+
+	checkOpen("/users/active/This filter group/baz_file", true)
+	checkOpen("/users/active/This filter group/A Subproject", true)
+	checkOpen("/users/active/This filter group/A Project", false)
 	s.fs.MountProject("fg", fixtureThisFilterGroupUUID)
-
-	_, err := s.fs.OpenFile("/fg/baz_file", 0, 0)
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.OpenFile("/fg/A Subproject", 0, 0)
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.OpenFile("/fg/A Project", 0, 0)
-	c.Assert(err, check.Not(check.IsNil))
+	checkOpen("/fg/baz_file", true)
+	checkOpen("/fg/A Subproject", true)
+	checkOpen("/fg/A Project", false)
+	s.fs.MountProject("home", "")
+	checkOpen("/home/A filter group with an is_a collection filter/baz_file", true)
+	checkOpen("/home/A filter group with an is_a collection filter/baz_file/baz", true)
+	checkOpen("/home/A filter group with an is_a collection filter/A Subproject", false)
+	checkOpen("/home/A filter group with an is_a collection filter/A Project", false)
 
 	// An empty filter means everything that is visible should be returned.
+	checkOpen("/users/active/A filter group without filters/baz_file", true)
+	checkOpen("/users/active/A filter group without filters/A Subproject", true)
+	checkOpen("/users/active/A filter group without filters/A Project", true)
 	s.fs.MountProject("fg2", fixtureAFilterGroupTwoUUID)
+	checkOpen("/fg2/baz_file", true)
+	checkOpen("/fg2/A Subproject", true)
+	checkOpen("/fg2/A Project", true)
 
-	_, err = s.fs.OpenFile("/fg2/baz_file", 0, 0)
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.OpenFile("/fg2/A Subproject", 0, 0)
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.OpenFile("/fg2/A Project", 0, 0)
-	c.Assert(err, check.IsNil)
+	// If a filter group matches itself or one of its ancestors,
+	// the matched item appears as an empty directory.
+	checkDirContains("/users/active/A filter group without filters", "A filter group without filters", true)
+	checkOpen("/users/active/A filter group without filters/A filter group without filters", true)
+	checkOpen("/users/active/A filter group without filters/A filter group without filters/baz_file", false)
+	checkDirContains("/users/active/A filter group without filters/A filter group without filters", "", false)
 
 	// An 'is_a' 'arvados#collection' filter means only collections should be returned.
+	checkOpen("/users/active/A filter group with an is_a collection filter/baz_file", true)
+	checkOpen("/users/active/A filter group with an is_a collection filter/baz_file/baz", true)
+	checkOpen("/users/active/A filter group with an is_a collection filter/A Subproject", false)
+	checkOpen("/users/active/A filter group with an is_a collection filter/A Project", false)
 	s.fs.MountProject("fg3", fixtureAFilterGroupThreeUUID)
-
-	_, err = s.fs.OpenFile("/fg3/baz_file", 0, 0)
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.OpenFile("/fg3/A Subproject", 0, 0)
-	c.Assert(err, check.Not(check.IsNil))
+	checkOpen("/fg3/baz_file", true)
+	checkOpen("/fg3/baz_file/baz", true)
+	checkOpen("/fg3/A Subproject", false)
 
 	// An 'exists' 'arvados#collection' filter means only collections with certain properties should be returned.
 	s.fs.MountProject("fg4", fixtureAFilterGroupFourUUID)
-
-	_, err = s.fs.Stat("/fg4/collection with list property with odd values")
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.Stat("/fg4/collection with list property with even values")
-	c.Assert(err, check.IsNil)
+	checkOpen("/fg4/collection with list property with odd values", true)
+	checkOpen("/fg4/collection with list property with even values", true)
+	checkOpen("/fg4/baz_file", false)
 
 	// A 'contains' 'arvados#collection' filter means only collections with certain properties should be returned.
 	s.fs.MountProject("fg5", fixtureAFilterGroupFiveUUID)
-
-	_, err = s.fs.Stat("/fg5/collection with list property with odd values")
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.Stat("/fg5/collection with list property with string value")
-	c.Assert(err, check.IsNil)
-
-	_, err = s.fs.Stat("/fg5/collection with prop2 5")
-	c.Assert(err, check.Not(check.IsNil))
-
-	_, err = s.fs.Stat("/fg5/collection with list property with even values")
-	c.Assert(err, check.Not(check.IsNil))
+	checkOpen("/fg5/collection with list property with odd values", true)
+	checkOpen("/fg5/collection with list property with string value", true)
+	checkOpen("/fg5/collection with prop2 5", false)
+	checkOpen("/fg5/collection with list property with even values", false)
 }
 
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {

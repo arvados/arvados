@@ -37,8 +37,9 @@ const (
 	StorageClassesDesiredArchiveConfirmedDefault = "zzzzz-4zz18-3t236wr12769qqa"
 	EmptyCollectionUUID                          = "zzzzz-4zz18-gs9ooj1h9sd5mde"
 
-	AProjectUUID    = "zzzzz-j7d0g-v955i6s2oi1cbso"
-	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"
+	AProjectUUID     = "zzzzz-j7d0g-v955i6s2oi1cbso"
+	ASubprojectUUID  = "zzzzz-j7d0g-axqo7eu9pwvna1x"
+	AFilterGroupUUID = "zzzzz-j7d0g-thisfiltergroup"
 
 	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
 	FooAndBarFilesInDirPDH  = "870369fc72738603c2fad16664e50e2d+58"
