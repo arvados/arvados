@@ -68,7 +68,10 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
                 <Typography
                     color="primary"
                     style={{ width: "auto", cursor: "pointer" }}
-                    onClick={() => dispatch<any>(navFunc(item.uuid))}
+                    onClick={(ev) => {
+                        ev.stopPropagation()
+                        dispatch<any>(navFunc(item.uuid))
+                    }}
                 >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
                     {item.name}

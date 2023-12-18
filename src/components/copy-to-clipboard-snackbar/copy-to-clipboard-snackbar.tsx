@@ -48,7 +48,7 @@ export const CopyToClipboardSnackbar = connect()(
             render() {
                 const { children, value, classes } = this.props;
                 return (
-                    <Tooltip title='Copy to clipboard'>
+                    <Tooltip title='Copy to clipboard' onClick={(ev) => ev.stopPropagation()}>
                         <span className={classes.copyIcon}>
                             <CopyToClipboard text={value} onCopy={this.onCopy}>
                                 {children || <CopyIcon />}
