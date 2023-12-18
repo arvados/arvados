@@ -20,22 +20,23 @@ const SidePanelToggle = (props: collapseButtonProps) => {
         root: {
             width: `${COLLAPSE_ICON_SIZE}px`,
             height: `${COLLAPSE_ICON_SIZE}px`,
-            marginTop: '0.4rem'
+            marginTop: '0.4rem',
+            marginLeft: '0.7rem',
+            paddingTop: '1rem',
+            paddingRight: '1rem'
         },
         icon: {
-            height: '1.5rem',
-            width: '3rem',
-            opacity: '0.6',
+            opacity: '0.5',
         },
     }
 
     return <Tooltip disableFocusListener title="Toggle Side Panel">
-        <IconButton style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
+        <IconButton data-cy="side-panel-toggle" style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
             <div>
                 {props.isCollapsed ?
-                    <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)" }} src='/collapseLHS-New.svg#svgView(preserveAspectRatio(none))' alt='expand button' />
+                    <img style={{...collapseButtonIconStyles.icon, marginLeft:'0.25rem'}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>
                     :
-                    <img style={{ ...collapseButtonIconStyles.icon, }} src='/collapseLHS-New.svg#svgView(preserveAspectRatio(none))' alt='collapse button' />}
+                    <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)"}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>}
             </div>
         </IconButton>
     </Tooltip>

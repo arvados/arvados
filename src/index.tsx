@@ -91,6 +91,9 @@ import { workflowActionSet, readOnlyWorkflowActionSet } from "views-components/c
 import { storeRedirects } from "./common/redirect-to";
 import { searchResultsActionSet } from "views-components/context-menu/action-sets/search-results-action-set";
 
+import 'bootstrap/dist/css/bootstrap.min.css';
+import '@coreui/coreui/dist/css/coreui.min.css';
+
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);

@@ -50,6 +50,7 @@ import { trashPanelColumns } from "views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { loadProcessPanel } from "store/process-panel/process-panel-actions";
 import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
+import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-panel";
 import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
 import { workflowPanelActions } from "store/workflow-panel/workflow-panel-actions";
 import { loadSshKeysPanel } from "store/auth/auth-action-ssh";
@@ -140,7 +141,7 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
             })
         );
         dispatch(trashPanelActions.SET_COLUMNS({ columns: trashPanelColumns }));
-        dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
+        dispatch(sharedWithMePanelActions.SET_COLUMNS({ columns: sharedWithMePanelColumns }));
         dispatch(workflowPanelActions.SET_COLUMNS({ columns: workflowPanelColumns }));
         dispatch(
             searchResultsPanelActions.SET_FETCH_MODE({

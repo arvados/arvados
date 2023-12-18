@@ -17,15 +17,20 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | "dataTable" | "container";
+type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    titleWrapper: {
+        display: "flex",
+        justifyContent: "space-between",
+    },
     searchBox: {
         paddingBottom: 0,
     },
     toolbar: {
         paddingTop: 0,
         paddingRight: theme.spacing.unit,
+        paddingLeft: "10px",
     },
     footer: {
         overflow: "auto",
@@ -41,6 +46,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing.unit * 2,
         paddingTop: theme.spacing.unit * 2,
         fontSize: "18px",
+        paddingRight: "10px",
+    },
+    subProcessTitle: {
+        display: "inline-block",
+        paddingLeft: theme.spacing.unit * 2,
+        paddingTop: theme.spacing.unit * 2,
+        fontSize: "18px",
+        flexGrow: 0,
+        paddingRight: "10px",
     },
     dataTable: {
         height: "100%",
@@ -50,11 +64,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "100%",
     },
     headerMenu: {
-        width: "100%",
-        float: "right",
-        display: "flex",
-        flexDirection: "row-reverse",
-        justifyContent: "space-between",
+        marginLeft: "auto",
+        flexBasis: "initial",
+        flexGrow: 0,
     },
 });
 
@@ -79,6 +91,7 @@ interface DataExplorerDataProps<T> {
     actions?: React.ReactNode;
     hideSearchInput?: boolean;
     title?: React.ReactNode;
+    progressBar?: React.ReactNode;
     paperKey?: string;
     currentItemUuid: string;
     elementPath?: string;
@@ -112,6 +125,8 @@ export const DataExplorer = withStyles(styles)(
             prevRefresh: "",
             prevRoute: "",
         };
+
+        multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
 
         componentDidUpdate(prevProps: DataExplorerProps<T>) {
             const currentRefresh = this.props.currentRefresh || "";
@@ -180,7 +195,9 @@ export const DataExplorer = withStyles(styles)(
                 paperKey,
                 fetchMode,
                 currentItemUuid,
+                currentRoute,
                 title,
+                progressBar,
                 doHidePanel,
                 doMaximizePanel,
                 doUnMaximizePanel,
@@ -204,16 +221,18 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        <div>
+                        <div className={classes.titleWrapper} style={currentRoute?.includes('search-results') || !!progressBar ? {marginBottom: '-20px'} : {}}>
                             {title && (
                                 <Grid
                                     item
                                     xs
-                                    className={classes.title}
+                                    className={!!progressBar ? classes.subProcessTitle : classes.title}
                                 >
                                     {title}
                                 </Grid>
                             )}
+                            {!!progressBar && progressBar}
+                            {this.multiSelectToolbarInTitle && <MultiselectToolbar />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -221,25 +240,27 @@ export const DataExplorer = withStyles(styles)(
                                     xs
                                 >
                                     <Toolbar className={classes.toolbar}>
-                                        {!hideSearchInput && (
-                                            <div className={classes.searchBox}>
-                                                {!hideSearchInput && (
-                                                    <SearchInput
-                                                        label={searchLabel}
-                                                        value={searchValue}
-                                                        selfClearProp={""}
-                                                        onSearch={onSearch}
-                                                    />
-                                                )}
-                                            </div>
-                                        )}
-                                        {actions}
-                                        {!hideColumnSelector && (
-                                            <ColumnSelector
-                                                columns={columns}
-                                                onColumnToggle={onColumnToggle}
-                                            />
-                                        )}
+                                        <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                                            {!hideSearchInput && (
+                                                <div className={classes.searchBox}>
+                                                    {!hideSearchInput && (
+                                                        <SearchInput
+                                                            label={searchLabel}
+                                                            value={searchValue}
+                                                            selfClearProp={""}
+                                                            onSearch={onSearch}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                            {actions}
+                                            {!hideColumnSelector && (
+                                                <ColumnSelector
+                                                    columns={columns}
+                                                    onColumnToggle={onColumnToggle}
+                                                />
+                                            )}
+                                        </Grid>
                                         {doUnMaximizePanel && panelMaximized && (
                                             <Tooltip
                                                 title={`Unmaximize ${panelName || "panel"}`}
@@ -274,14 +295,15 @@ export const DataExplorer = withStyles(styles)(
                                             </Tooltip>
                                         )}
                                     </Toolbar>
-                                    <MultiselectToolbar />
                                 </Grid>
                             )}
                         </div>
+                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar />}
                         <Grid
                             item
                             xs="auto"
                             className={classes.dataTable}
+                            style={currentRoute?.includes('search-results')  || !!progressBar ? {marginTop: '-10px'} : {}}
                         >
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}

@@ -151,8 +151,11 @@ packages-in-docker: check-arvados-directory workbench2-build-image
 	docker run --env ci="true" \
 		--env ARVADOS_DIRECTORY=/tmp/arvados \
 		--env APP_NAME=${APP_NAME} \
+		--env VERSION="${VERSION}" \
 		--env ITERATION=${ITERATION} \
 		--env TARGETS="${TARGETS}" \
+		--env MAINTAINER="${MAINTAINER}" \
+		--env DESCRIPTION="${DESCRIPTION}" \
 		-w="/tmp/workbench2" \
 		-t -v ${WORKSPACE}:/tmp/workbench2 \
 		-v ${ARVADOS_DIRECTORY}:/tmp/arvados workbench2-build:latest \

@@ -42,6 +42,7 @@ type CssRules = "root" | "transition" | "button" | "iconContainer";
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
+        flexShrink: 0,
         flexDirection: "row",
         width: 0,
         height: '2.7rem',

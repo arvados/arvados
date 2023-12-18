@@ -119,7 +119,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     splitter: {
         "& > .layout-splitter": {
-            width: "2px",
+            width: "3px",
         },
         "& > .layout-splitter-disabled": {
             pointerEvents: "none",
@@ -292,7 +292,7 @@ const applyCollapsedState = isCollapsed => {
     const totalWidth: number = document.getElementsByClassName("splitter-layout")[0]?.clientWidth;
     const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
     if (rightPanel) {
-        rightPanel.setAttribute("style", `width: ${isCollapsed ? rightPanelExpandedWidth : getSplitterInitialSize()}%`);
+        rightPanel.setAttribute("style", `width: ${isCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSplitterInitialSize()}%`}`);
     }
     const splitter = document.getElementsByClassName("layout-splitter")[0];
     isCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
