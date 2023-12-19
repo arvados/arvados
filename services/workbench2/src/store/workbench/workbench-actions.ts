@@ -762,6 +762,7 @@ export const loadSshKeys = handleFirstTimeLoad(async (dispatch: Dispatch<any>) =
 });
 
 export const loadInstanceTypes = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.INSTANCE_TYPES));
     dispatch(setInstanceTypesBreadcrumbs());
 });
 

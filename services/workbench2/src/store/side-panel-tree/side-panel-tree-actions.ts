@@ -24,6 +24,7 @@ export enum SidePanelTreeCategory {
     PUBLIC_FAVORITES = 'Public Favorites',
     SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
+    INSTANCE_TYPES = 'Instance Types',
     SHELL_ACCESS = 'Shell Access',
     GROUPS = 'Groups',
     TRASH = 'Trash',
@@ -53,6 +54,7 @@ let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.ALL_PROCESSES,
+    SidePanelTreeCategory.INSTANCE_TYPES,
     SidePanelTreeCategory.SHELL_ACCESS,
     SidePanelTreeCategory.GROUPS,
     SidePanelTreeCategory.TRASH
@@ -120,7 +122,7 @@ const loadProject = (projectUuid: string) =>
         };
 
         const { items } = await services.projectService.list(params);
-        
+
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: projectUuid,
             pickerId: SIDE_PANEL_TREE,
