@@ -11,6 +11,7 @@ import { connect } from 'react-redux';
 import { ClusterConfigJSON } from 'common/config';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { formatCWLResourceSize, formatCost, formatFileSize } from 'common/formatters';
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 
 type CssRules = 'root' | 'instanceType';
 
@@ -61,35 +62,35 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                                         <Typography variant="h6">
                                             {instanceKey}
                                         </Typography>
-                                        <Typography>
-                                            Provider type: {instanceType.ProviderType}
-                                        </Typography>
-                                        <Typography>
-                                            Price: {formatCost(instanceType.Price)}
-                                        </Typography>
-                                        <Typography>
-                                            Cores: {instanceType.VCPUs}
-                                        </Typography>
-                                        <Typography>
-                                            Max RAM request: {formatCWLResourceSize(ramRequest)} ({formatFileSize(ramRequest)})
-                                        </Typography>
-                                        <Typography>
-                                            Max disk request: {formatCWLResourceSize(diskRequest)} ({formatFileSize(diskRequest)})
-                                        </Typography>
-                                        <Typography>
-                                            Preemptible: {instanceType.Preemptible.toString()}
-                                        </Typography>
+                                        <Grid item xs={12}>
+                                            <DetailsAttribute label="Provider type" value={instanceType.ProviderType} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <DetailsAttribute label="Price" value={instanceType.Price} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <DetailsAttribute label="Cores" value={instanceType.VCPUs} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <DetailsAttribute label="Max RAM request" value={`${formatCWLResourceSize(ramRequest)} (${formatFileSize(ramRequest)})`} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <DetailsAttribute label="Max disk request" value={`${formatCWLResourceSize(diskRequest)} (${formatFileSize(diskRequest)})`} />
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <DetailsAttribute label="Preemptible" value={instanceType.Preemptible.toString()} />
+                                        </Grid>
                                         {instanceType.CUDA && instanceType.CUDA.DeviceCount > 0 ?
                                             <>
-                                                <Typography>
-                                                    CUDA GPUs: {instanceType.CUDA.DeviceCount}
-                                                </Typography>
-                                                <Typography>
-                                                    Hardware capability: {instanceType.CUDA.HardwareCapability}
-                                                </Typography>
-                                                <Typography>
-                                                    Driver version: {instanceType.CUDA.DriverVersion}
-                                                </Typography>
+                                                <Grid item xs={12}>
+                                                    <DetailsAttribute label="CUDA GPUs" value={instanceType.CUDA.DeviceCount} />
+                                                </Grid>
+                                                <Grid item xs={12}>
+                                                    <DetailsAttribute label="Hardware capability" value={instanceType.CUDA.HardwareCapability} />
+                                                </Grid>
+                                                <Grid item xs={12}>
+                                                    <DetailsAttribute label="Driver version" value={instanceType.CUDA.DriverVersion} />
+                                                </Grid>
                                             </> : <></>
                                         }
                                     </CardContent>
