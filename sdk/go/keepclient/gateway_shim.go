@@ -67,28 +67,3 @@ func (kvh *keepViaHTTP) LocalLocator(locator string) (string, error) {
 	}
 	return loc, nil
 }
-
-// keepViaBlockCache implements arvados.KeepGateway by using the given
-// KeepClient's BlockCache with the wrapped KeepGateway.
-//
-// Note the whole KeepClient gets passed in instead of just its
-// cache. This ensures the new BlockCache gets used if it changes
-// after keepViaBlockCache is initialized.
-type keepViaBlockCache struct {
-	kc *KeepClient
-	arvados.KeepGateway
-}
-
-func (kvbc *keepViaBlockCache) ReadAt(locator string, dst []byte, offset int) (int, error) {
-	return kvbc.kc.cache().ReadAt(kvbc.KeepGateway, locator, dst, offset)
-}
-
-func (kvbc *keepViaBlockCache) BlockRead(ctx context.Context, opts arvados.BlockReadOptions) (int, error) {
-	rdr, _, _, _, err := kvbc.kc.getOrHead("GET", opts.Locator, nil)
-	if err != nil {
-		return 0, err
-	}
-	defer rdr.Close()
-	n, err := io.Copy(opts.WriteTo, rdr)
-	return int(n), err
-}

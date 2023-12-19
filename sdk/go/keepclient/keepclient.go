@@ -110,7 +110,6 @@ type KeepClient struct {
 	lock                  sync.RWMutex
 	HTTPClient            HTTPClient
 	Retries               int
-	BlockCache            *BlockCache
 	RequestID             string
 	StorageClasses        []string
 	DefaultStorageClasses []string // Set by cluster's exported config
@@ -540,17 +539,6 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 	// After trying all usable service hints, fall back to local roots.
 	found = append(found, NewRootSorter(kc.LocalRoots(), locator[0:32]).GetSortedRoots()...)
 	return found
-}
-
-func (kc *KeepClient) cache() *BlockCache {
-	if kc.BlockCache != nil {
-		return kc.BlockCache
-	}
-	return DefaultBlockCache
-}
-
-func (kc *KeepClient) ClearBlockCache() {
-	kc.cache().Clear()
 }
 
 func (kc *KeepClient) SetStorageClasses(sc []string) {

@@ -43,7 +43,6 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
-	blockCache := flags.Int("block-cache", 4, "read cache size (number of 64MiB blocks)")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
@@ -69,7 +68,6 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Print(err)
 		return 1
 	}
-	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: *blockCache}
 	host := fuse.NewFileSystemHost(&keepFS{
 		Client:     client,
 		KeepClient: kc,
