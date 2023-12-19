@@ -71,13 +71,13 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                                             Cores: {instanceType.VCPUs}
                                         </Typography>
                                         <Typography>
-                                            Preemptible: {instanceType.Preemptible.toString()}
+                                            Max RAM request: {formatCWLResourceSize(ramRequest)} ({formatFileSize(ramRequest)})
                                         </Typography>
                                         <Typography>
                                             Max disk request: {formatCWLResourceSize(diskRequest)} ({formatFileSize(diskRequest)})
                                         </Typography>
                                         <Typography>
-                                            Max RAM request: {formatCWLResourceSize(ramRequest)} ({formatFileSize(ramRequest)})
+                                            Preemptible: {instanceType.Preemptible.toString()}
                                         </Typography>
                                         {instanceType.CUDA && instanceType.CUDA.DeviceCount > 0 ?
                                             <>
