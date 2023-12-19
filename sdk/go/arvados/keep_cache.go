@@ -213,8 +213,7 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 	}
 	f, err := cache.openFile(cachefilename, os.O_CREATE|os.O_RDWR)
 	if err != nil {
-		cache.debugf("ReadAt: open(%s) failed: %s", cachefilename, err)
-		return cache.KeepGateway.ReadAt(locator, dst, offset)
+		return 0, fmt.Errorf("ReadAt: open(%s) failed: %s", cachefilename, err)
 	}
 	defer f.Close()
 
