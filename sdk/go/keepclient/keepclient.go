@@ -42,6 +42,9 @@ var (
 	DefaultProxyConnectTimeout      = 30 * time.Second
 	DefaultProxyTLSHandshakeTimeout = 10 * time.Second
 	DefaultProxyKeepAlive           = 120 * time.Second
+
+	rootCacheDir = "/var/cache/arvados/keep"
+	userCacheDir = ".cache/arvados/keep" // relative to HOME
 )
 
 // Error interface with an error and boolean indicating whether the error is temporary
@@ -336,43 +339,37 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 	return nil, 0, "", nil, err
 }
 
+// attempt to create dir/subdir/ and its parents, up to but not
+// including dir itself, using mode 0700.
+func makedirs(dir, subdir string) {
+	for _, part := range strings.Split(subdir, string(os.PathSeparator)) {
+		dir = filepath.Join(dir, part)
+		os.Mkdir(dir, 0700)
+	}
+}
+
 // upstreamGateway creates/returns the KeepGateway stack used to read
-// and write data: a memory cache, a disk-backed cache if available,
-// and an http backend.
+// and write data: a disk-backed cache on top of an http backend.
 func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
 	kc.lock.Lock()
 	defer kc.lock.Unlock()
 	if kc.gatewayStack != nil {
 		return kc.gatewayStack
 	}
-	var stack arvados.KeepGateway = &keepViaHTTP{kc}
-
-	// Wrap with a disk cache, if cache dir is writable
-	home := os.Getenv("HOME")
-	if fi, err := os.Stat(home); home != "" && err == nil && fi.IsDir() {
-		var err error
-		dir := home
-		for _, part := range []string{".cache", "arvados", "keep"} {
-			dir = filepath.Join(dir, part)
-			err = os.Mkdir(dir, 0700)
-		}
-		if err == nil || os.IsExist(err) {
-			os.Mkdir(filepath.Join(dir, "tmp"), 0700)
-			err = os.WriteFile(filepath.Join(dir, "tmp", "check.tmp"), nil, 0600)
-			if err == nil {
-				stack = &arvados.DiskCache{
-					Dir:         dir,
-					KeepGateway: stack,
-				}
-			}
-		}
+	var cachedir string
+	if os.Geteuid() == 0 {
+		cachedir = rootCacheDir
+		makedirs("/", cachedir)
+	} else {
+		home := "/" + os.Getenv("HOME")
+		makedirs(home, userCacheDir)
+		cachedir = filepath.Join(home, userCacheDir)
 	}
-	stack = &keepViaBlockCache{
-		kc:          kc,
-		KeepGateway: stack,
+	kc.gatewayStack = &arvados.DiskCache{
+		Dir:         cachedir,
+		KeepGateway: &keepViaHTTP{kc},
 	}
-	kc.gatewayStack = stack
-	return stack
+	return kc.gatewayStack
 }
 
 // LocalLocator returns a locator equivalent to the one supplied, but
