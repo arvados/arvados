@@ -376,22 +376,7 @@ func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
 // with a valid signature from the local cluster. If the given locator
 // already has a local signature, it is returned unchanged.
 func (kc *KeepClient) LocalLocator(locator string) (string, error) {
-	if !strings.Contains(locator, "+R") {
-		// Either it has +A, or it's unsigned and we assume
-		// it's a local locator on a site with signatures
-		// disabled.
-		return locator, nil
-	}
-	sighdr := fmt.Sprintf("local, time=%s", time.Now().UTC().Format(time.RFC3339))
-	_, _, url, hdr, err := kc.getOrHead("HEAD", locator, http.Header{"X-Keep-Signature": []string{sighdr}})
-	if err != nil {
-		return "", err
-	}
-	loc := hdr.Get("X-Keep-Locator")
-	if loc == "" {
-		return "", fmt.Errorf("missing X-Keep-Locator header in HEAD response from %s", url)
-	}
-	return loc, nil
+	return kc.upstreamGateway().LocalLocator(locator)
 }
 
 // Get retrieves a block, given a locator. Returns a reader, the
@@ -410,6 +395,12 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 // present, otherwise from the network.
 func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
 	return kc.upstreamGateway().ReadAt(locator, p, off)
+}
+
+// BlockWrite writes a full block to upstream servers and saves a copy
+// in the local cache.
+func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	return kc.upstreamGateway().BlockWrite(ctx, req)
 }
 
 // Ask verifies that a block with the given hash is available and

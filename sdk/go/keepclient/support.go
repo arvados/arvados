@@ -127,7 +127,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	}
 }
 
-func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
 	var resp arvados.BlockWriteResponse
 	var getReader func() io.Reader
 	if req.Data == nil && req.Reader == nil {

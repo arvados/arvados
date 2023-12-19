@@ -6,7 +6,11 @@ package keepclient
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net/http"
+	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
@@ -39,6 +43,29 @@ func (kvh *keepViaHTTP) BlockRead(ctx context.Context, opts arvados.BlockReadOpt
 	defer rdr.Close()
 	n, err := io.Copy(opts.WriteTo, rdr)
 	return int(n), err
+}
+
+func (kvh *keepViaHTTP) BlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	return kvh.httpBlockWrite(ctx, req)
+}
+
+func (kvh *keepViaHTTP) LocalLocator(locator string) (string, error) {
+	if !strings.Contains(locator, "+R") {
+		// Either it has +A, or it's unsigned and we assume
+		// it's a local locator on a site with signatures
+		// disabled.
+		return locator, nil
+	}
+	sighdr := fmt.Sprintf("local, time=%s", time.Now().UTC().Format(time.RFC3339))
+	_, _, url, hdr, err := kvh.KeepClient.getOrHead("HEAD", locator, http.Header{"X-Keep-Signature": []string{sighdr}})
+	if err != nil {
+		return "", err
+	}
+	loc := hdr.Get("X-Keep-Locator")
+	if loc == "" {
+		return "", fmt.Errorf("missing X-Keep-Locator header in HEAD response from %s", url)
+	}
+	return loc, nil
 }
 
 // keepViaBlockCache implements arvados.KeepGateway by using the given
