@@ -12,17 +12,24 @@ import { FederationConfig, getNavUrl } from 'routes/routes';
 import { Dispatch } from 'redux';
 import { navigationNotAvailable } from 'store/navigation/navigation-action';
 
-type CssRules = 'root' | 'space';
+type CssRules = 'root' | 'inlineRoot' | 'space' | 'inline';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',
-        padding: theme.spacing.unit
+        padding: theme.spacing.unit,
+    },
+    inlineRoot: {
+        padding: "3px",
+        display: "inline",
     },
     space: {
-        marginLeft: '15px'
-    }
+        marginLeft: '15px',
+    },
+    inline: {
+        display: 'inline',
+    },
 });
 
 export interface CodeSnippetDataProps {
@@ -31,6 +38,7 @@ export interface CodeSnippetDataProps {
     apiResponse?: boolean;
     linked?: boolean;
     children?: JSX.Element;
+    inline?: boolean;
 }
 
 interface CodeSnippetAuthProps {
@@ -44,11 +52,11 @@ const mapStateToProps = (state: RootState): CodeSnippetAuthProps => ({
 });
 
 export const CodeSnippet = withStyles(styles)(connect(mapStateToProps)(
-    ({ classes, lines, linked, className, apiResponse, dispatch, auth, children }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) =>
+    ({ classes, lines, linked, className, apiResponse, dispatch, auth, children, inline }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) =>
         <Typography
         component="div"
-        className={classNames(classes.root, className)}>
-            <Typography className={apiResponse ? classes.space : className} component="pre">
+        className={classNames([classes.root, className, inline ? classes.inlineRoot: undefined])}>
+            <Typography className={apiResponse ? classes.space : classNames([className, inline ? classes.inline : undefined])} component="pre">
                 {children}
                 {linked ?
                     lines.map((line, index) => <React.Fragment key={index}>{renderLinks(auth, dispatch)(line)}{`\n`}</React.Fragment>) :
