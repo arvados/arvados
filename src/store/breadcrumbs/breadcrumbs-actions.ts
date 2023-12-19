@@ -50,8 +50,8 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
     }
 }
 
-const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource): Breadcrumb => ({
-    label: resource.name,
+const resourceToBreadcrumb = (resource: (CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) & {fullName?: string}  ): Breadcrumb => ({
+    label: resource.name || resource.fullName || '',
     uuid: resource.uuid,
     icon: resourceToBreadcrumbIcon(resource),
 })
