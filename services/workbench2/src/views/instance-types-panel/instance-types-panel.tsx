@@ -41,7 +41,16 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
             <CardContent>
                 <Grid container direction="row">
                     {Object.keys(instances).length > 0 ?
-                        Object.keys(instances).map((instanceKey) => {
+                        Object.keys(instances).sort((a, b) => {
+                            const typeA = instances[a];
+                            const typeB = instances[b];
+
+                            if (typeA.Price !== typeB.Price) {
+                                return typeA.Price - typeB.Price;
+                            } else {
+                                return typeA.ProviderType.localeCompare(typeB.ProviderType);
+                            }
+                        }).map((instanceKey) => {
                             const instanceType = instances[instanceKey];
                             const diskRequest = instanceType.IncludedScratch;
                             const ramRequest = instanceType.RAM - config.Containers.ReserveExtraRAM;
