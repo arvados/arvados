@@ -30,7 +30,8 @@ export const BREADCRUMBS = 'breadcrumbs';
 
 export const setBreadcrumbs = (breadcrumbs: any, currentItem?: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) => {
     if (currentItem) {
-        breadcrumbs.push(resourceToBreadcrumb(currentItem));
+        const currentCrumb = resourceToBreadcrumb(currentItem)
+        if (currentCrumb.label.length) breadcrumbs.push(currentCrumb);
     }
     return propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
 };
