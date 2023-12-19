@@ -5,7 +5,7 @@
 import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Typography, Grid } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { InstanceTypeIcon } from 'components/icon/icon';
+import { ResourceIcon } from 'components/icon/icon';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { ClusterConfigJSON } from 'common/config';
@@ -88,7 +88,7 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                             </Grid>
                         }) :
                         <NotFoundView
-                            icon={InstanceTypeIcon}
+                            icon={ResourceIcon}
                             messages={["No instances found"]}
                         />
                     }

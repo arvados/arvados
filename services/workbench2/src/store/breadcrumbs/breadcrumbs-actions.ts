@@ -20,7 +20,7 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { AdminMenuIcon, CollectionIcon, IconType, InstanceTypeIcon, ProcessIcon, ProjectIcon, WorkflowIcon } from 'components/icon/icon';
+import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
 import { WorkflowResource } from 'models/workflow';
@@ -296,7 +296,7 @@ export const INSTANCE_TYPES_PANEL_LABEL = 'Instance Types';
 export const setInstanceTypesBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
-            { label: INSTANCE_TYPES_PANEL_LABEL, uuid: INSTANCE_TYPES_PANEL_LABEL, icon: InstanceTypeIcon },
+            { label: INSTANCE_TYPES_PANEL_LABEL, uuid: INSTANCE_TYPES_PANEL_LABEL, icon: ResourceIcon },
         ]));
     };
 
