@@ -260,12 +260,33 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 
 var quickReadAtLostRace = errors.New("quickReadAt: lost race")
 
-func (cache *DiskCache) deleteHeldopen(cachefilename string, heldopen *openFileEnt) {
+// Remove the cache entry for the indicated cachefilename if it
+// matches expect (quickReadAt() usage), or if expect is nil (tidy()
+// usage).
+//
+// If expect is non-nil, close expect's filehandle.
+//
+// If expect is nil and a different cache entry is deleted, close its
+// filehandle.
+func (cache *DiskCache) deleteHeldopen(cachefilename string, expect *openFileEnt) {
+	needclose := expect
+
 	cache.heldopenLock.Lock()
-	if cache.heldopen[cachefilename] == heldopen {
+	found := cache.heldopen[cachefilename]
+	if found != nil && (expect == nil || expect == found) {
 		delete(cache.heldopen, cachefilename)
+		needclose = found
 	}
 	cache.heldopenLock.Unlock()
+
+	if needclose != nil {
+		needclose.Lock()
+		defer needclose.Unlock()
+		if needclose.f != nil {
+			needclose.f.Close()
+			needclose.f = nil
+		}
+	}
 }
 
 // quickReadAt attempts to use a cached-filehandle approach to read
@@ -522,6 +543,7 @@ func (cache *DiskCache) tidy() {
 	deleted := 0
 	for _, ent := range ents {
 		os.Remove(ent.path)
+		go cache.deleteHeldopen(ent.path, nil)
 		deleted++
 		totalsize -= ent.size
 		if totalsize <= maxsize {
