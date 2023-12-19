@@ -77,7 +77,6 @@ import NotInterested from "@material-ui/icons/NotInterested";
 import Image from "@material-ui/icons/Image";
 import Stop from "@material-ui/icons/Stop";
 import FileCopy from "@material-ui/icons/FileCopy";
-import Storage from "@material-ui/icons/Storage";
 
 // Import FontAwesome icons
 import { library } from "@fortawesome/fontawesome-svg-core";
