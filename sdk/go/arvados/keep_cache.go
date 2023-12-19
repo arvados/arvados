@@ -213,7 +213,7 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 	}
 	f, err := cache.openFile(cachefilename, os.O_CREATE|os.O_RDWR)
 	if err != nil {
-		return 0, fmt.Errorf("ReadAt: open(%s) failed: %s", cachefilename, err)
+		return 0, fmt.Errorf("ReadAt: %s", cachefilename, err)
 	}
 	defer f.Close()
 
@@ -391,7 +391,7 @@ func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (i
 	cachefilename := cache.cacheFile(opts.Locator)
 	f, err := cache.openFile(cachefilename, os.O_CREATE|os.O_RDWR)
 	if err != nil {
-		cache.debugf("BlockRead: open(%s) failed: %s", cachefilename, err)
+		cache.debugf("BlockRead: %s", cachefilename, err)
 		return cache.KeepGateway.BlockRead(ctx, opts)
 	}
 	defer f.Close()
