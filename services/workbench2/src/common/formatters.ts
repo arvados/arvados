@@ -41,6 +41,10 @@ export const formatFileSize = (size?: number | string) => {
     return '0 B';
 };
 
+export const formatCWLResourceSize = (size: number) => {
+    return `${(size / CWL_SIZE.base).toFixed(0)} ${CWL_SIZE.unit}`;
+};
+
 export const formatTime = (time: number, seconds?: boolean) => {
     const minutes = Math.floor((time / (1000 * 60)) % 60).toFixed(0);
     const hours = Math.floor(time / (1000 * 60 * 60)).toFixed(0);
@@ -78,15 +82,15 @@ export function formatUploadSpeed(
 
 const FILE_SIZES = [
     {
-        base: 1099511627776,
+        base: 1024 ** 4,
         unit: 'TiB',
     },
     {
-        base: 1073741824,
+        base: 1024 ** 3,
         unit: 'GiB',
     },
     {
-        base: 1048576,
+        base: 1024 ** 2,
         unit: 'MiB',
     },
     {
@@ -98,6 +102,11 @@ const FILE_SIZES = [
         unit: 'B',
     },
 ];
+
+const CWL_SIZE = {
+    base: 1024 ** 2,
+    unit: 'MiB',
+};
 
 export const formatPropertyValue = (
     pv: PropertyValue,

@@ -10,7 +10,7 @@ import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { ClusterConfigJSON } from 'common/config';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
-import { formatCost, formatFileSize } from 'common/formatters';
+import { formatCWLResourceSize, formatCost, formatFileSize } from 'common/formatters';
 
 type CssRules = 'root' | 'instanceType';
 
@@ -43,6 +43,8 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                     {Object.keys(instances).length > 0 ?
                         Object.keys(instances).map((instanceKey) => {
                             const instanceType = instances[instanceKey];
+                            const diskRequest = instanceType.IncludedScratch;
+                            const ramRequest = instanceType.RAM - config.Containers.ReserveExtraRAM;
 
                             return <Grid data-cy={instanceKey} className={classes.instanceType} item sm={6} xs={12} key={instanceKey}>
                                 <Card>
@@ -63,10 +65,10 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                                             Preemptible: {instanceType.Preemptible.toString()}
                                         </Typography>
                                         <Typography>
-                                            Max disk request: {formatFileSize(instanceType.IncludedScratch)}
+                                            Max disk request: {formatCWLResourceSize(diskRequest)} ({formatFileSize(diskRequest)})
                                         </Typography>
                                         <Typography>
-                                            Max ram request: {formatFileSize(instanceType.RAM - config.Containers.ReserveExtraRAM)}
+                                            Max RAM request: {formatCWLResourceSize(ramRequest)} ({formatFileSize(ramRequest)})
                                         </Typography>
                                         {instanceType.CUDA && instanceType.CUDA.DeviceCount > 0 ?
                                             <>
