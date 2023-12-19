@@ -90,7 +90,7 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                                         <DetailsAttribute label="Provider type" value={instanceType.ProviderType} />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <DetailsAttribute label="Price" value={instanceType.Price} />
+                                        <DetailsAttribute label="Price" value={formatCost(instanceType.Price)} />
                                     </Grid>
                                     <Grid item xs={12}>
                                         <DetailsAttribute label="Cores" value={instanceType.VCPUs} />
