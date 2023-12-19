@@ -77,8 +77,9 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                         }
                     }).map((instanceKey) => {
                         const instanceType = instances[instanceKey];
-                        const diskRequest = instanceType.IncludedScratch;
-                        const ramRequest = instanceType.RAM - config.Containers.ReserveExtraRAM;
+                        const maxDiskRequest = instanceType.IncludedScratch;
+                        const keepBufferOverhead = calculateKeepBufferOverhead(instanceType.VCPUs);
+                        const maxRamRequest = discountRamByPercent(instanceType.RAM - config.Containers.ReserveExtraRAM - keepBufferOverhead);
 
                         return <Grid data-cy={instanceKey} className={classes.instanceType} item sm={6} xs={12} key={instanceKey}>
                             <Card>
@@ -96,10 +97,10 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
                                         <DetailsAttribute label="Cores" value={instanceType.VCPUs} />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <DetailsAttribute label="Max RAM request" value={`${formatCWLResourceSize(ramRequest)} (${formatFileSize(ramRequest)})`} />
+                                        <DetailsAttribute label="Max RAM request" value={`${formatCWLResourceSize(maxRamRequest)} (${formatFileSize(maxRamRequest)})`} />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <DetailsAttribute label="Max disk request" value={`${formatCWLResourceSize(diskRequest)} (${formatFileSize(diskRequest)})`} />
+                                        <DetailsAttribute label="Max disk request" value={`${formatCWLResourceSize(maxDiskRequest)} (${formatFileSize(maxDiskRequest)})`} />
                                     </Grid>
                                     <Grid item xs={12}>
                                         <DetailsAttribute label="Preemptible" value={instanceType.Preemptible.toString()} />
@@ -129,3 +130,19 @@ export const InstanceTypesPanel = withStyles(styles)(connect(mapStateToProps)(
         </Grid>;
     }
 ));
+
+export const calculateKeepBufferOverhead = (coreCount: number): number => {
+    // TODO replace with exported server config
+    const buffersPerVCPU = 1;
+
+    // Returns 220 MiB + 64MiB+10% per buffer
+    return (220 << 20) + (buffersPerVCPU * coreCount * (1 << 26) * (11/10))
+};
+
+export const discountRamByPercent = (requestedRamBytes: number): number => {
+    // TODO replace this with exported server config or remove when no longer
+    // used by server in ram calculation
+    const discountPercent = 5;
+
+    return requestedRamBytes * 100 / (100-discountPercent);
+};

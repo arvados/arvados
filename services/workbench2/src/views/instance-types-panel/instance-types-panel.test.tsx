@@ -4,11 +4,11 @@
 
 import React from 'react';
 import { configure, mount } from "enzyme";
-import { InstanceTypesPanel } from './instance-types-panel';
+import { InstanceTypesPanel, calculateKeepBufferOverhead, discountRamByPercent } from './instance-types-panel';
 import Adapter from "enzyme-adapter-react-16";
 import { combineReducers, createStore } from "redux";
 import { Provider } from "react-redux";
-import { formatFileSize } from 'common/formatters';
+import { formatFileSize, formatCWLResourceSize } from 'common/formatters';
 
 configure({ adapter: new Adapter() });
 
@@ -70,17 +70,43 @@ describe('<InstanceTypesPanel />', () => {
             const item = panel.find(`Grid[data-cy="${instanceKey}"]`)
 
             expect(item.find('h6').text()).toContain(instanceKey);
-            expect(item.text()).toContain(`Provider type: ${instanceType.ProviderType}`);
-            expect(item.text()).toContain(`Price: $${instanceType.Price}`);
-            expect(item.text()).toContain(`Cores: ${instanceType.VCPUs}`);
-            expect(item.text()).toContain(`Preemptible: ${instanceType.Preemptible.toString()}`);
-            expect(item.text()).toContain(`Max disk request: ${formatFileSize(instanceType.IncludedScratch)}`);
-            expect(item.text()).toContain(`Max ram request: ${formatFileSize(instanceType.RAM - initialAuthState.config.clusterConfig.Containers.ReserveExtraRAM)}`);
+            expect(item.text()).toContain(`Provider type${instanceType.ProviderType}`);
+            expect(item.text()).toContain(`Price$${instanceType.Price}`);
+            expect(item.text()).toContain(`Cores${instanceType.VCPUs}`);
+            expect(item.text()).toContain(`Preemptible${instanceType.Preemptible.toString()}`);
+            expect(item.text()).toContain(`Max disk request${formatCWLResourceSize(instanceType.IncludedScratch)} (${formatFileSize(instanceType.IncludedScratch)})`);
             if (instanceType.CUDA && instanceType.CUDA.DeviceCount > 0) {
-                expect(item.text()).toContain(`CUDA GPUs: ${instanceType.CUDA.DeviceCount}`);
-                expect(item.text()).toContain(`Hardware capability: ${instanceType.CUDA.HardwareCapability}`);
-                expect(item.text()).toContain(`Driver version: ${instanceType.CUDA.DriverVersion}`);
+                expect(item.text()).toContain(`CUDA GPUs${instanceType.CUDA.DeviceCount}`);
+                expect(item.text()).toContain(`Hardware capability${instanceType.CUDA.HardwareCapability}`);
+                expect(item.text()).toContain(`Driver version${instanceType.CUDA.DriverVersion}`);
             }
         });
+    });
+});
+
+describe('calculateKeepBufferOverhead', () => {
+    it('should calculate correct buffer size', () => {
+        const testCases = [
+            {input: 0, output: (220<<20)},
+            {input: 1, output: (220<<20) + ((1<<26) * (11/10))},
+            {input: 2, output: (220<<20) + 2*((1<<26) * (11/10))},
+        ];
+
+        for (const {input, output} of testCases) {
+            expect(calculateKeepBufferOverhead(input)).toBe(output);
+        }
+    });
+});
+
+describe('discountRamByPercent', () => {
+    it('should inflate ram requirement by 5% of final amount', () => {
+        const testCases = [
+            {input: 0, output: 0},
+            {input: 114, output: 120},
+        ];
+
+        for (const {input, output} of testCases) {
+            expect(discountRamByPercent(input)).toBe(output);
+        }
     });
 });
