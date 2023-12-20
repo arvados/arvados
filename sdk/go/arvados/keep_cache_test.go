@@ -127,15 +127,29 @@ func (s *keepCacheSuite) TestMaxSize(c *check.C) {
 		Data: make([]byte, 44000000),
 	})
 	c.Check(err, check.IsNil)
+
+	// Wait for tidy to finish, check that it doesn't delete the
+	// only block.
 	time.Sleep(time.Millisecond)
+	for atomic.LoadInt32(&cache.tidying) > 0 {
+		time.Sleep(time.Millisecond)
+	}
+	c.Check(atomic.LoadInt64(&cache.sizeMeasured), check.Equals, int64(44000000))
+
 	resp2, err := cache.BlockWrite(ctx, BlockWriteOptions{
 		Data: make([]byte, 32000000),
 	})
 	c.Check(err, check.IsNil)
 	delete(backend.data, resp1.Locator)
 	delete(backend.data, resp2.Locator)
-	cache.tidyHoldUntil = time.Time{}
-	cache.tidy()
+
+	// Wait for tidy to finish, check that it deleted the older
+	// block.
+	time.Sleep(time.Millisecond)
+	for atomic.LoadInt32(&cache.tidying) > 0 {
+		time.Sleep(time.Millisecond)
+	}
+	c.Check(atomic.LoadInt64(&cache.sizeMeasured), check.Equals, int64(32000000))
 
 	n, err := cache.ReadAt(resp1.Locator, make([]byte, 2), 0)
 	c.Check(n, check.Equals, 0)
