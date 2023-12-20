@@ -3,10 +3,7 @@
 SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
-  add_to_message = ''
-  if Rails.configuration.Users.AutoSetupNewUsers
     add_to_message = @user.is_invited ? ' and setup' : ', but not setup'
-  end
 %>
 A new user has been created<%=add_to_message%>:
 
@@ -15,9 +12,9 @@ A new user has been created<%=add_to_message%>:
 This user is <%= @user.is_active ? '' : 'NOT ' %>active.
 
 <% if Rails.configuration.Services.Workbench1.ExternalURL -%>
-Please see workbench for more information:
+Please see Workbench for more information:
 
-  <%= Rails.configuration.Services.Workbench1.ExternalURL %>
+  <%= Rails.configuration.Services.Workbench1.ExternalURL %>user/<%=@user.uuid%>
 
 <% end -%>
 Thanks,

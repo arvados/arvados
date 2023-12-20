@@ -2,15 +2,14 @@
 
 SPDX-License-Identifier: AGPL-3.0 %>
 
-
 A new user landed on the inactive user page:
 
   <%= @user.full_name %> <<%= @user.email %>>
 
 <% if Rails.configuration.Services.Workbench1.ExternalURL -%>
-Please see workbench for more information:
+Please see Workbench for more information:
 
-  <%= Rails.configuration.Services.Workbench1.ExternalURL %>
+  <%= Rails.configuration.Services.Workbench1.ExternalURL %>user/<%=@user.uuid%>
 
 <% end -%>
 Thanks,
