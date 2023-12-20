@@ -114,6 +114,36 @@ func (k *keepGatewayMemoryBacked) BlockWrite(ctx context.Context, opts BlockWrit
 	return BlockWriteResponse{Locator: locator, Replicas: 1}, nil
 }
 
+func (s *keepCacheSuite) TestBlockWrite(c *check.C) {
+	backend := &keepGatewayMemoryBacked{}
+	cache := DiskCache{
+		KeepGateway: backend,
+		MaxSize:     40000000,
+		Dir:         c.MkDir(),
+		Logger:      ctxlog.TestLogger(c),
+	}
+	ctx := context.Background()
+	real, err := cache.BlockWrite(ctx, BlockWriteOptions{
+		Data: make([]byte, 100000),
+	})
+	c.Assert(err, check.IsNil)
+
+	// Write different data but supply the same hash. Should be
+	// rejected (even though our fake backend doesn't notice).
+	_, err = cache.BlockWrite(ctx, BlockWriteOptions{
+		Hash: real.Locator[:32],
+		Data: make([]byte, 10),
+	})
+	c.Check(err, check.ErrorMatches, `block hash .+ did not match provided hash .+`)
+
+	// Ensure the bogus write didn't overwrite (or delete) the
+	// real cached data associated with that hash.
+	delete(backend.data, real.Locator)
+	n, err := cache.ReadAt(real.Locator, make([]byte, 100), 0)
+	c.Check(n, check.Equals, 100)
+	c.Check(err, check.IsNil)
+}
+
 func (s *keepCacheSuite) TestMaxSize(c *check.C) {
 	backend := &keepGatewayMemoryBacked{}
 	cache := DiskCache{
