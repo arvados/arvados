@@ -106,6 +106,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     }
     @stub_token_status = 200
     @stub_token_scopes = ["all"]
+    ActionMailer::Base.deliveries = []
   end
 
   teardown do
@@ -366,6 +367,12 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
   test 'get user from Login cluster' do
     Rails.configuration.Login.LoginCluster = 'zbbbb'
+    email_dest = ActiveSupport::OrderedOptions.new
+    email_dest[:'arvados-admin@example.com'] = ActiveSupport::OrderedOptions.new
+    Rails.configuration.Users.UserNotifierEmailBcc = email_dest
+    Rails.configuration.Users.NewUserNotificationRecipients = email_dest
+    Rails.configuration.Users.NewInactiveUserNotificationRecipients = email_dest
+
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
@@ -375,6 +382,14 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
+
+    ActionMailer::Base.deliveries.each do |d|
+      puts "--- delivery #{d.inspect}"
+    end
+
+    assert_equal 2, ActionMailer::Base.deliveries.length
+    assert_equal "Welcome to Arvados - account enabled", ActionMailer::Base.deliveries[0].subject
+    assert_equal "[ARVADOS] New user created notification", ActionMailer::Base.deliveries[1].subject
   end
 
   [true, false].each do |trusted|

@@ -264,8 +264,7 @@ SELECT target_uuid, perm_level
   def setup(repo_name: nil, vm_uuid: nil, send_notification_email: nil)
     newly_invited = Link.where(tail_uuid: self.uuid,
                               head_uuid: all_users_group_uuid,
-                              link_class: 'permission',
-                              name: 'can_read').empty?
+                              link_class: 'permission').empty?
 
     # Add can_read link from this user to "all users" which makes this
     # user "invited", and (depending on config) a link in the opposite
@@ -606,13 +605,17 @@ SELECT target_uuid, perm_level
 
   def self.update_remote_user remote_user
     remote_user = remote_user.symbolize_keys
+    remote_user_prefix = remote_user[:uuid][0..4]
+
     begin
-      user = User.find_or_create_by(uuid: remote_user[:uuid])
+      user = User.create_with(email: remote_user[:email],
+                              first_name: remote_user[:first_name],
+                              last_name: remote_user[:last_name],
+      ).find_or_create_by(uuid: remote_user[:uuid])
     rescue ActiveRecord::RecordNotUnique
       retry
     end
 
-    remote_user_prefix = user.uuid[0..4]
     user.with_lock do
       needupdate = {}
       [:email, :username, :first_name, :last_name, :prefs].each do |k|
@@ -658,9 +661,10 @@ SELECT target_uuid, perm_level
         end
       end
 
-      if user.is_invited && remote_user[:is_invited] == false
-        # Remote user is not "invited" state, they should be unsetup, which
-        # also makes them inactive.
+      if user.is_invited && (remote_user[:is_invited] == false || remote_user[:is_active] == false)
+        # Remote user is not "invited" or "active" state on their home
+        # cluster, so they should be unsetup, which also makes them
+        # inactive.
         user.unsetup
       else
         if !user.is_invited && remote_user[:is_invited] and
@@ -914,8 +918,9 @@ SELECT target_uuid, perm_level
 
   # Send admin notifications
   def send_admin_notifications
-    AdminNotifier.new_user(self).deliver_now
-    if not self.is_active then
+    if self.is_invited then
+      AdminNotifier.new_user(self).deliver_now
+    else
       AdminNotifier.new_inactive_user(self).deliver_now
     end
   end
