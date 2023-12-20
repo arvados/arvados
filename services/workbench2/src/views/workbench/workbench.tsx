@@ -106,6 +106,7 @@ import { pluginConfig } from "plugins";
 import { ElementListReducer } from "common/plugintypes";
 import { COLLAPSE_ICON_SIZE } from "views-components/side-panel-toggle/side-panel-toggle";
 import { Banner } from "views-components/baner/banner";
+import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-panel";
 
 type CssRules = "root" | "container" | "splitter" | "asidePanel" | "contentWrapper" | "content";
 
@@ -227,6 +228,10 @@ let routes = (
         <Route
             path={Routes.SSH_KEYS_ADMIN}
             component={SshKeyAdminPanel}
+        />
+        <Route
+            path={Routes.INSTANCE_TYPES}
+            component={InstanceTypesPanel}
         />
         <Route
             path={Routes.SITE_MANAGER}

@@ -4,12 +4,12 @@
 
 import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
-import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon } from 'components/icon/icon'
+import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, ResourceIcon } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
 import { IconButton, List, ListItem, Tooltip } from '@material-ui/core'
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles'
 import { ArvadosTheme } from 'common/custom-theme'
-import { navigateTo } from 'store/navigation/navigation-action'
+import { navigateTo, navigateToInstanceTypes } from 'store/navigation/navigation-action'
 import { RootState } from 'store/store'
 import { Dispatch } from 'redux'
 import {
@@ -48,6 +48,7 @@ enum SidePanelCollapsedCategory {
     PUBLIC_FAVORITES = 'Public Favorites',
     SHARED_WITH_ME = 'Shared with me',
     ALL_PROCESSES = 'All Processes',
+    INSTANCE_TYPES = 'Instance Types',
     SHELL_ACCESS = 'Shell Access',
     GROUPS = 'Groups',
     TRASH = 'Trash',
@@ -84,6 +85,11 @@ const sidePanelCollapsedCategories: TCollapsedCategory[] = [
         name: SidePanelCollapsedCategory.ALL_PROCESSES,
         icon: <ProcessIcon />,
         navTarget: navigateToAllProcesses,
+    },
+    {
+        name: SidePanelCollapsedCategory.INSTANCE_TYPES,
+        icon: <ResourceIcon />,
+        navTarget: navigateToInstanceTypes,
     },
     {
         name: SidePanelCollapsedCategory.SHELL_ACCESS,

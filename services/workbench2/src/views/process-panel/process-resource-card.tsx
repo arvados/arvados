@@ -19,7 +19,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import {
     CloseIcon,
     MaximizeIcon,
-    MemoryIcon,
+    ResourceIcon,
     UnMaximizeIcon,
 } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -88,7 +88,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                     content: classes.title,
                     avatar: classes.avatar,
                 }}
-                avatar={<MemoryIcon className={classes.iconHeader} />}
+                avatar={<ResourceIcon className={classes.iconHeader} />}
                 title={
                     <Typography noWrap variant='h6' color='inherit'>
                         Resources

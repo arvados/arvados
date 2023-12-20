@@ -11,7 +11,7 @@ import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { pluginConfig } from "plugins";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL } from "store/breadcrumbs/breadcrumbs-actions";
+import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL, INSTANCE_TYPES_PANEL_LABEL, VIRTUAL_MACHINES_USER_PANEL_LABEL, VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, REPOSITORIES_PANEL_LABEL } from "store/breadcrumbs/breadcrumbs-actions";
 
 export const navigationNotAvailable = (id: string) =>
     snackbarActions.OPEN_SNACKBAR({
@@ -78,6 +78,18 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
         case MY_ACCOUNT_PANEL_LABEL:
             dispatch(navigateToMyAccount);
             return;
+        case INSTANCE_TYPES_PANEL_LABEL:
+            dispatch(navigateToInstanceTypes);
+            return;
+        case VIRTUAL_MACHINES_USER_PANEL_LABEL:
+            dispatch(navigateToUserVirtualMachines);
+            return;
+        case VIRTUAL_MACHINES_ADMIN_PANEL_LABEL:
+            dispatch(navigateToAdminVirtualMachines);
+            return;
+        case REPOSITORIES_PANEL_LABEL:
+            dispatch(navigateToRepositories);
+            return;
     }
 
     dispatch(navigationNotAvailable(uuid));
@@ -131,6 +143,8 @@ export const navigateToRepositories = push(Routes.REPOSITORIES);
 export const navigateToSshKeysAdmin = push(Routes.SSH_KEYS_ADMIN);
 
 export const navigateToSshKeysUser = push(Routes.SSH_KEYS_USER);
+
+export const navigateToInstanceTypes = push(Routes.INSTANCE_TYPES);
 
 export const navigateToSiteManager = push(Routes.SITE_MANAGER);
 

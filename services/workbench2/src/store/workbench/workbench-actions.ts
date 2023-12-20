@@ -21,7 +21,6 @@ import { projectPanelColumns } from "views/project-panel/project-panel";
 import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
 import { matchRootRoute } from "routes/routes";
 import {
-    setBreadcrumbs,
     setGroupDetailsBreadcrumbs,
     setGroupsBreadcrumbs,
     setProcessBreadcrumbs,
@@ -31,6 +30,10 @@ import {
     setUsersBreadcrumbs,
     setMyAccountBreadcrumbs,
     setUserProfileBreadcrumbs,
+    setInstanceTypesBreadcrumbs,
+    setVirtualMachinesBreadcrumbs,
+    setVirtualMachinesAdminBreadcrumbs,
+    setRepositoriesBreadcrumbs,
 } from "store/breadcrumbs/breadcrumbs-actions";
 import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
@@ -95,7 +98,6 @@ import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-
 import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
 import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
-import { AdminMenuIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { multiselectActions } from "store/multiselect/multiselect-actions";
@@ -742,21 +744,26 @@ export const loadLinks = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => 
 
 export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
-    dispatch(setBreadcrumbs([{ label: "Virtual Machines" }]));
+    dispatch(setVirtualMachinesBreadcrumbs());
 });
 
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
-    dispatch(setBreadcrumbs([{ label: "Virtual Machines Admin", icon: AdminMenuIcon }]));
+    dispatch(setVirtualMachinesAdminBreadcrumbs());
 });
 
 export const loadRepositories = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadRepositoriesPanel());
-    dispatch(setBreadcrumbs([{ label: "Repositories" }]));
+    dispatch(setRepositoriesBreadcrumbs());
 });
 
 export const loadSshKeys = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadSshKeysPanel());
+});
+
+export const loadInstanceTypes = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.INSTANCE_TYPES));
+    dispatch(setInstanceTypesBreadcrumbs());
 });
 
 export const loadSiteManager = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {

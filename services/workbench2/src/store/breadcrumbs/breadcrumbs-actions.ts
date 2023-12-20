@@ -20,7 +20,7 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { CollectionIcon, IconType, ProcessIcon, ProjectIcon, WorkflowIcon } from 'components/icon/icon';
+import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
 import { WorkflowResource } from 'models/workflow';
@@ -288,5 +288,41 @@ export const setMyAccountBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
             { label: MY_ACCOUNT_PANEL_LABEL, uuid: MY_ACCOUNT_PANEL_LABEL },
+        ]));
+    };
+
+export const INSTANCE_TYPES_PANEL_LABEL = 'Instance Types';
+
+export const setInstanceTypesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: INSTANCE_TYPES_PANEL_LABEL, uuid: INSTANCE_TYPES_PANEL_LABEL, icon: ResourceIcon },
+        ]));
+    };
+
+export const VIRTUAL_MACHINES_USER_PANEL_LABEL = 'Virtual Machines';
+
+export const setVirtualMachinesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: VIRTUAL_MACHINES_USER_PANEL_LABEL, uuid: VIRTUAL_MACHINES_USER_PANEL_LABEL },
+        ]));
+    };
+
+export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Virtual Machines Admin';
+
+export const setVirtualMachinesAdminBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, uuid: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, icon: AdminMenuIcon },
+        ]));
+    };
+
+export const REPOSITORIES_PANEL_LABEL = 'Repositories';
+
+export const setRepositoriesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: REPOSITORIES_PANEL_LABEL, uuid: REPOSITORIES_PANEL_LABEL, icon: AdminMenuIcon },
         ]));
     };

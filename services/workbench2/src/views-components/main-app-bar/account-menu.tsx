@@ -17,7 +17,7 @@ import {
     navigateToSiteManager,
     navigateToSshKeysUser,
     navigateToMyAccount,
-    navigateToLinkAccount
+    navigateToLinkAccount,
 } from 'store/navigation/navigation-action';
 import { openUserVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { pluginConfig } from 'plugins';

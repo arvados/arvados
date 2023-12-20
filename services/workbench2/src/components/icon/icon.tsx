@@ -209,7 +209,7 @@ export const KeyIcon: IconType = props => <VpnKey {...props} />;
 export const LogIcon: IconType = props => <SettingsEthernet {...props} />;
 export const MailIcon: IconType = props => <Mail {...props} />;
 export const MaximizeIcon: IconType = props => <FullscreenSharp {...props} />;
-export const MemoryIcon: IconType = props => <Memory {...props} />;
+export const ResourceIcon: IconType = props => <Memory {...props} />;
 export const UnMaximizeIcon: IconType = props => <FullscreenExitSharp {...props} />;
 export const MoreVerticalIcon: IconType = props => <MoreVert {...props} />;
 export const MoreHorizontalIcon: IconType = props => <MoreHoriz {...props} />;
