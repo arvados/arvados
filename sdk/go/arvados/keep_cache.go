@@ -476,18 +476,8 @@ func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int
 	return n, err
 }
 
-// BlockRead reads the entire block from the wrapped KeepGateway into
-// the cache if needed, and writes it to the provided writer.
+// BlockRead reads an entire block using a 128 KiB buffer.
 func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (int, error) {
-	cache.gotidy()
-	cachefilename := cache.cacheFile(opts.Locator)
-	f, err := cache.openFile(cachefilename, os.O_CREATE|os.O_RDWR)
-	if err != nil {
-		cache.debugf("BlockRead: %s", cachefilename, err)
-		return cache.KeepGateway.BlockRead(ctx, opts)
-	}
-	defer f.Close()
-
 	i := strings.Index(opts.Locator, "+")
 	if i < 0 || i >= len(opts.Locator) {
 		return 0, errors.New("invalid block locator: no size hint")
@@ -502,33 +492,28 @@ func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (i
 		return 0, errors.New("invalid block locator: invalid size hint")
 	}
 
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
-	if err != nil {
-		return 0, err
+	offset := 0
+	buf := make([]byte, 131072)
+	for offset < int(blocksize) {
+		if ctx.Err() != nil {
+			return offset, ctx.Err()
+		}
+		if int(blocksize)-offset > len(buf) {
+			buf = buf[:int(blocksize)-offset]
+		}
+		nr, err := cache.ReadAt(opts.Locator, buf, offset)
+		if nr > 0 {
+			nw, err := opts.WriteTo.Write(buf)
+			if err != nil {
+				return offset + nw, err
+			}
+		}
+		offset += nr
+		if err != nil {
+			return offset, err
+		}
 	}
-	filesize, err := f.Seek(0, io.SeekEnd)
-	if err != nil {
-		return 0, err
-	}
-	_, err = f.Seek(0, io.SeekStart)
-	if err != nil {
-		return 0, err
-	}
-	if filesize == blocksize {
-		n, err := io.Copy(opts.WriteTo, f)
-		return int(n), err
-	}
-	err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
-	if err != nil {
-		return 0, err
-	}
-	opts.WriteTo = io.MultiWriter(f, opts.WriteTo)
-	n, err := cache.KeepGateway.BlockRead(ctx, opts)
-	if err != nil {
-		return int(n), err
-	}
-	f.Truncate(int64(n))
-	return n, nil
+	return offset, nil
 }
 
 // Start a tidy() goroutine, unless one is already running / recently
