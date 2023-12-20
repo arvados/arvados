@@ -31,8 +31,8 @@ class User < ArvadosModel
   after_update :setup_on_activate
 
   before_create :check_auto_admin
-  before_create :set_initial_username, :if => Proc.new {
-    email
+  before_validation :set_initial_username, :if => Proc.new {
+    new_record? && email
   }
   before_create :active_is_not_nil
   after_create :after_ownership_change
