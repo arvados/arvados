@@ -13,7 +13,9 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -49,8 +51,10 @@ func (*keepGatewayBlackHole) BlockWrite(ctx context.Context, opts BlockWriteOpti
 }
 
 type keepGatewayMemoryBacked struct {
-	mtx  sync.RWMutex
-	data map[string][]byte
+	mtx                 sync.RWMutex
+	data                map[string][]byte
+	pauseBlockReadAfter int
+	pauseBlockReadUntil chan error
 }
 
 func (k *keepGatewayMemoryBacked) ReadAt(locator string, dst []byte, offset int) (int, error) {
@@ -75,6 +79,16 @@ func (k *keepGatewayMemoryBacked) BlockRead(ctx context.Context, opts BlockReadO
 	k.mtx.RUnlock()
 	if data == nil {
 		return 0, errors.New("block not found: " + opts.Locator)
+	}
+	if k.pauseBlockReadUntil != nil {
+		src := bytes.NewReader(data)
+		n, err := io.CopyN(opts.WriteTo, src, int64(k.pauseBlockReadAfter))
+		if err != nil {
+			return int(n), err
+		}
+		<-k.pauseBlockReadUntil
+		n2, err := io.Copy(opts.WriteTo, src)
+		return int(n + n2), err
 	}
 	return opts.WriteTo.Write(data)
 }
@@ -218,6 +232,66 @@ func (s *keepCacheSuite) testConcurrentReaders(c *check.C, cannotRefresh, mangle
 		}()
 	}
 	wg.Wait()
+}
+
+func (s *keepCacheSuite) TestStreaming(c *check.C) {
+	blksize := 64000000
+	backend := &keepGatewayMemoryBacked{
+		pauseBlockReadUntil: make(chan error),
+		pauseBlockReadAfter: blksize / 8,
+	}
+	cache := DiskCache{
+		KeepGateway: backend,
+		MaxSize:     int64(blksize),
+		Dir:         c.MkDir(),
+		Logger:      ctxlog.TestLogger(c),
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resp, err := cache.BlockWrite(ctx, BlockWriteOptions{
+		Data: make([]byte, blksize),
+	})
+	c.Check(err, check.IsNil)
+	os.RemoveAll(filepath.Join(cache.Dir, resp.Locator[:3]))
+
+	// Start a lot of concurrent requests for various ranges of
+	// the same block. Our backend will return the first 8MB and
+	// then pause. The requests that can be satisfied by the first
+	// 8MB of data should return quickly. The rest should wait,
+	// and return after we release pauseBlockReadUntil.
+	var wgEarly, wgLate sync.WaitGroup
+	var doneEarly, doneLate int32
+	for i := 0; i < 10000; i++ {
+		wgEarly.Add(1)
+		go func() {
+			offset := int(rand.Int63() % int64(blksize-benchReadSize))
+			if offset+benchReadSize > backend.pauseBlockReadAfter {
+				wgLate.Add(1)
+				defer wgLate.Done()
+				wgEarly.Done()
+				defer atomic.AddInt32(&doneLate, 1)
+			} else {
+				defer wgEarly.Done()
+				defer atomic.AddInt32(&doneEarly, 1)
+			}
+			buf := make([]byte, benchReadSize)
+			n, err := cache.ReadAt(resp.Locator, buf, offset)
+			c.Check(n, check.Equals, len(buf))
+			c.Check(err, check.IsNil)
+		}()
+	}
+
+	// Ensure all early ranges finish while backend request(s) are
+	// paused.
+	wgEarly.Wait()
+	c.Logf("doneEarly = %d", doneEarly)
+	c.Check(doneLate, check.Equals, int32(0))
+
+	// Unpause backend request(s).
+	close(backend.pauseBlockReadUntil)
+	wgLate.Wait()
+	c.Logf("doneLate = %d", doneLate)
 }
 
 var _ = check.Suite(&keepCacheBenchSuite{})
