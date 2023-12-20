@@ -205,7 +205,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     xs
                     maxHeight="50%"
                     data-cy="process-children">
-                    <SubprocessPanel />
+                    <SubprocessPanel process={process} />
                 </MPVPanelContent>
             </MPVContainer>
         ) : (

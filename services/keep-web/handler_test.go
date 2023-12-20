@@ -328,9 +328,10 @@ func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
 func authzViaAuthzHeaderOAuth2(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "Bearer "+tok)
+	r.Header.Add("Authorization", "OAuth2 "+tok)
 	return http.StatusUnauthorized
 }
+
 func (s *IntegrationSuite) TestVhostViaAuthzHeaderBearer(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderBearer)
 }
@@ -348,6 +349,27 @@ func authzViaCookieValue(r *http.Request, tok string) int {
 		Value: auth.EncodeTokenCookie([]byte(tok)),
 	})
 	return http.StatusUnauthorized
+}
+
+func (s *IntegrationSuite) TestVhostViaHTTPBasicAuth(c *check.C) {
+	s.doVhostRequests(c, authzViaHTTPBasicAuth)
+}
+func authzViaHTTPBasicAuth(r *http.Request, tok string) int {
+	r.AddCookie(&http.Cookie{
+		Name:  "arvados_api_token",
+		Value: auth.EncodeTokenCookie([]byte(tok)),
+	})
+	return http.StatusUnauthorized
+}
+
+func (s *IntegrationSuite) TestVhostViaHTTPBasicAuthWithExtraSpaceChars(c *check.C) {
+	s.doVhostRequests(c, func(r *http.Request, tok string) int {
+		r.AddCookie(&http.Cookie{
+			Name:  "arvados_api_token",
+			Value: auth.EncodeTokenCookie([]byte(" " + tok + "\n")),
+		})
+		return http.StatusUnauthorized
+	})
 }
 
 func (s *IntegrationSuite) TestVhostViaPath(c *check.C) {
@@ -1083,6 +1105,17 @@ func (s *IntegrationSuite) TestDirectoryListingWithNoAnonymousToken(c *check.C) 
 }
 
 func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
+	// The "ownership cycle" test fixtures are reachable from the
+	// "filter group without filters" group, causing webdav's
+	// walkfs to recurse indefinitely. Avoid that by deleting one
+	// of the bogus fixtures.
+	arv := arvados.NewClientFromEnv()
+	err := arv.RequestAndDecode(nil, "DELETE", "arvados/v1/groups/zzzzz-j7d0g-cx2al9cqkmsf1hs", nil, nil)
+	if err != nil {
+		c.Assert(err, check.FitsTypeOf, &arvados.TransactionError{})
+		c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 404)
+	}
+
 	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	authHeader := http.Header{
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
@@ -1219,8 +1252,32 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			expect:  []string{"waz"},
 			cutDirs: 2,
 		},
+		{
+			uri:     "download.example.com/users/active/This filter group/",
+			header:  authHeader,
+			expect:  []string{"A Subproject/"},
+			cutDirs: 3,
+		},
+		{
+			uri:     "download.example.com/users/active/This filter group/A Subproject",
+			header:  authHeader,
+			expect:  []string{"baz_file/"},
+			cutDirs: 4,
+		},
+		{
+			uri:     "download.example.com/by_id/" + arvadostest.AFilterGroupUUID,
+			header:  authHeader,
+			expect:  []string{"A Subproject/"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "download.example.com/by_id/" + arvadostest.AFilterGroupUUID + "/A Subproject",
+			header:  authHeader,
+			expect:  []string{"baz_file/"},
+			cutDirs: 3,
+		},
 	} {
-		comment := check.Commentf("HTML: %q => %q", trial.uri, trial.expect)
+		comment := check.Commentf("HTML: %q redir %q => %q", trial.uri, trial.redirect, trial.expect)
 		resp := httptest.NewRecorder()
 		u := mustParseURL("//" + trial.uri)
 		req := &http.Request{
@@ -1256,6 +1313,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 			for _, e := range trial.expect {
+				e = strings.Replace(e, " ", "%20", -1)
 				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./`+e+`".*`, comment)
 			}
 			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`, comment)
@@ -1288,6 +1346,12 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		}
 		resp = httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
+		// This check avoids logging a big XML document in the
+		// event webdav throws a 500 error after sending
+		// headers for a 207.
+		if !c.Check(strings.HasSuffix(resp.Body.String(), "Internal Server Error"), check.Equals, false) {
+			continue
+		}
 		if trial.expect == nil {
 			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
@@ -1298,6 +1362,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 				} else {
 					e = filepath.Join(u.Path, e)
 				}
+				e = strings.Replace(e, " ", "%20", -1)
 				c.Check(resp.Body.String(), check.Matches, `(?ms).*<D:href>`+e+`</D:href>.*`, comment)
 			}
 		}

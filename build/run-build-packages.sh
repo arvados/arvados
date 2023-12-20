@@ -304,6 +304,9 @@ build_metapackage "arvados-user-activity" "tools/user-activity"
 # The cwltest package, which lives out of tree
 handle_cwltest "$FORMAT" "$ARCH"
 
+# Workbench2
+package_workbench2
+
 # Rails packages
 debug_echo -e "\nRails packages\n"
 

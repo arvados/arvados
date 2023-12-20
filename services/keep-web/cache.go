@@ -221,7 +221,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 		// using the new fs).
 		sess.inuse.Lock()
 		if !sess.userLoaded || refresh {
-			err := sess.client.RequestAndDecode(&sess.user, "GET", "/arvados/v1/users/current", nil, nil)
+			err := sess.client.RequestAndDecode(&sess.user, "GET", "arvados/v1/users/current", nil, nil)
 			if he := errorWithHTTPStatus(nil); errors.As(err, &he) && he.HTTPStatus() == http.StatusForbidden {
 				// token is OK, but "get user id" api is out
 				// of scope -- use existing/expired info if

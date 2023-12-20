@@ -40,6 +40,10 @@ func (as *APIStub) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error
 	as.appendCall(ctx, as.VocabularyGet, nil)
 	return arvados.Vocabulary{}, as.Error
 }
+func (as *APIStub) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	as.appendCall(ctx, as.DiscoveryDocument, nil)
+	return arvados.DiscoveryDocument{}, as.Error
+}
 func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	as.appendCall(ctx, as.Login, options)
 	return arvados.LoginResponse{}, as.Error

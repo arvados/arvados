@@ -13,6 +13,7 @@ import { Grid } from '@material-ui/core';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
 import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggle';
+import { SidePanelCollapsed } from './side-panel-collapsed';
 
 const DRAWER_WIDTH = 240;
 
@@ -47,7 +48,12 @@ export const SidePanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         ({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps & { currentRoute: string }) =>
             <Grid item xs>
-                {props.isCollapsed ? <SidePanelToggle /> :
+                {props.isCollapsed ? 
+                <>
+                    <SidePanelToggle />
+                    <SidePanelCollapsed />
+                </>
+                :
                 <>
                     <Grid className={classes.topButtonContainer}>
                         <SidePanelButton key={props.currentRoute} />

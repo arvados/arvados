@@ -474,7 +474,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_not_equal(new_project['uuid'],
                      groups(:aproject).uuid,
                      "create returned same uuid as existing project")
-    assert_match(/^A Project \(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z\)$/,
+    assert_match(/^A Project \(#{new_project['uuid'][-15..-1]}\)$/,
                  new_project['name'])
   end
 
@@ -800,7 +800,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
             ensure_unique_name: true
            }
       assert_response :success
-      assert_match /^trashed subproject 3 \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+      assert_match /^trashed subproject 3 \(#{json_response['uuid'][-15..-1]}\)$/, json_response['name']
     end
 
     test "move trashed subproject to new owner #{auth}" do

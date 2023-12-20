@@ -46,7 +46,7 @@ The @frozen_by_uuid@ attribute can be cleared by an admin user. It can also be c
 
 The optional @API.FreezeProjectRequiresDescription@ and @API.FreezeProjectRequiresProperties@ configuration settings can be used to prevent users from freezing projects that have empty @description@ and/or specified @properties@ entries.
 
-h3. Filter groups
+h3(#filter). Filter groups
 
 @filter@ groups are virtual groups; they can not own other objects. Filter groups have a special @properties@ field named @filters@, which must be an array of filter conditions. See "list method filters":{{site.baseurl}}/api/methods.html#filters for details on the syntax of valid filters, but keep in mind that the attributes must include the object type (@collections@, @container_requests@, @groups@, @workflows@), separated with a dot from the field to be filtered on.
 

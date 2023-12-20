@@ -363,71 +363,17 @@ class ApiClientAuthorization < ArvadosModel
     if user.nil? and remote_user.nil?
       Rails.logger.warn "remote token #{token.inspect} rejected: cannot get owner #{remote_user_uuid} from database or remote cluster"
       return nil
+    end
+
     # Invariant:    remote_user_prefix == upstream_cluster_id
     # therefore:    remote_user_prefix != Rails.configuration.ClusterID
     # Add or update user and token in local database so we can
     # validate subsequent requests faster.
-    elsif user.nil?
-      # Create a new record for this user.
-      user = User.new(uuid: remote_user['uuid'],
-                      is_active: false,
-                      is_admin: false,
-                      email: remote_user['email'],
-                      owner_uuid: system_user_uuid)
-      user.set_initial_username(requested: remote_user['username'])
-    end
 
-    # Sync user record if we loaded a remote user.
     act_as_system_user do
-      if remote_user
-        %w[first_name last_name email prefs].each do |attr|
-          user.send(attr+'=', remote_user[attr])
-        end
-
-        begin
-          user.save!
-        rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
-          Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
-          # Some other request won the race: retry fetching the user record.
-          user = User.uncached do
-            User.find_by_uuid(remote_user['uuid'])
-          end
-          if !user
-            Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
-            return nil
-          end
-        end
-
-        if user.is_invited && !remote_user['is_invited']
-          # Remote user is not "invited" state, they should be unsetup, which
-          # also makes them inactive.
-          user.unsetup
-        else
-          if !user.is_invited && remote_user['is_invited'] and
-            (remote_user_prefix == Rails.configuration.Login.LoginCluster or
-             Rails.configuration.Users.AutoSetupNewUsers or
-             Rails.configuration.Users.NewUsersAreActive or
-             Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-            user.setup
-          end
-
-          if !user.is_active && remote_user['is_active'] && user.is_invited and
-            (remote_user_prefix == Rails.configuration.Login.LoginCluster or
-             Rails.configuration.Users.NewUsersAreActive or
-             Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-            user.update!(is_active: true)
-          elsif user.is_active && !remote_user['is_active']
-            user.update!(is_active: false)
-          end
-
-          if remote_user_prefix == Rails.configuration.Login.LoginCluster and
-            user.is_active and
-            user.is_admin != remote_user['is_admin']
-            # Remote cluster controls our user database, including the
-            # admin flag.
-            user.update!(is_admin: remote_user['is_admin'])
-          end
-        end
+      if remote_user && remote_user_uuid != anonymous_user_uuid
+        # Sync user record if we loaded a remote user.
+        user = User.update_remote_user remote_user
       end
 
       # If stored_secret is set, we save stored_secret in the database

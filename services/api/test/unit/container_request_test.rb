@@ -1131,13 +1131,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal ContainerRequest::Final, cr.state
     output_coll = Collection.find_by_uuid(cr.output_uuid)
     # Make sure the resulting output collection name include the original name
-    # plus the date
+    # plus the last 15 characters of uuid
     assert_not_equal output_name, output_coll.name,
                      "more than one collection with the same owner and name"
     assert output_coll.name.include?(output_name),
            "New name should include original name"
-    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/, output_coll.name,
-                 "New name should include ISO8601 date"
+    assert_match /#{output_coll.uuid[-15..-1]}/, output_coll.name,
+                 "New name should include last 15 characters of uuid"
   end
 
   [[0, :check_output_ttl_0],

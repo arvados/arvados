@@ -33,7 +33,7 @@ if [[ "$WORKSPACE" == "" ]]; then
 fi
 
 
-debug_echo "package_go_binary $SRC_PATH"
+debug_echo "get-package-version.sh $TYPE_LANG $SRC_PATH"
 
 if [[ "$TYPE_LANG" == "go" ]]; then
   calculate_go_package_version go_package_version $SRC_PATH

@@ -50,7 +50,7 @@ func (h *handler) pullItemAndProcess(pullRequest PullRequest) error {
 	// Make a private copy of keepClient so we can set
 	// ServiceRoots to the source servers specified in the pull
 	// request.
-	keepClient := *h.keepClient
+	keepClient := h.keepClient.Clone()
 	serviceRoots := make(map[string]string)
 	for _, addr := range pullRequest.Servers {
 		serviceRoots[addr] = addr
@@ -59,7 +59,7 @@ func (h *handler) pullItemAndProcess(pullRequest PullRequest) error {
 
 	signedLocator := SignLocator(h.Cluster, pullRequest.Locator, keepClient.Arvados.ApiToken, time.Now().Add(time.Minute))
 
-	reader, contentLen, _, err := GetContent(signedLocator, &keepClient)
+	reader, contentLen, _, err := GetContent(signedLocator, keepClient)
 	if err != nil {
 		return err
 	}

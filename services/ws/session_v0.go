@@ -30,6 +30,7 @@ var (
 		"name",
 		"owner_uuid",
 		"portable_data_hash",
+		"requesting_container_uuid",
 		"state",
 	}
 

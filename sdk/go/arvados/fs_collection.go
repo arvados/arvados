@@ -457,7 +457,7 @@ func (fs *collectionFileSystem) Sync() error {
 }
 
 func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
-	node, err := rlookup(fs.fileSystem.root, path)
+	node, err := rlookup(fs.fileSystem.root, path, nil)
 	if err != nil {
 		return err
 	}

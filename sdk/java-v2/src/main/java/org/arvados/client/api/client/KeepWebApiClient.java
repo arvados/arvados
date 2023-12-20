@@ -13,6 +13,7 @@ import okhttp3.RequestBody;
 import org.arvados.client.config.ConfigProvider;
 
 import java.io.File;
+import java.io.InputStream;
 
 public class KeepWebApiClient extends BaseApiClient {
 
@@ -43,6 +44,16 @@ public class KeepWebApiClient extends BaseApiClient {
 
         Request request = getRequestBuilder()
                 .url(getUrlBuilder(collectionUuid, file.getName()).build())
+                .put(requestBody)
+                .build();
+        return newCall(request);
+    }
+
+    public String upload(String collectionUuid, InputStream inputStream, String fileName, ProgressListener progressListener) {
+        RequestBody requestBody = new CountingStreamRequestBody(inputStream, progressListener);
+
+        Request request = getRequestBuilder()
+                .url(getUrlBuilder(collectionUuid, fileName).build())
                 .put(requestBody)
                 .build();
         return newCall(request);

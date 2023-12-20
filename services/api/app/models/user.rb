@@ -34,6 +34,7 @@ class User < ArvadosModel
   before_create :set_initial_username, :if => Proc.new {
     username.nil? and email
   }
+  before_create :active_is_not_nil
   after_create :after_ownership_change
   after_create :setup_on_activate
   after_create :add_system_group_permission_link
@@ -102,6 +103,10 @@ class User < ArvadosModel
     !!(self.is_active ||
        Rails.configuration.Users.NewUsersAreActive ||
        self.groups_i_can(:read).select { |x| x.match(/-f+$/) }.first)
+  end
+
+  def self.ignored_select_attributes
+    super + ["full_name", "is_invited"]
   end
 
   def groups_i_can(verb)
@@ -382,7 +387,7 @@ SELECT target_uuid, perm_level
   end
 
   def set_initial_username(requested: false)
-    if !requested.is_a?(String) || requested.empty?
+    if (!requested.is_a?(String) || requested.empty?) and email
       email_parts = email.partition("@")
       local_parts = email_parts.first.partition("+")
       if email_parts.any?(&:empty?)
@@ -393,11 +398,18 @@ SELECT target_uuid, perm_level
         requested = email_parts.first
       end
     end
-    requested.sub!(/^[^A-Za-z]+/, "")
-    requested.gsub!(/[^A-Za-z0-9]/, "")
-    unless requested.empty?
+    if requested
+      requested.sub!(/^[^A-Za-z]+/, "")
+      requested.gsub!(/[^A-Za-z0-9]/, "")
+    end
+    unless !requested || requested.empty?
       self.username = find_usable_username_from(requested)
     end
+  end
+
+  def active_is_not_nil
+    self.is_active = false if self.is_active.nil?
+    self.is_admin = false if self.is_admin.nil?
   end
 
   # Move this user's (i.e., self's) owned items to new_owner_uuid and
@@ -500,11 +512,11 @@ SELECT target_uuid, perm_level
         update!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
-        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM
-        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
-        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM
+        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM, nil, true
+        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
+        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
       end
-      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM, nil, true
     end
   end
 
@@ -590,6 +602,98 @@ SELECT target_uuid, perm_level
     end
 
     primary_user
+  end
+
+  def self.update_remote_user remote_user
+    remote_user = remote_user.symbolize_keys
+    begin
+      user = User.find_or_create_by(uuid: remote_user[:uuid])
+    rescue ActiveRecord::RecordNotUnique
+      retry
+    end
+
+    remote_user_prefix = user.uuid[0..4]
+    user.with_lock do
+      needupdate = {}
+      [:email, :username, :first_name, :last_name, :prefs].each do |k|
+        v = remote_user[k]
+        if !v.nil? && user.send(k) != v
+          needupdate[k] = v
+        end
+      end
+
+      user.email = needupdate[:email] if needupdate[:email]
+
+      loginCluster = Rails.configuration.Login.LoginCluster
+      if user.username.nil? || user.username == ""
+        # Don't have a username yet, set one
+        needupdate[:username] = user.set_initial_username(requested: remote_user[:username])
+      elsif remote_user_prefix != loginCluster
+        # Upstream is not login cluster, don't try to change the
+        # username once set.
+        needupdate.delete :username
+      end
+
+      if needupdate.length > 0
+        begin
+          user.update!(needupdate)
+        rescue ActiveRecord::RecordInvalid
+          if remote_user_prefix == loginCluster && !needupdate[:username].nil?
+            local_user = User.find_by_username(needupdate[:username])
+            # The username of this record conflicts with an existing,
+            # different user record.  This can happen because the
+            # username changed upstream on the login cluster, or
+            # because we're federated with another cluster with a user
+            # by the same username.  The login cluster is the source
+            # of truth, so change the username on the conflicting
+            # record and retry the update operation.
+            if local_user.uuid != user.uuid
+              new_username = "#{needupdate[:username]}#{rand(99999999)}"
+              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
+              local_user.update!({username: new_username})
+              retry
+            end
+          end
+          raise # Not the issue we're handling above
+        end
+      end
+
+      if user.is_invited && remote_user[:is_invited] == false
+        # Remote user is not "invited" state, they should be unsetup, which
+        # also makes them inactive.
+        user.unsetup
+      else
+        if !user.is_invited && remote_user[:is_invited] and
+          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+           Rails.configuration.Users.AutoSetupNewUsers or
+           Rails.configuration.Users.NewUsersAreActive or
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+          # Remote user is 'invited' and should be set up
+          user.setup
+        end
+
+        if !user.is_active && remote_user[:is_active] && user.is_invited and
+          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+           Rails.configuration.Users.NewUsersAreActive or
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+          # remote user is active and invited, we need to activate them
+          user.update!(is_active: true)
+        elsif user.is_active && remote_user[:is_active] == false
+          # remote user is not active, we need to de-activate them
+          user.update!(is_active: false)
+        end
+
+        if remote_user_prefix == Rails.configuration.Login.LoginCluster and
+          user.is_active and
+          !remote_user[:is_admin].nil? and
+          user.is_admin != remote_user[:is_admin]
+          # Remote cluster controls our user database, including the
+          # admin flag.
+          user.update!(is_admin: remote_user[:is_admin])
+        end
+      end
+    end
+    user
   end
 
   protected

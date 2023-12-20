@@ -23,10 +23,7 @@ describe('tree-picker-actions', () => {
 
     let store: RootStore;
     let services: ServiceRepository;
-    const config: any = {
-
-
-    };
+    const config: any = {};
     const actions: ApiActions = {
         progressFn: (id: string, working: boolean) => { },
         errorFn: (id: string, message: string) => { }

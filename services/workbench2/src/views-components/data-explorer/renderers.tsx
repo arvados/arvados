@@ -914,6 +914,30 @@ const _resourceWithName = withStyles(
     );
 });
 
+const _resourceWithNameLink = withStyles(
+    {},
+    { withTheme: true }
+)((props: { uuid: string; userFullname: string; dispatch: Dispatch; theme: ArvadosTheme }) => {
+    const { uuid, userFullname, dispatch, theme } = props;
+    if (!userFullname) {
+        dispatch<any>(loadResource(uuid, false));
+    }
+
+    return (
+        <Typography
+            style={{ color: theme.palette.primary.main, cursor: 'pointer' }}
+            inline
+            noWrap
+            onClick={() => dispatch<any>(navigateTo(uuid))}
+        >
+            {userFullname ? userFullname : uuid}
+        </Typography>
+    )
+});
+
+
+export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLink);
+
 export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);

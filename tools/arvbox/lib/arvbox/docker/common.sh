@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-export RUBY_VERSION=2.7.0
-export BUNDLER_VERSION=2.2.19
+export RUBY_VERSION=3.2.2
+export BUNDLER_VERSION=2.4.22
 
 export DEBIAN_FRONTEND=noninteractive
 export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/usr/src/arvados/sdk/cli/binstubs
@@ -67,24 +67,38 @@ fi
 
 run_bundler() {
     flock $GEMLOCK /var/lib/arvados/bin/gem install --no-document --user bundler:$BUNDLER_VERSION
-    if test -f Gemfile.lock ; then
-        frozen=--frozen
-    else
-        frozen=""
-    fi
+
     BUNDLER=bundle
     if test -x $PWD/bin/bundle ; then
 	# If present, use the one associated with rails API
 	BUNDLER=$PWD/bin/bundle
     fi
 
+    # Use Gemfile.lock only if it is git tracked.
+    if git ls-files --error-unmatch Gemfile.lock ; then
+	flock $GEMLOCK $BUNDLER config set --local frozen true
+    else
+	flock $GEMLOCK $BUNDLER config set --local frozen false
+    fi
+    flock $GEMLOCK $BUNDLER config set --local deployment false
+
     if test -z "$(flock $GEMLOCK /var/lib/arvados/bin/gem list | grep 'arvados[[:blank:]].*[0-9.]*dev')" ; then
         (cd /usr/src/arvados/sdk/ruby && \
         /var/lib/arvados/bin/gem build arvados.gemspec && flock $GEMLOCK /var/lib/arvados/bin/gem install $(ls -1 *.gem | sort -r | head -n1))
     fi
-    if ! flock $GEMLOCK $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
-        flock $GEMLOCK $BUNDLER install --verbose --no-deployment $frozen "$@"
+
+    if ! flock $GEMLOCK $BUNDLER install --verbose --local "$@" ; then
+        flock $GEMLOCK $BUNDLER install --verbose "$@"
     fi
+}
+
+bundler_binstubs() {
+    BUNDLER=bundle
+    if test -x $PWD/bin/bundle ; then
+	# If present, use the one associated with rails API
+	BUNDLER=$PWD/bin/bundle
+    fi
+    flock $GEMLOCK $BUNDLER binstubs --all
 }
 
 PYCMD=""

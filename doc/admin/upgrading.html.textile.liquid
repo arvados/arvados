@@ -30,7 +30,15 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
+"previous: Upgrading to 2.7.1":#v2_7_1
+
+h2(#2_7_1). v2.7.1 (2023-12-12)
+
 "previous: Upgrading to 2.7.0":#v2_7_0
+
+h3. Remove Workbench1 packages after upgrading the salt installer
+
+If you installed a previous version of Arvados with the Salt installer, and you upgrade your installer to upgrade the cluster, you should uninstall the @arvados-workbench@ package from the workbench instance afterwards.
 
 h3. Remove Workbench1 packages and configuration
 
