@@ -458,6 +458,12 @@ func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int
 			progress.cond.Wait()
 		}
 		progress.cond.L.Unlock()
+		// If size<needed && progress.err!=nil here, we'll end
+		// up reporting a less helpful "EOF reading from cache
+		// file" below, instead of the actual error fetching
+		// from upstream to cache file.  This is OK though,
+		// because our caller (ReadAt) doesn't even report our
+		// error, it just retries.
 	}
 
 	n, err := heldopen.f.ReadAt(dst, int64(offset))
