@@ -390,7 +390,10 @@ export const DataExplorer = withStyles(styles)(
                 >
                     <IconButton
                         className={this.props.classes.moreOptionsButton}
-                        onClick={event => this.props.onContextMenu(event, item)}
+                        onClick={event => {
+                            event.stopPropagation()
+                            this.props.onContextMenu(event, item)
+                        }}
                     >
                         <MoreVerticalIcon />
                     </IconButton>

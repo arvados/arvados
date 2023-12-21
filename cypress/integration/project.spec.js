@@ -180,6 +180,47 @@ describe("Project tests", function () {
         verifyProjectDescription(projName, null);
     });
 
+    it('shows the appropriate buttons in the multiselect toolbar', () => {
+
+        const msButtonTooltips = [
+            'API Details',
+            'Add to Favorites',
+            'Copy to clipboard',
+            'Edit project',
+            'Freeze Project',
+            'Move to',
+            'Move to trash',
+            'New project',
+            'Open in new tab',
+            'Open with 3rd party client',
+            'Share',
+            'View details',
+        ];
+
+        cy.loginAs(activeUser);
+        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projName);
+                });
+            })
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom()
+        cy.go('back')
+
+        cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parent().parent().parent().click()
+        cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
+        for (let i = 0; i < msButtonTooltips.length; i++) {
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+            cy.get('body').contains(msButtonTooltips[i]).should('exist')
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
+        }
+    })
+
     it("creates new project on home project and then a subproject inside it", function () {
         const createProject = function (name, parentName) {
             cy.get("[data-cy=side-panel-button]").click();
@@ -473,7 +514,7 @@ describe("Project tests", function () {
             });
         });
 
-        it("should be able to froze own project", () => {
+        it("should be able to freeze own project", () => {
             cy.getAll("@mainProject").then(([mainProject]) => {
                 cy.loginAs(activeUser);
 
@@ -503,7 +544,7 @@ describe("Project tests", function () {
             });
         });
 
-        it("should be able to froze not owned project", () => {
+        it("should be able to freeze not owned project", () => {
             cy.getAll("@adminProject").then(([adminProject]) => {
                 cy.loginAs(activeUser);
 
@@ -515,7 +556,7 @@ describe("Project tests", function () {
             });
         });
 
-        it("should be able to unfroze project if user is an admin", () => {
+        it("should be able to unfreeze project if user is an admin", () => {
             cy.getAll("@adminProject").then(([adminProject]) => {
                 cy.loginAs(adminUser);
 
