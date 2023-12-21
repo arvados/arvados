@@ -30,26 +30,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
     <script src="{{ site.baseurl }}/js/bootstrap.min.js"></script>
     <script src="https://hypothes.is/embed.js" async></script>
 
-    <!-- Matomo analytics (used to be called "Piwik") -->
-    <script type="text/javascript">
-      var _paq = _paq || [];
-      _paq.push(["trackPageView"]);
-      _paq.push(["enableLinkTracking"]);
-      _paq.push(["setTrackerUrl", "https://piwik.arvados.org/piwik.php"]);
-      _paq.push(["setSiteId", "3"]);
-    </script>
-    <script defer src="https://piwik.arvados.org/piwik.js"></script>
-    <!-- End Matomo code -->
-
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-EFLSBXJ5SQ');
-    </script>
-    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-EFLSBXJ5SQ"></script>
-    <!-- End Google Analytics -->
+    {% include 'matomo_analytics' %}
+    {% include 'google_analytics' %}
 
   </head>
   <body class="nopad">
