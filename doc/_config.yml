@@ -11,6 +11,7 @@
 baseurl:
 current_version:
 all_versions:
+latest_version:
 arvados_api_host: localhost
 arvados_cluster_uuid: local
 arvados_workbench_host: http://localhost
