@@ -22,6 +22,8 @@ import {
 import { openUserVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
+import { SIDE_PANEL_TREE, SidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
 
 interface AccountMenuProps {
     user?: User;
@@ -51,7 +53,10 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 export const AccountMenuComponent =
     ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
         let accountMenuItems = <>
-            <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
+            <MenuItem onClick={() => {
+                dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({id: SidePanelTreeCategory.SHELL_ACCESS, pickerId: SIDE_PANEL_TREE} ))
+                dispatch(openUserVirtualMachines())
+            }}>Shell Access</MenuItem>
             <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
             <MenuItem onClick={() => {
                 dispatch<any>(getNewExtraToken(true));

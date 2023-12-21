@@ -53,6 +53,7 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
+import { setBreadcrumbs } from "store/breadcrumbs/breadcrumbs-actions";
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
@@ -512,7 +513,7 @@ const getResourceDisplayName = (resource: Resource): string => {
     }
 };
 
-const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
+const renderResourceLink = (dispatch: Dispatch, item: Resource, userUuid: string = '', breadcrumbs: any[] = []) => {
     var displayName = getResourceDisplayName(item);
 
     return (
@@ -523,7 +524,9 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
             onClick={() => {
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
                     ? dispatch<any>(navigateToGroupDetails(item.uuid))
-                    : dispatch<any>(navigateTo(item.uuid));
+                    : dispatch<any>(navigateTo(item.uuid)); 
+                //don't add breadcrumb when navigating to 'Home Projects'
+                if (item.uuid !== userUuid) setBreadcrumbs(breadcrumbs, item as any);
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
@@ -535,11 +538,14 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
 export const ResourceLinkTail = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<LinkResource>(props.uuid)(state.resources);
     const tailResource = getResource<Resource>(resource?.tailUuid || "")(state.resources);
+    const userUuid = state.auth.user?.uuid
 
     return {
         item: tailResource || { uuid: resource?.tailUuid || "", kind: resource?.tailKind || ResourceKind.NONE },
+        breadcrumbs: state.properties.breadcrumbs || [],
+        userUuid
     };
-})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item));
+})((props: { item: Resource, userUuid: string, breadcrumbs: any[] } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item, props.userUuid, props.breadcrumbs));
 
 export const ResourceLinkHead = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<LinkResource>(props.uuid)(state.resources);

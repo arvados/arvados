@@ -6,7 +6,6 @@ import { connect } from "react-redux";
 import { Breadcrumb, Breadcrumbs as BreadcrumbsComponent, BreadcrumbsProps } from 'components/breadcrumbs/breadcrumbs';
 import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
-import { navigateTo } from 'store/navigation/navigation-action';
 import { getProperty } from '../../store/properties/properties';
 import { BREADCRUMBS } from '../../store/breadcrumbs/breadcrumbs-actions';
 import { openSidePanelContextMenu } from 'store/context-menu/context-menu-actions';
@@ -20,8 +19,8 @@ const mapStateToProps = () => ({ properties, resources }: RootState): Breadcrumb
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): BreadcrumbsActionProps => ({
-    onClick: ({ uuid }: Breadcrumb) => {
-        dispatch<any>(navigateTo(uuid));
+    onClick: (navFunc, { uuid }: Breadcrumb) => {
+        dispatch<any>(navFunc(uuid));
     },
     onContextMenu: (event, breadcrumb: Breadcrumb) => {
         dispatch<any>(openSidePanelContextMenu(event, breadcrumb.uuid));

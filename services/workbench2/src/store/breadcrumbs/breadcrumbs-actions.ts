@@ -30,7 +30,8 @@ export const BREADCRUMBS = 'breadcrumbs';
 
 export const setBreadcrumbs = (breadcrumbs: any, currentItem?: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) => {
     if (currentItem) {
-        breadcrumbs.push(resourceToBreadcrumb(currentItem));
+        const currentCrumb = resourceToBreadcrumb(currentItem)
+        if (currentCrumb.label.length) breadcrumbs.push(currentCrumb);
     }
     return propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
 };
@@ -50,8 +51,8 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
     }
 }
 
-const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource): Breadcrumb => ({
-    label: resource.name,
+const resourceToBreadcrumb = (resource: (CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) & {fullName?: string}  ): Breadcrumb => ({
+    label: resource.name || resource.fullName || '',
     uuid: resource.uuid,
     icon: resourceToBreadcrumbIcon(resource),
 })
@@ -270,7 +271,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
                 || await services.userService.get(userUuid, false);
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
-                { label: user ? user.username : userUuid, uuid: userUuid },
+                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
             ];
             dispatch(setBreadcrumbs(breadcrumbs));
         } catch (e) {

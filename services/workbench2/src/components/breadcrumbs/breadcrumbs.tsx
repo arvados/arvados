@@ -9,10 +9,11 @@ import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
 import { IconType, FreezeIcon } from 'components/icon/icon';
 import grey from '@material-ui/core/colors/grey';
-import { ResourcesState } from 'store/resources/resources';
+import { getResource, ResourcesState } from 'store/resources/resources';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
-
+import { GroupClass } from "models/group";
+import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
@@ -59,7 +60,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface BreadcrumbsProps {
     items: Breadcrumb[];
     resources: ResourcesState;
-    onClick: (breadcrumb: Breadcrumb) => void;
+    onClick: (navFunc: (uuid: string) => void, breadcrumb: Breadcrumb) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
 }
 
@@ -71,6 +72,9 @@ export const Breadcrumbs = withStyles(styles)(
             const isLastItem = index === items.length - 1;
             const isFirstItem = index === 0;
             const Icon = item.icon || (() => (null));
+            const resource = getResource(item.uuid)(resources) as any;
+            const navFunc = resource && 'groupClass' in resource && resource.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
+
             return (
                 <React.Fragment key={index}>
                     {isFirstItem ? null : <IllegalNamingWarning name={item.label} />}
@@ -90,7 +94,7 @@ export const Breadcrumbs = withStyles(styles)(
                                 label: classes.buttonLabel
                             }}
                             color="inherit"
-                            onClick={() => onClick(item)}
+                            onClick={() => onClick(navFunc, item)}
                             onContextMenu={event => onContextMenu(event, item)}>
                             <Icon className={classes.icon} />
                             <Typography
