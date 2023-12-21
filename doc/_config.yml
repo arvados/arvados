@@ -13,9 +13,13 @@
 baseurl:
 current_version:
 all_versions:
+latest_version:
 arvados_api_host: localhost
 arvados_cluster_uuid: local
 arvados_workbench_host: http://localhost
+google_analytics: "G-EFLSBXJ5SQ"
+matomo_analytics_url: "https://piwik.arvados.org"
+matomo_analytics_siteid: "3"
 
 exclude: ["Rakefile", "tmp", "vendor"]
 
