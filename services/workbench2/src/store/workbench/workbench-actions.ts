@@ -98,7 +98,6 @@ import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-
 import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
 import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
-import { TerminalIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { multiselectActions } from "store/multiselect/multiselect-actions";

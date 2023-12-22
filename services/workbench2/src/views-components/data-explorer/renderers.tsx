@@ -537,7 +537,6 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
 export const ResourceLinkTail = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<LinkResource>(props.uuid)(state.resources);
     const tailResource = getResource<Resource>(resource?.tailUuid || "")(state.resources);
-    const userUuid = state.auth.user?.uuid
 
     return {
         item: tailResource || { uuid: resource?.tailUuid || "", kind: resource?.tailKind || ResourceKind.NONE },

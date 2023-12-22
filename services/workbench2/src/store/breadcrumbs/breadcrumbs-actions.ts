@@ -20,7 +20,7 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, WorkflowIcon } from 'components/icon/icon';
+import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, TerminalIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
 import { WorkflowResource } from 'models/workflow';
@@ -301,21 +301,21 @@ export const setInstanceTypesBreadcrumbs = () =>
         ]));
     };
 
-export const VIRTUAL_MACHINES_USER_PANEL_LABEL = 'Virtual Machines';
+export const VIRTUAL_MACHINES_USER_PANEL_LABEL = 'Shell Access';
 
 export const setVirtualMachinesBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
-            { label: VIRTUAL_MACHINES_USER_PANEL_LABEL, uuid: VIRTUAL_MACHINES_USER_PANEL_LABEL },
+            { label: VIRTUAL_MACHINES_USER_PANEL_LABEL, uuid: VIRTUAL_MACHINES_USER_PANEL_LABEL, icon: TerminalIcon },
         ]));
     };
 
-export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Virtual Machines Admin';
+export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Shell Access Admin';
 
 export const setVirtualMachinesAdminBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
-            { label: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, uuid: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, icon: AdminMenuIcon },
+            { label: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, uuid: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, icon: TerminalIcon },
         ]));
     };
 
