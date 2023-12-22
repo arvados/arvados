@@ -513,9 +513,9 @@ const getResourceDisplayName = (resource: Resource): string => {
     }
 };
 
-const renderResourceLink = (dispatch: Dispatch, item: Resource, userUuid: string = '', breadcrumbs: any[] = []) => {
+const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
     var displayName = getResourceDisplayName(item);
-
+console.log(displayName, item)
     return (
         <Typography
             noWrap
@@ -524,9 +524,9 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource, userUuid: string
             onClick={() => {
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
                     ? dispatch<any>(navigateToGroupDetails(item.uuid))
+                    : item.kind === ResourceKind.USER 
+                    ? dispatch<any>(navigateToUserProfile(item.uuid))
                     : dispatch<any>(navigateTo(item.uuid)); 
-                //don't add breadcrumb when navigating to 'Home Projects'
-                if (item.uuid !== userUuid) setBreadcrumbs(breadcrumbs, item as any);
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
@@ -542,10 +542,8 @@ export const ResourceLinkTail = connect((state: RootState, props: { uuid: string
 
     return {
         item: tailResource || { uuid: resource?.tailUuid || "", kind: resource?.tailKind || ResourceKind.NONE },
-        breadcrumbs: state.properties.breadcrumbs || [],
-        userUuid
     };
-})((props: { item: Resource, userUuid: string, breadcrumbs: any[] } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item, props.userUuid, props.breadcrumbs));
+})((props: { item: Resource } & DispatchProp<any>) => renderResourceLink(props.dispatch, props.item));
 
 export const ResourceLinkHead = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<LinkResource>(props.uuid)(state.resources);
