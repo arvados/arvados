@@ -303,7 +303,7 @@ func (c *cache) pruneSessions() {
 	// Mark more sessions for deletion until reaching desired
 	// memory size limit, starting with the oldest entries.
 	for i, snap := range snaps {
-		if size <= c.cluster.Collections.WebDAVCache.MaxCollectionBytes {
+		if size <= int64(c.cluster.Collections.WebDAVCache.MaxCollectionBytes) {
 			break
 		}
 		if snap.prune {

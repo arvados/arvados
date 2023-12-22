@@ -8,10 +8,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 )
 
 type ByteSize int64
+
+// ByteSizeOrPercent indicates either a number of bytes or a
+// percentage from 1 to 100.
+type ByteSizeOrPercent ByteSize
 
 var prefixValue = map[string]int64{
 	"":   1,
@@ -87,5 +92,56 @@ func (n *ByteSize) UnmarshalJSON(data []byte) error {
 		return nil
 	} else {
 		return fmt.Errorf("bug: json.Number for %q is not int64 or float64: %s", s, err)
+	}
+}
+
+func (n ByteSizeOrPercent) MarshalJSON() ([]byte, error) {
+	if n < 0 && n >= -100 {
+		return []byte(fmt.Sprintf("\"%d%%\"", -n)), nil
+	} else {
+		return json.Marshal(int64(n))
+	}
+}
+
+func (n *ByteSizeOrPercent) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || data[0] != '"' {
+		return (*ByteSize)(n).UnmarshalJSON(data)
+	}
+	var s string
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
+	}
+	if s := strings.TrimSpace(s); len(s) > 0 && s[len(s)-1] == '%' {
+		pct, err := strconv.ParseInt(strings.TrimSpace(s[:len(s)-1]), 10, 64)
+		if err != nil {
+			return err
+		}
+		if pct < 0 || pct > 100 {
+			return fmt.Errorf("invalid value %q (percentage must be between 0 and 100)", s)
+		}
+		*n = ByteSizeOrPercent(-pct)
+		return nil
+	}
+	return (*ByteSize)(n).UnmarshalJSON(data)
+}
+
+// ByteSize returns the absolute byte size specified by n, or 0 if n
+// specifies a percent.
+func (n ByteSizeOrPercent) ByteSize() ByteSize {
+	if n >= -100 && n < 0 {
+		return 0
+	} else {
+		return ByteSize(n)
+	}
+}
+
+// ByteSize returns the percentage specified by n, or 0 if n specifies
+// an absolute byte size.
+func (n ByteSizeOrPercent) Percent() int64 {
+	if n >= -100 && n < 0 {
+		return int64(-n)
+	} else {
+		return 0
 	}
 }

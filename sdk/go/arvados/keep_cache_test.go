@@ -201,7 +201,7 @@ func (s *keepCacheSuite) testConcurrentReaders(c *check.C, cannotRefresh, mangle
 	backend := &keepGatewayMemoryBacked{}
 	cache := DiskCache{
 		KeepGateway: backend,
-		MaxSize:     int64(blksize),
+		MaxSize:     ByteSizeOrPercent(blksize),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
 	}
@@ -286,7 +286,7 @@ func (s *keepCacheSuite) TestStreaming(c *check.C) {
 	}
 	cache := DiskCache{
 		KeepGateway: backend,
-		MaxSize:     int64(blksize),
+		MaxSize:     ByteSizeOrPercent(blksize),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
 	}
@@ -354,7 +354,7 @@ func (s *keepCacheBenchSuite) SetUpTest(c *check.C) {
 	s.backend = &keepGatewayMemoryBacked{}
 	s.cache = &DiskCache{
 		KeepGateway: s.backend,
-		MaxSize:     int64(s.blksize),
+		MaxSize:     ByteSizeOrPercent(s.blksize),
 		Dir:         c.MkDir(),
 		Logger:      ctxlog.TestLogger(c),
 	}

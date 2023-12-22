@@ -721,16 +721,18 @@ Clusters:
         # Time to cache manifests, permission checks, and sessions.
         TTL: 300s
 
-        # Block cache entries. Each block consumes up to 64 MiB RAM.
-        MaxBlockEntries: 20
+        # Maximum amount of data cached in /var/cache/arvados/keep.
+        # Can be given as a percentage ("10%") or a number of bytes
+        # ("10 GiB")
+        DiskCacheSize: 10%
 
         # Approximate memory limit (in bytes) for session cache.
         #
         # Note this applies to the in-memory representation of
         # projects and collections -- metadata, block locators,
-        # filenames, etc. -- excluding cached file content, which is
-        # limited by MaxBlockEntries.
-        MaxCollectionBytes: 100000000
+        # filenames, etc. -- not the file data itself (see
+        # DiskCacheSize).
+        MaxCollectionBytes: 100 MB
 
         # Persistent sessions.
         MaxSessions: 100

@@ -1469,20 +1469,14 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
-	s.handler.Cluster.Collections.WebDAVCache.MaxBlockEntries = 42
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), 42)
-	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
-	req := &http.Request{
-		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
-	}
+func (s *IntegrationSuite) TestCacheSize(c *check.C) {
+	req, err := http.NewRequest("GET", "http://"+arvadostest.FooCollection+".example.com/foo", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	c.Assert(err, check.IsNil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
+	c.Assert(resp.Code, check.Equals, http.StatusOK)
+	c.Check(s.handler.Cache.sessions[arvadostest.ActiveTokenV2].client.DiskCacheSize.Percent(), check.Equals, int64(10))
 }
 
 // Writing to a collection shouldn't affect its entry in the

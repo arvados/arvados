@@ -37,7 +37,7 @@ type KeepGateway interface {
 type DiskCache struct {
 	KeepGateway
 	Dir     string
-	MaxSize int64
+	MaxSize ByteSizeOrPercent
 	Logger  logrus.FieldLogger
 
 	tidying        int32 // see tidy()
@@ -534,7 +534,7 @@ func (cache *DiskCache) gotidy() {
 	// is below MaxSize, and we haven't reached the "recheck
 	// anyway" time threshold.
 	if cache.sizeMeasured > 0 &&
-		atomic.LoadInt64(&cache.sizeEstimated) < cache.MaxSize &&
+		atomic.LoadInt64(&cache.sizeEstimated) < atomic.LoadInt64(&cache.defaultMaxSize) &&
 		time.Now().Before(cache.tidyHoldUntil) {
 		atomic.AddInt32(&cache.tidying, -1)
 		return
@@ -548,14 +548,26 @@ func (cache *DiskCache) gotidy() {
 
 // Delete cache files as needed to control disk usage.
 func (cache *DiskCache) tidy() {
-	maxsize := cache.MaxSize
+	maxsize := int64(cache.MaxSize.ByteSize())
 	if maxsize < 1 {
-		if maxsize = atomic.LoadInt64(&cache.defaultMaxSize); maxsize == 0 {
+		maxsize = atomic.LoadInt64(&cache.defaultMaxSize)
+		if maxsize == 0 {
+			// defaultMaxSize not yet computed. Use 10% of
+			// filesystem capacity (or different
+			// percentage if indicated by cache.MaxSize)
+			pct := cache.MaxSize.Percent()
+			if pct == 0 {
+				pct = 10
+			}
 			var stat unix.Statfs_t
 			if nil == unix.Statfs(cache.Dir, &stat) {
-				maxsize = int64(stat.Bavail) * stat.Bsize / 10
+				maxsize = int64(stat.Bavail) * stat.Bsize * pct / 100
+				atomic.StoreInt64(&cache.defaultMaxSize, maxsize)
+			} else {
+				// In this case we will set
+				// defaultMaxSize below after
+				// measuring current usage.
 			}
-			atomic.StoreInt64(&cache.defaultMaxSize, maxsize)
 		}
 	}
 
@@ -611,7 +623,8 @@ func (cache *DiskCache) tidy() {
 
 	// If MaxSize wasn't specified and we failed to come up with a
 	// defaultSize above, use the larger of {current cache size, 1
-	// GiB} as the defaultSize for subsequent tidy() operations.
+	// GiB} as the defaultMaxSize for subsequent tidy()
+	// operations.
 	if maxsize == 0 {
 		if totalsize < 1<<30 {
 			atomic.StoreInt64(&cache.defaultMaxSize, 1<<30)

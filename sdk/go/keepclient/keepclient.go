@@ -113,6 +113,7 @@ type KeepClient struct {
 	RequestID             string
 	StorageClasses        []string
 	DefaultStorageClasses []string // Set by cluster's exported config
+	DiskCacheSize         arvados.ByteSizeOrPercent
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -137,7 +138,6 @@ func (kc *KeepClient) Clone() *KeepClient {
 		gatewayRoots:          kc.gatewayRoots,
 		HTTPClient:            kc.HTTPClient,
 		Retries:               kc.Retries,
-		BlockCache:            kc.BlockCache,
 		RequestID:             kc.RequestID,
 		StorageClasses:        kc.StorageClasses,
 		DefaultStorageClasses: kc.DefaultStorageClasses,
@@ -387,6 +387,7 @@ func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
 	}
 	kc.gatewayStack = &arvados.DiskCache{
 		Dir:         cachedir,
+		MaxSize:     kc.DiskCacheSize,
 		KeepGateway: &keepViaHTTP{kc},
 	}
 	return kc.gatewayStack
