@@ -53,7 +53,6 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
-import { setBreadcrumbs } from "store/breadcrumbs/breadcrumbs-actions";
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
@@ -515,7 +514,7 @@ const getResourceDisplayName = (resource: Resource): string => {
 
 const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
     var displayName = getResourceDisplayName(item);
-console.log(displayName, item)
+
     return (
         <Typography
             noWrap
