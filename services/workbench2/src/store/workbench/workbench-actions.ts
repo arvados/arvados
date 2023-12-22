@@ -15,6 +15,7 @@ import {
     initSidePanelTree,
     loadSidePanelTreeProjects,
     SidePanelTreeCategory,
+    SIDE_PANEL_TREE, 
 } from "store/side-panel-tree/side-panel-tree-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { projectPanelColumns } from "views/project-panel/project-panel";
@@ -101,6 +102,7 @@ import { allProcessesPanelColumns } from "views/all-processes-panel/all-processe
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { multiselectActions } from "store/multiselect/multiselect-actions";
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -745,6 +747,7 @@ export const loadLinks = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => 
 export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
     dispatch(setVirtualMachinesBreadcrumbs());
+    dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({id: SidePanelTreeCategory.SHELL_ACCESS, pickerId: SIDE_PANEL_TREE} ))
 });
 
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {

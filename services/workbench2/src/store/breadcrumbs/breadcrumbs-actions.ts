@@ -315,7 +315,7 @@ export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Shell Access Admin';
 export const setVirtualMachinesAdminBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
-            { label: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, uuid: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, icon: TerminalIcon },
+            { label: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, uuid: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, icon: AdminMenuIcon },
         ]));
     };
 
