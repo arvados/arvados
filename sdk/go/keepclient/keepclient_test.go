@@ -1101,19 +1101,20 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	}
 	{
 		hash2, replicas, err := kc.PutB(content)
+		c.Check(err, IsNil)
 		c.Check(hash2, Matches, fmt.Sprintf(`%s\+%d\b.*`, hash, len(content)))
 		c.Check(replicas, Equals, 2)
-		c.Check(err, Equals, nil)
 	}
 	{
 		r, n, url2, err := kc.Get(hash)
 		c.Check(err, Equals, nil)
 		c.Check(n, Equals, int64(len(content)))
 		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
-
-		readContent, err2 := ioutil.ReadAll(r)
-		c.Check(err2, Equals, nil)
-		c.Check(readContent, DeepEquals, content)
+		if c.Check(r, NotNil) {
+			readContent, err2 := ioutil.ReadAll(r)
+			c.Check(err2, Equals, nil)
+			c.Check(readContent, DeepEquals, content)
+		}
 	}
 	{
 		n, url2, err := kc.Ask(hash)

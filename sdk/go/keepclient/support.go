@@ -149,8 +149,12 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 		getReader = func() io.Reader { return bytes.NewReader(req.Data[:req.DataSize]) }
 	} else {
 		buf := asyncbuf.NewBuffer(make([]byte, 0, req.DataSize))
+		reader := req.Reader
+		if req.Hash != "" {
+			reader = HashCheckingReader{req.Reader, md5.New(), req.Hash}
+		}
 		go func() {
-			_, err := io.Copy(buf, HashCheckingReader{req.Reader, md5.New(), req.Hash})
+			_, err := io.Copy(buf, reader)
 			buf.CloseWithError(err)
 		}()
 		getReader = buf.NewReader
