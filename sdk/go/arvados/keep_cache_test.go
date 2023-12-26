@@ -418,6 +418,7 @@ func (s *fileOpsSuite) BenchmarkOpenClose(c *check.C) {
 	os.WriteFile(fnm, make([]byte, 64000000), 0700)
 	var wg sync.WaitGroup
 	for i := 0; i < c.N; i++ {
+		i := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
