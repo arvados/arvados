@@ -209,6 +209,10 @@ func (s *UnitSuite) TestWebdavPrefixAndSource(c *check.C) {
 }
 
 func (s *UnitSuite) TestEmptyResponse(c *check.C) {
+	// Ensure we start with an empty cache
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	os.Setenv("HOME", c.MkDir())
+
 	for _, trial := range []struct {
 		dataExists    bool
 		sendIMSHeader bool
