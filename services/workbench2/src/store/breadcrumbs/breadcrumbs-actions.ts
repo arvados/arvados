@@ -269,7 +269,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
         try {
             const user = getResource<UserResource>(userUuid)(getState().resources)
                 || await services.userService.get(userUuid, false);
-                const currentCrumbs = getState().properties.breadcrumbs as Breadcrumb[]
+            const currentCrumbs = getState().properties.breadcrumbs as Breadcrumb[]
             const userProfileBreadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
                 { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
@@ -278,7 +278,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
                 ...currentCrumbs,
                 { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
             ];
-            dispatch(setBreadcrumbs(currentCrumbs.some(crumb => crumb.label === SidePanelTreeCategory.GROUPS) ? breadcrumbsWithPreviousCrumbs : userProfileBreadcrumbs));
+            dispatch(setBreadcrumbs(currentCrumbs.some((crumb) => crumb.label === SidePanelTreeCategory.GROUPS) ? breadcrumbsWithPreviousCrumbs : userProfileBreadcrumbs));
         } catch (e) {
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
