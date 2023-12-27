@@ -753,6 +753,7 @@ export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
     dispatch(setVirtualMachinesAdminBreadcrumbs());
+    dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({pickerId: SIDE_PANEL_TREE} ))
 });
 
 export const loadRepositories = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
