@@ -231,6 +231,10 @@ Clusters:
       # also effectively limited by MaxConcurrentRailsRequests (see
       # below) because most controller requests proxy through to the
       # RailsAPI service.
+      #
+      # HTTP proxies and load balancers downstream of arvados services
+      # should be configured to allow at least {MaxConcurrentRequest +
+      # MaxQueuedRequests + MaxGatewayTunnels} concurrent requests.
       MaxConcurrentRequests: 64
 
       # Maximum number of concurrent requests to process concurrently
@@ -249,6 +253,12 @@ Clusters:
       # Maximum time a "lock container" request is allowed to wait in
       # the incoming request queue before returning 503.
       MaxQueueTimeForLockRequests: 2s
+
+      # Maximum number of active gateway tunnel connections. A slot is
+      # consumed by each running container, and by each incoming
+      # "container shell" connection. These do not count toward
+      # MaxConcurrentRequests.
+      MaxGatewayTunnels: 1000
 
       # Fraction of MaxConcurrentRequests that can be "log create"
       # messages at any given time.  This is to prevent logging
