@@ -23,7 +23,6 @@ import {
 import { navigateToUserVirtualMachines } from 'store/navigation/navigation-action'
 import { RouterAction } from 'react-router-redux'
 import { User } from 'models/user'
-import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions'
 
 type CssRules = 'button' | 'unselected' | 'selected'
 
