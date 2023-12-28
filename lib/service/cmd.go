@@ -16,6 +16,7 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -297,7 +298,7 @@ func (c *command) requestLimiter(handler http.Handler, cluster *arvados.Cluster,
 		Priority: c.requestPriority,
 		Registry: reg,
 		Queue: func(req *http.Request) *httpserver.RequestQueue {
-			if strings.HasPrefix(req.URL.Path, "/arvados/v1/connect/") {
+			if req.Method == http.MethodPost && reTunnelPath.MatchString(req.URL.Path) {
 				return rqTunnel
 			} else {
 				return rqAPI
@@ -305,6 +306,25 @@ func (c *command) requestLimiter(handler http.Handler, cluster *arvados.Cluster,
 		},
 	}
 }
+
+// reTunnelPath matches paths of API endpoints that go in the "tunnel"
+// queue.
+var reTunnelPath = regexp.MustCompile(func() string {
+	rePathVar := regexp.MustCompile(`{.*?}`)
+	out := ""
+	for _, endpoint := range []arvados.APIEndpoint{
+		arvados.EndpointContainerGatewayTunnel,
+		arvados.EndpointContainerGatewayTunnelCompat,
+		arvados.EndpointContainerSSH,
+		arvados.EndpointContainerSSHCompat,
+	} {
+		if out != "" {
+			out += "|"
+		}
+		out += `\Q/` + rePathVar.ReplaceAllString(endpoint.Path, `\E[^/]*\Q`) + `\E`
+	}
+	return "^(" + out + ")$"
+}())
 
 func (c *command) requestPriority(req *http.Request, queued time.Time) int64 {
 	switch {
