@@ -32,6 +32,12 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.1":#v2_7_1
 
+h3. WebDAV service uses @/var/cache@ for file content
+
+@keep-web@ now stores copies of recently accessed data blocks in @/var/cache/arvados/keep@ instead of in memory. That directory will be created automatically. The default cache size is 10% of the filesystem size. Use the new @Collections.WebDAVCache.DiskCacheSize@ config to specify a different percentage or an absolute size.
+
+If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
+
 h2(#2_7_1). v2.7.1 (2023-12-12)
 
 "previous: Upgrading to 2.7.0":#v2_7_0
