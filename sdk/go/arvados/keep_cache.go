@@ -61,7 +61,6 @@ type sharedCache struct {
 	maxSize ByteSizeOrPercent
 
 	tidying        int32 // see tidy()
-	tidyHoldUntil  time.Time
 	defaultMaxSize int64
 
 	// The "heldopen" fields are used to open cache files for
@@ -79,8 +78,10 @@ type sharedCache struct {
 	writingCond *sync.Cond
 	writingLock sync.Mutex
 
-	sizeMeasured  int64 // actual size on disk after last tidy(); zero if not measured yet
-	sizeEstimated int64 // last measured size, plus files we have written since
+	sizeMeasured    int64 // actual size on disk after last tidy(); zero if not measured yet
+	sizeEstimated   int64 // last measured size, plus files we have written since
+	lastFileCount   int64 // number of files on disk at last count
+	writesSinceTidy int64 // number of files written since last tidy()
 }
 
 type writeprogress struct {
@@ -97,9 +98,8 @@ type openFileEnt struct {
 }
 
 const (
-	cacheFileSuffix  = ".keepcacheblock"
-	tmpFileSuffix    = ".tmp"
-	tidyHoldDuration = 5 * time.Minute // time to re-check cache size even if estimated size is below max
+	cacheFileSuffix = ".keepcacheblock"
+	tmpFileSuffix   = ".tmp"
 )
 
 func (cache *DiskCache) setup() {
@@ -557,6 +557,7 @@ func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (i
 // Start a tidy() goroutine, unless one is already running / recently
 // finished.
 func (cache *DiskCache) gotidy() {
+	writes := atomic.AddInt64(&cache.writesSinceTidy, 1)
 	// Skip if another tidy goroutine is running in this process.
 	n := atomic.AddInt32(&cache.tidying, 1)
 	if n != 1 {
@@ -564,17 +565,18 @@ func (cache *DiskCache) gotidy() {
 		return
 	}
 	// Skip if sizeEstimated is based on an actual measurement and
-	// is below maxSize, and we haven't reached the "recheck
-	// anyway" time threshold.
+	// is below maxSize, and we haven't done very many writes
+	// since last tidy (defined as 1% of number of cache files at
+	// last count).
 	if cache.sizeMeasured > 0 &&
 		atomic.LoadInt64(&cache.sizeEstimated) < atomic.LoadInt64(&cache.defaultMaxSize) &&
-		time.Now().Before(cache.tidyHoldUntil) {
+		writes < cache.lastFileCount/100 {
 		atomic.AddInt32(&cache.tidying, -1)
 		return
 	}
 	go func() {
 		cache.tidy()
-		cache.tidyHoldUntil = time.Now().Add(tidyHoldDuration)
+		atomic.StoreInt64(&cache.writesSinceTidy, 0)
 		atomic.AddInt32(&cache.tidying, -1)
 	}()
 }
@@ -677,6 +679,7 @@ func (cache *DiskCache) tidy() {
 	if totalsize <= maxsize || len(ents) == 1 {
 		atomic.StoreInt64(&cache.sizeMeasured, totalsize)
 		atomic.StoreInt64(&cache.sizeEstimated, totalsize)
+		cache.lastFileCount = int64(len(ents))
 		return
 	}
 
@@ -710,4 +713,5 @@ func (cache *DiskCache) tidy() {
 	}
 	atomic.StoreInt64(&cache.sizeMeasured, totalsize)
 	atomic.StoreInt64(&cache.sizeEstimated, totalsize)
+	cache.lastFileCount = int64(len(ents) - deleted)
 }
