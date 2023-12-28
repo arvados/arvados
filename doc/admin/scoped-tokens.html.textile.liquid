@@ -42,14 +42,14 @@ h2. Creating a scoped token
 
 A scoped token can be created at the command line:
 
-<pre>
-$ arv api_client_authorization create --api-client-authorization '{"scopes": [["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]}'
+<notextile>
+<pre><code>$ <span class="userinput">arv api_client_authorization create --api-client-authorization '{"scopes": [["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]}'</span>
 {
- "href":"/api_client_authorizations/x1u39-gj3su-bizbsw0mx5pju3w",
+ "href":"/api_client_authorizations/zzzzz-gj3su-bizbsw0mx5pju3w",
  "kind":"arvados#apiClientAuthorization",
  "etag":"9yk144t0v6cvyp0342exoh2vq",
- "uuid":"x1u39-gj3su-bizbsw0mx5pju3w",
- "owner_uuid":"x1u39-tpzed-fr97h9t4m5jffxs",
+ "uuid":"zzzzz-gj3su-bizbsw0mx5pju3w",
+ "owner_uuid":"zzzzz-tpzed-fr97h9t4m5jffxs",
  "created_at":"2020-03-12T20:36:12.517375422Z",
  "modified_by_client_uuid":null,
  "modified_by_user_uuid":null,
@@ -73,6 +73,7 @@ $ arv api_client_authorization create --api-client-authorization '{"scopes": [["
   ]
  ]
 }
-</pre>
+</code></pre>
+</notextile>
 
 The response will include @api_token@ field which is the newly issued secret token.  It can be passed directly to the API server that issued it, or can be used to construct a @v2@ token.  A @v2@ format token is required if the token will be used to access other clusters in an Arvados federation.  An Arvados @v2@ format token consists of three fields separate by slashes: the prefix @v2@, followed by the token uuid, followed by the token secret.  For example: @v2/x1u39-gj3su-bizbsw0mx5pju3w/5a74htnoqwkhtfo2upekpfbsg04hv7cy5v4nowf7dtpxer086m@.
