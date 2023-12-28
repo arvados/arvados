@@ -18,9 +18,9 @@ Another example is situations where admin access is required but there is risk o
 
 h2. Defining scopes
 
-A "scope" consists of a HTTP method and API path.  A token can have multiple scopes.  Token scopes act as a whitelist, and the API server checks the HTTP method and the API path of every request against the scopes of the request token.  Scopes are also described on the "API Authorization":{{site.baseurl}}/api/tokens.html#scopes page of the "API documentation":{{site.baseurl}}/api .
+A "scope" consists of a HTTP method and API path.  A token can have multiple scopes.  Token scopes act as a whitelist, and the API server checks the HTTP method and the API path of every request against the scopes of the request token.  Scopes are also described on the "API Authorization":{{site.baseurl}}/api/tokens.html#scopes page of the "API documentation":{{site.baseurl}}/api/index.html.
 
-These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api to determine the endpoints for specific methods.
+These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api/index.html to determine the endpoints for specific methods.
 
 The scope @["GET", "/arvados/v1/collections"]@ will allow only GET or HEAD requests for the list of collections.  Any other HTTP method or path (including requests for a specific collection record, eg a request with path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) will return a permission error.
 
