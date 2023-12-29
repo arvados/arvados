@@ -8,6 +8,7 @@ ARG GOVERSION
 
 ## dont use debian:12 here since the word 'bookworm' is used for rvm precompiled binaries
 FROM debian:bookworm as build_x86_64
+ONBUILD ARG BRANCH
 # Install go
 ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-amd64.tar.gz /usr/local/
@@ -24,6 +25,7 @@ ONBUILD RUN /usr/bin/dpkg --add-architecture arm64
 ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediate-Configure=0 -q -y libpam0g-dev:arm64 libfuse-dev:arm64
 
 FROM debian:bookworm as build_aarch64
+ONBUILD ARG BRANCH
 # Install go
 ONBUILD ARG GOVERSION
 ONBUILD ADD generated/go${GOVERSION}.linux-arm64.tar.gz /usr/local/
@@ -63,7 +65,7 @@ ENV MAKE "make --jobs 8"
 # Preseed the go module cache and the ruby gems, using the currently checked
 # out branch of the source tree. This avoids potential compatibility issues
 # between the version of Ruby and certain gems.
-RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
+RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
