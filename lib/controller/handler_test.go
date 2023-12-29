@@ -99,6 +99,7 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 
 func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	countRailsReqs := func() int {
+		s.railsSpy.Wait()
 		n := 0
 		for _, req := range s.railsSpy.RequestDumps {
 			if bytes.Contains(req, []byte("/discovery/v1/apis/arvados/v1/rest")) {
