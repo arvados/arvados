@@ -482,11 +482,11 @@ func (conn *Conn) socket(ctx context.Context, u *url.URL, upgradeHeader string, 
 		} else {
 			message = fmt.Sprintf("%q", body)
 		}
-		return connresp, fmt.Errorf("server did not provide a tunnel: %s: %s", resp.Status, message)
+		return connresp, httpserver.ErrorWithStatus(fmt.Errorf("server did not provide a tunnel: %s: %s", resp.Status, message), resp.StatusCode)
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != upgradeHeader ||
 		strings.ToLower(resp.Header.Get("Connection")) != "upgrade" {
-		return connresp, fmt.Errorf("bad response from server: Upgrade %q Connection %q", resp.Header.Get("Upgrade"), resp.Header.Get("Connection"))
+		return connresp, httpserver.ErrorWithStatus(fmt.Errorf("bad response from server: Upgrade %q Connection %q", resp.Header.Get("Upgrade"), resp.Header.Get("Connection")), http.StatusBadGateway)
 	}
 	connresp.Conn = netconn
 	connresp.Bufrw = &bufio.ReadWriter{Reader: bufr, Writer: bufw}
