@@ -125,7 +125,7 @@ package_workbench2() {
     cd "$WORKSPACE/$src"
     rm -rf ./build
     NODE_ENV=production yarn install
-    VERSION="$VERSION" BUILD_NUMBER="$(default_iteration "$pkgname" "$version" yarn)" GIT_COMMIT="$(git rev-parse HEAD | head -c9)" yarn build
+    VERSION="$version" BUILD_NUMBER="$(default_iteration "$pkgname" "$version" yarn)" GIT_COMMIT="$(git rev-parse HEAD | head -c9)" yarn build
     cd "$WORKSPACE/packages/$TARGET"
     fpm_build "${WORKSPACE}/$src" "${WORKSPACE}/$src/build/=$dst" "$pkgname" dir "$version" \
               --license="GNU Affero General Public License, version 3.0" \
