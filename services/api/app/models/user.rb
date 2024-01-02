@@ -31,8 +31,8 @@ class User < ArvadosModel
   after_update :setup_on_activate
 
   before_create :check_auto_admin
-  before_create :set_initial_username, :if => Proc.new {
-    username.nil? and email
+  before_validation :set_initial_username, :if => Proc.new {
+    new_record? && email
   }
   before_create :active_is_not_nil
   after_create :after_ownership_change
@@ -264,8 +264,7 @@ SELECT target_uuid, perm_level
   def setup(repo_name: nil, vm_uuid: nil, send_notification_email: nil)
     newly_invited = Link.where(tail_uuid: self.uuid,
                               head_uuid: all_users_group_uuid,
-                              link_class: 'permission',
-                              name: 'can_read').empty?
+                              link_class: 'permission').empty?
 
     # Add can_read link from this user to "all users" which makes this
     # user "invited", and (depending on config) a link in the opposite
@@ -387,6 +386,10 @@ SELECT target_uuid, perm_level
   end
 
   def set_initial_username(requested: false)
+    if new_record? and requested == false and self.username != nil and self.username != ""
+      requested = self.username
+    end
+
     if (!requested.is_a?(String) || requested.empty?) and email
       email_parts = email.partition("@")
       local_parts = email_parts.first.partition("+")
@@ -606,13 +609,64 @@ SELECT target_uuid, perm_level
 
   def self.update_remote_user remote_user
     remote_user = remote_user.symbolize_keys
+    remote_user_prefix = remote_user[:uuid][0..4]
+
+    # interaction between is_invited and is_active
+    #
+    # either can flag can be nil, true or false
+    #
+    # in all cases, we create the user if they don't exist.
+    #
+    # invited nil, active nil: don't call setup or unsetup.
+    #
+    # invited nil, active false: call unsetup
+    #
+    # invited nil, active true: call setup and activate them.
+    #
+    #
+    # invited false, active nil: call unsetup
+    #
+    # invited false, active false: call unsetup
+    #
+    # invited false, active true: call unsetup
+    #
+    #
+    # invited true, active nil: call setup but don't change is_active
+    #
+    # invited true, active false: call setup but don't change is_active
+    #
+    # invited true, active true: call setup and activate them.
+
+    should_setup = (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+                    Rails.configuration.Users.AutoSetupNewUsers or
+                    Rails.configuration.Users.NewUsersAreActive or
+                    Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+
+    should_activate = (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+                       Rails.configuration.Users.NewUsersAreActive or
+                       Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+
+    remote_should_be_unsetup = (remote_user[:is_invited] == nil && remote_user[:is_active] == false) ||
+                               (remote_user[:is_invited] == false)
+
+    remote_should_be_setup = should_setup && (
+      (remote_user[:is_invited] == nil && remote_user[:is_active] == true) ||
+      (remote_user[:is_invited] == false && remote_user[:is_active] == true) ||
+      (remote_user[:is_invited] == true))
+
+    remote_should_be_active = should_activate && remote_user[:is_invited] != false && remote_user[:is_active] == true
+
     begin
-      user = User.find_or_create_by(uuid: remote_user[:uuid])
+      user = User.create_with(email: remote_user[:email],
+                              username: remote_user[:username],
+                              first_name: remote_user[:first_name],
+                              last_name: remote_user[:last_name],
+                              is_active: remote_should_be_active
+      ).find_or_create_by(uuid: remote_user[:uuid])
     rescue ActiveRecord::RecordNotUnique
       retry
     end
 
-    remote_user_prefix = user.uuid[0..4]
     user.with_lock do
       needupdate = {}
       [:email, :username, :first_name, :last_name, :prefs].each do |k|
@@ -658,29 +712,19 @@ SELECT target_uuid, perm_level
         end
       end
 
-      if user.is_invited && remote_user[:is_invited] == false
-        # Remote user is not "invited" state, they should be unsetup, which
-        # also makes them inactive.
+      if remote_should_be_unsetup
+        # Remote user is not "invited" or "active" state on their home
+        # cluster, so they should be unsetup, which also makes them
+        # inactive.
         user.unsetup
       else
-        if !user.is_invited && remote_user[:is_invited] and
-          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
-           Rails.configuration.Users.AutoSetupNewUsers or
-           Rails.configuration.Users.NewUsersAreActive or
-           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-          # Remote user is 'invited' and should be set up
+        if !user.is_invited && remote_should_be_setup
           user.setup
         end
 
-        if !user.is_active && remote_user[:is_active] && user.is_invited and
-          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
-           Rails.configuration.Users.NewUsersAreActive or
-           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+        if !user.is_active && remote_should_be_active
           # remote user is active and invited, we need to activate them
           user.update!(is_active: true)
-        elsif user.is_active && remote_user[:is_active] == false
-          # remote user is not active, we need to de-activate them
-          user.update!(is_active: false)
         end
 
         if remote_user_prefix == Rails.configuration.Login.LoginCluster and
@@ -914,8 +958,9 @@ SELECT target_uuid, perm_level
 
   # Send admin notifications
   def send_admin_notifications
-    AdminNotifier.new_user(self).deliver_now
-    if not self.is_active then
+    if self.is_invited then
+      AdminNotifier.new_user(self).deliver_now
+    else
       AdminNotifier.new_inactive_user(self).deliver_now
     end
   end

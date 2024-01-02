@@ -347,10 +347,12 @@ class UserTest < ActiveSupport::TestCase
   test "create new user with notifications" do
     set_user_from_auth :admin
 
+    Rails.configuration.Users.AutoSetupNewUsers = false
+
     create_user_and_verify_setup_and_notifications true, active_notify_list, inactive_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications true, active_notify_list, empty_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications true, empty_notify_list, empty_notify_list, nil, nil
-    create_user_and_verify_setup_and_notifications false, active_notify_list, inactive_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications false, empty_notify_list, inactive_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications false, empty_notify_list, inactive_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications false, empty_notify_list, empty_notify_list, nil, nil
   end
@@ -379,13 +381,13 @@ class UserTest < ActiveSupport::TestCase
     [false, empty_notify_list, empty_notify_list, "arvados@example.com", false, false, "arvados2"],
     [true, active_notify_list, inactive_notify_list, "arvados@example.com", false, false, "arvados2"],
     [true, active_notify_list, inactive_notify_list, "root@example.com", true, false, "root2"],
-    [false, active_notify_list, inactive_notify_list, "root@example.com", true, false, "root2"],
+    [false, active_notify_list, empty_notify_list, "root@example.com", true, false, "root2"],
     [true, active_notify_list, inactive_notify_list, "roo_t@example.com", false, true, "root2"],
     [false, empty_notify_list, empty_notify_list, "^^incorrect_format@example.com", true, true, "incorrectformat"],
     [true, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
     [true, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
-    [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
-    [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
+    [false, active_notify_list, empty_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
+    [false, active_notify_list, empty_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
   ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, expect_username|
     test "create new user with auto setup active=#{active} email=#{email} vm=#{auto_setup_vm} repo=#{auto_setup_repo}" do
       set_user_from_auth :admin

@@ -100,12 +100,15 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       uuid: 'zbbbb-tpzed-000000000000001',
       email: 'foo@example.com',
       username: 'barney',
+      first_name: "Barney",
+      last_name: "Foo",
       is_admin: true,
       is_active: true,
       is_invited: true,
     }
     @stub_token_status = 200
     @stub_token_scopes = ["all"]
+    ActionMailer::Base.deliveries = []
   end
 
   teardown do
@@ -366,6 +369,12 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
   test 'get user from Login cluster' do
     Rails.configuration.Login.LoginCluster = 'zbbbb'
+    email_dest = ActiveSupport::OrderedOptions.new
+    email_dest[:'arvados-admin@example.com'] = ActiveSupport::OrderedOptions.new
+    Rails.configuration.Users.UserNotifierEmailBcc = email_dest
+    Rails.configuration.Users.NewUserNotificationRecipients = email_dest
+    Rails.configuration.Users.NewInactiveUserNotificationRecipients = email_dest
+
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
@@ -375,14 +384,18 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
+
+    assert_equal 2, ActionMailer::Base.deliveries.length
+    assert_equal "Welcome to Arvados - account enabled", ActionMailer::Base.deliveries[0].subject
+    assert_equal "[ARVADOS] New user created notification", ActionMailer::Base.deliveries[1].subject
   end
 
   [true, false].each do |trusted|
     [true, false].each do |logincluster|
-      [true, false].each do |admin|
-        [true, false].each do |active|
+      [true, false, nil].each do |admin|
+        [true, false, nil].each do |active|
           [true, false].each do |autosetup|
-            [true, false].each do |invited|
+            [true, false, nil].each do |invited|
               test "get invited=#{invited}, active=#{active}, admin=#{admin} user from #{if logincluster then "Login" else "peer" end} cluster when AutoSetupNewUsers=#{autosetup} ActivateUsers=#{trusted}" do
                 Rails.configuration.Login.LoginCluster = 'zbbbb' if logincluster
                 Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = trusted
@@ -400,9 +413,9 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
                     headers: auth(remote: 'zbbbb')
                 assert_response :success
                 assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
-                assert_equal (logincluster && admin && invited && active), json_response['is_admin']
-                assert_equal (invited and (logincluster || trusted || autosetup)), json_response['is_invited']
-                assert_equal (invited and (logincluster || trusted) and active), json_response['is_active']
+                assert_equal (logincluster && !!admin && (invited != false) && !!active), json_response['is_admin']
+                assert_equal ((invited == true || (invited == nil && !!active)) && (logincluster || trusted || autosetup)), json_response['is_invited']
+                assert_equal ((invited != false) && (logincluster || trusted) && !!active), json_response['is_active']
                 assert_equal 'foo@example.com', json_response['email']
                 assert_equal 'barney', json_response['username']
               end
