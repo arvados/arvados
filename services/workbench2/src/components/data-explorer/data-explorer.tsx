@@ -16,8 +16,9 @@ import { DataTableFilters } from "components/data-table-filters/data-table-filte
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
+import classNames from "classnames";
 
-type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | "dataTable" | "container";
+type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | "titleWithProgress" | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -46,8 +47,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing.unit * 2,
         paddingTop: theme.spacing.unit * 2,
         fontSize: "18px",
-        flexGrow: 0,
         paddingRight: "10px",
+    },
+    titleWithProgress: {
+        flexGrow: 0,
     },
     dataTable: {
         height: "100%",
@@ -218,7 +221,7 @@ export const DataExplorer = withStyles(styles)(
                                 <Grid
                                     item
                                     xs
-                                    className={classes.title}
+                                    className={classNames(classes.title, !!progressBar && classes.titleWithProgress)}
                                 >
                                     {title}
                                 </Grid>
