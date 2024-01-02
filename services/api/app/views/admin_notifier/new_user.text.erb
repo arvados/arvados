@@ -11,7 +11,7 @@ They are able to use Arvados.
 <% if Rails.configuration.Services.Workbench1.ExternalURL -%>
 Please see Workbench for more information:
 
-  <%= Rails.configuration.Services.Workbench1.ExternalURL %>user/<%=@user.uuid%>
+  <%= URI::join(Rails.configuration.Services.Workbench1.ExternalURL, "user/#{@user.uuid}") %>
 
 <% end -%>
 Thanks,

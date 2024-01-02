@@ -6,12 +6,12 @@ A new user has been created, but not set up.
 
   <%= @user.full_name %> <<%= @user.email %>> (<%= @user.username %>)
 
-They will not be able to use Arvado unless set up by an admin.
+They will not be able to use Arvados unless set up by an admin.
 
 <% if Rails.configuration.Services.Workbench1.ExternalURL -%>
 Please see Workbench for more information:
 
-  <%= Rails.configuration.Services.Workbench1.ExternalURL %>user/<%=@user.uuid%>
+  <%= URI::join(Rails.configuration.Services.Workbench1.ExternalURL, "user/#{@user.uuid}") %>
 
 <% end -%>
 Thanks,

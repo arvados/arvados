@@ -385,10 +385,6 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
 
-    # ActionMailer::Base.deliveries.each do |d|
-    #   puts "--- delivery #{d.inspect} #{d.body}"
-    # end
-
     assert_equal 2, ActionMailer::Base.deliveries.length
     assert_equal "Welcome to Arvados - account enabled", ActionMailer::Base.deliveries[0].subject
     assert_equal "[ARVADOS] New user created notification", ActionMailer::Base.deliveries[1].subject
