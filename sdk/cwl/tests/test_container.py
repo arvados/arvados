@@ -579,7 +579,7 @@ class TestContainer(unittest.TestCase):
             self.fail("RuntimeStatusLoggingHandler should not be called recursively")
 
 
-    # Test to make sure that an exception raised from
+    # Test to make sure trunner = mock.MagicMock()hat an exception raised from
     # get_current_container doesn't cause the logger to raise an
     # exception
     @mock.patch("arvados_cwl.util.get_current_container")
@@ -1708,3 +1708,26 @@ class TestWorkflow(unittest.TestCase):
         api._rootDesc = copy.deepcopy(get_rootDesc())
         runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')
+    
+    @mock.patch("arvados.collection.Collection")
+    def test_spot_instance_retry(self):
+        arvados_cwl.add_arv_hints()
+
+        # Add hint
+
+        api = mock.MagicMock()
+
+        runner = mock.MagicMock()
+        runner.api = api
+        runner.num_retries = 0
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
+        runner.api.containers().get().execute.return_value = {
+            "state": "Complete",
+            "output": "abc+123",
+            "exit_code": 137
+        }
+        # Add assertions to make sure it reran as nonpreemptible
+        assert False
