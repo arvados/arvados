@@ -25,7 +25,7 @@ The following steps can be used to temporarily disable writes on an S3 bucket to
   Volumes:
     <span class="userinput">target-volume-uuid</span>:
       ReadOnly: true
-      AllowTrashWhileReadOnly: true
+      AllowTrashWhenReadOnly: true
       DriverParameters:
         UnsafeDelete: true
 </pre></notextile> Note that @BlobTrashLifetime: 0@ instructs keepstore to delete unneeded blocks outright (bypassing the recoverable trash phase); however, in this mode it will normally not trash any blocks at all on an S3 volume due to the safety issue mentioned above, unless the volume is configured with @UnsafeDelete: true@.
@@ -35,7 +35,7 @@ The following steps can be used to temporarily disable writes on an S3 bucket to
 # Remove the @UnsafeDelete@ configuration entry on the target volume.
 # Remove the @BlobTrashLifetime@ configuration entry (or restore it to its previous value).
 # If the target volume has @PrefixLength: 0@ and the new volume has @PrefixLength: 3@, skip the next two steps: new data will be stored on the new volume, some existing data will be moved automatically to other volumes, and some will be left on the target volume as long as it's needed.
-# If you want to resume writing new data to the target volume, revert to @ReadOnly: false@ and @AllowTrashWhileReadOnly: false@ on the target volume.
-# If you want to stop writing new data to the newly created volume, set @ReadOnly: true@ and @AllowTrashWhileReadOnly: true@ on the new volume.
+# If you want to resume writing new data to the target volume, revert to @ReadOnly: false@ and @AllowTrashWhenReadOnly: false@ on the target volume.
+# If you want to stop writing new data to the newly created volume, set @ReadOnly: true@ and @AllowTrashWhenReadOnly: true@ on the new volume.
 # Remove the @BalancePullLimit@ configuration entry (or restore its previous value), and restart @keep-balance@.
 # Restart all @keepstore@ services with the updated configuration.
