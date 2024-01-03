@@ -37,7 +37,7 @@ Gem::Specification.new do |s|
   s.files       = ["lib/arvados.rb", "lib/arvados/google_api_client.rb",
                    "lib/arvados/collection.rb", "lib/arvados/keep.rb",
                    "README", "LICENSE-2.0.txt"]
-  s.required_ruby_version = '>= 1.8.7'
+  s.required_ruby_version = '>= 1.8.7', '< 3'
   s.add_dependency('activesupport', '>= 3')
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
   # Our google-api-client dependency used to be < 0.9, but that could be
