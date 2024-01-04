@@ -694,8 +694,7 @@ fpm_build_virtualenv_worker () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
-  local python=$PYTHON3_EXECUTABLE
-  pip=pip3
+  local python="python$PYTHON3_VERSION"
   PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
 
   if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
@@ -715,7 +714,7 @@ fpm_build_virtualenv_worker () {
     exit 1
   fi
 
-  local venv_py="$venv_dir/bin/python3"
+  local venv_py="$venv_dir/bin/$python"
   if ! "$venv_py" -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel; then
     printf "Error, unable to upgrade pip, setuptools, and wheel with
   %s -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel
