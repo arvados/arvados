@@ -293,14 +293,6 @@ fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "$FORMAT"
 # The Arvados user activity tool
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "$FORMAT" "$ARCH"
 
-# The python->python3 metapackages
-build_metapackage "arvados-fuse" "services/fuse"
-build_metapackage "arvados-python-client" "services/fuse"
-build_metapackage "arvados-cwl-runner" "sdk/cwl"
-build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
-build_metapackage "arvados-docker-cleaner" "services/dockercleaner"
-build_metapackage "arvados-user-activity" "tools/user-activity"
-
 # The cwltest package, which lives out of tree
 handle_cwltest "$FORMAT" "$ARCH"
 
