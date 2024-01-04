@@ -207,6 +207,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		finishContainer(ctr)
 		return int(rand.Uint32() & 0x3)
 	}
+	var type4BrokenUntil time.Time
 	var countCapacityErrors int64
 	vmCount := int32(0)
 	s.stubDriver.Queue = queue
@@ -224,6 +225,17 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		stubvm.CrashRunningContainer = finishContainer
 		stubvm.ExtraCrunchRunArgs = "'--runtime-engine=stub' '--foo' '--extra='\\''args'\\'''"
 		switch {
+		case stubvm.Instance().ProviderType() == test.InstanceType(4).ProviderType &&
+			(type4BrokenUntil.IsZero() || time.Now().Before(type4BrokenUntil)):
+			// Initially (at least 2*TimeoutBooting), all
+			// instances of this type are completely
+			// broken. This ensures the
+			// boot_outcomes{outcome="failure"} metric is
+			// not zero.
+			stubvm.Broken = time.Now()
+			if type4BrokenUntil.IsZero() {
+				type4BrokenUntil = time.Now().Add(2 * s.cluster.Containers.CloudVMs.TimeoutBooting.Duration())
+			}
 		case n%7 == 0:
 			// some instances start out OK but then stop
 			// running any commands
@@ -235,11 +247,6 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			// some instances start out OK but then start
 			// reporting themselves as broken
 			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
-		case n == 3:
-			// 1 instance is completely broken, ensuring
-			// the boot_outcomes{outcome="failure"} metric
-			// is not zero
-			stubvm.Broken = time.Now()
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
 			stubvm.ArvMountDeadlockRate = 0.1
