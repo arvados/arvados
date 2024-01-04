@@ -137,12 +137,19 @@ while [ $# -gt 0 ]; do
 done
 
 set -e
+orig_umask="$(umask)"
 
 if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
     echo "build version='$ARVADOS_BUILDING_VERSION', package iteration='$ARVADOS_BUILDING_ITERATION'"
 fi
 
 if [[ -n "$test_packages" ]]; then
+  # Packages are built world-readable, so package indexes should be too,
+  # especially because since 2022 apt uses an unprivileged user `_apt` to
+  # retrieve everything.  Ensure it has permissions to read the packages
+  # when mounted as a volume inside the Docker container.
+  chmod a+rx "$WORKSPACE" "$WORKSPACE/packages" "$WORKSPACE/packages/$TARGET"
+  umask 022
   if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
     CREATEREPO="$(command -v createrepo createrepo_c | tail -n1)"
     if [[ -z "$CREATEREPO" ]]; then
@@ -179,6 +186,7 @@ if [[ -n "$test_packages" ]]; then
 
   COMMAND="/jenkins/package-testing/test-packages-$TARGET.sh"
   IMAGE="arvados/package-test:$TARGET"
+  umask "$orig_umask"
 else
   IMAGE="arvados/build:$TARGET"
   if [[ "$COMMAND" != "" ]]; then
