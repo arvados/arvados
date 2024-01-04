@@ -710,27 +710,31 @@ fpm_build_virtualenv_worker () {
   cd $WORKSPACE/$PKG_DIR
 
   rm -rf dist/*
-
-  # Get the latest setuptools.
-  #
-  # Note "pip3 install setuptools" fails on debian12 ("error:
-  # externally-managed-environment") even if that requirement is
-  # already satisfied, so we parse "pip3 list" output instead to check
-  # whether we need to do anything.
-  if [[ "$($pip list | grep -P -o '^setuptools\s+\K[0-9]+')" -ge 66 ]]; then
-    : # OK, already installed
-  elif ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools>=66'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools>=66'"
+  local venv_dir="dist/build/usr/share/$python/dist/$PYTHON_PKG"
+  echo "Creating virtualenv..."
+  if ! "$python" -m venv "$venv_dir"; then
+    printf "Error, unable to run\n  %s -m venv %s\n" "$python" "$venv_dir"
     exit 1
   fi
+
+  local venv_py="$venv_dir/bin/python3"
+  if ! "$venv_py" -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel; then
+    printf "Error, unable to upgrade pip, setuptools, and wheel with
+  %s -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel
+" "$venv_py"
+    exit 1
+  fi
+  cat <<EOF
+pip version:        $("$venv_py" -m pip --version)
+setuptools version: $("$venv_py" -c 'import setuptools; print(setuptools.__version__)')
+wheel version:      $("$venv_dir/bin/wheel" version)
+EOF
+
   # filter a useless warning (when building the cwltest package) from the stderr output
-  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
-    echo "Error, unable to run $python setup.py sdist for $PKG"
+  if ! "$venv_py" setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
+    echo "Error, unable to run $venv_py setup.py sdist for $PKG"
     exit 1
   fi
-
-  PACKAGE_PATH=`(cd dist; ls *tar.gz)`
 
   if [[ "arvados-python-client" == "$PKG" ]]; then
     PYSDK_PATH="-f $(pwd)/dist/"
@@ -750,67 +754,22 @@ fpm_build_virtualenv_worker () {
   fi
 
   # See if we actually need to build this package; does it exist already?
-  # We can't do this earlier than here, because we need PYTHON_VERSION...
-  # This isn't so bad; the sdist call above is pretty quick compared to
-  # the invocation of virtualenv and fpm, below.
+  # We can't do this earlier than here, because we need PYTHON_VERSION.
   if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" "$python" "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
     return 0
   fi
 
   echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
 
-  # Package the sdist in a virtualenv
-  echo "Creating virtualenv..."
-
-  cd dist
-
-  rm -rf build
-  rm -f $PYTHON_PKG*deb
-  echo "virtualenv version: `virtualenv --version`"
-  virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
-
-  if ! $virtualenv_command; then
-    echo "Error, unable to run"
-    echo "  $virtualenv_command"
+  local sdist_path="$(ls dist/*.tar.gz)"
+  if ! "$venv_py" -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH "$sdist_path"; then
+    printf "Error, unable to run
+  %s -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG %s %s
+" "$venv_py" "$PYSDK_PATH" "$sdist_path"
     exit 1
   fi
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
-    echo "Error, unable to upgrade pip with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
-    exit 1
-  fi
-  echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
-
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
-    exit 1
-  fi
-  echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"
-
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
-    echo "Error, unable to upgrade wheel with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
-    exit 1
-  fi
-  echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
-
-  if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
-  else
-    # centos7 needs these special tweaks to install python-arvados-fuse
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
-  fi
-
-  if [[ "$?" != "0" ]]; then
-    echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH"
-    exit 1
-  fi
-
-  cd build/usr/share/$python/dist/$PYTHON_PKG/
+  pushd "$venv_dir" >$STDOUT_IF_DEBUG
 
   # Replace the shebang lines in all python scripts, and handle the activate
   # scripts too. This is a functional replacement of the 237 line
@@ -832,10 +791,10 @@ fpm_build_virtualenv_worker () {
     fi
   done
 
-  cd - >$STDOUT_IF_DEBUG
+  popd >$STDOUT_IF_DEBUG
+  cd dist
 
-  find build -iname '*.pyc' -exec rm {} \;
-  find build -iname '*.pyo' -exec rm {} \;
+  find build -iname '*.py[co]' -delete
 
   # Finally, generate the package
   echo "Creating package..."
