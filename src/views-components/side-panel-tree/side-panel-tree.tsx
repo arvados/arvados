@@ -21,6 +21,7 @@ export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
     sidePanelProgress?: boolean;
     isCollapsed?: boolean
+    setCurrentSideWidth: (width: number) => void
 }
 
 type SidePanelTreeActionProps = Pick<TreePickerProps<ProjectResource | string>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;

@@ -24,6 +24,8 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         siteBanner: state.auth.config.clusterConfig.Workbench.SiteName,
         sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
         sidePanelIsCollapsed: state.sidePanel.collapsedState,
+        isTransitioning: state.detailsPanel.isTransitioning,
+        currentSideWidth: state.sidePanel.currentSideWidth
     };
 };
 

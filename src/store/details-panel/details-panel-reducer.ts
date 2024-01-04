@@ -8,12 +8,14 @@ export interface DetailsPanelState {
     resourceUuid: string;
     isOpened: boolean;
     tabNr: number;
+    isTransitioning: boolean;
 }
 
 const initialState = {
     resourceUuid: '',
     isOpened: false,
-    tabNr: 0
+    tabNr: 0,
+    isTransitioning: false
 };
 
 export const detailsPanelReducer = (state: DetailsPanelState = initialState, action: DetailsPanelAction) =>
@@ -22,4 +24,6 @@ export const detailsPanelReducer = (state: DetailsPanelState = initialState, act
         LOAD_DETAILS_PANEL: resourceUuid => ({ ...state, resourceUuid }),
         OPEN_DETAILS_PANEL: tabNr => ({ ...state, isOpened: true, tabNr }),
         TOGGLE_DETAILS_PANEL: () => ({ ...state, isOpened: !state.isOpened }),
+        START_TRANSITION: () => ({...state, isTransitioning: true}),
+        END_TRANSITION: () => ({...state, isTransitioning: false})
     });
