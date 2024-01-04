@@ -722,11 +722,6 @@ fpm_build_virtualenv_worker () {
 " "$venv_py"
     exit 1
   fi
-  cat <<EOF
-pip version:        $("$venv_py" -m pip --version)
-setuptools version: $("$venv_py" -c 'import setuptools; print(setuptools.__version__)')
-wheel version:      $("$venv_dir/bin/wheel" version)
-EOF
 
   # filter a useless warning (when building the cwltest package) from the stderr output
   if ! "$venv_py" setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
