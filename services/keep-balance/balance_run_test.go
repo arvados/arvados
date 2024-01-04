@@ -556,6 +556,10 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	c.Check(bal.stats.trashesDeferred, check.Not(check.Equals), 0)
 	c.Check(bal.stats.underrep.replicas, check.Not(check.Equals), 0)
 	c.Check(bal.stats.overrep.replicas, check.Not(check.Equals), 0)
+
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_trash_entries_deferred_count [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_pull_entries_deferred_count [1-9].*`)
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
@@ -593,6 +597,19 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
+
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="0"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="1"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="9"} 0\n.*`)
+
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_replicas{status="needed",storage_class="default"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_blocks{status="needed",storage_class="default"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="needed",storage_class="default"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="unneeded",storage_class="default"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="unachievable",storage_class="default"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="pulling",storage_class="default"} [1-9].*`)
+
+	c.Logf("%s", metrics)
 }
 
 func (s *runSuite) TestChunkPrefix(c *check.C) {
