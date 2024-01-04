@@ -10,11 +10,12 @@ from future.utils import viewitems
 from builtins import str
 
 import argparse
+import importlib.metadata
+import importlib.resources
 import logging
 import os
 import sys
 import re
-import pkg_resources  # part of setuptools
 
 from schema_salad.sourceline import SourceLine
 import schema_salad.validate as validate
@@ -57,15 +58,12 @@ arvados.log_handler.setFormatter(logging.Formatter(
 
 def versionstring():
     """Print version string of key packages for provenance and debugging."""
-
-    arvcwlpkg = pkg_resources.require("arvados-cwl-runner")
-    arvpkg = pkg_resources.require("arvados-python-client")
-    cwlpkg = pkg_resources.require("cwltool")
-
-    return "%s %s, %s %s, %s %s" % (sys.argv[0], arvcwlpkg[0].version,
-                                    "arvados-python-client", arvpkg[0].version,
-                                    "cwltool", cwlpkg[0].version)
-
+    return "{} {}, arvados-python-client {}, cwltool {}".format(
+        sys.argv[0],
+        importlib.metadata.version('arvados-cwl-runner'),
+        importlib.metadata.version('arvados-python-client'),
+        importlib.metadata.version('cwltool'),
+    )
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(
@@ -270,10 +268,8 @@ def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
     supported_versions = ["v1.0", "v1.1", "v1.2"]
     for s in supported_versions:
-        res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-%s.yml' % s)
-        customschema = res.read().decode('utf-8')
+        customschema = importlib.resources.read_text(__name__, f'arv-cwl-schema-{s}.yml', 'utf-8')
         use_custom_schema(s, "http://arvados.org/cwl", customschema)
-        res.close()
     cwltool.process.supportedProcessRequirements.extend([
         "http://arvados.org/cwl#RunInSingleContainer",
         "http://arvados.org/cwl#OutputDirType",
