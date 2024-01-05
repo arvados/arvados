@@ -20,6 +20,7 @@ import { CommandInputParameter, getIOParamId, WorkflowInputsData } from "models/
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
 import { OutputDetails, NodeInstanceType, NodeInfo } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export const processPanelActions = unionize({
     RESET_PROCESS_PANEL: ofType<{}>(),
@@ -53,10 +54,10 @@ export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, get
     dispatch<any>(loadSubprocessPanel());
 };
 
-export const navigateToOutput = (uuid: string) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+export const navigateToOutput = (resource: ContextMenuResource | ContainerRequestResource) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     try {
-        await services.collectionService.get(uuid);
-        dispatch<any>(navigateTo(uuid));
+        await services.collectionService.get(resource.outputUuid || '');
+        dispatch<any>(navigateTo(resource.outputUuid || ''));
     } catch {
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Output collection was trashed or deleted.", hideDuration: 4000, kind: SnackbarKind.WARNING }));
     }

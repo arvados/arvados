@@ -305,7 +305,7 @@ const applyCollapsedState = isCollapsed => {
 
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
     //panel size will not scale automatically on window resize, so we do it manually
-    window.addEventListener("resize", () => applyCollapsedState(props.sidePanelIsCollapsed));
+    if (props && props.sidePanelIsCollapsed) window.addEventListener("resize", () => applyCollapsedState(props.sidePanelIsCollapsed));
     applyCollapsedState(props.sidePanelIsCollapsed);
 
     return (

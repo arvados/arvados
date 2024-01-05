@@ -13,6 +13,8 @@ import { sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with
 import { ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
 import { matchCollectionRoute, matchSharedWithMeRoute } from "routes/routes";
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { addDisabledButton } from "store/multiselect/multiselect-actions";
 
 export const toggleProjectTrashed =
     (uuid: string, ownerUuid: string, isTrashed: boolean, isMulti: boolean) =>
@@ -20,11 +22,12 @@ export const toggleProjectTrashed =
             let errorMessage = "";
             let successMessage = "";
             let untrashedResource;
+            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
             try {
                 if (isTrashed) {
                     errorMessage = "Could not restore project from trash";
                     successMessage = "Restored project from trash";
-                    untrashedResource = await services.groupsService.untrash(uuid);
+                     untrashedResource = await services.groupsService.untrash(uuid);
                     dispatch<any>(isMulti || !untrashedResource ? navigateToTrash : navigateTo(uuid));
                     dispatch<any>(activateSidePanelTreeItem(uuid));
                 } else {
@@ -32,7 +35,7 @@ export const toggleProjectTrashed =
                     successMessage = "Added project to trash";
                     await services.groupsService.trash(uuid);
                     dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
-
+                    
                     const { location } = getState().router;
                     if (matchSharedWithMeRoute(location ? location.pathname : "")) {
                         dispatch(sharedWithMePanelActions.REQUEST_ITEMS());
@@ -42,7 +45,7 @@ export const toggleProjectTrashed =
                     }
                 }
                 if (untrashedResource) {
-                    dispatch(
+                        dispatch(
                         snackbarActions.OPEN_SNACKBAR({
                             message: successMessage,
                             hideDuration: 2000,
@@ -74,6 +77,7 @@ export const toggleCollectionTrashed =
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
             let errorMessage = "";
             let successMessage = "";
+            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
             try {
                 if (isTrashed) {
                     const { location } = getState().router;
