@@ -512,7 +512,7 @@ const getResourceDisplayName = (resource: Resource): string => {
     }
 };
 
-const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
+const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
     var displayName = getResourceDisplayName(item);
 
     return (
@@ -523,7 +523,9 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
             onClick={() => {
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
                     ? dispatch<any>(navigateToGroupDetails(item.uuid))
-                    : dispatch<any>(navigateTo(item.uuid));
+                    : item.kind === ResourceKind.USER 
+                    ? dispatch<any>(navigateToUserProfile(item.uuid))
+                    : dispatch<any>(navigateTo(item.uuid)); 
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}

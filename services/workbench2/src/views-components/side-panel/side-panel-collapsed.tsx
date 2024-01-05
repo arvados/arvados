@@ -119,9 +119,7 @@ const mapStateToProps = ({auth, properties }: RootState) => {
         return {
             user: auth.user,
             selectedPath: properties.breadcrumbs
-                ? properties.breadcrumbs[0].label !== 'Virtual Machines'
                 ? properties.breadcrumbs[0].label
-                : SidePanelCollapsedCategory.SHELL_ACCESS
                 : SidePanelCollapsedCategory.PROJECTS,
         }
 }

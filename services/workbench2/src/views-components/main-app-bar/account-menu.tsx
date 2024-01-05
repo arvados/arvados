@@ -51,7 +51,7 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 export const AccountMenuComponent =
     ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
         let accountMenuItems = <>
-            <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
+            <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Shell Access</MenuItem>
             <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
             <MenuItem onClick={() => {
                 dispatch<any>(getNewExtraToken(true));

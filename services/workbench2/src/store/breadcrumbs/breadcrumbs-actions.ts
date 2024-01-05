@@ -20,7 +20,7 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, WorkflowIcon } from 'components/icon/icon';
+import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, TerminalIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
 import { WorkflowResource } from 'models/workflow';
@@ -30,7 +30,8 @@ export const BREADCRUMBS = 'breadcrumbs';
 
 export const setBreadcrumbs = (breadcrumbs: any, currentItem?: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) => {
     if (currentItem) {
-        breadcrumbs.push(resourceToBreadcrumb(currentItem));
+        const currentCrumb = resourceToBreadcrumb(currentItem)
+        if (currentCrumb.label.length) breadcrumbs.push(currentCrumb);
     }
     return propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
 };
@@ -50,8 +51,8 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
     }
 }
 
-const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource): Breadcrumb => ({
-    label: resource.name,
+const resourceToBreadcrumb = (resource: (CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) & {fullName?: string}  ): Breadcrumb => ({
+    label: resource.name || resource.fullName || '',
     uuid: resource.uuid,
     icon: resourceToBreadcrumbIcon(resource),
 })
@@ -268,11 +269,16 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
         try {
             const user = getResource<UserResource>(userUuid)(getState().resources)
                 || await services.userService.get(userUuid, false);
-            const breadcrumbs: Breadcrumb[] = [
+            const currentCrumbs = getState().properties.breadcrumbs as Breadcrumb[]
+            const userProfileBreadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
-                { label: user ? user.username : userUuid, uuid: userUuid },
+                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
+            ];    
+            const breadcrumbsWithPreviousCrumbs: Breadcrumb[] = [
+                ...currentCrumbs,
+                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
             ];
-            dispatch(setBreadcrumbs(breadcrumbs));
+            dispatch(setBreadcrumbs(currentCrumbs.some((crumb) => crumb.label === SidePanelTreeCategory.GROUPS) ? breadcrumbsWithPreviousCrumbs : userProfileBreadcrumbs));
         } catch (e) {
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
@@ -300,16 +306,14 @@ export const setInstanceTypesBreadcrumbs = () =>
         ]));
     };
 
-export const VIRTUAL_MACHINES_USER_PANEL_LABEL = 'Virtual Machines';
-
 export const setVirtualMachinesBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
-            { label: VIRTUAL_MACHINES_USER_PANEL_LABEL, uuid: VIRTUAL_MACHINES_USER_PANEL_LABEL },
+            { label: SidePanelTreeCategory.SHELL_ACCESS, uuid: SidePanelTreeCategory.SHELL_ACCESS, icon: TerminalIcon },
         ]));
     };
 
-export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Virtual Machines Admin';
+export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Shell Access Admin';
 
 export const setVirtualMachinesAdminBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
