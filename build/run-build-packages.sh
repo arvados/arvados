@@ -112,19 +112,6 @@ PYTHON3_EXECUTABLE=python3
 PYTHON3_PKG_PREFIX=python3
 PYTHON3_PREFIX=/usr
 case "$TARGET" in
-    centos7)
-        FORMAT=rpm
-        # In CentOS 7, libcurl is linked against libnss. pycurl needs to know
-        # that in order to link to it correctly. This environment variable tells
-        # it that.
-        # libcurl is linked against openssl in RH8+ so this should not be
-        # necessary in later versions.
-        export PYCURL_SSL_LIBRARY=nss
-        ;;
-    ubuntu1804)
-        FORMAT=deb
-        PYTHON3_EXECUTABLE=python3.8
-        ;;
     centos*|rocky*)
         FORMAT=rpm
         ;;
