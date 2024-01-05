@@ -456,9 +456,10 @@ func (cache *DiskCache) quickReadAt(cachefilename string, dst []byte, offset int
 	cache.heldopenLock.Unlock()
 
 	if isnew {
-		// Open and flock the file, then call wg.Done() to
-		// unblock any other goroutines that are waiting in
-		// the !isnew case above.
+		// Open and flock the file, save the filehandle (or
+		// error) in heldopen.f, and release the write lock so
+		// other goroutines waiting at heldopen.RLock() below
+		// can use the shared filehandle (or shared error).
 		f, err := os.Open(cachefilename)
 		if err == nil {
 			err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH)
