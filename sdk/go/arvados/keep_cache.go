@@ -308,9 +308,11 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 			var writef *os.File
 			var err error
 			defer func() {
-				closeErr := writef.Close()
-				if err == nil {
-					err = closeErr
+				if writef != nil {
+					closeErr := writef.Close()
+					if err == nil {
+						err = closeErr
+					}
 				}
 				progress.cond.L.Lock()
 				progress.err = err
