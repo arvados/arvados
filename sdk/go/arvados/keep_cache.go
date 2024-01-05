@@ -175,7 +175,11 @@ func (cache *DiskCache) BlockWrite(ctx context.Context, opts BlockWriteOptions) 
 	pipereader, pipewriter := io.Pipe()
 	defer pipereader.Close()
 	go func() {
+		// Note this is a double-close (which is a no-op) in
+		// the happy path.
 		defer tmpfile.Close()
+		// Note this is a no-op in the happy path (the
+		// uniquely named tmpfilename will have been renamed).
 		defer os.Remove(tmpfilename)
 		defer pipewriter.Close()
 
