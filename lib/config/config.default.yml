@@ -254,9 +254,10 @@ Clusters:
       # the incoming request queue before returning 503.
       MaxQueueTimeForLockRequests: 2s
 
-      # Maximum number of active gateway tunnel connections. A slot is
-      # consumed by each running container, and by each incoming
-      # "container shell" connection. These do not count toward
+      # Maximum number of active gateway tunnel connections. One slot
+      # is consumed by each "container shell" connection. If using an
+      # HPC dispatcher (LSF or Slurm), one slot is consumed by each
+      # running container.  These do not count toward
       # MaxConcurrentRequests.
       MaxGatewayTunnels: 1000
 
