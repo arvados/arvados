@@ -329,17 +329,7 @@ class Collection < ArvadosModel
   end
 
   def sync_past_versions
-    updates = self.syncable_updates
-    Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_before_last_save, self.uuid_before_last_save).each do |c|
-      c.attributes = updates
-      # Use a different validation context to skip the 'past_versions_cannot_be_updated'
-      # validator, as on this case it is legal to update some fields.
-      leave_modified_by_user_alone do
-        leave_modified_at_alone do
-          c.save(context: :update_old_versions)
-        end
-      end
-    end
+    Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_before_last_save, self.uuid_before_last_save).update_all self.syncable_updates
   end
 
   def versionable_updates?(attrs)
