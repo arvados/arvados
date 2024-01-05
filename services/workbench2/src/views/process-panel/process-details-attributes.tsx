@@ -75,12 +75,12 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 };
 
 interface ProcessDetailsAttributesActionProps {
-    navigateToOutput: (uuid: string) => void;
+    navigateToOutput: (resource: ContainerRequestResource) => void;
     openWorkflow: (uuid: string) => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionProps => ({
-    navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
+    navigateToOutput: (resource) => dispatch<any>(navigateToOutput(resource)),
     openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
 });
 
@@ -156,7 +156,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 </Grid>
                 <Grid item xs={6}>
                     <DetailsAttribute label='Output collection' />
-                    {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
+                    {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest!)}>
                         <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
                     </span>}
                 </Grid>

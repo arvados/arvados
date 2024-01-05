@@ -41,6 +41,7 @@ import {
 } from 'views-components/data-explorer/renderers';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 import { DataColumns } from 'components/data-table/data-table';
 import { ContainerRequestState } from 'models/container-request';
 import { ProjectResource } from 'models/project';
@@ -280,6 +281,7 @@ export const SharedWithMePanel = withStyles(styles)(
             }
 
             handleRowClick = (uuid: string) => {
+                this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
         }

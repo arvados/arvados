@@ -144,7 +144,7 @@ export const DataTable = withStyles(styles)(
         };
 
         componentDidMount(): void {
-            this.initializeCheckedList(this.props.items);
+            this.initializeCheckedList([]);
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
@@ -155,6 +155,13 @@ export const DataTable = withStyles(styles)(
                 if (items.length) this.initializeCheckedList(items);
                 else setCheckedListOnStore({});
             }
+            if (prevProps.currentRoute !== this.props.currentRoute) {
+                this.initializeCheckedList([])
+            }
+        }
+
+        componentWillUnmount(): void {
+            this.initializeCheckedList([])
         }
 
         checkBoxColumn: DataColumn<any, any> = {
@@ -166,6 +173,7 @@ export const DataTable = withStyles(styles)(
                 const { classes, checkedList } = this.props;
                 return (
                     <input
+                        data-cy={`multiselect-checkbox-${uuid}`}
                         type="checkbox"
                         name={uuid}
                         className={classes.checkBox}
@@ -367,6 +375,7 @@ export const DataTable = withStyles(styles)(
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
             return (
                 <TableRow
+                    data-cy={'data-table-row'}
                     hover
                     key={extractKey ? extractKey(item) : index}
                     onClick={event => onRowClick && onRowClick(event, item)}

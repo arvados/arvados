@@ -9,6 +9,8 @@ import { checkPublicFavorite } from "./public-favorites-reducer";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { loadPublicFavoritesTree } from "store/side-panel-tree/side-panel-tree-actions";
 
 export const publicFavoritesActions = unionize({
@@ -22,6 +24,7 @@ export type PublicFavoritesAction = UnionOf<typeof publicFavoritesActions>;
 export const togglePublicFavorite = (resource: { uuid: string; name: string }) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         dispatch(progressIndicatorActions.START_WORKING("togglePublicFavorite"));
+        dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.ADD_TO_PUBLIC_FAVORITES))
         const uuidPrefix = getState().auth.config.uuidPrefix;
         const uuid = `${uuidPrefix}-j7d0g-publicfavorites`;
         dispatch(publicFavoritesActions.TOGGLE_PUBLIC_FAVORITE({ resourceUuid: resource.uuid }));
@@ -48,6 +51,7 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
+                dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.ADD_TO_PUBLIC_FAVORITES))
                 dispatch(progressIndicatorActions.STOP_WORKING("togglePublicFavorite"));
                 dispatch<any>(loadPublicFavoritesTree())
             })

@@ -22,13 +22,14 @@ interface Props {
     extractKey?: (item: any) => React.Key;
 }
 
-const mapStateToProps = (state: RootState, { id }: Props) => {
-    const progress = state.progressIndicator.find(p => p.id === id);
-    const dataExplorerState = getDataExplorer(state.dataExplorer, id);
-    const currentRoute = state.router.location ? state.router.location.pathname : "";
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {
+    const progress = progressIndicator.find(p => p.id === id);
+    const dataExplorerState = getDataExplorer(dataExplorer, id);
+    const currentRoute = router.location ? router.location.pathname : "";
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
-    const currentItemUuid = currentRoute === "/workflows" ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
-    const isMSToolbarVisible = state.multiselect.isVisible;
+    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
+    const currentItemUuid = currentRoute === "/workflows" ? properties.workflowPanelDetailsUuid : isDetailsResourceChecked ? detailsPanel.resourceUuid : multiselect.selectedUuid;
+    const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
         working: !!progress?.working,
@@ -37,11 +38,11 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
         paperKey: currentRoute,
         currentItemUuid,
         isMSToolbarVisible,
-        checkedList: state.multiselect.checkedList,
+        checkedList: multiselect.checkedList,
     };
 };
 
-const mapDispatchToProps = dispatchFn => {
+const mapDispatchToProps = () => {
     return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
         onSetColumns: (columns: DataColumns<any, any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));

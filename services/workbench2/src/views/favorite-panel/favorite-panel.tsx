@@ -38,6 +38,7 @@ import { GroupClass, GroupResource } from 'models/group';
 import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
 import { CollectionResource } from 'models/collection';
+import { toggleOne } from 'store/multiselect/multiselect-actions';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -171,6 +172,7 @@ export const FavoritePanel = withStyles(styles)(
             }
 
             handleRowClick = (uuid: string) => {
+                this.props.dispatch<any>(toggleOne(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
 

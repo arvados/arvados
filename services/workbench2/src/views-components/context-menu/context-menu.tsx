@@ -16,7 +16,6 @@ type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resou
 
 const mapStateToProps = (state: RootState): DataProps => {
     const { open, position, resource } = state.contextMenu;
-
     const filteredItems = getMenuActionSet(resource).map(group =>
         group.filter(item => {
             if (resource && item.filters) {
