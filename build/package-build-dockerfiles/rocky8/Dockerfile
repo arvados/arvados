@@ -6,7 +6,7 @@ ARG HOSTTYPE
 ARG BRANCH
 ARG GOVERSION
 
-FROM rockylinux:8.6-minimal as build_x86_64
+FROM rockylinux:8.8-minimal as build_x86_64
 ONBUILD ARG BRANCH
 # Install go
 ONBUILD ARG GOVERSION
@@ -18,7 +18,7 @@ ONBUILD RUN ln -s /usr/local/node-v12.22.12-linux-x64/bin/* /usr/local/bin/
 ONBUILD RUN npm install -g yarn
 ONBUILD RUN ln -sf /usr/local/node-v12.22.12-linux-x64/bin/* /usr/local/bin/
 
-FROM rockylinux:8.6-minimal as build_aarch64
+FROM rockylinux:8.8-minimal as build_aarch64
 ONBUILD ARG BRANCH
 # Install go
 ONBUILD ARG GOVERSION
@@ -55,10 +55,8 @@ RUN microdnf --assumeyes --enablerepo=devel install \
     patch \
     postgresql-devel \
     procps-ng \
-    python3 \
-    python3-devel \
-    python3-pip \
-    python3-virtualenv \
+    python39 \
+    python39-devel \
     readline-devel \
     rpm-build \
     ruby \
