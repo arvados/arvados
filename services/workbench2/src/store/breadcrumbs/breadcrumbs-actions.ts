@@ -306,12 +306,10 @@ export const setInstanceTypesBreadcrumbs = () =>
         ]));
     };
 
-export const VIRTUAL_MACHINES_USER_PANEL_LABEL = 'Shell Access';
-
 export const setVirtualMachinesBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
-            { label: VIRTUAL_MACHINES_USER_PANEL_LABEL, uuid: VIRTUAL_MACHINES_USER_PANEL_LABEL, icon: TerminalIcon },
+            { label: SidePanelTreeCategory.SHELL_ACCESS, uuid: SidePanelTreeCategory.SHELL_ACCESS, icon: TerminalIcon },
         ]));
     };
 

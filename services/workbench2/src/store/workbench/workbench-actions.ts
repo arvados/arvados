@@ -747,7 +747,7 @@ export const loadLinks = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => 
 export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
     dispatch(setVirtualMachinesBreadcrumbs());
-    dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({id: SidePanelTreeCategory.SHELL_ACCESS, pickerId: SIDE_PANEL_TREE} ))
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.SHELL_ACCESS));
 });
 
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
