@@ -60,10 +60,8 @@ export const SidePanel = withStyles(styles)(
             if (!splitPane) return;
 
             const observer = new ResizeObserver((entries)=>{
-                for (let i = 0; i < entries.length; i++) {
-                    const width = entries[i].contentRect.width
-                    props.setCurrentSideWidth(width)
-                }
+                const width = entries[0].contentRect.width
+                props.setCurrentSideWidth(width)
             })
 
             observer.observe(splitPane)

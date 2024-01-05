@@ -121,7 +121,7 @@ export const SidePanelButton = withStyles(styles)(
                 menuItems = React.createElement(React.Fragment, null,
                     pluginConfig.newButtonMenuList.reduce(reduceItemsFn, React.Children.toArray(menuItems.props.children)));
 
-                return <Toolbar>
+                return <Toolbar style={{paddingRight: 0}}>
                     <Grid container>
                         <Grid container item xs alignItems="center" justify="flex-start">
                             <Button data-cy="side-panel-button" variant="contained" disabled={!enabled}
