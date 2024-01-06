@@ -106,8 +106,19 @@ if [[ "$DEBUG" != 0 ]]; then
     DASHQ_UNLESS_DEBUG=
 fi
 
-
-PYTHON3_EXECUTABLE=python3
+# The next section defines a bunch of constants used to build distro packages
+# for our Python tools. Because those packages include C extensions, they need
+# to depend on and refer to a specific minor version of Python 3. The logic
+# below should Just Work for most cases, but you can override variables for a
+# specific distro if you need to to do something weird.
+# * PYTHON3_VERSION: The major+minor version of Python we build against
+#   (e.g., "3.11")
+# * PYTHON3_EXECUTABLE: The command to run that version of Python,
+#   either a full path or something in $PATH (e.g., "python3.11")
+# * PYTHON3_PACKAGE: The name of the distro package that provides
+#   $PYTHON3_EXECUTABLE. Our Python packages will all depend on this.
+# * PYTHON3_PKG_PREFIX: The prefix used in the names of all of our Python
+#   packages. This should match distro convention.
 PYTHON3_PKG_PREFIX=python3
 case "$TARGET" in
     centos*|rocky*)
@@ -121,13 +132,14 @@ case "$TARGET" in
         exit 1
         ;;
 esac
-: "${PYTHON3_VERSION:=$("$PYTHON3_EXECUTABLE" -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')}"
+: "${PYTHON3_VERSION:=$("${PYTHON3_EXECUTABLE:-python3}" -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')}"
+: "${PYTHON3_EXECUTABLE:=python$PYTHON3_VERSION}"
 case "$FORMAT" in
     deb)
         : "${PYTHON3_PACKAGE:=python$PYTHON3_VERSION}"
         ;;
     rpm)
-        : "${PYTHON3_PACKAGE:=$(rpm -qf "$(command -v "python$PYTHON3_VERSION")" --queryformat '%{NAME}\n')}"
+        : "${PYTHON3_PACKAGE:=$(rpm -qf "$(command -v "$PYTHON3_EXECUTABLE")" --queryformat '%{NAME}\n')}"
         ;;
 esac
 

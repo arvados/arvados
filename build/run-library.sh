@@ -694,9 +694,7 @@ fpm_build_virtualenv_worker () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
-  local python="python$PYTHON3_VERSION"
   PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
-
   if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
@@ -707,14 +705,14 @@ fpm_build_virtualenv_worker () {
   cd $WORKSPACE/$PKG_DIR
 
   rm -rf dist/*
-  local venv_dir="dist/build/usr/share/$python/dist/$PYTHON_PKG"
+  local venv_dir="dist/build/usr/share/python$PYTHON3_VERSION/dist/$PYTHON_PKG"
   echo "Creating virtualenv..."
-  if ! "$python" -m venv "$venv_dir"; then
-    printf "Error, unable to run\n  %s -m venv %s\n" "$python" "$venv_dir"
+  if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
+    printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
     exit 1
   fi
 
-  local venv_py="$venv_dir/bin/$python"
+  local venv_py="$venv_dir/bin/python$PYTHON3_VERSION"
   if ! "$venv_py" -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel; then
     printf "Error, unable to upgrade pip, setuptools, and wheel with
   %s -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel
@@ -747,7 +745,7 @@ fpm_build_virtualenv_worker () {
 
   # See if we actually need to build this package; does it exist already?
   # We can't do this earlier than here, because we need PYTHON_VERSION.
-  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" "$python" "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
+  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" python3 "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
     return 0
   fi
 
@@ -767,19 +765,16 @@ fpm_build_virtualenv_worker () {
   # scripts too. This is a functional replacement of the 237 line
   # virtualenv_tools.py script that doesn't work in python3 without serious
   # patching, minus the parts we don't need (modifying pyc files, etc).
+  local sys_venv_dir="${venv_dir#dist/build/}"
+  local sys_venv_py="$sys_venv_dir/bin/python$PYTHON3_VERSION"
   for binfile in `ls bin/`; do
-    if ! file --mime bin/$binfile |grep -q binary; then
-      # Not a binary file
-      if [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
-        # these 'activate' scripts need special treatment
-        sed -i "s/VIRTUAL_ENV=\".*\"/VIRTUAL_ENV=\"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
-        sed -i "s/VIRTUAL_ENV \".*\"/VIRTUAL_ENV \"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
-      else
-        if grep -q -E '^#!.*/bin/python\d?' bin/$binfile; then
-          # Replace shebang line
-          sed -i "1 s/^.*$/#!\/usr\/share\/$python\/dist\/$PYTHON_PKG\/bin\/python/" bin/$binfile
-        fi
-      fi
+    if file --mime "bin/$binfile" | grep -q binary; then
+      :  # Nothing to do for binary files
+    elif [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
+      sed -ri "s@VIRTUAL_ENV(=| )\".*\"@VIRTUAL_ENV\\1\"/$sys_venv_dir\"@" "bin/$binfile"
+    else
+      # Replace shebang line
+      sed -ri "1 s@^#\![^[:space:]]+/bin/python[0-9.]*@#\!/$sys_venv_py@" "bin/$binfile"
     fi
   done
 
@@ -873,7 +868,7 @@ fpm_build_virtualenv_worker () {
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("usr/share/python$PYTHON3_VERSION/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
@@ -886,13 +881,13 @@ fpm_build_virtualenv_worker () {
   # because those are the ones we rewrote the shebang line of, above.
   if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
-      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
+      COMMAND_ARR+=("$sys_venv_dir/bin/$binary=/usr/bin/")
     done
   fi
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/cwltool=/usr/bin/")
+  if [[ -e "$WORKSPACE/$PKG_DIR/$venv_dir/bin/cwltool" ]]; then
+    COMMAND_ARR+=("$sys_venv_dir/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")
