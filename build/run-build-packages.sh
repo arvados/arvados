@@ -106,11 +106,9 @@ if [[ "$DEBUG" != 0 ]]; then
     DASHQ_UNLESS_DEBUG=
 fi
 
-declare -a PYTHON3_BACKPORTS
 
 PYTHON3_EXECUTABLE=python3
 PYTHON3_PKG_PREFIX=python3
-PYTHON3_PREFIX=/usr
 case "$TARGET" in
     centos*|rocky*)
         FORMAT=rpm
@@ -126,11 +124,9 @@ esac
 : "${PYTHON3_VERSION:=$("$PYTHON3_EXECUTABLE" -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')}"
 case "$FORMAT" in
     deb)
-        : "${PYTHON3_INSTALL_LIB:=lib/python$PYTHON3_VERSION/dist-packages}"
         : "${PYTHON3_PACKAGE:=python$PYTHON3_VERSION}"
         ;;
     rpm)
-        : "${PYTHON3_INSTALL_LIB:=lib/python$PYTHON3_VERSION/site-packages}"
         : "${PYTHON3_PACKAGE:=$(rpm -qf "$(command -v "python$PYTHON3_VERSION")" --queryformat '%{NAME}\n')}"
         ;;
 esac
