@@ -63,6 +63,7 @@ type CssRules =
     | "noItemsInfo"
     | "checkBoxHead"
     | "checkBoxCell"
+    | "clickBox"
     | "checkBox"
     | "firstTableCell"
     | "tableCell"
@@ -94,10 +95,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     checkBoxHead: {
         padding: "0",
         display: "flex",
+        width: '2rem',
+        height: "1.5rem",
+        paddingLeft: '0.75rem',
+        marginRight: '0.2rem'
     },
     checkBoxCell: {
         padding: "0",
-        paddingLeft: "10px",
+    },
+    clickBox: {
+        width: '1.3rem',
+        height: "1.3rem",
+        paddingLeft: '0.2rem',
+        paddingTop: '0rem',
+        marginLeft: '0.5rem',
+        cursor: "pointer",
     },
     checkBox: {
         cursor: "pointer",
@@ -172,14 +184,24 @@ export const DataTable = withStyles(styles)(
             render: uuid => {
                 const { classes, checkedList } = this.props;
                 return (
-                    <input
-                        data-cy={`multiselect-checkbox-${uuid}`}
-                        type="checkbox"
-                        name={uuid}
-                        className={classes.checkBox}
-                        checked={checkedList && checkedList[uuid] ? checkedList[uuid] : false}
-                        onChange={() => this.handleSelectOne(uuid)}
-                        onDoubleClick={ev => ev.stopPropagation()}></input>
+                    <div
+                        className={classes.clickBox}
+                        onClick={(ev) => {
+                            ev.stopPropagation()
+                            this.handleSelectOne(uuid)
+                        }}
+                        onDoubleClick={(ev) => ev.stopPropagation()}
+                    >
+                        <input
+                            data-cy={`multiselect-checkbox-${uuid}`}
+                            type='checkbox'
+                            name={uuid}
+                            className={classes.checkBox}
+                            checked={checkedList && checkedList[uuid] ? checkedList[uuid] : false}
+                            onChange={() => this.handleSelectOne(uuid)}
+                            onDoubleClick={(ev) => ev.stopPropagation()}
+                        ></input>
+                    </div>
                 );
             },
         };
