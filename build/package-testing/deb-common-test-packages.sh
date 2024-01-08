@@ -47,13 +47,21 @@ fi
 dpkg-deb -x $debpkg .
 
 if [[ "$DEBUG" != "0" ]]; then
-  while read so && [ -n "$so" ]; do
-      echo
-      echo "== Packages dependencies for $so =="
-      ldd "$so" | awk '($3 ~ /^\//){print $3}' | sort -u | xargs -r dpkg -S | cut -d: -f1 | sort -u
-  done <<EOF
-$(find -name '*.so')
-EOF
+  find -type f -name '*.so' | while read so; do
+      printf "\n== Package dependencies for %s ==\n" "$so"
+      # dpkg is not fully aware of merged-/usr systems: ldd may list a library
+      # under /lib where dpkg thinks it's under /usr/lib, or vice versa.
+      # awk constructs globs that we pass to `dpkg --search` to be flexible
+      # about which version we find. This could potentially return multiple
+      # results, but doing better probably requires restructuring this whole
+      # code to find and report the best match across multiple dpkg queries.
+      ldd "$so" \
+          | awk 'BEGIN { ORS="\0" } ($3 ~ /^\//) {print "*" $3}' \
+          | sort --unique --zero-terminated \
+          | xargs -0 --no-run-if-empty dpkg --search \
+          | cut -d: -f1 \
+          | sort --unique
+  done
 fi
 
 exec /jenkins/package-testing/common-test-packages.sh "$1"

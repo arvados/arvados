@@ -593,8 +593,6 @@ handle_cwltest () {
   # signal to our build script that we want a cwltest executable installed in /usr/bin/
   mkdir cwltest/bin && touch cwltest/bin/cwltest
   fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
-  # The python->python3 metapackage
-  build_metapackage "cwltest" "cwltest"
   cd "$WORKSPACE"
   rm -rf "$WORKSPACE/cwltest"
 }
@@ -696,10 +694,7 @@ fpm_build_virtualenv_worker () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
-  local python=$PYTHON3_EXECUTABLE
-  pip=pip3
   PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
-
   if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
@@ -710,27 +705,26 @@ fpm_build_virtualenv_worker () {
   cd $WORKSPACE/$PKG_DIR
 
   rm -rf dist/*
-
-  # Get the latest setuptools.
-  #
-  # Note "pip3 install setuptools" fails on debian12 ("error:
-  # externally-managed-environment") even if that requirement is
-  # already satisfied, so we parse "pip3 list" output instead to check
-  # whether we need to do anything.
-  if [[ "$($pip list | grep -P -o '^setuptools\s+\K[0-9]+')" -ge 66 ]]; then
-    : # OK, already installed
-  elif ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools>=66'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools>=66'"
+  local venv_dir="dist/build/usr/share/python$PYTHON3_VERSION/dist/$PYTHON_PKG"
+  echo "Creating virtualenv..."
+  if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
+    printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
     exit 1
   fi
+
+  local venv_py="$venv_dir/bin/python$PYTHON3_VERSION"
+  if ! "$venv_py" -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel; then
+    printf "Error, unable to upgrade pip, setuptools, and wheel with
+  %s -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel
+" "$venv_py"
+    exit 1
+  fi
+
   # filter a useless warning (when building the cwltest package) from the stderr output
-  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
-    echo "Error, unable to run $python setup.py sdist for $PKG"
+  if ! "$venv_py" setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
+    echo "Error, unable to run $venv_py setup.py sdist for $PKG"
     exit 1
   fi
-
-  PACKAGE_PATH=`(cd dist; ls *tar.gz)`
 
   if [[ "arvados-python-client" == "$PKG" ]]; then
     PYSDK_PATH="-f $(pwd)/dist/"
@@ -750,92 +744,44 @@ fpm_build_virtualenv_worker () {
   fi
 
   # See if we actually need to build this package; does it exist already?
-  # We can't do this earlier than here, because we need PYTHON_VERSION...
-  # This isn't so bad; the sdist call above is pretty quick compared to
-  # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" "$python" "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
+  # We can't do this earlier than here, because we need PYTHON_VERSION.
+  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" python3 "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
     return 0
   fi
 
   echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
 
-  # Package the sdist in a virtualenv
-  echo "Creating virtualenv..."
-
-  cd dist
-
-  rm -rf build
-  rm -f $PYTHON_PKG*deb
-  echo "virtualenv version: `virtualenv --version`"
-  virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
-
-  if ! $virtualenv_command; then
-    echo "Error, unable to run"
-    echo "  $virtualenv_command"
+  local sdist_path="$(ls dist/*.tar.gz)"
+  if ! "$venv_py" -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH "$sdist_path"; then
+    printf "Error, unable to run
+  %s -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG %s %s
+" "$venv_py" "$PYSDK_PATH" "$sdist_path"
     exit 1
   fi
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
-    echo "Error, unable to upgrade pip with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
-    exit 1
-  fi
-  echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
-
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
-    exit 1
-  fi
-  echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"
-
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
-    echo "Error, unable to upgrade wheel with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
-    exit 1
-  fi
-  echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
-
-  if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
-  else
-    # centos7 needs these special tweaks to install python-arvados-fuse
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
-  fi
-
-  if [[ "$?" != "0" ]]; then
-    echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH"
-    exit 1
-  fi
-
-  cd build/usr/share/$python/dist/$PYTHON_PKG/
+  pushd "$venv_dir" >$STDOUT_IF_DEBUG
 
   # Replace the shebang lines in all python scripts, and handle the activate
   # scripts too. This is a functional replacement of the 237 line
   # virtualenv_tools.py script that doesn't work in python3 without serious
   # patching, minus the parts we don't need (modifying pyc files, etc).
+  local sys_venv_dir="${venv_dir#dist/build/}"
+  local sys_venv_py="$sys_venv_dir/bin/python$PYTHON3_VERSION"
   for binfile in `ls bin/`; do
-    if ! file --mime bin/$binfile |grep -q binary; then
-      # Not a binary file
-      if [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
-        # these 'activate' scripts need special treatment
-        sed -i "s/VIRTUAL_ENV=\".*\"/VIRTUAL_ENV=\"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
-        sed -i "s/VIRTUAL_ENV \".*\"/VIRTUAL_ENV \"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
-      else
-        if grep -q -E '^#!.*/bin/python\d?' bin/$binfile; then
-          # Replace shebang line
-          sed -i "1 s/^.*$/#!\/usr\/share\/$python\/dist\/$PYTHON_PKG\/bin\/python/" bin/$binfile
-        fi
-      fi
+    if file --mime "bin/$binfile" | grep -q binary; then
+      :  # Nothing to do for binary files
+    elif [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
+      sed -ri "s@VIRTUAL_ENV(=| )\".*\"@VIRTUAL_ENV\\1\"/$sys_venv_dir\"@" "bin/$binfile"
+    else
+      # Replace shebang line
+      sed -ri "1 s@^#\![^[:space:]]+/bin/python[0-9.]*@#\!/$sys_venv_py@" "bin/$binfile"
     fi
   done
 
-  cd - >$STDOUT_IF_DEBUG
+  popd >$STDOUT_IF_DEBUG
+  cd dist
 
-  find build -iname '*.pyc' -exec rm {} \;
-  find build -iname '*.pyo' -exec rm {} \;
+  find build -iname '*.py[co]' -delete
 
   # Finally, generate the package
   echo "Creating package..."
@@ -922,7 +868,7 @@ fpm_build_virtualenv_worker () {
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("usr/share/python$PYTHON3_VERSION/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
@@ -935,13 +881,13 @@ fpm_build_virtualenv_worker () {
   # because those are the ones we rewrote the shebang line of, above.
   if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
-      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
+      COMMAND_ARR+=("$sys_venv_dir/bin/$binary=/usr/bin/")
     done
   fi
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/cwltool=/usr/bin/")
+  if [[ -e "$WORKSPACE/$PKG_DIR/$venv_dir/bin/cwltool" ]]; then
+    COMMAND_ARR+=("$sys_venv_dir/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")
@@ -961,136 +907,6 @@ fpm_build_virtualenv_worker () {
     mv $WORKSPACE/$PKG_DIR/dist/*$package_format $WORKSPACE/packages/$TARGET/
   fi
   echo
-}
-
-# build_metapackage builds meta packages that help with the python to python 3 package migration
-build_metapackage() {
-  # base package name (e.g. arvados-python-client)
-  BASE_NAME=$1
-  shift
-  PKG_DIR=$1
-  shift
-
-  if [[ -n "$ONLY_BUILD" ]] && [[ "python-$BASE_NAME" != "$ONLY_BUILD" ]]; then
-    return 0
-  fi
-
-  if [[ "$ARVADOS_BUILDING_ITERATION" == "" ]]; then
-    ARVADOS_BUILDING_ITERATION=1
-  fi
-
-  if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    cd $WORKSPACE/$PKG_DIR
-    pwd
-    rm -rf dist/*
-
-    # Get the latest setuptools
-    if ! pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-      echo "Error, unable to upgrade setuptools with XY"
-      echo "  pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
-      exit 1
-    fi
-    # filter a useless warning (when building the cwltest package) from the stderr output
-    if ! python3 setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
-      echo "Error, unable to run python3 setup.py sdist for $PKG"
-      exit 1
-    fi
-
-    PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
-    UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
-
-  else
-    UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
-    PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
-  fi
-
-  cd - >$STDOUT_IF_DEBUG
-  if [[ -d "$BASE_NAME" ]]; then
-    rm -rf $BASE_NAME
-  fi
-  mkdir $BASE_NAME
-  cd $BASE_NAME
-
-  if [[ "$FORMAT" == "deb" ]]; then
-    cat >ns-control <<EOF
-Section: misc
-Priority: optional
-Standards-Version: 3.9.2
-
-Package: python-${BASE_NAME}
-Version: ${PYTHON_VERSION}-${ARVADOS_BUILDING_ITERATION}
-Maintainer: Arvados Package Maintainers <packaging@arvados.org>
-Depends: python3-${BASE_NAME}
-Description: metapackage to ease the upgrade to the Pyhon 3 version of ${BASE_NAME}
- This package is a metapackage that will automatically install the new version of
- ${BASE_NAME} which is Python 3 based and has a different name.
-EOF
-
-    /usr/bin/equivs-build ns-control
-    if [[ $? -ne 0 ]]; then
-      echo "Error running 'equivs-build ns-control', is the 'equivs' package installed?"
-      return 1
-    fi
-  elif [[ "$FORMAT" == "rpm" ]]; then
-    cat >meta.spec <<EOF
-Summary: metapackage to ease the upgrade to the Python 3 version of ${BASE_NAME}
-Name: python-${BASE_NAME}
-Version: ${PYTHON_VERSION}
-Release: ${ARVADOS_BUILDING_ITERATION}
-License: distributable
-
-Requires: python3-${BASE_NAME}
-
-%description
-This package is a metapackage that will automatically install the new version of
-python-${BASE_NAME} which is Python 3 based and has a different name.
-
-%prep
-
-%build
-
-%clean
-
-%install
-
-%post
-
-%files
-
-
-%changelog
-* Mon Apr 12 2021 Arvados Package Maintainers <packaging@arvados.org>
-- initial release
-EOF
-
-    /usr/bin/rpmbuild -ba meta.spec
-    if [[ $? -ne 0 ]]; then
-      echo "Error running 'rpmbuild -ba meta.spec', is the 'rpm-build' package installed?"
-      return 1
-    else
-      mv /root/rpmbuild/RPMS/x86_64/python-${BASE_NAME}*.${FORMAT} .
-      if [[ $? -ne 0 ]]; then
-        echo "Error finding rpm file output of 'rpmbuild -ba meta.spec'"
-        return 1
-      fi
-    fi
-  else
-    echo "Unknown format"
-    return 1
-  fi
-
-  if [[ $EXITCODE -ne 0 ]]; then
-    return 1
-  else
-    echo `ls *$FORMAT`
-    mv *$FORMAT $WORKSPACE/packages/$TARGET/
-  fi
-
-  # clean up
-  cd - >$STDOUT_IF_DEBUG
-  if [[ -d "$BASE_NAME" ]]; then
-    rm -rf $BASE_NAME
-  fi
 }
 
 # Build packages for everything
