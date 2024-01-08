@@ -598,17 +598,34 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
 
+	for _, cat := range []string{
+		"dedup_byte_ratio", "dedup_block_ratio", "collection_bytes",
+		"referenced_bytes", "referenced_blocks", "reference_count",
+		"pull_entries_sent_count",
+		"trash_entries_sent_count",
+	} {
+		c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+` [1-9].*`)
+	}
+
+	for _, cat := range []string{
+		"pull_entries_deferred_count",
+		"trash_entries_deferred_count",
+	} {
+		c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+` 0\n.*`)
+	}
+
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="0"} [1-9].*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="1"} [1-9].*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="9"} 0\n.*`)
 
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_replicas{status="needed",storage_class="default"} [1-9].*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_blocks{status="needed",storage_class="default"} [1-9].*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="needed",storage_class="default"} [1-9].*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="unneeded",storage_class="default"} [1-9].*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="unachievable",storage_class="default"} [1-9].*`)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_bytes{status="pulling",storage_class="default"} [1-9].*`)
-
+	for _, sub := range []string{"replicas", "blocks", "bytes"} {
+		for _, cat := range []string{"needed", "unneeded", "unachievable", "pulling"} {
+			c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_`+sub+`{status="`+cat+`",storage_class="default"} [1-9].*`)
+		}
+		for _, cat := range []string{"total", "garbage", "transient", "overreplicated", "underreplicated", "unachievable", "balanced", "desired", "lost"} {
+			c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+`_`+sub+` [0-9].*`)
+		}
+	}
 	c.Logf("%s", metrics)
 }
 
