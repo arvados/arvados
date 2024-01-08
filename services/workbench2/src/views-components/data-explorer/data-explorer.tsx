@@ -28,7 +28,9 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const currentRoute = router.location ? router.location.pathname : "";
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
     const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
-    const currentItemUuid = currentRoute === "/workflows" ? properties.workflowPanelDetailsUuid : isDetailsResourceChecked ? detailsPanel.resourceUuid : multiselect.selectedUuid;
+    const isOnlyOneSelected = Object.values(multiselect.checkedList).filter(x => x === true).length === 1;
+    const currentItemUuid =
+        currentRoute === '/workflows' ? properties.workflowPanelDetailsUuid : isDetailsResourceChecked && isOnlyOneSelected ? detailsPanel.resourceUuid : multiselect.selectedUuid;
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,

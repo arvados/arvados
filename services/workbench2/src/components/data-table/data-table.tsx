@@ -98,7 +98,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: '2rem',
         height: "1.5rem",
         paddingLeft: '0.8rem',
-        marginRight: '0.2rem'
+        marginRight: '0.5rem'
     },
     checkBoxCell: {
         padding: "0",
@@ -107,7 +107,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: '1.4rem',
         height: "1.4rem",
         paddingLeft: '0.25rem',
-        paddingTop: '0rem',
         marginLeft: '0.5rem',
         cursor: "pointer",
     },
