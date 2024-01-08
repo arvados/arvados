@@ -17,6 +17,12 @@ import (
 
 // keepViaHTTP implements arvados.KeepGateway by using a KeepClient to
 // do upstream requests to keepstore and keepproxy.
+//
+// This enables KeepClient to use KeepGateway wrappers (like
+// arvados.DiskCache) to wrap its own HTTP client back-end methods
+// (getOrHead, httpBlockWrite).
+//
+// See (*KeepClient)upstreamGateway() for the relevant glue.
 type keepViaHTTP struct {
 	*KeepClient
 }

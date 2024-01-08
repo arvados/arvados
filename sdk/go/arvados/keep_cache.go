@@ -34,6 +34,10 @@ type KeepGateway interface {
 }
 
 // DiskCache wraps KeepGateway, adding a disk-based cache layer.
+//
+// A DiskCache is automatically incorporated into the backend stack of
+// each keepclient.KeepClient. Most programs do not need to use
+// DiskCache directly.
 type DiskCache struct {
 	KeepGateway
 	Dir     string
