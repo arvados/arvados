@@ -102,6 +102,7 @@ type Cluster struct {
 		MaxConcurrentRailsRequests       int
 		MaxConcurrentRequests            int
 		MaxQueuedRequests                int
+		MaxGatewayTunnels                int
 		MaxQueueTimeForLockRequests      Duration
 		LogCreateRequestFraction         float64
 		MaxKeepBlobBuffers               int

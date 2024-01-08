@@ -70,6 +70,7 @@ var whitelist = map[string]bool{
 	"API.LogCreateRequestFraction":             false,
 	"API.MaxConcurrentRailsRequests":           false,
 	"API.MaxConcurrentRequests":                false,
+	"API.MaxGatewayTunnels":                    false,
 	"API.MaxIndexDatabaseRead":                 false,
 	"API.MaxItemsPerResponse":                  true,
 	"API.MaxKeepBlobBuffers":                   false,

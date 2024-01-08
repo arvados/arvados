@@ -28,6 +28,14 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
+h2(#2_7_2). v2.7.2 (2024-02-??)
+
+"previous: Upgrading to 2.7.1":#v2_7_1
+
+h3. Check MaxGatewayTunnels config
+
+If you use the LSF or Slurm dispatcher, ensure the new @API.MaxGatewayTunnels@ config entry is high enough to support the size of your cluster. See "LSF docs":{{site.baseurl}}/install/crunch2-lsf/install-dispatch.html#MaxGatewayTunnels or "Slurm docs":{{site.baseurl}}/install/crunch2-slurm/install-dispatch.html#MaxGatewayTunnels for details.
+
 h2(#2_7_1). v2.7.1 (2023-12-12)
 
 "previous: Upgrading to 2.7.0":#v2_7_0
