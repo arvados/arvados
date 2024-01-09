@@ -370,8 +370,11 @@ class ArvadosContainer(JobBase):
         ram_multiplier = [1]
 
         oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
-        if oom_retry_req and oom_retry_req.get('memoryRetryMultipler'):
-            ram_multiplier.append(oom_retry_req.get('memoryRetryMultipler'))
+        if oom_retry_req:
+            if oom_retry_req.get('memoryRetryMultiplier'):
+                ram_multiplier.append(oom_retry_req.get('memoryRetryMultiplier'))
+            elif oom_retry_req.get('memoryRetryMultipler'):
+                ram_multiplier.append(oom_retry_req.get('memoryRetryMultipler'))
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
