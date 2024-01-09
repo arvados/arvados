@@ -416,6 +416,14 @@ check() {
             exit 1
         ;;
     esac
+
+    user_watches=$(/usr/sbin/sysctl fs.inotify.max_user_watches)
+    [[ $user_watches =~ fs.inotify.max_user_watches\ =\ ([0-9]+) ]] && value=${BASH_REMATCH[1]}
+    if [[ "$value" -lt 256000 ]] ; then
+	echo "Not enough file system listeners ($value), to fix this run:"
+	echo "sudo sh -c 'echo fs.inotify.max_user_watches=524288 >> /etc/sysctl.d/local.conf && sysctl --system'"
+	exit 1
+    fi
 }
 
 subcmd="$1"
