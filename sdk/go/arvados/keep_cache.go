@@ -547,12 +547,12 @@ func (cache *DiskCache) BlockRead(ctx context.Context, opts BlockReadOptions) (i
 		if ctx.Err() != nil {
 			return offset, ctx.Err()
 		}
-		if int(blocksize)-offset > len(buf) {
+		if int(blocksize)-offset < len(buf) {
 			buf = buf[:int(blocksize)-offset]
 		}
 		nr, err := cache.ReadAt(opts.Locator, buf, offset)
 		if nr > 0 {
-			nw, err := opts.WriteTo.Write(buf)
+			nw, err := opts.WriteTo.Write(buf[:nr])
 			if err != nil {
 				return offset + nw, err
 			}
