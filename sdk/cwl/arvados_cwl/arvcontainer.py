@@ -375,6 +375,8 @@ class ArvadosContainer(JobBase):
                 ram_multiplier.append(oom_retry_req.get('memoryRetryMultiplier'))
             elif oom_retry_req.get('memoryRetryMultipler'):
                 ram_multiplier.append(oom_retry_req.get('memoryRetryMultipler'))
+            else:
+                ram_multiplier.append(2)
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
