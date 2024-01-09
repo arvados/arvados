@@ -9,21 +9,16 @@
 {%- set controller_nr = balancer_backends|length %}
 {%- set disabled_controller = "__DISABLED_CONTROLLER__" %}
 {%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
+{%- set max_tunnels = ("__CONTROLLER_MAX_GATEWAY_TUNNELS__" or 1000)|int %}
 
 ### NGINX
 nginx:
   ### SERVER
   server:
     config:
-      {%- if max_reqs != "" %}
-      worker_rlimit_nofile: {{ (max_reqs|int * 3 * controller_nr)|round|int }}
+      worker_rlimit_nofile: {{ (max_reqs * 3 + max_tunnels) * controller_nr }}
       events:
-        worker_connections: {{ (max_reqs|int * 3 * controller_nr)|round|int }}
-      {%- else %}
-      worker_rlimit_nofile: 4096
-      events:
-        worker_connections: 1024
-      {%- endif %}
+        worker_connections: {{ (max_reqs * 3 + max_tunnels) * controller_nr }}
       ### STREAMS
       http:
         'geo $external_client':
