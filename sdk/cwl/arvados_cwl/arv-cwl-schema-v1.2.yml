@@ -430,7 +430,7 @@ $graph:
         If the container failed on its first run, re-submit the
         container with the RAM request multiplied by this factor.
     - name: memoryRetryMultipler
-      type: float
+      type: float?
       doc: |
         Deprecated misspelling of "memoryRetryMultiplier".  Kept only
         for backwards compatability, don't use this.

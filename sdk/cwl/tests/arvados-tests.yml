@@ -487,7 +487,7 @@
 
 - job: oom/fakeoom.yml
   output: {}
-  tool: oom/19975-oom-misspelled.cwl
+  tool: oom/19975-oom-mispelled.cwl
   doc: "Test feature 19975 - retry on exit 137, old misspelled version"
 
 - job: oom/fakeoom2.yml
