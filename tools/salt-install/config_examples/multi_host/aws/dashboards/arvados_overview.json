@@ -1052,7 +1052,7 @@
           },
           "expr": "arvados_concurrent_requests{}",
           "interval": "",
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{instance}}_{{queue}}",
           "refId": "A"
         }
       ],
