@@ -6,22 +6,13 @@
 FROM debian:bullseye-slim
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
-ENV DEBIAN_FRONTEND noninteractive
-
-RUN apt-get update -q
-RUN apt-get install -yq --no-install-recommends gnupg
-
 ARG repo_version
-ADD apt.arvados.org-$repo_version.list /etc/apt/sources.list.d/
-
-ADD 1078ECD7.key /tmp/
-RUN cat /tmp/1078ECD7.key | apt-key add -
-
-ARG python_sdk_version
 ARG cwl_runner_version
 
+ADD apt.arvados.org-$repo_version.list /etc/apt/sources.list.d/
+ADD 1078ECD7.key /etc/apt/trusted.gpg.d/arvados.asc
 RUN apt-get update -q
-RUN apt-get install -yq --no-install-recommends python3-arvados-cwl-runner=$cwl_runner_version
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends python3-arvados-cwl-runner=$cwl_runner_version
 
 # use the Python executable from the python-arvados-cwl-runner package
 RUN PYTHON=`ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python|head -n1` && rm -f /usr/bin/python && ln -s $PYTHON /usr/bin/python
