@@ -13,7 +13,7 @@
 # (This dockerfile file must be located in the arvados/sdk/ directory because
 #  of the docker build root.)
 
-FROM debian:buster-slim
+FROM debian:bullseye
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
