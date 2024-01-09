@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Based on Debian
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
