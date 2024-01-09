@@ -34,6 +34,7 @@ import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 
 const WIDTH_TRANSITION = 150
 
@@ -134,12 +135,14 @@ export const MultiselectToolbar = connect(
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
-                        actions.map((action, i) =>{
+                        <IntersectionObserverWrapper>
+                        {actions.map((action, i) =>{
                             const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
                         return hasAlts ? (
                             <Tooltip
                                 className={classes.button}
                                 title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
+                                data-targetid={name}
                                 key={i}
                                 disableFocusListener
                             >
@@ -170,7 +173,8 @@ export const MultiselectToolbar = connect(
                                 </span>
                             </Tooltip>
                         );
-                        })
+                        })}
+                        </IntersectionObserverWrapper>
                     ) : (
                         <></>
                     )}
