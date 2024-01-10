@@ -95,5 +95,4 @@ docker build --no-cache \
        -t arvados/jobs:$cwl_runner_version \
        "$WORKSPACE/sdk"
 
-echo arv-keepdocker arvados/jobs $cwl_runner_version
 arv-keepdocker arvados/jobs $cwl_runner_version
