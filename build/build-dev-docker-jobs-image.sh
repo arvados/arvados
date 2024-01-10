@@ -28,13 +28,6 @@ if [[ -z "$WORKSPACE" ]] ; then
     echo "Using WORKSPACE $WORKSPACE"
 fi
 
-if [[ -z "$ARVADOS_API_HOST" || -z "$ARVADOS_API_TOKEN" ]] ; then
-    echo "$helpmessage"
-    echo
-    echo "Must set ARVADOS_API_HOST and ARVADOS_API_TOKEN"
-    exit 1
-fi
-
 cd "$WORKSPACE"
 
 py=python3
