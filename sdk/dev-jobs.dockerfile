@@ -9,47 +9,20 @@
 # version.
 #
 # Use arvados/build/build-dev-docker-jobs-image.sh to build.
-#
-# (This dockerfile file must be located in the arvados/sdk/ directory because
-#  of the docker build root.)
 
-FROM debian:bullseye
+FROM debian:bullseye-slim
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
-ENV DEBIAN_FRONTEND noninteractive
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -q && apt-get install -qy --no-install-recommends \
+    git python3-dev python3-venv libcurl4-gnutls-dev libgnutls28-dev nodejs build-essential
 
-ARG pythoncmd=python3
-ARG pipcmd=pip3
+ADD * /usr/local/src/
+RUN python3 -m venv /opt/arvados-py
+ENV PATH=/opt/arvados-py/bin:/usr/local/bin:/usr/bin:/bin
+RUN python3 -m pip install --no-cache-dir wheel
+# Run a-c-r afterward to check for a successful install.
+RUN python3 -m pip install --no-cache-dir /usr/local/src/* && arvados-cwl-runner --version
 
-RUN apt-get update -q && apt-get install -qy --no-install-recommends \
-    git ${pythoncmd}-pip ${pythoncmd}-virtualenv ${pythoncmd}-dev libcurl4-gnutls-dev \
-    libgnutls28-dev nodejs ${pythoncmd}-pyasn1-modules build-essential ${pythoncmd}-setuptools
-
-ARG sdk
-ARG runner
-ARG salad
-ARG cwlutils
-ARG cwltool
-
-ADD python/dist/$sdk /tmp/
-ADD cwl/salad_dist/$salad /tmp/
-ADD cwl/cwltool_dist/$cwltool /tmp/
-ADD cwl/cwlutils_dist/$cwlutils /tmp/
-ADD cwl/dist/$runner /tmp/
-
-RUN $pipcmd install wheel
-RUN cd /tmp/arvados-python-client-* && $pipcmd install .
-RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && $pipcmd install . ; fi
-RUN if test -d /tmp/cwl-utils-* ; then cd /tmp/cwl-utils-* && $pipcmd install . ; fi
-RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pipcmd install . ; fi
-RUN cd /tmp/arvados-cwl-runner-* && $pipcmd install .
-
-# Sometimes Python dependencies install successfully but don't
-# actually work.  So run arvados-cwl-runner here to catch fun
-# dependency errors like pkg_resources.DistributionNotFound.
-RUN arvados-cwl-runner --version
-
-# Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \
       --gecos 'Crunch execution user' crunch && \
     /usr/bin/install --directory --owner=crunch --group=crunch --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job
