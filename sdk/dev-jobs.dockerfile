@@ -16,10 +16,13 @@ MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -q && apt-get install -qy --no-install-recommends \
     git python3-dev python3-venv libcurl4-gnutls-dev libgnutls28-dev nodejs build-essential
 
-ADD * /usr/local/src/
 RUN python3 -m venv /opt/arvados-py
 ENV PATH=/opt/arvados-py/bin:/usr/local/bin:/usr/bin:/bin
 RUN python3 -m pip install --no-cache-dir setuptools wheel
+
+# The build script sets up our build context with all the Python source
+# packages to install.
+COPY . /usr/local/src/
 # Run a-c-r afterward to check for a successful install.
 RUN python3 -m pip install --no-cache-dir /usr/local/src/* && arvados-cwl-runner --version
 
