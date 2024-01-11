@@ -29,18 +29,13 @@ fi
 
 context_dir="$(mktemp --directory --tmpdir dev-jobs.XXXXXXXX)"
 trap 'rm -rf "$context_dir"' EXIT INT TERM QUIT
-ts_path="$context_dir/.timestamp"
 
 for src_dir in "$WORKSPACE/sdk/python" "${CWLTOOL:-}" "${CWL_UTILS:-}" "${SALAD:-}" "$WORKSPACE/sdk/cwl"; do
     if [[ -z "$src_dir" ]]; then
         continue
     fi
-    touch "$ts_path"
-    env -C "$src_dir" python3 setup.py sdist
-    find "$src_dir/dist/" -maxdepth 1 -type f -cnewer "$ts_path" -print0 \
-        | xargs -0 cp --target="$context_dir/"
+    env -C "$src_dir" python3 setup.py sdist --dist-dir="$context_dir"
 done
-rm "$ts_path"
 
 cd "$WORKSPACE"
 . build/run-library.sh
