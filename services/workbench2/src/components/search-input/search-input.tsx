@@ -76,7 +76,7 @@ export const SearchInput = (props: SearchInputProps) => {
     };
 
     return <form onSubmit={handleSubmit}>
-        <FormControl style={{ minWidth: '9rem'}}>
+        <FormControl style={{ width: '14rem'}}>
             <InputLabel>{label}</InputLabel>
             <Input
                 type="text"
