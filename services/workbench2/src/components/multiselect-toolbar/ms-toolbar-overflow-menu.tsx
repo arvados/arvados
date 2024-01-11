@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, ReactElement, JSXElementConstructor } from 'react';
 import { DoubleRightArrows } from 'components/icon/icon';
 import classnames from 'classnames';
 import { IconButton, Menu, MenuItem, StyleRulesCallback, Tooltip, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type CssRules = 'inOverflowMenu' | 'iconButton';
+type CssRules = 'inOverflowMenu' | 'openMenuButton' | 'menu';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inOverflowMenu: {
@@ -16,12 +16,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             backgroundColor: 'transparent',
         },
     },
-    iconButton: {
+    openMenuButton: {
         right: '10px',
     },
+    menu: {
+    }
 });
 
-export const OverflowMenu = withStyles(styles)((props: any & WithStyles<CssRules>) => {
+export type OverflowChild = ReactElement<{ className: string; }, string | JSXElementConstructor<any>>
+
+type OverflowMenuProps = {
+    children: OverflowChild[]
+    className: string
+    visibilityMap: {}
+}
+
+export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithStyles<CssRules>) => {
     const { children, className, visibilityMap, classes } = props;
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
@@ -45,7 +55,7 @@ export const OverflowMenu = withStyles(styles)((props: any & WithStyles<CssRules
                     aria-controls='long-menu'
                     aria-haspopup='true'
                     onClick={handleClick}
-                    className={classes.iconButton}
+                    className={classes.openMenuButton}
                 >
                         <DoubleRightArrows />
                 </IconButton>

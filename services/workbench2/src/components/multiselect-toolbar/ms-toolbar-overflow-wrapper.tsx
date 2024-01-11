@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect , ReactElement, JSXElementConstructor} from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import classnames from 'classnames'
 import { ArvadosTheme } from 'common/custom-theme';
-import { OverflowMenu } from './ms-toolbar-overflow-menu';
+import { OverflowMenu, OverflowChild} from './ms-toolbar-overflow-menu';
 
 type CssRules = 'visible' | 'inVisible' | 'toolbarWrapper' | 'overflowStyle';
 
@@ -35,7 +35,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export const IntersectionObserverWrapper = withStyles(styles)((props: any & WithStyles<CssRules>) => {
+type WrapperProps = {
+    children: OverflowChild[]
+}
+
+export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
   const { classes, children} = props
 
     const navRef = useRef<any>(null);
