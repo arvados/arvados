@@ -143,6 +143,7 @@ func (kc *KeepClient) Clone() *KeepClient {
 		RequestID:             kc.RequestID,
 		StorageClasses:        kc.StorageClasses,
 		DefaultStorageClasses: kc.DefaultStorageClasses,
+		DiskCacheSize:         kc.DiskCacheSize,
 		replicasPerService:    kc.replicasPerService,
 		foundNonDiskSvc:       kc.foundNonDiskSvc,
 		disableDiscovery:      kc.disableDiscovery,
