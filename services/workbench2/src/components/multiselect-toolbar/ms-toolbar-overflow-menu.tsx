@@ -8,7 +8,7 @@ import classnames from 'classnames';
 import { IconButton, Menu, MenuItem, StyleRulesCallback, Tooltip, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type CssRules = 'inOverflowMenu' | 'openMenuButton' | 'menu';
+type CssRules = 'inOverflowMenu' | 'openMenuButton' | 'menu' | 'menuItem' | 'menuElement';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inOverflowMenu: {
@@ -20,6 +20,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         right: '10px',
     },
     menu: {
+        marginLeft: 0,
+    },
+    menuItem: {
+        '&:hover': {
+            backgroundColor: 'white',
+        },
+        marginTop: 0,
+        paddingTop: 0,
+        paddingLeft: '0.85rem',
+        height: '2.5rem',
+    },
+    menuElement: {
+        width: '2rem',
     }
 });
 
@@ -66,6 +79,8 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                 keepMounted
                 open={open}
                 onClose={handleClose}
+                disableAutoFocusItem
+                className={classes.menu}
             >
                 {React.Children.map(children, (child: any) => {
                     if (!visibilityMap[child.props['data-targetid']]) {
@@ -73,9 +88,10 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                             <MenuItem
                                 key={child}
                                 onClick={handleClose}
+                                className={classes.menuItem}
                             >
                                 {React.cloneElement(child, {
-                                    className: classnames(child.className, classes.inOverflowMenu),
+                                    className: classnames(classes.menuElement),
                                 })}
                             </MenuItem>
                         );
