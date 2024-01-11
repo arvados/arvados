@@ -103,7 +103,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		if iter == 0 {
 			c.Check(logBuf.String(), check.Matches, `(?ms).*ChangeSet{Pulls:1.*`)
 			c.Check(logBuf.String(), check.Not(check.Matches), `(?ms).*ChangeSet{.*Trashes:[^0]}*`)
-		} else if strings.Contains(logBuf.String(), "ChangeSet{Pulls:0") {
+		} else if !strings.Contains(logBuf.String(), "ChangeSet{Pulls:1") {
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
