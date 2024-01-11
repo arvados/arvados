@@ -41,8 +41,16 @@ type ServerRequiredSuite struct{}
 // Standalone tests
 type StandaloneSuite struct{}
 
+var origHOME = os.Getenv("HOME")
+
 func (s *StandaloneSuite) SetUpTest(c *C) {
 	RefreshServiceDiscovery()
+	// Prevent cache state from leaking between test cases
+	os.Setenv("HOME", c.MkDir())
+}
+
+func (s *StandaloneSuite) TearDownTest(c *C) {
+	os.Setenv("HOME", origHOME)
 }
 
 func pythonDir() string {
@@ -56,10 +64,13 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
+	os.Setenv("HOME", origHOME)
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	RefreshServiceDiscovery()
+	// Prevent cache state from leaking between test cases
+	os.Setenv("HOME", c.MkDir())
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
@@ -715,15 +726,14 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *StandaloneSuite) TestGet404(c *C) {
@@ -740,11 +750,10 @@ func (s *StandaloneSuite) TestGet404(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
-	c.Check(r, Equals, nil)
+	c.Check(r, IsNil)
 }
 
 func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
@@ -759,14 +768,14 @@ func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e+0")
+	r, n, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e+0")
 	c.Check(err, IsNil)
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
 	c.Assert(r, NotNil)
 	buf, err := ioutil.ReadAll(r)
 	c.Check(err, IsNil)
 	c.Check(buf, DeepEquals, []byte{})
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *StandaloneSuite) TestGetFail(c *C) {
@@ -784,14 +793,14 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 	kc.Retries = 0
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 	errNotFound, _ := err.(*ErrNotFound)
-	c.Check(errNotFound, NotNil)
-	c.Check(strings.Contains(errNotFound.Error(), "HTTP 500"), Equals, true)
-	c.Check(errNotFound.Temporary(), Equals, true)
+	if c.Check(errNotFound, NotNil) {
+		c.Check(strings.Contains(errNotFound.Error(), "HTTP 500"), Equals, true)
+		c.Check(errNotFound.Temporary(), Equals, true)
+	}
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
-	c.Check(r, Equals, nil)
+	c.Check(r, IsNil)
 }
 
 func (s *StandaloneSuite) TestGetFailRetry(c *C) {
@@ -815,15 +824,14 @@ func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
 
-	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	content, err := ioutil.ReadAll(r)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 
 	c.Logf("%q", st.reqIDs)
 	c.Assert(len(st.reqIDs) > 1, Equals, true)
@@ -842,14 +850,14 @@ func (s *StandaloneSuite) TestGetNetError(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 	errNotFound, _ := err.(*ErrNotFound)
-	c.Check(errNotFound, NotNil)
-	c.Check(strings.Contains(errNotFound.Error(), "connection refused"), Equals, true)
-	c.Check(errNotFound.Temporary(), Equals, true)
+	if c.Check(errNotFound, NotNil) {
+		c.Check(strings.Contains(errNotFound.Error(), "connection refused"), Equals, true)
+		c.Check(errNotFound.Temporary(), Equals, true)
+	}
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
-	c.Check(r, Equals, nil)
+	c.Check(r, IsNil)
 }
 
 func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
@@ -882,15 +890,14 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 		nil,
 		map[string]string{uuid: ks.url})
 
-	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash + "+K@" + uuid)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ks.url, hash+"+K@"+uuid))
 
 	content, err := ioutil.ReadAll(r)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 // Use a service hint to fetch from a local disk service, overriding
@@ -905,8 +912,8 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 		c,
 		"error if used",
 		"abc123",
-		http.StatusOK,
-		[]byte("foo")})
+		http.StatusBadGateway,
+		nil})
 	defer ks0.listener.Close()
 	// This one should be used:
 	ks := RunFakeKeepServer(StubGetHandler{
@@ -935,15 +942,14 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 			uuid:                          ks.url},
 	)
 
-	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash + "+K@" + uuid)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ks.url, hash+"+K@"+uuid))
 
 	content, err := ioutil.ReadAll(r)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
@@ -974,15 +980,14 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 		nil,
 		map[string]string{uuid: ksGateway.url})
 
-	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
-	c.Assert(err, Equals, nil)
-	defer r.Close()
+	r, n, _, err := kc.Get(hash + "+K@" + uuid)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ksLocal.url, hash+"+K@"+uuid))
 
 	content, err := ioutil.ReadAll(r)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 type BarHandler struct {
@@ -1018,9 +1023,11 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	<-st.handled
 
 	r, n, _, err = kc.Get(foohash)
-	c.Check(err, IsNil)
-	_, err = ioutil.ReadAll(r)
-	c.Check(n, Equals, int64(3))
+	if err == nil {
+		buf, readerr := ioutil.ReadAll(r)
+		c.Logf("%q", buf)
+		err = readerr
+	}
 	c.Check(err, Equals, BadChecksum)
 
 	<-st.handled
@@ -1072,16 +1079,16 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	// an example that passes this Assert.)
 	c.Assert(NewRootSorter(localRoots, hash).GetSortedRoots()[0], Not(Equals), ks1[0].url)
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 
 	<-fh.handled
-	c.Check(err, Equals, nil)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks1[0].url, hash))
 
 	readContent, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(readContent, DeepEquals, content)
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
@@ -1106,14 +1113,16 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(replicas, Equals, 2)
 	}
 	{
-		r, n, url2, err := kc.Get(hash)
-		c.Check(err, Equals, nil)
+		r, n, _, err := kc.Get(hash)
+		c.Check(err, IsNil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
 		if c.Check(r, NotNil) {
-			readContent, err2 := ioutil.ReadAll(r)
-			c.Check(err2, Equals, nil)
-			c.Check(readContent, DeepEquals, content)
+			readContent, err := ioutil.ReadAll(r)
+			c.Check(err, IsNil)
+			if c.Check(len(readContent), Equals, len(content)) {
+				c.Check(readContent, DeepEquals, content)
+			}
+			c.Check(r.Close(), IsNil)
 		}
 	}
 	{

@@ -641,7 +641,7 @@ func getIndexWorker(c *C, useConfig bool) {
 	c.Check(rep, Equals, 2)
 	c.Check(err, Equals, nil)
 
-	reader, blocklen, _, err := kc.Get(hash)
+	reader, blocklen, _, err := kc.Get(hash2)
 	c.Assert(err, IsNil)
 	c.Check(blocklen, Equals, int64(10))
 	all, err := ioutil.ReadAll(reader)
@@ -783,10 +783,12 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 		},
 	} {
 		err := f()
-		c.Assert(err, NotNil)
+		c.Check(err, NotNil)
 		errNotFound, _ := err.(*keepclient.ErrNotFound)
-		c.Check(errNotFound.Temporary(), Equals, true)
-		c.Check(err, ErrorMatches, `.*HTTP 502.*`)
+		if c.Check(errNotFound, NotNil) {
+			c.Check(errNotFound.Temporary(), Equals, true)
+			c.Check(err, ErrorMatches, `.*HTTP 502.*`)
+		}
 	}
 }
 

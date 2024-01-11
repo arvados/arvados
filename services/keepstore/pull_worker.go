@@ -59,7 +59,7 @@ func (h *handler) pullItemAndProcess(pullRequest PullRequest) error {
 
 	signedLocator := SignLocator(h.Cluster, pullRequest.Locator, keepClient.Arvados.ApiToken, time.Now().Add(time.Minute))
 
-	reader, contentLen, _, err := GetContent(signedLocator, keepClient)
+	reader, _, _, err := GetContent(signedLocator, keepClient)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (h *handler) pullItemAndProcess(pullRequest PullRequest) error {
 		return err
 	}
 
-	if (readContent == nil) || (int64(len(readContent)) != contentLen) {
+	if readContent == nil {
 		return fmt.Errorf("Content not found for: %s", signedLocator)
 	}
 
