@@ -321,6 +321,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	}()
 
 	kc := h.makeKeepClient(req)
+	kc.DiskCacheSize = keepclient.DiskCacheDisabled
 
 	var pass bool
 	var tok string

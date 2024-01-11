@@ -47,6 +47,7 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 
 	s.keepClient, err = keepclient.MakeKeepClient(arv)
 	c.Assert(err, check.IsNil)
+	s.keepClient.DiskCacheSize = keepclient.DiskCacheDisabled
 	s.putReplicas(c, "foo", 4)
 	s.putReplicas(c, "bar", 1)
 }

@@ -142,6 +142,7 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool, kp *ar
 		arv.ApiToken = "bogus-token"
 	}
 	kc := keepclient.New(arv)
+	kc.DiskCacheSize = keepclient.DiskCacheDisabled
 	sr := map[string]string{
 		TestProxyUUID: "http://" + srv.Addr,
 	}

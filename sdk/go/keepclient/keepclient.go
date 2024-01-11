@@ -100,6 +100,8 @@ type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
+const DiskCacheDisabled = arvados.ByteSizeOrPercent(1)
+
 // KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
 	Arvados               *arvadosclient.ArvadosClient
@@ -112,8 +114,8 @@ type KeepClient struct {
 	Retries               int
 	RequestID             string
 	StorageClasses        []string
-	DefaultStorageClasses []string // Set by cluster's exported config
-	DiskCacheSize         arvados.ByteSizeOrPercent
+	DefaultStorageClasses []string                  // Set by cluster's exported config
+	DiskCacheSize         arvados.ByteSizeOrPercent // See also DiskCacheDisabled
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -385,10 +387,15 @@ func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
 		makedirs(home, userCacheDir)
 		cachedir = filepath.Join(home, userCacheDir)
 	}
-	kc.gatewayStack = &arvados.DiskCache{
-		Dir:         cachedir,
-		MaxSize:     kc.DiskCacheSize,
-		KeepGateway: &keepViaHTTP{kc},
+	backend := &keepViaHTTP{kc}
+	if kc.DiskCacheSize == DiskCacheDisabled {
+		kc.gatewayStack = backend
+	} else {
+		kc.gatewayStack = &arvados.DiskCache{
+			Dir:         cachedir,
+			MaxSize:     kc.DiskCacheSize,
+			KeepGateway: backend,
+		}
 	}
 	return kc.gatewayStack
 }
