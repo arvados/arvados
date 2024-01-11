@@ -530,7 +530,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 }
 
 func (s *StandaloneSuite) TestPutHR(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := &StubPutHandler{
 		c:                    c,
@@ -708,7 +708,7 @@ func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 }
 
 func (s *StandaloneSuite) TestGet(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetHandler{
 		c,
@@ -737,7 +737,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 }
 
 func (s *StandaloneSuite) TestGet404(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := Error404Handler{make(chan string, 1)}
 
@@ -779,7 +779,7 @@ func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetFail(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := FailHandler{make(chan string, 1)}
 
@@ -804,7 +804,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetFailRetry(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := &FailThenSucceedHandler{
 		handled: make(chan string, 1),
@@ -842,7 +842,7 @@ func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetNetError(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Check(err, IsNil)
@@ -862,7 +862,7 @@ func (s *StandaloneSuite) TestGetNetError(c *C) {
 
 func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	uuid := "zzzzz-bi6l4-123451234512345"
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	// This one shouldn't be used:
 	ks0 := RunFakeKeepServer(StubGetHandler{
@@ -904,7 +904,7 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 // rendezvous probe order.
 func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 	uuid := "zzzzz-bi6l4-zzzzzzzzzzzzzzz"
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	// This one shouldn't be used, although it appears first in
 	// rendezvous probe order:
@@ -954,7 +954,7 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 
 func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	uuid := "zzzzz-bi6l4-123451234512345"
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	ksLocal := RunFakeKeepServer(StubGetHandler{
 		c,
@@ -1000,8 +1000,8 @@ func (h BarHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (s *StandaloneSuite) TestChecksum(c *C) {
-	foohash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
-	barhash := fmt.Sprintf("%x", md5.Sum([]byte("bar")))
+	foohash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
+	barhash := fmt.Sprintf("%x+3", md5.Sum([]byte("bar")))
 
 	st := BarHandler{make(chan string, 1)}
 
@@ -1044,7 +1044,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 
 func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	content := []byte("waz")
-	hash := fmt.Sprintf("%x", md5.Sum(content))
+	hash := fmt.Sprintf("%x+3", md5.Sum(content))
 
 	fh := Error404Handler{
 		make(chan string, 4)}
@@ -1112,7 +1112,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	kc, err := MakeKeepClient(arv)
 	c.Assert(err, IsNil)
 
-	hash := fmt.Sprintf("%x", md5.Sum(content))
+	hash := fmt.Sprintf("%x+%d", md5.Sum(content), len(content))
 
 	{
 		n, _, err := kc.Ask(hash)
@@ -1122,7 +1122,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	{
 		hash2, replicas, err := kc.PutB(content)
 		c.Check(err, IsNil)
-		c.Check(hash2, Matches, fmt.Sprintf(`%s\+%d\b.*`, hash, len(content)))
+		c.Check(hash2, Matches, `\Q`+hash+`\E\b.*`)
 		c.Check(replicas, Equals, 2)
 	}
 	{
@@ -1142,7 +1142,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		n, url2, err := kc.Ask(hash)
 		c.Check(err, IsNil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
+		c.Check(url2, Matches, "http://localhost:\\d+/\\Q"+hash+"\\E")
 	}
 	{
 		loc, err := kc.LocalLocator(hash)
@@ -1358,14 +1358,14 @@ func (h StubGetIndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reque
 }
 
 func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
 		"/index",
 		"abc123",
 		http.StatusOK,
-		[]byte(hash + "+3 1443559274\n\n")}
+		[]byte(hash + " 1443559274\n\n")}
 
 	ks := RunFakeKeepServer(st)
 	defer ks.listener.Close()
@@ -1393,7 +1393,7 @@ func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
 		"/index/" + hash[0:3],
 		"abc123",
 		http.StatusOK,
-		[]byte(hash + "+3 1443559274\n\n")}
+		[]byte(hash + " 1443559274\n\n")}
 
 	ks := RunFakeKeepServer(st)
 	defer ks.listener.Close()
@@ -1436,7 +1436,7 @@ func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
