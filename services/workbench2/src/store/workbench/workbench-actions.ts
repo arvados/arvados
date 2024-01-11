@@ -101,7 +101,7 @@ import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processe
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
-import { multiselectActions } from "store/multiselect/multiselect-actions";
+import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
@@ -477,7 +477,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
                         link: collection.ownerUuid,
                     })
                 );
-                dispatch<any>(multiselectActions.deselectOne(copyToProject.uuid));
+                dispatch<any>(deselectOne(copyToProject.uuid));
             }
         } catch (e) {
             dispatch(
