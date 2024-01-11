@@ -75,11 +75,11 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	kc, err := MakeKeepClient(arv)
 
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 	c.Check(len(kc.LocalRoots()), Equals, 2)
 	for _, root := range kc.LocalRoots() {
 		c.Check(root, Matches, "http://localhost:\\d+")
@@ -140,7 +140,7 @@ func (sph *StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request
 		sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	}
 	body, err := ioutil.ReadAll(req.Body)
-	sph.c.Check(err, Equals, nil)
+	sph.c.Check(err, IsNil)
 	sph.c.Check(body, DeepEquals, []byte(sph.expectBody))
 	resp.Header().Set("X-Keep-Replicas-Stored", "1")
 	if sph.returnStorageClasses != "" {
@@ -629,7 +629,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	<-fh.handled
 
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(phash, Equals, "")
 	c.Check(replicas, Equals, 2)
 
@@ -1018,7 +1018,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	c.Check(err, IsNil)
 	_, err = ioutil.ReadAll(r)
 	c.Check(n, Equals, int64(3))
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 
 	<-st.handled
 
@@ -1097,7 +1097,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Check(err, IsNil)
 	kc, err := MakeKeepClient(arv)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	hash := fmt.Sprintf("%x", md5.Sum(content))
 
@@ -1127,13 +1127,13 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	}
 	{
 		n, url2, err := kc.Ask(hash)
-		c.Check(err, Equals, nil)
+		c.Check(err, IsNil)
 		c.Check(n, Equals, int64(len(content)))
 		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
 	}
 	{
 		loc, err := kc.LocalLocator(hash)
-		c.Check(err, Equals, nil)
+		c.Check(err, IsNil)
 		c.Assert(len(loc) >= 32, Equals, true)
 		c.Check(loc[:32], Equals, hash[:32])
 	}
@@ -1180,7 +1180,7 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
 
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(replicas, Equals, 2)
 }
 
@@ -1214,7 +1214,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 func (s *StandaloneSuite) TestMakeLocator(c *C) {
 	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+3+Aabcde@12345678")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, 3)
 	c.Check(l.Hints, DeepEquals, []string{"3", "Aabcde@12345678"})
@@ -1222,7 +1222,7 @@ func (s *StandaloneSuite) TestMakeLocator(c *C) {
 
 func (s *StandaloneSuite) TestMakeLocatorNoHints(c *C) {
 	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, -1)
 	c.Check(l.Hints, DeepEquals, []string{})
@@ -1230,7 +1230,7 @@ func (s *StandaloneSuite) TestMakeLocatorNoHints(c *C) {
 
 func (s *StandaloneSuite) TestMakeLocatorNoSizeHint(c *C) {
 	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+Aabcde@12345678")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, -1)
 	c.Check(l.Hints, DeepEquals, []string{"Aabcde@12345678"})
@@ -1239,7 +1239,7 @@ func (s *StandaloneSuite) TestMakeLocatorNoSizeHint(c *C) {
 func (s *StandaloneSuite) TestMakeLocatorPreservesUnrecognizedHints(c *C) {
 	str := "91f372a266fe2bf2823cb8ec7fda31ce+3+Unknown+Kzzzzz+Afoobar"
 	l, err := MakeLocator(str)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, 3)
 	c.Check(l.Hints, DeepEquals, []string{"3", "Unknown", "Kzzzzz", "Afoobar"})
@@ -1368,12 +1368,12 @@ func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
 	c.Check(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
 func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
@@ -1392,15 +1392,15 @@ func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, err := kc.GetIndex("x", hash[0:3])
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
 func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
@@ -1463,10 +1463,10 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, err := kc.GetIndex("x", "abcd")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
@@ -1504,14 +1504,14 @@ func (s *StandaloneSuite) TestPutBRetry(c *C) {
 
 	hash, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(hash, Equals, "")
 	c.Check(replicas, Equals, 2)
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	// Add an additional "testblobstore" keepservice
 	blobKeepService := make(arvadosclient.Dict)
@@ -1521,13 +1521,13 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 			"service_port": "21321",
 			"service_type": "testblobstore"}},
 		&blobKeepService)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
 	RefreshServiceDiscovery()
 
 	// Make a keepclient and ensure that the testblobstore is included
 	kc, err := MakeKeepClient(arv)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	// verify kc.LocalRoots
 	c.Check(len(kc.LocalRoots()), Equals, 3)

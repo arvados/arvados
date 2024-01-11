@@ -407,7 +407,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	{
 		reader, blocklen, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e")
-		c.Assert(err, Equals, nil)
+		c.Assert(err, IsNil)
 		all, err := ioutil.ReadAll(reader)
 		c.Check(err, IsNil)
 		c.Check(all, DeepEquals, []byte(""))
