@@ -46,8 +46,11 @@ func (kvh *keepViaHTTP) BlockRead(ctx context.Context, opts arvados.BlockReadOpt
 	if err != nil {
 		return 0, err
 	}
-	defer rdr.Close()
 	n, err := io.Copy(opts.WriteTo, rdr)
+	errClose := rdr.Close()
+	if err == nil {
+		err = errClose
+	}
 	return int(n), err
 }
 
