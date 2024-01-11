@@ -5,7 +5,7 @@
 import React, { useState, useMemo } from 'react';
 import { DoubleRightArrows } from 'components/icon/icon';
 import classnames from 'classnames';
-import { IconButton, Menu, MenuItem, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { IconButton, Menu, MenuItem, StyleRulesCallback, Tooltip, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'inOverflowMenu' | 'iconButton';
@@ -39,15 +39,17 @@ export const OverflowMenu = withStyles(styles)((props: any & WithStyles<CssRules
     }
     return (
         <div className={className}>
-            <IconButton
-                aria-label='more'
-                aria-controls='long-menu'
-                aria-haspopup='true'
-                onClick={handleClick}
-                className={classes.iconButton}
-            >
-                <DoubleRightArrows />
-            </IconButton>
+            <Tooltip title="More Options" disableFocusListener>
+                <IconButton
+                    aria-label='more'
+                    aria-controls='long-menu'
+                    aria-haspopup='true'
+                    onClick={handleClick}
+                    className={classes.iconButton}
+                >
+                        <DoubleRightArrows />
+                </IconButton>
+            </Tooltip>
             <Menu
                 id='long-menu'
                 anchorEl={anchorEl}
