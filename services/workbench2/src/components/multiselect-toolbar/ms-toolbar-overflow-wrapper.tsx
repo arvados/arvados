@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState, useRef, useEffect , ReactElement, JSXElementConstructor} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import classnames from 'classnames'
+import classnames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
-import { OverflowMenu, OverflowChild} from './ms-toolbar-overflow-menu';
+import { OverflowMenu, OverflowChild } from './ms-toolbar-overflow-menu';
 
 type CssRules = 'visible' | 'inVisible' | 'toolbarWrapper' | 'overflowStyle';
 
@@ -36,11 +36,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type WrapperProps = {
-    children: OverflowChild[]
-}
+    children: OverflowChild[];
+};
 
 export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
-  const { classes, children} = props
+    const { classes, children } = props;
 
     const navRef = useRef<any>(null);
     const [visibilityMap, setVisibilityMap] = useState({});
@@ -82,21 +82,24 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
     }, []);
 
     return (
-      <div className={classes.toolbarWrapper} ref={navRef}>
-      {React.Children.map(children, (child) => {
-        return React.cloneElement(child, {
-          className: classnames(child.props.className, {
-            [classes.visible]: !!visibilityMap[child.props["data-targetid"]],
-            [classes.inVisible]: !visibilityMap[child.props["data-targetid"]]
-          })
-        });
-      })}
-      <OverflowMenu
-        visibilityMap={visibilityMap}
-        className={classes.overflowStyle}
-      >
-        {children}
-      </OverflowMenu>
-    </div>
+        <div
+            className={classes.toolbarWrapper}
+            ref={navRef}
+        >
+            {React.Children.map(children, (child) => {
+                return React.cloneElement(child, {
+                    className: classnames(child.props.className, {
+                        [classes.visible]: !!visibilityMap[child.props['data-targetid']],
+                        [classes.inVisible]: !visibilityMap[child.props['data-targetid']],
+                    }),
+                });
+            })}
+            <OverflowMenu
+                visibilityMap={visibilityMap}
+                className={classes.overflowStyle}
+            >
+                {children}
+            </OverflowMenu>
+        </div>
     );
 });
