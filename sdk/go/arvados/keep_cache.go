@@ -358,11 +358,10 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 	for !progress.done && progress.size < len(dst)+offset {
 		progress.cond.Wait()
 	}
-	ok := progress.size >= len(dst)+offset
 	err = progress.err
 	progress.cond.L.Unlock()
 
-	if !ok && err != nil {
+	if err != nil {
 		// If the copy-from-backend goroutine encountered an
 		// error before copying enough bytes to satisfy our
 		// request, we return that error.
