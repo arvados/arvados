@@ -4,6 +4,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import classnames from 'classnames'
 import { ArvadosTheme } from 'common/custom-theme';
 import { OverflowMenu } from './ms-toolbar-overflow-menu';
 
@@ -24,12 +25,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         overflow: 'hidden',
         padding: '0 20px',
-        width: '75%',
+        width: '100%',
     },
     overflowStyle: {
         order: 99,
         position: 'sticky',
-        right: '0',
+        right: '-2rem',
         backgroundColor: 'white',
     },
 });
@@ -44,7 +45,6 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: any & With
         const updatedEntries = {};
         entries.forEach((entry) => {
             const targetid = entry.target.dataset.targetid;
-            console.log(entry, targetid);
             if (entry.isIntersecting) {
                 updatedEntries[targetid] = true;
             } else {
@@ -60,9 +60,10 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: any & With
     useEffect((): any => {
         const observer = new IntersectionObserver(handleIntersection, {
             root: navRef.current,
+            rootMargin: '0px -20px 0px 0px',
             threshold: 1,
         });
-        // We are addting observers to child elements of the container div
+        // We are adding observers to child elements of the container div
         // with ref as navRef. Notice that we are adding observers
         // only if we have the data attribute targetid on the child element
         if (navRef.current)
@@ -95,14 +96,3 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: any & With
     </div>
     );
 });
-
-const classnames = (...args: Array<string | Record<string, boolean>>) => {
-    return args.reduce((output: string, currentArg: any) => {
-        if (typeof currentArg === 'string') output += currentArg + ' ';
-        else
-            for (const entry in currentArg) {
-                if (currentArg[entry] === true) output += entry + ' ';
-            }
-        return output;
-    }, '');
-};
