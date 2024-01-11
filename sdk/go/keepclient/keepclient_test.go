@@ -1015,12 +1015,17 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, n, _, err := kc.Get(barhash)
-	c.Check(err, IsNil)
-	_, err = ioutil.ReadAll(r)
-	c.Check(n, Equals, int64(3))
-	c.Check(err, IsNil)
+	if c.Check(err, IsNil) {
+		_, err = ioutil.ReadAll(r)
+		c.Check(n, Equals, int64(3))
+		c.Check(err, IsNil)
+	}
 
-	<-st.handled
+	select {
+	case <-st.handled:
+	case <-time.After(time.Second):
+		c.Fatal("timed out")
+	}
 
 	r, n, _, err = kc.Get(foohash)
 	if err == nil {
@@ -1030,7 +1035,11 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	}
 	c.Check(err, Equals, BadChecksum)
 
-	<-st.handled
+	select {
+	case <-st.handled:
+	case <-time.After(time.Second):
+		c.Fatal("timed out")
+	}
 }
 
 func (s *StandaloneSuite) TestGetWithFailures(c *C) {
@@ -1081,7 +1090,11 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 
 	r, n, _, err := kc.Get(hash)
 
-	<-fh.handled
+	select {
+	case <-fh.handled:
+	case <-time.After(time.Second):
+		c.Fatal("timed out")
+	}
 	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
 
