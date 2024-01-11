@@ -37,10 +37,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type WrapperProps = {
     children: OverflowChild[];
+    length: number;
 };
 
 export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
-    const { classes, children } = props;
+    const { classes, children, length } = props;
 
     const navRef = useRef<any>(null);
     const [visibilityMap, setVisibilityMap] = useState({});
@@ -61,7 +62,9 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
             ...updatedEntries,
         }));
     };
+
     useEffect((): any => {
+        setVisibilityMap({})
         const observer = new IntersectionObserver(handleIntersection, {
             root: navRef.current,
             rootMargin: '0px -20px 0px 0px',
@@ -79,7 +82,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         return () => {
             observer.disconnect();
         };
-    }, []);
+    }, [length]);
 
     return (
         <div

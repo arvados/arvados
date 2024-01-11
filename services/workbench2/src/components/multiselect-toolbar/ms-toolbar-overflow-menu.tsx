@@ -28,7 +28,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
         marginTop: 0,
         paddingTop: 0,
-        paddingLeft: '0.85rem',
+        paddingLeft: '1rem',
         height: '2.5rem',
     },
     menuElement: {
