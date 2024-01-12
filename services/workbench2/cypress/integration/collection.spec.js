@@ -32,7 +32,7 @@ describe("Collection panel tests", function () {
         cy.clearLocalStorage();
     });
 
-    it('shows the appropriate buttons in the toolbar', () => {
+    it.only('shows the appropriate buttons in the toolbar', () => {
 
         const msButtonTooltips = [
             'API Details',
@@ -63,6 +63,8 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
             cy.waitForDom()
             cy.get('[data-cy=data-table-row]').contains(name).should('exist').parent().parent().parent().parent().click()
+            const buttons = cy.get('[data-cy=multiselect-button]')
+            console.log(buttons) 
             cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length + 1)
             for (let i = 0; i < msButtonTooltips.length; i++) {
                 cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
