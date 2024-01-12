@@ -97,16 +97,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         display: "flex",
         width: '2rem',
         height: "1.5rem",
-        paddingLeft: '0.8rem',
+        paddingLeft: '0.9rem',
         marginRight: '0.5rem'
     },
     checkBoxCell: {
         padding: "0",
     },
     clickBox: {
-        width: '1.4rem',
-        height: "1.4rem",
-        paddingLeft: '0.25rem',
+        display: 'flex',
+        width: '1.6rem',
+        height: "1.5rem",
+        paddingLeft: '0.35rem',
+        paddingTop: '0.1rem',
         marginLeft: '0.5rem',
         cursor: "pointer",
     },
