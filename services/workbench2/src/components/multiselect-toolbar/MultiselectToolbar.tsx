@@ -122,7 +122,7 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={isTransitioning ? classes.transition: classes.root}
-                    style={{ width: `${(actions.length * 2.5) + 6}rem` }}
+                    style={{ width: `${(actions.length * 2.5) + 8}rem` }}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
