@@ -9,12 +9,10 @@ set -eux -o pipefail
 . /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/arvados/sdk/ruby
-run_bundler
-bundler_binstubs
+run_bundler --binstubs=binstubs
 
 cd /usr/src/arvados/sdk/cli
-run_bundler
-bundler_binstubs
+run_bundler --binstubs=binstubs
 
 python_srcdir="$(mktemp --directory --tmpdir pysrc.XXXXXXXX)"
 trap 'rm -rf "$python_srcdir"' EXIT INT TERM QUIT
