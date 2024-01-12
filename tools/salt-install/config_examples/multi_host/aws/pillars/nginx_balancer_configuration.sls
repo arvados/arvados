@@ -16,9 +16,9 @@ nginx:
   ### SERVER
   server:
     config:
-      worker_rlimit_nofile: {{ (max_reqs * 3 + max_tunnels) * controller_nr }}
+      worker_rlimit_nofile: {{ (max_reqs + max_tunnels) * 5 * controller_nr }}
       events:
-        worker_connections: {{ (max_reqs * 3 + max_tunnels) * controller_nr }}
+        worker_connections: {{ (max_reqs + max_tunnels) * 5 * controller_nr }}
       ### STREAMS
       http:
         'geo $external_client':

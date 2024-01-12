@@ -55,9 +55,10 @@ nginx:
       # controller, then potentially 1 from controller back to
       # passenger).  Each connection consumes a file descriptor.
       # That's how we get these calculations
-      worker_rlimit_nofile: {{ max_reqs * 3 + 1 + max_tunnels }}
+      # (we're multiplying by 5 instead to be on the safe side)
+      worker_rlimit_nofile: {{ (max_reqs + max_tunnels) * 5 + 1 }}
       events:
-        worker_connections: {{ max_reqs * 3 + 1 + max_tunnels }}
+        worker_connections: {{ (max_reqs + max_tunnels) * 5 + 1 }}
 
   ### SITES
   servers:
