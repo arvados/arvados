@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core/styles";
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
@@ -150,6 +150,8 @@ interface WorkbenchDataProps {
     isNotLinking: boolean;
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
+    isTransitioning: boolean;
+    currentSideWidth: number;
 }
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
@@ -292,38 +294,55 @@ routes = React.createElement(
     pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children))
 );
 
-const applyCollapsedState = isCollapsed => {
-    const rightPanel: Element = document.getElementsByClassName("layout-pane")[1];
-    const totalWidth: number = document.getElementsByClassName("splitter-layout")[0]?.clientWidth;
-    const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
-    if (rightPanel) {
-        rightPanel.setAttribute("style", `width: ${isCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSplitterInitialSize()}%`}`);
-    }
-    const splitter = document.getElementsByClassName("layout-splitter")[0];
-    isCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
-};
-
 export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
-    //panel size will not scale automatically on window resize, so we do it manually
-    if (props && props.sidePanelIsCollapsed) window.addEventListener("resize", () => applyCollapsedState(props.sidePanelIsCollapsed));
-    applyCollapsedState(props.sidePanelIsCollapsed);
+const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActive, sessionIdleTimeout, currentSideWidth } = props
+
+    const applyCollapsedState = (savedWidthInPx) => {
+        const rightPanel: Element = document.getElementsByClassName("layout-pane")[1];
+        const totalWidth: number = document.getElementsByClassName("splitter-layout")[0]?.clientWidth;
+        const savedWidthInPercent = (savedWidthInPx / totalWidth) * 100
+        const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
+
+        if(isTransitioning && !!rightPanel) {
+            rightPanel.setAttribute('style', `width: ${sidePanelIsCollapsed ? `calc(${savedWidthInPercent}% - 1rem)` : `${getSplitterInitialSize()}%`};`)
+        }
+
+        if (rightPanel) {
+            rightPanel.setAttribute("style", `width: ${sidePanelIsCollapsed ? `calc(${rightPanelExpandedWidth}% - 1rem)` : `${getSplitterInitialSize()}%`};`);
+        }
+        const splitter = document.getElementsByClassName("layout-splitter")[0];
+        sidePanelIsCollapsed ? splitter?.classList.add("layout-splitter-disabled") : splitter?.classList.remove("layout-splitter-disabled");
+    };
+
+    const [savedWidth, setSavedWidth] = useState<number>(0)
+
+    useEffect(()=>{
+        if (isTransitioning) setSavedWidth(currentSideWidth)
+    }, [isTransitioning, currentSideWidth])
+
+    useEffect(()=>{
+        if (isTransitioning) applyCollapsedState(savedWidth);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isTransitioning, savedWidth])
+
+    applyCollapsedState(savedWidth);
 
     return (
         <Grid
             container
             item
             xs
-            className={props.classes.root}
+            className={classes.root}
         >
-            {props.sessionIdleTimeout > 0 && <AutoLogout />}
+            {sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid
                 container
                 item
                 xs
-                className={props.classes.container}
+                className={classes.container}
             >
                 <SplitterLayout
-                    customClassName={props.classes.splitter}
+                    customClassName={classes.splitter}
                     percentage={true}
                     primaryIndex={0}
                     primaryMinSize={10}
@@ -331,14 +350,14 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                     secondaryMinSize={40}
                     onSecondaryPaneSizeChange={saveSplitterSize}
                 >
-                    {props.isUserActive && props.isNotLinking && (
+                    {isUserActive && isNotLinking && (
                         <Grid
                             container
                             item
                             xs
                             component="aside"
                             direction="column"
-                            className={props.classes.asidePanel}
+                            className={classes.asidePanel}
                         >
                             <SidePanel />
                         </Grid>
@@ -349,18 +368,18 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
                         xs
                         component="main"
                         direction="column"
-                        className={props.classes.contentWrapper}
+                        className={classes.contentWrapper}
                     >
                         <Grid
                             item
                             xs
                         >
-                            {props.isNotLinking && <MainContentBar />}
+                            {isNotLinking && <MainContentBar />}
                         </Grid>
                         <Grid
                             item
                             xs
-                            className={props.classes.content}
+                            className={classes.content}
                         >
                             <Switch>
                                 {routes.props.children}
