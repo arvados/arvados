@@ -283,7 +283,7 @@ describe('Registered workflow panel tests', function() {
                 cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
                 cy.waitForDom()
                 cy.get('[data-cy=data-table-row]').contains(workflowResource.name).should('exist').parent().parent().parent().click()
-                cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
+                cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length + 1)
                 for (let i = 0; i < msButtonTooltips.length; i++) {
                         cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
                         cy.get('body').contains(msButtonTooltips[i]).should('exist')
