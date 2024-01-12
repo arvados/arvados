@@ -4,7 +4,7 @@
 
 const path = require("path");
 
-describe("Collection panel tests", function () {
+describe.only("Collection panel tests", function () {
     let activeUser;
     let adminUser;
     let downloadsFolder;
@@ -49,6 +49,7 @@ describe("Collection panel tests", function () {
         ];
 
         cy.loginAs(activeUser);
+        cy.viewport(1450, 850)
         const name = `Test collection ${Math.floor(Math.random() * 999999)}`;
         cy.get("[data-cy=side-panel-button]").click({force: true});
         cy.get("[data-cy=side-panel-new-collection]").click();
@@ -63,8 +64,6 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
             cy.waitForDom()
             cy.get('[data-cy=data-table-row]').contains(name).should('exist').parent().parent().parent().parent().click()
-            const buttons = cy.get('[data-cy=multiselect-button]')
-            console.log(buttons) 
             cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length + 1)
             for (let i = 0; i < msButtonTooltips.length; i++) {
                 cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
