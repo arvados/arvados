@@ -8,12 +8,6 @@ set -eux -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-mkdir -p ~/.pip /var/lib/pip
-cat > ~/.pip/pip.conf <<EOF
-[global]
-download_cache = /var/lib/pip
-EOF
-
 cd /usr/src/arvados/sdk/ruby
 run_bundler
 bundler_binstubs
@@ -22,18 +16,10 @@ cd /usr/src/arvados/sdk/cli
 run_bundler
 bundler_binstubs
 
-export PYCMD=python3
-
-pip_install wheel
-
-cd /usr/src/arvados/sdk/python
-$PYCMD setup.py sdist
-pip_install $(ls dist/arvados-python-client-*.tar.gz | tail -n1)
-
-cd /usr/src/arvados/services/fuse
-$PYCMD setup.py sdist
-pip_install $(ls dist/arvados_fuse-*.tar.gz | tail -n1)
-
-cd /usr/src/arvados/sdk/cwl
-$PYCMD setup.py sdist
-pip_install $(ls dist/arvados-cwl-runner-*.tar.gz | tail -n1)
+python_srcdir="$(mktemp --directory --tmpdir pysrc.XXXXXXXX)"
+trap 'rm -rf "$python_srcdir"' EXIT INT TERM QUIT
+for subdir in sdk/python services/fuse sdk/cwl; do
+    env -C "/usr/src/arvados/$subdir" \
+        /opt/arvados-py/bin/python3 setup.py sdist --dist-dir="$python_srcdir"
+done
+/opt/arvados-py/bin/pip install "$python_srcdir"/*

@@ -18,13 +18,10 @@ cd /usr/src/arvados/doc
 run_bundler --without=development
 
 # Generating the Python and R docs is expensive, so for development if the file
-# "no-sdk" exists then skip the Python and R stuff.
+# "no-sdk" exists then skip installing R stuff.
 if [[ ! -f /usr/src/arvados/doc/no-sdk ]] ; then
     cd /usr/src/arvados/sdk/R
     R --quiet --vanilla --file=install_deps.R
-
-    export PYCMD=python3
-    pip_install pdoc
 fi
 
 if test "$1" = "--only-deps" ; then
