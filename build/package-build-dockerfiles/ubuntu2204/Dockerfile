@@ -44,7 +44,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 SHELL ["/bin/bash", "-c"]
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev shared-mime-info equivs
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev shared-mime-info equivs
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
