@@ -28,6 +28,7 @@ describe("Collection panel tests", function () {
     });
 
     beforeEach(function () {
+        cy.viewport(1920, 1080)
         cy.clearCookies();
         cy.clearLocalStorage();
     });
