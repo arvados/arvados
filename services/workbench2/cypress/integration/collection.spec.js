@@ -4,7 +4,7 @@
 
 const path = require("path");
 
-describe.only("Collection panel tests", function () {
+describe("Collection panel tests", function () {
     let activeUser;
     let adminUser;
     let downloadsFolder;
@@ -32,7 +32,7 @@ describe.only("Collection panel tests", function () {
         cy.clearLocalStorage();
     });
 
-    it.only('shows the appropriate buttons in the toolbar', () => {
+    it('shows the appropriate buttons in the toolbar', () => {
 
         const msButtonTooltips = [
             'API Details',
@@ -49,7 +49,6 @@ describe.only("Collection panel tests", function () {
         ];
 
         cy.loginAs(activeUser);
-        cy.viewport(1450, 850)
         const name = `Test collection ${Math.floor(Math.random() * 999999)}`;
         cy.get("[data-cy=side-panel-button]").click({force: true});
         cy.get("[data-cy=side-panel-new-collection]").click();
@@ -64,7 +63,7 @@ describe.only("Collection panel tests", function () {
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
             cy.waitForDom()
             cy.get('[data-cy=data-table-row]').contains(name).should('exist').parent().parent().parent().parent().click()
-            cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length + 1)
+            cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
             for (let i = 0; i < msButtonTooltips.length; i++) {
                 cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
                 cy.get('body').contains(msButtonTooltips[i]).should('exist')

@@ -123,7 +123,7 @@ describe("Process tests", function () {
                 cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
                 cy.waitForDom()
                 cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parent().parent().parent().parent().click()
-                cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length + 1)
+                cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
                 for (let i = 0; i < msButtonTooltips.length; i++) {
                     cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
                     cy.get('body').contains(msButtonTooltips[i]).should('exist')
