@@ -556,6 +556,10 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	c.Check(bal.stats.trashesDeferred, check.Not(check.Equals), 0)
 	c.Check(bal.stats.underrep.replicas, check.Not(check.Equals), 0)
 	c.Check(bal.stats.overrep.replicas, check.Not(check.Equals), 0)
+
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_trash_entries_deferred_count [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_pull_entries_deferred_count [1-9].*`)
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
@@ -593,6 +597,36 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
+
+	for _, cat := range []string{
+		"dedup_byte_ratio", "dedup_block_ratio", "collection_bytes",
+		"referenced_bytes", "referenced_blocks", "reference_count",
+		"pull_entries_sent_count",
+		"trash_entries_sent_count",
+	} {
+		c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+` [1-9].*`)
+	}
+
+	for _, cat := range []string{
+		"pull_entries_deferred_count",
+		"trash_entries_deferred_count",
+	} {
+		c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+` 0\n.*`)
+	}
+
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="0"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="1"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="9"} 0\n.*`)
+
+	for _, sub := range []string{"replicas", "blocks", "bytes"} {
+		for _, cat := range []string{"needed", "unneeded", "unachievable", "pulling"} {
+			c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_`+sub+`{status="`+cat+`",storage_class="default"} [1-9].*`)
+		}
+		for _, cat := range []string{"total", "garbage", "transient", "overreplicated", "underreplicated", "unachievable", "balanced", "desired", "lost"} {
+			c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+`_`+sub+` [0-9].*`)
+		}
+	}
+	c.Logf("%s", metrics)
 }
 
 func (s *runSuite) TestChunkPrefix(c *check.C) {

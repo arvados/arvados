@@ -239,7 +239,7 @@ tryrun:
 				// so mark it as allocated, and try to
 				// start the container.
 				unalloc[unallocType]--
-				logger = logger.WithField("InstanceType", unallocType)
+				logger = logger.WithField("InstanceType", unallocType.Name)
 				if dontstart[unallocType] {
 					// We already tried & failed to start
 					// a higher-priority container on the
@@ -282,7 +282,7 @@ tryrun:
 				logger.Trace("all eligible types at capacity")
 				continue
 			}
-			logger = logger.WithField("InstanceType", availableType)
+			logger = logger.WithField("InstanceType", availableType.Name)
 			if !sch.pool.Create(availableType) {
 				// Failed despite not being at quota,
 				// e.g., cloud ops throttled.
