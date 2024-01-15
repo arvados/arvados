@@ -353,9 +353,11 @@ Cypress.Commands.add("loginAs", user => {
     cy.clearCookies();
     cy.clearLocalStorage();
     cy.visit(`/token/?api_token=${user.token}`);
-    // Wait for window.location to not be undefined
-    cy.waitUntil(() => cy.window().then(win => win?.location?.href));
-    cy.url({ timeout: 15000 }).should("contain", "/projects/");
+    // Use waitUntil to avoid permafail race conditions with window.location being undefined
+    cy.waitUntil(() => cy.window().then(win =>
+        win?.location?.href &&
+        win.location.href.includes("/projects/")
+    ), { timeout: 15000 });
     cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
     cy.get("div#root").should("not.contain", "Your account is inactive");
 });
