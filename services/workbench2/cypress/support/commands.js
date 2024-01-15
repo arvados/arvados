@@ -352,7 +352,9 @@ Cypress.Commands.add("loginAs", user => {
     cy.clearCookies();
     cy.clearLocalStorage();
     cy.visit(`/token/?api_token=${user.token}`);
-    cy.url({ timeout: 15000 }).should("contain", "/projects/");
+    cy.location({ timeout: 15000 }).should((loc) => {
+        expect(loc.href).to.include("/projects/");
+    });
     cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
     cy.get("div#root").should("not.contain", "Your account is inactive");
 });
