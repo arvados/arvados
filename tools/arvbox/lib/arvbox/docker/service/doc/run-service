@@ -19,14 +19,12 @@ run_bundler --without=development
 
 # Generating the Python and R docs is expensive, so for development if the file
 # "no-sdk" exists then skip installing R stuff.
-if [[ ! -f /usr/src/arvados/doc/no-sdk ]] ; then
-    cd /usr/src/arvados/sdk/R
-    R --quiet --vanilla --file=install_deps.R
+if [[ ! -f no-sdk ]] ; then
+    env -C ../sdk/R R --quiet --vanilla --file=install_deps.R
 fi
 
 if test "$1" = "--only-deps" ; then
     exit
 fi
 
-cd /usr/src/arvados/doc
 flock $GEMLOCK bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip
