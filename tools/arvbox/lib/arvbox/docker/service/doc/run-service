@@ -27,4 +27,6 @@ if test "$1" = "--only-deps" ; then
     exit
 fi
 
+# Active the arvbox virtualenv so we can import pdoc for PySDK doc generation.
+. /opt/arvados-py/bin/activate
 flock $GEMLOCK bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip

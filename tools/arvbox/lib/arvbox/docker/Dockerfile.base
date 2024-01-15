@@ -102,8 +102,7 @@ RUN $GOPATH/bin/arvados-server install -type test
 # Everything else is installed by the sdk service on boot.
 RUN python3 -m venv /opt/arvados-py \
  && /opt/arvados-py/bin/pip install --no-cache-dir wheel \
- && /opt/arvados-py/bin/pip install --no-cache-dir setuptools PyYAML pdoc \
- && ln -s /opt/arvados-py/bin/pdoc /usr/local/bin/
+ && /opt/arvados-py/bin/pip install --no-cache-dir setuptools PyYAML pdoc
 
 RUN /etc/init.d/postgresql start && \
     su postgres -c 'dropuser arvados' && \
