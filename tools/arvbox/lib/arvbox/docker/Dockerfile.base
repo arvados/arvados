@@ -98,7 +98,7 @@ RUN $GOPATH/bin/arvados-server install -type test
 # also rely on it.
 # 1. Install wheel just to modernize the virtualenv.
 # 2. Install setuptools as an sdk build dependency; PyYAML for all tests
-#    and yml_override;py; and pdoc for the doc service.
+#    and yml_override.py; and pdoc for the doc service.
 # Everything else is installed by the sdk service on boot.
 RUN python3 -m venv /opt/arvados-py \
  && /opt/arvados-py/bin/pip install --no-cache-dir wheel \
