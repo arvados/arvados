@@ -352,8 +352,9 @@ Cypress.Commands.add("loginAs", user => {
     cy.clearCookies();
     cy.clearLocalStorage();
     cy.visit(`/token/?api_token=${user.token}`);
+    // location can be undefined so ensure retryability with should
     cy.location({ timeout: 15000 }).should((loc) => {
-        expect(loc.href).to.include("/projects/");
+        expect(loc?.href).to.include("/projects/");
     });
     cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
     cy.get("div#root").should("not.contain", "Your account is inactive");
