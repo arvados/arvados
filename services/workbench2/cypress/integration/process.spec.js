@@ -1434,8 +1434,6 @@ describe("Process tests", function () {
             const fakeOutputUUID = "zzzzz-4zz18-abcdefghijklmno";
             const fakeOutputPDH = "11111111111111111111111111111111+99/";
 
-            cy.loginAs(activeUser);
-
             // Add output uuid and inputs to container request
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                 req.reply(res => {
@@ -1489,31 +1487,30 @@ describe("Process tests", function () {
                 );
             });
 
-            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed").as(
-                "containerRequest"
-            );
+            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed")
+                .then(containerRequest => {
+                    cy.loginAs(activeUser);
 
-            cy.getAll("@containerRequest").then(function ([containerRequest]) {
-                cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-io-card] h6")
-                    .contains("Inputs")
-                    .parents("[data-cy=process-io-card]")
-                    .within(() => {
-                        cy.wait(2000);
-                        cy.waitForDom();
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+                    cy.goToPath(`/processes/${containerRequest.uuid}`);
+                    cy.get("[data-cy=process-io-card] h6")
+                        .contains("Inputs")
+                        .parents("[data-cy=process-io-card]")
+                        .within(() => {
+                            cy.wait(2000);
+                            cy.waitForDom();
+                            cy.get("tbody tr").each(item => {
+                                cy.wrap(item).contains("No value");
+                            });
                         });
-                    });
-                cy.get("[data-cy=process-io-card] h6")
-                    .contains("Outputs")
-                    .parents("[data-cy=process-io-card]")
-                    .within(() => {
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+                    cy.get("[data-cy=process-io-card] h6")
+                        .contains("Outputs")
+                        .parents("[data-cy=process-io-card]")
+                        .within(() => {
+                            cy.get("tbody tr").each(item => {
+                                cy.wrap(item).contains("No value");
+                            });
                         });
-                    });
-            });
+                });
         });
     });
 });
