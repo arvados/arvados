@@ -47,6 +47,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: 0,
         height: '2.7rem',
         padding: 0,
+        paddingRight: '-1rem',
         margin: "1rem auto auto 0.5rem",
         transition: `width ${WIDTH_TRANSITION}ms`,
         overflow: 'hidden',
