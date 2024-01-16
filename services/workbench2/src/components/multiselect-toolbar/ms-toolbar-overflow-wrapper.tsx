@@ -37,12 +37,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 type WrapperProps = {
     children: OverflowChild[];
-    length: number;
+    menuLength: number;
 };
 
 export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
-    const { classes, children, length } = props;
-
+    const { classes, children, menuLength } = props;
+    const lastEntryId = (children[menuLength - 1] as any).props['data-targetid'];
     const navRef = useRef<any>(null);
     const [visibilityMap, setVisibilityMap] = useState({});
 
@@ -58,9 +58,11 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         });
 
         setVisibilityMap((prev) => ({
-            ...prev,
-            ...updatedEntries,
-        }));
+                ...prev,
+                ...updatedEntries,
+                [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
+            })
+        );
     };
 
     useEffect((): any => {
@@ -82,7 +84,12 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         return () => {
             observer.disconnect();
         };
-    }, [length]);
+        // eslint-disable-next-line 
+    }, [menuLength]);
+
+    const numHidden = (visMap: {}) => {
+        return Object.values(visMap).filter((x) => x === false).length;
+    };
 
     return (
         <div
@@ -97,12 +104,14 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
                     }),
                 });
             })}
-            <OverflowMenu
-                visibilityMap={visibilityMap}
-                className={classes.overflowStyle}
-            >
-                {children}
-            </OverflowMenu>
+            {numHidden(visibilityMap) >= 2 && (
+                <OverflowMenu
+                    visibilityMap={visibilityMap}
+                    className={classes.overflowStyle}
+                >
+                    {children}
+                </OverflowMenu>
+            )}
         </div>
     );
 });
