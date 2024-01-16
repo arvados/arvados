@@ -1495,6 +1495,8 @@ describe("Process tests", function () {
 
             cy.getAll("@containerRequest").then(function ([containerRequest]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.waitForDom();
+
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Inputs")
                     .parents("[data-cy=process-io-card]")
