@@ -373,24 +373,23 @@ func (cache *DiskCache) ReadAt(locator string, dst []byte, offset int) (int, err
 
 	if err != nil {
 		// If the copy-from-backend goroutine encountered an
-		// error before copying enough bytes to satisfy our
-		// request, we return that error.
+		// error, we return that error. (Even if we read the
+		// desired number of bytes, the error might be
+		// something like BadChecksum so we should not ignore
+		// it.)
 		return 0, err
-	} else if len(dst) == 0 {
+	}
+	if len(dst) == 0 {
 		// It's possible that sharedf==nil here (the writer
 		// goroutine might not have done anything at all yet)
 		// and we don't need it anyway because no bytes are
 		// being read. Reading zero bytes seems pointless, but
 		// if someone does it, we might as well return
-		// suitable values, and not crash.
+		// suitable values, rather than risk a crash by
+		// calling sharedf.ReadAt() when sharedf is nil.
 		return 0, nil
-	} else {
-		// Regardless of whether the copy-from-backend
-		// goroutine succeeded, or failed after copying the
-		// bytes we need, the only errors we need to report
-		// are errors reading from the cache file.
-		return sharedf.ReadAt(dst, int64(offset))
 	}
+	return sharedf.ReadAt(dst, int64(offset))
 }
 
 var quickReadAtLostRace = errors.New("quickReadAt: lost race")
