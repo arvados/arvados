@@ -96,6 +96,7 @@ collectionNameCache = {}
 def getCollectionName(arv, uuid, pdh):
     lookupField = uuid
     filters = [["uuid", "=", uuid]]
+    order = None
     cached = uuid in collectionNameCache
     # look up by uuid if it is available, fall back to look up by pdh
     if uuid is None or len(uuid) != 27:
@@ -105,10 +106,11 @@ def getCollectionName(arv, uuid, pdh):
         # name, if the uuid for the request is not known.
         lookupField = pdh
         filters = [["portable_data_hash", "=", pdh]]
+        order = "created_at"
         cached = pdh in collectionNameCache
 
     if not cached:
-        u = arv.collections().list(filters=filters, order="created_at", limit=1).execute().get("items")
+        u = arv.collections().list(filters=filters, order=order, limit=1, count="none").execute().get("items")
         if len(u) < 1:
             return "(deleted)"
         collectionNameCache[lookupField] = u[0]["name"]
