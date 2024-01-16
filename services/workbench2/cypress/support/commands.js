@@ -358,6 +358,8 @@ Cypress.Commands.add("loginAs", user => {
         win?.location?.href &&
         win.location.href.includes("/projects/")
     ), { timeout: 15000 });
+    // Wait for page to settle before getting elements
+    cy.waitForDom();
     cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
     cy.get("div#root").should("not.contain", "Your account is inactive");
 });
