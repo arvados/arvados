@@ -14,10 +14,4 @@ run_bundler --binstubs=binstubs
 cd /usr/src/arvados/sdk/cli
 run_bundler --binstubs=binstubs
 
-python_srcdir="$(mktemp --directory --tmpdir pysrc.XXXXXXXX)"
-trap 'rm -rf "$python_srcdir"' EXIT INT TERM QUIT
-for subdir in sdk/python services/fuse sdk/cwl; do
-    env -C "/usr/src/arvados/$subdir" \
-        /opt/arvados-py/bin/python3 setup.py sdist --dist-dir="$python_srcdir"
-done
-/opt/arvados-py/bin/pip install "$python_srcdir"/*
+pip_install_sdist sdk/python services/fuse sdk/cwl

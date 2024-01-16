@@ -100,3 +100,22 @@ bundler_binstubs() {
     fi
     flock $GEMLOCK $BUNDLER binstubs --all
 }
+
+# Usage: Pass any number of directories. Relative directories will be taken as
+# relative to /usr/src/arvados. This function will build an sdist from each,
+# then pip install them all in the arvbox virtualenv.
+pip_install_sdist() {
+    local sdist_dir="$(mktemp --directory --tmpdir py_sdist.XXXXXXXX)"
+    trap 'rm -rf "$sdist_dir"' RETURN
+    local src_dir
+    for src_dir in "$@"; do
+        case "$src_dir" in
+            /*) ;;
+            *) src_dir="/usr/src/arvados/$src_dir" ;;
+        esac
+        env -C "$src_dir" /opt/arvados-py/bin/python3 setup.py sdist --dist-dir="$sdist_dir" \
+            || return
+    done
+    /opt/arvados-py/bin/pip install "$sdist_dir"/* || return
+    return
+}
