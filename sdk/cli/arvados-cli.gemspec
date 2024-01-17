@@ -39,7 +39,7 @@ Gem::Specification.new do |s|
   s.executables << "arv"
   s.executables << "arv-tag"
   s.required_ruby_version = '>= 2.5.0'
-  s.add_runtime_dependency 'arvados', '~> 2.7.0.rc1'
+  s.add_runtime_dependency 'arvados', '~> 2.8.a'
   # arvados fork of google-api-client gem with old API and new
   # compatibility fixes, built from ../ruby-google-api-client/
   s.add_runtime_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.9')
