@@ -148,7 +148,7 @@ if [[ "$suite" = "conformance-v1.1" ]] ; then
 fi
 
 if [[ "$suite" = "conformance-v1.2" ]] ; then
-   git checkout 1.2.1_proposed
+   git checkout v1.2.1
 fi
 
 #if [[ "$suite" != "integration" ]] ; then
@@ -191,7 +191,7 @@ if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
 elif [[ "$suite" = "conformance-v1.2" ]] ; then
-   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N307 $@ -- \$EXTRA
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint $@ -- \$EXTRA
 elif [[ "$suite" = "conformance-v1.1" ]] ; then
    exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N199 $@ -- \$EXTRA
 elif [[ "$suite" = "conformance-v1.0" ]] ; then
