@@ -64,7 +64,54 @@ func (s *ByteSizeSuite) TestUnmarshal(c *check.C) {
 	} {
 		var n ByteSize
 		err := yaml.Unmarshal([]byte(testcase+"\n"), &n)
-		c.Logf("%v => error: %v", n, err)
+		c.Logf("%s => error: %v", testcase, err)
+		c.Check(err, check.NotNil)
+	}
+}
+
+func (s *ByteSizeSuite) TestMarshalByteSizeOrPercent(c *check.C) {
+	for _, testcase := range []struct {
+		in  ByteSizeOrPercent
+		out string
+	}{
+		{0, "0"},
+		{-1, "1%"},
+		{-100, "100%"},
+		{8, "8"},
+	} {
+		out, err := yaml.Marshal(&testcase.in)
+		c.Check(err, check.IsNil)
+		c.Check(string(out), check.Equals, testcase.out+"\n")
+	}
+}
+
+func (s *ByteSizeSuite) TestUnmarshalByteSizeOrPercent(c *check.C) {
+	for _, testcase := range []struct {
+		in  string
+		out int64
+	}{
+		{"0", 0},
+		{"100", 100},
+		{"0%", 0},
+		{"1%", -1},
+		{"100%", -100},
+		{"8 GB", 8000000000},
+	} {
+		var n ByteSizeOrPercent
+		err := yaml.Unmarshal([]byte(testcase.in+"\n"), &n)
+		c.Logf("%v => %v: %v", testcase.in, testcase.out, n)
+		c.Check(err, check.IsNil)
+		c.Check(int64(n), check.Equals, testcase.out)
+	}
+	for _, testcase := range []string{
+		"1000%", "101%", "-1%",
+		"%", "-%", "%%", "%1",
+		"400000 EB",
+		"4.11e4 EB",
+	} {
+		var n ByteSizeOrPercent
+		err := yaml.Unmarshal([]byte(testcase+"\n"), &n)
+		c.Logf("%s => error: %v", testcase, err)
 		c.Check(err, check.NotNil)
 	}
 }

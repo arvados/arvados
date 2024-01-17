@@ -119,6 +119,7 @@ func (rp *remoteProxy) remoteClient(remoteID string, remoteCluster arvados.Remot
 		if err != nil {
 			return nil, err
 		}
+		kc.DiskCacheSize = keepclient.DiskCacheDisabled
 
 		rp.mtx.Lock()
 		if rp.clients == nil {

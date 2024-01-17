@@ -27,15 +27,13 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
-	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
 
 type handler struct {
-	Cache     cache
-	Cluster   *arvados.Cluster
-	setupOnce sync.Once
+	Cache   cache
+	Cluster *arvados.Cluster
 
 	lockMtx    sync.Mutex
 	lock       map[string]*sync.RWMutex
@@ -58,10 +56,6 @@ func parseCollectionIDFromURL(s string) string {
 		return pdh
 	}
 	return ""
-}
-
-func (h *handler) setup() {
-	keepclient.DefaultBlockCache.MaxBlocks = h.Cluster.Collections.WebDAVCache.MaxBlockEntries
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -179,8 +173,6 @@ func (h *handler) Done() <-chan struct{} {
 
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
-	h.setupOnce.Do(h.setup)
-
 	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
 		r.URL.Scheme = xfp
 	}

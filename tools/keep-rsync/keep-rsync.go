@@ -193,6 +193,7 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 			return kc, 0, err
 		}
 	}
+	kc.DiskCacheSize = keepclient.DiskCacheDisabled
 
 	if isDst {
 		// Get default replications value from destination, if it is not already provided

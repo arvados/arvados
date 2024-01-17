@@ -368,9 +368,6 @@ func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
 	return 0, errors.New("not implemented")
 }
 
-func (client *KeepTestClient) ClearBlockCache() {
-}
-
 func (client *KeepTestClient) Close() {
 	client.Content = nil
 }

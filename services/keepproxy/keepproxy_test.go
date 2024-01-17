@@ -142,6 +142,7 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool, kp *ar
 		arv.ApiToken = "bogus-token"
 	}
 	kc := keepclient.New(arv)
+	kc.DiskCacheSize = keepclient.DiskCacheDisabled
 	sr := map[string]string{
 		TestProxyUUID: "http://" + srv.Addr,
 	}
@@ -406,7 +407,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	{
 		reader, blocklen, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e")
-		c.Assert(err, Equals, nil)
+		c.Assert(err, IsNil)
 		all, err := ioutil.ReadAll(reader)
 		c.Check(err, IsNil)
 		c.Check(all, DeepEquals, []byte(""))
@@ -640,7 +641,7 @@ func getIndexWorker(c *C, useConfig bool) {
 	c.Check(rep, Equals, 2)
 	c.Check(err, Equals, nil)
 
-	reader, blocklen, _, err := kc.Get(hash)
+	reader, blocklen, _, err := kc.Get(hash2)
 	c.Assert(err, IsNil)
 	c.Check(blocklen, Equals, int64(10))
 	all, err := ioutil.ReadAll(reader)
@@ -782,10 +783,12 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 		},
 	} {
 		err := f()
-		c.Assert(err, NotNil)
+		c.Check(err, NotNil)
 		errNotFound, _ := err.(*keepclient.ErrNotFound)
-		c.Check(errNotFound.Temporary(), Equals, true)
-		c.Check(err, ErrorMatches, `.*HTTP 502.*`)
+		if c.Check(errNotFound, NotNil) {
+			c.Check(errNotFound.Temporary(), Equals, true)
+			c.Check(err, ErrorMatches, `.*HTTP 502.*`)
+		}
 	}
 }
 

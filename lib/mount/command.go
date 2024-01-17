@@ -19,6 +19,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
+	"github.com/ghodss/yaml"
 )
 
 var Command = &mountCommand{}
@@ -43,7 +44,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	ro := flags.Bool("ro", false, "read-only")
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
-	blockCache := flags.Int("block-cache", 4, "read cache size (number of 64MiB blocks)")
+	cacheSizeStr := flags.String("cache-size", "0", "cache size as percent of home filesystem size (\"5%\") or size (\"10GiB\") or 0 for automatic")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
@@ -59,6 +60,10 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	}
 
 	client := arvados.NewClientFromEnv()
+	if err := yaml.Unmarshal([]byte(*cacheSizeStr), &client.DiskCacheSize); err != nil {
+		logger.Printf("error parsing -cache-size argument: %s", err)
+		return 2
+	}
 	ac, err := arvadosclient.New(client)
 	if err != nil {
 		logger.Print(err)
@@ -69,7 +74,6 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 		logger.Print(err)
 		return 1
 	}
-	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: *blockCache}
 	host := fuse.NewFileSystemHost(&keepFS{
 		Client:     client,
 		KeepClient: kc,
