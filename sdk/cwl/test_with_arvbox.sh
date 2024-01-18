@@ -5,8 +5,10 @@
 
 set -x
 
+cwldir=$(readlink -f $(dirname $0))
+
 if ! which arvbox >/dev/null ; then
-    export PATH=$PATH:$(readlink -f $(dirname $0)/../../tools/arvbox/bin)
+    export PATH=$PATH:$cwldir/../../tools/arvbox/bin
 fi
 
 reset_container=1
@@ -91,7 +93,7 @@ arvbox start $config $tag
 # of using the one inside the container, so we can make changes to the
 # integration tests without necessarily having to rebuilding the
 # container image.
-docker cp -L $(readlink -f $(dirname $0)/tests) $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl
+docker cp -L $cwldir/tests $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl
 
 arvbox pipe <<EOF
 set -eu -o pipefail
@@ -170,23 +172,22 @@ cwltest --version
 # Skip test 199 in the v1.1 suite because it has different output
 # depending on whether there is a pty associated with stdout (fixed in
 # the v1.2 suite)
-#
-# Skip test 307 in the v1.2 suite because the test relied on
-# secondary file behavior of cwltool that wasn't actually correct to specification
 
 if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
 elif [[ "$suite" = "conformance-v1.2" ]] ; then
-   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint $@ -- \$EXTRA
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint --badgedir /tmp/badges $@ -- \$EXTRA
 elif [[ "$suite" = "conformance-v1.1" ]] ; then
-   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N199 $@ -- \$EXTRA
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N199 --badgedir /tmp/badges $@ -- \$EXTRA
 elif [[ "$suite" = "conformance-v1.0" ]] ; then
-   exec cwltest --tool arvados-cwl-runner --test v1.0/conformance_test_v1.0.yaml -Sdocker_entrypoint $@ -- \$EXTRA
+   exec cwltest --tool arvados-cwl-runner --test v1.0/conformance_test_v1.0.yaml -Sdocker_entrypoint --badgedir /tmp/badges $@ -- \$EXTRA
 fi
 EOF
 
 CODE=$?
+
+docker cp -L $ARVBOX_CONTAINER:/tmp/badges $cwldir/badges
 
 if test $leave_running = 0 ; then
     arvbox stop
