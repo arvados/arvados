@@ -5,6 +5,7 @@
 package keepstore
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -23,22 +24,22 @@ type KeepError struct {
 }
 
 var (
-	BadRequestError     = &KeepError{400, "Bad Request"}
-	UnauthorizedError   = &KeepError{401, "Unauthorized"}
-	CollisionError      = &KeepError{500, "Collision"}
-	RequestHashError    = &KeepError{422, "Hash mismatch in request"}
-	PermissionError     = &KeepError{403, "Forbidden"}
-	DiskHashError       = &KeepError{500, "Hash mismatch in stored data"}
-	ExpiredError        = &KeepError{401, "Expired permission signature"}
-	NotFoundError       = &KeepError{404, "Not Found"}
-	VolumeBusyError     = &KeepError{503, "Volume backend busy"}
-	GenericError        = &KeepError{500, "Fail"}
-	FullError           = &KeepError{503, "Full"}
-	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}
-	TooLongError        = &KeepError{413, "Block is too large"}
-	MethodDisabledError = &KeepError{405, "Method disabled"}
-	ErrNotImplemented   = &KeepError{500, "Unsupported configuration"}
-	ErrClientDisconnect = &KeepError{503, "Client disconnected"}
+	BadRequestError     = &KeepError{http.StatusBadRequest, "Bad Request"}
+	UnauthorizedError   = &KeepError{http.StatusUnauthorized, "Unauthorized"}
+	CollisionError      = &KeepError{http.StatusInternalServerError, "Collision"}
+	RequestHashError    = &KeepError{http.StatusUnprocessableEntity, "Hash mismatch in request"}
+	PermissionError     = &KeepError{http.StatusForbidden, "Forbidden"}
+	DiskHashError       = &KeepError{http.StatusInternalServerError, "Hash mismatch in stored data"}
+	ExpiredError        = &KeepError{http.StatusUnauthorized, "Expired permission signature"}
+	NotFoundError       = &KeepError{http.StatusNotFound, "Not Found"}
+	VolumeBusyError     = &KeepError{http.StatusServiceUnavailable, "Volume backend busy"}
+	GenericError        = &KeepError{http.StatusInternalServerError, "Fail"}
+	FullError           = &KeepError{http.StatusInsufficientStorage, "Full"}
+	SizeRequiredError   = &KeepError{http.StatusLengthRequired, "Missing Content-Length"}
+	TooLongError        = &KeepError{http.StatusRequestEntityTooLarge, "Block is too large"}
+	MethodDisabledError = &KeepError{http.StatusMethodNotAllowed, "Method disabled"}
+	ErrNotImplemented   = &KeepError{http.StatusInternalServerError, "Unsupported configuration"}
+	ErrClientDisconnect = &KeepError{499, "Client disconnected"} // non-RFC Nginx status code
 )
 
 func (e *KeepError) Error() string {
