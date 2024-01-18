@@ -53,6 +53,7 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
+import { DetailsCard } from 'views-components/details-card';
 
 type CssRules = 'root' | 'button';
 
@@ -263,10 +264,11 @@ export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
             render() {
-                const { classes } = this.props;
+                const { classes, userUuid, currentItemId } = this.props;
 
                 return this.props.project ?
                     <div data-cy='project-panel' className={classes.root}>
+                        {currentItemId !== userUuid && <DetailsCard />}
                         <DataExplorer
                             id={PROJECT_PANEL_ID}
                             onRowClick={this.handleRowClick}

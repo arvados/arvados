@@ -85,10 +85,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     singleSelectedUuid: string | null
+    inputSelectedUuid?: string
     iconProps: IconProps
     user: User | null
     disabledButtons: Set<string>
-    executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
+    executeMulti: (action: ContextMenuAction, inputSelectedUuid: string | undefined, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 type IconProps = {
@@ -102,7 +103,8 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, singleSelectedUuid, iconProps, user, disabledButtons } = props;
+        const { classes, checkedList, inputSelectedUuid, iconProps, user, disabledButtons } = props;
+        const singleSelectedUuid = inputSelectedUuid ?? props.singleSelectedUuid
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
@@ -147,7 +149,7 @@ export const MultiselectToolbar = connect(
                                     <IconButton
                                         data-cy='multiselect-button'
                                         disabled={disabledButtons.has(name)}
-                                        onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                        onClick={() => props.executeMulti(action, inputSelectedUuid, checkedList, iconProps.resources)}
                                     >
                                         {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                     </IconButton>
@@ -163,7 +165,7 @@ export const MultiselectToolbar = connect(
                                 <span className={classes.iconContainer}>
                                     <IconButton
                                         data-cy='multiselect-button'
-                                        onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                        onClick={() => props.executeMulti(action, inputSelectedUuid, checkedList, iconProps.resources)}
                                     >
                                         {action.icon({})}
                                     </IconButton>
@@ -337,17 +339,18 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
-            const kindGroups = groupByKind(checkedList, resources);
+        executeMulti: (selectedAction: ContextMenuAction, inputSelectedUuid: string | undefined, checkedList: TCheckedList, resources: ResourcesState): void => {
+            const kindGroups = inputSelectedUuid ? groupByKind({[inputSelectedUuid]: true}, resources) : groupByKind(checkedList, resources);
+            const currentList = inputSelectedUuid ? [inputSelectedUuid] : selectedToArray(checkedList)
             switch (selectedAction.name) {
                 case MultiSelectMenuActionNames.MOVE_TO:
                 case MultiSelectMenuActionNames.REMOVE:
-                    const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as ContainerRequestResource | Resource;
+                    const firstResource = getResource(currentList[0])(resources) as ContainerRequestResource | Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
                 case MultiSelectMenuActionNames.COPY_TO_CLIPBOARD:
-                    const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
+                    const selectedResources = currentList.map(uuid => getResource(uuid)(resources));
                     dispatch<any>(copyToClipboardAction(selectedResources));
                     break;
                 default:
