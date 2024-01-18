@@ -28,6 +28,7 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
 
+import 'cypress-wait-until';
 import { extractFilesData } from "services/collection-service/collection-service-files-response";
 
 const controllerURL = Cypress.env("controller_url");
@@ -352,7 +353,13 @@ Cypress.Commands.add("loginAs", user => {
     cy.clearCookies();
     cy.clearLocalStorage();
     cy.visit(`/token/?api_token=${user.token}`);
-    cy.url({ timeout: 15000 }).should("contain", "/projects/");
+    // Use waitUntil to avoid permafail race conditions with window.location being undefined
+    cy.waitUntil(() => cy.window().then(win =>
+        win?.location?.href &&
+        win.location.href.includes("/projects/")
+    ), { timeout: 15000 });
+    // Wait for page to settle before getting elements
+    cy.waitForDom();
     cy.get("div#root").should("contain", "Arvados Workbench (zzzzz)");
     cy.get("div#root").should("not.contain", "Your account is inactive");
 });
