@@ -412,6 +412,24 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 		resp.Body.Close()
 	}
 
+	var coll arvados.Collection
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.IsNil)
+	arv.ApiToken = arvadostest.ActiveTokenV2
+	err = arv.Create("collections", map[string]interface{}{"ensure_unique_name": true}, &coll)
+	c.Assert(err, check.IsNil)
+	defer arv.Delete("collections", coll.UUID, nil, nil)
+	for i := 0; i < 2; i++ {
+		size := 1 << (i * 12)
+		req, _ = http.NewRequest("PUT", srvaddr+"/zero-"+fmt.Sprintf("%d", size), bytes.NewReader(make([]byte, size)))
+		req.Host = coll.UUID + ".example.com"
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		resp, err = http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusCreated)
+		resp.Body.Close()
+	}
+
 	time.Sleep(metricsUpdateInterval * 2)
 
 	req, _ = http.NewRequest("GET", srvaddr+"/metrics.json", nil)
@@ -476,7 +494,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(summaries["request_duration_seconds/get/200"].SampleCount, check.Equals, "3")
 	c.Check(summaries["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(summaries["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
-	c.Check(gauges["arvados_keepweb_sessions_cached_session_bytes//"].Value, check.Equals, float64(624))
+	c.Check(gauges["arvados_keepweb_sessions_cached_session_bytes//"].Value, check.Equals, float64(1208))
 
 	// If the Host header indicates a collection, /metrics.json
 	// refers to a file in the collection -- the metrics handler
@@ -490,6 +508,24 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 		c.Assert(err, check.IsNil)
 		c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 	}
+
+	// Dump entire metrics output in test logs
+	req, _ = http.NewRequest("GET", srvaddr+"/metrics", nil)
+	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	buf, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+
+	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_download_limiting_backend_speed_bucket{size_range="0",le="1e\+06"} 4\n.*`)
+	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_download_speed_bucket{size_range="0",le="\+Inf"} 4\n.*`)
+	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_upload_speed_bucket{size_range="0",le="\+Inf"} 2\n.*`)
+	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_upload_sync_delay_seconds_bucket{size_range="0",le="10"} 2\n.*`)
+
+	// Dump entire metrics output in test logs
+	c.Logf("%s", buf)
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
