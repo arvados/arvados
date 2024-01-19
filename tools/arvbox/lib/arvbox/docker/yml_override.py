@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/arvados-py/bin/python3
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -10,12 +10,12 @@ fn = sys.argv[1]
 
 try:
     with open(fn+".override") as f:
-        b = yaml.load(f)
+        b = yaml.safe_load(f)
 except IOError:
     exit()
 
 with open(fn) as f:
-    a = yaml.load(f)
+    a = yaml.safe_load(f)
 
 def recursiveMerge(a, b):
     if isinstance(a, dict) and isinstance(b, dict):
@@ -27,4 +27,4 @@ def recursiveMerge(a, b):
         return b
 
 with open(fn, "w") as f:
-    yaml.dump(recursiveMerge(a, b), f)
+    yaml.safe_dump(recursiveMerge(a, b), f)

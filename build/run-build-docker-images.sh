@@ -90,25 +90,28 @@ docker_push () {
 
     if [[ ! -z "$tags" ]]
     then
-        for tag in $( echo $tags|tr "," " " )
+        for tag in $(echo $tags|tr "," " " )
         do
              $DOCKER tag $1:$GITHEAD $1:$tag
         done
     fi
 
-    # Sometimes docker push fails; retry it a few times if necessary.
-    for i in `seq 1 5`; do
-        $DOCKER push $*
-        ECODE=$?
-        if [[ "$ECODE" == "0" ]]; then
-            break
-        fi
-    done
+    for tag in $(echo $tags|tr "," " " )
+    do
+	# Sometimes docker push fails; retry it a few times if necessary.
+	for i in `seq 1 5`; do
+             $DOCKER push $1:$tag
+             ECODE=$?
+             if [[ "$ECODE" == "0" ]]; then
+		 break
+             fi
+	done
 
-    if [[ "$ECODE" != "0" ]]; then
-        title "!!!!!! docker push $* failed !!!!!!"
-        EXITCODE=$(($EXITCODE + $ECODE))
-    fi
+	if [[ "$ECODE" != "0" ]]; then
+            title "!!!!!! docker push $1:$tag failed !!!!!!"
+            EXITCODE=$(($EXITCODE + $ECODE))
+	fi
+    done
 }
 
 timer_reset() {

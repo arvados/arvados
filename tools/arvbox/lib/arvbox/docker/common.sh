@@ -6,7 +6,7 @@ export RUBY_VERSION=3.2.2
 export BUNDLER_VERSION=2.4.22
 
 export DEBIAN_FRONTEND=noninteractive
-export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/usr/src/arvados/sdk/cli/binstubs
+export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/opt/arvados-py/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
@@ -101,23 +101,21 @@ bundler_binstubs() {
     flock $GEMLOCK $BUNDLER binstubs --all
 }
 
-PYCMD=""
-pip_install() {
-    pushd /var/lib/pip
-    for p in $(ls http*.tar.gz) $(ls http*.tar.bz2) $(ls http*.whl) $(ls http*.zip) ; do
-        if test -f $p ; then
-            ln -sf $p $(echo $p | sed 's/.*%2F\(.*\)/\1/')
-        fi
+# Usage: Pass any number of directories. Relative directories will be taken as
+# relative to /usr/src/arvados. This function will build an sdist from each,
+# then pip install them all in the arvbox virtualenv.
+pip_install_sdist() {
+    local sdist_dir="$(mktemp --directory --tmpdir py_sdist.XXXXXXXX)"
+    trap 'rm -rf "$sdist_dir"' RETURN
+    local src_dir
+    for src_dir in "$@"; do
+        case "$src_dir" in
+            /*) ;;
+            *) src_dir="/usr/src/arvados/$src_dir" ;;
+        esac
+        env -C "$src_dir" /opt/arvados-py/bin/python3 setup.py sdist --dist-dir="$sdist_dir" \
+            || return
     done
-    popd
-
-    if [ "$PYCMD" = "python3" ]; then
-        if ! pip3 install --prefix /usr/local --no-index --find-links /var/lib/pip $1 ; then
-            pip3 install --prefix /usr/local $1
-        fi
-    else
-        if ! pip install --no-index --find-links /var/lib/pip $1 ; then
-            pip install $1
-        fi
-    fi
+    /opt/arvados-py/bin/pip install "$sdist_dir"/* || return
+    return
 }
