@@ -53,7 +53,7 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
-import { DetailsCard } from 'views-components/details-card';
+import { ProjectDetailsCard } from 'views-components/project-details-card/project-details-card';
 
 type CssRules = 'root' | 'button';
 
@@ -268,7 +268,7 @@ export const ProjectPanel = withStyles(styles)(
 
                 return this.props.project ?
                     <div data-cy='project-panel' className={classes.root}>
-                        {currentItemId !== userUuid && <DetailsCard />}
+                        {currentItemId !== userUuid && <ProjectDetailsCard />}
                         <DataExplorer
                             id={PROJECT_PANEL_ID}
                             onRowClick={this.handleRowClick}
