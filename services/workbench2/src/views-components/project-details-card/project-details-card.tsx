@@ -161,9 +161,8 @@ export const ProjectDetailsCard = connect(mapStateToProps)(
                     <section className={classes.chipsection}>
                         <Typography
                             component='div'
-                            // className={classes.attribute}
                         >
-                            {Object.keys(currentResource.properties).map((k) =>
+                            {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).map((k) =>
                                 Array.isArray(currentResource.properties[k])
                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
                                     : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)

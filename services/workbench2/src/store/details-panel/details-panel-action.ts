@@ -66,20 +66,27 @@ export const refreshCollectionVersionsList = (uuid: string) =>
         );
     };
 
-export const toggleDetailsPanel = () => (dispatch: Dispatch, getState: () => RootState) => {
+export const toggleDetailsPanel = (uuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
+    const { detailsPanel, router }= getState()
+    const currentRoute = router.location?.pathname.split('/') || [];
+    const currentItemUuid = currentRoute[currentRoute.length - 1];
     // because of material-ui issue resizing details panel breaks tabs.
     // triggering window resize event fixes that.
-    setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-    }, SLIDE_TIMEOUT);
-    startDetailsPanelTransition(dispatch)
-    dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-    if (getState().detailsPanel.isOpened) {
-        dispatch<any>(loadDetailsPanel(getState().detailsPanel.resourceUuid));
+    if(uuid !== detailsPanel.resourceUuid  && (detailsPanel.isOpened || uuid === currentItemUuid)){
+        dispatch<any>(loadDetailsPanel(uuid));
+    } else {
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, SLIDE_TIMEOUT);
+        startDetailsPanelTransition(dispatch)
+        dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        if (getState().detailsPanel.isOpened) {
+            dispatch<any>(loadDetailsPanel(getState().detailsPanel.resourceUuid));
+        }
     }
-};
-
-const startDetailsPanelTransition = (dispatch) => {
+    };
+    
+    const startDetailsPanelTransition = (dispatch) => {
         dispatch(detailsPanelActions.START_TRANSITION())
     setTimeout(() => {
         dispatch(detailsPanelActions.END_TRANSITION())
