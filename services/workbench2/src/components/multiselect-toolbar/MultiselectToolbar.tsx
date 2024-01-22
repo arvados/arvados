@@ -109,16 +109,20 @@ export const MultiselectToolbar = connect(
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
         const [isTransitioning, setIsTransitioning] = useState(false);
+        let transitionTimeout;
         
         const handleTransition = () => {
             setIsTransitioning(true)
-            setTimeout(() => {
+            transitionTimeout = setTimeout(() => {
                 setIsTransitioning(false)
             }, WIDTH_TRANSITION);
         }
         
         useEffect(()=>{
                 handleTransition()
+                return () => {
+                    if(transitionTimeout) clearTimeout(transitionTimeout)
+                };
         }, [checkedList])
 
         const actions =
