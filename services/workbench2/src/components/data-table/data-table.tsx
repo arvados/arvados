@@ -216,11 +216,12 @@ export const DataTable = withStyles(styles)(
         initializeCheckedList = (uuids: any[]): void => {
             const newCheckedList = { ...this.props.checkedList };
 
-            uuids.forEach(uuid => {
-                if (!newCheckedList.hasOwnProperty(uuid)) {
-                    newCheckedList[uuid] = false;
+            if(Object.keys(newCheckedList).length === 0){
+                for(const uuid of uuids){
+                    newCheckedList[uuid] = false
                 }
-            });
+            }
+
             for (const key in newCheckedList) {
                 if (!uuids.includes(key)) {
                     delete newCheckedList[key];
