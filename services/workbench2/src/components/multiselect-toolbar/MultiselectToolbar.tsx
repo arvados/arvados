@@ -123,6 +123,7 @@ export const MultiselectToolbar = connect(
                 return () => {
                     if(transitionTimeout) clearTimeout(transitionTimeout)
                 };
+            // eslint-disable-next-line
         }, [checkedList])
 
         const actions =
