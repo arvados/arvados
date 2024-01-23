@@ -264,11 +264,11 @@ export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
             render() {
-                const { classes, userUuid, currentItemId } = this.props;
+                const { classes } = this.props;
 
                 return this.props.project ?
                     <div data-cy='project-panel' className={classes.root}>
-                        {currentItemId !== userUuid && <ProjectDetailsCard />}
+                        <ProjectDetailsCard />
                         <DataExplorer
                             id={PROJECT_PANEL_ID}
                             onRowClick={this.handleRowClick}
