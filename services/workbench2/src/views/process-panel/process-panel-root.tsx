@@ -41,7 +41,7 @@ export interface ProcessPanelRootDataProps {
     auth: AuthState;
     inputRaw: WorkflowInputsData | null;
     inputParams: ProcessIOParameter[] | null;
-    outputRaw: OutputDetails | null;
+    outputData: OutputDetails | null;
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
@@ -83,7 +83,7 @@ export const ProcessPanelRoot = withStyles(styles)(
         processLogsPanel,
         inputRaw,
         inputParams,
-        outputRaw,
+        outputData,
         outputDefinitions,
         outputParams,
         nodeInfo,
@@ -115,7 +115,7 @@ export const ProcessPanelRoot = withStyles(styles)(
         // Trigger processing output params when raw or definitions change
         React.useEffect(() => {
             updateOutputParams();
-        }, [outputRaw, outputDefinitions, updateOutputParams]);
+        }, [outputData, outputDefinitions, updateOutputParams]);
 
         return process ? (
             <MPVContainer
@@ -187,7 +187,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                         label={ProcessIOCardType.OUTPUT}
                         process={process}
                         params={outputParams}
-                        raw={outputRaw?.rawOutputs}
+                        raw={outputData?.raw}
                         outputUuid={outputUuid || ""}
                     />
                 </MPVPanelContent>
