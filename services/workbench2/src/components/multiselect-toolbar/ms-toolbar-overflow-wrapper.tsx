@@ -31,7 +31,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         order: 99,
         position: 'sticky',
         right: '-2rem',
-        backgroundColor: 'white',
     },
 });
 
@@ -69,7 +68,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         setVisibilityMap({})
         const observer = new IntersectionObserver(handleIntersection, {
             root: navRef.current,
-            rootMargin: '0px -20px 0px 0px',
+            rootMargin: '0px -30px 0px 0px',
             threshold: 1,
         });
         // We are adding observers to child elements of the container div

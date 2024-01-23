@@ -65,13 +65,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         width: "2.5rem",
         height: "2.5rem ",
-        paddingLeft: 0
+        paddingLeft: 0,
     },
     iconContainer: {
         height: '100%',
     },
     icon: {
-        marginLeft: '-0.5rem'
+        marginLeft: '-0.5rem',
     }
 });
 
@@ -123,7 +123,7 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={isTransitioning ? classes.transition: classes.root}
-                    style={{ width: `${(actions.length * 2.5) + 8}rem` }}
+                    style={{ width: `${(actions.length * 2.5) + 5}rem` }}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
@@ -133,11 +133,11 @@ export const MultiselectToolbar = connect(
                             return hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
-                                    title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
                                     data-targetid={name}
+                                    title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
                                     key={i}
                                     disableFocusListener
-                                >
+                                    >
                                     <span className={classes.iconContainer}>
                                         <IconButton
                                             data-cy='multiselect-button'
@@ -152,11 +152,11 @@ export const MultiselectToolbar = connect(
                             ) : (
                                 <Tooltip
                                     className={classes.button}
-                                    title={action.name}
                                     data-targetid={name}
+                                    title={action.name}
                                     key={i}
                                     disableFocusListener
-                                >
+                                    >
                                     <span className={classes.iconContainer}>
                                         <IconButton
                                             data-cy='multiselect-button'
