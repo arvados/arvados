@@ -272,6 +272,8 @@ export const ProcessIOCard = withStyles(styles)(
 
             const hasRaw = !!(raw && Object.keys(raw).length > 0);
             const hasParams = !!(params && params.length > 0);
+            // isRawLoaded allows subprocess panel to display raw even if it's {}
+            const isRawLoaded = !!(raw && Object.keys(raw).length >= 0);
 
             // Subprocess
             const hasInputMounts = !!(label === ProcessIOCardType.INPUT && mounts && mounts.length);
@@ -422,7 +424,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     >
                                         <CircularProgress />
                                     </Grid>
-                                ) : !subProcessLoading && (hasInputMounts || hasOutputCollecton || hasRaw) ? (
+                                ) : !subProcessLoading && (hasInputMounts || hasOutputCollecton || isRawLoaded) ? (
                                     <>
                                         <Tabs
                                             value={subProcTabState}
@@ -432,7 +434,7 @@ export const ProcessIOCard = withStyles(styles)(
                                         >
                                             {hasInputMounts && <Tab label="Collections" />}
                                             {hasOutputCollecton && <Tab label="Collection" />}
-                                            {hasRaw && <Tab label="JSON" />}
+                                            {isRawLoaded && <Tab label="JSON" />}
                                         </Tabs>
                                         <div className={classes.tableWrapper}>
                                             {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
@@ -457,7 +459,7 @@ export const ProcessIOCard = withStyles(styles)(
                                                     />
                                                 </>
                                             )}
-                                            {hasRaw && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
+                                            {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
                                                 <div className={classes.tableWrapper}>
                                                     <ProcessIORaw data={raw} />
                                                 </div>

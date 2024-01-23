@@ -5,11 +5,10 @@
 import React from 'react';
 import { mount, configure } from 'enzyme';
 import { combineReducers, createStore } from "redux";
-import { CircularProgress, MuiThemeProvider, Tab, TableBody, TableCell } from "@material-ui/core";
+import { CircularProgress, MuiThemeProvider, Tab, TableBody } from "@material-ui/core";
 import { CustomTheme } from 'common/custom-theme';
 import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
-import configureMockStore from 'redux-mock-store'
 import { ProcessIOCard, ProcessIOCardType } from './process-io-card';
 import { DefaultView } from "components/default-view/default-view";
 import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
@@ -17,8 +16,6 @@ import { ProcessOutputCollectionFiles } from './process-output-collection-files'
 import { MemoryRouter } from 'react-router-dom';
 
 
-const middlewares = [];
-const mockStore = configureMockStore(middlewares);
 jest.mock('views/process-panel/process-output-collection-files');
 configure({ adapter: new Adapter() });
 
@@ -208,7 +205,32 @@ describe('renderers', () => {
 
             // then
             expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(1); // Empty raw is hidden in subprocesses
+            expect(panel.find(Tab).length).toBe(1); // Unloaded raw is hidden in subprocesses
+            expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
+        });
+
+        it('shows empty subprocess raw', () => {
+            // when
+            const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
+            const outputCollection = '123456789';
+            let panel = mount(
+                <Provider store={store}>
+                    <MuiThemeProvider theme={CustomTheme}>
+                        <ProcessIOCard
+                            label={ProcessIOCardType.OUTPUT}
+                            process={subprocess} // Treat as a subprocess with outputUuid
+                            outputUuid={outputCollection}
+                            params={null}
+                            raw={{}}
+                        />
+                    </MuiThemeProvider>
+                </Provider>
+                );
+
+            // then
+            expect(panel.find(CircularProgress).exists()).toBeFalsy();
+            expect(panel.find(Tab).length).toBe(2); // Empty raw is visible in subprocesses
+            expect(panel.find(Tab).first().text()).toBe('Collection');
             expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
         });
 
