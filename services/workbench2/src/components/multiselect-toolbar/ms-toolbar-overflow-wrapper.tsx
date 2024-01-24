@@ -24,13 +24,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbarWrapper: {
         display: 'flex',
         overflow: 'hidden',
-        padding: '0 20px',
+        padding: '0 0px 0 20px',
         width: '100%',
     },
     overflowStyle: {
         order: 99,
         position: 'sticky',
         right: '-2rem',
+        width: 0,
     },
 });
 
@@ -43,12 +44,15 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
     const { classes, children, menuLength } = props;
     const lastEntryId = (children[menuLength - 1] as any).props['data-targetid'];
     const navRef = useRef<any>(null);
-    const [visibilityMap, setVisibilityMap] = useState({});
+    const [visibilityMap, setVisibilityMap] = useState<Record<string, boolean>>({});
+    const [numHidden, setNumHidden] = useState(() => findNumHidden(visibilityMap));
+
+    const prevNumHidden = useRef(numHidden);
 
     const handleIntersection = (entries) => {
-        const updatedEntries = {};
+        const updatedEntries: Record<string, boolean> = {};
         entries.forEach((entry) => {
-            const targetid = entry.target.dataset.targetid;
+            const targetid = entry.target.dataset.targetid as string;
             if (entry.isIntersecting) {
                 updatedEntries[targetid] = true;
             } else {
@@ -57,15 +61,28 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         });
 
         setVisibilityMap((prev) => ({
-                ...prev,
-                ...updatedEntries,
-                [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
-            })
-        );
+            ...prev,
+            ...updatedEntries,
+            [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
+        }));
     };
 
+    useEffect(() => {
+        if (prevNumHidden.current === 2 && numHidden === 1) {
+            setVisibilityMap((prev) => ({
+                ...prev,
+                [lastEntryId]: true,
+            }));
+        }
+        prevNumHidden.current = numHidden;
+    }, [numHidden, lastEntryId]);
+
+    useEffect(() => {
+        setNumHidden(findNumHidden(visibilityMap));
+    }, [visibilityMap]);
+
     useEffect((): any => {
-        setVisibilityMap({})
+        setVisibilityMap({});
         const observer = new IntersectionObserver(handleIntersection, {
             root: navRef.current,
             rootMargin: '0px -30px 0px 0px',
@@ -83,12 +100,12 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         return () => {
             observer.disconnect();
         };
-        // eslint-disable-next-line 
+        // eslint-disable-next-line
     }, [menuLength]);
 
-    const numHidden = (visMap: {}) => {
+    function findNumHidden(visMap: {}) {
         return Object.values(visMap).filter((x) => x === false).length;
-    };
+    }
 
     return (
         <div
@@ -103,7 +120,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
                     }),
                 });
             })}
-            {numHidden(visibilityMap) >= 2 && (
+            {numHidden >= 2 && (
                 <OverflowMenu
                     visibilityMap={visibilityMap}
                     className={classes.overflowStyle}
