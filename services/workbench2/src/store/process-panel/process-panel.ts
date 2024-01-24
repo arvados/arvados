@@ -9,7 +9,7 @@ import { ProcessIOParameter } from "views/process-panel/process-io-card";
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 
 export type OutputDetails = {
-    rawOutputs?: any;
+    raw?: any;
     pdh?: string;
 }
 
@@ -41,7 +41,7 @@ export interface ProcessPanel {
     filters: { [status: string]: boolean };
     inputRaw: WorkflowInputsData | null;
     inputParams: ProcessIOParameter[] | null;
-    outputRaw: OutputDetails | null;
+    outputData: OutputDetails | null;
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;

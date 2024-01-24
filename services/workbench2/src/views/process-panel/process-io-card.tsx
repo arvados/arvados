@@ -219,7 +219,7 @@ export interface ProcessIOCardDataProps {
     raw: any;
     mounts?: InputCollectionMount[];
     outputUuid?: string;
-    showParams?: boolean;
+    forceShowParams?: boolean;
 }
 
 export interface ProcessIOCardActionProps {
@@ -251,7 +251,7 @@ export const ProcessIOCard = withStyles(styles)(
             panelName,
             process,
             navigateTo,
-            showParams,
+            forceShowParams,
         }: ProcessIOCardProps) => {
             const [mainProcTabState, setMainProcTabState] = useState(0);
             const [subProcTabState, setSubProcTabState] = useState(0);
@@ -266,14 +266,20 @@ export const ProcessIOCard = withStyles(styles)(
 
             const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
             const mainProcess = !(process && process!.containerRequest.requestingContainerUuid);
+            const showParamTable = mainProcess || forceShowParams;
 
             const loading = raw === null || raw === undefined || params === null;
+
             const hasRaw = !!(raw && Object.keys(raw).length > 0);
             const hasParams = !!(params && params.length > 0);
+            // isRawLoaded allows subprocess panel to display raw even if it's {}
+            const isRawLoaded = !!(raw && Object.keys(raw).length >= 0);
 
             // Subprocess
             const hasInputMounts = !!(label === ProcessIOCardType.INPUT && mounts && mounts.length);
             const hasOutputCollecton = !!(label === ProcessIOCardType.OUTPUT && outputUuid);
+            // Subprocess should not show loading if hasOutputCollection or hasInputMounts
+            const subProcessLoading = loading && !hasOutputCollecton && !hasInputMounts;
 
             return (
                 <Card
@@ -350,7 +356,7 @@ export const ProcessIOCard = withStyles(styles)(
                         }
                     />
                     <CardContent className={classes.content}>
-                        {mainProcess || showParams ? (
+                        {showParamTable ? (
                             <>
                                 {/* raw is undefined until params are loaded */}
                                 {loading && (
@@ -377,14 +383,14 @@ export const ProcessIOCard = withStyles(styles)(
                                         >
                                             {/* params will be empty on processes without workflow definitions in mounts, so we only show raw */}
                                             {hasParams && <Tab label="Parameters" />}
-                                            {!showParams && <Tab label="JSON" />}
+                                            {!forceShowParams && <Tab label="JSON" />}
                                         </Tabs>
                                         {mainProcTabState === 0 && params && hasParams && (
                                             <div className={classes.tableWrapper}>
                                                 <ProcessIOPreview
                                                     data={params}
                                                     showImagePreview={showImagePreview}
-                                                    valueLabel={showParams ? "Default value" : "Value"}
+                                                    valueLabel={forceShowParams ? "Default value" : "Value"}
                                                 />
                                             </div>
                                         )}
@@ -409,7 +415,7 @@ export const ProcessIOCard = withStyles(styles)(
                         ) : (
                             // Subprocess
                             <>
-                                {loading && (
+                                {subProcessLoading ? (
                                     <Grid
                                         container
                                         item
@@ -418,8 +424,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     >
                                         <CircularProgress />
                                     </Grid>
-                                )}
-                                {!loading && (hasInputMounts || hasOutputCollecton || hasRaw) ? (
+                                ) : !subProcessLoading && (hasInputMounts || hasOutputCollecton || isRawLoaded) ? (
                                     <>
                                         <Tabs
                                             value={subProcTabState}
@@ -429,7 +434,7 @@ export const ProcessIOCard = withStyles(styles)(
                                         >
                                             {hasInputMounts && <Tab label="Collections" />}
                                             {hasOutputCollecton && <Tab label="Collection" />}
-                                            <Tab label="JSON" />
+                                            {isRawLoaded && <Tab label="JSON" />}
                                         </Tabs>
                                         <div className={classes.tableWrapper}>
                                             {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
@@ -454,7 +459,7 @@ export const ProcessIOCard = withStyles(styles)(
                                                     />
                                                 </>
                                             )}
-                                            {(subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
+                                            {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
                                                 <div className={classes.tableWrapper}>
                                                     <ProcessIORaw data={raw} />
                                                 </div>

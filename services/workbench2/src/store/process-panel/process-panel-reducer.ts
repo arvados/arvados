@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProcessPanel } from "store/process-panel/process-panel";
+import { OutputDetails, ProcessPanel } from "store/process-panel/process-panel";
 import { ProcessPanelAction, processPanelActions } from "store/process-panel/process-panel-actions";
 
 const initialState: ProcessPanel = {
@@ -10,10 +10,15 @@ const initialState: ProcessPanel = {
     filters: {},
     inputRaw: null,
     inputParams: null,
-    outputRaw: null,
+    outputData: null,
     nodeInfo: null,
     outputDefinitions: [],
     outputParams: null,
+};
+
+export type OutputDataUpdate = {
+    uuid: string;
+    payload: OutputDetails;
 };
 
 export const processPanelReducer = (state = initialState, action: ProcessPanelAction): ProcessPanel =>
@@ -49,12 +54,12 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
                 return state;
             }
         },
-        SET_OUTPUT_RAW: (data: any) => {
+        SET_OUTPUT_DATA: (update: OutputDataUpdate) => {
             //never set output to {} unless initializing
-            if (state.outputRaw?.rawOutputs && Object.keys(state.outputRaw?.rawOutputs).length && state.containerRequestUuid === data.uuid) {
+            if (state.outputData?.raw && Object.keys(state.outputData?.raw).length && state.containerRequestUuid === update.uuid) {
                 return state;
             }
-            return { ...state, outputRaw: data.outputRaw };
+            return { ...state, outputData: update.payload };
         },
         SET_NODE_INFO: ({ nodeInfo }) => {
             return { ...state, nodeInfo };
