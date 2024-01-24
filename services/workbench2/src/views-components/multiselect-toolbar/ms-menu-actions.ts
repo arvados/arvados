@@ -24,6 +24,7 @@ export enum MultiSelectMenuActionNames {
     MOVE_TO_TRASH = 'Move to trash',
     ADD_TO_PUBLIC_FAVORITES = 'Add to public favorites',
     API_DETAILS = 'API Details',
+    ATTRIBUTES = 'Attributes',
     CANCEL = 'CANCEL',
     COPY_AND_RERUN_PROCESS = 'Copy and re-run process',
     COPY_TO_CLIPBOARD = 'Copy to clipboard',
