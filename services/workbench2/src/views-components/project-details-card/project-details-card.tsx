@@ -32,11 +32,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '1rem',
     },
     fadeout: {
-        maxWidth: '30rem',
+        maxWidth: '25rem',
         minWdidth: '18rem',
-        height: '2.5rem',
+        height: '1.5rem',
         overflow: 'hidden',
-        WebkitMaskImage: '-webkit-gradient(linear, left top, left bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)))',
+        WebkitMaskImage: '-webkit-gradient(linear, left bottom, right bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)))',
     },
     nameContainer: {
         display: 'flex',
@@ -183,7 +183,7 @@ const ProjectCard = ({ props }) => {
                 subheader={
                     description ? (
                         <section>
-                            <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '')}</Typography>
+                            <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '').slice(0, 45)}...</Typography>
                             <RichTextEditorLink
                                 title={`Description of ${name}`}
                                 content={description}
