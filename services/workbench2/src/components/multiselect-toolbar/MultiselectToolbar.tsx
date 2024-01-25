@@ -272,7 +272,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
                 ? msMenuResourceKind.RUNNING_PROCESS_RESOURCE
                 : msMenuResourceKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
-            return msMenuResourceKind.ROOT_PROJECT;
+            return isAdmin ? msMenuResourceKind.ROOT_PROJECT_ADMIN : msMenuResourceKind.ROOT_PROJECT;
         case ResourceKind.LINK:
             return msMenuResourceKind.LINK;
         case ResourceKind.WORKFLOW:

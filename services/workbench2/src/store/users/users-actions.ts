@@ -136,16 +136,6 @@ export const openUserPanel = () =>
         }
     };
 
-export const toggleIsAdmin = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const isAdmin = data!.isAdmin;
-        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
-        dispatch<any>(loadUsersPanel());
-        return newActivity;
-    };
-
 export const loadUsersPanel = () =>
     (dispatch: Dispatch) => {
         dispatch(userBindedActions.RESET_EXPLORER_SEARCH_VALUE());

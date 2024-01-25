@@ -16,11 +16,12 @@ import {
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 import { ResourceKind } from 'models/resource';
-import { msUserActionSet } from "views-components/multiselect-toolbar/ms-user-action-set";
+import { msUserActionSet, msUserCommonActionFilter, msUserAdminActionFilter } from "views-components/multiselect-toolbar/ms-user-action-set";
 
 export enum msMenuResourceKind {
     API_CLIENT_AUTHORIZATION = 'ApiClientAuthorization',
     ROOT_PROJECT = 'RootProject',
+    ROOT_PROJECT_ADMIN = 'RootProjectAdmin',
     PROJECT = 'Project',
     FILTER_GROUP = 'FilterGroup',
     READONLY_PROJECT = 'ReadOnlyProject',
@@ -83,7 +84,8 @@ const {
     FILTER_GROUP_ADMIN,
     WORKFLOW,
     READONLY_WORKFLOW,
-    ROOT_PROJECT
+    ROOT_PROJECT,
+    ROOT_PROJECT_ADMIN,
 } = msMenuResourceKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;
@@ -115,5 +117,6 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
 
-    [ROOT_PROJECT]: [msUserActionSet, allActionNames(msUserActionSet)],
+    [ROOT_PROJECT]: [msUserActionSet, msUserCommonActionFilter],
+    [ROOT_PROJECT_ADMIN]: [msUserActionSet, msUserAdminActionFilter],
 };

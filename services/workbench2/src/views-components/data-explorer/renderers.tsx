@@ -36,7 +36,6 @@ import { ResourceStatus as WorkflowStatus } from "views/workflow-panel/workflow-
 import { getUuidPrefix, openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { getUserFullname, getUserDisplayName, User, UserResource } from "models/user";
-import { toggleIsAdmin } from "store/users/users-actions";
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
 import { withResourceData } from "views-components/data-explorer/with-resources";
@@ -53,6 +52,18 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
+import { ServiceRepository } from "services/services";
+import { loadUsersPanel } from "store/users/users-actions";
+
+export const toggleIsAdmin = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        const isAdmin = data!.isAdmin;
+        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
+        dispatch<any>(loadUsersPanel());
+        return newActivity;
+    };
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;

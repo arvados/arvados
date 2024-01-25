@@ -43,6 +43,10 @@ export enum MultiSelectMenuActionNames {
     RUN_WORKFLOW = 'Run Workflow',
     SHARE = 'Share',
     VIEW_DETAILS = 'View details',
+    ACTIVATE_USER = 'Activate user', 
+    DEACTIVATE_USER = 'Deactivate user', 
+    SETUP_USER = 'Setup user',
+    LOGIN_AS_USER = 'Login as user',
 };
 
 export type MultiSelectMenuAction = {
