@@ -9,7 +9,7 @@ type MultiselectToolbarState = {
     isVisible: boolean;
     checkedList: TCheckedList;
     selectedUuid: string;
-    disabledButtons: string[]
+    disabledButtons: string[];
 };
 
 const multiselectToolbarInitialState = {
