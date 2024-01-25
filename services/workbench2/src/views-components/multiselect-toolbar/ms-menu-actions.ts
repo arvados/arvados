@@ -18,6 +18,7 @@ import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
+import { UserAccountStatus } from 'store/users/users-actions';
 
 export enum MultiSelectMenuActionNames {
     ADD_TO_FAVORITES = 'Add to Favorites',
@@ -59,6 +60,7 @@ export type MultiSelectMenuAction = {
     useAlts?: (uuid: string | null, iconProps: {resources: ResourcesState, favorites: FavoritesState, publicFavorites: PublicFavoritesState}) => boolean;
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
     adminOnly?: boolean;
+    filters?: UserAccountStatus[]
 };
 
 export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];

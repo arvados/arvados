@@ -26,7 +26,7 @@ import { resourceIsFrozen } from "common/frozen-resources";
 import { getResourceWithEditableStatus } from "store/resources/resources";
 import { GroupResource } from "models/group";
 import { EditableResource } from "models/resource";
-import { User } from "models/user";
+import { User, UserResource } from "models/user";
 import { GroupClass } from "models/group";
 import { isProcessCancelable } from "store/processes/process";
 import { CollectionResource } from "models/collection";
@@ -34,6 +34,11 @@ import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { AuthState } from "store/auth/auth-reducer";
+import { BuiltinGroups, getBuiltinGroupUuid } from "models/group";
+import { LinkResource, LinkClass } from "models/link";
+import { filterResources } from "store/resources/resources";
+import { UserAccountStatus } from "store/users/users-actions";
 
 const WIDTH_TRANSITION = 150
 
@@ -89,7 +94,8 @@ export type MultiselectToolbarProps = {
     iconProps: IconProps
     user: User | null
     disabledButtons: Set<string>
-    executeMulti: (action: ContextMenuAction, inputSelectedUuid: string | undefined, checkedList: TCheckedList, resources: ResourcesState) => void;
+    auth: AuthState;
+    executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, inputSelectedUuid: string | undefined, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 type IconProps = {
@@ -103,7 +109,7 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, inputSelectedUuid, iconProps, user, disabledButtons } = props;
+        const { classes, checkedList, inputSelectedUuid, iconProps, user, disabledButtons, auth } = props;
         const singleSelectedUuid = inputSelectedUuid ?? props.singleSelectedUuid
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
@@ -126,12 +132,34 @@ export const MultiselectToolbar = connect(
             // eslint-disable-next-line
         }, [checkedList])
 
+        const getAccountStatus = (auth: AuthState, resources: ResourcesState) => {
+            const user = getResource<UserResource>(singleSelectedUuid as string)(resources);
+            if (!user) return;
+            const allUsersGroupUuid = getBuiltinGroupUuid(auth.localCluster, BuiltinGroups.ALL);
+            const permissions = filterResources(
+                (resource: LinkResource) =>
+                    resource.kind === ResourceKind.LINK &&
+                    resource.linkClass === LinkClass.PERMISSION &&
+                    resource.headUuid === allUsersGroupUuid &&
+                    resource.tailUuid === singleSelectedUuid
+            )(resources);
+
+            return user && user.isActive ? UserAccountStatus.ACTIVE : permissions.length > 0 ? UserAccountStatus.SETUP : UserAccountStatus.INACTIVE;
+        };
+
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
-                        singleSelectedUuid === null ? action.isForMulti : true
-                    );
+                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
+                      .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true))
+                      .filter((action) => {
+                          if (action.filters && action.filters.length) {
+                              if (action.filters[0] === UserAccountStatus.OTHER && singleSelectedUuid !== auth.user?.uuid) return true;
+                              const accountStatus = getAccountStatus(auth, iconProps.resources);
+                              return accountStatus && action.filters.includes(accountStatus);
+                          }
+                          return true;
+                      });
 
         return (
             <React.Fragment>
@@ -334,6 +362,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
         singleSelectedUuid: isExactlyOneSelected(multiselect.checkedList),
         user: auth && auth.user ? auth.user : null,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
+        auth,
         iconProps: {
             resources,
             favorites,

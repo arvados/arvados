@@ -146,6 +146,7 @@ export enum UserAccountStatus {
         ACTIVE = 'Active',
         INACTIVE = 'Inactive',
         SETUP = 'Setup',
+        OTHER = 'Other',
     }
 
 export const getUserAccountStatus = (state: RootState, uuid: string) => {

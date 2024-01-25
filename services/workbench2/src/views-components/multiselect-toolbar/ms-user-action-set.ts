@@ -6,12 +6,10 @@ import { ActiveIcon, AdminMenuIcon, AdvancedIcon, AttributesIcon, DeactivateUser
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, MultiSelectMenuActionNames } from './ms-menu-actions';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openActivateDialog, openDeactivateDialog, openSetupDialog } from 'store/user-profile/user-profile-actions';
-import { openUserAttributes } from 'store/users/users-actions';
+import { UserAccountStatus, openUserAttributes } from 'store/users/users-actions';
 import { loginAs } from 'store/users/users-actions';
 
 const { ATTRIBUTES, API_DETAILS, SETUP_USER, ACTIVATE_USER, DEACTIVATE_USER, LOGIN_AS_USER } = MultiSelectMenuActionNames;
-
-export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 
 const msUserAttributes: MultiSelectMenuAction = {
     name: ATTRIBUTES,
@@ -41,6 +39,7 @@ const msActivateUser: MultiSelectMenuAction = {
     execute: (dispatch, resources) => {
         dispatch<any>(openActivateDialog(resources[0].uuid));
     },
+    filters: [UserAccountStatus.INACTIVE, UserAccountStatus.SETUP],
 };
 
 const msSetupUser: MultiSelectMenuAction = {
@@ -51,6 +50,7 @@ const msSetupUser: MultiSelectMenuAction = {
     execute: (dispatch, resources) => {
         dispatch<any>(openSetupDialog(resources[0].uuid));
     },
+    filters: [UserAccountStatus.INACTIVE],
 };
 
 const msDeactivateUser: MultiSelectMenuAction = {
@@ -61,6 +61,7 @@ const msDeactivateUser: MultiSelectMenuAction = {
     execute: (dispatch, resources) => {
         dispatch<any>(openDeactivateDialog(resources[0].uuid));
     },
+    filters: [UserAccountStatus.ACTIVE, UserAccountStatus.SETUP],
 };
 
 const msLoginAsUser: MultiSelectMenuAction = {
@@ -71,6 +72,7 @@ const msLoginAsUser: MultiSelectMenuAction = {
     execute: (dispatch, resources) => {
         dispatch<any>(loginAs(resources[0].uuid));
     },
+    filters: [UserAccountStatus.OTHER]
 };
 
 export const msUserActionSet: MultiSelectMenuActionSet = [[msAdvancedAction, msUserAttributes, msSetupUser, msActivateUser, msDeactivateUser, msLoginAsUser]];
