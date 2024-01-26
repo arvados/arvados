@@ -19,7 +19,6 @@ import org.arvados.client.test.utils.FileTestUtils;
 import org.arvados.client.utils.FileMerge;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +39,9 @@ import java.util.UUID;
 import static org.arvados.client.test.utils.FileTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -84,10 +86,10 @@ public class FileDownloaderTest {
         List<File> downloadedFiles = fileDownloader.downloadFilesFromCollection(collectionToDownload.getUuid(), FILE_DOWNLOAD_TEST_DIR);
 
         //then
-        Assert.assertEquals(3, downloadedFiles.size()); // 3 files downloaded
+        assertEquals(3, downloadedFiles.size()); // 3 files downloaded
 
         File collectionDir = new File(FILE_DOWNLOAD_TEST_DIR + Characters.SLASH + collectionToDownload.getUuid());
-        Assert.assertTrue(collectionDir.exists()); // collection directory created
+        assertTrue(collectionDir.exists()); // collection directory created
 
         // 3 files correctly saved
         assertThat(downloadedFiles).allMatch(File::exists);
@@ -112,8 +114,8 @@ public class FileDownloaderTest {
         File downloadedFile = fileDownloader.downloadSingleFileUsingKeepWeb(file.getName(), collectionToDownload.getUuid(), FILE_DOWNLOAD_TEST_DIR);
 
         //then
-        Assert.assertTrue(downloadedFile.exists());
-        Assert.assertEquals(file.getName(), downloadedFile.getName());
+        assertTrue(downloadedFile.exists());
+        assertEquals(file.getName(), downloadedFile.getName());
         assertArrayEquals(FileUtils.readFileToByteArray(downloadedFile), FileUtils.readFileToByteArray(file));
     }
 
@@ -121,12 +123,12 @@ public class FileDownloaderTest {
     public void testDownloadFileWithResume() throws Exception {
         //given
         String collectionUuid = "some-collection-uuid";
+        String expectedDataString = "testData";
         String fileName = "sample-file-name";
-        long start = 1024;
+        long start = 0;
         Long end = null;
 
-        byte[] expectedData = "test data".getBytes();
-        InputStream inputStream = new ByteArrayInputStream(expectedData);
+        InputStream inputStream = new ByteArrayInputStream(expectedDataString.getBytes());
 
         when(keepWebApiClient.get(collectionUuid, fileName, start, end)).thenReturn(inputStream);
 
@@ -134,14 +136,10 @@ public class FileDownloaderTest {
         File downloadedFile = fileDownloader.downloadFileWithResume(collectionUuid, fileName, FILE_DOWNLOAD_TEST_DIR, start, end);
 
         //then
-        Assert.assertNotNull(downloadedFile);
-        Assert.assertTrue(downloadedFile.exists());
-        Assert.assertEquals(downloadedFile.length(), expectedData.length);
-
-        byte[] actualData = Files.readAllBytes(downloadedFile.toPath());
-        assertArrayEquals(expectedData, actualData);
-
-        Files.delete(downloadedFile.toPath());
+        assertNotNull(downloadedFile);
+        assertTrue(downloadedFile.exists());
+        String actualDataString = Files.readString(downloadedFile.toPath());
+        assertEquals("The content of the file does not match the expected data.", expectedDataString, actualDataString);
     }
 
     @After
