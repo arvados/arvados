@@ -20,9 +20,12 @@ import org.arvados.client.logic.keep.exception.DownloadFolderAlreadyExistsExcept
 import org.arvados.client.logic.keep.exception.FileAlreadyExistsException;
 import org.slf4j.Logger;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -68,6 +71,34 @@ public class FileDownloader {
             throw new ArvadosClientException(String.format("Unable to write down file %s", fileToken.getFileName()), e);
         }
         return downloadedFile;
+    }
+
+    public File downloadFileWithResume(String collectionUuid, String fileName, String pathToDownloadFolder, long offset, int bufferSize) throws IOException {
+        if (bufferSize <= 0) {
+            throw new IllegalArgumentException("Buffer size must be greater than 0");
+        }
+
+        File destinationFile = new File(pathToDownloadFolder, fileName);
+
+        if (!destinationFile.exists()) {
+            boolean isCreated = destinationFile.createNewFile();
+            if (!isCreated) {
+                throw new IOException("Failed to create new file: " + destinationFile.getAbsolutePath());
+            }
+        }
+
+        try (RandomAccessFile outputFile = new RandomAccessFile(destinationFile, "rw")) {
+            outputFile.seek(offset);
+
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+            InputStream inputStream = new ByteArrayInputStream(keepWebApiClient.downloadPartial(collectionUuid, fileName, offset));
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputFile.write(buffer, 0, bytesRead);
+            }
+        }
+
+        return destinationFile;
     }
 
     public List<File> downloadFilesFromCollectionUsingKeepWeb(String collectionUuid, String pathToDownloadFolder) {

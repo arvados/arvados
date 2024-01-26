@@ -13,12 +13,17 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.Files;
 
+import okhttp3.mockwebserver.MockResponse;
+import okio.Buffer;
+
 import static org.arvados.client.test.utils.ApiClientTestUtils.getResponse;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class KeepWebApiClientTest extends ArvadosClientMockedWebServerTest {
 
-    private KeepWebApiClient client = new KeepWebApiClient(CONFIG);
+    private final KeepWebApiClient client = new KeepWebApiClient(CONFIG);
 
     @Test
     public void uploadFile() throws Exception {
@@ -34,6 +39,27 @@ public class KeepWebApiClientTest extends ArvadosClientMockedWebServerTest {
 
         // then
         assertThat(uploadResponse).isEqualTo("Created");
+    }
+
+    @Test
+    public void downloadPartialIsPerformedSuccessfully() throws Exception {
+        // given
+        String collectionUuid = "some-collection-uuid";
+        String filePathName = "sample-file-path";
+        long offset = 1024;
+
+        byte[] expectedData = "test data".getBytes();
+
+        try (Buffer buffer = new Buffer().write(expectedData)) {
+            server.enqueue(new MockResponse().setBody(buffer));
+
+            // when
+            byte[] actualData = client.downloadPartial(collectionUuid, filePathName, offset);
+
+            // then
+            assertNotNull(actualData);
+            assertEquals(new String(expectedData), new String(actualData));
+        }
     }
 
 }
