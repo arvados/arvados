@@ -99,7 +99,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     );
 };
 
-const FrozenProject = (props: { item: ProjectResource }) => {
+export const FrozenProject = (props: { item: ProjectResource }) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
         if (props.item.frozenByUuid) {

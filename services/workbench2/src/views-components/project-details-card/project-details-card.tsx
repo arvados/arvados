@@ -20,9 +20,10 @@ import { formatDate } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
-import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
-
-
+import { UserResourceAccountStatus, FrozenProject } from 'views-components/data-explorer/renderers';
+import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
+import { FavoritesState } from 'store/favorites/favorites-reducer';
+import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
 
 type CssRules = 'root' | 'cardheader' | 'fadeout' | 'nameContainer' | 'activeIndicator' | 'cardcontent' | 'attributesection' | 'attribute' | 'chipsection' | 'tag';
 
@@ -82,19 +83,33 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-type DetailsCardProps = {
+type DetailsCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource | UserResource;
 };
 
+type UserCardProps = WithStyles<CssRules> & {
+    currentResource: UserResource;
+};
+
+type ProjectCardProps = WithStyles<CssRules> & {
+    currentResource: ProjectResource;
+};
+
 export const ProjectDetailsCard = connect(mapStateToProps)(
-    withStyles(styles)((props: DetailsCardProps & WithStyles<CssRules>) => {
-        const { currentResource } = props;
-        return (currentResource.kind as string) === ResourceKind.USER ? <UserCard props={props} /> : <ProjectCard props={props} />;
+    withStyles(styles)((props: DetailsCardProps) => {
+        const { classes, currentResource } = props;
+        switch (currentResource.kind as string) {
+            case ResourceKind.USER:
+                return <UserCard classes={classes} currentResource={currentResource as UserResource} />;
+            case ResourceKind.PROJECT:
+                return <ProjectCard classes={classes} currentResource={currentResource as ProjectResource} />;
+            default:
+                return null;
+        }
     })
 );
 
-const UserCard = ({ props }) => {
-    const { classes, currentResource } = props;
+const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
     const { fullName, uuid, username, email, isAdmin } = currentResource as UserResource & { fullName: string };
 
     return (
@@ -106,19 +121,15 @@ const UserCard = ({ props }) => {
                         <Typography
                             noWrap
                             variant='h6'
-                            >
+                        >
                             {fullName}
                         </Typography>
-                        <Typography
-                            className={classes.activeIndicator}
-                        >
+                        <Typography className={classes.activeIndicator}>
                             <UserResourceAccountStatus uuid={uuid} />
                         </Typography>
                     </section>
                 }
-                action={
-                <MultiselectToolbar inputSelectedUuid={uuid} />
-                }
+                action={<MultiselectToolbar inputSelectedUuid={uuid} />}
             />
             <CardContent className={classes.cardcontent}>
                 <section className={classes.attributesection}>
@@ -165,8 +176,7 @@ const UserCard = ({ props }) => {
     );
 };
 
-const ProjectCard = ({ props }) => {
-    const { classes, currentResource } = props;
+const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource }) => {
     const { name, uuid, description } = currentResource as ProjectResource;
     return (
         <Card className={classes.root}>
@@ -178,6 +188,9 @@ const ProjectCard = ({ props }) => {
                         variant='h6'
                     >
                         {name}
+                        <FavoriteStar resourceUuid={currentResource.uuid} />
+                        <PublicFavoriteStar resourceUuid={currentResource.uuid} />
+                        {currentResource.kind === ResourceKind.PROJECT && <FrozenProject item={currentResource} />}
                     </Typography>
                 }
                 subheader={
@@ -195,7 +208,6 @@ const ProjectCard = ({ props }) => {
                     )
                 }
                 action={<MultiselectToolbar inputSelectedUuid={uuid} />}
-                
             />
             <CardContent className={classes.cardcontent}>
                 <section className={classes.attributesection}>
@@ -205,7 +217,7 @@ const ProjectCard = ({ props }) => {
                     >
                         <DetailsAttribute
                             label='Type'
-                            value={currentResource.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)}
+                            value={'groupClass' in currentResource && currentResource.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)}
                         />
                     </Typography>
                     <Typography
@@ -249,7 +261,8 @@ const ProjectCard = ({ props }) => {
                 </section>
                 <section className={classes.chipsection}>
                     <Typography component='div'>
-                        {typeof currentResource.properties === 'object' &&
+                        {'properties' in currentResource &&
+                            typeof currentResource.properties === 'object' &&
                             Object.keys(currentResource.properties).map((k) =>
                                 Array.isArray(currentResource.properties[k])
                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
