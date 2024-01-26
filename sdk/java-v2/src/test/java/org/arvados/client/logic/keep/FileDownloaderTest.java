@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -123,7 +122,6 @@ public class FileDownloaderTest {
         //given
         String collectionUuid = "some-collection-uuid";
         String fileName = "sample-file-name";
-        String pathToDownloadFolder = "downloads";
         long start = 1024;
         Long end = null;
 
@@ -133,7 +131,7 @@ public class FileDownloaderTest {
         when(keepWebApiClient.get(collectionUuid, fileName, start, end)).thenReturn(inputStream);
 
         //when
-        File downloadedFile = fileDownloader.downloadFileWithResume(collectionUuid, fileName, pathToDownloadFolder, start, end);
+        File downloadedFile = fileDownloader.downloadFileWithResume(collectionUuid, fileName, FILE_DOWNLOAD_TEST_DIR, start, end);
 
         //then
         Assert.assertNotNull(downloadedFile);
@@ -144,7 +142,6 @@ public class FileDownloaderTest {
         assertArrayEquals(expectedData, actualData);
 
         Files.delete(downloadedFile.toPath());
-        Files.delete(Paths.get(pathToDownloadFolder));
     }
 
     @After
