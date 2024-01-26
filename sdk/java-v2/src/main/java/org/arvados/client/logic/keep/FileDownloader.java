@@ -20,7 +20,6 @@ import org.arvados.client.logic.keep.exception.DownloadFolderAlreadyExistsExcept
 import org.arvados.client.logic.keep.exception.FileAlreadyExistsException;
 import org.slf4j.Logger;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -73,9 +72,9 @@ public class FileDownloader {
         return downloadedFile;
     }
 
-    public File downloadFileWithResume(String collectionUuid, String fileName, String pathToDownloadFolder, long offset, int bufferSize) throws IOException {
-        if (bufferSize <= 0) {
-            throw new IllegalArgumentException("Buffer size must be greater than 0");
+    public File downloadFileWithResume(String collectionUuid, String fileName, String pathToDownloadFolder, long start, Long end) throws IOException {
+        if (end != null && end < start) {
+            throw new IllegalArgumentException("End index must be greater than or equal to the start index");
         }
 
         File destinationFile = new File(pathToDownloadFolder, fileName);
@@ -87,14 +86,17 @@ public class FileDownloader {
             }
         }
 
-        try (RandomAccessFile outputFile = new RandomAccessFile(destinationFile, "rw")) {
-            outputFile.seek(offset);
+        try (RandomAccessFile outputFile = new RandomAccessFile(destinationFile, "rw");
+             InputStream inputStream = keepWebApiClient.get(collectionUuid, fileName, start, end)) {
+            outputFile.seek(start);
 
-            byte[] buffer = new byte[bufferSize];
+            long remaining = (end == null) ? Long.MAX_VALUE : end - start + 1;
+            byte[] buffer = new byte[4096];
             int bytesRead;
-            InputStream inputStream = new ByteArrayInputStream(keepWebApiClient.downloadPartial(collectionUuid, fileName, offset));
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputFile.write(buffer, 0, bytesRead);
+            while ((bytesRead = inputStream.read(buffer)) != -1 && remaining > 0) {
+                int bytesToWrite = (int) Math.min(bytesRead, remaining);
+                outputFile.write(buffer, 0, bytesToWrite);
+                remaining -= bytesToWrite;
             }
         }
 

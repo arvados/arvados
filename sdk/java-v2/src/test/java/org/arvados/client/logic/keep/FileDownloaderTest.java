@@ -27,8 +27,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +40,7 @@ import java.util.UUID;
 
 import static org.arvados.client.test.utils.FileTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -90,7 +95,7 @@ public class FileDownloaderTest {
 
         for(int i = 0; i < downloadedFiles.size(); i ++) {
             File downloaded = new File(collectionDir + Characters.SLASH + files.get(i).getName());
-            Assert.assertArrayEquals(FileUtils.readFileToByteArray(downloaded), FileUtils.readFileToByteArray(files.get(i)));
+            assertArrayEquals(FileUtils.readFileToByteArray(downloaded), FileUtils.readFileToByteArray(files.get(i)));
         }
     }
 
@@ -110,7 +115,36 @@ public class FileDownloaderTest {
         //then
         Assert.assertTrue(downloadedFile.exists());
         Assert.assertEquals(file.getName(), downloadedFile.getName());
-        Assert.assertArrayEquals(FileUtils.readFileToByteArray(downloadedFile), FileUtils.readFileToByteArray(file));
+        assertArrayEquals(FileUtils.readFileToByteArray(downloadedFile), FileUtils.readFileToByteArray(file));
+    }
+
+    @Test
+    public void testDownloadFileWithResume() throws Exception {
+        //given
+        String collectionUuid = "some-collection-uuid";
+        String fileName = "sample-file-name";
+        String pathToDownloadFolder = "downloads";
+        long start = 1024;
+        Long end = null;
+
+        byte[] expectedData = "test data".getBytes();
+        InputStream inputStream = new ByteArrayInputStream(expectedData);
+
+        when(keepWebApiClient.get(collectionUuid, fileName, start, end)).thenReturn(inputStream);
+
+        //when
+        File downloadedFile = fileDownloader.downloadFileWithResume(collectionUuid, fileName, pathToDownloadFolder, start, end);
+
+        //then
+        Assert.assertNotNull(downloadedFile);
+        Assert.assertTrue(downloadedFile.exists());
+        Assert.assertEquals(downloadedFile.length(), expectedData.length);
+
+        byte[] actualData = Files.readAllBytes(downloadedFile.toPath());
+        assertArrayEquals(expectedData, actualData);
+
+        Files.delete(downloadedFile.toPath());
+        Files.delete(Paths.get(pathToDownloadFolder));
     }
 
     @After
