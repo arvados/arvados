@@ -11,7 +11,7 @@ SRC=$(realpath $(dirname ${BASH_SOURCE[0]})/../..)
 ctrname=arvadostest
 ctrbase=${ctrname}
 if [[ "${1}" != "--update" ]] || ! docker images --format={{.Repository}} | grep -x ${ctrbase}; then
-    ctrbase=debian:10
+    ctrbase=debian:11
 fi
 
 if docker ps -a --format={{.Names}} | grep -x ${ctrname}; then
