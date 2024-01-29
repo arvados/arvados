@@ -9,7 +9,7 @@ read -rd "\000" helpmessage <<EOF
 $(basename "$0"): Build Arvados packages
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename "$0") [options]
+        WORKSPACE=/path/to/arvados $(basename "$0") --target <target> [options]
 
 Options:
 
@@ -18,7 +18,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian10)
+    Distribution to build packages for
 --only-build <package>
     Build only a specific package (or ONLY_BUILD from environment)
 --arch <arch>
@@ -47,8 +47,8 @@ VENDOR="The Arvados Project"
 DEBUG=${ARVADOS_DEBUG:-0}
 FORCE_BUILD=${FORCE_BUILD:-0}
 EXITCODE=0
-TARGET=debian10
 COMMAND=
+TARGET=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
     help,build-bundle-packages,debug,target:,only-build:,arch:,force-build \
@@ -92,6 +92,14 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+if [[ -z "$TARGET" ]]; then
+    echo "FATAL: --target must be specified" >&2
+    exit 2
+elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+    echo "FATAL: unknown build target '$TARGET'" >&2
+    exit 2
+fi
 
 if [[ "$COMMAND" != "" ]]; then
   COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
