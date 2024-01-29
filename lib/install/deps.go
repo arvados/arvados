@@ -832,21 +832,21 @@ func identifyOS() (osversion, error) {
 	case "debian":
 		osv.Debian = true
 	default:
-		id_like_match := false
-		for _, id_like := range strings.Split(kv["ID_LIKE"], " ") {
-			switch id_like {
+		idLikeMatched := false
+		for _, idLike := range strings.Split(kv["ID_LIKE"], " ") {
+			switch idLike {
 			case "debian":
 				osv.Debian = true
-				id_like_match = true
+				idLikeMatched = true
 			case "rhel":
 				osv.RedHat = true
-				id_like_match = true
+				idLikeMatched = true
 			}
-			if id_like_match {
+			if idLikeMatched {
 				break
 			}
 		}
-		if !id_like_match {
+		if !idLikeMatched {
 			return osv, fmt.Errorf("no supported ID found in /etc/os-release")
 		}
 	}
