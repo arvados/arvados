@@ -77,13 +77,6 @@ arvados:
       user: {{ database_user }}
       extra_conn_params:
         client_encoding: UTF8
-      # Centos7 does not enable SSL by default, so we disable
-      # it here just for testing of the formula purposes only.
-      # You should not do this in production, and should
-      # configure Postgres certificates correctly
-      {%- if grains.os_family in ('RedHat',) %}
-        sslmode: disable
-      {%- endif %}
 
     tls:
       # certificate: ''
