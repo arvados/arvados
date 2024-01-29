@@ -10,15 +10,21 @@ import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { getResource } from 'store/resources/resources';
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
-import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
-import { UserResourceAccountStatus, FrozenProject } from 'views-components/data-explorer/renderers';
+import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
 import { FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
+import { MoreVerticalIcon } from 'components/icon/icon';
+import { IconButton } from '@material-ui/core';
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
+import { openContextMenu } from 'store/context-menu/context-menu-actions'; 
+import { CollectionResource } from 'models/collection';
+import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';    
 
 type CssRules =
     | 'root'
@@ -107,19 +113,51 @@ const mapStateToProps = (state: RootState) => {
     const currentRoute = state.router.location?.pathname.split('/') || [];
     const currentItemUuid = currentRoute[currentRoute.length - 1];
     const currentResource = getResource(currentItemUuid)(state.resources);
-    const frozenByUser =
-        currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(state.resources);
-    const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName:string }).fullName;
-    // const frozenByFullName = frozenByUser && 'fullName' in frozenByUser ? (frozenByUser as any).fullName : undefined;
-        return {
+    const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(state.resources);
+    const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
+
+    return {
+        isAdmin: state.auth.user?.isAdmin,
         currentResource,
         frozenByFullName,
     };
 };
 
+const mapDispatchToProps = (dispatch: any) => ({
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: any, isAdmin: boolean) => {
+        // When viewing the contents of a filter group, all contents should be treated as read only.
+        let readOnly = false;
+        if (resource.groupClass === 'filter') {
+            readOnly = true;
+        }
+
+        const menuKind = dispatch(resourceUuidToContextMenuKind(resource.uuid, readOnly));
+        if (menuKind && resource) {
+            dispatch(
+                openContextMenu(event, {
+                    name: resource.name,
+                    uuid: resource.uuid,
+                    ownerUuid: resource.ownerUuid,
+                    isTrashed: 'isTrashed' in resource ? resource.isTrashed : false,
+                    kind: resource.kind,
+                    menuKind,
+                    isAdmin,
+                    isFrozen: !!resource.frozenById,
+                    description: resource.description,
+                    storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
+                    properties: 'properties' in resource ? resource.properties : {},
+                })
+            );
+        }
+
+    },
+});
+
 type DetailsCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource | UserResource;
     frozenByFullName?: string;
+    isAdmin: boolean;
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
 };
 
 type UserCardProps = WithStyles<CssRules> & {
@@ -129,11 +167,16 @@ type UserCardProps = WithStyles<CssRules> & {
 type ProjectCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource;
     frozenByFullName: string | undefined;
+    isAdmin: boolean;
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
 };
 
-export const ProjectDetailsCard = connect(mapStateToProps)(
+export const ProjectDetailsCard = connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(
     withStyles(styles)((props: DetailsCardProps) => {
-        const { classes, currentResource, frozenByFullName } = props;
+        const { classes, currentResource, frozenByFullName, handleContextMenu, isAdmin } = props;
         switch (currentResource.kind as string) {
             case ResourceKind.USER:
                 return (
@@ -148,6 +191,8 @@ export const ProjectDetailsCard = connect(mapStateToProps)(
                         classes={classes}
                         currentResource={currentResource as ProjectResource}
                         frozenByFullName={frozenByFullName}
+                        isAdmin={isAdmin}
+                        handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                     />
                 );
             default:
@@ -184,40 +229,66 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
     );
 };
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, isAdmin }) => {
     const { name, uuid, description } = currentResource as ProjectResource;
-    
+
     return (
         <Card className={classes.root}>
             <CardHeader
                 className={classes.cardheader}
                 title={
+                    <>
                     <section className={classes.namePlate}>
                         <Typography
                             noWrap
                             variant='h6'
-                            style={{marginRight: '1rem'}}
+                            style={{ marginRight: '1rem' }}
                         >
                             {name}
-                            </Typography>
-                            <FavoriteStar
-                                className={classes.faveIcon}
-                                resourceUuid={currentResource.uuid}
-                            />
-                            <PublicFavoriteStar
-                                className={classes.faveIcon}
-                                resourceUuid={currentResource.uuid}
-                            />
-                            <Tooltip
-                                className={classes.frozenIcon}
-                                title={!!frozenByFullName && <span>Project was frozen by {frozenByFullName}</span>}
-                            >
-                                <FreezeIcon style={{ fontSize: 'inherit' }} />
-                            </Tooltip>
+                        </Typography>
+                        <FavoriteStar
+                            className={classes.faveIcon}
+                            resourceUuid={currentResource.uuid}
+                        />
+                        <PublicFavoriteStar
+                            className={classes.faveIcon}
+                            resourceUuid={currentResource.uuid}
+                        />
+                        <Tooltip
+                            className={classes.frozenIcon}
+                            title={!!frozenByFullName && <span>Project was frozen by {frozenByFullName}</span>}
+                        >
+                            <FreezeIcon style={{ fontSize: 'inherit' }} />
+                        </Tooltip>
                     </section>
+                    <section className={classes.chipsection}>
+                    <Typography component='div'>
+                        {typeof currentResource.properties === 'object' &&
+                            Object.keys(currentResource.properties).map((k) =>
+                                Array.isArray(currentResource.properties[k])
+                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                            )}
+                    </Typography>
+                </section>
+                    </>
                 }
-                subheader={
-                    description ? (
+                    
+                    
+                action={<Tooltip
+                    title='More options'
+                    disableFocusListener
+                >
+                    <IconButton
+                        aria-label='More options'
+                        onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                    >
+                        <MoreVerticalIcon />
+                    </IconButton>
+                </Tooltip>}
+            />
+            <CardContent className={classes.cardcontent}>
+                {description && (
                         <section>
                             <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '').slice(0, 45)}...</Typography>
                             <div className={classes.showmore}>
@@ -228,23 +299,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                 />
                             </div>
                         </section>
-                    ) : (
-                        'no description available'
-                    )
-                }
-                action={<MultiselectToolbar inputSelectedUuid={uuid} />}
-            />
-            <CardContent className={classes.cardcontent}>
-                <section className={classes.chipsection}>
-                    <Typography component='div'>
-                        {typeof currentResource.properties === 'object' &&
-                            Object.keys(currentResource.properties).map((k) =>
-                                Array.isArray(currentResource.properties[k])
-                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                            )}
-                    </Typography>
-                </section>
+                    )}
             </CardContent>
         </Card>
     );
