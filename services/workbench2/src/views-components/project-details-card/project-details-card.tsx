@@ -142,7 +142,7 @@ const mapDispatchToProps = (dispatch: any) => ({
                     kind: resource.kind,
                     menuKind,
                     isAdmin,
-                    isFrozen: !!resource.frozenById,
+                    isFrozen: !!resource.frozenByUuid,
                     description: resource.description,
                     storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                     properties: 'properties' in resource ? resource.properties : {},
@@ -254,12 +254,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                             className={classes.faveIcon}
                             resourceUuid={currentResource.uuid}
                         />
-                        <Tooltip
+                        {!!frozenByFullName && <Tooltip
                             className={classes.frozenIcon}
-                            title={!!frozenByFullName && <span>Project was frozen by {frozenByFullName}</span>}
+                            title={<span>Project was frozen by {frozenByFullName}</span>}
                         >
                             <FreezeIcon style={{ fontSize: 'inherit' }} />
-                        </Tooltip>
+                        </Tooltip>}
                     </section>
                     <section className={classes.chipsection}>
                     <Typography component='div'>
@@ -290,7 +290,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
             <CardContent className={classes.cardcontent}>
                 {description && (
                         <section>
-                            <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '').slice(0, 45)}...</Typography>
+                            {/* <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '').slice(0, 45)}...</Typography> */}
                             <div className={classes.showmore}>
                                 <RichTextEditorLink
                                     title={`Description of ${name}`}
