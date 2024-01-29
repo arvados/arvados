@@ -273,8 +273,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		} else if osv.Debian {
 			var codename string
 			switch osv.Major {
-			case 10:
-				codename = "buster"
 			case 11:
 				codename = "bullseye"
 			case 12:
