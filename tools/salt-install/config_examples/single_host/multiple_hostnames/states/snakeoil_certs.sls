@@ -63,7 +63,7 @@ extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run:
   # Taken from https://github.com/arvados/arvados/blob/master/tools/arvbox/lib/arvbox/docker/service/certificate/run
   cmd.run:
     - name: |
-        # These dirs are not to CentOS-ish, but this is a helper script
+        # These dirs are not too CentOS-ish, but this is a helper script
         # and they should be enough
         /bin/bash -c "mkdir -p /etc/ssl/certs/ /etc/ssl/private/ && \
         openssl req \
