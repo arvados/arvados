@@ -3,29 +3,38 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent } from '@material-ui/core';
+import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip } from '@material-ui/core';
 import { StyleRulesCallback } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { getResource } from 'store/resources/resources';
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
-import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ProjectResource } from 'models/project';
-import { GroupClass } from 'models/group';
-import { ResourceWithName } from 'views-components/data-explorer/renderers';
-import { formatDate } from 'common/formatters';
-import { resourceLabel } from 'common/labels';
 import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
 import { UserResourceAccountStatus, FrozenProject } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
-import { FavoritesState } from 'store/favorites/favorites-reducer';
-import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
+import { FreezeIcon } from 'components/icon/icon';
+import { Resource } from 'models/resource';
 
-type CssRules = 'root' | 'cardheader' | 'fadeout' | 'nameContainer' | 'activeIndicator' | 'cardcontent' | 'attributesection' | 'attribute' | 'chipsection' | 'tag';
+type CssRules =
+    | 'root'
+    | 'cardheader'
+    | 'fadeout'
+    | 'showmore'
+    | 'nameContainer'
+    | 'activeIndicator'
+    | 'cardcontent'
+    | 'namePlate'
+    | 'faveIcon'
+    | 'frozenIcon'
+    | 'attributesection'
+    | 'attribute'
+    | 'chipsection'
+    | 'tag';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -38,6 +47,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '1.5rem',
         overflow: 'hidden',
         WebkitMaskImage: '-webkit-gradient(linear, left bottom, right bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)))',
+    },
+    showmore: {
+        color: theme.palette.primary.main,
+        cursor: 'pointer',
+        maxWidth: '10rem',
     },
     nameContainer: {
         display: 'flex',
@@ -53,6 +67,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'column',
         marginTop: '-1rem',
     },
+    namePlate: {
+        display: 'flex',
+        flexDirection: 'row',
+    },
+    faveIcon: {
+        fontSize: '0.8rem',
+        margin: 'auto 0 0.5rem 0.3rem',
+        color: theme.palette.text.primary,
+    },
+    frozenIcon: {
+        fontSize: '0.5rem',
+        marginLeft: '0.3rem',
+        marginTop: '0.57rem',
+        height: '1rem',
+        color: theme.palette.text.primary,
+    },
     attributesection: {
         display: 'flex',
         flexWrap: 'wrap',
@@ -60,7 +90,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
         marginBottom: '0.5rem',
         marginRight: '1rem',
-        border: '1px solid lightgrey',
         padding: '0.5rem',
         borderRadius: '5px',
     },
@@ -78,13 +107,19 @@ const mapStateToProps = (state: RootState) => {
     const currentRoute = state.router.location?.pathname.split('/') || [];
     const currentItemUuid = currentRoute[currentRoute.length - 1];
     const currentResource = getResource(currentItemUuid)(state.resources);
-    return {
+    const frozenByUser =
+        currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(state.resources);
+    const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName:string }).fullName;
+    // const frozenByFullName = frozenByUser && 'fullName' in frozenByUser ? (frozenByUser as any).fullName : undefined;
+        return {
         currentResource,
+        frozenByFullName,
     };
 };
 
 type DetailsCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource | UserResource;
+    frozenByFullName?: string;
 };
 
 type UserCardProps = WithStyles<CssRules> & {
@@ -93,16 +128,28 @@ type UserCardProps = WithStyles<CssRules> & {
 
 type ProjectCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource;
+    frozenByFullName: string | undefined;
 };
 
 export const ProjectDetailsCard = connect(mapStateToProps)(
     withStyles(styles)((props: DetailsCardProps) => {
-        const { classes, currentResource } = props;
+        const { classes, currentResource, frozenByFullName } = props;
         switch (currentResource.kind as string) {
             case ResourceKind.USER:
-                return <UserCard classes={classes} currentResource={currentResource as UserResource} />;
+                return (
+                    <UserCard
+                        classes={classes}
+                        currentResource={currentResource as UserResource}
+                    />
+                );
             case ResourceKind.PROJECT:
-                return <ProjectCard classes={classes} currentResource={currentResource as ProjectResource} />;
+                return (
+                    <ProjectCard
+                        classes={classes}
+                        currentResource={currentResource as ProjectResource}
+                        frozenByFullName={frozenByFullName}
+                    />
+                );
             default:
                 return null;
         }
@@ -110,7 +157,7 @@ export const ProjectDetailsCard = connect(mapStateToProps)(
 );
 
 const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
-    const { fullName, uuid, username, email, isAdmin } = currentResource as UserResource & { fullName: string };
+    const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
         <Card className={classes.root}>
@@ -124,84 +171,62 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
                         >
                             {fullName}
                         </Typography>
-                        <Typography className={classes.activeIndicator}>
-                            <UserResourceAccountStatus uuid={uuid} />
-                        </Typography>
+                        {!currentResource.isActive && (
+                            <Typography className={classes.activeIndicator}>
+                                <UserResourceAccountStatus uuid={uuid} />
+                            </Typography>
+                        )}
                     </section>
                 }
                 action={<MultiselectToolbar inputSelectedUuid={uuid} />}
             />
-            <CardContent className={classes.cardcontent}>
-                <section className={classes.attributesection}>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Username'
-                            value={username}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Email'
-                            value={email}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Admin'
-                            value={isAdmin ? 'Yes' : 'No'}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='UUID'
-                            linkToUuid={currentResource.uuid}
-                            value={currentResource.uuid}
-                        />
-                    </Typography>
-                </section>
-            </CardContent>
         </Card>
     );
 };
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName }) => {
     const { name, uuid, description } = currentResource as ProjectResource;
+    
     return (
         <Card className={classes.root}>
             <CardHeader
                 className={classes.cardheader}
                 title={
-                    <Typography
-                        noWrap
-                        variant='h6'
-                    >
-                        {name}
-                        <FavoriteStar resourceUuid={currentResource.uuid} />
-                        <PublicFavoriteStar resourceUuid={currentResource.uuid} />
-                        {currentResource.kind === ResourceKind.PROJECT && <FrozenProject item={currentResource} />}
-                    </Typography>
+                    <section className={classes.namePlate}>
+                        <Typography
+                            noWrap
+                            variant='h6'
+                            style={{marginRight: '1rem'}}
+                        >
+                            {name}
+                            </Typography>
+                            <FavoriteStar
+                                className={classes.faveIcon}
+                                resourceUuid={currentResource.uuid}
+                            />
+                            <PublicFavoriteStar
+                                className={classes.faveIcon}
+                                resourceUuid={currentResource.uuid}
+                            />
+                            <Tooltip
+                                className={classes.frozenIcon}
+                                title={!!frozenByFullName && <span>Project was frozen by {frozenByFullName}</span>}
+                            >
+                                <FreezeIcon style={{ fontSize: 'inherit' }} />
+                            </Tooltip>
+                    </section>
                 }
                 subheader={
                     description ? (
                         <section>
                             <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '').slice(0, 45)}...</Typography>
-                            <RichTextEditorLink
-                                title={`Description of ${name}`}
-                                content={description}
-                                label='Show full description'
-                            />
+                            <div className={classes.showmore}>
+                                <RichTextEditorLink
+                                    title={`Description of ${name}`}
+                                    content={description}
+                                    label='Show full description'
+                                />
+                            </div>
                         </section>
                     ) : (
                         'no description available'
@@ -210,59 +235,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource }) =
                 action={<MultiselectToolbar inputSelectedUuid={uuid} />}
             />
             <CardContent className={classes.cardcontent}>
-                <section className={classes.attributesection}>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Type'
-                            value={'groupClass' in currentResource && currentResource.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Owner'
-                            linkToUuid={currentResource.ownerUuid}
-                            uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Last modified'
-                            value={formatDate(currentResource.modifiedAt)}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='Created at'
-                            value={formatDate(currentResource.createdAt)}
-                        />
-                    </Typography>
-                    <Typography
-                        component='div'
-                        className={classes.attribute}
-                    >
-                        <DetailsAttribute
-                            label='UUID'
-                            linkToUuid={currentResource.uuid}
-                            value={currentResource.uuid}
-                        />
-                    </Typography>
-                </section>
                 <section className={classes.chipsection}>
                     <Typography component='div'>
-                        {'properties' in currentResource &&
-                            typeof currentResource.properties === 'object' &&
+                        {typeof currentResource.properties === 'object' &&
                             Object.keys(currentResource.properties).map((k) =>
                                 Array.isArray(currentResource.properties[k])
                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
