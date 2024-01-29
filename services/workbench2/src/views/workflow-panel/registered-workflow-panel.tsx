@@ -27,6 +27,7 @@ import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-me
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io-card';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
+import { WorkflowProcessesPanel } from './workflow-processes-panel';
 
 type CssRules = 'root'
     | 'button'
@@ -137,7 +138,8 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     { name: "Details" },
                     { name: "Inputs" },
                     { name: "Outputs" },
-                    { name: "Files" },
+                    { name: "Executions" },
+                    { name: "Definition" },
                 ];
                 return item
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
@@ -194,6 +196,9 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 raw={{}}
                                 forceShowParams={true}
                             />
+                        </MPVPanelContent>
+                        <MPVPanelContent forwardProps xs>
+                            <WorkflowProcessesPanel />
                         </MPVPanelContent>
                         <MPVPanelContent xs>
                             <Card className={classes.filesCard}>
