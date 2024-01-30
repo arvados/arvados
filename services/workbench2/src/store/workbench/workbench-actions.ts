@@ -103,7 +103,6 @@ import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
-import { multiselectActions } from "store/multiselect/multiselect-actions";
 import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
 import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
 
