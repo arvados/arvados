@@ -46,6 +46,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         marginBottom: '1rem',
+        flex: '0 0 auto',
     },
     fadeout: {
         maxWidth: '25rem',

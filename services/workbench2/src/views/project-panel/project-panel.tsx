@@ -60,6 +60,8 @@ type CssRules = 'root' | 'button';
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
     },
     button: {
         marginLeft: theme.spacing.unit,
