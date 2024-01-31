@@ -28,18 +28,17 @@ import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-e
 
 type CssRules =
     | 'root'
-    | 'cardheader'
-    | 'fadeout'
-    | 'showmore'
+    | 'cardHeader'
+    | 'showMore'
     | 'nameContainer'
     | 'activeIndicator'
-    | 'cardcontent'
+    | 'cardContent'
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
-    | 'attributesection'
+    | 'attributeSection'
     | 'attribute'
-    | 'chipsection'
+    | 'chipSection'
     | 'tag';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -48,14 +47,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '1rem',
         flex: '0 0 auto',
     },
-    fadeout: {
-        maxWidth: '25rem',
-        minWdidth: '18rem',
-        height: '1.5rem',
-        overflow: 'hidden',
-        WebkitMaskImage: '-webkit-gradient(linear, left bottom, right bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)))',
-    },
-    showmore: {
+    showMore: {
         color: theme.palette.primary.main,
         cursor: 'pointer',
         maxWidth: '10rem',
@@ -66,10 +58,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     activeIndicator: {
         margin: '0.3rem auto auto 1rem',
     },
-    cardheader: {
+    cardHeader: {
         paddingTop: '0.4rem',
     },
-    cardcontent: {
+    cardContent: {
         display: 'flex',
         flexDirection: 'column',
         marginTop: '-1rem',
@@ -90,7 +82,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '1rem',
         color: theme.palette.text.primary,
     },
-    attributesection: {
+    attributeSection: {
         display: 'flex',
         flexWrap: 'wrap',
     },
@@ -100,7 +92,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: '0.5rem',
         borderRadius: '5px',
     },
-    chipsection: {
+    chipSection: {
         display: 'flex',
         flexWrap: 'wrap',
     },
@@ -208,7 +200,7 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
     return (
         <Card className={classes.root}>
             <CardHeader
-                className={classes.cardheader}
+                className={classes.cardHeader}
                 title={
                     <section className={classes.nameContainer}>
                         <Typography
@@ -231,12 +223,12 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
 };
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, isAdmin }) => {
-    const { name, uuid, description } = currentResource as ProjectResource;
+    const { name, description } = currentResource as ProjectResource;
 
     return (
         <Card className={classes.root}>
             <CardHeader
-                className={classes.cardheader}
+                className={classes.cardHeader}
                 title={
                     <>
                     <section className={classes.namePlate}>
@@ -262,7 +254,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                             <FreezeIcon style={{ fontSize: 'inherit' }} />
                         </Tooltip>}
                     </section>
-                    <section className={classes.chipsection}>
+                    <section className={classes.chipSection}>
                     <Typography component='div'>
                         {typeof currentResource.properties === 'object' &&
                             Object.keys(currentResource.properties).map((k) =>
@@ -288,11 +280,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </IconButton>
                 </Tooltip>}
             />
-            <CardContent className={classes.cardcontent}>
+            <CardContent className={classes.cardContent}>
                 {description && (
                         <section>
-                            {/* <Typography className={classes.fadeout}>{description.replace(/<[^>]*>/g, '').slice(0, 45)}...</Typography> */}
-                            <div className={classes.showmore}>
+                            <div className={classes.showMore}>
                                 <RichTextEditorLink
                                     title={`Description of ${name}`}
                                     content={description}
