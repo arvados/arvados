@@ -136,9 +136,9 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                 const { classes, item, inputParams, outputParams, workflowCollection } = this.props;
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
+                    { name: "Runs" },
                     { name: "Inputs" },
                     { name: "Outputs" },
-                    { name: "Executions" },
                     { name: "Definition" },
                 ];
                 return item
@@ -181,6 +181,9 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 </CardContent>
                             </Card>
                         </MPVPanelContent>
+                        <MPVPanelContent forwardProps xs>
+                            <WorkflowProcessesPanel />
+                        </MPVPanelContent>
                         <MPVPanelContent forwardProps xs data-cy="process-inputs">
                             <ProcessIOCard
                                 label={ProcessIOCardType.INPUT}
@@ -197,11 +200,9 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 forceShowParams={true}
                             />
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs>
-                            <WorkflowProcessesPanel />
-                        </MPVPanelContent>
                         <MPVPanelContent xs>
                             <Card className={classes.filesCard}>
+                                <CardHeader title="Workflow Definition" />
                                 <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={workflowCollection} />
                             </Card>
                         </MPVPanelContent>

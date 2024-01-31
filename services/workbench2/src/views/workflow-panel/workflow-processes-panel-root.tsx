@@ -103,7 +103,7 @@ const WorkflowProcessesTitle = withStyles(styles)(
         <div className={classes.cardHeader}>
             <ProcessIcon className={classes.iconHeader} /><span></span>
             <Typography noWrap variant='h6' color='inherit'>
-                Workflow Processes
+                Run History
             </Typography>
         </div>
 );
