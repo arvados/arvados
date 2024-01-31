@@ -132,7 +132,7 @@ describe("Process tests", function () {
             });
         })
     })
-
+ 
     describe("Details panel", function () {
         it("shows process details", function () {
             createContainerRequest(
