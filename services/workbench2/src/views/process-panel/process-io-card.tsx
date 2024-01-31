@@ -123,7 +123,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 4.5}px)`,
+        maxHeight: `calc(100% - ${theme.spacing.unit * 3}px)`,
         overflow: "auto",
     },
     tableRoot: {
