@@ -370,9 +370,9 @@ export const ProcessIOCard = withStyles(styles)(
                                     </Grid>
                                 )}
                                 {/* Once loaded, either raw or params may still be empty
-                                 *   Raw when all params are empty
-                                 *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
-                                 */}
+                            *   Raw when all params are empty
+                            *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+                            */}
                                 {!loading && (hasRaw || hasParams) && (
                                     <>
                                         <Tabs
@@ -384,6 +384,7 @@ export const ProcessIOCard = withStyles(styles)(
                                             {/* params will be empty on processes without workflow definitions in mounts, so we only show raw */}
                                             {hasParams && <Tab label="Parameters" />}
                                             {!forceShowParams && <Tab label="JSON" />}
+                                            {hasOutputCollecton && <Tab label="Collection" />}
                                         </Tabs>
                                         {mainProcTabState === 0 && params && hasParams && (
                                             <div className={classes.tableWrapper}>
@@ -399,6 +400,28 @@ export const ProcessIOCard = withStyles(styles)(
                                                 <ProcessIORaw data={raw} />
                                             </div>
                                         )}
+                                        {mainProcTabState === 2 && hasOutputCollecton && (
+                                            <>
+                                                {outputUuid && (
+                                                    <Typography className={classes.collectionLink}>
+                                                        Output Collection:{" "}
+                                                        <MuiLink
+                                                            className={classes.keepLink}
+                                                            onClick={() => {
+                                                                navigateTo(outputUuid || "");
+                                                            }}
+                                                        >
+                                                            {outputUuid}
+                                                        </MuiLink>
+                                                    </Typography>
+                                                )}
+                                                <ProcessOutputCollectionFiles
+                                                    isWritable={false}
+                                                    currentItemUuid={outputUuid}
+                                                />
+                                            </>
+                                        )}
+
                                     </>
                                 )}
                                 {!loading && !hasRaw && !hasParams && (
