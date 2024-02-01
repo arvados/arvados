@@ -68,7 +68,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
     };
 
     useEffect(() => {
-        if (prevNumHidden.current === 2 && numHidden === 1) {
+        if ((prevNumHidden.current === 2 || prevNumHidden.current === 0) && numHidden === 1) {
             setVisibilityMap((prev) => ({
                 ...prev,
                 [lastEntryId]: true,
