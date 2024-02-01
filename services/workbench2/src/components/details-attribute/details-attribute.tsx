@@ -25,7 +25,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
         boxSizing: 'border-box',
         color: theme.palette.grey["600"],
-        width: '100%'
+        width: '100%',
+        marginTop: "0.4em",
     },
     value: {
         boxSizing: 'border-box',
@@ -132,4 +133,3 @@ export const DetailsAttributeComponent = withStyles(styles)(
                 </Tooltip>}
             </Typography>
         </Typography>);
-

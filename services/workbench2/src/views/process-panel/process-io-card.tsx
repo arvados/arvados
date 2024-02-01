@@ -89,7 +89,8 @@ type CssRules =
     | "symmetricTabs"
     | "imagePlaceholder"
     | "rowWithPreview"
-    | "labelColumn";
+    | "labelColumn"
+    | "primaryRow";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -173,10 +174,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: "20px",
     },
     secondaryRow: {
-        height: "29px",
+        height: "24px",
         verticalAlign: "top",
         position: "relative",
-        top: "-9px",
+        top: "-4px",
     },
     emptyValue: {
         color: theme.customs.colors.grey700,
@@ -184,7 +185,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     noBorderRow: {
         "& td": {
             borderBottom: "none",
+            paddingTop: "2px",
+            paddingBottom: "2px",
         },
+        height: "24px",
     },
     symmetricTabs: {
         "& button": {
@@ -205,6 +209,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     labelColumn: {
         minWidth: "120px",
+    },
+    primaryRow: {
+        height: "24px",
+        "& td": {
+            paddingTop: "2px",
+            paddingBottom: "2px",
+        },
     },
 });
 
@@ -370,9 +381,9 @@ export const ProcessIOCard = withStyles(styles)(
                                     </Grid>
                                 )}
                                 {/* Once loaded, either raw or params may still be empty
-                            *   Raw when all params are empty
-                            *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
-                            */}
+				  *   Raw when all params are empty
+				  *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+				  */}
                                 {!loading && (hasRaw || hasParams) && (
                                     <>
                                         <Tabs
@@ -551,6 +562,7 @@ const ProcessIOPreview = memo(
                         const rest = param.value.slice(1);
                         const mainRowClasses = {
                             [classes.noBorderRow]: rest.length > 0,
+                            [classes.primaryRow]: true
                         };
 
                         return (
@@ -577,6 +589,7 @@ const ProcessIOPreview = memo(
                                     const rowClasses = {
                                         [classes.noBorderRow]: i < rest.length - 1,
                                         [classes.secondaryRow]: val.secondary,
+                                        [classes.primaryRow]: !val.secondary,
                                     };
                                     return (
                                         <TableRow
