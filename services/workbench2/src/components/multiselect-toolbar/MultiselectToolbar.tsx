@@ -126,7 +126,7 @@ export const MultiselectToolbar = connect(
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
-                        <IntersectionObserverWrapper menuLength={actions.length} isTransitioning>
+                        <IntersectionObserverWrapper menuLength={actions.length}>
                             {actions.map((action, i) =>{
                                 const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
                             return hasAlts ? (

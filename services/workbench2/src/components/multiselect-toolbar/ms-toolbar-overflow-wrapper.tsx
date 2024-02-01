@@ -38,7 +38,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type WrapperProps = {
     children: OverflowChild[];
     menuLength: number;
-    isTransitioning: boolean;
 };
 
 export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
@@ -64,7 +63,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         setVisibilityMap((prev) => ({
             ...prev,
             ...updatedEntries,
-            [lastEntryId]: !props.isTransitioning && Object.keys(updatedEntries)[0] === lastEntryId,
+            [lastEntryId]: Object.keys(updatedEntries)[0] === lastEntryId,
         }));
     };
 
