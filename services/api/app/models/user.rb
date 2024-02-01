@@ -680,8 +680,9 @@ SELECT target_uuid, perm_level
 
       loginCluster = Rails.configuration.Login.LoginCluster
       if user.username.nil? || user.username == ""
-        # Don't have a username yet, set one
-        needupdate[:username] = user.set_initial_username(requested: remote_user[:username])
+        # Don't have a username yet, try to set one
+        initial_username = user.set_initial_username(requested: remote_user[:username])
+        needupdate[:username] = initial_username if !initial_username.nil?
       elsif remote_user_prefix != loginCluster
         # Upstream is not login cluster, don't try to change the
         # username once set.
