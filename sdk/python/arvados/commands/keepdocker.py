@@ -2,34 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import next
 import argparse
 import collections
 import datetime
 import errno
+import fcntl
 import json
+import logging
 import os
 import re
+import subprocess
 import sys
 import tarfile
 import tempfile
-import shutil
-import _strptime
-import fcntl
+
+import ciso8601
 from operator import itemgetter
 from stat import *
 
-import subprocess
-
 import arvados
+import arvados.config
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
-from arvados.collection import CollectionReader
-import ciso8601
-import logging
-import arvados.config
-
 from arvados._version import __version__
 
 logger = logging.getLogger('arvados.keepdocker')

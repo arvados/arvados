@@ -2,23 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
 import arvados
 import collections
 import copy
 import hashlib
+import logging
 import mock
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
-import logging
 
 import arvados.commands.keepdocker as arv_keepdocker
 from . import arvados_testutil as tutil
-from . import run_test_server
-
 
 class StopTest(Exception):
     pass
