@@ -971,8 +971,8 @@ func (s *IntegrationSuite) TestSetupUserWithVM(c *check.C) {
 			"hostname": "example",
 		},
 		})
+	c.Assert(err, check.IsNil)
 	c.Check(outVM.UUID[0:5], check.Equals, "z3333")
-	c.Check(err, check.IsNil)
 
 	// Make sure z3333 user list is up to date
 	_, err = conn3.UserList(rootctx3, arvados.ListOptions{Limit: 1000})

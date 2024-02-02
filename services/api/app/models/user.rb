@@ -656,13 +656,16 @@ SELECT target_uuid, perm_level
 
     remote_should_be_active = should_activate && remote_user[:is_invited] != false && remote_user[:is_active] == true
 
+    # Make sure blank username is nil
+    remote_user[:username] = nil if remote_user[:username] == ""
+
     begin
       user = User.create_with(email: remote_user[:email],
                               username: remote_user[:username],
                               first_name: remote_user[:first_name],
                               last_name: remote_user[:last_name],
-                              is_active: remote_should_be_active
-      ).find_or_create_by(uuid: remote_user[:uuid])
+                              is_active: remote_should_be_active,
+                             ).find_or_create_by(uuid: remote_user[:uuid])
     rescue ActiveRecord::RecordNotUnique
       retry
     end
@@ -680,8 +683,9 @@ SELECT target_uuid, perm_level
 
       loginCluster = Rails.configuration.Login.LoginCluster
       if user.username.nil? || user.username == ""
-        # Don't have a username yet, set one
-        needupdate[:username] = user.set_initial_username(requested: remote_user[:username])
+        # Don't have a username yet, try to set one
+        initial_username = user.set_initial_username(requested: remote_user[:username])
+        needupdate[:username] = initial_username if !initial_username.nil?
       elsif remote_user_prefix != loginCluster
         # Upstream is not login cluster, don't try to change the
         # username once set.
@@ -709,6 +713,14 @@ SELECT target_uuid, perm_level
             end
           end
           raise # Not the issue we're handling above
+        end
+      elsif user.new_record?
+        begin
+          user.save!
+        rescue => e
+          Rails.logger.debug "Error saving user record: #{$!}"
+          Rails.logger.debug "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+          raise
         end
       end
 
