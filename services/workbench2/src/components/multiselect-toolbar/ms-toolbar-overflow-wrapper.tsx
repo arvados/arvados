@@ -53,6 +53,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         const updatedEntries: Record<string, boolean> = {};
         entries.forEach((entry) => {
             const targetid = entry.target.dataset.targetid as string;
+            //if true, the element is visible
             if (entry.isIntersecting) {
                 updatedEntries[targetid] = true;
             } else {
@@ -67,8 +68,9 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
         }));
     };
 
+    //ensures that the last element is always visible if the second to last is visible
     useEffect(() => {
-        if (prevNumHidden.current === 2 && numHidden === 1) {
+        if ((prevNumHidden.current > 1 || prevNumHidden.current === 0) && numHidden === 1) {
             setVisibilityMap((prev) => ({
                 ...prev,
                 [lastEntryId]: true,
