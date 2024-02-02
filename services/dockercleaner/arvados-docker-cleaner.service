@@ -6,8 +6,6 @@
 Description=Arvados Docker Image Cleaner
 Documentation=https://doc.arvados.org/
 After=network.target
-
-# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
@@ -15,14 +13,7 @@ Type=simple
 Restart=always
 RestartSec=10s
 RestartPreventExitStatus=2
-#
-# This unwieldy ExecStart command detects at runtime whether
-# arvados-docker-cleaner is installed with the Python 3.3 Software
-# Collection, and if so, invokes it with the "scl" wrapper.
-ExecStart=/bin/sh -c 'if [ -e /opt/rh/rh-python36/root/bin/arvados-docker-cleaner ]; then exec scl enable rh-python36 arvados-docker-cleaner; else exec arvados-docker-cleaner; fi'
-
-# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
-StartLimitInterval=0
+ExecStart=/usr/bin/arvados-docker-cleaner
 
 [Install]
 WantedBy=multi-user.target

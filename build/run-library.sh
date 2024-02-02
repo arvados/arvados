@@ -190,12 +190,12 @@ package_go_binary() {
   fi
 
   case "$package_format-$TARGET" in
-    # Older Debian/Ubuntu do not support cross compilation because the
+    # Ubuntu 20.04 does not support cross compilation because the
     # libfuse package does not support multiarch. See
     # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477>.
     # Red Hat-based distributions do not support native cross compilation at
     # all (they use a qemu-based solution we haven't implemented yet).
-    deb-debian10|deb-ubuntu1804|deb-ubuntu2004|rpm-*)
+    deb-ubuntu2004|rpm-*)
       cross_compilation=0
       if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
         echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
@@ -440,10 +440,8 @@ test_package_presence() {
       echo "Package $full_pkgname build forced with --force-build, building"
     elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
-      dd[debian10]=buster
       dd[debian11]=bullseye
       dd[debian12]=bookworm
-      dd[ubuntu1804]=bionic
       dd[ubuntu2004]=focal
       dd[ubuntu2204]=jammy
       D=${dd[$TARGET]}
@@ -469,7 +467,6 @@ test_package_presence() {
     else
       local rpm_root
       case "$TARGET" in
-        centos7) rpm_root="CentOS/7/dev" ;;
         rocky8) rpm_root="CentOS/8/dev" ;;
         *)
           echo "FIXME: Don't know RPM URL path for $TARGET, building"

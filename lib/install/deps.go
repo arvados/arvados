@@ -249,7 +249,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev")
 		case osv.Debian || osv.Ubuntu:
 			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev")
-		case osv.Centos:
+		case osv.RedHat:
 			pkgs = append(pkgs, "gcc", "gcc-c++", "libcurl-devel", "postgresql-devel")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get")
@@ -273,8 +273,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		} else if osv.Debian {
 			var codename string
 			switch osv.Major {
-			case 10:
-				codename = "buster"
 			case 11:
 				codename = "bullseye"
 			case 12:
@@ -793,7 +791,7 @@ rsync -a --delete-after "$tmp/build/" "$dst/"
 type osversion struct {
 	Debian bool
 	Ubuntu bool
-	Centos bool
+	RedHat bool
 	Major  int
 }
 
@@ -831,10 +829,24 @@ func identifyOS() (osversion, error) {
 		osv.Ubuntu = true
 	case "debian":
 		osv.Debian = true
-	case "centos":
-		osv.Centos = true
 	default:
-		return osv, fmt.Errorf("unsupported ID in /etc/os-release: %q", kv["ID"])
+		idLikeMatched := false
+		for _, idLike := range strings.Split(kv["ID_LIKE"], " ") {
+			switch idLike {
+			case "debian":
+				osv.Debian = true
+				idLikeMatched = true
+			case "rhel":
+				osv.RedHat = true
+				idLikeMatched = true
+			}
+			if idLikeMatched {
+				break
+			}
+		}
+		if !idLikeMatched {
+			return osv, fmt.Errorf("no supported ID found in /etc/os-release")
+		}
 	}
 	vstr := kv["VERSION_ID"]
 	if i := strings.Index(vstr, "."); i > 0 {
@@ -895,7 +907,7 @@ func prodpkgs(osv osversion) []string {
 		return append(pkgs,
 			"mime-support", // keep-web
 		)
-	} else if osv.Centos {
+	} else if osv.RedHat {
 		return append(pkgs,
 			"fuse-libs", // services/fuse
 			"mailcap",   // keep-web
