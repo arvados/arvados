@@ -68,12 +68,12 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 const panelsData: MPVPanelState[] = [
     { name: "Details" },
-    { name: "Command" },
     { name: "Logs", visible: true },
-    { name: "Inputs" },
-    { name: "Outputs" },
-    { name: "Resources" },
     { name: "Subprocesses" },
+    { name: "Outputs" },
+    { name: "Inputs" },
+    { name: "Command" },
+    { name: "Resources" },
 ];
 
 export const ProcessPanelRoot = withStyles(styles)(
@@ -112,6 +112,8 @@ export const ProcessPanelRoot = withStyles(styles)(
             }
         }, [containerRequest, loadInputs, loadOutputs, loadOutputDefinitions, loadNodeJson]);
 
+        const maxHeight = "100%";
+
         // Trigger processing output params when raw or definitions change
         React.useEffect(() => {
             updateOutputParams();
@@ -139,17 +141,9 @@ export const ProcessPanelRoot = withStyles(styles)(
                 </MPVPanelContent>
                 <MPVPanelContent
                     forwardProps
-                    xs="auto"
-                    data-cy="process-cmd">
-                    <ProcessCmdCard
-                        onCopy={props.onCopyToClipboard}
-                        process={process}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
                     xs
-                    minHeight="50%"
+                    minHeight={maxHeight}
+                    maxHeight={maxHeight}
                     data-cy="process-logs">
                     <ProcessLogsCard
                         onCopy={props.onCopyToClipboard}
@@ -168,20 +162,14 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <MPVPanelContent
                     forwardProps
                     xs
-                    maxHeight="50%"
-                    data-cy="process-inputs">
-                    <ProcessIOCard
-                        label={ProcessIOCardType.INPUT}
-                        process={process}
-                        params={inputParams}
-                        raw={inputRaw}
-                        mounts={inputMounts}
-                    />
+                    maxHeight={maxHeight}
+                    data-cy="process-children">
+                    <SubprocessPanel process={process} />
                 </MPVPanelContent>
                 <MPVPanelContent
                     forwardProps
                     xs
-                    maxHeight="50%"
+                    maxHeight={maxHeight}
                     data-cy="process-outputs">
                     <ProcessIOCard
                         label={ProcessIOCardType.OUTPUT}
@@ -194,18 +182,33 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <MPVPanelContent
                     forwardProps
                     xs
-                    data-cy="process-resources">
-                    <ProcessResourceCard
+                    maxHeight={maxHeight}
+                    data-cy="process-inputs">
+                    <ProcessIOCard
+                        label={ProcessIOCardType.INPUT}
                         process={process}
-                        nodeInfo={nodeInfo}
+                        params={inputParams}
+                        raw={inputRaw}
+                        mounts={inputMounts}
+                    />
+                </MPVPanelContent>
+                <MPVPanelContent
+                    forwardProps
+                    xs="auto"
+                    data-cy="process-cmd">
+                    <ProcessCmdCard
+                        onCopy={props.onCopyToClipboard}
+                        process={process}
                     />
                 </MPVPanelContent>
                 <MPVPanelContent
                     forwardProps
                     xs
-                    maxHeight="50%"
-                    data-cy="process-children">
-                    <SubprocessPanel process={process} />
+                    data-cy="process-resources">
+                    <ProcessResourceCard
+                        process={process}
+                        nodeInfo={nodeInfo}
+                    />
                 </MPVPanelContent>
             </MPVContainer>
         ) : (
