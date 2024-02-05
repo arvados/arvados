@@ -181,10 +181,10 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 </CardContent>
                             </Card>
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs>
+                        <MPVPanelContent forwardProps xs maxHeight="100%">
                             <WorkflowProcessesPanel />
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-inputs">
+                        <MPVPanelContent forwardProps xs data-cy="process-inputs" maxHeight="100%">
                             <ProcessIOCard
                                 label={ProcessIOCardType.INPUT}
                                 params={inputParams}
@@ -192,7 +192,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 forceShowParams={true}
                             />
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-outputs">
+                        <MPVPanelContent forwardProps xs data-cy="process-outputs" maxHeight="100%">
                             <ProcessIOCard
                                 label={ProcessIOCardType.OUTPUT}
                                 params={outputParams}
@@ -200,7 +200,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 forceShowParams={true}
                             />
                         </MPVPanelContent>
-                        <MPVPanelContent xs>
+                        <MPVPanelContent xs maxHeight="100%">
                             <Card className={classes.filesCard}>
                                 <CardHeader title="Workflow Definition" />
                                 <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={workflowCollection} />
