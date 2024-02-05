@@ -137,8 +137,8 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
                     { name: "Runs" },
-                    { name: "Inputs" },
                     { name: "Outputs" },
+                    { name: "Inputs" },
                     { name: "Definition" },
                 ];
                 return item
@@ -184,18 +184,18 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                         <MPVPanelContent forwardProps xs maxHeight="100%">
                             <WorkflowProcessesPanel />
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-inputs" maxHeight="100%">
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                params={inputParams}
-                                raw={{}}
-                                forceShowParams={true}
-                            />
-                        </MPVPanelContent>
                         <MPVPanelContent forwardProps xs data-cy="process-outputs" maxHeight="100%">
                             <ProcessIOCard
                                 label={ProcessIOCardType.OUTPUT}
                                 params={outputParams}
+                                raw={{}}
+                                forceShowParams={true}
+                            />
+                        </MPVPanelContent>
+                        <MPVPanelContent forwardProps xs data-cy="process-inputs" maxHeight="100%">
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                params={inputParams}
                                 raw={{}}
                                 forceShowParams={true}
                             />
