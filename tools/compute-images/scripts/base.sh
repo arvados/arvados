@@ -80,17 +80,17 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
 dockerversion=5:20.10.13~3-0
 if [[ "$DIST" =~ ^debian ]]; then
   family="debian"
-  if [ "$DIST" == "debian10" ]; then
-    distro="buster"
-  elif [ "$DIST" == "debian11" ]; then
+  if [ "$DIST" == "debian11" ]; then
     distro="bullseye"
+  elif [ "$DIST" == "debian12" ]; then
+    distro="bookworm"
   fi
 elif [[ "$DIST" =~ ^ubuntu ]]; then
   family="ubuntu"
-  if [ "$DIST" == "ubuntu1804" ]; then
-    distro="bionic"
-  elif [ "$DIST" == "ubuntu2004" ]; then
+  if [ "$DIST" == "ubuntu2004" ]; then
     distro="focal"
+  elif [ "$DIST" == "ubuntu2204" ]; then
+    distro="jammy"
   fi
 else
   echo "Unsupported distribution $DIST"
@@ -186,8 +186,7 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/3bf863cc.pub
   $SUDO apt-get -y install software-properties-common
   $SUDO add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
-  # Ubuntu 18.04's add-apt-repository does not understand 'contrib'
-  $SUDO add-apt-repository contrib || true
+  $SUDO add-apt-repository contrib
   $SUDO apt-get update
   $SUDO apt-get -y install cuda
 

@@ -364,24 +364,25 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
 else
   # Install a few dependency packages
   # First, let's figure out the OS we're working on
-  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d=  |cut -f 2 -d \")
-  echo "Detected distro: ${OS_ID}"
+  OS_IDS="$(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}")"
+  echo "Detected distro families: $OS_IDS"
 
-  case ${OS_ID} in
-    "centos")
-      echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
-      sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
-      setenforce permissive
-      yum install -y  curl git jq
-      ;;
-    "debian"|"ubuntu")
-      # Wait 2 minutes for any apt locks to clear
-      # This option is supported from apt 1.9.1 and ignored in older apt versions.
-      # Cf. https://blog.sinjakli.co.uk/2021/10/25/waiting-for-apt-locks-without-the-hacky-bash-scripts/
-      DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
-      DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
-      ;;
-  esac
+  for OS_ID in $OS_IDS; do
+    case "$OS_ID" in
+      rhel)
+        echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
+        sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
+        setenforce permissive
+        yum install -y  curl git jq
+        break
+        ;;
+      debian)
+        DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
+        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
+        break
+        ;;
+    esac
+  done
 
   if which salt-call; then
     echo "Salt already installed"

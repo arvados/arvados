@@ -31,7 +31,7 @@ import { createTree } from "models/tree";
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { getProcess } from "store/processes/process";
 import { ResourcesState } from "store/resources/resources";
-import { toggleOne } from "store/multiselect/multiselect-actions";
+import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -145,6 +145,7 @@ export const AllProcessesPanel = withStyles(styles)(
 
             handleRowClick = (uuid: string) => {
                 this.props.dispatch<any>(toggleOne(uuid))
+                this.props.dispatch<any>(deselectAllOthers(uuid))
                 this.props.dispatch<any>(loadDetailsPanel(uuid));
             };
 

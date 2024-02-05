@@ -8,8 +8,8 @@ $namespaces:
   arv: "http://arvados.org/cwl#"
 hints:
   arv:OutOfMemoryRetry:
-    memoryRetryMultiplier: 2
-    memoryErrorRegex: Whoops
+    # legacy misspelled name, should behave exactly the same
+    memoryRetryMultipler: 2
   ResourceRequirement:
     ramMin: 256
   arv:APIRequirement: {}

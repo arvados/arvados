@@ -19,10 +19,6 @@ case "$TARGET" in
         apt-get install -y nginx
         dpkg-reconfigure "$PACKAGE_NAME"
         ;;
-    centos*)
-        yum install --assumeyes httpd
-        yum reinstall --assumeyes "$PACKAGE_NAME"
-        ;;
     rocky*)
         microdnf --assumeyes install httpd
         microdnf --assumeyes reinstall "$PACKAGE_NAME"

@@ -1,5 +1,0 @@
-[localrepo]
-name=Arvados Test
-baseurl=file:///arvados/packages/centos7
-gpgcheck=0
-enabled=1

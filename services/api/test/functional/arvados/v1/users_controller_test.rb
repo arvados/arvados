@@ -1101,6 +1101,37 @@ The Arvados team.
     assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
   end
 
+  test 'batch update does not produce spurious log events' do
+    # test for bug #21304
+
+    existinguuid = 'remot-tpzed-foobarbazwazqux'
+    act_as_system_user do
+      User.create!(uuid: existinguuid,
+                   first_name: 'root',
+                   is_active: true,
+                  )
+    end
+    assert_equal(1, Log.where(object_uuid: existinguuid).count)
+
+    Rails.configuration.Login.LoginCluster = 'remot'
+
+    authorize_with(:admin)
+    patch(:batch_update,
+          params: {
+            updates: {
+              existinguuid => {
+                'first_name' => 'root',
+                'email' => '',
+                'username' => '',
+                'is_active' => true,
+                'is_invited' => true
+              },
+            }})
+    assert_response(:success)
+
+    assert_equal(1, Log.where(object_uuid: existinguuid).count)
+  end
+
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "is_admin", "is_invited", "email", "first_name",
                          "last_name", "username", "can_write", "can_manage"].sort
 
