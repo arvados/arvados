@@ -2,34 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import next
 import argparse
 import collections
 import datetime
 import errno
+import fcntl
 import json
+import logging
 import os
 import re
+import subprocess
 import sys
 import tarfile
 import tempfile
-import shutil
-import _strptime
-import fcntl
+
+import ciso8601
 from operator import itemgetter
 from stat import *
 
-import subprocess
-
 import arvados
+import arvados.config
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
-from arvados.collection import CollectionReader
-import ciso8601
-import logging
-import arvados.config
-
 from arvados._version import __version__
 
 logger = logging.getLogger('arvados.keepdocker')
@@ -356,6 +351,25 @@ def _uuid2pdh(api, uuid):
         select=['portable_data_hash'],
     ).execute()['items'][0]['portable_data_hash']
 
+def load_image_metadata(image_file):
+    """Load an image manifest and config from an archive
+
+    Given an image archive as an open binary file object, this function loads
+    the image manifest and configuration, deserializing each from JSON and
+    returning them in a 2-tuple of dicts.
+    """
+    image_file.seek(0)
+    with tarfile.open(fileobj=image_file) as image_tar:
+        with image_tar.extractfile('manifest.json') as manifest_file:
+            image_manifest_list = json.load(manifest_file)
+        # Because arv-keepdocker only saves one image, there should only be
+        # one manifest.  This extracts that from the list and raises
+        # ValueError if there's not exactly one.
+        image_manifest, = image_manifest_list
+        with image_tar.extractfile(image_manifest['Config']) as config_file:
+            image_config = json.load(config_file)
+    return image_manifest, image_config
+
 def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None):
     args = arg_parser.parse_args(arguments)
     if api is None:
@@ -532,21 +546,9 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         # Managed properties could be already set
         coll_properties = api.collections().get(uuid=coll_uuid).execute(num_retries=args.retries).get('properties', {})
         coll_properties.update({"docker-image-repo-tag": image_repo_tag})
-
         api.collections().update(uuid=coll_uuid, body={"properties": coll_properties}).execute(num_retries=args.retries)
 
-        # Read the image metadata and make Arvados links from it.
-        image_file.seek(0)
-        image_tar = tarfile.open(fileobj=image_file)
-        image_hash_type, _, raw_image_hash = image_hash.rpartition(':')
-        if image_hash_type:
-            json_filename = raw_image_hash + '.json'
-        else:
-            json_filename = raw_image_hash + '/json'
-        json_file = image_tar.extractfile(image_tar.getmember(json_filename))
-        image_metadata = json.loads(json_file.read().decode('utf-8'))
-        json_file.close()
-        image_tar.close()
+        _, image_metadata = load_image_metadata(image_file)
         link_base = {'head_uuid': coll_uuid, 'properties': {}}
         if 'created' in image_metadata:
             link_base['properties']['image_timestamp'] = image_metadata['created']

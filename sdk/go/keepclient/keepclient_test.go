@@ -530,7 +530,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 }
 
 func (s *StandaloneSuite) TestPutHR(c *C) {
-	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := &StubPutHandler{
 		c:                    c,
