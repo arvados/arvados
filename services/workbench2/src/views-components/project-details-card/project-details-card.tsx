@@ -31,6 +31,7 @@ import { Dispatch } from 'redux';
 type CssRules =
     | 'root'
     | 'cardHeader'
+    | 'descriptionLabel'
     | 'showMore'
     | 'noDescription'
     | 'nameContainer'
@@ -52,7 +53,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     showMore: {
         color: theme.palette.primary.main,
         cursor: 'pointer',
-        maxWidth: '10rem',
     },
     noDescription: {
         color: theme.palette.grey['600'],
@@ -64,10 +64,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardHeader: {
         paddingTop: '0.4rem',
     },
+    descriptionLabel: {
+        paddingTop: '1rem',
+        marginBottom: 0,
+        minHeight: '2.5rem',
+    },
     cardContent: {
         display: 'flex',
-        flexDirection: 'column',
-        marginTop: '-1rem',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: '-2rem',
     },
     namePlate: {
         display: 'flex',
@@ -248,43 +254,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
             <CardHeader
                 className={classes.cardHeader}
                 title={
-                    <>
-                        <section className={classes.namePlate}>
-                            <Typography
-                                noWrap
-                                variant='h6'
-                                style={{ marginRight: '1rem' }}
+                    <section className={classes.namePlate}>
+                        <Typography
+                            noWrap
+                            variant='h6'
+                            style={{ marginRight: '1rem' }}
+                        >
+                            {name}
+                        </Typography>
+                        <FavoriteStar
+                            className={classes.faveIcon}
+                            resourceUuid={currentResource.uuid}
+                        />
+                        <PublicFavoriteStar
+                            className={classes.faveIcon}
+                            resourceUuid={currentResource.uuid}
+                        />
+                        {!!frozenByFullName && (
+                            <Tooltip
+                                className={classes.frozenIcon}
+                                title={<span>Project was frozen by {frozenByFullName}</span>}
                             >
-                                {name}
-                            </Typography>
-                            <FavoriteStar
-                                className={classes.faveIcon}
-                                resourceUuid={currentResource.uuid}
-                            />
-                            <PublicFavoriteStar
-                                className={classes.faveIcon}
-                                resourceUuid={currentResource.uuid}
-                            />
-                            {!!frozenByFullName && (
-                                <Tooltip
-                                    className={classes.frozenIcon}
-                                    title={<span>Project was frozen by {frozenByFullName}</span>}
-                                >
-                                    <FreezeIcon style={{ fontSize: 'inherit' }} />
-                                </Tooltip>
-                            )}
-                        </section>
-                        <section className={classes.chipSection}>
-                            <Typography component='div'>
-                                {typeof currentResource.properties === 'object' &&
-                                    Object.keys(currentResource.properties).map((k) =>
-                                        Array.isArray(currentResource.properties[k])
-                                            ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                            : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                                    )}
-                            </Typography>
-                        </section>
-                    </>
+                                <FreezeIcon style={{ fontSize: 'inherit' }} />
+                            </Tooltip>
+                        )}
+                    </section>
                 }
                 action={
                     <Tooltip
@@ -301,8 +295,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                 }
             />
             <CardContent className={classes.cardContent}>
-                {description ? (
-                    <section>
+                <section className={classes.chipSection}>
+                    <Typography component='div'>
+                        {typeof currentResource.properties === 'object' &&
+                            Object.keys(currentResource.properties).map((k) =>
+                                Array.isArray(currentResource.properties[k])
+                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                            )}
+                    </Typography>
+                </section>
+                <section className={classes.descriptionLabel}>
+                    {description ? (
                         <div className={classes.showMore}>
                             <RichTextEditorLink
                                 title={`Description of ${name}`}
@@ -310,11 +314,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                 label='Show full description'
                             />
                         </div>
-                    </section>
-                ) : (
+                    ) : (
                         <Typography className={classes.noDescription}>no description available</Typography>
-                )
-                }
+                    )}
+                </section>
             </CardContent>
         </Card>
     );
