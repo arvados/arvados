@@ -13,30 +13,31 @@ import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectTo
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
-import { UserResource } from 'models/user';
+import { User, UserResource } from 'models/user';
 import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
 import { FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
 import { MoreVerticalIcon } from 'components/icon/icon';
 import { IconButton } from '@material-ui/core';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource, openUserContextMenu } from 'store/context-menu/context-menu-actions';
 import { resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
-import { openContextMenu } from 'store/context-menu/context-menu-actions'; 
+import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { CollectionResource } from 'models/collection';
-import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';    
+import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
+import { ContextMenuKind } from 'views-components/context-menu/context-menu';
+import { Dispatch } from 'redux';
 
 type CssRules =
     | 'root'
     | 'cardHeader'
     | 'showMore'
     | 'nameContainer'
-    | 'activeIndicator'
     | 'cardContent'
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
-    | 'attributeSection'
+    | 'contextMenuSection'
     | 'attribute'
     | 'chipSection'
     | 'tag';
@@ -46,6 +47,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         marginBottom: '1rem',
         flex: '0 0 auto',
+        paddingTop: '0.2rem',
     },
     showMore: {
         color: theme.palette.primary.main,
@@ -54,9 +56,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     nameContainer: {
         display: 'flex',
-    },
-    activeIndicator: {
-        margin: '0.3rem auto auto 1rem',
     },
     cardHeader: {
         paddingTop: '0.4rem',
@@ -82,9 +81,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '1rem',
         color: theme.palette.text.primary,
     },
-    attributeSection: {
+    contextMenuSection: {
         display: 'flex',
-        flexWrap: 'wrap',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: '0.6rem',
     },
     attribute: {
         marginBottom: '0.5rem',
@@ -116,17 +117,19 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: any) => ({
+const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: any, isAdmin: boolean) => {
+        event.stopPropagation();
         // When viewing the contents of a filter group, all contents should be treated as read only.
         let readOnly = false;
         if (resource.groupClass === 'filter') {
             readOnly = true;
         }
-
-        const menuKind = dispatch(resourceUuidToContextMenuKind(resource.uuid, readOnly));
-        if (menuKind && resource) {
-            dispatch(
+        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readOnly));
+        if (menuKind === ContextMenuKind.ROOT_PROJECT) {
+            dispatch<any>(openUserContextMenu(event, resource as UserResource));
+        } else if (menuKind && resource) {
+            dispatch<any>(
                 openContextMenu(event, {
                     name: resource.name,
                     uuid: resource.uuid,
@@ -142,7 +145,6 @@ const mapDispatchToProps = (dispatch: any) => ({
                 })
             );
         }
-
     },
 });
 
@@ -155,6 +157,8 @@ type DetailsCardProps = WithStyles<CssRules> & {
 
 type UserCardProps = WithStyles<CssRules> & {
     currentResource: UserResource;
+    isAdmin: boolean;
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
 };
 
 type ProjectCardProps = WithStyles<CssRules> & {
@@ -176,6 +180,8 @@ export const ProjectDetailsCard = connect(
                     <UserCard
                         classes={classes}
                         currentResource={currentResource as UserResource}
+                        isAdmin={isAdmin}
+                        handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                     />
                 );
             case ResourceKind.PROJECT:
@@ -194,7 +200,7 @@ export const ProjectDetailsCard = connect(
     })
 );
 
-const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
+const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleContextMenu, isAdmin }) => {
     const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
@@ -209,14 +215,28 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource }) => {
                         >
                             {fullName}
                         </Typography>
+                    </section>
+                }
+                action={
+                    <section className={classes.contextMenuSection}>
                         {!currentResource.isActive && (
-                            <Typography className={classes.activeIndicator}>
+                            <Typography>
                                 <UserResourceAccountStatus uuid={uuid} />
                             </Typography>
                         )}
+                        <Tooltip
+                            title='More options'
+                            disableFocusListener
+                        >
+                            <IconButton
+                                aria-label='More options'
+                                onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                            >
+                                <MoreVerticalIcon />
+                            </IconButton>
+                        </Tooltip>
                     </section>
                 }
-                action={<MultiselectToolbar inputSelectedUuid={uuid} />}
             />
         </Card>
     );
@@ -231,67 +251,69 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                 className={classes.cardHeader}
                 title={
                     <>
-                    <section className={classes.namePlate}>
-                        <Typography
-                            noWrap
-                            variant='h6'
-                            style={{ marginRight: '1rem' }}
-                        >
-                            {name}
-                        </Typography>
-                        <FavoriteStar
-                            className={classes.faveIcon}
-                            resourceUuid={currentResource.uuid}
-                        />
-                        <PublicFavoriteStar
-                            className={classes.faveIcon}
-                            resourceUuid={currentResource.uuid}
-                        />
-                        {!!frozenByFullName && <Tooltip
-                            className={classes.frozenIcon}
-                            title={<span>Project was frozen by {frozenByFullName}</span>}
-                        >
-                            <FreezeIcon style={{ fontSize: 'inherit' }} />
-                        </Tooltip>}
-                    </section>
-                    <section className={classes.chipSection}>
-                    <Typography component='div'>
-                        {typeof currentResource.properties === 'object' &&
-                            Object.keys(currentResource.properties).map((k) =>
-                                Array.isArray(currentResource.properties[k])
-                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                        <section className={classes.namePlate}>
+                            <Typography
+                                noWrap
+                                variant='h6'
+                                style={{ marginRight: '1rem' }}
+                            >
+                                {name}
+                            </Typography>
+                            <FavoriteStar
+                                className={classes.faveIcon}
+                                resourceUuid={currentResource.uuid}
+                            />
+                            <PublicFavoriteStar
+                                className={classes.faveIcon}
+                                resourceUuid={currentResource.uuid}
+                            />
+                            {!!frozenByFullName && (
+                                <Tooltip
+                                    className={classes.frozenIcon}
+                                    title={<span>Project was frozen by {frozenByFullName}</span>}
+                                >
+                                    <FreezeIcon style={{ fontSize: 'inherit' }} />
+                                </Tooltip>
                             )}
-                    </Typography>
-                </section>
+                        </section>
+                        <section className={classes.chipSection}>
+                            <Typography component='div'>
+                                {typeof currentResource.properties === 'object' &&
+                                    Object.keys(currentResource.properties).map((k) =>
+                                        Array.isArray(currentResource.properties[k])
+                                            ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                            : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                    )}
+                            </Typography>
+                        </section>
                     </>
                 }
-                    
-                    
-                action={<Tooltip
-                    title='More options'
-                    disableFocusListener
-                >
-                    <IconButton
-                        aria-label='More options'
-                        onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                action={
+                    <Tooltip
+                        title='More options'
+                        disableFocusListener
                     >
-                        <MoreVerticalIcon />
-                    </IconButton>
-                </Tooltip>}
+                        <IconButton
+                            aria-label='More options'
+                            onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                        >
+                            <MoreVerticalIcon />
+                        </IconButton>
+                    </Tooltip>
+                }
             />
             <CardContent className={classes.cardContent}>
                 {description && (
-                        <section>
-                            <div className={classes.showMore}>
-                                <RichTextEditorLink
-                                    title={`Description of ${name}`}
-                                    content={description}
-                                    label='Show full description'
-                                />
-                            </div>
-                        </section>
-                    )}
+                    <section>
+                        <div className={classes.showMore}>
+                            <RichTextEditorLink
+                                title={`Description of ${name}`}
+                                content={description}
+                                label='Show full description'
+                            />
+                        </div>
+                    </section>
+                )}
             </CardContent>
         </Card>
     );
