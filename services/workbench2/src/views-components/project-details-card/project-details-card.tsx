@@ -32,13 +32,13 @@ type CssRules =
     | 'root'
     | 'cardHeader'
     | 'showMore'
+    | 'noDescription'
     | 'nameContainer'
     | 'cardContent'
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
     | 'contextMenuSection'
-    | 'attribute'
     | 'chipSection'
     | 'tag';
 
@@ -53,6 +53,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.primary.main,
         cursor: 'pointer',
         maxWidth: '10rem',
+    },
+    noDescription: {
+        color: theme.palette.grey['600'],
+        fontStyle: 'italic',
     },
     nameContainer: {
         display: 'flex',
@@ -86,12 +90,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: '0.6rem',
-    },
-    attribute: {
-        marginBottom: '0.5rem',
-        marginRight: '1rem',
-        padding: '0.5rem',
-        borderRadius: '5px',
     },
     chipSection: {
         display: 'flex',
@@ -303,7 +301,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                 }
             />
             <CardContent className={classes.cardContent}>
-                {description && (
+                {description ? (
                     <section>
                         <div className={classes.showMore}>
                             <RichTextEditorLink
@@ -313,7 +311,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                             />
                         </div>
                     </section>
-                )}
+                ) : (
+                        <Typography className={classes.noDescription}>no description available</Typography>
+                )
+                }
             </CardContent>
         </Card>
     );
