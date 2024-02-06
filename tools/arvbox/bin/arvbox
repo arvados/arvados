@@ -381,6 +381,8 @@ build() {
 
     if test "$1" = localdemo -o "$1" = publicdemo ; then
         BUILDTYPE=demo
+    elif test "$1" = test ; then
+        BUILDTYPE=test
     else
         BUILDTYPE=dev
     fi
@@ -389,14 +391,16 @@ build() {
 	ARVADOS_BRANCH=$GITHEAD
     fi
 
-    docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE \
-	   --build-arg=go_version=$GO_VERSION \
-	   --build-arg=arvados_version=$ARVADOS_BRANCH \
-	   --build-arg=workdir=/tools/arvbox/lib/arvbox/docker \
-	   -t arvados/arvbox-base:$GITHEAD \
-	   -f "$ARVBOX_DOCKER/Dockerfile.base" \
-	   "$LOCAL_ARVADOS_ROOT"
-    docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
+    if test "$BUILD_BASE" != skip ; then
+	docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE \
+	       --build-arg=go_version=$GO_VERSION \
+	       --build-arg=arvados_version=$ARVADOS_BRANCH \
+	       --build-arg=workdir=/tools/arvbox/lib/arvbox/docker \
+	       -t arvados/arvbox-base:$GITHEAD \
+	       -f "$ARVBOX_DOCKER/Dockerfile.base" \
+	       "$LOCAL_ARVADOS_ROOT"
+	docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
+    fi
     docker build $NO_CACHE \
 	   --build-arg=go_version=$GO_VERSION \
 	   --build-arg=arvados_version=$ARVADOS_BRANCH \
@@ -434,6 +438,11 @@ case "$subcmd" in
     build)
         check $@
         build $@
+        ;;
+
+    quickbuild)
+        check $@
+        BUILD_BASE=skip build $@
         ;;
 
     rebuild)
