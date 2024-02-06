@@ -87,7 +87,7 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
 
         render() {
             const { uuidEnhancer, link, value, classes, linkToUuid,
-                localCluster, remoteHostsConfig, sessions } = this.props;
+                localCluster, remoteHostsConfig, sessions, label } = this.props;
             let valueNode: React.ReactNode;
 
             if (linkToUuid) {
@@ -116,7 +116,7 @@ interface DetailsAttributeComponentProps {
 
 export const DetailsAttributeComponent = withStyles(styles)(
     (props: DetailsAttributeDataProps & WithStyles<CssRules> & DetailsAttributeComponentProps) =>
-        <Typography component="div" className={props.classes.attribute}>
+        <Typography component="div" className={props.classes.attribute} data-cy={`details-panel-${props.label.toLowerCase()}`}>
             <Typography component="div" className={classnames([props.classes.label, props.classLabel])}>{props.label}</Typography>
             <Typography
                 onClick={props.onValueClick}
