@@ -116,7 +116,6 @@ setup(name='arvados-python-client',
       ],
       install_requires=[
           'ciso8601 >=2.0.0',
-          'dataclasses; python_version<"3.7"',
           'future',
           'google-api-core <2.11.0', # 2.11.0rc1 is incompatible with google-auth<2
           'google-api-python-client >=2.1.0',
@@ -127,11 +126,9 @@ setup(name='arvados-python-client',
           'pyparsing <3',
           'ruamel.yaml >=0.15.54, <0.17.22',
           'setuptools >=40.3.0',
-          # As of 4.8.0rc1, typing_extensions does not parse in Python 3.7
-          'typing_extensions >=3.7.4, <4.8; python_version<"3.8"',
           'websockets >=11.0',
-          'websockets ~=11.0; python_version<"3.8"',
       ],
+      python_requires="~=3.8",
       classifiers=[
           'Programming Language :: Python :: 3',
       ],

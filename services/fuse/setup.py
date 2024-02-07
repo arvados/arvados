@@ -51,6 +51,7 @@ setup(name='arvados_fuse',
         'setuptools',
         "prometheus_client"
         ],
+      python_requires="~=3.8",
       classifiers=[
           'Programming Language :: Python :: 3',
       ],
