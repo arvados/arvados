@@ -35,6 +35,7 @@ interface MainContentBarProps {
     onDetailsPanelToggle: () => void;
     buttonVisible: boolean;
     projectUuid: string;
+    routeUuid: string;
 }
 
 const isButtonVisible = ({ router }: RootState) => {
@@ -54,10 +55,16 @@ const isButtonVisible = ({ router }: RootState) => {
         Routes.matchFavoritesRoute(pathname);
 };
 
-const mapStateToProps = (state: RootState) => ({
-    buttonVisible: isButtonVisible(state),
-    projectUuid: state.detailsPanel.resourceUuid,
-});
+const mapStateToProps = (state: RootState) => {
+    const currentRoute = state.router.location?.pathname.split('/') || [];
+    const routeUuid = currentRoute[currentRoute.length - 1];
+
+    return {
+        buttonVisible: isButtonVisible(state),
+        projectUuid: state.detailsPanel.resourceUuid,
+        routeUuid
+    }
+};
 
 const mapDispatchToProps = () => (dispatch: Dispatch) => ({
     onDetailsPanelToggle: (uuid: string) => dispatch<any>(toggleDetailsPanel(uuid)),
@@ -82,7 +89,7 @@ export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withS
                     <IconButton data-cy="additional-info-icon"
                         color="inherit"
                         className={props.classes.infoTooltip}
-                        onClick={()=>props.onDetailsPanelToggle(props.projectUuid)}>
+                        onClick={()=>props.onDetailsPanelToggle(props.routeUuid)}>
                         <DetailsIcon />
                     </IconButton>
                 </Tooltip>}
