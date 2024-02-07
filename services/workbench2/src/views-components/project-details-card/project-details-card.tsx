@@ -9,11 +9,10 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import { getResource } from 'store/resources/resources';
-import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
-import { User, UserResource } from 'models/user';
+import { UserResource } from 'models/user';
 import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
 import { FreezeIcon } from 'components/icon/icon';
@@ -24,7 +23,6 @@ import { ContextMenuResource, openUserContextMenu } from 'store/context-menu/con
 import { resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { CollectionResource } from 'models/collection';
-import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 
@@ -36,12 +34,14 @@ type CssRules =
     | 'noDescription'
     | 'nameContainer'
     | 'cardContent'
+    | 'subHeader'
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
     | 'contextMenuSection'
     | 'chipSection'
-    | 'tag';
+    | 'tag'
+    | 'description';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -68,8 +68,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: '1rem',
         marginBottom: 0,
         minHeight: '2.5rem',
+        marginRight: '0.8rem',
     },
     cardContent: {
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    subHeader: {
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -104,6 +109,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
         marginRight: '1rem',
         marginTop: '0.5rem',
+    },
+    description: {
+        marginTop: '1rem',
     },
 });
 
@@ -248,6 +256,12 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, isAdmin }) => {
     const { name, description } = currentResource as ProjectResource;
+    const [showDescription, setShowDescription] = React.useState(false);
+
+    const toggleDescription = (resource: ProjectResource) => {
+        console.log('toggleDescription', resource);
+        setShowDescription(!showDescription);
+    };
 
     return (
         <Card className={classes.root}>
@@ -295,28 +309,35 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                 }
             />
             <CardContent className={classes.cardContent}>
-                <section className={classes.chipSection}>
-                    <Typography component='div'>
-                        {typeof currentResource.properties === 'object' &&
-                            Object.keys(currentResource.properties).map((k) =>
-                                Array.isArray(currentResource.properties[k])
-                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                            )}
-                    </Typography>
+                <section className={classes.subHeader}>
+                    <section className={classes.chipSection}>
+                        <Typography component='div'>
+                            {typeof currentResource.properties === 'object' &&
+                                Object.keys(currentResource.properties).map((k) =>
+                                    Array.isArray(currentResource.properties[k])
+                                        ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                        : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                )}
+                        </Typography>
+                    </section>
+                    <section className={classes.descriptionLabel}>
+                        {description ? (
+                            <Typography
+                                className={classes.showMore}
+                                onClick={() => toggleDescription(currentResource)}
+                            >
+                                Show full description
+                            </Typography>
+                        ) : (
+                            <Typography className={classes.noDescription}>no description available</Typography>
+                        )}
+                    </section>
                 </section>
-                <section className={classes.descriptionLabel}>
-                    {description ? (
-                        <div className={classes.showMore}>
-                            <RichTextEditorLink
-                                title={`Description of ${name}`}
-                                content={description}
-                                label='Show full description'
-                            />
-                        </div>
-                    ) : (
-                        <Typography className={classes.noDescription}>no description available</Typography>
-                    )}
+                <section>
+                    {showDescription && 
+                        <Typography className={classes.description}>
+                            {currentResource.description}
+                        </Typography>}
                 </section>
             </CardContent>
         </Card>
