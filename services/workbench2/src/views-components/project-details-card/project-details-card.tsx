@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip } from '@material-ui/core';
+import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse } from '@material-ui/core';
 import { StyleRulesCallback } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
@@ -73,6 +73,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardContent: {
         display: 'flex',
         flexDirection: 'column',
+        transition: 'height 0.3s ease',
     },
     subHeader: {
         display: 'flex',
@@ -258,8 +259,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     const { name, description } = currentResource as ProjectResource;
     const [showDescription, setShowDescription] = React.useState(false);
 
-    const toggleDescription = (resource: ProjectResource) => {
-        console.log('toggleDescription', resource);
+    const toggleDescription = () => {
         setShowDescription(!showDescription);
     };
 
@@ -324,21 +324,22 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         {description ? (
                             <Typography
                                 className={classes.showMore}
-                                onClick={() => toggleDescription(currentResource)}
+                                onClick={toggleDescription}
                             >
-                                Show full description
+                                {!showDescription ? "Show full description" : "Hide full description"}
                             </Typography>
                         ) : (
                             <Typography className={classes.noDescription}>no description available</Typography>
                         )}
                     </section>
                 </section>
-                <section>
-                    {showDescription && 
+                <Collapse in={showDescription} timeout='auto'>
+                    <section>
                         <Typography className={classes.description}>
-                            {currentResource.description}
-                        </Typography>}
-                </section>
+                            {description}
+                        </Typography>
+                    </section>
+                </Collapse>
             </CardContent>
         </Card>
     );
