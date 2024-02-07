@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse } from '@material-ui/core';
-import { StyleRulesCallback } from '@material-ui/core';
+import { StyleRulesCallback, Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
@@ -15,13 +14,11 @@ import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
 import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
-import { FreezeIcon } from 'components/icon/icon';
+import { MoreVerticalIcon, FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
-import { MoreVerticalIcon } from 'components/icon/icon';
 import { IconButton } from '@material-ui/core';
 import { ContextMenuResource, openUserContextMenu } from 'store/context-menu/context-menu-actions';
-import { resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
-import { openContextMenu } from 'store/context-menu/context-menu-actions';
+import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { CollectionResource } from 'models/collection';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
@@ -295,17 +292,19 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 }
                 action={
-                    <Tooltip
-                        title='More options'
-                        disableFocusListener
-                    >
-                        <IconButton
-                            aria-label='More options'
-                            onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                    <section className={classes.contextMenuSection}>
+                        <Tooltip
+                            title='More options'
+                            disableFocusListener
                         >
-                            <MoreVerticalIcon />
-                        </IconButton>
-                    </Tooltip>
+                            <IconButton
+                                aria-label='More options'
+                                onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                            >
+                                <MoreVerticalIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </section>
                 }
             />
             <CardContent className={classes.cardContent}>
