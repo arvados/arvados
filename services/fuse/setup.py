@@ -51,11 +51,8 @@ setup(name='arvados_fuse',
         'setuptools',
         "prometheus_client"
         ],
-      extras_require={
-          ':python_version<"3"': ['pytz'],
-      },
+      python_requires="~=3.8",
       classifiers=[
-          'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',

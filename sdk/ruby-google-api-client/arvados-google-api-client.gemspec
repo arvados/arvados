@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.name = "arvados-google-api-client"
   s.version = Google::APIClient::VERSION::STRING
 
-  s.required_ruby_version = '>= 2.5.0'
+  s.required_ruby_version = '>= 2.7.0'
   s.required_rubygems_version = ">= 1.3.5"
   s.require_paths = ["lib"]
   s.authors = ["Bob Aman", "Steven Bazyl"]

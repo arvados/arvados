@@ -45,6 +45,7 @@ setup(name='crunchstat_summary',
       install_requires=[
           'arvados-python-client{}'.format(pysdk_dep),
       ],
+      python_requires="~=3.8",
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0'],
       zip_safe=False,
