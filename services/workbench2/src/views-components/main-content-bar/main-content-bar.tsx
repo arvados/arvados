@@ -34,6 +34,7 @@ interface MainContentBarProps {
     onRefreshPage: () => void;
     onDetailsPanelToggle: () => void;
     buttonVisible: boolean;
+    projectUuid: string;
 }
 
 const isButtonVisible = ({ router }: RootState) => {
@@ -59,7 +60,7 @@ const mapStateToProps = (state: RootState) => ({
 });
 
 const mapDispatchToProps = () => (dispatch: Dispatch) => ({
-    onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
+    onDetailsPanelToggle: (uuid: string) => dispatch<any>(toggleDetailsPanel(uuid)),
     onRefreshButtonClick: (id) => {
         dispatch<any>(loadSidePanelTreeProjects(id));
     }
@@ -81,7 +82,7 @@ export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withS
                     <IconButton data-cy="additional-info-icon"
                         color="inherit"
                         className={props.classes.infoTooltip}
-                        onClick={props.onDetailsPanelToggle}>
+                        onClick={()=>props.onDetailsPanelToggle(props.projectUuid)}>
                         <DetailsIcon />
                     </IconButton>
                 </Tooltip>}
