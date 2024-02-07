@@ -33,5 +33,6 @@ setup(name='arvados-user-activity',
       install_requires=[
           'arvados-python-client >= 2.2.0.dev20201118185221',
       ],
+      python_requires="~=3.8",
       zip_safe=True,
 )
