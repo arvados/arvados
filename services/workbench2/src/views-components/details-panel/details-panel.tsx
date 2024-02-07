@@ -103,12 +103,13 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
         isOpened: detailsPanel.isOpened,
         tabNr: detailsPanel.tabNr,
         res: resource || (file && file.value) || EMPTY_RESOURCE,
+        currentItemUuid
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onCloseDrawer: () => {
-        dispatch<any>(toggleDetailsPanel());
+    onCloseDrawer: (currentItemId) => {
+        dispatch<any>(toggleDetailsPanel(currentItemId));
     },
     setActiveTab: (tabNr: number) => {
         dispatch<any>(openDetailsPanel(undefined, tabNr));
@@ -116,13 +117,14 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 });
 
 export interface DetailsPanelDataProps {
-    onCloseDrawer: () => void;
+    onCloseDrawer: (currentItemId) => void;
     setActiveTab: (tabNr: number) => void;
     authConfig: Config;
     isOpened: boolean;
     tabNr: number;
     res: DetailsResource;
     isFrozen: boolean;
+    currentItemUuid: string;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -162,7 +164,7 @@ export const DetailsPanel = withStyles(styles)(
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, res, tabNr, authConfig } = this.props;
+                const { classes, onCloseDrawer, res, tabNr, authConfig, currentItemUuid } = this.props;
 
                 let shouldShowInlinePreview = false;
                 if (!('kind' in res)) {
@@ -199,7 +201,7 @@ export const DetailsPanel = withStyles(styles)(
                             </Tooltip>
                         </Grid>
                         <Grid item>
-                            <IconButton color="inherit" onClick={onCloseDrawer}>
+                            <IconButton color="inherit" onClick={()=>onCloseDrawer(currentItemUuid)}>
                                 <CloseIcon />
                             </IconButton>
                         </Grid>
