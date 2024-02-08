@@ -208,7 +208,8 @@ sanity_checks() {
     find /usr/include -path '*gnutls/gnutls.h' | egrep --max-count=1 . \
         || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
     echo -n 'virtualenv: '
-    python3 -m venv -h | egrep --max-count=1 . \
+    python3 -m venv --help | grep -q '^usage: venv ' \
+        && echo "venv module found" \
         || fatal "No virtualenv. Try: apt-get install python3-venv"
     echo -n 'Python3 pyconfig.h: '
     find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
