@@ -5,7 +5,7 @@
 import { multiselectActionConstants } from "./multiselect-actions";
 import { TCheckedList } from "components/data-table/data-table";
 
-type MultiselectToolbarState = {
+export type MultiselectToolbarState = {
     isVisible: boolean;
     checkedList: TCheckedList;
     selectedUuid: string;

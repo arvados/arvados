@@ -29,6 +29,7 @@ import { SvgIconProps } from "@material-ui/core/SvgIcon";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -54,6 +55,7 @@ export interface DataTableDataProps<I> {
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     checkedList: TCheckedList;
+    setSelectedUuid: (checkedList: TCheckedList) => void;
 }
 
 type CssRules =
@@ -170,6 +172,9 @@ export const DataTable = withStyles(styles)(
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([])
+            }
+            if (isExactlyOneSelected(prevProps.checkedList) !== isExactlyOneSelected(this.props.checkedList)) {
+                this.props.setSelectedUuid(this.props.checkedList)
             }
         }
 

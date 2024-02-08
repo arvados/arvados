@@ -13,6 +13,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { OrderBuilder } from 'services/api/order-builder';
 import { CollectionResource } from 'models/collection';
 import { extractUuidKind, ResourceKind } from 'models/resource';
+import { CLOSE_DRAWER } from 'views-components/details-panel/details-panel';
 
 export const SLIDE_TIMEOUT = 500;
 
@@ -67,19 +68,20 @@ export const refreshCollectionVersionsList = (uuid: string) =>
     };
 
 export const toggleDetailsPanel = (uuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
-    const { detailsPanel, router }= getState()
-    // because of material-ui issue resizing details panel breaks tabs.
-    // triggering window resize event fixes that.
-    if(uuid !== detailsPanel.resourceUuid  && detailsPanel.isOpened){
+    const { detailsPanel }= getState()
+    const isTargetUuidNew = uuid !== detailsPanel.resourceUuid
+    if(isTargetUuidNew && uuid !== CLOSE_DRAWER && detailsPanel.isOpened){
         dispatch<any>(loadDetailsPanel(uuid));
     } else {
+        // because of material-ui issue resizing details panel breaks tabs.
+        // triggering window resize event fixes that.
         setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
         }, SLIDE_TIMEOUT);
         startDetailsPanelTransition(dispatch)
         dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
         if (getState().detailsPanel.isOpened) {
-            dispatch<any>(loadDetailsPanel(getState().detailsPanel.resourceUuid));
+            dispatch<any>(loadDetailsPanel(isTargetUuidNew ? uuid : detailsPanel.resourceUuid));
         }
     }
     };

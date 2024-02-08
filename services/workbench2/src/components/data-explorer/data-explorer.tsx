@@ -116,6 +116,7 @@ interface DataExplorerActionProps<T> {
     extractKey?: (item: T) => React.Key;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    setSelectedUuid: (checkedList: TCheckedList) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -324,6 +325,7 @@ export const DataExplorer = withStyles(styles)(
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
+                                setSelectedUuid={this.props.setSelectedUuid}
                             />
                         </Grid>
                         <Grid

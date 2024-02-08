@@ -28,6 +28,8 @@ import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from 'store/detai
 import { FileDetails } from 'views-components/details-panel/file-details';
 import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { DetailsPanelState } from 'store/details-panel/details-panel-reducer';
+import { MultiselectToolbarState } from 'store/multiselect/multiselect-reducer';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -83,10 +85,27 @@ const getItem = (res: DetailsResource): DetailsData => {
     }
 };
 
+const getCurrentItemUuid = (
+    isDetailsResourceChecked: boolean,
+    currentRoute: string,
+    detailsPanel: DetailsPanelState,
+    multiselect: MultiselectToolbarState,
+    currentRouteSplit: string[]
+) => {
+    if (isDetailsResourceChecked || currentRoute.includes('collections') || detailsPanel.isOpened) {
+        return detailsPanel.resourceUuid;
+    }
+    if (!!multiselect.selectedUuid) {
+        return multiselect.selectedUuid;
+    }
+    return currentRouteSplit[currentRouteSplit.length - 1];
+};
+
 const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, multiselect, router }: RootState) => {
-    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
+    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid] === true;
     const currentRoute = router.location ? router.location.pathname : "";
-    const currentItemUuid = isDetailsResourceChecked || currentRoute.includes('collections') ? detailsPanel.resourceUuid : multiselect.selectedUuid ? multiselect.selectedUuid : currentRoute.split('/')[2];
+    const currentRouteSplit = currentRoute.split('/');
+    const currentItemUuid = getCurrentItemUuid(isDetailsResourceChecked, currentRoute, detailsPanel, multiselect, currentRouteSplit);
     const resource = getResource(currentItemUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
@@ -106,6 +125,8 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
         currentItemUuid
     };
 };
+
+export const CLOSE_DRAWER = 'CLOSE_DRAWER'
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: (currentItemId) => {
@@ -164,7 +185,7 @@ export const DetailsPanel = withStyles(styles)(
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, res, tabNr, authConfig, currentItemUuid } = this.props;
+                const { classes, onCloseDrawer, res, tabNr, authConfig } = this.props;
 
                 let shouldShowInlinePreview = false;
                 if (!('kind' in res)) {
@@ -201,7 +222,7 @@ export const DetailsPanel = withStyles(styles)(
                             </Tooltip>
                         </Grid>
                         <Grid item>
-                            <IconButton color="inherit" onClick={()=>onCloseDrawer(currentItemUuid)}>
+                            <IconButton color="inherit" onClick={()=>onCloseDrawer(CLOSE_DRAWER)}>
                                 <CloseIcon />
                             </IconButton>
                         </Grid>
