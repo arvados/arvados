@@ -68,12 +68,9 @@ export const refreshCollectionVersionsList = (uuid: string) =>
 
 export const toggleDetailsPanel = (uuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
     const { detailsPanel, router }= getState()
-    const currentRoute = router.location?.pathname.split('/') || [];
-    const currentItemUuid = currentRoute[currentRoute.length - 1];
-    console.log('toggleDetailsPanel', uuid, detailsPanel.resourceUuid, currentItemUuid)
     // because of material-ui issue resizing details panel breaks tabs.
     // triggering window resize event fixes that.
-    if(uuid !== detailsPanel.resourceUuid  && (detailsPanel.isOpened || uuid === currentItemUuid)){
+    if(uuid !== detailsPanel.resourceUuid  && detailsPanel.isOpened){
         dispatch<any>(loadDetailsPanel(uuid));
     } else {
         setTimeout(() => {
