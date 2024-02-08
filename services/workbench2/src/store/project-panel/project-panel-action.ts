@@ -9,7 +9,6 @@ import { getProperty } from "store/properties/properties";
 import { loadProject } from "store/workbench/workbench-actions";
 import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 
-export const PROJECT_PANEL_ID = "projectPanel";
 export const PROJECT_PANEL_CURRENT_UUID = "projectPanelCurrentUuid";
 export const IS_PROJECT_PANEL_TRASHED = "isProjectPanelTrashed";
 

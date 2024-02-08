@@ -19,7 +19,7 @@ import { snackbarReducer } from "./snackbar/snackbar-reducer";
 import { collectionPanelFilesReducer } from "./collection-panel/collection-panel-files/collection-panel-files-reducer";
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
-import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
+import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action-bind";
 import { WORKFLOW_PROCESSES_PANEL_ID } from "./workflow-panel/workflow-panel-actions";
 import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";

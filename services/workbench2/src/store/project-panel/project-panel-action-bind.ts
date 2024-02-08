@@ -4,6 +4,8 @@
 
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 
-const PROJECT_PANEL_ID = "projectPanel";
+// These are split into a separate file to avoid circular imports causing
+// invariant violations with unit tests
 
+export const PROJECT_PANEL_ID = "projectPanel";
 export const projectPanelActions = bindDataExplorerActions(PROJECT_PANEL_ID);

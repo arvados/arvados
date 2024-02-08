@@ -52,7 +52,8 @@ import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
-import { DetailsCardRoot } from 'views-components/details-card/details-card-root'; 
+import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
+import { PROJECT_PANEL_ID } from 'store/project-panel/project-panel-action-bind';
 
 type CssRules = 'root' | 'button' ;
 
@@ -234,8 +235,6 @@ export const projectPanelColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceDeleteDate uuid={uuid} />,
     },
 ];
-
-export const PROJECT_PANEL_ID = 'projectPanel';
 
 const DEFAULT_VIEW_MESSAGES = ['Your project is empty.', 'Please create a project or create a collection and upload a data.'];
 
