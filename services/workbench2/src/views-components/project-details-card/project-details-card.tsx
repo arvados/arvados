@@ -22,9 +22,11 @@ import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-me
 import { CollectionResource } from 'models/collection';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
+import classNames from 'classnames';
 
 type CssRules =
     | 'root'
+    | 'selected'
     | 'cardHeader'
     | 'descriptionLabel'
     | 'showMore'
@@ -46,6 +48,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '1rem',
         flex: '0 0 auto',
         paddingTop: '0.2rem',
+        border: '2px solid transparent',
+    },
+    selected: {
+        border: '2px solid #ccc',
     },
     showMore: {
         color: theme.palette.primary.main,
@@ -119,11 +125,13 @@ const mapStateToProps = (state: RootState) => {
     const currentResource = getResource(currentItemUuid)(state.resources);
     const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(state.resources);
     const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
+    const isSelected = currentItemUuid === state.detailsPanel.resourceUuid && state.detailsPanel.isOpened === true && !!state.multiselect.selectedUuid;
 
     return {
         isAdmin: state.auth.user?.isAdmin,
         currentResource,
         frozenByFullName,
+        isSelected,
     };
 };
 
@@ -162,12 +170,14 @@ type DetailsCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource | UserResource;
     frozenByFullName?: string;
     isAdmin: boolean;
+    isSelected: boolean;
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
 };
 
 type UserCardProps = WithStyles<CssRules> & {
     currentResource: UserResource;
     isAdmin: boolean;
+    isSelected: boolean;
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
 };
 
@@ -175,6 +185,7 @@ type ProjectCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource;
     frozenByFullName: string | undefined;
     isAdmin: boolean;
+    isSelected: boolean;
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
 };
 
@@ -183,7 +194,7 @@ export const ProjectDetailsCard = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: DetailsCardProps) => {
-        const { classes, currentResource, frozenByFullName, handleContextMenu, isAdmin } = props;
+        const { classes, currentResource, frozenByFullName, handleContextMenu, isAdmin, isSelected } = props;
         switch (currentResource.kind as string) {
             case ResourceKind.USER:
                 return (
@@ -191,6 +202,7 @@ export const ProjectDetailsCard = connect(
                         classes={classes}
                         currentResource={currentResource as UserResource}
                         isAdmin={isAdmin}
+                        isSelected={isSelected}
                         handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                     />
                 );
@@ -201,6 +213,7 @@ export const ProjectDetailsCard = connect(
                         currentResource={currentResource as ProjectResource}
                         frozenByFullName={frozenByFullName}
                         isAdmin={isAdmin}
+                        isSelected={isSelected}
                         handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                     />
                 );
@@ -210,11 +223,11 @@ export const ProjectDetailsCard = connect(
     })
 );
 
-const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleContextMenu, isAdmin }) => {
+const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleContextMenu, isAdmin, isSelected }) => {
     const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
-        <Card className={classes.root}>
+        <Card className={classNames(classes.root, isSelected ? classes.selected : '')}>
             <CardHeader
                 className={classes.cardHeader}
                 title={
@@ -252,7 +265,7 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
     );
 };
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, isAdmin }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, isAdmin, isSelected }) => {
     const { name, description } = currentResource as ProjectResource;
     const [showDescription, setShowDescription] = React.useState(false);
 
@@ -261,7 +274,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     };
 
     return (
-        <Card className={classes.root}>
+        <Card className={classNames(classes.root, isSelected ? classes.selected : '')}>
             <CardHeader
                 className={classes.cardHeader}
                 title={
