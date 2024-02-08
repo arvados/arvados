@@ -53,9 +53,10 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
+import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { PROJECT_PANEL_ID } from 'store/project-panel/project-panel-action-bind';
 
-type CssRules = 'root' | 'button' ;
+type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -65,6 +66,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit,
+    },
+    mpvRoot: {
+        flexGrow: 1,
+    },
+    dataExplorer: {
+        height: "100%",
     },
 });
 
@@ -238,6 +245,10 @@ export const projectPanelColumns: DataColumns<string, ProjectResource> = [
 
 const DEFAULT_VIEW_MESSAGES = ['Your project is empty.', 'Please create a project or create a collection and upload a data.'];
 
+const panelsData: MPVPanelState[] = [
+    { name: "Subprojects", visible: true },
+];
+
 interface ProjectPanelDataProps {
     currentItemId: string;
     resources: ResourcesState;
@@ -269,15 +280,30 @@ export const ProjectPanel = withStyles(styles)(
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
                     <DetailsCardRoot />
-                    <DataExplorer
-                        id={PROJECT_PANEL_ID}
-                        onRowClick={this.handleRowClick}
-                        onRowDoubleClick={this.handleRowDoubleClick}
-                        onContextMenu={this.handleContextMenu}
-                        contextMenuColumn={true}
-                        defaultViewIcon={ProjectIcon}
-                        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                    />
+                    <MPVContainer
+                        className={classes.mpvRoot}
+                        spacing={8}
+                        panelStates={panelsData}
+                        mutuallyExclusive
+                        justify-content="flex-start"
+                        direction="column"
+                        wrap="nowrap">
+                        <MPVPanelContent
+                            forwardProps
+                            xs="auto"
+                            data-cy="process-details"
+                            className={classes.dataExplorer}>
+                            <DataExplorer
+                                id={PROJECT_PANEL_ID}
+                                onRowClick={this.handleRowClick}
+                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onContextMenu={this.handleContextMenu}
+                                contextMenuColumn={true}
+                                defaultViewIcon={ProjectIcon}
+                                defaultViewMessages={DEFAULT_VIEW_MESSAGES}
+                            />
+                        </MPVPanelContent>
+                    </MPVContainer>
                 </div>
             }
 

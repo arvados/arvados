@@ -8,6 +8,8 @@ import {
     Grid,
     Paper,
     StyleRulesCallback,
+    Tab,
+    Tabs,
     Tooltip,
     withStyles,
     WithStyles
@@ -19,7 +21,7 @@ import { InfoIcon } from 'components/icon/icon';
 import { ReactNodeArray } from 'prop-types';
 import classNames from 'classnames';
 
-type CssRules = 'root' | 'button' | 'buttonIcon' | 'content';
+type CssRules = 'root' | 'button' | 'buttonIcon' | 'content' | 'tabsWrapper' | 'tabsRoot' | 'tabs';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -36,6 +38,17 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     content: {
         overflow: 'auto',
+    },
+    tabsWrapper: {
+        width: '100%',
+    },
+    tabsRoot: {
+        flexGrow: 1,
+    },
+    tabs: {
+        flexGrow: 1,
+        flexShrink: 1,
+        maxWidth: 'initial',
     },
 });
 
@@ -114,6 +127,7 @@ export interface MPVPanelState {
 }
 interface MPVContainerDataProps {
     panelStates?: MPVPanelState[];
+    mutuallyExclusive?: boolean;
 }
 type MPVContainerProps = MPVContainerDataProps & GridProps;
 
@@ -131,44 +145,56 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(initialVisibility);
     const [previousPanelVisibility, setPreviousPanelVisibility] = useState<boolean[]>(initialVisibility);
     const [highlightedPanel, setHighlightedPanel] = useState<number>(-1);
+    const currentSelectedPanel = panelVisibility.findIndex(Boolean);
     const [selectedPanel, setSelectedPanel] = useState<number>(-1);
     const panelRef = useRef<any>(null);
 
     let panels: JSX.Element[] = [];
     let buttons: JSX.Element[] = [];
+    let tabs: JSX.Element[] = [];
+    let buttonBar: JSX.Element = <></>;
 
     if (isArray(children)) {
-        for (let idx = 0; idx < children.length; idx++) {
-            const showFn = (idx: number) => () => {
-                setPreviousPanelVisibility(initialVisibility);
+        const showFn = (idx: number) => () => {
+            setPreviousPanelVisibility(initialVisibility);
+            if (props.mutuallyExclusive) {
+                // Hide all other panels
+                setPanelVisibility([
+                    ...(new Array(idx).fill(false)),
+                    true,
+                    ...(new Array(panelVisibility.length-(idx+1)).fill(false)),
+                ]);
+            } else {
                 setPanelVisibility([
                     ...panelVisibility.slice(0, idx),
                     true,
                     ...panelVisibility.slice(idx + 1)
                 ]);
-                setSelectedPanel(idx);
-            };
-            const hideFn = (idx: number) => () => {
-                setPreviousPanelVisibility(initialVisibility);
-                setPanelVisibility([
-                    ...panelVisibility.slice(0, idx),
-                    false,
-                    ...panelVisibility.slice(idx + 1)
-                ])
-            };
-            const maximizeFn = (idx: number) => () => {
-                setPreviousPanelVisibility(panelVisibility);
-                // Maximize X == hide all but X
-                setPanelVisibility([
-                    ...panelVisibility.slice(0, idx).map(() => false),
-                    true,
-                    ...panelVisibility.slice(idx + 1).map(() => false),
-                ]);
-            };
-            const unMaximizeFn = (idx: number) => () => {
-                setPanelVisibility(previousPanelVisibility);
-                setSelectedPanel(idx);
             }
+            setSelectedPanel(idx);
+        };
+        const hideFn = (idx: number) => () => {
+            setPreviousPanelVisibility(initialVisibility);
+            setPanelVisibility([
+                ...panelVisibility.slice(0, idx),
+                false,
+                ...panelVisibility.slice(idx+1)
+            ])
+        };
+        const maximizeFn = (idx: number) => () => {
+            setPreviousPanelVisibility(panelVisibility);
+            // Maximize X == hide all but X
+            setPanelVisibility([
+                ...panelVisibility.slice(0, idx).map(() => false),
+                true,
+                ...panelVisibility.slice(idx+1).map(() => false),
+            ]);
+        };
+        const unMaximizeFn = (idx: number) => () => {
+            setPanelVisibility(previousPanelVisibility);
+            setSelectedPanel(idx);
+        }
+        for (let idx = 0; idx < children.length; idx++) {
             const panelName = panelStates === undefined
                 ? `Panel ${idx + 1}`
                 : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx + 1}`;
@@ -198,6 +224,11 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
                 </Tooltip>
             ];
 
+            tabs = [
+                ...tabs,
+                <>{panelName}</>
+            ];
+
             const aPanel =
                 <MPVHideablePanel key={idx} visible={panelVisibility[idx]} name={panelName}
                     panelRef={(idx === selectedPanel) ? panelRef : undefined}
@@ -207,11 +238,21 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
                 </MPVHideablePanel>;
             panels = [...panels, aPanel];
         };
+
+        buttonBar = props.mutuallyExclusive ?
+            <Paper className={classes.tabsWrapper}>
+                <Tabs className={classes.tabsRoot} value={currentSelectedPanel} onChange={(e, val) => showFn(val)()}>
+                    {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
+                </Tabs>
+            </Paper> :
+            <>
+                {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
+            </>;
     };
 
-    return <Grid container {...props} className={classes.root}>
+    return <Grid container {...props} className={classNames(classes.root, props.className)}>
         <Grid container item direction="row">
-            {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
+            {buttonBar}
         </Grid>
         <Grid container item {...props} xs className={classes.content}
             onScroll={() => setSelectedPanel(-1)}>
