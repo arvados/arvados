@@ -23,6 +23,7 @@ import { CollectionResource } from 'models/collection';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 import classNames from 'classnames';
+import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 
 type CssRules =
     | 'root'
@@ -125,7 +126,7 @@ const mapStateToProps = (state: RootState) => {
     const currentResource = getResource(currentItemUuid)(state.resources);
     const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(state.resources);
     const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
-    const isSelected = currentItemUuid === state.detailsPanel.resourceUuid && state.detailsPanel.isOpened === true && !!state.multiselect.selectedUuid;
+    const isSelected = currentItemUuid === state.detailsPanel.resourceUuid && state.detailsPanel.isOpened === true;
 
     return {
         isAdmin: state.auth.user?.isAdmin,
@@ -136,6 +137,9 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
+    handleCardClick: (uuid: string) => {
+        dispatch<any>(loadDetailsPanel(uuid));
+    },
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: any, isAdmin: boolean) => {
         event.stopPropagation();
         // When viewing the contents of a filter group, all contents should be treated as read only.
@@ -172,6 +176,7 @@ type DetailsCardProps = WithStyles<CssRules> & {
     isAdmin: boolean;
     isSelected: boolean;
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
+    handleCardClick: (resource: any) => void;
 };
 
 type UserCardProps = WithStyles<CssRules> & {
@@ -179,6 +184,7 @@ type UserCardProps = WithStyles<CssRules> & {
     isAdmin: boolean;
     isSelected: boolean;
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
+    handleCardClick: (resource: any) => void;
 };
 
 type ProjectCardProps = WithStyles<CssRules> & {
@@ -187,6 +193,7 @@ type ProjectCardProps = WithStyles<CssRules> & {
     isAdmin: boolean;
     isSelected: boolean;
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
+    handleCardClick: (resource: any) => void;
 };
 
 export const ProjectDetailsCard = connect(
@@ -194,7 +201,7 @@ export const ProjectDetailsCard = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: DetailsCardProps) => {
-        const { classes, currentResource, frozenByFullName, handleContextMenu, isAdmin, isSelected } = props;
+        const { classes, currentResource, frozenByFullName, handleContextMenu, handleCardClick, isAdmin, isSelected } = props;
         switch (currentResource.kind as string) {
             case ResourceKind.USER:
                 return (
@@ -204,6 +211,7 @@ export const ProjectDetailsCard = connect(
                         isAdmin={isAdmin}
                         isSelected={isSelected}
                         handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                        handleCardClick={handleCardClick}
                     />
                 );
             case ResourceKind.PROJECT:
@@ -215,6 +223,7 @@ export const ProjectDetailsCard = connect(
                         isAdmin={isAdmin}
                         isSelected={isSelected}
                         handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                        handleCardClick={handleCardClick}
                     />
                 );
             default:
@@ -223,11 +232,11 @@ export const ProjectDetailsCard = connect(
     })
 );
 
-const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleContextMenu, isAdmin, isSelected }) => {
+const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleContextMenu, handleCardClick, isAdmin, isSelected }) => {
     const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
-        <Card className={classNames(classes.root, isSelected ? classes.selected : '')}>
+        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)}>
             <CardHeader
                 className={classes.cardHeader}
                 title={
@@ -265,8 +274,8 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
     );
 };
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, isAdmin, isSelected }) => {
-    const { name, description } = currentResource as ProjectResource;
+const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, handleCardClick, isAdmin, isSelected }) => {
+    const { name, description, uuid } = currentResource as ProjectResource;
     const [showDescription, setShowDescription] = React.useState(false);
 
     const toggleDescription = () => {
@@ -274,7 +283,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     };
 
     return (
-        <Card className={classNames(classes.root, isSelected ? classes.selected : '')}>
+        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)}>
             <CardHeader
                 className={classes.cardHeader}
                 title={
@@ -332,7 +341,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                 )}
                         </Typography>
                     </section>
-                    <section className={classes.descriptionLabel}>
+                    <section className={classes.descriptionLabel} onClick={(ev)=>ev.stopPropagation()}>
                         {description ? (
                             <Typography
                                 className={classes.showMore}
@@ -346,7 +355,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 </section>
                 <Collapse in={showDescription} timeout='auto'>
-                    <section>
+                    <section onClick={(ev)=>ev.stopPropagation()}>
                         <Typography className={classes.description}>
                             {description}
                         </Typography>
