@@ -8,7 +8,6 @@ import { msCollectionActionSet } from "views-components/multiselect-toolbar/ms-c
 import { msProjectActionSet } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { msProcessActionSet } from "views-components/multiselect-toolbar/ms-process-action-set";
 import { msWorkflowActionSet } from "views-components/multiselect-toolbar/ms-workflow-action-set";
-import { msUserActionSet } from "views-components/multiselect-toolbar/ms-user-action-set";
 
 export function findActionByName(name: string, actionSet: MultiSelectMenuActionSet) {
     return actionSet[0].find(action => action.name === name);
@@ -21,5 +20,4 @@ export const kindToActionSet: Record<string, MultiSelectMenuActionSet> = {
     [PROCESS]: msProcessActionSet,
     [PROJECT]: msProjectActionSet,
     [WORKFLOW]: msWorkflowActionSet,
-    [USER]: msUserActionSet
 };

@@ -26,7 +26,7 @@ import { resourceIsFrozen } from "common/frozen-resources";
 import { getResourceWithEditableStatus } from "store/resources/resources";
 import { GroupResource } from "models/group";
 import { EditableResource } from "models/resource";
-import { User, UserResource } from "models/user";
+import { User } from "models/user";
 import { GroupClass } from "models/group";
 import { isProcessCancelable } from "store/processes/process";
 import { CollectionResource } from "models/collection";
@@ -35,10 +35,6 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { AuthState } from "store/auth/auth-reducer";
-import { BuiltinGroups, getBuiltinGroupUuid } from "models/group";
-import { LinkResource, LinkClass } from "models/link";
-import { filterResources } from "store/resources/resources";
-import { UserAccountStatus } from "store/users/users-actions";
 
 const WIDTH_TRANSITION = 150
 
@@ -132,34 +128,12 @@ export const MultiselectToolbar = connect(
             // eslint-disable-next-line
         }, [checkedList])
 
-        const getAccountStatus = (auth: AuthState, resources: ResourcesState) => {
-            const user = getResource<UserResource>(singleSelectedUuid as string)(resources);
-            if (!user) return;
-            const allUsersGroupUuid = getBuiltinGroupUuid(auth.localCluster, BuiltinGroups.ALL);
-            const permissions = filterResources(
-                (resource: LinkResource) =>
-                    resource.kind === ResourceKind.LINK &&
-                    resource.linkClass === LinkClass.PERMISSION &&
-                    resource.headUuid === allUsersGroupUuid &&
-                    resource.tailUuid === singleSelectedUuid
-            )(resources);
-
-            return user && user.isActive ? UserAccountStatus.ACTIVE : permissions.length > 0 ? UserAccountStatus.SETUP : UserAccountStatus.INACTIVE;
-        };
-
         const actions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
-                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters)
-                      .filter((action) => (singleSelectedUuid === null ? action.isForMulti : true))
-                      .filter((action) => {
-                          if (action.filters && action.filters.length) {
-                              if (action.filters[0] === UserAccountStatus.OTHER && singleSelectedUuid !== auth.user?.uuid) return true;
-                              const accountStatus = getAccountStatus(auth, iconProps.resources);
-                              return accountStatus && action.filters.includes(accountStatus);
-                          }
-                          return true;
-                      });
+                : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
+                        singleSelectedUuid === null ? action.isForMulti : true
+                    );
 
         return (
             <React.Fragment>

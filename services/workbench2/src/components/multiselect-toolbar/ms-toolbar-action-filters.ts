@@ -16,7 +16,6 @@ import {
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 import { ResourceKind } from 'models/resource';
-import { msUserActionSet, msUserCommonActionFilter, msUserAdminActionFilter } from "views-components/multiselect-toolbar/ms-user-action-set";
 
 export enum msMenuResourceKind {
     API_CLIENT_AUTHORIZATION = 'ApiClientAuthorization',
@@ -116,7 +115,4 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
-
-    [ROOT_PROJECT]: [msUserActionSet, msUserCommonActionFilter],
-    [ROOT_PROJECT_ADMIN]: [msUserActionSet, msUserAdminActionFilter],
 };
