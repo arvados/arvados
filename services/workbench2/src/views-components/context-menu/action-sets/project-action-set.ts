@@ -118,8 +118,8 @@ export const freezeProjectAction = {
 export const newProjectAction: any = {
     icon: NewProjectIcon,
     name: "New project",
-    execute: (dispatch, resource): void => {
-        dispatch(openProjectCreateDialog(resource.uuid));
+    execute: (dispatch, resources): void => {
+        dispatch(openProjectCreateDialog(resources[0].uuid));
     },
 };
 

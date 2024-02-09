@@ -478,8 +478,13 @@ $graph:
         and stderr produced by the tool to determine if a failed job
         should be retried with more RAM.  By default, searches for the
         substrings 'bad_alloc' and 'OutOfMemory'.
-    - name: memoryRetryMultipler
-      type: float
+    - name: memoryRetryMultiplier
+      type: float?
       doc: |
         If the container failed on its first run, re-submit the
         container with the RAM request multiplied by this factor.
+    - name: memoryRetryMultipler
+      type: float?
+      doc: |
+        Deprecated misspelling of "memoryRetryMultiplier".  Kept only
+        for backwards compatability, don't use this.

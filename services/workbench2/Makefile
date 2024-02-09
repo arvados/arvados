@@ -21,7 +21,7 @@ GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 # changes in the package. (i.e. example config files externally added
 ITERATION?=1
 
-TARGETS?=centos7 rocky8 debian10 debian11 ubuntu1804 ubuntu2004
+TARGETS?=rocky8 debian11 debian12 ubuntu2004 ubuntu2204
 
 DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
 MAINTAINER=Arvados Package Maintainers <packaging@arvados.org>

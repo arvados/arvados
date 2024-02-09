@@ -46,24 +46,11 @@ extra_snakeoil_certs_dependencies_pkg_installed:
       - openssl
       - ca-certificates
 
-# Remove the RANDFILE parameter in openssl.cnf as it makes openssl fail in Ubuntu 18.04
-# Saving and restoring the rng state is not necessary anymore in the openssl 1.1.1
-# random generator, cf
-#   https://github.com/openssl/openssl/issues/7754
-#
-extra_snakeoil_certs_file_comment_etc_openssl_conf:
-  file.comment:
-    - name: /etc/ssl/openssl.cnf
-    - regex: ^RANDFILE.*
-    - onlyif: grep -q ^RANDFILE /etc/ssl/openssl.cnf
-    - require_in:
-      - cmd: extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run
-
 extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run:
   # Taken from https://github.com/arvados/arvados/blob/master/tools/arvbox/lib/arvbox/docker/service/certificate/run
   cmd.run:
     - name: |
-        # These dirs are not to CentOS-ish, but this is a helper script
+        # These dirs are not too CentOS-ish, but this is a helper script
         # and they should be enough
         /bin/bash -c "mkdir -p /etc/ssl/certs/ /etc/ssl/private/ && \
         openssl req \

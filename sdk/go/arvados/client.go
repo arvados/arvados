@@ -77,6 +77,11 @@ type Client struct {
 	// context deadline to establish a maximum request time.
 	Timeout time.Duration
 
+	// Maximum disk cache size in bytes or percent of total
+	// filesystem size. If zero, use default, currently 10% of
+	// filesystem size.
+	DiskCacheSize ByteSizeOrPercent
+
 	dd *DiscoveryDocument
 
 	defaultRequestID string
@@ -154,6 +159,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		APIHost:        ctrlURL.Host,
 		Insecure:       cluster.TLS.Insecure,
 		Timeout:        5 * time.Minute,
+		DiskCacheSize:  cluster.Collections.WebDAVCache.DiskCacheSize,
 		requestLimiter: &requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
 	}, nil
 }
@@ -301,6 +307,11 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		if c.Timeout == 0 {
 			return false, nil
 		}
+		// This check can be removed when
+		// https://github.com/hashicorp/go-retryablehttp/pull/210
+		// (or equivalent) is merged and we update go.mod.
+		// Until then, it is needed to pass
+		// TestNonRetryableStdlibError.
 		if respErr != nil && reqErrorRe.MatchString(respErr.Error()) {
 			return false, nil
 		}

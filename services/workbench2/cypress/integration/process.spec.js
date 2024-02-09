@@ -123,6 +123,7 @@ describe("Process tests", function () {
                 cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
                 cy.waitForDom()
                 cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parent().parent().parent().parent().click()
+                cy.waitForDom()
                 cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
                 for (let i = 0; i < msButtonTooltips.length; i++) {
                     cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
@@ -132,7 +133,7 @@ describe("Process tests", function () {
             });
         })
     })
-
+ 
     describe("Details panel", function () {
         it("shows process details", function () {
             createContainerRequest(
@@ -1495,6 +1496,8 @@ describe("Process tests", function () {
 
             cy.getAll("@containerRequest").then(function ([containerRequest]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.waitForDom();
+
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Inputs")
                     .parents("[data-cy=process-io-card]")

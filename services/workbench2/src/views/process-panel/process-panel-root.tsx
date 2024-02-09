@@ -41,7 +41,7 @@ export interface ProcessPanelRootDataProps {
     auth: AuthState;
     inputRaw: WorkflowInputsData | null;
     inputParams: ProcessIOParameter[] | null;
-    outputRaw: OutputDetails | null;
+    outputData: OutputDetails | null;
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
@@ -68,12 +68,12 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 const panelsData: MPVPanelState[] = [
     { name: "Details" },
-    { name: "Command" },
     { name: "Logs", visible: true },
-    { name: "Inputs" },
-    { name: "Outputs" },
-    { name: "Resources" },
     { name: "Subprocesses" },
+    { name: "Outputs" },
+    { name: "Inputs" },
+    { name: "Command" },
+    { name: "Resources" },
 ];
 
 export const ProcessPanelRoot = withStyles(styles)(
@@ -83,7 +83,7 @@ export const ProcessPanelRoot = withStyles(styles)(
         processLogsPanel,
         inputRaw,
         inputParams,
-        outputRaw,
+        outputData,
         outputDefinitions,
         outputParams,
         nodeInfo,
@@ -112,10 +112,12 @@ export const ProcessPanelRoot = withStyles(styles)(
             }
         }, [containerRequest, loadInputs, loadOutputs, loadOutputDefinitions, loadNodeJson]);
 
+        const maxHeight = "100%";
+
         // Trigger processing output params when raw or definitions change
         React.useEffect(() => {
             updateOutputParams();
-        }, [outputRaw, outputDefinitions, updateOutputParams]);
+        }, [outputData, outputDefinitions, updateOutputParams]);
 
         return process ? (
             <MPVContainer
@@ -139,17 +141,9 @@ export const ProcessPanelRoot = withStyles(styles)(
                 </MPVPanelContent>
                 <MPVPanelContent
                     forwardProps
-                    xs="auto"
-                    data-cy="process-cmd">
-                    <ProcessCmdCard
-                        onCopy={props.onCopyToClipboard}
-                        process={process}
-                    />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
                     xs
-                    minHeight="50%"
+                    minHeight={maxHeight}
+                    maxHeight={maxHeight}
                     data-cy="process-logs">
                     <ProcessLogsCard
                         onCopy={props.onCopyToClipboard}
@@ -168,7 +162,27 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <MPVPanelContent
                     forwardProps
                     xs
-                    maxHeight="50%"
+                    maxHeight={maxHeight}
+                    data-cy="process-children">
+                    <SubprocessPanel process={process} />
+                </MPVPanelContent>
+                <MPVPanelContent
+                    forwardProps
+                    xs
+                    maxHeight={maxHeight}
+                    data-cy="process-outputs">
+                    <ProcessIOCard
+                        label={ProcessIOCardType.OUTPUT}
+                        process={process}
+                        params={outputParams}
+                        raw={outputData?.raw}
+                        outputUuid={outputUuid || ""}
+                    />
+                </MPVPanelContent>
+                <MPVPanelContent
+                    forwardProps
+                    xs
+                    maxHeight={maxHeight}
                     data-cy="process-inputs">
                     <ProcessIOCard
                         label={ProcessIOCardType.INPUT}
@@ -180,15 +194,11 @@ export const ProcessPanelRoot = withStyles(styles)(
                 </MPVPanelContent>
                 <MPVPanelContent
                     forwardProps
-                    xs
-                    maxHeight="50%"
-                    data-cy="process-outputs">
-                    <ProcessIOCard
-                        label={ProcessIOCardType.OUTPUT}
+                    xs="auto"
+                    data-cy="process-cmd">
+                    <ProcessCmdCard
+                        onCopy={props.onCopyToClipboard}
                         process={process}
-                        params={outputParams}
-                        raw={outputRaw?.rawOutputs}
-                        outputUuid={outputUuid || ""}
                     />
                 </MPVPanelContent>
                 <MPVPanelContent
@@ -199,13 +209,6 @@ export const ProcessPanelRoot = withStyles(styles)(
                         process={process}
                         nodeInfo={nodeInfo}
                     />
-                </MPVPanelContent>
-                <MPVPanelContent
-                    forwardProps
-                    xs
-                    maxHeight="50%"
-                    data-cy="process-children">
-                    <SubprocessPanel process={process} />
                 </MPVPanelContent>
             </MPVContainer>
         ) : (

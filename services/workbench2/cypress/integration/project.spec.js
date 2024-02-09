@@ -180,6 +180,45 @@ describe("Project tests", function () {
         verifyProjectDescription(projName, null);
     });
 
+    it("creates a project from the context menu in the correct subfolder", function () {
+        const parentProjName = `Test project (${Math.floor(999999 * Math.random())})`;
+        const childProjName = `Test project (${Math.floor(999999 * Math.random())})`;
+        cy.loginAs(activeUser);
+
+        // Create project
+        cy.get("[data-cy=side-panel-button]").click();
+        cy.get("[data-cy=side-panel-new-project]").click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "New Project")
+            .within(() => {
+                cy.get("[data-cy=name-field]").within(() => {
+                    cy.get("input").type(parentProjName);
+                });
+            });
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+        cy.go('back')
+
+        // Create subproject from context menu
+        cy.get("[data-cy=project-panel] tbody tr").contains(parentProjName).rightclick({ force: true });
+        cy.get("[data-cy=context-menu]").contains("New project").click();
+        cy.get("[data-cy=form-dialog]")
+            .should("contain", "New Project")
+            .within(() => {
+                cy.get("[data-cy=name-field]").within(() => {
+                    cy.get("input").type(childProjName);
+                });
+            });
+        cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+
+        // open details panel and check 'owner' field
+        cy.get("[data-cy=additional-info-icon]").click();
+        cy.waitForDom();
+        cy.get("[data-cy=details-panel-owner]").contains(parentProjName).should("be.visible")
+        cy.get("[data-cy=additional-info-icon]").click();
+    });
+
     it('shows the appropriate buttons in the multiselect toolbar', () => {
 
         const msButtonTooltips = [
@@ -213,6 +252,7 @@ describe("Project tests", function () {
         cy.go('back')
 
         cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parent().parent().parent().click()
+        cy.waitForDom()
         cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');

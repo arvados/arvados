@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.name = "arvados-google-api-client"
   s.version = Google::APIClient::VERSION::STRING
 
-  s.required_ruby_version = '>= 2.5.0'
+  s.required_ruby_version = '>= 2.7.0'
   s.required_rubygems_version = ">= 1.3.5"
   s.require_paths = ["lib"]
   s.authors = ["Bob Aman", "Steven Bazyl"]
@@ -26,7 +26,12 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'addressable', '~> 2.3'
   s.add_runtime_dependency 'signet', '~> 0.16.0'
-  s.add_runtime_dependency 'faraday', '~> 2.0'
+  # faraday requires Ruby 3.0 starting with 2.9.0. If you install this gem
+  # on Ruby 2.7, the dependency resolver asks you to resolve the conflict
+  # manually. Instead of teaching all our tooling to do that, we prefer to
+  # require the latest version that supports Ruby 2.7 here. This requirement
+  # can be relaxed to '~> 2.0' when we drop support for Ruby 2.7.
+  s.add_runtime_dependency 'faraday', '~> 2.8.0'
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
   s.add_runtime_dependency 'faraday-gzip', '~> 2.0'
   s.add_runtime_dependency 'googleauth', '~> 1.0'

@@ -184,7 +184,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 label={ProcessIOCardType.INPUT}
                                 params={inputParams}
                                 raw={{}}
-                                showParams={true}
+                                forceShowParams={true}
                             />
                         </MPVPanelContent>
                         <MPVPanelContent forwardProps xs data-cy="process-outputs">
@@ -192,7 +192,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 label={ProcessIOCardType.OUTPUT}
                                 params={outputParams}
                                 raw={{}}
-                                showParams={true}
+                                forceShowParams={true}
                             />
                         </MPVPanelContent>
                         <MPVPanelContent xs>

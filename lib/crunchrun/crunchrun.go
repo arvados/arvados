@@ -78,7 +78,6 @@ type IKeepClient interface {
 	ReadAt(locator string, p []byte, off int) (int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	LocalLocator(locator string) (string, error)
-	ClearBlockCache()
 	SetStorageClasses(sc []string)
 }
 
@@ -2033,7 +2032,6 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		log.Printf("%s: %v", containerUUID, err)
 		return 1
 	}
-	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
 
 	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, containerUUID)

@@ -35,10 +35,11 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { AuthState } from "store/auth/auth-reducer";
+import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 
 const WIDTH_TRANSITION = 150
 
-type CssRules = "root" | "transition" | "button" | "iconContainer";
+type CssRules = "root" | "transition" | "button" | "iconContainer" | "icon";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -47,39 +48,30 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: 0,
         height: '2.7rem',
         padding: 0,
-        margin: "1rem auto auto 0.5rem",
+        margin: "1rem auto auto 0.3rem",
         transition: `width ${WIDTH_TRANSITION}ms`,
-        overflowY: 'auto',
-        scrollBehavior: 'smooth',
-        '&::-webkit-scrollbar': {
-            width: 0,
-            height: 2
-        },
-        '&::-webkit-scrollbar-track': {
-            width: 0,
-            height: 2
-        },
-        '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#757575',
-            borderRadius: 2
-        }
+        overflow: 'hidden',
     },
     transition: {
         display: "flex",
         flexDirection: "row",
-        width: 0,
         height: '2.7rem',
         padding: 0,
-        margin: "1rem auto auto 0.5rem",
+        margin: "1rem auto auto 0.3rem",
         overflow: 'hidden',
         transition: `width ${WIDTH_TRANSITION}ms`,
     },
     button: {
         width: "2.5rem",
         height: "2.5rem ",
+        paddingLeft: 0,
+        border: "1px solid transparent",
     },
     iconContainer: {
-        height: '100%'
+        height: '100%',
+    },
+    icon: {
+        marginLeft: '-0.5rem',
     }
 });
 
@@ -139,47 +131,53 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={isTransitioning ? classes.transition: classes.root}
-                    style={{ width: `${(actions.length * 2.5) + 1}rem` }}
+                    style={{ width: `${(actions.length * 2.5) + 6}rem`}}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
-                        actions.map((action, i) =>{
-                            const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
-                        return hasAlts ? (
-                            <Tooltip
-                                className={classes.button}
-                                title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
-                                key={i}
-                                disableFocusListener
-                            >
-                                <span className={classes.iconContainer}>
-                                    <IconButton
-                                        data-cy='multiselect-button'
-                                        disabled={disabledButtons.has(name)}
-                                        onClick={() => props.executeMulti(action, inputSelectedUuid, checkedList, iconProps.resources)}
+                        <IntersectionObserverWrapper menuLength={actions.length}>
+                            {actions.map((action, i) =>{
+                                const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
+                            return hasAlts ? (
+                                <Tooltip
+                                    className={classes.button}
+                                    data-targetid={name}
+                                    title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
+                                    key={i}
+                                    disableFocusListener
                                     >
-                                        {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        ) : (
-                            <Tooltip
-                                className={classes.button}
-                                title={action.name}
-                                key={i}
-                                disableFocusListener
-                            >
-                                <span className={classes.iconContainer}>
-                                    <IconButton
-                                        data-cy='multiselect-button'
-                                        onClick={() => props.executeMulti(action, inputSelectedUuid, checkedList, iconProps.resources)}
+                                    <span className={classes.iconContainer}>
+                                        <IconButton
+                                            data-cy='multiselect-button'
+                                            disabled={disabledButtons.has(name)}
+                                            onClick={() => props.executeMulti(action, undefined, checkedList, iconProps.resources)}
+                                            className={classes.icon}
+                                        >
+                                            {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            ) : (
+                                <Tooltip
+                                    className={classes.button}
+                                    data-targetid={name}
+                                    title={action.name}
+                                    key={i}
+                                    disableFocusListener
                                     >
-                                        {action.icon({})}
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        );
-                        })
+                                    <span className={classes.iconContainer}>
+                                        <IconButton
+                                            data-cy='multiselect-button'
+                                            onClick={() => props.executeMulti(action, undefined, checkedList, iconProps.resources)}
+                                            className={classes.icon}
+                                        >
+                                            {action.icon({})}
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            );
+                            })}
+                        </IntersectionObserverWrapper>
                     ) : (
                         <></>
                     )}

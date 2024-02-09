@@ -21,6 +21,7 @@ import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/
 import { OutputDetails, NodeInstanceType, NodeInfo } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { OutputDataUpdate } from "./process-panel-reducer";
 
 export const processPanelActions = unionize({
     RESET_PROCESS_PANEL: ofType<{}>(),
@@ -29,7 +30,7 @@ export const processPanelActions = unionize({
     TOGGLE_PROCESS_PANEL_FILTER: ofType<string>(),
     SET_INPUT_RAW: ofType<WorkflowInputsData | null>(),
     SET_INPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
-    SET_OUTPUT_RAW: ofType<OutputDetails | null>(),
+    SET_OUTPUT_DATA: ofType<OutputDataUpdate | null>(),
     SET_OUTPUT_DEFINITIONS: ofType<CommandOutputParameter[]>(),
     SET_OUTPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
     SET_NODE_INFO: ofType<NodeInfo>(),
@@ -71,10 +72,13 @@ export const loadInputs =
 
 export const loadOutputs =
     (containerRequest: ContainerRequestResource) => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const noOutputs = { rawOutputs: {} };
+        const noOutputs: OutputDetails = { raw: {} };
 
         if (!containerRequest.outputUuid) {
-            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_RAW({ uuid: containerRequest.uuid, outputRaw: noOutputs }));
+            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({
+                uuid: containerRequest.uuid,
+                payload: noOutputs
+            }));
             return;
         }
         try {
@@ -86,9 +90,12 @@ export const loadOutputs =
             // If has propsOutput, skip fetching cwl.output.json
             if (propsOutputs !== undefined) {
                 dispatch<ProcessPanelAction>(
-                    processPanelActions.SET_OUTPUT_RAW({
-                        rawOutputs: propsOutputs,
-                        pdh: collection.portableDataHash,
+                    processPanelActions.SET_OUTPUT_DATA({
+                        uuid: containerRequest.uuid,
+                        payload: {
+                            raw: propsOutputs,
+                            pdh: collection.portableDataHash,
+                        },
                     })
                 );
             } else {
@@ -97,17 +104,20 @@ export const loadOutputs =
                 let outputData = outputFile ? await services.collectionService.getFileContents(outputFile) : undefined;
                 if (outputData && (outputData = JSON.parse(outputData)) && collection.portableDataHash) {
                     dispatch<ProcessPanelAction>(
-                        processPanelActions.SET_OUTPUT_RAW({
+                        processPanelActions.SET_OUTPUT_DATA({
                             uuid: containerRequest.uuid,
-                            outputRaw: { rawOutputs: outputData, pdh: collection.portableDataHash },
+                            payload: {
+                                raw: outputData,
+                                pdh: collection.portableDataHash,
+                            },
                         })
                     );
                 } else {
-                    dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_RAW({ uuid: containerRequest.uuid, outputRaw: noOutputs }));
+                    dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({ uuid: containerRequest.uuid, payload: noOutputs }));
                 }
             }
         } catch {
-            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_RAW({ uuid: containerRequest.uuid, outputRaw: noOutputs }));
+            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({ uuid: containerRequest.uuid, payload: noOutputs }));
         }
     };
 
@@ -149,11 +159,11 @@ export const loadOutputDefinitions =
 
 export const updateOutputParams = () => async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     const outputDefinitions = getState().processPanel.outputDefinitions;
-    const outputRaw = getState().processPanel.outputRaw;
+    const outputData = getState().processPanel.outputData;
 
-    if (outputRaw && outputRaw.rawOutputs) {
+    if (outputData && outputData.raw) {
         dispatch<ProcessPanelAction>(
-            processPanelActions.SET_OUTPUT_PARAMS(formatOutputData(outputDefinitions, outputRaw.rawOutputs, outputRaw.pdh, getState().auth))
+            processPanelActions.SET_OUTPUT_PARAMS(formatOutputData(outputDefinitions, outputData.raw, outputData.pdh, getState().auth))
         );
     }
 };

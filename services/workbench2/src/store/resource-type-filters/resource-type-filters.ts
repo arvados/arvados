@@ -93,6 +93,30 @@ export const getInitialResourceTypeFilters = pipe(
 
 );
 
+// Using pipe() with more than 7 arguments makes the return type be 'any',
+// causing compile issues.
+export const getInitialSearchTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    pipe(
+        initFilter(ObjectTypeFilter.PROJECT, '', true, true),
+        initFilter(GroupTypeFilter.PROJECT, ObjectTypeFilter.PROJECT),
+        initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.WORKFLOW, '', false, true),
+        initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.WORKFLOW, false),
+        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.WORKFLOW, false),
+        initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW, false),
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.COLLECTION, '', true, true),
+        initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+    ),
+);
+
 export const getInitialProcessTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     initFilter(ProcessTypeFilter.MAIN_PROCESS),

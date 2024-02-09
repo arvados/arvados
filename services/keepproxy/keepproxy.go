@@ -304,7 +304,6 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	var err error
 	var status int
 	var expectLength, responseLength int64
-	var proxiedURI = "-"
 
 	logger := ctxlog.FromContext(req.Context())
 	defer func() {
@@ -312,7 +311,6 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 			"locator":        locator,
 			"expectLength":   expectLength,
 			"responseLength": responseLength,
-			"proxiedURI":     proxiedURI,
 			"err":            err,
 		})
 		if status != http.StatusOK {
@@ -321,6 +319,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	}()
 
 	kc := h.makeKeepClient(req)
+	kc.DiskCacheSize = keepclient.DiskCacheDisabled
 
 	var pass bool
 	var tok string
@@ -345,9 +344,9 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 
 	switch req.Method {
 	case "HEAD":
-		expectLength, proxiedURI, err = kc.Ask(locator)
+		expectLength, _, err = kc.Ask(locator)
 	case "GET":
-		reader, expectLength, proxiedURI, err = kc.Get(locator)
+		reader, expectLength, _, err = kc.Get(locator)
 		if reader != nil {
 			defer reader.Close()
 		}

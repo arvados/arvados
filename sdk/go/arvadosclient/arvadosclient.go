@@ -105,6 +105,11 @@ type ArvadosClient struct {
 	// available services.
 	KeepServiceURIs []string
 
+	// Maximum disk cache size in bytes or percent of total
+	// filesystem size. If zero, use default, currently 10% of
+	// filesystem size.
+	DiskCacheSize arvados.ByteSizeOrPercent
+
 	// Discovery document
 	DiscoveryDoc Dict
 
@@ -144,6 +149,7 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 		Client:            hc,
 		Retries:           2,
 		KeepServiceURIs:   c.KeepServiceURIs,
+		DiskCacheSize:     c.DiskCacheSize,
 		lastClosedIdlesAt: time.Now(),
 	}
 

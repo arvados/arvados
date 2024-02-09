@@ -24,7 +24,7 @@ if ! arv-get 20850f01122e860fb878758ac1320877+71 > /dev/null ; then
 fi
 
 # Use the python executor associated with the installed OS package, if present.
-python=$(((ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python || echo python3) | head -n1) 2>/dev/null)
+python=$(((ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python || ls /opt/arvados-py/bin/python || echo python3) | head -n1) 2>/dev/null)
 
 # Test for #18888
 # This is a standalone test because the bug was observed with this

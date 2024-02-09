@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 set -ex -o pipefail
 
@@ -7,7 +11,7 @@ SRC=$(realpath $(dirname ${BASH_SOURCE[0]})/../..)
 ctrname=arvadostest
 ctrbase=${ctrname}
 if [[ "${1}" != "--update" ]] || ! docker images --format={{.Repository}} | grep -x ${ctrbase}; then
-    ctrbase=debian:10
+    ctrbase=debian:11
 fi
 
 if docker ps -a --format={{.Names}} | grep -x ${ctrname}; then
