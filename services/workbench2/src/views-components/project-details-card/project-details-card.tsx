@@ -202,6 +202,9 @@ export const ProjectDetailsCard = connect(
 )(
     withStyles(styles)((props: DetailsCardProps) => {
         const { classes, currentResource, frozenByFullName, handleContextMenu, handleCardClick, isAdmin, isSelected } = props;
+        if (!currentResource) {
+            return null;
+        }
         switch (currentResource.kind as string) {
             case ResourceKind.USER:
                 return (
