@@ -24,15 +24,24 @@ class WebChart(object):
         self.label = label
         self.summarizers = summarizers
 
-    def html(self):
+    def html(self, bodytext=''):
         return '''<!doctype html><html><head>
         <title>{} stats</title>
         <script type="text/javascript" src="{}"></script>
         <script type="text/javascript">{}</script>
+        <style>
+        table {{
+          width: 80%
+        }}
+        td {{
+          width: 20%;
+        }}
+        </style>
         {}
-        </head><body></body></html>
+        </head><body>{}</body></html>
         '''.format(escape(self.label),
-                   self.JSLIB, self.js(), self.headHTML())
+                   self.JSLIB, self.js(), self.headHTML(),
+                   bodytext)
 
     def js(self):
         return 'var chartdata = {};\n{}'.format(

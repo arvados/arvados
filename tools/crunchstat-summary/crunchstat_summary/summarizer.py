@@ -632,7 +632,17 @@ class MultiSummarizer(object):
         return d
 
     def html_report(self):
-        return WEBCHART_CLASS(self.label, iter(self._descendants().values())).html()
+        txt = self.text_report()
+        fmt = """
+        <table>
+        <tbody>
+        {}
+        </tbody>
+        </table>
+        <p>{}</p>
+        """.format("\n".join("<tr><td>{}</td></tr>".format(x.replace("\t", "</td><td>")) for x in txt.split("\n") if not x.startswith("#")),
+                   "\n".join("{}<br>".format(x) for x in txt.split("\n") if x.startswith("#")))
+        return WEBCHART_CLASS(self.label, iter(self._descendants().values())).html(fmt)
 
 
 class JobTreeSummarizer(MultiSummarizer):
