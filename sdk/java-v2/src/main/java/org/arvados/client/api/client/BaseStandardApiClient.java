@@ -27,7 +27,7 @@ import java.util.Map;
 
 public abstract class BaseStandardApiClient<T extends Item, L extends ItemList> extends BaseApiClient {
 
-    private static final MediaType JSON = MediaType.parse(com.google.common.net.MediaType.JSON_UTF_8.toString());
+    protected static final MediaType JSON = MediaType.parse(com.google.common.net.MediaType.JSON_UTF_8.toString());
     private final Logger log = org.slf4j.LoggerFactory.getLogger(BaseStandardApiClient.class);
 
     BaseStandardApiClient(ConfigProvider config) {
@@ -107,7 +107,7 @@ public abstract class BaseStandardApiClient<T extends Item, L extends ItemList> 
         return MAPPER.readValue(content, cls);
     }
 
-    private <TL> String mapToJson(TL type) {
+    protected  <TL> String mapToJson(TL type) {
         ObjectWriter writer = MAPPER.writer().withDefaultPrettyPrinter();
         try {
             return writer.writeValueAsString(type);
