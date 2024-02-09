@@ -239,7 +239,7 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
     const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
-        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)}>
+        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)} data-cy='user-details-card'>
             <CardHeader
                 className={classes.cardHeader}
                 title={
@@ -261,10 +261,10 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
                         )}
                         <Tooltip
                             title='More options'
-                            disableFocusListener
                         >
                             <IconButton
                                 aria-label='More options'
+                                data-cy='kebab-icon'
                                 onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                             >
                                 <MoreVerticalIcon />
@@ -286,7 +286,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     };
 
     return (
-        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)}>
+        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)} data-cy='project-details-card'>
             <CardHeader
                 className={classes.cardHeader}
                 title={
@@ -320,13 +320,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     <section className={classes.contextMenuSection}>
                         <Tooltip
                             title='More options'
-                            disableFocusListener
                         >
                             <IconButton
                                 aria-label='More options'
                                 onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                             >
-                                <MoreVerticalIcon />
+                                <MoreVerticalIcon data-cy='kebab-icon' />
                             </IconButton>
                         </Tooltip>
                     </section>
