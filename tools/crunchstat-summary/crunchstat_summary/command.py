@@ -9,6 +9,7 @@ import logging
 import sys
 
 from crunchstat_summary import logger, summarizer
+from crunchstat_summary._version import __version__
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -46,6 +47,9 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             '--verbose', '-v', action='count', default=0,
             help='Log more information (once for progress, twice for debug)')
+        self.add_argument('--version', action='version',
+                         version="%s %s" % (sys.argv[0], __version__),
+                         help='Print version and exit.')
 
 
 class UTF8Decode(object):

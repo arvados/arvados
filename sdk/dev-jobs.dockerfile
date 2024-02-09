@@ -24,7 +24,7 @@ RUN python3 -m pip install --no-cache-dir setuptools wheel
 # packages to install.
 COPY . /usr/local/src/
 # Run a-c-r afterward to check for a successful install.
-RUN python3 -m pip install --no-cache-dir /usr/local/src/* && arvados-cwl-runner --version
+RUN python3 -m pip install --no-cache-dir /usr/local/src/* && arvados-cwl-runner --version && crunchstat-summary --version
 
 RUN /usr/sbin/adduser --disabled-password \
       --gecos 'Crunch execution user' crunch && \

@@ -27,6 +27,8 @@ from cwltool.job import JobBase
 
 import arvados.collection
 
+import crunchstat_summary.summarizer
+
 from .arvdocker import arv_docker_get_image
 from . import done
 from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields, make_builder
@@ -497,11 +499,14 @@ class ArvadosContainer(JobBase):
             else:
                 processStatus = "permanentFail"
 
-            if processStatus == "permanentFail" and record["log_uuid"]:
-                logc = arvados.collection.CollectionReader(record["log_uuid"],
-                                                           api_client=self.arvrunner.api,
-                                                           keep_client=self.arvrunner.keep_client,
-                                                           num_retries=self.arvrunner.num_retries)
+            logc = None
+            if record["log_uuid"]:
+                logc = arvados.collection.Collection(record["log_uuid"],
+                                                     api_client=self.arvrunner.api,
+                                                     keep_client=self.arvrunner.keep_client,
+                                                     num_retries=self.arvrunner.num_retries)
+
+            if processStatus == "permanentFail" and logc is not None:
                 label = self.arvrunner.label(self)
                 done.logtail(
                     logc, logger.error,
@@ -527,6 +532,16 @@ class ArvadosContainer(JobBase):
                 uuid=self.uuid,
                 body={"container_request": {"properties": properties}}
             ).execute(num_retries=self.arvrunner.num_retries)
+
+            if logc is not None:
+                summerizer = crunchstat_summary.summarizer.NewSummarizer(self.uuid)
+                summerizer.run()
+                with logc.open("metrics_report.txt", "wt") as mr:
+                    mr.write(summerizer.text_report())
+                with logc.open("metrics_report.html", "wt") as mr:
+                    mr.write(summerizer.html_report())
+                logc.save()
+
         except WorkflowException as e:
             # Only include a stack trace if in debug mode.
             # A stack trace may obfuscate more useful output about the workflow.
