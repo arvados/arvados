@@ -13,9 +13,9 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { OrderBuilder } from 'services/api/order-builder';
 import { CollectionResource } from 'models/collection';
 import { extractUuidKind, ResourceKind } from 'models/resource';
-import { CLOSE_DRAWER } from 'views-components/details-panel/details-panel';
 
 export const SLIDE_TIMEOUT = 500;
+export const CLOSE_DRAWER = 'CLOSE_DRAWER'
 
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),

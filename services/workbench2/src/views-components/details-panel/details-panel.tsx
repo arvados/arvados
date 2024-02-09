@@ -30,6 +30,7 @@ import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { DetailsPanelState } from 'store/details-panel/details-panel-reducer';
 import { MultiselectToolbarState } from 'store/multiselect/multiselect-reducer';
+import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -126,7 +127,7 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
     };
 };
 
-export const CLOSE_DRAWER = 'CLOSE_DRAWER'
+// export const CLOSE_DRAWER = 'CLOSE_DRAWER'
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: (currentItemId) => {
