@@ -105,7 +105,7 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, inputSelectedUuid, iconProps, user, disabledButtons, auth } = props;
+        const { classes, checkedList, inputSelectedUuid, iconProps, user, disabledButtons } = props;
         const singleSelectedUuid = inputSelectedUuid ?? props.singleSelectedUuid
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));

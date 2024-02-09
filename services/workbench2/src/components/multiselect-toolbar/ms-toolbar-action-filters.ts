@@ -83,8 +83,6 @@ const {
     FILTER_GROUP_ADMIN,
     WORKFLOW,
     READONLY_WORKFLOW,
-    ROOT_PROJECT,
-    ROOT_PROJECT_ADMIN,
 } = msMenuResourceKind;
 
 export type TMultiselectActionsFilters = Record<string, [MultiSelectMenuActionSet, Set<string>]>;

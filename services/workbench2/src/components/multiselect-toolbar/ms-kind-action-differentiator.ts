@@ -13,7 +13,7 @@ export function findActionByName(name: string, actionSet: MultiSelectMenuActionS
     return actionSet[0].find(action => action.name === name);
 }
 
-const { COLLECTION, PROCESS, PROJECT, WORKFLOW , USER} = ResourceKind;
+const { COLLECTION, PROCESS, PROJECT, WORKFLOW } = ResourceKind;
 
 export const kindToActionSet: Record<string, MultiSelectMenuActionSet> = {
     [COLLECTION]: msCollectionActionSet,
