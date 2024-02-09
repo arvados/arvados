@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -68,6 +70,37 @@ public class FileDownloader {
             throw new ArvadosClientException(String.format("Unable to write down file %s", fileToken.getFileName()), e);
         }
         return downloadedFile;
+    }
+
+    public File downloadFileWithResume(String collectionUuid, String fileName, String pathToDownloadFolder, long start, Long end) throws IOException {
+        if (end != null && end < start) {
+            throw new IllegalArgumentException("End index must be greater than or equal to the start index");
+        }
+
+        File destinationFile = new File(pathToDownloadFolder, fileName);
+
+        if (!destinationFile.exists()) {
+            boolean isCreated = destinationFile.createNewFile();
+            if (!isCreated) {
+                throw new IOException("Failed to create new file: " + destinationFile.getAbsolutePath());
+            }
+        }
+
+        try (RandomAccessFile outputFile = new RandomAccessFile(destinationFile, "rw");
+             InputStream inputStream = keepWebApiClient.get(collectionUuid, fileName, start, end)) {
+            outputFile.seek(start);
+
+            long remaining = (end == null) ? Long.MAX_VALUE : end - start + 1;
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1 && remaining > 0) {
+                int bytesToWrite = (int) Math.min(bytesRead, remaining);
+                outputFile.write(buffer, 0, bytesToWrite);
+                remaining -= bytesToWrite;
+            }
+        }
+
+        return destinationFile;
     }
 
     public List<File> downloadFilesFromCollectionUsingKeepWeb(String collectionUuid, String pathToDownloadFolder) {
