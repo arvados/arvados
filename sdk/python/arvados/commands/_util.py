@@ -4,10 +4,9 @@
 
 import argparse
 import errno
-import os
 import logging
+import os
 import signal
-from future.utils import listitems, listvalues
 import sys
 
 def _pos_int(s):
@@ -61,5 +60,5 @@ def install_signal_handlers():
                             for sigcode in CAUGHT_SIGNALS}
 
 def restore_signal_handlers():
-    for sigcode, orig_handler in listitems(orig_signal_handlers):
+    for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
