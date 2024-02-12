@@ -30,6 +30,9 @@ const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
 const WORKFLOW_PANEL_DETAILS_UUID = 'workflowPanelDetailsUuid';
 export const workflowPanelActions = bindDataExplorerActions(WORKFLOW_PANEL_ID);
 
+export const WORKFLOW_PROCESSES_PANEL_ID = "workflowProcessesPanel";
+export const workflowProcessesPanelActions = bindDataExplorerActions(WORKFLOW_PROCESSES_PANEL_ID);
+
 export const loadWorkflowPanel = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(workflowPanelActions.REQUEST_ITEMS());

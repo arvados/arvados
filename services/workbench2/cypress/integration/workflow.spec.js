@@ -217,13 +217,13 @@ describe('Registered workflow panel tests', function() {
                     cy.get('[data-cy=registered-workflow-info-panel')
                         .should('contain', 'gitCommit: 9b091ed7e0bef98b3312e9478c52b89ba25792de')
 
-                    cy.get('[data-cy=process-io-card] h6').contains('Inputs')
+                    cy.get('[data-cy=process-io-card] h6').contains('Input Parameters')
                         .parents('[data-cy=process-io-card]').within(() => {
                             verifyIOParameter('file1', null, '', '', '');
                             verifyIOParameter('numbering', null, '', '', '');
                             verifyIOParameter('args.py', null, '', 'args.py', 'de738550734533c5027997c87dc5488e+53');
                         });
-                    cy.get('[data-cy=process-io-card] h6').contains('Outputs')
+                    cy.get('[data-cy=process-io-card] h6').contains('Output Parameters')
                         .parents('[data-cy=process-io-card]').within(() => {
                             verifyIOParameter('args', null, '', '', '');
                         });

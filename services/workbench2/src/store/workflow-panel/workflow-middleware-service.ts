@@ -13,6 +13,10 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { WorkflowResource } from 'models/workflow';
 import { ListResults } from 'services/common-service/common-service';
 import { workflowPanelActions } from 'store/workflow-panel/workflow-panel-actions';
+import { matchRegisteredWorkflowRoute } from 'routes/routes';
+import { ProcessesMiddlewareService } from "store/processes/processes-middleware-service";
+import { workflowProcessesPanelActions } from "./workflow-panel-actions";
+import { joinFilters } from "services/api/filter-builder";
 
 export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -56,3 +60,27 @@ const couldNotFetchWorkflows = () =>
         message: 'Could not fetch workflows.',
         kind: SnackbarKind.ERROR
     });
+
+
+export class WorkflowProcessesMiddlewareService extends ProcessesMiddlewareService {
+    constructor(services: ServiceRepository, id: string) {
+        super(services, workflowProcessesPanelActions, id);
+    }
+
+    getFilters(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): string | null {
+        const state = api.getState();
+
+        if (!state.router.location) { return null; }
+
+        const registeredWorkflowMatch = matchRegisteredWorkflowRoute(state.router.location.pathname);
+        if (!registeredWorkflowMatch) { return null; }
+
+        const workflow_uuid = registeredWorkflowMatch.params.id;
+
+        const requesting_container = new FilterBuilder().addEqual('properties.template_uuid', workflow_uuid).getFilters();
+        const sup = super.getFilters(api, dataExplorer);
+        if (sup === null) { return null; }
+
+        return joinFilters(sup, requesting_container);
+    }
+}
