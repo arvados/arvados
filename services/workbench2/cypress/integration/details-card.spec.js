@@ -64,7 +64,7 @@ describe('User Details Card tests', function () {
     });
 });
 
-describe.only('Project Details Card tests', function () {
+describe('Project Details Card tests', function () {
     let activeUser;
     let adminUser;
 
@@ -114,7 +114,22 @@ describe.only('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
     });
 
-    it ('should contain a context menu with the correct options', () => {
+    it('should contain a context menu with the correct options', () => {
+        const adminProjName = `Test project (${Math.floor(999999 * Math.random())})`;
+        cy.loginAs(adminUser);
+
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projName);
+                });
+            });
+        cy.get('[data-cy=form-submit-btn]').click();
+
+        cy.waitForDom();
         cy.get('[data-cy=kebab-icon]').should('be.visible').click();
 
         //admin options
@@ -148,7 +163,7 @@ describe.only('Project Details Card tests', function () {
             });
         cy.get('[data-cy=form-submit-btn]').click();
 
-        cy.waitForDom()
+        cy.waitForDom();
         cy.get('[data-cy=kebab-icon]').should('be.visible').click({ force: true });
 
         //active user options
@@ -165,48 +180,82 @@ describe.only('Project Details Card tests', function () {
         cy.get('[data-cy=context-menu]').contains('Freeze project').should('be.visible');
         cy.get('[data-cy=context-menu]').contains('Move to trash').should('be.visible');
         cy.get('[data-cy=context-menu]').contains('View details').should('be.visible');
-
     });
 
-    it.only('should toggle description display', () => {
+    it('should toggle description display', () => {
+        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
+        const projDescription = 'Lorem ipsum dolor sit amet, consectetur adipiscing vultures, whose wings are dull realities.';
+        cy.loginAs(adminUser);
 
-      const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-      const projDescription = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, whose wings are dull realities.';
-      cy.loginAs(adminUser);
+        // Create project
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projName);
+                });
+            });
+        cy.get('[data-cy=form-submit-btn]').click();
 
-      // Create project
-      cy.get('[data-cy=side-panel-button]').click();
-      cy.get('[data-cy=side-panel-new-project]').click();
-      cy.get('[data-cy=form-dialog]')
-          .should('contain', 'New Project')
-          .within(() => {
-              cy.get('[data-cy=name-field]').within(() => {
-                  cy.get('input').type(projName);
-              });
-          });
-      cy.get('[data-cy=form-submit-btn]').click();
+        //check for no description
+        cy.get('[data-cy=no-description').should('be.visible');
 
-      //check for no description
-      cy.get("[data-cy=no-description").should('be.visible');
+        //add description
+        cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
+        cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
+        cy.get('[data-cy=context-menu]').contains('Edit').click();
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('div[contenteditable=true]').click().type(projDescription);
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+        cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
+        cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
-      //add description
-      cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-      cy.get("[data-cy=project-panel] tbody tr").contains(projName).rightclick({ force: true });
-      cy.get("[data-cy=context-menu]").contains("Edit").click();
-      cy.get("[data-cy=form-dialog]").within(() => {
-          cy.get("div[contenteditable=true]").click().type(projDescription);
-          cy.get("[data-cy=form-submit-btn]").click();
-      });
-      cy.get("[data-cy=project-panel] tbody tr").contains(projName).click({ force: true });
-      cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
+        //toggle description
+        cy.get('[data-cy=toggle-description').click();
+        cy.waitForDom();
+        cy.get('[data-cy=project-description]').should('be.visible');
+        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
+        cy.get('[data-cy=toggle-description').click();
+        cy.waitForDom();
+        cy.get('[data-cy=project-description]').should('be.hidden');
+    });
 
-      //toggle description
-      cy.get("[data-cy=toggle-description").click();
-      cy.waitForDom();
-      cy.get("[data-cy=project-description]").should('be.visible');
-      cy.get("[data-cy=project-details-card]").contains(projDescription).should('be.visible');
-      cy.get("[data-cy=toggle-description").click();
-      cy.waitForDom();
-      cy.get("[data-cy=project-description]").should('be.hidden');
+    it('should display key/value pairs', () => {
+        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
+        cy.loginAs(adminUser);
+
+        // Create project wih key/value pairs
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projName);
+                });
+            });
+
+        cy.get('[data-cy=key-input]').should('be.visible').click().type('Animal');
+        cy.get('[data-cy=value-input]').should('be.visible').click().type('Dog');
+        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
+
+        cy.get('[data-cy=key-input]').should('be.visible').click().type('Importance');
+        cy.get('[data-cy=value-input]').should('be.visible').click().type('Critical');
+        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
+
+        cy.get('[data-cy=form-submit-btn]').click();
+
+        //check for key/value pairs in project details card
+        cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
+        cy.get('[data-cy=project-details-card]').contains('Importance').should('be.visible').click();
+        cy.waitForDom();
+        cy.window().then((win) =>
+            win.navigator.clipboard.readText().then((text) => {
+                expect(text).to.match(new RegExp(`Importance: Critical`));
+            })
+        );
     });
 });
