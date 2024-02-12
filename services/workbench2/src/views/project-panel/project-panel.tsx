@@ -244,6 +244,7 @@ interface ProjectPanelDataProps {
     isAdmin: boolean;
     userUuid: string;
     dataExplorerItems: any;
+    working: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
@@ -251,7 +252,9 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRu
 const mapStateToProps = (state: RootState) => {
     const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
     const project = getResource<GroupResource>(currentItemId || "")(state.resources);
+    const working = !!state.progressIndicator.some(p => p.id === PROJECT_PANEL_ID && p.working);
     return {
+        working,
         currentItemId,
         project,
         resources: state.resources,
@@ -259,9 +262,28 @@ const mapStateToProps = (state: RootState) => {
     };
 }
 
+type ProjectPanelState = {
+    isLoaded: boolean;
+};
+
 export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
+
+            state: ProjectPanelState ={
+                isLoaded: false,
+            }
+
+            componentDidMount(): void {
+                this.setState({ isLoaded: false });
+            }
+
+            componentDidUpdate( prevProps: Readonly<ProjectPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
+                if(prevProps.working === true && this.props.working === false) {
+                    this.setState({ isLoaded: true });
+                }
+            }
+
             render() {
                 const { classes } = this.props;
 
@@ -277,11 +299,12 @@ export const ProjectPanel = withStyles(styles)(
                             defaultViewMessages={DEFAULT_VIEW_MESSAGES}
                         />
                     </div>
-                    :
+                    : this.state.isLoaded ?
                     <NotFoundView
                         icon={ProjectIcon}
                         messages={["Project not found"]}
                     />
+                    : null
             }
 
             isCurrentItemChild = (resource: Resource) => {
