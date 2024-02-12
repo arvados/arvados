@@ -348,17 +348,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                             <Typography
                                 className={classes.showMore}
                                 onClick={toggleDescription}
+                                data-cy='toggle-description'
                             >
                                 {!showDescription ? "Show full description" : "Hide full description"}
                             </Typography>
                         ) : (
-                            <Typography className={classes.noDescription}>no description available</Typography>
+                            <Typography className={classes.noDescription} data-cy="no-description">no description available</Typography>
                         )}
                     </section>
                 </section>
                 <Collapse in={showDescription} timeout='auto'>
                     <section onClick={(ev)=>ev.stopPropagation()}>
-                        <Typography className={classes.description}>
+                        <Typography className={classes.description} data-cy='project-description'>
                             {description}
                         </Typography>
                     </section>
