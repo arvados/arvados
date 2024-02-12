@@ -75,6 +75,8 @@ type ErrNotFound struct {
 	multipleResponseError
 }
 
+func (*ErrNotFound) HTTPStatus() int { return http.StatusNotFound }
+
 type InsufficientReplicasError struct{ error }
 
 type OversizeBlockError struct{ error }

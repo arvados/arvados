@@ -5,7 +5,6 @@
 package keepstore
 
 import (
-	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -20,16 +19,18 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
-var _ = check.Suite(&ProxyRemoteSuite{})
+var _ = check.Suite(&proxyRemoteSuite{})
 
-type ProxyRemoteSuite struct {
+type proxyRemoteSuite struct {
 	cluster *arvados.Cluster
-	handler *handler
+	handler *router
 
 	remoteClusterID      string
 	remoteBlobSigningKey []byte
@@ -40,7 +41,7 @@ type ProxyRemoteSuite struct {
 	remoteAPI            *httptest.Server
 }
 
-func (s *ProxyRemoteSuite) remoteKeepproxyHandler(w http.ResponseWriter, r *http.Request) {
+func (s *proxyRemoteSuite) remoteKeepproxyHandler(w http.ResponseWriter, r *http.Request) {
 	expectToken, err := auth.SaltToken(arvadostest.ActiveTokenV2, s.remoteClusterID)
 	if err != nil {
 		panic(err)
@@ -57,7 +58,7 @@ func (s *ProxyRemoteSuite) remoteKeepproxyHandler(w http.ResponseWriter, r *http
 	http.Error(w, "404", 404)
 }
 
-func (s *ProxyRemoteSuite) remoteAPIHandler(w http.ResponseWriter, r *http.Request) {
+func (s *proxyRemoteSuite) remoteAPIHandler(w http.ResponseWriter, r *http.Request) {
 	host, port, _ := net.SplitHostPort(strings.Split(s.remoteKeepproxy.URL, "//")[1])
 	portnum, _ := strconv.Atoi(port)
 	if r.URL.Path == "/arvados/v1/discovery/v1/rest" {
@@ -81,15 +82,13 @@ func (s *ProxyRemoteSuite) remoteAPIHandler(w http.ResponseWriter, r *http.Reque
 	http.Error(w, "404", 404)
 }
 
-func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
+func (s *proxyRemoteSuite) SetUpTest(c *check.C) {
 	s.remoteClusterID = "z0000"
 	s.remoteBlobSigningKey = []byte("3b6df6fb6518afe12922a5bc8e67bf180a358bc8")
-	s.remoteKeepproxy = httptest.NewServer(http.HandlerFunc(s.remoteKeepproxyHandler))
+	s.remoteKeepproxy = httptest.NewServer(httpserver.LogRequests(http.HandlerFunc(s.remoteKeepproxyHandler)))
 	s.remoteAPI = httptest.NewUnstartedServer(http.HandlerFunc(s.remoteAPIHandler))
 	s.remoteAPI.StartTLS()
 	s.cluster = testCluster(c)
-	s.cluster.Collections.BlobSigningKey = knownKey
-	s.cluster.SystemRootToken = arvadostest.SystemRootToken
 	s.cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		s.remoteClusterID: {
 			Host:     strings.Split(s.remoteAPI.URL, "//")[1],
@@ -98,17 +97,21 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 			Insecure: true,
 		},
 	}
-	s.cluster.Volumes = map[string]arvados.Volume{"zzzzz-nyw5e-000000000000000": {Driver: "mock"}}
-	s.handler = &handler{}
-	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	s.cluster.Volumes = map[string]arvados.Volume{"zzzzz-nyw5e-000000000000000": {Driver: "stub"}}
 }
 
-func (s *ProxyRemoteSuite) TearDownTest(c *check.C) {
+func (s *proxyRemoteSuite) TearDownTest(c *check.C) {
 	s.remoteAPI.Close()
 	s.remoteKeepproxy.Close()
 }
 
-func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
+func (s *proxyRemoteSuite) TestProxyRemote(c *check.C) {
+	reg := prometheus.NewRegistry()
+	router, cancel := testRouter(c, s.cluster, reg)
+	defer cancel()
+	instrumented := httpserver.Instrument(reg, ctxlog.TestLogger(c), router)
+	handler := httpserver.LogRequests(instrumented.ServeAPI(s.cluster.ManagementToken, instrumented))
+
 	data := []byte("foo bar")
 	s.remoteKeepData = data
 	locator := fmt.Sprintf("%x+%d", md5.Sum(data), len(data))
@@ -172,7 +175,7 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 			expectSignature:  true,
 		},
 	} {
-		c.Logf("trial: %s", trial.label)
+		c.Logf("=== trial: %s", trial.label)
 
 		s.remoteKeepRequests = 0
 
@@ -184,11 +187,18 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 			req.Header.Set("X-Keep-Signature", trial.xKeepSignature)
 		}
 		resp = httptest.NewRecorder()
-		s.handler.ServeHTTP(resp, req)
+		handler.ServeHTTP(resp, req)
 		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
-		c.Check(resp.Code, check.Equals, trial.expectCode)
+		if !c.Check(resp.Code, check.Equals, trial.expectCode) {
+			c.Logf("resp.Code %d came with resp.Body %q", resp.Code, resp.Body.String())
+		}
 		if resp.Code == http.StatusOK {
-			c.Check(resp.Body.String(), check.Equals, string(data))
+			if trial.method == "HEAD" {
+				c.Check(resp.Body.String(), check.Equals, "")
+				c.Check(resp.Result().ContentLength, check.Equals, int64(len(data)))
+			} else {
+				c.Check(resp.Body.String(), check.Equals, string(data))
+			}
 		} else {
 			c.Check(resp.Body.String(), check.Not(check.Equals), string(data))
 		}
@@ -203,13 +213,13 @@ func (s *ProxyRemoteSuite) TestProxyRemote(c *check.C) {
 
 		c.Check(locHdr, check.Not(check.Equals), "")
 		c.Check(locHdr, check.Not(check.Matches), `.*\+R.*`)
-		c.Check(VerifySignature(s.cluster, locHdr, trial.token), check.IsNil)
+		c.Check(arvados.VerifySignature(locHdr, trial.token, s.cluster.Collections.BlobSigningTTL.Duration(), []byte(s.cluster.Collections.BlobSigningKey)), check.IsNil)
 
 		// Ensure block can be requested using new signature
 		req = httptest.NewRequest("GET", "/"+locHdr, nil)
 		req.Header.Set("Authorization", "Bearer "+trial.token)
 		resp = httptest.NewRecorder()
-		s.handler.ServeHTTP(resp, req)
+		handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
 		c.Check(s.remoteKeepRequests, check.Equals, trial.expectRemoteReqs)
 	}

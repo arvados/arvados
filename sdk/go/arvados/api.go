@@ -242,8 +242,9 @@ type LogoutOptions struct {
 }
 
 type BlockReadOptions struct {
-	Locator string
-	WriteTo io.Writer
+	Locator      string
+	WriteTo      io.Writer
+	LocalLocator func(string)
 }
 
 type BlockWriteOptions struct {
@@ -258,8 +259,9 @@ type BlockWriteOptions struct {
 }
 
 type BlockWriteResponse struct {
-	Locator  string
-	Replicas int
+	Locator        string
+	Replicas       int
+	StorageClasses map[string]int
 }
 
 type WebDAVOptions struct {

@@ -9,11 +9,13 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -39,7 +41,7 @@ type TB interface {
 // A TestableVolumeFactory returns a new TestableVolume. The factory
 // function, and the TestableVolume it returns, can use "t" to write
 // logs, fail the current test, etc.
-type TestableVolumeFactory func(t TB, cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) TestableVolume
+type TestableVolumeFactory func(t TB, params newVolumeParams) TestableVolume
 
 // DoGenericVolumeTests runs a set of tests that every TestableVolume
 // is expected to pass. It calls factory to create a new TestableVolume
@@ -50,16 +52,6 @@ func DoGenericVolumeTests(t TB, readonly bool, factory TestableVolumeFactory) {
 
 	s.testGet(t, factory)
 	s.testGetNoSuchBlock(t, factory)
-
-	s.testCompareNonexistent(t, factory)
-	s.testCompareSameContent(t, factory, TestHash, TestBlock)
-	s.testCompareSameContent(t, factory, EmptyHash, EmptyBlock)
-	s.testCompareWithCollision(t, factory, TestHash, TestBlock, []byte("baddata"))
-	s.testCompareWithCollision(t, factory, TestHash, TestBlock, EmptyBlock)
-	s.testCompareWithCollision(t, factory, EmptyHash, EmptyBlock, TestBlock)
-	s.testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, []byte("baddata"))
-	s.testCompareWithCorruptStoredData(t, factory, TestHash, TestBlock, EmptyBlock)
-	s.testCompareWithCorruptStoredData(t, factory, EmptyHash, EmptyBlock, []byte("baddata"))
 
 	if !readonly {
 		s.testPutBlockWithSameContent(t, factory, TestHash, TestBlock)
@@ -76,7 +68,7 @@ func DoGenericVolumeTests(t TB, readonly bool, factory TestableVolumeFactory) {
 
 	s.testMtimeNoSuchBlock(t, factory)
 
-	s.testIndexTo(t, factory)
+	s.testIndex(t, factory)
 
 	if !readonly {
 		s.testDeleteNewBlock(t, factory)
@@ -84,33 +76,24 @@ func DoGenericVolumeTests(t TB, readonly bool, factory TestableVolumeFactory) {
 	}
 	s.testDeleteNoSuchBlock(t, factory)
 
-	s.testStatus(t, factory)
-
 	s.testMetrics(t, readonly, factory)
-
-	s.testString(t, factory)
-
-	if readonly {
-		s.testUpdateReadOnly(t, factory)
-	}
 
 	s.testGetConcurrent(t, factory)
 	if !readonly {
 		s.testPutConcurrent(t, factory)
-
 		s.testPutFullBlock(t, factory)
+		s.testTrashUntrash(t, readonly, factory)
+		s.testTrashEmptyTrashUntrash(t, factory)
 	}
-
-	s.testTrashUntrash(t, readonly, factory)
-	s.testTrashEmptyTrashUntrash(t, factory)
 }
 
 type genericVolumeSuite struct {
-	cluster  *arvados.Cluster
-	volume   arvados.Volume
-	logger   logrus.FieldLogger
-	metrics  *volumeMetricsVecs
-	registry *prometheus.Registry
+	cluster    *arvados.Cluster
+	volume     arvados.Volume
+	logger     logrus.FieldLogger
+	metrics    *volumeMetricsVecs
+	registry   *prometheus.Registry
+	bufferPool *bufferPool
 }
 
 func (s *genericVolumeSuite) setup(t TB) {
@@ -118,10 +101,18 @@ func (s *genericVolumeSuite) setup(t TB) {
 	s.logger = ctxlog.TestLogger(t)
 	s.registry = prometheus.NewRegistry()
 	s.metrics = newVolumeMetricsVecs(s.registry)
+	s.bufferPool = newBufferPool(s.logger, 8, s.registry)
 }
 
 func (s *genericVolumeSuite) newVolume(t TB, factory TestableVolumeFactory) TestableVolume {
-	return factory(t, s.cluster, s.volume, s.logger, s.metrics)
+	return factory(t, newVolumeParams{
+		UUID:         "zzzzz-nyw5e-999999999999999",
+		Cluster:      s.cluster,
+		ConfigVolume: s.volume,
+		Logger:       s.logger,
+		MetricsVecs:  s.metrics,
+		BufferPool:   s.bufferPool,
+	})
 }
 
 // Put a test block, get it and verify content
@@ -131,16 +122,18 @@ func (s *genericVolumeSuite) testGet(t TB, factory TestableVolumeFactory) {
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	v.PutRaw(TestHash, TestBlock)
-
-	buf := make([]byte, BlockSize)
-	n, err := v.Get(context.Background(), TestHash, buf)
+	err := v.BlockWrite(context.Background(), TestHash, TestBlock)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
-	if bytes.Compare(buf[:n], TestBlock) != 0 {
-		t.Errorf("expected %s, got %s", string(TestBlock), string(buf))
+	buf := bytes.NewBuffer(nil)
+	_, err = v.BlockRead(context.Background(), TestHash, buf)
+	if err != nil {
+		t.Error(err)
+	}
+	if bytes.Compare(buf.Bytes(), TestBlock) != 0 {
+		t.Errorf("expected %s, got %s", "foo", buf.String())
 	}
 }
 
@@ -151,75 +144,8 @@ func (s *genericVolumeSuite) testGetNoSuchBlock(t TB, factory TestableVolumeFact
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	buf := make([]byte, BlockSize)
-	if _, err := v.Get(context.Background(), TestHash2, buf); err == nil {
-		t.Errorf("Expected error while getting non-existing block %v", TestHash2)
-	}
-}
-
-// Compare() should return os.ErrNotExist if the block does not exist.
-// Otherwise, writing new data causes CompareAndTouch() to generate
-// error logs even though everything is working fine.
-func (s *genericVolumeSuite) testCompareNonexistent(t TB, factory TestableVolumeFactory) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	err := v.Compare(context.Background(), TestHash, TestBlock)
-	if err != os.ErrNotExist {
-		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
-	}
-}
-
-// Put a test block and compare the locator with same content
-// Test should pass for both writable and read-only volumes
-func (s *genericVolumeSuite) testCompareSameContent(t TB, factory TestableVolumeFactory, testHash string, testData []byte) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	v.PutRaw(testHash, testData)
-
-	// Compare the block locator with same content
-	err := v.Compare(context.Background(), testHash, testData)
-	if err != nil {
-		t.Errorf("Got err %q, expected nil", err)
-	}
-}
-
-// Test behavior of Compare() when stored data matches expected
-// checksum but differs from new data we need to store. Requires
-// testHash = md5(testDataA).
-//
-// Test should pass for both writable and read-only volumes
-func (s *genericVolumeSuite) testCompareWithCollision(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	v.PutRaw(testHash, testDataA)
-
-	// Compare the block locator with different content; collision
-	err := v.Compare(context.Background(), TestHash, testDataB)
-	if err == nil {
-		t.Errorf("Got err nil, expected error due to collision")
-	}
-}
-
-// Test behavior of Compare() when stored data has become
-// corrupted. Requires testHash = md5(testDataA) != md5(testDataB).
-//
-// Test should pass for both writable and read-only volumes
-func (s *genericVolumeSuite) testCompareWithCorruptStoredData(t TB, factory TestableVolumeFactory, testHash string, testDataA, testDataB []byte) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	v.PutRaw(TestHash, testDataB)
-
-	err := v.Compare(context.Background(), testHash, testDataA)
-	if err == nil || err == CollisionError {
-		t.Errorf("Got err %+v, expected non-collision error", err)
+	if _, err := v.BlockRead(context.Background(), barHash, io.Discard); err == nil {
+		t.Errorf("Expected error while getting non-existing block %v", barHash)
 	}
 }
 
@@ -230,12 +156,12 @@ func (s *genericVolumeSuite) testPutBlockWithSameContent(t TB, factory TestableV
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	err := v.Put(context.Background(), testHash, testData)
+	err := v.BlockWrite(context.Background(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(context.Background(), testHash, testData)
+	err = v.BlockWrite(context.Background(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block second time %q: %q, expected nil", TestBlock, err)
 	}
@@ -248,23 +174,23 @@ func (s *genericVolumeSuite) testPutBlockWithDifferentContent(t TB, factory Test
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	v.PutRaw(testHash, testDataA)
+	v.BlockWrite(context.Background(), testHash, testDataA)
 
-	putErr := v.Put(context.Background(), testHash, testDataB)
-	buf := make([]byte, BlockSize)
-	n, getErr := v.Get(context.Background(), testHash, buf)
+	putErr := v.BlockWrite(context.Background(), testHash, testDataB)
+	buf := bytes.NewBuffer(nil)
+	_, getErr := v.BlockRead(context.Background(), testHash, buf)
 	if putErr == nil {
 		// Put must not return a nil error unless it has
 		// overwritten the existing data.
-		if bytes.Compare(buf[:n], testDataB) != 0 {
-			t.Errorf("Put succeeded but Get returned %+q, expected %+q", buf[:n], testDataB)
+		if buf.String() != string(testDataB) {
+			t.Errorf("Put succeeded but Get returned %+q, expected %+q", buf, testDataB)
 		}
 	} else {
 		// It is permissible for Put to fail, but it must
 		// leave us with either the original data, the new
 		// data, or nothing at all.
-		if getErr == nil && bytes.Compare(buf[:n], testDataA) != 0 && bytes.Compare(buf[:n], testDataB) != 0 {
-			t.Errorf("Put failed but Get returned %+q, which is neither %+q nor %+q", buf[:n], testDataA, testDataB)
+		if getErr == nil && buf.String() != string(testDataA) && buf.String() != string(testDataB) {
+			t.Errorf("Put failed but Get returned %+q, which is neither %+q nor %+q", buf, testDataA, testDataB)
 		}
 	}
 }
@@ -276,46 +202,48 @@ func (s *genericVolumeSuite) testPutMultipleBlocks(t TB, factory TestableVolumeF
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	err := v.Put(context.Background(), TestHash, TestBlock)
+	err := v.BlockWrite(context.Background(), TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(context.Background(), TestHash2, TestBlock2)
+	err = v.BlockWrite(context.Background(), TestHash2, TestBlock2)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock2, err)
 	}
 
-	err = v.Put(context.Background(), TestHash3, TestBlock3)
+	err = v.BlockWrite(context.Background(), TestHash3, TestBlock3)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock3, err)
 	}
 
-	data := make([]byte, BlockSize)
-	n, err := v.Get(context.Background(), TestHash, data)
+	buf := bytes.NewBuffer(nil)
+	_, err = v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
 	} else {
-		if bytes.Compare(data[:n], TestBlock) != 0 {
-			t.Errorf("Block present, but got %+q, expected %+q", data[:n], TestBlock)
+		if bytes.Compare(buf.Bytes(), TestBlock) != 0 {
+			t.Errorf("Block present, but got %+q, expected %+q", buf, TestBlock)
 		}
 	}
 
-	n, err = v.Get(context.Background(), TestHash2, data)
+	buf.Reset()
+	_, err = v.BlockRead(context.Background(), TestHash2, buf)
 	if err != nil {
 		t.Error(err)
 	} else {
-		if bytes.Compare(data[:n], TestBlock2) != 0 {
-			t.Errorf("Block present, but got %+q, expected %+q", data[:n], TestBlock2)
+		if bytes.Compare(buf.Bytes(), TestBlock2) != 0 {
+			t.Errorf("Block present, but got %+q, expected %+q", buf, TestBlock2)
 		}
 	}
 
-	n, err = v.Get(context.Background(), TestHash3, data)
+	buf.Reset()
+	_, err = v.BlockRead(context.Background(), TestHash3, buf)
 	if err != nil {
 		t.Error(err)
 	} else {
-		if bytes.Compare(data[:n], TestBlock3) != 0 {
-			t.Errorf("Block present, but to %+q, expected %+q", data[:n], TestBlock3)
+		if bytes.Compare(buf.Bytes(), TestBlock3) != 0 {
+			t.Errorf("Block present, but to %+q, expected %+q", buf, TestBlock3)
 		}
 	}
 }
@@ -328,13 +256,13 @@ func (s *genericVolumeSuite) testPutAndTouch(t TB, factory TestableVolumeFactory
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	if err := v.Put(context.Background(), TestHash, TestBlock); err != nil {
+	if err := v.BlockWrite(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	// We'll verify { t0 < threshold < t1 }, where t0 is the
-	// existing block's timestamp on disk before Put() and t1 is
-	// its timestamp after Put().
+	// existing block's timestamp on disk before BlockWrite() and t1 is
+	// its timestamp after BlockWrite().
 	threshold := time.Now().Add(-time.Second)
 
 	// Set the stored block's mtime far enough in the past that we
@@ -348,7 +276,7 @@ func (s *genericVolumeSuite) testPutAndTouch(t TB, factory TestableVolumeFactory
 	}
 
 	// Write the same block again.
-	if err := v.Put(context.Background(), TestHash, TestBlock); err != nil {
+	if err := v.BlockWrite(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -367,7 +295,7 @@ func (s *genericVolumeSuite) testTouchNoSuchBlock(t TB, factory TestableVolumeFa
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	if err := v.Touch(TestHash); err == nil {
+	if err := v.BlockTouch(TestHash); err == nil {
 		t.Error("Expected error when attempted to touch a non-existing block")
 	}
 }
@@ -384,12 +312,12 @@ func (s *genericVolumeSuite) testMtimeNoSuchBlock(t TB, factory TestableVolumeFa
 	}
 }
 
-// Put a few blocks and invoke IndexTo with:
+// Put a few blocks and invoke Index with:
 // * no prefix
 // * with a prefix
 // * with no such prefix
 // Test should pass for both writable and read-only volumes
-func (s *genericVolumeSuite) testIndexTo(t TB, factory TestableVolumeFactory) {
+func (s *genericVolumeSuite) testIndex(t TB, factory TestableVolumeFactory) {
 	s.setup(t)
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
@@ -400,9 +328,9 @@ func (s *genericVolumeSuite) testIndexTo(t TB, factory TestableVolumeFactory) {
 	minMtime := time.Now().UTC().UnixNano()
 	minMtime -= minMtime % 1e9
 
-	v.PutRaw(TestHash, TestBlock)
-	v.PutRaw(TestHash2, TestBlock2)
-	v.PutRaw(TestHash3, TestBlock3)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash2, TestBlock2)
+	v.BlockWrite(context.Background(), TestHash3, TestBlock3)
 
 	maxMtime := time.Now().UTC().UnixNano()
 	if maxMtime%1e9 > 0 {
@@ -412,13 +340,13 @@ func (s *genericVolumeSuite) testIndexTo(t TB, factory TestableVolumeFactory) {
 
 	// Blocks whose names aren't Keep hashes should be omitted from
 	// index
-	v.PutRaw("fffffffffnotreallyahashfffffffff", nil)
-	v.PutRaw("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", nil)
-	v.PutRaw("f0000000000000000000000000000000f", nil)
-	v.PutRaw("f00", nil)
+	v.BlockWrite(context.Background(), "fffffffffnotreallyahashfffffffff", nil)
+	v.BlockWrite(context.Background(), "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", nil)
+	v.BlockWrite(context.Background(), "f0000000000000000000000000000000f", nil)
+	v.BlockWrite(context.Background(), "f00", nil)
 
 	buf := new(bytes.Buffer)
-	v.IndexTo("", buf)
+	v.Index(context.Background(), "", buf)
 	indexRows := strings.Split(string(buf.Bytes()), "\n")
 	sort.Strings(indexRows)
 	sortedIndex := strings.Join(indexRows, "\n")
@@ -441,7 +369,7 @@ func (s *genericVolumeSuite) testIndexTo(t TB, factory TestableVolumeFactory) {
 
 	for _, prefix := range []string{"f", "f15", "f15ac"} {
 		buf = new(bytes.Buffer)
-		v.IndexTo(prefix, buf)
+		v.Index(context.Background(), prefix, buf)
 
 		m, err := regexp.MatchString(`^`+TestHash2+`\+\d+ \d+\n$`, string(buf.Bytes()))
 		if err != nil {
@@ -453,11 +381,11 @@ func (s *genericVolumeSuite) testIndexTo(t TB, factory TestableVolumeFactory) {
 
 	for _, prefix := range []string{"zero", "zip", "zilch"} {
 		buf = new(bytes.Buffer)
-		err := v.IndexTo(prefix, buf)
+		err := v.Index(context.Background(), prefix, buf)
 		if err != nil {
-			t.Errorf("Got error on IndexTo with no such prefix %v", err.Error())
+			t.Errorf("Got error on Index with no such prefix %v", err.Error())
 		} else if buf.Len() != 0 {
-			t.Errorf("Expected empty list for IndexTo with no such prefix %s", prefix)
+			t.Errorf("Expected empty list for Index with no such prefix %s", prefix)
 		}
 	}
 }
@@ -471,17 +399,17 @@ func (s *genericVolumeSuite) testDeleteNewBlock(t TB, factory TestableVolumeFact
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	v.Put(context.Background(), TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 
-	if err := v.Trash(TestHash); err != nil {
+	if err := v.BlockTrash(TestHash); err != nil {
 		t.Error(err)
 	}
-	data := make([]byte, BlockSize)
-	n, err := v.Get(context.Background(), TestHash, data)
+	buf := bytes.NewBuffer(nil)
+	_, err := v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
-	} else if bytes.Compare(data[:n], TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", data[:n], TestBlock)
+	} else if buf.String() != string(TestBlock) {
+		t.Errorf("Got data %+q, expected %+q", buf.String(), TestBlock)
 	}
 }
 
@@ -494,36 +422,30 @@ func (s *genericVolumeSuite) testDeleteOldBlock(t TB, factory TestableVolumeFact
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	v.Put(context.Background(), TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
-	if err := v.Trash(TestHash); err != nil {
+	if err := v.BlockTrash(TestHash); err != nil {
 		t.Error(err)
 	}
-	data := make([]byte, BlockSize)
-	if _, err := v.Get(context.Background(), TestHash, data); err == nil || !os.IsNotExist(err) {
+	if _, err := v.BlockRead(context.Background(), TestHash, io.Discard); err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	_, err := v.Mtime(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
-	}
-
-	err = v.Compare(context.Background(), TestHash, TestBlock)
-	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	indexBuf := new(bytes.Buffer)
-	v.IndexTo("", indexBuf)
+	v.Index(context.Background(), "", indexBuf)
 	if strings.Contains(string(indexBuf.Bytes()), TestHash) {
-		t.Fatalf("Found trashed block in IndexTo")
+		t.Errorf("Found trashed block in Index")
 	}
 
-	err = v.Touch(TestHash)
+	err = v.BlockTouch(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 }
 
@@ -534,30 +456,8 @@ func (s *genericVolumeSuite) testDeleteNoSuchBlock(t TB, factory TestableVolumeF
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	if err := v.Trash(TestHash2); err == nil {
+	if err := v.BlockTrash(TestHash2); err == nil {
 		t.Errorf("Expected error when attempting to delete a non-existing block")
-	}
-}
-
-// Invoke Status and verify that VolumeStatus is returned
-// Test should pass for both writable and read-only volumes
-func (s *genericVolumeSuite) testStatus(t TB, factory TestableVolumeFactory) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	// Get node status and make a basic sanity check.
-	status := v.Status()
-	if status.DeviceNum == 0 {
-		t.Errorf("uninitialized device_num in %v", status)
-	}
-
-	if status.BytesFree == 0 {
-		t.Errorf("uninitialized bytes_free in %v", status)
-	}
-
-	if status.BytesUsed == 0 {
-		t.Errorf("uninitialized bytes_used in %v", status)
 	}
 }
 
@@ -575,7 +475,7 @@ func (s *genericVolumeSuite) testMetrics(t TB, readonly bool, factory TestableVo
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	opsC, _, ioC := s.metrics.getCounterVecsFor(prometheus.Labels{"device_id": v.GetDeviceID()})
+	opsC, _, ioC := s.metrics.getCounterVecsFor(prometheus.Labels{"device_id": v.DeviceID()})
 
 	if ioC == nil {
 		t.Error("ioBytes CounterVec is nil")
@@ -600,7 +500,7 @@ func (s *genericVolumeSuite) testMetrics(t TB, readonly bool, factory TestableVo
 
 	// Test Put if volume is writable
 	if !readonly {
-		err = v.Put(context.Background(), TestHash, TestBlock)
+		err = v.BlockWrite(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 		}
@@ -614,13 +514,12 @@ func (s *genericVolumeSuite) testMetrics(t TB, readonly bool, factory TestableVo
 			t.Error("ioBytes{direction=out} counter shouldn't be zero")
 		}
 	} else {
-		v.PutRaw(TestHash, TestBlock)
+		v.BlockWrite(context.Background(), TestHash, TestBlock)
 	}
 
-	buf := make([]byte, BlockSize)
-	_, err = v.Get(context.Background(), TestHash, buf)
+	_, err = v.BlockRead(context.Background(), TestHash, io.Discard)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// Check that the operations counter increased
@@ -634,63 +533,6 @@ func (s *genericVolumeSuite) testMetrics(t TB, readonly bool, factory TestableVo
 	}
 }
 
-// Invoke String for the volume; expect non-empty result
-// Test should pass for both writable and read-only volumes
-func (s *genericVolumeSuite) testString(t TB, factory TestableVolumeFactory) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	if id := v.String(); len(id) == 0 {
-		t.Error("Got empty string for v.String()")
-	}
-}
-
-// Putting, updating, touching, and deleting blocks from a read-only volume result in error.
-// Test is intended for only read-only volumes
-func (s *genericVolumeSuite) testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
-	s.setup(t)
-	v := s.newVolume(t, factory)
-	defer v.Teardown()
-
-	v.PutRaw(TestHash, TestBlock)
-	buf := make([]byte, BlockSize)
-
-	// Get from read-only volume should succeed
-	_, err := v.Get(context.Background(), TestHash, buf)
-	if err != nil {
-		t.Errorf("got err %v, expected nil", err)
-	}
-
-	// Put a new block to read-only volume should result in error
-	err = v.Put(context.Background(), TestHash2, TestBlock2)
-	if err == nil {
-		t.Errorf("Expected error when putting block in a read-only volume")
-	}
-	_, err = v.Get(context.Background(), TestHash2, buf)
-	if err == nil {
-		t.Errorf("Expected error when getting block whose put in read-only volume failed")
-	}
-
-	// Touch a block in read-only volume should result in error
-	err = v.Touch(TestHash)
-	if err == nil {
-		t.Errorf("Expected error when touching block in a read-only volume")
-	}
-
-	// Delete a block from a read-only volume should result in error
-	err = v.Trash(TestHash)
-	if err == nil {
-		t.Errorf("Expected error when deleting block from a read-only volume")
-	}
-
-	// Overwriting an existing block in read-only volume should result in error
-	err = v.Put(context.Background(), TestHash, TestBlock)
-	if err == nil {
-		t.Errorf("Expected error when putting block in a read-only volume")
-	}
-}
-
 // Launch concurrent Gets
 // Test should pass for both writable and read-only volumes
 func (s *genericVolumeSuite) testGetConcurrent(t TB, factory TestableVolumeFactory) {
@@ -698,43 +540,43 @@ func (s *genericVolumeSuite) testGetConcurrent(t TB, factory TestableVolumeFacto
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	v.PutRaw(TestHash, TestBlock)
-	v.PutRaw(TestHash2, TestBlock2)
-	v.PutRaw(TestHash3, TestBlock3)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash2, TestBlock2)
+	v.BlockWrite(context.Background(), TestHash3, TestBlock3)
 
 	sem := make(chan int)
 	go func() {
-		buf := make([]byte, BlockSize)
-		n, err := v.Get(context.Background(), TestHash, buf)
+		buf := bytes.NewBuffer(nil)
+		_, err := v.BlockRead(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Errorf("err1: %v", err)
 		}
-		if bytes.Compare(buf[:n], TestBlock) != 0 {
-			t.Errorf("buf should be %s, is %s", string(TestBlock), string(buf[:n]))
+		if buf.String() != string(TestBlock) {
+			t.Errorf("buf should be %s, is %s", TestBlock, buf)
 		}
 		sem <- 1
 	}()
 
 	go func() {
-		buf := make([]byte, BlockSize)
-		n, err := v.Get(context.Background(), TestHash2, buf)
+		buf := bytes.NewBuffer(nil)
+		_, err := v.BlockRead(context.Background(), TestHash2, buf)
 		if err != nil {
 			t.Errorf("err2: %v", err)
 		}
-		if bytes.Compare(buf[:n], TestBlock2) != 0 {
-			t.Errorf("buf should be %s, is %s", string(TestBlock2), string(buf[:n]))
+		if buf.String() != string(TestBlock2) {
+			t.Errorf("buf should be %s, is %s", TestBlock2, buf)
 		}
 		sem <- 1
 	}()
 
 	go func() {
-		buf := make([]byte, BlockSize)
-		n, err := v.Get(context.Background(), TestHash3, buf)
+		buf := bytes.NewBuffer(nil)
+		_, err := v.BlockRead(context.Background(), TestHash3, buf)
 		if err != nil {
 			t.Errorf("err3: %v", err)
 		}
-		if bytes.Compare(buf[:n], TestBlock3) != 0 {
-			t.Errorf("buf should be %s, is %s", string(TestBlock3), string(buf[:n]))
+		if buf.String() != string(TestBlock3) {
+			t.Errorf("buf should be %s, is %s", TestBlock3, buf)
 		}
 		sem <- 1
 	}()
@@ -752,60 +594,38 @@ func (s *genericVolumeSuite) testPutConcurrent(t TB, factory TestableVolumeFacto
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	sem := make(chan int)
-	go func(sem chan int) {
-		err := v.Put(context.Background(), TestHash, TestBlock)
+	blks := []struct {
+		hash string
+		data []byte
+	}{
+		{hash: TestHash, data: TestBlock},
+		{hash: TestHash2, data: TestBlock2},
+		{hash: TestHash3, data: TestBlock3},
+	}
+
+	var wg sync.WaitGroup
+	for _, blk := range blks {
+		blk := blk
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := v.BlockWrite(context.Background(), blk.hash, blk.data)
+			if err != nil {
+				t.Errorf("%s: %v", blk.hash, err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Check that we actually wrote the blocks.
+	for _, blk := range blks {
+		buf := bytes.NewBuffer(nil)
+		_, err := v.BlockRead(context.Background(), blk.hash, buf)
 		if err != nil {
-			t.Errorf("err1: %v", err)
+			t.Errorf("get %s: %v", blk.hash, err)
+		} else if buf.String() != string(blk.data) {
+			t.Errorf("get %s: expected %s, got %s", blk.hash, blk.data, buf)
 		}
-		sem <- 1
-	}(sem)
-
-	go func(sem chan int) {
-		err := v.Put(context.Background(), TestHash2, TestBlock2)
-		if err != nil {
-			t.Errorf("err2: %v", err)
-		}
-		sem <- 1
-	}(sem)
-
-	go func(sem chan int) {
-		err := v.Put(context.Background(), TestHash3, TestBlock3)
-		if err != nil {
-			t.Errorf("err3: %v", err)
-		}
-		sem <- 1
-	}(sem)
-
-	// Wait for all goroutines to finish
-	for done := 0; done < 3; done++ {
-		<-sem
-	}
-
-	// Double check that we actually wrote the blocks we expected to write.
-	buf := make([]byte, BlockSize)
-	n, err := v.Get(context.Background(), TestHash, buf)
-	if err != nil {
-		t.Errorf("Get #1: %v", err)
-	}
-	if bytes.Compare(buf[:n], TestBlock) != 0 {
-		t.Errorf("Get #1: expected %s, got %s", string(TestBlock), string(buf[:n]))
-	}
-
-	n, err = v.Get(context.Background(), TestHash2, buf)
-	if err != nil {
-		t.Errorf("Get #2: %v", err)
-	}
-	if bytes.Compare(buf[:n], TestBlock2) != 0 {
-		t.Errorf("Get #2: expected %s, got %s", string(TestBlock2), string(buf[:n]))
-	}
-
-	n, err = v.Get(context.Background(), TestHash3, buf)
-	if err != nil {
-		t.Errorf("Get #3: %v", err)
-	}
-	if bytes.Compare(buf[:n], TestBlock3) != 0 {
-		t.Errorf("Get #3: expected %s, got %s", string(TestBlock3), string(buf[:n]))
 	}
 }
 
@@ -819,17 +639,18 @@ func (s *genericVolumeSuite) testPutFullBlock(t TB, factory TestableVolumeFactor
 	wdata[0] = 'a'
 	wdata[BlockSize-1] = 'z'
 	hash := fmt.Sprintf("%x", md5.Sum(wdata))
-	err := v.Put(context.Background(), hash, wdata)
-	if err != nil {
-		t.Fatal(err)
-	}
-	buf := make([]byte, BlockSize)
-	n, err := v.Get(context.Background(), hash, buf)
+	err := v.BlockWrite(context.Background(), hash, wdata)
 	if err != nil {
 		t.Error(err)
 	}
-	if bytes.Compare(buf[:n], wdata) != 0 {
-		t.Error("buf %+q != wdata %+q", buf[:n], wdata)
+
+	buf := bytes.NewBuffer(nil)
+	_, err = v.BlockRead(context.Background(), hash, buf)
+	if err != nil {
+		t.Error(err)
+	}
+	if buf.String() != string(wdata) {
+		t.Error("buf %+q != wdata %+q", buf, wdata)
 	}
 }
 
@@ -844,48 +665,44 @@ func (s *genericVolumeSuite) testTrashUntrash(t TB, readonly bool, factory Testa
 	defer v.Teardown()
 
 	// put block and backdate it
-	v.PutRaw(TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
-	buf := make([]byte, BlockSize)
-	n, err := v.Get(context.Background(), TestHash, buf)
+	buf := bytes.NewBuffer(nil)
+	_, err := v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	if bytes.Compare(buf[:n], TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf[:n], TestBlock)
+	if buf.String() != string(TestBlock) {
+		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 
 	// Trash
-	err = v.Trash(TestHash)
-	if readonly {
-		if err != MethodDisabledError {
-			t.Fatal(err)
-		}
-	} else if err != nil {
-		if err != ErrNotImplemented {
-			t.Fatal(err)
-		}
-	} else {
-		_, err = v.Get(context.Background(), TestHash, buf)
-		if err == nil || !os.IsNotExist(err) {
-			t.Errorf("os.IsNotExist(%v) should have been true", err)
-		}
+	err = v.BlockTrash(TestHash)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	buf.Reset()
+	_, err = v.BlockRead(context.Background(), TestHash, buf)
+	if err == nil || !os.IsNotExist(err) {
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
+	}
 
-		// Untrash
-		err = v.Untrash(TestHash)
-		if err != nil {
-			t.Fatal(err)
-		}
+	// Untrash
+	err = v.BlockUntrash(TestHash)
+	if err != nil {
+		t.Error(err)
 	}
 
 	// Get the block - after trash and untrash sequence
-	n, err = v.Get(context.Background(), TestHash, buf)
+	buf.Reset()
+	_, err = v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	if bytes.Compare(buf[:n], TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf[:n], TestBlock)
+	if buf.String() != string(TestBlock) {
+		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 }
 
@@ -895,13 +712,13 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 	defer v.Teardown()
 
 	checkGet := func() error {
-		buf := make([]byte, BlockSize)
-		n, err := v.Get(context.Background(), TestHash, buf)
+		buf := bytes.NewBuffer(nil)
+		_, err := v.BlockRead(context.Background(), TestHash, buf)
 		if err != nil {
 			return err
 		}
-		if bytes.Compare(buf[:n], TestBlock) != 0 {
-			t.Fatalf("Got data %+q, expected %+q", buf[:n], TestBlock)
+		if buf.String() != string(TestBlock) {
+			t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
 		}
 
 		_, err = v.Mtime(TestHash)
@@ -909,13 +726,8 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 			return err
 		}
 
-		err = v.Compare(context.Background(), TestHash, TestBlock)
-		if err != nil {
-			return err
-		}
-
 		indexBuf := new(bytes.Buffer)
-		v.IndexTo("", indexBuf)
+		v.Index(context.Background(), "", indexBuf)
 		if !strings.Contains(string(indexBuf.Bytes()), TestHash) {
 			return os.ErrNotExist
 		}
@@ -927,50 +739,47 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 
 	s.cluster.Collections.BlobTrashLifetime.Set("1h")
 
-	v.PutRaw(TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	err := checkGet()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// Trash the block
-	err = v.Trash(TestHash)
-	if err == MethodDisabledError || err == ErrNotImplemented {
-		// Skip the trash tests for read-only volumes, and
-		// volume types that don't support
-		// BlobTrashLifetime>0.
-		return
+	err = v.BlockTrash(TestHash)
+	if err != nil {
+		t.Error(err)
 	}
 
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	err = v.Touch(TestHash)
+	err = v.BlockTouch(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	v.EmptyTrash()
 
 	// Even after emptying the trash, we can untrash our block
 	// because the deadline hasn't been reached.
-	err = v.Untrash(TestHash)
+	err = v.BlockUntrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	err = checkGet()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
-	err = v.Touch(TestHash)
+	err = v.BlockTouch(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// Because we Touch'ed, need to backdate again for next set of tests
@@ -979,16 +788,16 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 	// If the only block in the trash has already been untrashed,
 	// most volumes will fail a subsequent Untrash with a 404, but
 	// it's also acceptable for Untrash to succeed.
-	err = v.Untrash(TestHash)
+	err = v.BlockUntrash(TestHash)
 	if err != nil && !os.IsNotExist(err) {
-		t.Fatalf("Expected success or os.IsNotExist(), but got: %v", err)
+		t.Errorf("Expected success or os.IsNotExist(), but got: %v", err)
 	}
 
 	// The additional Untrash should not interfere with our
 	// already-untrashed copy.
 	err = checkGet()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// Untrash might have updated the timestamp, so backdate again
@@ -998,74 +807,74 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 
 	s.cluster.Collections.BlobTrashLifetime.Set("1ns")
 
-	err = v.Trash(TestHash)
+	err = v.BlockTrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Even though 1ns has passed, we can untrash because we
 	// haven't called EmptyTrash yet.
-	err = v.Untrash(TestHash)
+	err = v.BlockUntrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	err = checkGet()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// Trash it again, and this time call EmptyTrash so it really
 	// goes away.
 	// (In Azure volumes, un/trash changes Mtime, so first backdate again)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
-	_ = v.Trash(TestHash)
+	_ = v.BlockTrash(TestHash)
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 	v.EmptyTrash()
 
 	// Untrash won't find it
-	err = v.Untrash(TestHash)
+	err = v.BlockUntrash(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Get block won't find it
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Third set: If the same data block gets written again after
 	// being trashed, and then the trash gets emptied, the newer
 	// un-trashed copy doesn't get deleted along with it.
 
-	v.PutRaw(TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	s.cluster.Collections.BlobTrashLifetime.Set("1ns")
-	err = v.Trash(TestHash)
+	err = v.BlockTrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	v.PutRaw(TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	// EmptyTrash should not delete the untrashed copy.
 	v.EmptyTrash()
 	err = checkGet()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// Fourth set: If the same data block gets trashed twice with
@@ -1073,33 +882,33 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 	// at intermediate time B (A < B < C), it is still possible to
 	// untrash the block whose deadline is "C".
 
-	v.PutRaw(TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	s.cluster.Collections.BlobTrashLifetime.Set("1ns")
-	err = v.Trash(TestHash)
+	err = v.BlockTrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
-	v.PutRaw(TestHash, TestBlock)
+	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
 	s.cluster.Collections.BlobTrashLifetime.Set("1h")
-	err = v.Trash(TestHash)
+	err = v.BlockTrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	// EmptyTrash should not prevent us from recovering the
 	// time.Hour ("C") trash
 	v.EmptyTrash()
-	err = v.Untrash(TestHash)
+	err = v.BlockUntrash(TestHash)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	err = checkGet()
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/services/keepstore"
 )
 
 // Pull is a request to retrieve a block from a remote server, and
@@ -23,13 +24,8 @@ type Pull struct {
 // MarshalJSON formats a pull request the way keepstore wants to see
 // it.
 func (p Pull) MarshalJSON() ([]byte, error) {
-	type KeepstorePullRequest struct {
-		Locator   string   `json:"locator"`
-		Servers   []string `json:"servers"`
-		MountUUID string   `json:"mount_uuid"`
-	}
-	return json.Marshal(KeepstorePullRequest{
-		Locator:   string(p.SizedDigest[:32]),
+	return json.Marshal(keepstore.PullListItem{
+		Locator:   string(p.SizedDigest),
 		Servers:   []string{p.From.URLBase()},
 		MountUUID: p.To.KeepMount.UUID,
 	})
@@ -45,13 +41,8 @@ type Trash struct {
 // MarshalJSON formats a trash request the way keepstore wants to see
 // it, i.e., as a bare locator with no +size hint.
 func (t Trash) MarshalJSON() ([]byte, error) {
-	type KeepstoreTrashRequest struct {
-		Locator    string `json:"locator"`
-		BlockMtime int64  `json:"block_mtime"`
-		MountUUID  string `json:"mount_uuid"`
-	}
-	return json.Marshal(KeepstoreTrashRequest{
-		Locator:    string(t.SizedDigest[:32]),
+	return json.Marshal(keepstore.TrashListItem{
+		Locator:    string(t.SizedDigest),
 		BlockMtime: t.Mtime,
 		MountUUID:  t.From.KeepMount.UUID,
 	})
