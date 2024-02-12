@@ -24,7 +24,7 @@ import { DataTableFilters } from "../data-table-filters/data-table-filters-tree"
 import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty } from "models/tree";
-import { IconType, PendingIcon } from "components/icon/icon";
+import { IconType } from "components/icon/icon";
 import { SvgIconProps } from "@material-ui/core/SvgIcon";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { createTree } from "models/tree";
@@ -69,8 +69,7 @@ type CssRules =
     | "tableCell"
     | "arrow"
     | "arrowButton"
-    | "tableCellWorkflows"
-    | "loader";
+    | "tableCellWorkflows";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -82,11 +81,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper,
-    },
-    loader: {
-        left: "50%",
-        marginLeft: "-84px",
-        position: "absolute",
     },
     noItemsInfo: {
         textAlign: "center",
@@ -303,14 +297,6 @@ export const DataTable = withStyles(styles)(
                             </TableHead>
                             <TableBody className={classes.tableBody}>{!working && items.map(this.renderBodyRow)}</TableBody>
                         </Table>
-                        {!!working && (
-                            <div className={classes.loader}>
-                                <DataTableDefaultView
-                                    icon={PendingIcon}
-                                    messages={["Loading data, please wait."]}
-                                />
-                            </div>
-                        )}
                         {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
                     </div>
                 </div>

@@ -53,8 +53,10 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
+import { PendingIcon } from 'components/icon/icon';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 
-type CssRules = 'root' | 'button';
+type CssRules = 'root' | 'button' | 'loader' | 'notFoundView';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -62,6 +64,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit,
+    },
+    loader: {
+        top: "25%",
+        left: "46.5%",
+        marginLeft: "-84px",
+        position: "absolute",
+    },
+    notFoundView: {
+        top: "30%",
+        left: "50%",
+        marginLeft: "-84px",
+        position: "absolute",
     },
 });
 
@@ -299,12 +313,20 @@ export const ProjectPanel = withStyles(styles)(
                             defaultViewMessages={DEFAULT_VIEW_MESSAGES}
                         />
                     </div>
-                    : this.state.isLoaded ?
-                    <NotFoundView
-                        icon={ProjectIcon}
-                        messages={["Project not found"]}
-                    />
-                    : null
+                : this.state.isLoaded ?
+                    <div className={classes.notFoundView}>
+                        <NotFoundView
+                            icon={ProjectIcon}
+                            messages={["Project not found"]}
+                            />
+                    </div>
+                    :   
+                    <div className={classes.loader}>
+                        <DataTableDefaultView
+                            icon={PendingIcon}
+                            messages={["Loading data, please wait."]}
+                        />
+                    </div>
             }
 
             isCurrentItemChild = (resource: Resource) => {
