@@ -117,7 +117,13 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument('--unmount-timeout',
                           type=float, default=2.0,
                           help="Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted")
-
+        self.add_argument(
+            '--filters',
+            type=arv_cmd.JSONArgument(arv_cmd.validate_filters),
+            help="""Filters to apply to all project, shared, and tag directory
+contents. Pass filters as either a JSON string or a path to a JSON file.
+The JSON object should be a list of filters in Arvados API list filter syntax.
+""")
         self.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                             dest="exec_args", metavar=('command', 'args', '...', '--'),
                             help="""Mount, run a command, then unmount and exit""")
@@ -300,7 +306,14 @@ class Mount(object):
         usr = self.api.users().current().execute(num_retries=self.args.retries)
         now = time.time()
         dir_class = None
-        dir_args = [llfuse.ROOT_INODE, self.operations.inodes, self.api, self.args.retries, self.args.enable_write]
+        dir_args = [
+            llfuse.ROOT_INODE,
+            self.operations.inodes,
+            self.api,
+            self.args.retries,
+            self.args.enable_write,
+            self.args.filters,
+        ]
         mount_readme = False
 
         storage_classes = None
@@ -366,7 +379,12 @@ class Mount(object):
             return
 
         e = self.operations.inodes.add_entry(Directory(
-            llfuse.ROOT_INODE, self.operations.inodes, self.api.config, self.args.enable_write))
+            llfuse.ROOT_INODE,
+            self.operations.inodes,
+            self.api.config,
+            self.args.enable_write,
+            self.args.filters,
+        ))
         dir_args[0] = e.inode
 
         for name in self.args.mount_by_id:
