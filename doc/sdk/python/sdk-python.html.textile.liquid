@@ -39,7 +39,7 @@ If you are on Ubuntu 18.04, please note that the Arvados packages that use Pytho
 The package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. You can test the installation by doing that, then creating a client object. Ensure your "@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ credentials are set up correctly":{{site.baseurl}}/user/reference/api-tokens.html. Then you should be able to run the following without any errors:
 
 <notextile>
-<pre>~$ <code class="userinput">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code>
+<pre>~$ <code class="userinput">source /usr/lib/python3-arvados-python-client/bin/activate</code>
 (python-arvados-python-client) ~$ <code class="userinput">python</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
@@ -53,7 +53,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 Alternatively, you can run the Python executable inside the @virtualenv@ directly:
 
 <notextile>
-<pre>~$ <code class="userinput">/usr/share/python3/dist/python3-arvados-python-client/bin/python</code>
+<pre>~$ <code class="userinput">/usr/lib/python3-arvados-python-client/bin/python</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.
