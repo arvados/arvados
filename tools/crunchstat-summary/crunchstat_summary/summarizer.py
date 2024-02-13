@@ -20,7 +20,7 @@ from crunchstat_summary import logger
 # Recommend memory constraints that are this multiple of an integral
 # number of GiB. (Actual nodes tend to be sold in sizes like 8 GiB
 # that have amounts like 7.5 GiB according to the kernel.)
-AVAILABLE_RAM_RATIO = 0.95
+AVAILABLE_RAM_RATIO = 0.90
 MB=2**20
 
 # Workaround datetime.datetime.strptime() thread-safety bug by calling
@@ -269,30 +269,36 @@ class Summarizer(object):
         label = self.label
         if hasattr(self, 'process') and self.process['uuid'] not in label:
             label = '{} ({})'.format(label, self.process['uuid'])
-        if self.finishtime:
-            label += ' -- elapsed time '
-            s = (self.finishtime - self.starttime).total_seconds()
-            if s > 86400:
-                label += '{}d'.format(int(s/86400))
-            if s > 3600:
-                label += '{}h'.format(int(s/3600) % 24)
-            if s > 60:
-                label += '{}m'.format(int(s/60) % 60)
-            label += '{}s'.format(int(s) % 60)
+        return label
+
+    def elapsed_time(self):
+        if not self.finishtime:
+            return ""
+        label = ""
+        s = (self.finishtime - self.starttime).total_seconds()
+        if s > 86400:
+            label += '{}d'.format(int(s/86400))
+        if s > 3600:
+            label += '{}h'.format(int(s/3600) % 24)
+        if s > 60:
+            label += '{}m'.format(int(s/60) % 60)
+        label += '{}s'.format(int(s) % 60)
         return label
 
     def text_report(self):
         if not self.tasks:
             return "(no report generated)\n"
         return "\n".join(itertools.chain(
-            self._text_report_gen(),
-            self._recommend_gen())) + "\n"
+            self._text_report_table_gen(lambda x: "\t".join(x),
+                                  lambda x: "\t".join(x)),
+            self._text_report_agg_gen(lambda x: "# {}: {}{}".format(x[0], x[1], x[2])),
+            self._recommend_gen(lambda x: "#!! "+x))) + "\n"
 
     def html_report(self):
         return WEBCHART_CLASS(self.label, [self]).html()
 
-    def _text_report_gen(self):
-        yield "\t".join(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
+    def _text_report_table_gen(self, headerformat, rowformat):
+        yield headerformat(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
         for category, stat_max in sorted(self.stats_max.items()):
             for stat, val in sorted(stat_max.items()):
                 if stat.endswith('__rate'):
@@ -300,66 +306,88 @@ class Summarizer(object):
                 max_rate = self._format(stat_max.get(stat+'__rate', '-'))
                 val = self._format(val)
                 tot = self._format(self.job_tot[category].get(stat, '-'))
-                yield "\t".join([category, stat, str(val), max_rate, tot])
-        for args in (
-                ('Number of tasks: {}',
-                 len(self.tasks),
-                 None),
-                ('Max CPU time spent by a single task: {}s',
+                yield rowformat([category, stat, str(val), max_rate, tot])
+
+    def _text_report_agg_gen(self, aggformat):
+        by_single_task = ""
+        if len(self.tasks) > 1:
+            by_single_task = " by a single task"
+        metrics = [
+            ('Elapsed time',
+             self.elapsed_time(),
+             None,
+             ''),
+                ('Max CPU time spent{}'.format(by_single_task),
                  self.stats_max['cpu']['user+sys'],
-                 None),
-                ('Max CPU usage in a single interval: {}%',
+                 None,
+                 's'),
+                ('Max CPU usage in a single interval',
                  self.stats_max['cpu']['user+sys__rate'],
-                 lambda x: x * 100),
-                ('Overall CPU usage: {}%',
+                 lambda x: x * 100,
+                 '%'),
+                ('Overall CPU usage',
                  float(self.job_tot['cpu']['user+sys']) /
                  self.job_tot['time']['elapsed']
                  if self.job_tot['time']['elapsed'] > 0 else 0,
-                 lambda x: x * 100),
-                ('Max memory used by a single task: {}GB',
+                 lambda x: x * 100,
+                 '%'),
+                ('Max memory used{}'.format(by_single_task),
                  self.stats_max['mem']['rss'],
-                 lambda x: x / 1e9),
-                ('Max network traffic in a single task: {}GB',
+                 lambda x: x / 1e9,
+                 'GB'),
+                ('Max network traffic{}'.format(by_single_task),
                  self.stats_max['net:eth0']['tx+rx'] +
                  self.stats_max['net:keep0']['tx+rx'],
-                 lambda x: x / 1e9),
-                ('Max network speed in a single interval: {}MB/s',
+                 lambda x: x / 1e9,
+                 'GB'),
+                ('Max network speed in a single interval',
                  self.stats_max['net:eth0']['tx+rx__rate'] +
                  self.stats_max['net:keep0']['tx+rx__rate'],
-                 lambda x: x / 1e6),
-                ('Keep cache miss rate {}%',
+                 lambda x: x / 1e6,
+                 'MB/s'),
+                ('Keep cache miss rate',
                  (float(self.job_tot['keepcache']['miss']) /
                  float(self.job_tot['keepcalls']['get']))
                  if self.job_tot['keepcalls']['get'] > 0 else 0,
-                 lambda x: x * 100.0),
-                ('Keep cache utilization {}%',
+                 lambda x: x * 100.0,
+                 '%'),
+                ('Keep cache utilization',
                  (float(self.job_tot['blkio:0:0']['read']) /
                  float(self.job_tot['net:keep0']['rx']))
                  if self.job_tot['net:keep0']['rx'] > 0 else 0,
-                 lambda x: x * 100.0),
-               ('Temp disk utilization {}%',
+                 lambda x: x * 100.0,
+                 '%'),
+               ('Temp disk utilization',
                  (float(self.job_tot['statfs']['used']) /
                  float(self.job_tot['statfs']['total']))
                  if self.job_tot['statfs']['total'] > 0 else 0,
-                 lambda x: x * 100.0),
-                ):
-            format_string, val, transform = args
+                 lambda x: x * 100.0,
+                '%'),
+        ]
+
+        if len(self.tasks) > 1:
+            metrics.insert(0, ('Number of tasks',
+                 len(self.tasks),
+                 None,
+                 ''))
+        for args in metrics:
+            format_string, val, transform, suffix = args
             if val == float('-Inf'):
                 continue
             if transform:
                 val = transform(val)
-            yield "# "+format_string.format(self._format(val))
+            yield aggformat((format_string, self._format(val), suffix))
 
-    def _recommend_gen(self):
+    def _recommend_gen(self, recommendformat):
         # TODO recommend fixing job granularity if elapsed time is too short
         return itertools.chain(
-            self._recommend_cpu(),
-            self._recommend_ram(),
-            self._recommend_keep_cache(),
-            self._recommend_temp_disk(),
+            self._recommend_cpu(recommendformat),
+            self._recommend_ram(recommendformat),
+            self._recommend_keep_cache(recommendformat),
+            self._recommend_temp_disk(recommendformat),
             )
 
-    def _recommend_cpu(self):
+    def _recommend_cpu(self, recommendformat):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
 
         constraint_key = self._map_runtime_constraint('vcpus')
@@ -375,8 +403,8 @@ class Summarizer(object):
             asked_cores = 1
         # TODO: This should be more nuanced in cases where max >> avg
         if used_cores < asked_cores:
-            yield (
-                '#!! {} max CPU usage was {}% -- '
+            yield recommendformat(
+                '{} max CPU usage was {}% -- '
                 'try reducing runtime_constraints to "{}":{}'
             ).format(
                 self.label,
@@ -385,7 +413,7 @@ class Summarizer(object):
                 int(used_cores))
 
     # FIXME: This needs to be updated to account for current a-d-c algorithms
-    def _recommend_ram(self):
+    def _recommend_ram(self, recommendformat):
         """Recommend an economical RAM constraint for this job.
 
         Nodes that are advertised as "8 gibibytes" actually have what
@@ -425,21 +453,23 @@ class Summarizer(object):
             logger.warning('%s: no memory usage data', self.label)
             return
         used_mib = math.ceil(float(used_bytes) / MB)
-        asked_mib = self.existing_constraints.get(constraint_key)
+        asked_mib = self.existing_constraints.get(constraint_key) / MB
 
         nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
-        if used_mib > 0 and (asked_mib is None or (
-                math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib))):
-            yield (
-                '#!! {} max RSS was {} MiB -- '
-                'try reducing runtime_constraints to "{}":{}'
+        ratio = 0.5
+        recommend_mib = int(math.ceil(nearlygibs(used_mib/ratio))*AVAILABLE_RAM_RATIO*1024)
+        if used_mib > 0 and (used_mib / asked_mib) < ratio and asked_mib > recommend_mib:
+            yield recommendformat(
+                '{} requested {} MiB of RAM but actual RAM usage was below {}% at {} MiB -- '
+                'suggest reducing RAM request to {} MiB'
             ).format(
                 self.label,
+                int(asked_mib),
+                int(100*ratio),
                 int(used_mib),
-                constraint_key,
-                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(MB)/self._runtime_constraint_mem_unit()))
+                recommend_mib)
 
-    def _recommend_keep_cache(self):
+    def _recommend_keep_cache(self, recommendformat):
         """Recommend increasing keep cache if utilization < 80%"""
         constraint_key = self._map_runtime_constraint('keep_cache_ram')
         if self.job_tot['net:keep0']['rx'] == 0:
@@ -450,8 +480,8 @@ class Summarizer(object):
         asked_cache = self.existing_constraints.get(constraint_key, 256) * self._runtime_constraint_mem_unit()
 
         if utilization < 0.8:
-            yield (
-                '#!! {} Keep cache utilization was {:.2f}% -- '
+            yield recommendformat(
+                '{} Keep cache utilization was {:.2f}% -- '
                 'try doubling runtime_constraints to "{}":{} (or more)'
             ).format(
                 self.label,
@@ -460,14 +490,14 @@ class Summarizer(object):
                 math.ceil(asked_cache * 2 / self._runtime_constraint_mem_unit()))
 
 
-    def _recommend_temp_disk(self):
+    def _recommend_temp_disk(self, recommendformat):
         """Recommend decreasing temp disk if utilization < 50%"""
         total = float(self.job_tot['statfs']['total'])
         utilization = (float(self.job_tot['statfs']['used']) / total) if total > 0 else 0.0
 
         if utilization < 50.8 and total > 0:
-            yield (
-                '#!! {} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
+            yield recommendformat(
+                '{} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
                 'consider reducing "tmpdirMin" and/or "outdirMin"'
             ).format(
                 self.label,
@@ -632,17 +662,21 @@ class MultiSummarizer(object):
         return d
 
     def html_report(self):
-        txt = self.text_report()
-        fmt = """
-        <table>
-        <tbody>
-        {}
-        </tbody>
-        </table>
-        <p>{}</p>
-        """.format("\n".join("<tr><td>{}</td></tr>".format(x.replace("\t", "</td><td>")) for x in txt.split("\n") if not x.startswith("#")),
-                   "\n".join("{}<br>".format(x) for x in txt.split("\n") if x.startswith("#")))
-        return WEBCHART_CLASS(self.label, iter(self._descendants().values())).html(fmt)
+        tophtml = ""
+        bottomhtml = ""
+        label = self.label
+        if len(self._descendants()) == 1:
+            summarizer = next(iter(self._descendants().values()))
+            tophtml = """{}\n<table class='aggtable'><tbody>{}</tbody></table>\n""".format(
+                "\n".join(summarizer._recommend_gen(lambda x: "<p>{}</p>".format(x))),
+                "\n".join(summarizer._text_report_agg_gen(lambda x: "<tr><th>{}</th><td>{}{}</td></tr>".format(*x))))
+
+            bottomhtml = """<table class='metricstable'><tbody>{}</tbody></table>\n""".format(
+                "\n".join(summarizer._text_report_table_gen(lambda x: "<tr><th>{}</th><th>{}</th><th>{}</th><th>{}</th><th>{}</th></tr>".format(*x),
+                                                            lambda x: "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(*x))))
+            label = summarizer.long_label()
+
+        return WEBCHART_CLASS(label, iter(self._descendants().values())).html(tophtml, bottomhtml)
 
 
 class JobTreeSummarizer(MultiSummarizer):

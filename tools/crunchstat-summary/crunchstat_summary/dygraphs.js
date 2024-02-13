@@ -40,9 +40,10 @@ window.onload = function() {
         },
     }
     chartdata.forEach(function(section, section_idx) {
-        var h1 = document.createElement('h1');
-        h1.appendChild(document.createTextNode(section.label));
-        document.body.appendChild(h1);
+        //var h1 = document.createElement('h1');
+        //h1.appendChild(document.createTextNode(section.label));
+        //document.body.appendChild(h1);
+        var chartDiv = document.getElementById("chart");
         section.charts.forEach(function(chart, chart_idx) {
             // Skip chart if every series has zero data points
             if (0 == chart.data.reduce(function(len, series) {
@@ -54,7 +55,7 @@ window.onload = function() {
             var div = document.createElement('div');
             div.setAttribute('id', id);
             div.setAttribute('style', 'width: 100%; height: 150px');
-            document.body.appendChild(div);
+            chartDiv.appendChild(div);
             chart.options.valueFormatter = function(y) {
             }
             chart.options.axes = {
