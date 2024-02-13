@@ -317,7 +317,7 @@ class Summarizer(object):
              self.elapsed_time(),
              None,
              ''),
-                ('Max CPU time spent{}'.format(by_single_task),
+                ('CPU time spent{}'.format(by_single_task),
                  self.stats_max['cpu']['user+sys'],
                  None,
                  's'),
