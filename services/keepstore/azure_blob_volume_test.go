@@ -222,7 +222,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusCreated)
 	case r.Method == "PUT" && r.Form.Get("comp") == "metadata":
 		// "Set Metadata Headers" API. We don't bother
-		// stubbing "Get Metadata Headers": AzureBlobVolume
+		// stubbing "Get Metadata Headers": azureBlobVolume
 		// sets metadata headers only as a way to bump Etag
 		// and Last-Modified.
 		if !blobExists {
@@ -367,7 +367,7 @@ func (d *azStubDialer) Dial(network, address string) (net.Conn, error) {
 }
 
 type testableAzureBlobVolume struct {
-	*AzureBlobVolume
+	*azureBlobVolume
 	azHandler *azStubHandler
 	azStub    *httptest.Server
 	t         TB
@@ -397,7 +397,7 @@ func (s *stubbedAzureBlobSuite) newTestableAzureBlobVolume(t TB, params newVolum
 	azClient.Sender = &singleSender{}
 
 	bs := azClient.GetBlobService()
-	v := &AzureBlobVolume{
+	v := &azureBlobVolume{
 		ContainerName:        container,
 		WriteRaceInterval:    arvados.Duration(time.Millisecond),
 		WriteRacePollTime:    arvados.Duration(time.Nanosecond),
@@ -416,7 +416,7 @@ func (s *stubbedAzureBlobSuite) newTestableAzureBlobVolume(t TB, params newVolum
 	}
 
 	return &testableAzureBlobVolume{
-		AzureBlobVolume: v,
+		azureBlobVolume: v,
 		azHandler:       azHandler,
 		azStub:          azStub,
 		t:               t,
@@ -553,8 +553,8 @@ func (s *stubbedAzureBlobSuite) TestAzureBlobVolumeCreateBlobRaceDeadline(c *che
 		MetricsVecs:  newVolumeMetricsVecs(prometheus.NewRegistry()),
 		BufferPool:   newBufferPool(ctxlog.TestLogger(c), 8, prometheus.NewRegistry()),
 	})
-	v.AzureBlobVolume.WriteRaceInterval.Set("2s")
-	v.AzureBlobVolume.WriteRacePollTime.Set("5ms")
+	v.azureBlobVolume.WriteRaceInterval.Set("2s")
+	v.azureBlobVolume.WriteRacePollTime.Set("5ms")
 	defer v.Teardown()
 
 	v.BlockWriteRaw(TestHash, nil)

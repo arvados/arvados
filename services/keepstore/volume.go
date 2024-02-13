@@ -48,7 +48,3 @@ type ioStats struct {
 	InBytes    uint64
 	OutBytes   uint64
 }
-
-type InternalStatser interface {
-	InternalStats() interface{}
-}

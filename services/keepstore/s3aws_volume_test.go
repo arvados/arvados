@@ -58,7 +58,7 @@ type StubbedS3AWSSuite struct {
 	s3server *httptest.Server
 	metadata *httptest.Server
 	cluster  *arvados.Cluster
-	volumes  []*TestableS3AWSVolume
+	volumes  []*testableS3Volume
 }
 
 func (s *StubbedS3AWSSuite) SetUpTest(c *check.C) {
@@ -102,7 +102,8 @@ func (s *StubbedS3AWSSuite) TestIndex(c *check.C) {
 	}, 0)
 	v.IndexPageSize = 3
 	for i := 0; i < 256; i++ {
-		v.PutRaw(fmt.Sprintf("%02x%030x", i, i), []byte{102, 111, 111})
+		err := v.blockWriteWithoutMD5Check(fmt.Sprintf("%02x%030x", i, i), []byte{102, 111, 111})
+		c.Assert(err, check.IsNil)
 	}
 	for _, spec := range []struct {
 		prefix      string
@@ -132,7 +133,7 @@ func (s *StubbedS3AWSSuite) TestSignature(c *check.C) {
 
 	// The aws-sdk-go-v2 driver only supports S3 V4 signatures. S3 v2 signatures are being phased out
 	// as of June 24, 2020. Cf. https://forums.aws.amazon.com/ann.jspa?annID=5816
-	vol := S3AWSVolume{
+	vol := s3Volume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
 			AccessKeyID:     "xxx",
 			SecretAccessKey: "xxx",
@@ -165,7 +166,7 @@ func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
 	}))
 	defer s.metadata.Close()
 
-	v := &S3AWSVolume{
+	v := &s3Volume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
 			IAMRole:  s.metadata.URL + "/latest/api/token",
 			Endpoint: "http://localhost:12345",
@@ -186,7 +187,7 @@ func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
 	s.metadata = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
-	deadv := &S3AWSVolume{
+	deadv := &s3Volume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
 			IAMRole:  s.metadata.URL + "/fake-metadata/test-role",
 			Endpoint: "http://localhost:12345",
@@ -259,19 +260,19 @@ func (h *s3AWSBlockingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *StubbedS3AWSSuite) TestGetContextCancel(c *check.C) {
-	s.testContextCancel(c, func(ctx context.Context, v *TestableS3AWSVolume) error {
+	s.testContextCancel(c, func(ctx context.Context, v *testableS3Volume) error {
 		_, err := v.BlockRead(ctx, fooHash, io.Discard)
 		return err
 	})
 }
 
 func (s *StubbedS3AWSSuite) TestPutContextCancel(c *check.C) {
-	s.testContextCancel(c, func(ctx context.Context, v *TestableS3AWSVolume) error {
+	s.testContextCancel(c, func(ctx context.Context, v *testableS3Volume) error {
 		return v.BlockWrite(ctx, fooHash, []byte("foo"))
 	})
 }
 
-func (s *StubbedS3AWSSuite) testContextCancel(c *check.C, testFunc func(context.Context, *TestableS3AWSVolume) error) {
+func (s *StubbedS3AWSSuite) testContextCancel(c *check.C, testFunc func(context.Context, *testableS3Volume) error) {
 	handler := &s3AWSBlockingHandler{}
 	s.s3server = httptest.NewServer(handler)
 	defer s.s3server.Close()
@@ -534,8 +535,8 @@ func (s *StubbedS3AWSSuite) TestBackendStates(c *check.C) {
 	}
 }
 
-type TestableS3AWSVolume struct {
-	*S3AWSVolume
+type testableS3Volume struct {
+	*s3Volume
 	server      *httptest.Server
 	c           *check.C
 	serverClock *s3AWSFakeClock
@@ -558,7 +559,7 @@ func (l LogrusLog) Print(level gofakes3.LogLevel, v ...interface{}) {
 	}
 }
 
-func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams, raceWindow time.Duration) *TestableS3AWSVolume {
+func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams, raceWindow time.Duration) *testableS3Volume {
 
 	clock := &s3AWSFakeClock{}
 	// fake s3
@@ -581,8 +582,8 @@ func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams
 		iamRole, accessKey, secretKey = s.metadata.URL+"/fake-metadata/test-role", "", ""
 	}
 
-	v := &TestableS3AWSVolume{
-		S3AWSVolume: &S3AWSVolume{
+	v := &testableS3Volume{
+		s3Volume: &s3Volume{
 			S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
 				IAMRole:            iamRole,
 				AccessKeyID:        accessKey,
@@ -604,24 +605,23 @@ func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams
 		server:      srv,
 		serverClock: clock,
 	}
-	c.Assert(v.S3AWSVolume.check(""), check.IsNil)
+	c.Assert(v.s3Volume.check(""), check.IsNil)
 	// Our test S3 server uses the older 'Path Style'
-	v.S3AWSVolume.bucket.svc.ForcePathStyle = true
+	v.s3Volume.bucket.svc.ForcePathStyle = true
 	// Create the testbucket
 	input := &s3.CreateBucketInput{
 		Bucket: aws.String(S3AWSTestBucketName),
 	}
-	req := v.S3AWSVolume.bucket.svc.CreateBucketRequest(input)
+	req := v.s3Volume.bucket.svc.CreateBucketRequest(input)
 	_, err := req.Send(context.Background())
 	c.Assert(err, check.IsNil)
 	// We couldn't set RaceWindow until now because check()
 	// rejects negative values.
-	v.S3AWSVolume.RaceWindow = arvados.Duration(raceWindow)
+	v.s3Volume.RaceWindow = arvados.Duration(raceWindow)
 	return v
 }
 
-// PutRaw skips the ContentMD5 test
-func (v *TestableS3AWSVolume) PutRaw(loc string, block []byte) {
+func (v *testableS3Volume) blockWriteWithoutMD5Check(loc string, block []byte) error {
 	key := v.key(loc)
 	r := newCountingReader(bytes.NewReader(block), v.bucket.stats.TickOutBytes)
 
@@ -636,7 +636,7 @@ func (v *TestableS3AWSVolume) PutRaw(loc string, block []byte) {
 		Body:   r,
 	})
 	if err != nil {
-		v.logger.Printf("PutRaw: %s: %+v", key, err)
+		return err
 	}
 
 	empty := bytes.NewReader([]byte{})
@@ -645,15 +645,13 @@ func (v *TestableS3AWSVolume) PutRaw(loc string, block []byte) {
 		Key:    aws.String("recent/" + key),
 		Body:   empty,
 	})
-	if err != nil {
-		v.logger.Printf("PutRaw: recent/%s: %+v", key, err)
-	}
+	return err
 }
 
 // TouchWithDate turns back the clock while doing a Touch(). We assume
 // there are no other operations happening on the same s3test server
 // while we do this.
-func (v *TestableS3AWSVolume) TouchWithDate(loc string, lastPut time.Time) {
+func (v *testableS3Volume) TouchWithDate(loc string, lastPut time.Time) {
 	v.serverClock.now = &lastPut
 
 	uploader := s3manager.NewUploaderWithClient(v.bucket.svc)
@@ -670,10 +668,10 @@ func (v *TestableS3AWSVolume) TouchWithDate(loc string, lastPut time.Time) {
 	v.serverClock.now = nil
 }
 
-func (v *TestableS3AWSVolume) Teardown() {
+func (v *testableS3Volume) Teardown() {
 	v.server.Close()
 }
 
-func (v *TestableS3AWSVolume) ReadWriteOperationLabelValues() (r, w string) {
+func (v *testableS3Volume) ReadWriteOperationLabelValues() (r, w string) {
 	return "get", "put"
 }

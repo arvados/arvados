@@ -155,7 +155,7 @@ func (rtr *router) handleIndex(w http.ResponseWriter, req *http.Request) {
 		prefix = mux.Vars(req)["prefix"]
 	}
 	cw := &countingWriter{writer: w}
-	err := rtr.keepstore.Index(req.Context(), IndexOptions{
+	err := rtr.keepstore.Index(req.Context(), indexOptions{
 		MountUUID: mux.Vars(req)["uuid"],
 		Prefix:    prefix,
 		WriteTo:   cw,

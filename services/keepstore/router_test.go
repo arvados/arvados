@@ -302,8 +302,8 @@ func (s *routerSuite) TestBadRequest(c *C) {
 		"GET /mounts/blocks/123",
 		"GET /trash",
 		"GET /pull",
-		"GET /debug.json",
-		"GET /status.json",
+		"GET /debug.json",  // old endpoint, no longer exists
+		"GET /status.json", // old endpoint, no longer exists
 		"POST /",
 		"POST /aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		"POST /trash",

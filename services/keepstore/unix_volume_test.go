@@ -23,7 +23,7 @@ import (
 )
 
 type testableUnixVolume struct {
-	UnixVolume
+	unixVolume
 	t TB
 }
 
@@ -77,7 +77,7 @@ func (s *unixVolumeSuite) newTestableUnixVolume(c *check.C, params newVolumePara
 		locker = &sync.Mutex{}
 	}
 	v := &testableUnixVolume{
-		UnixVolume: UnixVolume{
+		unixVolume: unixVolume{
 			Root:    d,
 			locker:  locker,
 			uuid:    params.UUID,
@@ -313,7 +313,7 @@ func (s *unixVolumeSuite) TestStats(c *check.C) {
 		return string(buf)
 	}
 
-	c.Check(stats(), check.Matches, `.*"StatOps":1,.*`) // (*UnixVolume)check() calls Stat() once
+	c.Check(stats(), check.Matches, `.*"StatOps":1,.*`) // (*unixVolume)check() calls Stat() once
 	c.Check(stats(), check.Matches, `.*"Errors":0,.*`)
 
 	_, err := vol.BlockRead(context.Background(), fooHash, io.Discard)
@@ -353,14 +353,14 @@ func (s *unixVolumeSuite) TestStats(c *check.C) {
 func (s *unixVolumeSuite) TestSkipUnusedDirs(c *check.C) {
 	vol := s.newTestableUnixVolume(c, s.params, false)
 
-	err := os.Mkdir(vol.UnixVolume.Root+"/aaa", 0777)
+	err := os.Mkdir(vol.unixVolume.Root+"/aaa", 0777)
 	c.Assert(err, check.IsNil)
-	err = os.Mkdir(vol.UnixVolume.Root+"/.aaa", 0777) // EmptyTrash should not look here
+	err = os.Mkdir(vol.unixVolume.Root+"/.aaa", 0777) // EmptyTrash should not look here
 	c.Assert(err, check.IsNil)
-	deleteme := vol.UnixVolume.Root + "/aaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trash.1"
+	deleteme := vol.unixVolume.Root + "/aaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trash.1"
 	err = ioutil.WriteFile(deleteme, []byte{1, 2, 3}, 0777)
 	c.Assert(err, check.IsNil)
-	skipme := vol.UnixVolume.Root + "/.aaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trash.1"
+	skipme := vol.unixVolume.Root + "/.aaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trash.1"
 	err = ioutil.WriteFile(skipme, []byte{1, 2, 3}, 0777)
 	c.Assert(err, check.IsNil)
 	vol.EmptyTrash()

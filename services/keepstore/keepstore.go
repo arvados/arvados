@@ -2,6 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+// Package keepstore implements the keepstore service component and
+// back-end storage drivers.
+//
+// It is an internal module, only intended to be imported by
+// /cmd/arvados-server and other server-side components in this
+// repository.
 package keepstore
 
 import (
@@ -47,7 +53,7 @@ var (
 	driver               = make(map[string]volumeDriver)
 )
 
-type IndexOptions struct {
+type indexOptions struct {
 	MountUUID string
 	Prefix    string
 	WriteTo   io.Writer
@@ -653,7 +659,7 @@ func (ks *keepstore) Mounts() []*mount {
 	return ks.mountsR
 }
 
-func (ks *keepstore) Index(ctx context.Context, opts IndexOptions) error {
+func (ks *keepstore) Index(ctx context.Context, opts indexOptions) error {
 	mounts := ks.mountsR
 	if opts.MountUUID != "" {
 		mnt, ok := ks.mounts[opts.MountUUID]
