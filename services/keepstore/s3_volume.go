@@ -65,7 +65,7 @@ type s3Volume struct {
 	logger     logrus.FieldLogger
 	metrics    *volumeMetricsVecs
 	bufferPool *bufferPool
-	bucket     *s3AWSbucket
+	bucket     *s3Bucket
 	region     string
 	startOnce  sync.Once
 }
@@ -73,7 +73,7 @@ type s3Volume struct {
 // s3bucket wraps s3.bucket and counts I/O and API usage stats. The
 // wrapped bucket can be replaced atomically with SetBucket in order
 // to update credentials.
-type s3AWSbucket struct {
+type s3Bucket struct {
 	bucket string
 	svc    *s3.Client
 	stats  s3awsbucketStats
@@ -222,7 +222,7 @@ func (v *s3Volume) check(ec2metadataHostname string) error {
 
 	cfg.Credentials = creds
 
-	v.bucket = &s3AWSbucket{
+	v.bucket = &s3Bucket{
 		bucket: v.Bucket,
 		svc:    s3.New(cfg),
 	}
@@ -538,7 +538,7 @@ func (v *s3Volume) BlockWrite(ctx context.Context, hash string, data []byte) err
 
 type s3awsLister struct {
 	Logger            logrus.FieldLogger
-	Bucket            *s3AWSbucket
+	Bucket            *s3Bucket
 	Prefix            string
 	PageSize          int
 	Stats             *s3awsbucketStats
@@ -768,7 +768,7 @@ func (v *s3Volume) checkRaceWindow(key string) error {
 	return nil
 }
 
-func (b *s3AWSbucket) Del(path string) error {
+func (b *s3Bucket) Del(path string) error {
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(path),

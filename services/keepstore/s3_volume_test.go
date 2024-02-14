@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	S3AWSTestBucketName = "testbucket"
+	s3TestBucketName = "testbucket"
 )
 
 type s3AWSFakeClock struct {
@@ -50,18 +50,18 @@ func (c *s3AWSFakeClock) Since(t time.Time) time.Duration {
 	return c.Now().Sub(t)
 }
 
-var _ = check.Suite(&StubbedS3AWSSuite{})
+var _ = check.Suite(&stubbedS3Suite{})
 
 var srv httptest.Server
 
-type StubbedS3AWSSuite struct {
+type stubbedS3Suite struct {
 	s3server *httptest.Server
 	metadata *httptest.Server
 	cluster  *arvados.Cluster
 	volumes  []*testableS3Volume
 }
 
-func (s *StubbedS3AWSSuite) SetUpTest(c *check.C) {
+func (s *stubbedS3Suite) SetUpTest(c *check.C) {
 	s.s3server = nil
 	s.metadata = nil
 	s.cluster = testCluster(c)
@@ -71,7 +71,7 @@ func (s *StubbedS3AWSSuite) SetUpTest(c *check.C) {
 	}
 }
 
-func (s *StubbedS3AWSSuite) TestGeneric(c *check.C) {
+func (s *stubbedS3Suite) TestGeneric(c *check.C) {
 	DoGenericVolumeTests(c, false, func(t TB, params newVolumeParams) TestableVolume {
 		// Use a negative raceWindow so s3test's 1-second
 		// timestamp precision doesn't confuse fixRace.
@@ -79,13 +79,13 @@ func (s *StubbedS3AWSSuite) TestGeneric(c *check.C) {
 	})
 }
 
-func (s *StubbedS3AWSSuite) TestGenericReadOnly(c *check.C) {
+func (s *stubbedS3Suite) TestGenericReadOnly(c *check.C) {
 	DoGenericVolumeTests(c, true, func(t TB, params newVolumeParams) TestableVolume {
 		return s.newTestableVolume(c, params, -2*time.Second)
 	})
 }
 
-func (s *StubbedS3AWSSuite) TestGenericWithPrefix(c *check.C) {
+func (s *stubbedS3Suite) TestGenericWithPrefix(c *check.C) {
 	DoGenericVolumeTests(c, false, func(t TB, params newVolumeParams) TestableVolume {
 		v := s.newTestableVolume(c, params, -2*time.Second)
 		v.PrefixLength = 3
@@ -93,7 +93,7 @@ func (s *StubbedS3AWSSuite) TestGenericWithPrefix(c *check.C) {
 	})
 }
 
-func (s *StubbedS3AWSSuite) TestIndex(c *check.C) {
+func (s *stubbedS3Suite) TestIndex(c *check.C) {
 	v := s.newTestableVolume(c, newVolumeParams{
 		Cluster:      s.cluster,
 		ConfigVolume: arvados.Volume{Replication: 2},
@@ -124,7 +124,7 @@ func (s *StubbedS3AWSSuite) TestIndex(c *check.C) {
 	}
 }
 
-func (s *StubbedS3AWSSuite) TestSignature(c *check.C) {
+func (s *stubbedS3Suite) TestSignature(c *check.C) {
 	var header http.Header
 	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header = r.Header
@@ -155,7 +155,7 @@ func (s *StubbedS3AWSSuite) TestSignature(c *check.C) {
 	c.Check(header.Get("Authorization"), check.Matches, `AWS4-HMAC-SHA256 .*`)
 }
 
-func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
+func (s *stubbedS3Suite) TestIAMRoleCredentials(c *check.C) {
 	s.metadata = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upd := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
 		exp := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
@@ -205,7 +205,7 @@ func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
 	c.Check(err, check.ErrorMatches, `(?s).*404.*`)
 }
 
-func (s *StubbedS3AWSSuite) TestStats(c *check.C) {
+func (s *stubbedS3Suite) TestStats(c *check.C) {
 	v := s.newTestableVolume(c, newVolumeParams{
 		Cluster:      s.cluster,
 		ConfigVolume: arvados.Volume{Replication: 2},
@@ -259,20 +259,20 @@ func (h *s3AWSBlockingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	http.Error(w, "nothing here", http.StatusNotFound)
 }
 
-func (s *StubbedS3AWSSuite) TestGetContextCancel(c *check.C) {
+func (s *stubbedS3Suite) TestGetContextCancel(c *check.C) {
 	s.testContextCancel(c, func(ctx context.Context, v *testableS3Volume) error {
 		_, err := v.BlockRead(ctx, fooHash, io.Discard)
 		return err
 	})
 }
 
-func (s *StubbedS3AWSSuite) TestPutContextCancel(c *check.C) {
+func (s *stubbedS3Suite) TestPutContextCancel(c *check.C) {
 	s.testContextCancel(c, func(ctx context.Context, v *testableS3Volume) error {
 		return v.BlockWrite(ctx, fooHash, []byte("foo"))
 	})
 }
 
-func (s *StubbedS3AWSSuite) testContextCancel(c *check.C, testFunc func(context.Context, *testableS3Volume) error) {
+func (s *stubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Context, *testableS3Volume) error) {
 	handler := &s3AWSBlockingHandler{}
 	s.s3server = httptest.NewServer(handler)
 	defer s.s3server.Close()
@@ -318,7 +318,7 @@ func (s *StubbedS3AWSSuite) testContextCancel(c *check.C, testFunc func(context.
 	}
 }
 
-func (s *StubbedS3AWSSuite) TestBackendStates(c *check.C) {
+func (s *stubbedS3Suite) TestBackendStates(c *check.C) {
 	s.cluster.Collections.BlobTrashLifetime.Set("1h")
 	s.cluster.Collections.BlobSigningTTL.Set("1h")
 
@@ -559,7 +559,7 @@ func (l LogrusLog) Print(level gofakes3.LogLevel, v ...interface{}) {
 	}
 }
 
-func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams, raceWindow time.Duration) *testableS3Volume {
+func (s *stubbedS3Suite) newTestableVolume(c *check.C, params newVolumeParams, raceWindow time.Duration) *testableS3Volume {
 
 	clock := &s3AWSFakeClock{}
 	// fake s3
@@ -588,7 +588,7 @@ func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams
 				IAMRole:            iamRole,
 				AccessKeyID:        accessKey,
 				SecretAccessKey:    secretKey,
-				Bucket:             S3AWSTestBucketName,
+				Bucket:             s3TestBucketName,
 				Endpoint:           endpoint,
 				Region:             "test-region-1",
 				LocationConstraint: true,
@@ -610,7 +610,7 @@ func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, params newVolumeParams
 	v.s3Volume.bucket.svc.ForcePathStyle = true
 	// Create the testbucket
 	input := &s3.CreateBucketInput{
-		Bucket: aws.String(S3AWSTestBucketName),
+		Bucket: aws.String(s3TestBucketName),
 	}
 	req := v.s3Volume.bucket.svc.CreateBucketRequest(input)
 	_, err := req.Send(context.Background())
