@@ -38,7 +38,8 @@ export const searchBarActions = unionize({
     SET_SELECTED_ITEM: ofType<string>(),
     MOVE_UP: ofType<{}>(),
     MOVE_DOWN: ofType<{}>(),
-    SELECT_FIRST_ITEM: ofType<{}>()
+    SELECT_FIRST_ITEM: ofType<{}>(),
+    SET_IS_SEARCHING: ofType<boolean>(),
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;

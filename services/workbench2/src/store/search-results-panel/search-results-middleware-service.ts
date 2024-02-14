@@ -17,7 +17,8 @@ import { searchResultsPanelActions } from 'store/search-results-panel/search-res
 import {
     getSearchSessions,
     queryToFilters,
-    getAdvancedDataFromQuery
+    getAdvancedDataFromQuery,
+    searchBarActions
 } from 'store/search-bar/search-bar-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
@@ -55,12 +56,20 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(setItems(initial));
         }
 
+        const numberOfSessions = sessions.length;
+        let numberOfResolvedResponses = 0;
+        api.dispatch(searchBarActions.SET_IS_SEARCHING(true));
+
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
+                    numberOfResolvedResponses++;
+                        if (numberOfResolvedResponses === numberOfSessions) {
+                            api.dispatch(searchBarActions.SET_IS_SEARCHING(false));
+                        }
                     // Request all containers for process status to be available
                     const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
                     const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
@@ -73,10 +82,11 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                         .then((containers) => {
                             api.dispatch(updateResources(containers.items));
                         });
-                }).catch(() => {
-                    api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                });
-        }
+                    }).catch(() => {
+                        api.dispatch(couldNotFetchSearchResults(session.clusterId));
+                        api.dispatch(searchBarActions.SET_IS_SEARCHING(false));
+                    });
+            }
         );
     }
 }

@@ -24,6 +24,7 @@ interface SearchBar {
     savedQueries: SearchBarAdvancedFormData[];
     recentQueries: string[];
     selectedItem: SearchBarSelectedItem;
+    isSearching: boolean;
 }
 
 export enum SearchView {
@@ -42,7 +43,8 @@ const initialState: SearchBar = {
     selectedItem: {
         id: '',
         query: ''
-    }
+    },
+    isSearching: false,
 };
 
 const makeSelectedItem = (id: string, query?: string): SearchBarSelectedItem => ({ id, query: query ? query : id });
@@ -143,5 +145,6 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
                 selectedItem
             };
         },
+        SET_IS_SEARCHING: isSearching => ({ ...state, isSearching }),
         default: () => state
     });

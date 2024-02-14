@@ -14,6 +14,8 @@ import { User } from "models/user";
 import { Config } from 'common/config';
 import { Session } from "models/session";
 import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;
@@ -21,6 +23,8 @@ export interface SearchResultsPanelDataProps {
     sessions: Session[];
     remoteHostsConfig: { [key: string]: Config };
     localCluster: string;
+    numberOfItems: number;
+    isSearching: boolean;
 }
 
 export interface SearchResultsPanelActionProps {
@@ -28,16 +32,22 @@ export interface SearchResultsPanelActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
+    startSpinner: () => void;
+    stopSpinner: () => void;
 }
 
 export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
 
 const mapStateToProps = (rootState: RootState) => {
+    const { dataExplorer, searchBar } = rootState;
+    const numberOfItems = dataExplorer[SEARCH_RESULTS_PANEL_ID].items.length;
     return {
         user: rootState.auth.user,
         sessions: rootState.auth.sessions,
         remoteHostsConfig: rootState.auth.remoteHostsConfig,
         localCluster: rootState.auth.localCluster,
+        numberOfItems,
+        isSearching: searchBar.isSearching,
     };
 };
 
@@ -53,7 +63,13 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     },
     onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
-    }
+    },
+    startSpinner: () => {
+        dispatch<any>(progressIndicatorActions.START_WORKING(SEARCH_RESULTS_PANEL_ID));
+    },
+    stopSpinner: () => {
+        dispatch<any>(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID));
+    },
 });
 
 export const SearchResultsPanel = connect(mapStateToProps, mapDispatchToProps)(SearchResultsPanelView);
