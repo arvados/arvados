@@ -21,12 +21,14 @@ import {
 import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from "store/processes/processes-actions";
 import { navigateToLogCollection, pollProcessLogs, setProcessLogsPanelFilter } from "store/process-logs-panel/process-logs-panel-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { getInlineFileUrl } from "views-components/context-menu/actions/helpers";
 
 const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
     const uuid = getProcessPanelCurrentUuid(router) || "";
     const subprocesses = getSubprocesses(uuid)(resources);
+    const process = getProcess(uuid)(resources);
     return {
-        process: getProcess(uuid)(resources),
+        process,
         subprocesses: subprocesses.filter(subprocess => processPanel.filters[getProcessStatus(subprocess)]),
         filters: getFilters(processPanel, subprocesses),
         processLogsPanel: processLogsPanel,
@@ -37,7 +39,11 @@ const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPan
         outputDefinitions: processPanel.outputDefinitions,
         outputParams: processPanel.outputParams,
         nodeInfo: processPanel.nodeInfo,
-        usageReport: processPanel.usageReport,
+        usageReport: (process || null) && processPanel.usageReport && getInlineFileUrl(
+            `${auth.config.keepWebServiceUrl}${processPanel.usageReport.url}?api_token=${auth.apiToken}`,
+            auth.config.keepWebServiceUrl,
+            auth.config.keepWebInlineServiceUrl
+        ),
     };
 };
 

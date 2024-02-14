@@ -46,7 +46,7 @@ export interface ProcessPanelRootDataProps {
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
-    usageReport: CollectionFile | null;
+    usageReport: string | null;
 }
 
 export interface ProcessPanelRootActionProps {

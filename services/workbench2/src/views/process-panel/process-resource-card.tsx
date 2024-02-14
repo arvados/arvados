@@ -15,6 +15,7 @@ import {
     Typography,
     Grid,
     Link,
+    Button
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
@@ -30,12 +31,11 @@ import { NodeInstanceType } from 'store/process-panel/process-panel';
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { formatFileSize } from "common/formatters";
 import { MountKind } from 'models/mount-types';
-import { CollectionFile } from 'models/collection-file';
 
 interface ProcessResourceCardDataProps {
     process: Process;
     nodeInfo: NodeInstanceType | null;
-    usageReport: CollectionFile | null;
+    usageReport: string | null;
 }
 
 type CssRules = "card" | "header" | "title" | "avatar" | "iconHeader" | "content" | "sectionH3";
@@ -99,6 +99,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                 }
                 action={
                     <div>
+                        {usageReport && <Button href={usageReport} variant="contained" color="primary">Resource usage report</Button>}
                         {doUnMaximizePanel && panelMaximized &&
                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                 <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
@@ -114,7 +115,6 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                     </div>
                 } />
             <CardContent className={classes.content}>
-                {usageReport && <Link href={usageReport.url}>Resource usage report</Link>}
                 <Grid container>
                     <Grid item xs={4}>
                         <h3 className={classes.sectionH3}>Requested Resources</h3>
