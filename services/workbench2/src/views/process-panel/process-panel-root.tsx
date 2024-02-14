@@ -24,6 +24,7 @@ import { ProcessCmdCard } from "./process-cmd-card";
 import { ContainerRequestResource } from "models/container-request";
 import { OutputDetails, NodeInstanceType } from "store/process-panel/process-panel";
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
+import { CollectionFile } from 'models/collection-file';
 
 type CssRules = "root";
 
@@ -45,6 +46,7 @@ export interface ProcessPanelRootDataProps {
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
+    usageReport: CollectionFile | null;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -87,6 +89,7 @@ export const ProcessPanelRoot = withStyles(styles)(
         outputDefinitions,
         outputParams,
         nodeInfo,
+        usageReport,
         loadInputs,
         loadOutputs,
         loadNodeJson,
@@ -208,6 +211,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     <ProcessResourceCard
                         process={process}
                         nodeInfo={nodeInfo}
+                        usageReport={usageReport}
                     />
                 </MPVPanelContent>
             </MPVContainer>

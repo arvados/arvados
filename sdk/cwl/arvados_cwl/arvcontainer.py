@@ -536,9 +536,7 @@ class ArvadosContainer(JobBase):
             if logc is not None:
                 summerizer = crunchstat_summary.summarizer.NewSummarizer(self.uuid)
                 summerizer.run()
-                with logc.open("metrics_report.txt", "wt") as mr:
-                    mr.write(summerizer.text_report())
-                with logc.open("metrics_report.html", "wt") as mr:
+                with logc.open("usage_report.html", "wt") as mr:
                     mr.write(summerizer.html_report())
                 logc.save()
 

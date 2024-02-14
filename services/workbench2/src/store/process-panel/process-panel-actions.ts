@@ -18,7 +18,7 @@ import { ContainerRequestResource } from "models/container-request";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { CommandInputParameter, getIOParamId, WorkflowInputsData } from "models/workflow";
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
-import { OutputDetails, NodeInstanceType, NodeInfo } from "./process-panel";
+import { OutputDetails, NodeInstanceType, NodeInfo, UsageReport } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { OutputDataUpdate } from "./process-panel-reducer";
@@ -34,6 +34,7 @@ export const processPanelActions = unionize({
     SET_OUTPUT_DEFINITIONS: ofType<CommandOutputParameter[]>(),
     SET_OUTPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
     SET_NODE_INFO: ofType<NodeInfo>(),
+    SET_USAGE_REPORT: ofType<UsageReport>(),
 });
 
 export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
@@ -145,8 +146,12 @@ export const loadNodeJson =
             } else {
                 dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO(noLog));
             }
+
+            const usageReportFile = files.find(file => file.name === "usage_report.html") as CollectionFile | null;
+            dispatch<ProcessPanelAction>(processPanelActions.SET_USAGE_REPORT({ usageReport: usageReportFile }));
         } catch {
             dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO(noLog));
+            dispatch<ProcessPanelAction>(processPanelActions.SET_USAGE_REPORT({ usageReport: null }));
         }
     };
 

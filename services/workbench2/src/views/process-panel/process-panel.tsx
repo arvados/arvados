@@ -37,6 +37,7 @@ const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPan
         outputDefinitions: processPanel.outputDefinitions,
         outputParams: processPanel.outputParams,
         nodeInfo: processPanel.nodeInfo,
+        usageReport: processPanel.usageReport,
     };
 };
 
