@@ -13,10 +13,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -218,6 +220,11 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 		replicasPerThread = req.Replicas
 	}
 
+	retryDelay := kc.RetryDelay
+	if retryDelay < 1 {
+		retryDelay = DefaultRetryDelay
+	}
+	maxRetryDelay := retryDelay * 10
 	retriesRemaining := req.Attempts
 	var retryServers []string
 
@@ -306,14 +313,23 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 			}
 
 			if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
-				(status.statusCode >= 500 && status.statusCode != 503) {
+				(status.statusCode >= 500 && status.statusCode != http.StatusInsufficientStorage) {
 				// Timeout, too many requests, or other server side failure
-				// Do not retry when status code is 503, which means the keep server is full
+				// (do not auto-retry status 507 "full")
 				retryServers = append(retryServers, status.url[0:strings.LastIndex(status.url, "/")])
 			}
 		}
 
 		sv = retryServers
+		if len(sv) > 0 {
+			time.Sleep(retryDelay)
+			// Increase delay by a random factor between
+			// 1.75x and 2x
+			retryDelay = time.Duration((2 - rand.Float64()/4) * float64(retryDelay))
+			if retryDelay > maxRetryDelay {
+				retryDelay = maxRetryDelay
+			}
+		}
 	}
 
 	return resp, nil

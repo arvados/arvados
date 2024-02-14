@@ -206,6 +206,7 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 		Arvados:       ac,
 		Want_replicas: 1,
 		DiskCacheSize: keepclient.DiskCacheDisabled,
+		Retries:       0,
 	}
 	h.keepClient.Arvados.ApiToken = fmt.Sprintf("%x", rand.Int63())
 

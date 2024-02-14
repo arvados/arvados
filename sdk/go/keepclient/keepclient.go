@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -43,6 +44,8 @@ var (
 	DefaultProxyConnectTimeout      = 30 * time.Second
 	DefaultProxyTLSHandshakeTimeout = 10 * time.Second
 	DefaultProxyKeepAlive           = 120 * time.Second
+
+	DefaultRetryDelay = 2 * time.Second // see KeepClient.RetryDelay
 
 	rootCacheDir = "/var/cache/arvados/keep"
 	userCacheDir = ".cache/arvados/keep" // relative to HOME
@@ -105,14 +108,25 @@ const DiskCacheDisabled = arvados.ByteSizeOrPercent(1)
 
 // KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados               *arvadosclient.ArvadosClient
-	Want_replicas         int
-	localRoots            map[string]string
-	writableLocalRoots    map[string]string
-	gatewayRoots          map[string]string
-	lock                  sync.RWMutex
-	HTTPClient            HTTPClient
-	Retries               int
+	Arvados            *arvadosclient.ArvadosClient
+	Want_replicas      int
+	localRoots         map[string]string
+	writableLocalRoots map[string]string
+	gatewayRoots       map[string]string
+	lock               sync.RWMutex
+	HTTPClient         HTTPClient
+
+	// Number of times to automatically retry a read/write
+	// operation after a transient failure.
+	Retries int
+
+	// Initial delay after first attempt, used when automatic
+	// retry is invoked. If zero, DefaultRetryDelay is used.
+	// Delays after subsequent attempts are increased by a random
+	// factor between 1.75x and 2x, up to a maximum of 10x the
+	// initial delay.
+	RetryDelay time.Duration
+
 	RequestID             string
 	StorageClasses        []string
 	DefaultStorageClasses []string                  // Set by cluster's exported config
@@ -141,6 +155,7 @@ func (kc *KeepClient) Clone() *KeepClient {
 		gatewayRoots:          kc.gatewayRoots,
 		HTTPClient:            kc.HTTPClient,
 		Retries:               kc.Retries,
+		RetryDelay:            kc.RetryDelay,
 		RequestID:             kc.RequestID,
 		StorageClasses:        kc.StorageClasses,
 		DefaultStorageClasses: kc.DefaultStorageClasses,
@@ -269,6 +284,11 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var errs []string
 
+	retryDelay := kc.RetryDelay
+	if retryDelay < 1 {
+		retryDelay = DefaultRetryDelay
+	}
+	maxRetryDelay := retryDelay * 10
 	triesRemaining := 1 + kc.Retries
 
 	serversToTry := kc.getSortedRoots(locator)
@@ -348,6 +368,15 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 			return nil, expectLength, url, resp.Header, nil
 		}
 		serversToTry = retryList
+		if len(serversToTry) > 0 && triesRemaining > 0 {
+			time.Sleep(retryDelay)
+			// Increase delay by a random factor between
+			// 1.75x and 2x
+			retryDelay = time.Duration((2 - rand.Float64()/4) * float64(retryDelay))
+			if retryDelay > maxRetryDelay {
+				retryDelay = maxRetryDelay
+			}
+		}
 	}
 	DebugPrintf("DEBUG: %s %s failed: %v", method, locator, errs)
 
