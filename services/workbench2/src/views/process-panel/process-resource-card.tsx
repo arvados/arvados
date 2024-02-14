@@ -14,7 +14,6 @@ import {
     Tooltip,
     Typography,
     Grid,
-    Link,
     Button
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -23,6 +22,7 @@ import {
     MaximizeIcon,
     ResourceIcon,
     UnMaximizeIcon,
+    ShowChartIcon,
 } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { connect } from 'react-redux';
@@ -38,7 +38,7 @@ interface ProcessResourceCardDataProps {
     usageReport: string | null;
 }
 
-type CssRules = "card" | "header" | "title" | "avatar" | "iconHeader" | "content" | "sectionH3";
+type CssRules = "card" | "header" | "title" | "avatar" | "iconHeader" | "content" | "sectionH3" | "reportButton";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -67,6 +67,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "0.8125rem",
         textTransform: "uppercase",
+    },
+    reportButton: {
+        fontSize: '0.75rem'
     }
 });
 
@@ -99,7 +102,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                 }
                 action={
                     <div>
-                        {usageReport && <Button href={usageReport} variant="contained" color="primary">Resource usage report</Button>}
+                        {usageReport && <Button href={usageReport} variant="contained" color="primary" className={classes.reportButton}><ShowChartIcon /> Resource usage report</Button>}
                         {doUnMaximizePanel && panelMaximized &&
                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                 <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
