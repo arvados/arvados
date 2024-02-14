@@ -47,9 +47,10 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-se
 # Install virtualenv
 RUN /usr/bin/pip3 install 'virtualenv<20'
 
-# Install RVM
 ADD generated/mpapis.asc /tmp/
 ADD generated/pkuczynski.asc /tmp/
+# fpm depends on dotenv, but version 3.0 of that gem dropped support for
+# Ruby 2.7, so we need to specifically install an older version.
 RUN gpg --import --no-tty /tmp/mpapis.asc && \
     gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
@@ -57,7 +58,8 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
     echo "gem: --no-document" >> ~/.gemrc && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
-    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
+    /usr/local/rvm/bin/rvm-exec default gem install dotenv --version '~> 2.8' && \
+    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.15.1
 
 RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
