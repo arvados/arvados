@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -46,6 +45,7 @@ var (
 	DefaultProxyKeepAlive           = 120 * time.Second
 
 	DefaultRetryDelay = 2 * time.Second // see KeepClient.RetryDelay
+	MinimumRetryDelay = time.Millisecond
 
 	rootCacheDir = "/var/cache/arvados/keep"
 	userCacheDir = ".cache/arvados/keep" // relative to HOME
@@ -120,11 +120,11 @@ type KeepClient struct {
 	// operation after a transient failure.
 	Retries int
 
-	// Initial delay after first attempt, used when automatic
-	// retry is invoked. If zero, DefaultRetryDelay is used.
-	// Delays after subsequent attempts are increased by a random
-	// factor between 1.75x and 2x, up to a maximum of 10x the
-	// initial delay.
+	// Initial maximum delay for automatic retry. If zero,
+	// DefaultRetryDelay is used.  The delay after attempt N
+	// (0-based) will be a random duration between
+	// MinimumRetryDelay and RetryDelay * 2^N, not to exceed a cap
+	// of RetryDelay * 10.
 	RetryDelay time.Duration
 
 	RequestID             string
@@ -284,11 +284,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var errs []string
 
-	retryDelay := kc.RetryDelay
-	if retryDelay < 1 {
-		retryDelay = DefaultRetryDelay
-	}
-	maxRetryDelay := retryDelay * 10
+	delay := delayCalculator{InitialMaxDelay: kc.RetryDelay}
 	triesRemaining := 1 + kc.Retries
 
 	serversToTry := kc.getSortedRoots(locator)
@@ -369,13 +365,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 		}
 		serversToTry = retryList
 		if len(serversToTry) > 0 && triesRemaining > 0 {
-			time.Sleep(retryDelay)
-			// Increase delay by a random factor between
-			// 1.75x and 2x
-			retryDelay = time.Duration((2 - rand.Float64()/4) * float64(retryDelay))
-			if retryDelay > maxRetryDelay {
-				retryDelay = maxRetryDelay
-			}
+			time.Sleep(delay.Next())
 		}
 	}
 	DebugPrintf("DEBUG: %s %s failed: %v", method, locator, errs)

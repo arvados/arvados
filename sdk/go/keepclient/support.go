@@ -220,11 +220,7 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 		replicasPerThread = req.Replicas
 	}
 
-	retryDelay := kc.RetryDelay
-	if retryDelay < 1 {
-		retryDelay = DefaultRetryDelay
-	}
-	maxRetryDelay := retryDelay * 10
+	delay := delayCalculator{InitialMaxDelay: kc.RetryDelay}
 	retriesRemaining := req.Attempts
 	var retryServers []string
 
@@ -322,13 +318,7 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 
 		sv = retryServers
 		if len(sv) > 0 {
-			time.Sleep(retryDelay)
-			// Increase delay by a random factor between
-			// 1.75x and 2x
-			retryDelay = time.Duration((2 - rand.Float64()/4) * float64(retryDelay))
-			if retryDelay > maxRetryDelay {
-				retryDelay = maxRetryDelay
-			}
+			time.Sleep(delay.Next())
 		}
 	}
 
@@ -360,4 +350,38 @@ func parseStorageClassesConfirmedHeader(hdr string) (map[string]int, error) {
 		classesStored[className] = replicas
 	}
 	return classesStored, nil
+}
+
+// delayCalculator calculates a series of delays for implementing
+// exponential backoff with jitter.  The first call to Next() returns
+// a random duration between MinimumRetryDelay and the specified
+// InitialMaxDelay (or DefaultRetryDelay if 0).  The max delay is
+// doubled on each subsequent call to Next(), up to 10x the initial
+// max delay.
+type delayCalculator struct {
+	InitialMaxDelay time.Duration
+	n               int // number of delays returned so far
+	nextmax         time.Duration
+	limit           time.Duration
+}
+
+func (dc *delayCalculator) Next() time.Duration {
+	if dc.nextmax <= MinimumRetryDelay {
+		// initialize
+		if dc.InitialMaxDelay > 0 {
+			dc.nextmax = dc.InitialMaxDelay
+		} else {
+			dc.nextmax = DefaultRetryDelay
+		}
+		dc.limit = 10 * dc.nextmax
+	}
+	d := time.Duration(rand.Float64() * float64(dc.nextmax))
+	if d < MinimumRetryDelay {
+		d = MinimumRetryDelay
+	}
+	dc.nextmax *= 2
+	if dc.nextmax > dc.limit {
+		dc.nextmax = dc.limit
+	}
+	return d
 }
