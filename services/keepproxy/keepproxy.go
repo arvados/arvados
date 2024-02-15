@@ -320,7 +320,6 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 
 	kc := h.makeKeepClient(req)
 	kc.DiskCacheSize = keepclient.DiskCacheDisabled
-	kc.RetryDelay = time.Second
 
 	var pass bool
 	var tok string
