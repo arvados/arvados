@@ -261,6 +261,7 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
                         )}
                         <Tooltip
                             title='More options'
+                            disableFocusListener
                         >
                             <IconButton
                                 aria-label='More options'
@@ -309,6 +310,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         {!!frozenByFullName && (
                             <Tooltip
                                 className={classes.frozenIcon}
+                                disableFocusListener
                                 title={<span>Project was frozen by {frozenByFullName}</span>}
                             >
                                 <FreezeIcon style={{ fontSize: 'inherit' }} />
@@ -320,7 +322,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     <section className={classes.contextMenuSection}>
                         <Tooltip
                             title='More options'
-                        >
+                            disableFocusListener
+                            >
                             <IconButton
                                 aria-label='More options'
                                 onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}

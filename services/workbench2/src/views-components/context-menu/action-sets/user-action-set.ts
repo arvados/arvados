@@ -36,7 +36,7 @@ export const userActionSet: ContextMenuActionSet = [
             },
         },
         {
-            name: 'Project',
+            name: 'Home Project',
             icon: ProjectIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openUserProjects(resources[0].uuid));
