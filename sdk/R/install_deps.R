@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-options(repos=structure(c(CRAN="http://cran.wustl.edu/")))
+options(repos=structure(c(CRAN="https://cloud.r-project.org/")))
 if (!requireNamespace("devtools")) {
   install.packages("devtools")
 }
