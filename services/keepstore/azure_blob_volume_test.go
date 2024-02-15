@@ -13,7 +13,6 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -490,15 +489,13 @@ func (s *stubbedAzureBlobSuite) TestAzureBlobVolumeRangeFenceposts(c *check.C) {
 		if err != nil {
 			c.Error(err)
 		}
-		gotData := bytes.NewBuffer(nil)
-		gotLen, err := v.BlockRead(context.Background(), hash, gotData)
+		gotData := &brbuffer{}
+		err = v.BlockRead(context.Background(), hash, gotData)
 		if err != nil {
 			c.Error(err)
 		}
 		gotHash := fmt.Sprintf("%x", md5.Sum(gotData.Bytes()))
-		if gotLen != size {
-			c.Errorf("length mismatch: got %d != %d", gotLen, size)
-		}
+		c.Check(gotData.Len(), check.Equals, size)
 		if gotHash != hash {
 			c.Errorf("hash mismatch: got %s != %s", gotHash, hash)
 		}
@@ -532,7 +529,7 @@ func (s *stubbedAzureBlobSuite) TestAzureBlobVolumeCreateBlobRace(c *check.C) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_, err := v.BlockRead(context.Background(), TestHash, io.Discard)
+		err := v.BlockRead(context.Background(), TestHash, brdiscard)
 		if err != nil {
 			c.Error(err)
 		}
@@ -570,15 +567,13 @@ func (s *stubbedAzureBlobSuite) TestAzureBlobVolumeCreateBlobRaceDeadline(c *che
 	allDone := make(chan struct{})
 	go func() {
 		defer close(allDone)
-		buf := bytes.NewBuffer(nil)
-		n, err := v.BlockRead(context.Background(), TestHash, buf)
+		buf := &brbuffer{}
+		err := v.BlockRead(context.Background(), TestHash, buf)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		if n != 0 {
-			c.Errorf("Got %+q (n=%d), expected empty buf", buf.Bytes(), n)
-		}
+		c.Check(buf.String(), check.Equals, "")
 	}()
 	select {
 	case <-allDone:
@@ -596,8 +591,7 @@ func (s *stubbedAzureBlobSuite) TestAzureBlobVolumeCreateBlobRaceDeadline(c *che
 func (s *stubbedAzureBlobSuite) TestAzureBlobVolumeContextCancelBlockRead(c *check.C) {
 	s.testAzureBlobVolumeContextCancel(c, func(ctx context.Context, v *testableAzureBlobVolume) error {
 		v.BlockWriteRaw(TestHash, TestBlock)
-		_, err := v.BlockRead(ctx, TestHash, io.Discard)
-		return err
+		return v.BlockRead(ctx, TestHash, brdiscard)
 	})
 }
 
@@ -667,7 +661,7 @@ func (s *stubbedAzureBlobSuite) TestStats(c *check.C) {
 	c.Check(stats(), check.Matches, `.*"Errors":0,.*`)
 
 	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
-	_, err := volume.BlockRead(context.Background(), loc, io.Discard)
+	err := volume.BlockRead(context.Background(), loc, brdiscard)
 	c.Check(err, check.NotNil)
 	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
 	c.Check(stats(), check.Matches, `.*"Errors":[^0],.*`)
@@ -679,9 +673,9 @@ func (s *stubbedAzureBlobSuite) TestStats(c *check.C) {
 	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
 	c.Check(stats(), check.Matches, `.*"CreateOps":1,.*`)
 
-	_, err = volume.BlockRead(context.Background(), loc, io.Discard)
+	err = volume.BlockRead(context.Background(), loc, brdiscard)
 	c.Check(err, check.IsNil)
-	_, err = volume.BlockRead(context.Background(), loc, io.Discard)
+	err = volume.BlockRead(context.Background(), loc, brdiscard)
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
 }

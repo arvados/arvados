@@ -15,7 +15,7 @@ import (
 
 // volume is the interface to a back-end storage device.
 type volume interface {
-	BlockRead(ctx context.Context, hash string, writeTo io.Writer) (int, error)
+	BlockRead(ctx context.Context, hash string, writeTo io.WriterAt) error
 	BlockWrite(ctx context.Context, hash string, data []byte) error
 	DeviceID() string
 	BlockTouch(hash string) error

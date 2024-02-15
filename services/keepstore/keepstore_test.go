@@ -372,7 +372,7 @@ func (s *keepstoreSuite) TestBlockTrash(c *C) {
 		return ks.BlockTrash(ctx, loc)
 	}
 	checkexists := func(volidx int) bool {
-		_, err := vol[volidx].BlockRead(ctx, fooHash, io.Discard)
+		err := vol[volidx].BlockRead(ctx, fooHash, brdiscard)
 		if !os.IsNotExist(err) {
 			c.Check(err, IsNil)
 		}
@@ -573,7 +573,7 @@ func (s *keepstoreSuite) TestUntrashHandlerWithNoWritableVolumes(c *C) {
 	for _, mnt := range ks.mounts {
 		err := mnt.BlockWrite(context.Background(), fooHash, []byte("foo"))
 		c.Assert(err, IsNil)
-		_, err = mnt.BlockRead(context.Background(), fooHash, io.Discard)
+		err = mnt.BlockRead(context.Background(), fooHash, brdiscard)
 		c.Assert(err, IsNil)
 	}
 
@@ -581,7 +581,7 @@ func (s *keepstoreSuite) TestUntrashHandlerWithNoWritableVolumes(c *C) {
 	c.Check(os.IsNotExist(err), Equals, true)
 
 	for _, mnt := range ks.mounts {
-		_, err := mnt.BlockRead(context.Background(), fooHash, io.Discard)
+		err := mnt.BlockRead(context.Background(), fooHash, brdiscard)
 		c.Assert(err, IsNil)
 	}
 }
@@ -693,7 +693,7 @@ type stubVolume struct {
 	// corresponding func (if non-nil). If the func returns an
 	// error, that error is returned to caller. Otherwise, the
 	// stub continues normally.
-	blockRead    func(ctx context.Context, hash string, writeTo io.Writer) (int, error)
+	blockRead    func(ctx context.Context, hash string, writeTo io.WriterAt) error
 	blockWrite   func(ctx context.Context, hash string, data []byte) error
 	deviceID     func() string
 	blockTouch   func(hash string) error
@@ -710,19 +710,19 @@ func (v *stubVolume) log(op, hash string) {
 	v.stubLog.Printf("%s %s %s", v.params.UUID[24:27], op, hash[:3])
 }
 
-func (v *stubVolume) BlockRead(ctx context.Context, hash string, writeTo io.Writer) (int, error) {
+func (v *stubVolume) BlockRead(ctx context.Context, hash string, writeTo io.WriterAt) error {
 	v.log("read", hash)
 	if v.blockRead != nil {
-		n, err := v.blockRead(ctx, hash, writeTo)
+		err := v.blockRead(ctx, hash, writeTo)
 		if err != nil {
-			return n, err
+			return err
 		}
 	}
 	v.mtx.Lock()
 	ent, ok := v.data[hash]
 	v.mtx.Unlock()
 	if !ok || !ent.trash.IsZero() {
-		return 0, os.ErrNotExist
+		return os.ErrNotExist
 	}
 	wrote := 0
 	for writesize := 1000; wrote < len(ent.data); writesize = writesize * 2 {
@@ -730,13 +730,13 @@ func (v *stubVolume) BlockRead(ctx context.Context, hash string, writeTo io.Writ
 		if len(data) > writesize {
 			data = data[:writesize]
 		}
-		n, err := writeTo.Write(data)
+		n, err := writeTo.WriteAt(data, int64(wrote))
 		wrote += n
 		if err != nil {
-			return wrote, err
+			return err
 		}
 	}
-	return wrote, nil
+	return nil
 }
 
 func (v *stubVolume) BlockWrite(ctx context.Context, hash string, data []byte) error {

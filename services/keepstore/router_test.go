@@ -268,7 +268,7 @@ func (s *routerSuite) TestBlockTrash(c *C) {
 	resp := call(router, "DELETE", "http://example/"+fooHash+"+3", s.cluster.SystemRootToken, nil, nil)
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(vol0.stubLog.String(), Matches, `(?ms).* trash .*`)
-	_, err = vol0.BlockRead(context.Background(), fooHash, io.Discard)
+	err = vol0.BlockRead(context.Background(), fooHash, brdiscard)
 	c.Assert(err, Equals, os.ErrNotExist)
 }
 
@@ -281,12 +281,12 @@ func (s *routerSuite) TestBlockUntrash(c *C) {
 	c.Assert(err, IsNil)
 	err = vol0.BlockTrash(fooHash)
 	c.Assert(err, IsNil)
-	_, err = vol0.BlockRead(context.Background(), fooHash, io.Discard)
+	err = vol0.BlockRead(context.Background(), fooHash, brdiscard)
 	c.Assert(err, Equals, os.ErrNotExist)
 	resp := call(router, "PUT", "http://example/untrash/"+fooHash+"+3", s.cluster.SystemRootToken, nil, nil)
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(vol0.stubLog.String(), Matches, `(?ms).* untrash .*`)
-	_, err = vol0.BlockRead(context.Background(), fooHash, io.Discard)
+	err = vol0.BlockRead(context.Background(), fooHash, brdiscard)
 	c.Check(err, IsNil)
 }
 
@@ -356,8 +356,8 @@ func (s *routerSuite) TestRequireAdminMgtToken(c *C) {
 func (s *routerSuite) TestVolumeErrorStatusCode(c *C) {
 	router, cancel := testRouter(c, s.cluster, nil)
 	defer cancel()
-	router.keepstore.mountsW[0].volume.(*stubVolume).blockRead = func(_ context.Context, hash string, w io.Writer) (int, error) {
-		return 0, httpserver.ErrorWithStatus(errors.New("test error"), http.StatusBadGateway)
+	router.keepstore.mountsW[0].volume.(*stubVolume).blockRead = func(_ context.Context, hash string, w io.WriterAt) error {
+		return httpserver.ErrorWithStatus(errors.New("test error"), http.StatusBadGateway)
 	}
 
 	// To test whether we fall back to volume 1 after volume 0
@@ -472,10 +472,10 @@ func (s *routerSuite) TestCancelOnDisconnect(c *C) {
 	defer cancel()
 
 	unblock := make(chan struct{})
-	router.keepstore.mountsW[0].volume.(*stubVolume).blockRead = func(ctx context.Context, hash string, w io.Writer) (int, error) {
+	router.keepstore.mountsW[0].volume.(*stubVolume).blockRead = func(ctx context.Context, hash string, w io.WriterAt) error {
 		<-unblock
 		c.Check(ctx.Err(), NotNil)
-		return 0, ctx.Err()
+		return ctx.Err()
 	}
 	go func() {
 		time.Sleep(time.Second / 10)

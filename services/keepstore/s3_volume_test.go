@@ -221,7 +221,7 @@ func (s *stubbedS3Suite) TestStats(c *check.C) {
 	c.Check(stats(), check.Matches, `.*"Ops":0,.*`)
 
 	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
-	_, err := v.BlockRead(context.Background(), loc, io.Discard)
+	err := v.BlockRead(context.Background(), loc, brdiscard)
 	c.Check(err, check.NotNil)
 	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
 	c.Check(stats(), check.Matches, `.*"s3.requestFailure 404 NoSuchKey[^"]*":[^0].*`)
@@ -232,9 +232,9 @@ func (s *stubbedS3Suite) TestStats(c *check.C) {
 	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
 	c.Check(stats(), check.Matches, `.*"PutOps":2,.*`)
 
-	_, err = v.BlockRead(context.Background(), loc, io.Discard)
+	err = v.BlockRead(context.Background(), loc, brdiscard)
 	c.Check(err, check.IsNil)
-	_, err = v.BlockRead(context.Background(), loc, io.Discard)
+	err = v.BlockRead(context.Background(), loc, brdiscard)
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
 }
@@ -261,8 +261,7 @@ func (h *s3AWSBlockingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 func (s *stubbedS3Suite) TestGetContextCancel(c *check.C) {
 	s.testContextCancel(c, func(ctx context.Context, v *testableS3Volume) error {
-		_, err := v.BlockRead(ctx, fooHash, io.Discard)
-		return err
+		return v.BlockRead(ctx, fooHash, brdiscard)
 	})
 }
 
@@ -480,7 +479,7 @@ func (s *stubbedS3Suite) TestBackendStates(c *check.C) {
 
 			// Check canGet
 			loc, blk := setupScenario()
-			_, err := v.BlockRead(context.Background(), loc, io.Discard)
+			err := v.BlockRead(context.Background(), loc, brdiscard)
 			c.Check(err == nil, check.Equals, scenario.canGet)
 			if err != nil {
 				c.Check(os.IsNotExist(err), check.Equals, true)
@@ -490,7 +489,7 @@ func (s *stubbedS3Suite) TestBackendStates(c *check.C) {
 			loc, _ = setupScenario()
 			err = v.BlockTrash(loc)
 			c.Check(err == nil, check.Equals, scenario.canTrash)
-			_, err = v.BlockRead(context.Background(), loc, io.Discard)
+			err = v.BlockRead(context.Background(), loc, brdiscard)
 			c.Check(err == nil, check.Equals, scenario.canGetAfterTrash)
 			if err != nil {
 				c.Check(os.IsNotExist(err), check.Equals, true)
@@ -505,7 +504,7 @@ func (s *stubbedS3Suite) TestBackendStates(c *check.C) {
 				// should be able to Get after Untrash --
 				// regardless of timestamps, errors, race
 				// conditions, etc.
-				_, err = v.BlockRead(context.Background(), loc, io.Discard)
+				err = v.BlockRead(context.Background(), loc, brdiscard)
 				c.Check(err, check.IsNil)
 			}
 

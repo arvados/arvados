@@ -19,10 +19,10 @@ import (
 // streamWriterAt writes the data to the provided io.Writer in
 // sequential order.
 //
-// streamWriterAt can also be used as an asynchronous buffer: the
-// caller can use the io.Writer interface to write into a memory
-// buffer and return without waiting for the wrapped writer to catch
-// up.
+// streamWriterAt can also be wrapped with an io.OffsetWriter to
+// provide an asynchronous buffer: the caller can use the io.Writer
+// interface to write into a memory buffer and return without waiting
+// for the wrapped writer to catch up.
 //
 // Close returns when all data has been written through.
 type streamWriterAt struct {
@@ -87,14 +87,7 @@ func (swa *streamWriterAt) writeToWriter() {
 	}
 }
 
-// Write implements io.Writer.
-func (swa *streamWriterAt) Write(p []byte) (int, error) {
-	n, err := swa.WriteAt(p, int64(swa.writepos))
-	swa.writepos += n
-	return n, err
-}
-
-// WriteAt implements io.WriterAt.
+// WriteAt implements io.WriterAt. WriteAt is goroutine-safe.
 func (swa *streamWriterAt) WriteAt(p []byte, offset int64) (int, error) {
 	pos := int(offset)
 	n := 0

@@ -9,7 +9,6 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -127,8 +126,8 @@ func (s *genericVolumeSuite) testGet(t TB, factory TestableVolumeFactory) {
 		t.Error(err)
 	}
 
-	buf := bytes.NewBuffer(nil)
-	_, err = v.BlockRead(context.Background(), TestHash, buf)
+	buf := &brbuffer{}
+	err = v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
 	}
@@ -144,7 +143,7 @@ func (s *genericVolumeSuite) testGetNoSuchBlock(t TB, factory TestableVolumeFact
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
-	if _, err := v.BlockRead(context.Background(), barHash, io.Discard); err == nil {
+	if err := v.BlockRead(context.Background(), barHash, brdiscard); err == nil {
 		t.Errorf("Expected error while getting non-existing block %v", barHash)
 	}
 }
@@ -177,8 +176,8 @@ func (s *genericVolumeSuite) testPutBlockWithDifferentContent(t TB, factory Test
 	v.BlockWrite(context.Background(), testHash, testDataA)
 
 	putErr := v.BlockWrite(context.Background(), testHash, testDataB)
-	buf := bytes.NewBuffer(nil)
-	_, getErr := v.BlockRead(context.Background(), testHash, buf)
+	buf := &brbuffer{}
+	getErr := v.BlockRead(context.Background(), testHash, buf)
 	if putErr == nil {
 		// Put must not return a nil error unless it has
 		// overwritten the existing data.
@@ -217,8 +216,8 @@ func (s *genericVolumeSuite) testPutMultipleBlocks(t TB, factory TestableVolumeF
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock3, err)
 	}
 
-	buf := bytes.NewBuffer(nil)
-	_, err = v.BlockRead(context.Background(), TestHash, buf)
+	buf := &brbuffer{}
+	err = v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -228,7 +227,7 @@ func (s *genericVolumeSuite) testPutMultipleBlocks(t TB, factory TestableVolumeF
 	}
 
 	buf.Reset()
-	_, err = v.BlockRead(context.Background(), TestHash2, buf)
+	err = v.BlockRead(context.Background(), TestHash2, buf)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -238,7 +237,7 @@ func (s *genericVolumeSuite) testPutMultipleBlocks(t TB, factory TestableVolumeF
 	}
 
 	buf.Reset()
-	_, err = v.BlockRead(context.Background(), TestHash3, buf)
+	err = v.BlockRead(context.Background(), TestHash3, buf)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -404,8 +403,8 @@ func (s *genericVolumeSuite) testDeleteNewBlock(t TB, factory TestableVolumeFact
 	if err := v.BlockTrash(TestHash); err != nil {
 		t.Error(err)
 	}
-	buf := bytes.NewBuffer(nil)
-	_, err := v.BlockRead(context.Background(), TestHash, buf)
+	buf := &brbuffer{}
+	err := v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
 	} else if buf.String() != string(TestBlock) {
@@ -428,7 +427,7 @@ func (s *genericVolumeSuite) testDeleteOldBlock(t TB, factory TestableVolumeFact
 	if err := v.BlockTrash(TestHash); err != nil {
 		t.Error(err)
 	}
-	if _, err := v.BlockRead(context.Background(), TestHash, io.Discard); err == nil || !os.IsNotExist(err) {
+	if err := v.BlockRead(context.Background(), TestHash, brdiscard); err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
@@ -517,7 +516,7 @@ func (s *genericVolumeSuite) testMetrics(t TB, readonly bool, factory TestableVo
 		v.BlockWrite(context.Background(), TestHash, TestBlock)
 	}
 
-	_, err = v.BlockRead(context.Background(), TestHash, io.Discard)
+	err = v.BlockRead(context.Background(), TestHash, brdiscard)
 	if err != nil {
 		t.Error(err)
 	}
@@ -546,8 +545,8 @@ func (s *genericVolumeSuite) testGetConcurrent(t TB, factory TestableVolumeFacto
 
 	sem := make(chan int)
 	go func() {
-		buf := bytes.NewBuffer(nil)
-		_, err := v.BlockRead(context.Background(), TestHash, buf)
+		buf := &brbuffer{}
+		err := v.BlockRead(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Errorf("err1: %v", err)
 		}
@@ -558,8 +557,8 @@ func (s *genericVolumeSuite) testGetConcurrent(t TB, factory TestableVolumeFacto
 	}()
 
 	go func() {
-		buf := bytes.NewBuffer(nil)
-		_, err := v.BlockRead(context.Background(), TestHash2, buf)
+		buf := &brbuffer{}
+		err := v.BlockRead(context.Background(), TestHash2, buf)
 		if err != nil {
 			t.Errorf("err2: %v", err)
 		}
@@ -570,8 +569,8 @@ func (s *genericVolumeSuite) testGetConcurrent(t TB, factory TestableVolumeFacto
 	}()
 
 	go func() {
-		buf := bytes.NewBuffer(nil)
-		_, err := v.BlockRead(context.Background(), TestHash3, buf)
+		buf := &brbuffer{}
+		err := v.BlockRead(context.Background(), TestHash3, buf)
 		if err != nil {
 			t.Errorf("err3: %v", err)
 		}
@@ -619,8 +618,8 @@ func (s *genericVolumeSuite) testPutConcurrent(t TB, factory TestableVolumeFacto
 
 	// Check that we actually wrote the blocks.
 	for _, blk := range blks {
-		buf := bytes.NewBuffer(nil)
-		_, err := v.BlockRead(context.Background(), blk.hash, buf)
+		buf := &brbuffer{}
+		err := v.BlockRead(context.Background(), blk.hash, buf)
 		if err != nil {
 			t.Errorf("get %s: %v", blk.hash, err)
 		} else if buf.String() != string(blk.data) {
@@ -644,13 +643,13 @@ func (s *genericVolumeSuite) testPutFullBlock(t TB, factory TestableVolumeFactor
 		t.Error(err)
 	}
 
-	buf := bytes.NewBuffer(nil)
-	_, err = v.BlockRead(context.Background(), hash, buf)
+	buf := &brbuffer{}
+	err = v.BlockRead(context.Background(), hash, buf)
 	if err != nil {
 		t.Error(err)
 	}
 	if buf.String() != string(wdata) {
-		t.Error("buf %+q != wdata %+q", buf, wdata)
+		t.Errorf("buf (len %d) != wdata (len %d)", buf.Len(), len(wdata))
 	}
 }
 
@@ -668,8 +667,8 @@ func (s *genericVolumeSuite) testTrashUntrash(t TB, readonly bool, factory Testa
 	v.BlockWrite(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*s.cluster.Collections.BlobSigningTTL.Duration()))
 
-	buf := bytes.NewBuffer(nil)
-	_, err := v.BlockRead(context.Background(), TestHash, buf)
+	buf := &brbuffer{}
+	err := v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
 	}
@@ -684,7 +683,7 @@ func (s *genericVolumeSuite) testTrashUntrash(t TB, readonly bool, factory Testa
 		return
 	}
 	buf.Reset()
-	_, err = v.BlockRead(context.Background(), TestHash, buf)
+	err = v.BlockRead(context.Background(), TestHash, buf)
 	if err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
@@ -697,7 +696,7 @@ func (s *genericVolumeSuite) testTrashUntrash(t TB, readonly bool, factory Testa
 
 	// Get the block - after trash and untrash sequence
 	buf.Reset()
-	_, err = v.BlockRead(context.Background(), TestHash, buf)
+	err = v.BlockRead(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Error(err)
 	}
@@ -712,8 +711,8 @@ func (s *genericVolumeSuite) testTrashEmptyTrashUntrash(t TB, factory TestableVo
 	defer v.Teardown()
 
 	checkGet := func() error {
-		buf := bytes.NewBuffer(nil)
-		_, err := v.BlockRead(context.Background(), TestHash, buf)
+		buf := &brbuffer{}
+		err := v.BlockRead(context.Background(), TestHash, buf)
 		if err != nil {
 			return err
 		}
