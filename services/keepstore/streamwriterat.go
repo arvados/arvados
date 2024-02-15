@@ -19,10 +19,16 @@ import (
 // streamWriterAt writes the data to the provided io.Writer in
 // sequential order.
 //
+// streamWriterAt can also be used as an asynchronous buffer: the
+// caller can use the io.Writer interface to write into a memory
+// buffer and return without waiting for the wrapped writer to catch
+// up.
+//
 // Close returns when all data has been written through.
 type streamWriterAt struct {
 	writer     io.Writer
 	buf        []byte
+	writepos   int         // target offset if Write is called
 	partsize   int         // size of each part written through to writer
 	endpos     int         // portion of buf actually used, judging by WriteAt calls so far
 	partfilled []int       // number of bytes written to each part so far
@@ -79,6 +85,13 @@ func (swa *streamWriterAt) writeToWriter() {
 		}
 		swa.wrote += n
 	}
+}
+
+// Write implements io.Writer.
+func (swa *streamWriterAt) Write(p []byte) (int, error) {
+	n, err := swa.WriteAt(p, int64(swa.writepos))
+	swa.writepos += n
+	return n, err
 }
 
 // WriteAt implements io.WriterAt.

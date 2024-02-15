@@ -33,11 +33,12 @@ func init() {
 
 func newUnixVolume(params newVolumeParams) (volume, error) {
 	v := &unixVolume{
-		uuid:    params.UUID,
-		cluster: params.Cluster,
-		volume:  params.ConfigVolume,
-		logger:  params.Logger,
-		metrics: params.MetricsVecs,
+		uuid:       params.UUID,
+		cluster:    params.Cluster,
+		volume:     params.ConfigVolume,
+		logger:     params.Logger,
+		metrics:    params.MetricsVecs,
+		bufferPool: params.BufferPool,
 	}
 	err := json.Unmarshal(params.ConfigVolume.DriverParameters, &v)
 	if err != nil {
@@ -71,11 +72,12 @@ type unixVolume struct {
 	Root      string // path to the volume's root directory
 	Serialize bool
 
-	uuid    string
-	cluster *arvados.Cluster
-	volume  arvados.Volume
-	logger  logrus.FieldLogger
-	metrics *volumeMetricsVecs
+	uuid       string
+	cluster    *arvados.Cluster
+	volume     arvados.Volume
+	logger     logrus.FieldLogger
+	metrics    *volumeMetricsVecs
+	bufferPool *bufferPool
 
 	// something to lock during IO, typically a sync.Mutex (or nil
 	// to skip locking)
@@ -231,6 +233,17 @@ func (v *unixVolume) BlockRead(ctx context.Context, hash string, w io.Writer) (i
 	if err != nil {
 		return 0, v.translateError(err)
 	}
+	var streamer *streamWriterAt
+	if v.locker != nil {
+		buf, err := v.bufferPool.GetContext(ctx)
+		if err != nil {
+			return 0, err
+		}
+		defer v.bufferPool.Put(buf)
+		streamer = newStreamWriterAt(w, 65536, buf)
+		defer streamer.Close()
+		w = streamer
+	}
 	var n int64
 	err = v.getFunc(ctx, path, func(rdr io.Reader) error {
 		n, err = io.Copy(w, rdr)
@@ -239,6 +252,15 @@ func (v *unixVolume) BlockRead(ctx context.Context, hash string, w io.Writer) (i
 		}
 		return err
 	})
+	if streamer != nil {
+		// If we're using the streamer (and there's no error
+		// so far) flush any remaining buffered data now that
+		// getFunc has released the serialize lock.
+		if err == nil {
+			err = streamer.Close()
+		}
+		return streamer.WroteAt(), err
+	}
 	return int(n), err
 }
 

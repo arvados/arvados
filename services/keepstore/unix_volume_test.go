@@ -78,13 +78,14 @@ func (s *unixVolumeSuite) newTestableUnixVolume(c *check.C, params newVolumePara
 	}
 	v := &testableUnixVolume{
 		unixVolume: unixVolume{
-			Root:    d,
-			locker:  locker,
-			uuid:    params.UUID,
-			cluster: params.Cluster,
-			logger:  params.Logger,
-			volume:  params.ConfigVolume,
-			metrics: params.MetricsVecs,
+			Root:       d,
+			locker:     locker,
+			uuid:       params.UUID,
+			cluster:    params.Cluster,
+			logger:     params.Logger,
+			volume:     params.ConfigVolume,
+			metrics:    params.MetricsVecs,
+			bufferPool: params.BufferPool,
 		},
 		t: c,
 	}
