@@ -42,8 +42,8 @@ const (
 	s3DefaultConnectTimeout     = arvados.Duration(time.Minute)
 	maxClockSkew                = 600 * time.Second
 	nearlyRFC1123               = "Mon, 2 Jan 2006 15:04:05 GMT"
-	s3downloaderPartSize        = 5 * 1024 * 1024
-	s3downloaderReadConcurrency = 13
+	s3downloaderPartSize        = 6 * 1024 * 1024
+	s3downloaderReadConcurrency = 11
 	s3uploaderPartSize          = 5 * 1024 * 1024
 	s3uploaderWriteConcurrency  = 5
 )
