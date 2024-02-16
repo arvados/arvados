@@ -40,7 +40,10 @@ var _ = Suite(&StandaloneSuite{})
 type ServerRequiredSuite struct{}
 
 // Standalone tests
-type StandaloneSuite struct{}
+type StandaloneSuite struct {
+	origDefaultRetryDelay time.Duration
+	origMinimumRetryDelay time.Duration
+}
 
 var origHOME = os.Getenv("HOME")
 
@@ -48,10 +51,14 @@ func (s *StandaloneSuite) SetUpTest(c *C) {
 	RefreshServiceDiscovery()
 	// Prevent cache state from leaking between test cases
 	os.Setenv("HOME", c.MkDir())
+	s.origDefaultRetryDelay = DefaultRetryDelay
+	s.origMinimumRetryDelay = MinimumRetryDelay
 }
 
 func (s *StandaloneSuite) TearDownTest(c *C) {
 	os.Setenv("HOME", origHOME)
+	DefaultRetryDelay = s.origDefaultRetryDelay
+	MinimumRetryDelay = s.origMinimumRetryDelay
 }
 
 func pythonDir() string {
@@ -1506,10 +1513,6 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 }
 
 func (s *StandaloneSuite) TestPutBRetry(c *C) {
-	defer func(origDefault, origMinimum time.Duration) {
-		DefaultRetryDelay = origDefault
-		MinimumRetryDelay = origMinimum
-	}(DefaultRetryDelay, MinimumRetryDelay)
 	DefaultRetryDelay = time.Second / 8
 	MinimumRetryDelay = time.Millisecond
 
@@ -1567,8 +1570,7 @@ func (s *StandaloneSuite) TestPutBRetry(c *C) {
 		min := MinimumRetryDelay * 3
 		max := expect + expect*2 + expect*2*2
 		max += nonsleeptime
-		c.Check(elapsed >= min, Equals, true, Commentf("elapsed %v / expect min %v", elapsed, min))
-		c.Check(elapsed <= max, Equals, true, Commentf("elapsed %v / expect max %v", elapsed, max))
+		checkInterval(c, elapsed, min, max)
 	}
 }
 
@@ -1618,50 +1620,59 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 	c.Assert(kc.httpClient().(*http.Client).Timeout, Equals, 300*time.Second)
 }
 
-func (s *StandaloneSuite) TestDelayCalculator(c *C) {
-	defer func(origDefault, origMinimum time.Duration) {
-		DefaultRetryDelay = origDefault
-		MinimumRetryDelay = origMinimum
-	}(DefaultRetryDelay, MinimumRetryDelay)
-
-	checkInterval := func(d, min, max time.Duration) {
-		c.Check(d >= min, Equals, true)
-		c.Check(d <= max, Equals, true)
-	}
-
+func (s *StandaloneSuite) TestDelayCalculator_Default(c *C) {
 	MinimumRetryDelay = time.Second / 2
 	DefaultRetryDelay = time.Second
+
 	dc := delayCalculator{InitialMaxDelay: 0}
-	checkInterval(dc.Next(), time.Second/2, time.Second)
-	checkInterval(dc.Next(), time.Second/2, time.Second*2)
-	checkInterval(dc.Next(), time.Second/2, time.Second*4)
-	checkInterval(dc.Next(), time.Second/2, time.Second*8)
-	checkInterval(dc.Next(), time.Second/2, time.Second*10)
-	checkInterval(dc.Next(), time.Second/2, time.Second*10)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*2)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*4)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*8)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*10)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*10)
+}
 
-	// Enforce non-zero InitialMaxDelay
-	dc = delayCalculator{InitialMaxDelay: time.Second}
-	checkInterval(dc.Next(), time.Second/2, time.Second*2)
-	checkInterval(dc.Next(), time.Second/2, time.Second*4)
-	checkInterval(dc.Next(), time.Second/2, time.Second*8)
-	checkInterval(dc.Next(), time.Second/2, time.Second*16)
-	checkInterval(dc.Next(), time.Second/2, time.Second*20)
-	checkInterval(dc.Next(), time.Second/2, time.Second*20)
+func (s *StandaloneSuite) TestDelayCalculator_SetInitial(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	DefaultRetryDelay = time.Second
 
-	// Enforce MinimumRetryDelay
-	dc = delayCalculator{InitialMaxDelay: time.Millisecond}
-	checkInterval(dc.Next(), time.Second/2, time.Second/2)
-	checkInterval(dc.Next(), time.Second/2, time.Second)
-	checkInterval(dc.Next(), time.Second/2, time.Second*2)
-	checkInterval(dc.Next(), time.Second/2, time.Second*4)
-	checkInterval(dc.Next(), time.Second/2, time.Second*8)
-	checkInterval(dc.Next(), time.Second/2, time.Second*10)
-	checkInterval(dc.Next(), time.Second/2, time.Second*10)
+	dc := delayCalculator{InitialMaxDelay: time.Second * 2}
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*2)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*4)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*8)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*16)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+}
 
-	// If InitialMaxDelay is less than MinimumRetryDelay/10, then
-	// delay is always MinimumRetryDelay.
-	dc = delayCalculator{InitialMaxDelay: time.Millisecond}
+func (s *StandaloneSuite) TestDelayCalculator_EnsureSomeLongDelays(c *C) {
+	dc := delayCalculator{InitialMaxDelay: time.Second * 5}
+	var d time.Duration
+	n := 4000
+	for i := 0; i < n; i++ {
+		if i < 20 || i%10 == 0 {
+			c.Logf("i=%d, delay=%v", i, d)
+		}
+		if d = dc.Next(); d > dc.InitialMaxDelay*9 {
+			return
+		}
+	}
+	c.Errorf("after %d trials, never got a delay more than 90%% of expected max %d; last was %v", n, dc.InitialMaxDelay*10, d)
+}
+
+// If InitialMaxDelay is less than MinimumRetryDelay/10, then delay is
+// always MinimumRetryDelay.
+func (s *StandaloneSuite) TestDelayCalculator_InitialLessThanMinimum(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	dc := delayCalculator{InitialMaxDelay: time.Millisecond}
 	for i := 0; i < 20; i++ {
 		c.Check(dc.Next(), Equals, time.Second/2)
 	}
+}
+
+func checkInterval(c *C, t, min, max time.Duration) {
+	c.Check(t >= min, Equals, true, Commentf("got %v which is below expected min %v", t, min))
+	c.Check(t <= max, Equals, true, Commentf("got %v which is above expected max %v", t, max))
 }
