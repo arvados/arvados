@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import { FederationConfig, getNavUrl } from 'routes/routes';
 import { RootState } from 'store/store';
 
-type CssRules = 'root' | 'wordWrap' | 'logText';
+type CssRules = 'root' | 'wordWrapOn' | 'wordWrapOff' | 'logText';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -35,8 +35,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     logText: {
         padding: `0 ${theme.spacing.unit*0.5}px`,
     },
-    wordWrap: {
-        whiteSpace: 'pre-wrap',
+    wordWrapOn: {
+        overflowWrap: 'anywhere',
+    },
+    wordWrapOff: {
+        whiteSpace: 'nowrap',
     },
 });
 
@@ -119,8 +122,8 @@ export const ProcessLogCodeSnippet = withStyles(styles)(connect(mapStateToProps)
                     }
                 }}>
                 { lines.map((line: string, index: number) =>
-                <Typography key={index} component="pre"
-                    className={classNames(classes.logText, wordWrap ? classes.wordWrap : undefined)}>
+                <Typography key={index} component="span"
+                    className={classNames(classes.logText, wordWrap ? classes.wordWrapOn : classes.wordWrapOff)}>
                     {renderLinks(fontSize, auth, dispatch)(line)}
                 </Typography>
                 ) }
