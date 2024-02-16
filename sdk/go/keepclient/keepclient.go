@@ -44,6 +44,9 @@ var (
 	DefaultProxyTLSHandshakeTimeout = 10 * time.Second
 	DefaultProxyKeepAlive           = 120 * time.Second
 
+	DefaultRetryDelay = 2 * time.Second // see KeepClient.RetryDelay
+	MinimumRetryDelay = time.Millisecond
+
 	rootCacheDir = "/var/cache/arvados/keep"
 	userCacheDir = ".cache/arvados/keep" // relative to HOME
 )
@@ -105,14 +108,25 @@ const DiskCacheDisabled = arvados.ByteSizeOrPercent(1)
 
 // KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados               *arvadosclient.ArvadosClient
-	Want_replicas         int
-	localRoots            map[string]string
-	writableLocalRoots    map[string]string
-	gatewayRoots          map[string]string
-	lock                  sync.RWMutex
-	HTTPClient            HTTPClient
-	Retries               int
+	Arvados            *arvadosclient.ArvadosClient
+	Want_replicas      int
+	localRoots         map[string]string
+	writableLocalRoots map[string]string
+	gatewayRoots       map[string]string
+	lock               sync.RWMutex
+	HTTPClient         HTTPClient
+
+	// Number of times to automatically retry a read/write
+	// operation after a transient failure.
+	Retries int
+
+	// Initial maximum delay for automatic retry. If zero,
+	// DefaultRetryDelay is used.  The delay after attempt N
+	// (0-based) will be a random duration between
+	// MinimumRetryDelay and RetryDelay * 2^N, not to exceed a cap
+	// of RetryDelay * 10.
+	RetryDelay time.Duration
+
 	RequestID             string
 	StorageClasses        []string
 	DefaultStorageClasses []string                  // Set by cluster's exported config
@@ -141,6 +155,7 @@ func (kc *KeepClient) Clone() *KeepClient {
 		gatewayRoots:          kc.gatewayRoots,
 		HTTPClient:            kc.HTTPClient,
 		Retries:               kc.Retries,
+		RetryDelay:            kc.RetryDelay,
 		RequestID:             kc.RequestID,
 		StorageClasses:        kc.StorageClasses,
 		DefaultStorageClasses: kc.DefaultStorageClasses,
@@ -269,6 +284,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var errs []string
 
+	delay := delayCalculator{InitialMaxDelay: kc.RetryDelay}
 	triesRemaining := 1 + kc.Retries
 
 	serversToTry := kc.getSortedRoots(locator)
@@ -348,6 +364,9 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 			return nil, expectLength, url, resp.Header, nil
 		}
 		serversToTry = retryList
+		if len(serversToTry) > 0 && triesRemaining > 0 {
+			time.Sleep(delay.Next())
+		}
 	}
 	DebugPrintf("DEBUG: %s %s failed: %v", method, locator, errs)
 

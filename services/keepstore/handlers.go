@@ -853,7 +853,7 @@ func newPutProgress(classes []string) putProgress {
 //
 //	The MD5 hash of the BLOCK does not match the argument HASH.
 //
-// 503 Full
+// 507 Full
 //
 //	There was not enough space left in any Keep volume to store
 //	the object.
