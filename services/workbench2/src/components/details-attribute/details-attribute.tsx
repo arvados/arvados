@@ -87,7 +87,7 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
 
         render() {
             const { uuidEnhancer, link, value, classes, linkToUuid,
-                localCluster, remoteHostsConfig, sessions, label } = this.props;
+                localCluster, remoteHostsConfig, sessions } = this.props;
             let valueNode: React.ReactNode;
 
             if (linkToUuid) {
