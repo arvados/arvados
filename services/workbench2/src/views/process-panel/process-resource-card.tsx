@@ -14,6 +14,7 @@ import {
     Tooltip,
     Typography,
     Grid,
+    Link,
     Button
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -69,7 +70,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textTransform: "uppercase",
     },
     reportButton: {
-        fontSize: '0.75rem'
     }
 });
 
@@ -102,7 +102,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                 }
                 action={
                     <div>
-                        {usageReport && <Button href={usageReport} variant="contained" color="primary" className={classes.reportButton}><ShowChartIcon /> Resource usage report</Button>}
+                        {usageReport && <Link href={usageReport} className={classes.reportButton} target="_blank"><ShowChartIcon /> Resource usage report</Link>}
                         {doUnMaximizePanel && panelMaximized &&
                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                 <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
