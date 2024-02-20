@@ -291,7 +291,7 @@ export const DataTable = withStyles(styles)(
         };
 
         render() {
-            const { items, classes, working, columns, is404 } = this.props;
+            const { items, classes, columns, is404 } = this.props;
             const { isLoaded } = this.state;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
@@ -323,10 +323,11 @@ export const DataTable = withStyles(styles)(
                 return (
                     <DataTableDefaultView 
                         icon={this.props.defaultViewIcon} 
-                        messages={["Project not found"]} 
+                        messages={["Item not found"]} 
                     />
                 );
             } else {
+                //if (isLoaded && !is404)
                 return (
                     <DataTableDefaultView
                         icon={this.props.defaultViewIcon}

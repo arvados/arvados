@@ -264,10 +264,8 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRu
 const mapStateToProps = (state: RootState) => {
     const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
     const project = getResource<GroupResource>(currentItemId || "")(state.resources);
-    const working = !!state.progressIndicator.some(p => p.id === PROJECT_PANEL_ID && p.working);
     const is404 = state.dataExplorer[PROJECT_PANEL_ID].isResponse404;
     return {
-        working,
         currentItemId,
         project,
         is404,
@@ -291,7 +289,6 @@ export const ProjectPanel = withStyles(styles)(
                         contextMenuColumn={true}
                         defaultViewIcon={ProjectIcon}
                         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                        working={this.props.working}
                         is404={this.props.is404}
                     />
                 </div>
