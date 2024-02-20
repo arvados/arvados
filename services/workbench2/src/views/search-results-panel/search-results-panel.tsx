@@ -24,7 +24,6 @@ export interface SearchResultsPanelDataProps {
     remoteHostsConfig: { [key: string]: Config };
     localCluster: string;
     numberOfItems: number;
-    isSearching: boolean;
 }
 
 export interface SearchResultsPanelActionProps {
@@ -39,7 +38,7 @@ export interface SearchResultsPanelActionProps {
 export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
 
 const mapStateToProps = (rootState: RootState) => {
-    const { dataExplorer, searchBar } = rootState;
+    const { dataExplorer } = rootState;
     const numberOfItems = dataExplorer[SEARCH_RESULTS_PANEL_ID].items.length;
     return {
         user: rootState.auth.user,
@@ -47,7 +46,6 @@ const mapStateToProps = (rootState: RootState) => {
         remoteHostsConfig: rootState.auth.remoteHostsConfig,
         localCluster: rootState.auth.localCluster,
         numberOfItems,
-        isSearching: searchBar.isSearching,
     };
 };
 

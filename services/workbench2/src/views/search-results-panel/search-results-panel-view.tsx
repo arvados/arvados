@@ -154,20 +154,7 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
-        const prevIsSearching = React.useRef<boolean>(props.isSearching);
         const [isLoaded, setIsLoaded] = React.useState<boolean>(false);
-
-        useEffect(() => {
-            if(prevIsSearching.current === true && props.isSearching === false) {
-                setIsLoaded(true);
-                props.stopSpinner();
-            }
-            if(props.isSearching === true) {
-                setIsLoaded(false);
-                props.startSpinner();
-            }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [props.isSearching]);
 
         const onItemClick = useCallback((uuid) => {
             setSelectedItem(uuid);

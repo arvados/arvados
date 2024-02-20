@@ -54,6 +54,7 @@ export interface DataTableDataProps<I> {
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     checkedList: TCheckedList;
+    notFound?: boolean;
 }
 
 type CssRules =
@@ -285,7 +286,7 @@ export const DataTable = withStyles(styles)(
         };
 
         render() {
-            const { items, classes, working, columns } = this.props;
+            const { items, classes, working, columns, notFound } = this.props;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
@@ -295,23 +296,40 @@ export const DataTable = withStyles(styles)(
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
-                            <TableBody className={classes.tableBody}>{!working && items.map(this.renderBodyRow)}</TableBody>
+                            <TableBody className={classes.tableBody}>{(!working && !notFound) && items.map(this.renderBodyRow)}</TableBody>
                         </Table>
-                        {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
+                        {(working || notFound) && this.renderNoItemsPlaceholder(this.props.columns)}
                     </div>
                 </div>
             );
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
+            const { working, notFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            return (
-                <DataTableDefaultView
-                    icon={this.props.defaultViewIcon}
-                    messages={this.props.defaultViewMessages}
-                    filtersApplied={dirty}
-                />
-            );
+            if (working) {
+                return (
+                    <DataTableDefaultView 
+                        icon={this.props.defaultViewIcon} 
+                        messages={["Loading data, please wait"]} 
+                    />
+                );
+            } else if (notFound) {
+                return (
+                    <DataTableDefaultView 
+                        icon={this.props.defaultViewIcon} 
+                        messages={["Project not found"]} 
+                    />
+                );
+            } else {
+                return (
+                    <DataTableDefaultView
+                        icon={this.props.defaultViewIcon}
+                        messages={this.props.defaultViewMessages}
+                        filtersApplied={dirty}
+                    />
+                );
+            }
         };
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {

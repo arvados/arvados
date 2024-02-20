@@ -20,10 +20,10 @@ interface Props {
     onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
+    working?: boolean;
 }
 
 const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {
-    const progress = progressIndicator.find(p => p.id === id);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
@@ -34,7 +34,6 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
-        working: !!progress?.working,
         currentRefresh: currentRefresh,
         currentRoute: currentRoute,
         paperKey: currentRoute,

@@ -18,7 +18,6 @@ import {
     getSearchSessions,
     queryToFilters,
     getAdvancedDataFromQuery,
-    searchBarActions
 } from 'store/search-bar/search-bar-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
@@ -27,6 +26,7 @@ import { serializeResourceTypeFilters } from 'store//resource-type-filters/resou
 import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -58,7 +58,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
         const numberOfSessions = sessions.length;
         let numberOfResolvedResponses = 0;
-        api.dispatch(searchBarActions.SET_IS_SEARCHING(true));
+        api.dispatch(progressIndicatorActions.START_WORKING(this.id))
 
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
@@ -67,9 +67,9 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
                     numberOfResolvedResponses++;
-                        if (numberOfResolvedResponses === numberOfSessions) {
-                            api.dispatch(searchBarActions.SET_IS_SEARCHING(false));
-                        }
+                    if (numberOfResolvedResponses === numberOfSessions) {
+                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                    }
                     // Request all containers for process status to be available
                     const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
                     const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
@@ -84,7 +84,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                         });
                     }).catch(() => {
                         api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                        api.dispatch(searchBarActions.SET_IS_SEARCHING(false));
+                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
                     });
             }
         );

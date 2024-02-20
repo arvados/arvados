@@ -51,10 +51,7 @@ import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
-import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
-import { PendingIcon } from 'components/icon/icon';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 
 type CssRules = 'root' | 'button' | 'loader' | 'notFoundView';
 
@@ -276,57 +273,24 @@ const mapStateToProps = (state: RootState) => {
     };
 }
 
-type ProjectPanelState = {
-    isLoaded: boolean;
-};
-
 export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
 
-            state: ProjectPanelState ={
-                isLoaded: false,
-            }
-
-            componentDidMount(): void {
-                this.setState({ isLoaded: false });
-            }
-
-            componentDidUpdate( prevProps: Readonly<ProjectPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
-                if(prevProps.working === true && this.props.working === false) {
-                    this.setState({ isLoaded: true });
-                }
-            }
-
             render() {
                 const { classes } = this.props;
-
-                return this.props.project ?
-                    <div data-cy='project-panel' className={classes.root}>
-                        <DataExplorer
-                            id={PROJECT_PANEL_ID}
-                            onRowClick={this.handleRowClick}
-                            onRowDoubleClick={this.handleRowDoubleClick}
-                            onContextMenu={this.handleContextMenu}
-                            contextMenuColumn={true}
-                            defaultViewIcon={ProjectIcon}
-                            defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                        />
-                    </div>
-                : this.state.isLoaded ?
-                    <div className={classes.notFoundView}>
-                        <NotFoundView
-                            icon={ProjectIcon}
-                            messages={["Project not found"]}
-                            />
-                    </div>
-                    :   
-                    <div className={classes.loader}>
-                        <DataTableDefaultView
-                            icon={PendingIcon}
-                            messages={["Loading data, please wait."]}
-                        />
-                    </div>
+                return <div data-cy='project-panel' className={classes.root}>
+                    <DataExplorer
+                        id={PROJECT_PANEL_ID}
+                        onRowClick={this.handleRowClick}
+                        onRowDoubleClick={this.handleRowDoubleClick}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={true}
+                        defaultViewIcon={ProjectIcon}
+                        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
+                        working={this.props.working}
+                    />
+                </div>
             }
 
             isCurrentItemChild = (resource: Resource) => {

@@ -118,12 +118,18 @@ interface DataExplorerActionProps<T> {
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
+type DataExplorerState = {
+    prevRefresh: string;
+    prevRoute: string;
+    notFound: boolean;
+};
+
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
-        state = {
-            showLoading: false,
+        state: DataExplorerState = {
             prevRefresh: "",
             prevRoute: "",
+            notFound: false,
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -136,7 +142,6 @@ export const DataExplorer = withStyles(styles)(
                 // Component already mounted, but the user comes from a route change,
                 // like browsing through a project hierarchy.
                 this.setState({
-                    showLoading: this.props.working,
                     prevRoute: currentRoute,
                 });
             }
@@ -145,13 +150,19 @@ export const DataExplorer = withStyles(styles)(
                 // Component already mounted, but the user just clicked the
                 // refresh button.
                 this.setState({
-                    showLoading: this.props.working,
                     prevRefresh: currentRefresh,
                 });
             }
-            if (this.state.showLoading && !this.props.working) {
+
+            if(this.state.notFound === true && this.props.itemsAvailable > 0) {
                 this.setState({
-                    showLoading: false,
+                    notFound: false,
+                });
+            }
+
+            if (prevProps.working === true && this.props.working === false) {
+                this.setState({
+                    notFound: this.props.itemsAvailable === 0,
                 });
             }
         }
@@ -162,7 +173,6 @@ export const DataExplorer = withStyles(styles)(
             }
             // Component just mounted, so we need to show the loading indicator.
             this.setState({
-                showLoading: this.props.working,
                 prevRefresh: this.props.currentRefresh || "",
                 prevRoute: this.props.currentRoute || "",
             });
@@ -207,6 +217,7 @@ export const DataExplorer = withStyles(styles)(
                 toggleMSToolbar,
                 setCheckedListOnStore,
                 checkedList,
+                working,
             } = this.props;
             return (
                 <Paper
@@ -314,7 +325,6 @@ export const DataExplorer = withStyles(styles)(
                                 onFiltersChange={onFiltersChange}
                                 onSortToggle={onSortToggle}
                                 extractKey={extractKey}
-                                working={this.state.showLoading}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
                                 currentItemUuid={currentItemUuid}
@@ -322,6 +332,8 @@ export const DataExplorer = withStyles(styles)(
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
+                                working={working}
+                                notFound={this.state.notFound}
                             />
                         </Grid>
                         <Grid
