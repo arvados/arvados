@@ -187,4 +187,4 @@ packages-in-docker: check-arvados-directory workbench2-build-image
 		sh -c 'git config --global --add safe.directory /tmp/workbench2 && make packages'
 
 workbench2-build-image:
-	(cd docker && docker build -t workbench2-build .)
+	docker build -t workbench2-build -f docker/Dockerfile ${ARVADOS_DIRECTORY}

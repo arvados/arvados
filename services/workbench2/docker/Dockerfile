@@ -13,8 +13,11 @@ RUN apt-get update && \
     apt-get clean
 
 RUN /usr/bin/gem install --no-document fpm
-RUN cd /usr/src && git clone git://git.arvados.org/arvados.git && \
-    cd arvados && \
+WORKDIR /usr/src/arvados
+COPY . .
+RUN cd /usr/src/arvados && \
+    test -d cmd/arvados-server || \
+      (echo "ERROR: build context must be an Arvados repository" && false) && \
     GO_VERSION=$(grep 'goversion =' lib/install/deps.go |awk -F'"' '{print $2}') && \
     ARCH=$(dpkg --print-architecture) && \
     echo $GO_VERSION && \
