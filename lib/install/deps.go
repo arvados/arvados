@@ -40,7 +40,7 @@ const (
 	pjsversion                = "1.9.8"
 	geckoversion              = "0.24.0"
 	gradleversion             = "5.3.1"
-	defaultNodejsVersion      = "12.22.12"
+	defaultNodejsVersion      = "14.21.3"
 	devtestDatabasePassword   = "insecure_arvados_test"
 )
 
@@ -284,7 +284,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			err = inst.runBash(`
 rm -f /usr/share/keyrings/docker-archive-keyring.gpg
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ `+codename+` stable' | \
+echo 'deb [arch=`+runtime.GOARCH+` signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ `+codename+` stable' | \
     tee /etc/apt/sources.list.d/docker.list
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install docker-ce
@@ -361,7 +361,7 @@ fi
 			err = inst.runBash(`
 cd /tmp
 rm -rf /var/lib/arvados/go/
-wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-`+runtime.GOARCH+`.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
@@ -537,15 +537,23 @@ setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
 		}
 	}
 
+	var njsArch string
+	switch runtime.GOARCH {
+	case "amd64":
+		njsArch = "x64"
+	default:
+		njsArch = runtime.GOARCH
+	}
+
 	if !prod {
 		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == "v"+inst.NodejsVersion+"\n" {
 			logger.Print("nodejs " + inst.NodejsVersion + " already installed")
 		} else {
 			err = inst.runBash(`
 NJS=v`+inst.NodejsVersion+`
-rm -rf /var/lib/arvados/node-*-linux-x64
-wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
-ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
+rm -rf /var/lib/arvados/node-*-linux-`+njsArch+`
+wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-`+njsArch+`.tar.xz | sudo tar -C /var/lib/arvados -xJf -
+ln -sfv /var/lib/arvados/node-${NJS}-linux-`+njsArch+`/bin/{node,npm} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -557,7 +565,7 @@ ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		} else {
 			err = inst.runBash(`
 npm install -g yarn
-ln -sfv /var/lib/arvados/node-v`+inst.NodejsVersion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
+ln -sfv /var/lib/arvados/node-v`+inst.NodejsVersion+`-linux-`+njsArch+`/bin/{yarn,yarnpkg} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
