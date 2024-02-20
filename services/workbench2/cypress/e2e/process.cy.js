@@ -337,6 +337,7 @@ describe("Process tests", function () {
             createContainerRequest(activeUser, crUncommitted, "arvados/jobs", ["echo", "hello world"], false, "Uncommitted").then(function (
                 containerRequest
             ) {
+                cy.loginAs(activeUser);
                 // Navigate to process and verify run / cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.waitForDom();
