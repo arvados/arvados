@@ -29,6 +29,7 @@ export const dataExplorerActions = unionize({
     SET_EXPLORER_SEARCH_VALUE: ofType<{ id: string; searchValue: string }>(),
     RESET_EXPLORER_SEARCH_VALUE: ofType<{ id: string }>(),
     SET_REQUEST_STATE: ofType<{ id: string; requestState: DataTableRequestState }>(),
+    SET_IS_RESPONSE_404: ofType<{ id: string; isResponse404: boolean }>(),
 });
 
 export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
@@ -51,4 +52,5 @@ export const bindDataExplorerActions = (id: string) => ({
     SET_EXPLORER_SEARCH_VALUE: (payload: { searchValue: string }) => dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ ...payload, id }),
     RESET_EXPLORER_SEARCH_VALUE: () => dataExplorerActions.RESET_EXPLORER_SEARCH_VALUE({ id }),
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) => dataExplorerActions.SET_REQUEST_STATE({ ...payload, id }),
+    SET_IS_RESPONSE_404: (payload: { isResponse404: boolean }) => dataExplorerActions.SET_IS_RESPONSE_404({ ...payload, id }),
 });

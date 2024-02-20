@@ -97,6 +97,7 @@ interface DataExplorerDataProps<T> {
     elementPath?: string;
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
+    is404?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -121,7 +122,6 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T
 type DataExplorerState = {
     prevRefresh: string;
     prevRoute: string;
-    notFound: boolean;
 };
 
 export const DataExplorer = withStyles(styles)(
@@ -129,7 +129,6 @@ export const DataExplorer = withStyles(styles)(
         state: DataExplorerState = {
             prevRefresh: "",
             prevRoute: "",
-            notFound: false,
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -151,18 +150,6 @@ export const DataExplorer = withStyles(styles)(
                 // refresh button.
                 this.setState({
                     prevRefresh: currentRefresh,
-                });
-            }
-
-            if(this.state.notFound === true && this.props.itemsAvailable > 0) {
-                this.setState({
-                    notFound: false,
-                });
-            }
-
-            if (prevProps.working === true && this.props.working === false) {
-                this.setState({
-                    notFound: this.props.itemsAvailable === 0,
                 });
             }
         }
@@ -333,7 +320,7 @@ export const DataExplorer = withStyles(styles)(
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
                                 working={working}
-                                notFound={this.state.notFound}
+                                is404={this.props.is404}
                             />
                         </Grid>
                         <Grid

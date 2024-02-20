@@ -37,6 +37,7 @@ import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
 import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -54,6 +55,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
+                api.dispatch<any>(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: false }));
                 if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 const resourceUuids = response.items.map(item => item.uuid);
@@ -72,7 +74,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     })
                 );
                 if (e.status === 404) {
-                    // It'll just show up as not found
+                    api.dispatch<any>(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: true}));
                 }
                 else {
                     api.dispatch(couldNotFetchProjectContents());

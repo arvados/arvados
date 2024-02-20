@@ -30,6 +30,7 @@ export interface DataExplorer {
     searchValue: string;
     working?: boolean;
     requestState: DataTableRequestState;
+    isResponse404: boolean;
 }
 
 export const initialDataExplorer: DataExplorer = {
@@ -42,6 +43,7 @@ export const initialDataExplorer: DataExplorer = {
     rowsPerPageOptions: [10, 20, 50, 100, 200, 500],
     searchValue: '',
     requestState: DataTableRequestState.IDLE,
+    isResponse404: false,
 };
 
 export type DataExplorerState = Record<string, DataExplorer>;
@@ -118,6 +120,9 @@ export const dataExplorerReducer = (
 
         TOGGLE_COLUMN: ({ id, columnName }) =>
             update(state, id, mapColumns(toggleColumn(columnName))),
+
+        SET_IS_RESPONSE_404: ({ id, isResponse404 }) =>
+            update(state, id, (explorer) => ({ ...explorer, isResponse404 })),
 
         default: () => state,
     });

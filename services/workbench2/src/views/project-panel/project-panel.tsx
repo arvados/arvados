@@ -256,6 +256,7 @@ interface ProjectPanelDataProps {
     userUuid: string;
     dataExplorerItems: any;
     working: boolean;
+    is404: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
@@ -264,10 +265,12 @@ const mapStateToProps = (state: RootState) => {
     const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
     const project = getResource<GroupResource>(currentItemId || "")(state.resources);
     const working = !!state.progressIndicator.some(p => p.id === PROJECT_PANEL_ID && p.working);
+    const is404 = state.dataExplorer[PROJECT_PANEL_ID].isResponse404;
     return {
         working,
         currentItemId,
         project,
+        is404,
         resources: state.resources,
         userUuid: state.auth.user!.uuid,
     };
@@ -289,6 +292,7 @@ export const ProjectPanel = withStyles(styles)(
                         defaultViewIcon={ProjectIcon}
                         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
                         working={this.props.working}
+                        is404={this.props.is404}
                     />
                 </div>
             }

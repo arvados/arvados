@@ -84,7 +84,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                         });
                     }).catch(() => {
                         api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                        api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.id))
                     });
             }
         );

@@ -54,7 +54,7 @@ export interface DataTableDataProps<I> {
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     checkedList: TCheckedList;
-    notFound?: boolean;
+    is404?: boolean;
 }
 
 type CssRules =
@@ -141,6 +141,7 @@ export type TCheckedList = Record<string, boolean>;
 
 type DataTableState = {
     isSelected: boolean;
+    isLoaded: boolean;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -149,6 +150,7 @@ export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
+            isLoaded: false,
         };
 
         componentDidMount(): void {
@@ -165,6 +167,9 @@ export const DataTable = withStyles(styles)(
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([])
+            }
+            if(prevProps.working === true && this.props.working === false) {
+                this.setState({ isLoaded: true });
             }
         }
 
@@ -286,7 +291,8 @@ export const DataTable = withStyles(styles)(
         };
 
         render() {
-            const { items, classes, working, columns, notFound } = this.props;
+            const { items, classes, working, columns, is404 } = this.props;
+            const { isLoaded } = this.state;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
@@ -296,25 +302,24 @@ export const DataTable = withStyles(styles)(
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
-                            <TableBody className={classes.tableBody}>{(!working && !notFound) && items.map(this.renderBodyRow)}</TableBody>
+                            <TableBody className={classes.tableBody}>{(isLoaded && !is404) && items.map(this.renderBodyRow)}</TableBody>
                         </Table>
-                        {(working || notFound) && this.renderNoItemsPlaceholder(this.props.columns)}
+                        {(!isLoaded || is404 || items.length === 0) && this.renderNoItemsPlaceholder(this.props.columns)}
                     </div>
                 </div>
             );
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
-            const { working, notFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            if (working) {
+            if (this.state.isLoaded === false) {
                 return (
                     <DataTableDefaultView 
                         icon={this.props.defaultViewIcon} 
                         messages={["Loading data, please wait"]} 
                     />
                 );
-            } else if (notFound) {
+            } else if (this.props.is404) {
                 return (
                     <DataTableDefaultView 
                         icon={this.props.defaultViewIcon} 
