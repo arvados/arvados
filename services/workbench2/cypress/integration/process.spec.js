@@ -579,23 +579,23 @@ describe("Process tests", function () {
 
                 cy.getAll("@node-info", "@stdout", "@stderr").then(() => {
                     // Verify sorted main logs
-                    cy.get("[data-cy=process-logs] pre", { timeout: 7000 }).eq(0).should("contain", "2023-07-18T20:14:48.128642814Z first");
-                    cy.get("[data-cy=process-logs] pre").eq(1).should("contain", "2023-07-18T20:14:48.528642814Z second");
-                    cy.get("[data-cy=process-logs] pre").eq(2).should("contain", "2023-07-18T20:14:49.128642814Z third");
+                    cy.get("[data-cy=process-logs] span > p", { timeout: 7000 }).eq(0).should("contain", "2023-07-18T20:14:48.128642814Z first");
+                    cy.get("[data-cy=process-logs] span > p").eq(1).should("contain", "2023-07-18T20:14:48.528642814Z second");
+                    cy.get("[data-cy=process-logs] span > p").eq(2).should("contain", "2023-07-18T20:14:49.128642814Z third");
 
                     // Switch to All logs
                     cy.get("[data-cy=process-logs-filter]").click();
                     cy.get("body").contains("li", "All logs").click();
                     // Verify non-sorted lines were preserved
-                    cy.get("[data-cy=process-logs] pre").eq(0).should("contain", "3: nodeinfo 1");
-                    cy.get("[data-cy=process-logs] pre").eq(1).should("contain", "2: nodeinfo 2");
-                    cy.get("[data-cy=process-logs] pre").eq(2).should("contain", "1: nodeinfo 3");
-                    cy.get("[data-cy=process-logs] pre").eq(3).should("contain", "2: nodeinfo 4");
-                    cy.get("[data-cy=process-logs] pre").eq(4).should("contain", "3: nodeinfo 5");
+                    cy.get("[data-cy=process-logs] span > p").eq(0).should("contain", "3: nodeinfo 1");
+                    cy.get("[data-cy=process-logs] span > p").eq(1).should("contain", "2: nodeinfo 2");
+                    cy.get("[data-cy=process-logs] span > p").eq(2).should("contain", "1: nodeinfo 3");
+                    cy.get("[data-cy=process-logs] span > p").eq(3).should("contain", "2: nodeinfo 4");
+                    cy.get("[data-cy=process-logs] span > p").eq(4).should("contain", "3: nodeinfo 5");
                     // Verify sorted logs
-                    cy.get("[data-cy=process-logs] pre").eq(5).should("contain", "2023-07-18T20:14:48.128642814Z first");
-                    cy.get("[data-cy=process-logs] pre").eq(6).should("contain", "2023-07-18T20:14:48.528642814Z second");
-                    cy.get("[data-cy=process-logs] pre").eq(7).should("contain", "2023-07-18T20:14:49.128642814Z third");
+                    cy.get("[data-cy=process-logs] span > p").eq(5).should("contain", "2023-07-18T20:14:48.128642814Z first");
+                    cy.get("[data-cy=process-logs] span > p").eq(6).should("contain", "2023-07-18T20:14:48.528642814Z second");
+                    cy.get("[data-cy=process-logs] span > p").eq(7).should("contain", "2023-07-18T20:14:49.128642814Z third");
                 });
             });
         });
@@ -633,16 +633,16 @@ describe("Process tests", function () {
                     cy.get("[data-cy=process-logs-filter]").click();
                     cy.get("body").contains("li", "All logs").click();
                     // Verify sorted logs
-                    cy.get("[data-cy=process-logs] pre").eq(0).should("contain", "2023-07-18T20:14:46.000000000Z A out 1");
-                    cy.get("[data-cy=process-logs] pre").eq(1).should("contain", "2023-07-18T20:14:47.000000000Z Z err 1");
-                    cy.get("[data-cy=process-logs] pre").eq(2).should("contain", "2023-07-18T20:14:48.128642814Z B err 2");
-                    cy.get("[data-cy=process-logs] pre").eq(3).should("contain", "2023-07-18T20:14:48.128642814Z C err 3");
-                    cy.get("[data-cy=process-logs] pre").eq(4).should("contain", "2023-07-18T20:14:48.128642814Z Y err 4");
-                    cy.get("[data-cy=process-logs] pre").eq(5).should("contain", "2023-07-18T20:14:48.128642814Z Z err 5");
-                    cy.get("[data-cy=process-logs] pre").eq(6).should("contain", "2023-07-18T20:14:48.128642814Z A err 6");
-                    cy.get("[data-cy=process-logs] pre").eq(7).should("contain", "2023-07-18T20:14:48.128642814Z A out 2");
-                    cy.get("[data-cy=process-logs] pre").eq(8).should("contain", "2023-07-18T20:14:48.128642814Z X out 3");
-                    cy.get("[data-cy=process-logs] pre").eq(9).should("contain", "2023-07-18T20:14:48.128642814Z A out 4");
+                    cy.get("[data-cy=process-logs] span > p").eq(0).should("contain", "2023-07-18T20:14:46.000000000Z A out 1");
+                    cy.get("[data-cy=process-logs] span > p").eq(1).should("contain", "2023-07-18T20:14:47.000000000Z Z err 1");
+                    cy.get("[data-cy=process-logs] span > p").eq(2).should("contain", "2023-07-18T20:14:48.128642814Z B err 2");
+                    cy.get("[data-cy=process-logs] span > p").eq(3).should("contain", "2023-07-18T20:14:48.128642814Z C err 3");
+                    cy.get("[data-cy=process-logs] span > p").eq(4).should("contain", "2023-07-18T20:14:48.128642814Z Y err 4");
+                    cy.get("[data-cy=process-logs] span > p").eq(5).should("contain", "2023-07-18T20:14:48.128642814Z Z err 5");
+                    cy.get("[data-cy=process-logs] span > p").eq(6).should("contain", "2023-07-18T20:14:48.128642814Z A err 6");
+                    cy.get("[data-cy=process-logs] span > p").eq(7).should("contain", "2023-07-18T20:14:48.128642814Z A out 2");
+                    cy.get("[data-cy=process-logs] span > p").eq(8).should("contain", "2023-07-18T20:14:48.128642814Z X out 3");
+                    cy.get("[data-cy=process-logs] span > p").eq(9).should("contain", "2023-07-18T20:14:48.128642814Z A out 4");
                 });
             });
         });
@@ -666,15 +666,15 @@ describe("Process tests", function () {
 
                 cy.getAll("@stdout").then(() => {
                     // Verify first 64KB and snipline
-                    cy.get("[data-cy=process-logs] pre", { timeout: 7000 })
+                    cy.get("[data-cy=process-logs] span > p", { timeout: 7000 })
                         .eq(0)
                         .should("contain", "X".repeat(63999) + "_\n" + SNIPLINE);
                     // Verify last 64KB
-                    cy.get("[data-cy=process-logs] pre")
+                    cy.get("[data-cy=process-logs] span > p")
                         .eq(1)
                         .should("contain", "_" + "X".repeat(63999));
                     // Verify none of the Os got through
-                    cy.get("[data-cy=process-logs] pre").should("not.contain", "O");
+                    cy.get("[data-cy=process-logs] span > p").should("not.contain", "O");
                 });
             });
         });
