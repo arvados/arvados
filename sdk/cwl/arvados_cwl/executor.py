@@ -947,7 +947,7 @@ The 'jobs' API is no longer supported.
             if output_properties_req:
                 builder = make_builder(job_order, tool.hints, tool.requirements, runtimeContext, tool.metadata)
                 for pr in output_properties_req["outputProperties"]:
-                    output_properties[pr["propertyName"]] = builder.do_eval(pr["propertyValue"])
+                    output_properties[pr["propertyName"]] = builder.do_eval(pr["propertyValue"], context=self.final_output)
 
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes,
                                                                                           self.output_tags, output_properties,
