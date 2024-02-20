@@ -27,6 +27,7 @@ import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -58,7 +59,9 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
         const numberOfSessions = sessions.length;
         let numberOfResolvedResponses = 0;
+        let totalNumItemsAvailable = 0;
         api.dispatch(progressIndicatorActions.START_WORKING(this.id))
+        api.dispatch(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: false }));
 
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
@@ -67,8 +70,10 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
                     numberOfResolvedResponses++;
+                    totalNumItemsAvailable += response.itemsAvailable;
                     if (numberOfResolvedResponses === numberOfSessions) {
                         api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                        if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: true }))
                     }
                     // Request all containers for process status to be available
                     const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
@@ -84,7 +89,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                         });
                     }).catch(() => {
                         api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                        api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.id))
+                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
                     });
             }
         );

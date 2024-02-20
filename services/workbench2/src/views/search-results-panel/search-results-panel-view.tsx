@@ -30,7 +30,6 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { getSearchSessions } from 'store/search-bar/search-bar-actions';
 import { camelCase } from 'lodash';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { PendingIcon } from 'components/icon/icon';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -154,8 +153,6 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
-        const [isLoaded, setIsLoaded] = React.useState<boolean>(false);
-
         const onItemClick = useCallback((uuid) => {
             setSelectedItem(uuid);
             props.onItemClick(uuid);
@@ -171,8 +168,7 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                 contextMenuColumn={false}
                 elementPath={`/ ${itemPath.reverse().join(' / ')}`}
                 hideSearchInput
-                defaultViewIcon={isLoaded && props.numberOfItems === 0 ? undefined : PendingIcon}
-                defaultViewMessages={isLoaded && props.numberOfItems === 0 ? ['No items found'] : ['Loading data, please wait']}
+                is404={props.is404}
                 title={
                     <div>
                         {loggedIn.length === 1 ?

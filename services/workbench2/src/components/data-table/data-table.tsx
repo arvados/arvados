@@ -312,7 +312,7 @@ export const DataTable = withStyles(styles)(
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            if (this.state.isLoaded === false) {
+            if (this.state.isLoaded === false || this.props.working === true) {
                 return (
                     <DataTableDefaultView 
                         icon={this.props.defaultViewIcon} 
@@ -327,7 +327,7 @@ export const DataTable = withStyles(styles)(
                     />
                 );
             } else {
-                //if (isLoaded && !is404)
+                //if (isLoaded && !working && !is404)
                 return (
                     <DataTableDefaultView
                         icon={this.props.defaultViewIcon}
