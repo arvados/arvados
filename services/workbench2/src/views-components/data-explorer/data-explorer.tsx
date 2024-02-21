@@ -21,7 +21,7 @@ interface Props {
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
     working?: boolean;
-    is404?: boolean;
+    isNotFound?: boolean;
 }
 
 const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {

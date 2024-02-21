@@ -97,7 +97,7 @@ interface DataExplorerDataProps<T> {
     elementPath?: string;
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
-    is404?: boolean;
+    isNotFound?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -320,7 +320,7 @@ export const DataExplorer = withStyles(styles)(
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
                                 working={working}
-                                is404={this.props.is404}
+                                isNotFound={this.props.isNotFound}
                             />
                         </Grid>
                         <Grid

@@ -54,7 +54,7 @@ export interface DataTableDataProps<I> {
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     checkedList: TCheckedList;
-    is404?: boolean;
+    isNotFound?: boolean;
 }
 
 type CssRules =
@@ -291,7 +291,7 @@ export const DataTable = withStyles(styles)(
         };
 
         render() {
-            const { items, classes, columns, is404 } = this.props;
+            const { items, classes, columns, isNotFound } = this.props;
             const { isLoaded } = this.state;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
@@ -302,32 +302,35 @@ export const DataTable = withStyles(styles)(
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
-                            <TableBody className={classes.tableBody}>{(isLoaded && !is404) && items.map(this.renderBodyRow)}</TableBody>
+                            <TableBody className={classes.tableBody}>{(isLoaded && !isNotFound) && items.map(this.renderBodyRow)}</TableBody>
                         </Table>
-                        {(!isLoaded || is404 || items.length === 0) && this.renderNoItemsPlaceholder(this.props.columns)}
+                        {(!isLoaded || isNotFound || items.length === 0) && this.renderNoItemsPlaceholder(this.props.columns)}
                     </div>
                 </div>
             );
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
+            const { isLoaded } = this.state;
+            const { working, items, isNotFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            if (this.state.isLoaded === false || this.props.working === true) {
-                return (
-                    <DataTableDefaultView 
-                        icon={this.props.defaultViewIcon} 
-                        messages={["Loading data, please wait"]} 
-                    />
-                );
-            } else if (this.props.is404) {
+            if (isNotFound && isLoaded) {
                 return (
                     <DataTableDefaultView 
                         icon={this.props.defaultViewIcon} 
                         messages={["Item not found"]} 
                     />
                 );
+            } else 
+            if (isLoaded === false || working === true) {
+                return (
+                    <DataTableDefaultView 
+                        icon={this.props.defaultViewIcon} 
+                        messages={["Loading data, please wait"]} 
+                    />
+                );
             } else {
-                //if (isLoaded && !working && !is404)
+                //if (isLoaded && !working && !isNotFound)
                 return (
                     <DataTableDefaultView
                         icon={this.props.defaultViewIcon}

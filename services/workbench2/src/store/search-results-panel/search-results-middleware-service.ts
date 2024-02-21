@@ -61,7 +61,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         let numberOfResolvedResponses = 0;
         let totalNumItemsAvailable = 0;
         api.dispatch(progressIndicatorActions.START_WORKING(this.id))
-        api.dispatch(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: false }));
+        api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
 
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
@@ -73,7 +73,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     totalNumItemsAvailable += response.itemsAvailable;
                     if (numberOfResolvedResponses === numberOfSessions) {
                         api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
-                        if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: true }))
+                        if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true }))
                     }
                     // Request all containers for process status to be available
                     const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];

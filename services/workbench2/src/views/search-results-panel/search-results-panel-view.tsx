@@ -168,7 +168,7 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                 contextMenuColumn={false}
                 elementPath={`/ ${itemPath.reverse().join(' / ')}`}
                 hideSearchInput
-                is404={props.is404}
+                isNotFound={props.isNotFound}
                 title={
                     <div>
                         {loggedIn.length === 1 ?

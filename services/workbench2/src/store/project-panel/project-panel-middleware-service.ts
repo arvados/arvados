@@ -55,7 +55,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch<any>(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: false }));
+                api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
                 if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 const resourceUuids = response.items.map(item => item.uuid);
@@ -74,7 +74,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     })
                 );
                 if (e.status === 404) {
-                    api.dispatch<any>(dataExplorerActions.SET_IS_RESPONSE_404({ id: this.id, isResponse404: true}));
+                    api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true}));
                 }
                 else {
                     api.dispatch(couldNotFetchProjectContents());
