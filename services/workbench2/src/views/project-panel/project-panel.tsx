@@ -264,7 +264,7 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRu
 const mapStateToProps = (state: RootState) => {
     const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
     const project = getResource<GroupResource>(currentItemId || "")(state.resources);
-    const isNotFound = state.dataExplorer[PROJECT_PANEL_ID].isNotFound;
+    const isNotFound = state.dataExplorer[PROJECT_PANEL_ID] ? state.dataExplorer[PROJECT_PANEL_ID].isNotFound : false;
     return {
         currentItemId,
         project,
