@@ -547,7 +547,7 @@ def NewSummarizer(process_or_uuid, **kwargs):
     else:
         uuid = process_or_uuid
         process = None
-        arv = arvados.api('v1')
+        arv = kwargs.get("arv") or arvados.api('v1')
 
     if '-dz642-' in uuid:
         if process is None:
@@ -682,7 +682,7 @@ class MultiSummarizer(object):
 class JobTreeSummarizer(MultiSummarizer):
     """Summarizes a job and all children listed in its components field."""
     def __init__(self, job, label=None, **kwargs):
-        arv = arvados.api('v1')
+        arv = kwargs.get("arv") or arvados.api('v1')
         label = label or job.get('name', job['uuid'])
         children = collections.OrderedDict()
         children[job['uuid']] = JobSummarizer(job, label=label, **kwargs)
@@ -726,7 +726,7 @@ class PipelineSummarizer(MultiSummarizer):
 
 class ContainerRequestTreeSummarizer(MultiSummarizer):
     def __init__(self, root, skip_child_jobs=False, **kwargs):
-        arv = arvados.api('v1')
+        arv = kwargs.get("arv") or arvados.api('v1')
 
         label = kwargs.pop('label', None) or root.get('name') or root['uuid']
         root['name'] = label

@@ -534,11 +534,16 @@ class ArvadosContainer(JobBase):
             ).execute(num_retries=self.arvrunner.num_retries)
 
             if logc is not None:
-                summerizer = crunchstat_summary.summarizer.NewSummarizer(self.uuid)
-                summerizer.run()
-                with logc.open("usage_report.html", "wt") as mr:
-                    mr.write(summerizer.html_report())
-                logc.save()
+                try:
+                    summerizer = crunchstat_summary.summarizer.NewSummarizer(self.uuid, arv=self.arvrunner.api)
+                    summerizer.run()
+                    with logc.open("usage_report.html", "wt") as mr:
+                        mr.write(summerizer.html_report())
+                    logc.save()
+                except Exception as e:
+                    logger.error("%s unable to generate resource usage report",
+                                 self.arvrunner.label(self),
+                                 exc_info=(e if self.arvrunner.debug else False))
 
         except WorkflowException as e:
             # Only include a stack trace if in debug mode.
