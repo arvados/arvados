@@ -22,6 +22,71 @@
 require "rubygems"
 require "colorize"
 
+def can_run?(*command, **options)
+  options = {
+    :in => :close,
+    :out => [File::NULL, "w"],
+  }.merge(options)
+  system(*command, **options)
+end
+
+class JavaSDK
+  def self.can_build?
+    can_run?("gradle", "--version")
+  end
+end
+
+class PythonSDK
+  def self.can_build?
+    can_run?("./pysdk_pdoc.py", "--version")
+  end
+end
+
+class RSDK
+  def self.can_build?
+    can_run?("R", "--version")
+  end
+end
+
+$build_sdks = begin
+  no_sdk_env = ENV.fetch("NO_SDK", "")
+  sdks_env = ENV.fetch("sdks", "")
+  all_sdks = Hash[[JavaSDK, PythonSDK, RSDK].map { |c| [c.name, c] }]
+
+  if no_sdk_env != "" and sdks_env != ""
+    fail "both NO_SDK and sdks defined in environment"
+  elsif sdks_env != ""
+    # Nothing to do
+  elsif no_sdk_env != "" or File.exist?("no-sdk")
+    sdks_env = "none"
+  end
+
+  if sdks_env == ""
+    all_sdks.each_pair.filter_map do |name, sdk|
+      if sdk.can_build?
+        sdk
+      else
+        puts "Warning: cannot build #{name.replace(/SDK$/, ' SDK')} documentation, skipping".colorize(:light_red)
+      end
+    end
+  else
+    wanted_sdks = []
+    sdks_env.split(/\s*[,\s]\s*/).each do |key|
+      key = "#{key.capitalize}SDK"
+      if key == "AllSDK"
+        wanted_sdks = all_sdks.values
+      elsif key == "NoneSDK"
+        wanted_sdks.clear
+      elsif sdk = all_sdks[key]
+        wanted_sdks << sdk
+      else
+        fail "cannot build documentation for unknown #{key}"
+      end
+    end
+    wanted_sdks
+  end
+end
+
 module Zenweb
   class Site
     @binary_files = %w[png jpg gif eot svg ttf woff2? ico pdf m4a t?gz xlsx]
@@ -51,46 +116,33 @@ file ["install/new_cluster_checklist_Azure.xlsx", "install/new_cluster_checklist
 end
 
 file "sdk/python/arvados.html" do |t|
-  if ENV['NO_SDK'] || File.exist?("no-sdk")
-    next
-  end
-  # pysdk_pdoc.py is a wrapper around the pdoc CLI. `which pdoc` is an easy
-  # and good-enough test to check whether it's installed at all.
-  `which pdoc`
-  if $? == 0
-    raise unless system("python3", "setup.py", "build",
-                        chdir: "../sdk/python", out: :err)
-    raise unless system("python3", "pysdk_pdoc.py",
-                        out: :err)
-  else
-    puts "Warning: pdoc not found, Python documentation will not be generated".colorize(:light_red)
-  end
+  next unless $build_sdks.include?(PythonSDK)
+  raise unless system("python3", "setup.py", "build",
+                      chdir: "../sdk/python", out: :err)
+  raise unless system("python3", "pysdk_pdoc.py",
+                      out: :err)
 end
 
 file "sdk/R/arvados/index.html" do |t|
-  if ENV['NO_SDK'] || File.exist?("no-sdk")
-    next
-  end
-  `which R`
-  if $? == 0
-    tgt = Dir.pwd
-    Dir.mkdir("sdk/R")
-    Dir.mkdir("sdk/R/arvados")
-    puts("tgt", tgt)
-    cp('css/R.css', 'sdk/R/arvados')
-    docfiles = []
-    Dir.chdir("../sdk/R/") do
-      Dir.entries("man").each do |rd|
-        if rd[-3..-1] == ".Rd"
-          htmlfile = "#{rd[0..-4]}.html"
-          `R CMD Rdconv -t html man/#{rd} > #{tgt}/sdk/R/arvados/#{htmlfile}`
-          docfiles << htmlfile
-        end
+  next unless $build_sdks.include?(RSDK)
+  tgt = Dir.pwd
+  Dir.mkdir("sdk/R")
+  Dir.mkdir("sdk/R/arvados")
+  puts("tgt", tgt)
+  cp('css/R.css', 'sdk/R/arvados')
+  docfiles = []
+  Dir.chdir("../sdk/R/") do
+    Dir.entries("man").each do |rd|
+      if rd[-3..-1] == ".Rd"
+        htmlfile = "#{rd[0..-4]}.html"
+        `R CMD Rdconv -t html man/#{rd} > #{tgt}/sdk/R/arvados/#{htmlfile}`
+        docfiles << htmlfile
       end
     end
-    raise if $? != 0
+  end
+  raise if $? != 0
 
-    File.open("../sdk/R/README.md", "r") do |rd|
+  File.open("../sdk/R/README.md", "r") do |rd|
     File.open("sdk/R/index.html.md", "w") do |fn|
       fn.write(<<-EOF
 ---
@@ -103,11 +155,11 @@ title: "R SDK Overview"
 #{rd.read}
 EOF
               )
-      end
     end
+  end
 
-    File.open("sdk/R/arvados/index.html.textile.liquid", "w") do |fn|
-      fn.write(<<-EOF
+  File.open("sdk/R/arvados/index.html.textile.liquid", "w") do |fn|
+    fn.write(<<-EOF
 ---
 layout: default
 navsection: sdk
@@ -121,54 +173,37 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 EOF
-              )
-
-      docfiles.sort.each do |d|
-        fn.write("* \"#{d[0..-6]}\":#{d}\n")
-      end
-
+            )
+    docfiles.sort.each do |d|
+      fn.write("* \"#{d[0..-6]}\":#{d}\n")
     end
-  else
-    puts "Warning: R not found, R documentation will not be generated".colorize(:light_red)
   end
 end
 
 file "sdk/java-v2/javadoc/index.html" do |t|
-  if ENV['NO_SDK'] || File.exist?("no-sdk")
-    next
+  next unless $build_sdks.include?(JavaSDK)
+  tgt = Dir.pwd
+  docfiles = []
+  Dir.chdir("../sdk/java-v2") do
+    STDERR.puts `gradle javadoc 2>&1`
+    raise if $? != 0
+    puts `sed -i "s/@import.*dejavu.css.*//g" build/docs/javadoc/stylesheet.css`
+    raise if $? != 0
   end
-  `which java`
-  if $? == 0
-    `which gradle`
-    if $? != 0
-      puts "Warning: gradle not found, java sdk documentation will not be generated".colorize(:light_red)
-    else
-      tgt = Dir.pwd
-      docfiles = []
-      Dir.chdir("../sdk/java-v2") do
-        STDERR.puts `gradle javadoc 2>&1`
-        raise if $? != 0
-        puts `sed -i "s/@import.*dejavu.css.*//g" build/docs/javadoc/stylesheet.css`
-        raise if $? != 0
-      end
-      cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
-      raise if $? != 0
-    end
-  else
-    puts "Warning: java not found, java sdk documentation will not be generated".colorize(:light_red)
-  end
+  cp_r("../sdk/java-v2/build/docs/javadoc", "sdk/java-v2")
+  raise if $? != 0
 end
 
 task :linkchecker => [ :generate ] do
-  Dir.chdir(".site") do
-    `which linkchecker`
-    if $? == 0
-      # we need --check-extern to check relative links, weird but true
-      system "linkchecker index.html --check-extern --ignore-url='!file://'" or exit $?.exitstatus
-    else
-      puts "Warning: linkchecker not found, skipping run".colorize(:light_red)
-    end
+  if !can_run?("linkchecker", "--version")
+    puts "Warning: linkchecker not found, skipping run".colorize(:light_red)
+    next
   end
+  # we need --check-extern to check relative links, weird but true
+  system(
+    "linkchecker", "index.html", "--check-extern", "--ignore-url=!file://",
+    chdir: ".site",
+  ) or exit $?.exitstatus
 end
 
 task :import_vscode_training do

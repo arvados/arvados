@@ -55,6 +55,18 @@ Alternately, to make the documentation browsable on the local filesystem:
 arvados/doc$ bundle exec rake generate baseurl=$PWD/.site
 </pre>
 
+h3. Selecting SDK documentation to build
+
+By default, the build process will try to detect what SDK documentation it can build, build all that, and skip the rest. You can specify exactly what you want to build using the @sdks@ environment variable. This is a list of comma- or space-separated SDKs you wanted to build documentation for. Valid values are @java@, @python@, @r@, @all@, or @none@. @all@ is a shortcut for listing all the valid SDKs. @none@ means do not build documentation for any SDK. For example, to build documentation for the Java and Python SDKs, but skip R:
+
+<pre>
+arvados/doc$ bundle exec rake generate baseurl=$PWD/.site sdks=java,python
+</pre>
+
+Specifying @sdks@ skips the build detection logic. If the Rakefile cannot build the requested SDK documentation, the build will fail.
+
+For backwards compatibility, if you do not specify @sdks@, but the @NO_SDK@ environment variable is set, or the @no-sdk@ file exists, the build will run as if you set @sdks=none@.
+
 h2. Run linkchecker
 
 If you have "Linkchecker":http://wummel.github.io/linkchecker/ installed on
