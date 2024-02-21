@@ -19,7 +19,7 @@ If you are logged in to an Arvados VM, the Python SDK should be installed.
 To use the Python SDK elsewhere, you can install it "from an Arvados distribution package":#package-install or "from PyPI using pip":#pip-install.
 
 {% include 'notebox_begin_warning' %}
-As of Arvados 2.2, the Python SDK requires Python 3.6+.  The last version to support Python 2.7 is Arvados 2.0.4.
+As of Arvados 3.0, the Python SDK requires Python 3.8+.
 {% include 'notebox_end' %}
 
 h2(#package-install). Install from a distribution package
@@ -32,14 +32,10 @@ First, configure the "Arvados package repositories":../../install/packages.html
 
 {% include 'install_packages' %}
 
-{% include 'notebox_begin_warning' %}
-If you are on Ubuntu 18.04, please note that the Arvados packages that use Python depend on the python-3.8 package. This means they are installed under @/usr/share/python3.8@, not @/usr/share/python3@. You will need to update the commands below accordingly.
-{% include 'notebox_end' %}
-
 The package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. You can test the installation by doing that, then creating a client object. Ensure your "@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ credentials are set up correctly":{{site.baseurl}}/user/reference/api-tokens.html. Then you should be able to run the following without any errors:
 
 <notextile>
-<pre>~$ <code class="userinput">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code>
+<pre>~$ <code class="userinput">source /usr/lib/python3-arvados-python-client/bin/activate</code>
 (python-arvados-python-client) ~$ <code class="userinput">python</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
@@ -53,7 +49,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 Alternatively, you can run the Python executable inside the @virtualenv@ directly:
 
 <notextile>
-<pre>~$ <code class="userinput">/usr/share/python3/dist/python3-arvados-python-client/bin/python</code>
+<pre>~$ <code class="userinput">/usr/lib/python3-arvados-python-client/bin/python</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.

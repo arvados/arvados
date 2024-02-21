@@ -198,7 +198,7 @@ func (s *HandlerSuite) TestGetHandler(c *check.C) {
 	// should make the service return a 503 so that clients can retry.
 	ExpectStatusCode(c,
 		"Volume backend busy",
-		503, response)
+		http.StatusServiceUnavailable, response)
 }
 
 // Test PutBlockHandler on the following situations:
@@ -1270,7 +1270,7 @@ func (s *HandlerSuite) TestPutStorageClasses(c *check.C) {
 		c.Logf("failure case %#v", trial)
 		rt.storageClasses = trial.ask
 		resp := IssueRequest(s.handler, &rt)
-		c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+		c.Check(resp.Code, check.Equals, http.StatusInsufficientStorage)
 	}
 }
 

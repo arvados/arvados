@@ -54,3 +54,5 @@ export const bindDataExplorerActions = (id: string) => ({
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) => dataExplorerActions.SET_REQUEST_STATE({ ...payload, id }),
     SET_IS_NOT_FOUND: (payload: { isNotFound: boolean }) => dataExplorerActions.SET_IS_NOT_FOUND({ ...payload, id }),
 });
+
+export type BoundDataExplorerActions = ReturnType<typeof bindDataExplorerActions>;

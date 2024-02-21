@@ -32,6 +32,30 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.1":#v2_7_1
 
+h3. Virtual environments inside distribution Python packages have moved
+
+The distribution packages that we publish for Python packages include an entire virtualenv with all required libraries. In Arvados 3.0 these virtualenvs have moved from @/usr/share/python3/dist/PACKAGE_NAME@ to @/usr/lib/PACKAGE_NAME@ to prevent conflicts with distribution packages and better conform to filesystem standards.
+
+If you only run the executables installed by these packages, you don't need to change anything. Those are still installed under @/usr/bin@ and will use the new location when you upgrade. If you have written your own scripts or tools that rely on these virtualenvs, you may need to update those with the new location. For example, if you have a shell script that activates the virtualenv by running:
+
+<pre><code class="shell">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code></pre>
+
+You must update it to:
+
+<notextile>
+<pre><code class="shell">source <span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/activate</code></pre>
+</notextile>
+
+If you have a Python script with this shebang line:
+
+<pre><code class="shell">#!/usr/share/python3/dist/python3-arvados-python-client/bin/python</code></pre>
+
+You must update it to:
+
+<notextile>
+<pre><code class="shell">#!<span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/python</code></pre>
+</notextile>
+
 h3. WebDAV service uses @/var/cache@ for file content
 
 @keep-web@ now stores copies of recently accessed data blocks in @/var/cache/arvados/keep@ instead of in memory. That directory will be created automatically. The default cache size is 10% of the filesystem size. Use the new @Collections.WebDAVCache.DiskCacheSize@ config to specify a different percentage or an absolute size.

@@ -220,8 +220,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export enum ProcessIOCardType {
-    INPUT = "Inputs",
-    OUTPUT = "Outputs",
+    INPUT = "Input Parameters",
+    OUTPUT = "Output Parameters",
 }
 export interface ProcessIOCardDataProps {
     process?: Process;
