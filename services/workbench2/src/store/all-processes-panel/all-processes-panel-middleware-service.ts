@@ -41,7 +41,6 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
                         select: containerRequestFieldsNoMounts,
                     });
 
-                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
                 api.dispatch(resourcesActions.SET_RESOURCES(processItems.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(processItems.items));
                 api.dispatch(allProcessesPanelActions.SET_ITEMS({
@@ -50,6 +49,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
                     page: Math.floor(processItems.offset / processItems.limit),
                     rowsPerPage: processItems.limit
                 }));
+                if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
             } catch {
                 if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
                 api.dispatch(allProcessesPanelActions.SET_ITEMS({
