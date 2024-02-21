@@ -12,12 +12,22 @@ Additional information is available on the "'Documentation' page on the Arvados 
 
 h2. Install dependencies
 
+To build the core Arvados documentation:
+
 <pre>
 arvados/doc$ sudo apt-get install build-essential libcurl4-openssl-dev libgnutls28-dev libssl-dev
 arvados/doc$ bundle install
 </pre>
 
-To generate the Python SDK documentation, these additional dependencies are needed:
+SDK reference documentation has additional, optional build requirements.
+
+h3. Java SDK documentation
+
+<pre>
+$ sudo apt install gradle
+</pre>
+
+h3. Python SDK documentation
 
 <pre>
 arvados/doc$ sudo apt install python3-venv
@@ -26,6 +36,12 @@ arvados/doc$ .venv/bin/pip install pdoc setuptools
 </pre>
 
 Then you must activate the virtualenv (e.g., run @. .venv/bin/activate@) before you run the @bundle exec rake@ commands below.
+
+h3. R SDK documentation
+
+<pre>
+$ sudo apt install r-cran-devtools r-cran-roxygen2 r-cran-knitr r-cran-markdown r-cran-xml
+</pre>
 
 h2. Generate HTML pages
 
