@@ -312,7 +312,7 @@ export const DataTable = withStyles(styles)(
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
             const { isLoaded } = this.state;
-            const { working, items, isNotFound } = this.props;
+            const { working, isNotFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
             if (isNotFound && isLoaded) {
                 return (
