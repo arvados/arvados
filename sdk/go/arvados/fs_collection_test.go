@@ -1501,6 +1501,39 @@ func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
 	c.Check(string(buf), check.Equals, filedata1)
 }
 
+func (s *CollectionFSSuite) TestPrefetchLargeFile(c *check.C) {
+	defer func(orig int) { maxBlockSize = orig }(maxBlockSize)
+	maxBlockSize = 1_000_000
+	txt := "."
+	nblocks := 10
+	locator := make([]string, nblocks)
+	data := make([]byte, maxBlockSize)
+	for i := 0; i < nblocks; i++ {
+		data[0] = byte(i)
+		resp, err := s.kc.BlockWrite(context.Background(), BlockWriteOptions{Data: data})
+		c.Assert(err, check.IsNil)
+		locator[i] = resp.Locator
+		txt += " " + resp.Locator
+	}
+	txt += fmt.Sprintf(" 0:%d:bigfile\n", nblocks*maxBlockSize)
+	fs, err := (&Collection{ManifestText: txt}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	c.Assert(s.kc.reads, check.HasLen, 0)
+
+	// Reading the first few bytes of the file requires reading
+	// the first block, and should also trigger pre-fetch of the
+	// second block.
+	f, err := fs.Open("bigfile")
+	c.Assert(err, check.IsNil)
+	_, err = f.Read(make([]byte, 8192))
+	c.Assert(err, check.IsNil)
+	for deadline := time.Now().Add(time.Second); len(s.kc.reads) < 2 && c.Check(time.Now().Before(deadline), check.Equals, true); time.Sleep(time.Millisecond) {
+	}
+	if c.Check(s.kc.reads, check.HasLen, 2) {
+		c.Check(s.kc.reads[1], check.Not(check.Equals), s.kc.reads[0])
+	}
+}
+
 func (s *CollectionFSSuite) TestRefreshSignatures(c *check.C) {
 	filedata1 := "hello refresh signatures world\n"
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)

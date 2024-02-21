@@ -28,6 +28,15 @@ type keepViaHTTP struct {
 }
 
 func (kvh *keepViaHTTP) ReadAt(locator string, dst []byte, offset int) (int, error) {
+	if len(dst) == 0 {
+		// arvados.collectionFileSystem uses a zero-length
+		// read to trigger pre-fetching a block into the cache
+		// before it's actually needed.  If a pre-fetch
+		// request gets this far, it means there's no cache
+		// above us in the stack, so the pre-fetch signal is a
+		// no-op.
+		return 0, nil
+	}
 	rdr, _, _, _, err := kvh.getOrHead("GET", locator, nil)
 	if err != nil {
 		return 0, err

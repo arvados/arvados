@@ -632,7 +632,7 @@ func (fn *filenode) MemorySize() (size int64) {
 
 // Read reads file data from a single segment, starting at startPtr,
 // into p. startPtr is assumed not to be up-to-date. Caller must have
-// RLock or Lock.
+// lock.
 func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr, err error) {
 	ptr = fn.seek(startPtr)
 	if ptr.off < 0 {
@@ -645,8 +645,10 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 	}
 	if ss, ok := fn.segments[ptr.segmentIdx].(storedSegment); ok {
 		ss.locator = fn.fs.refreshSignature(ss.locator)
+		ss.didRead = true
 		fn.segments[ptr.segmentIdx] = ss
 	}
+
 	n, err = fn.segments[ptr.segmentIdx].ReadAt(p, int64(ptr.segmentOff))
 	if n > 0 {
 		ptr.off += int64(n)
@@ -659,6 +661,24 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 			}
 		}
 	}
+
+	prefetch := maxBlockSize
+	for inext := ptr.segmentIdx; inext < len(fn.segments) && prefetch > 0; inext++ {
+		if inext == ptr.segmentIdx && ptr.segmentOff > 0 {
+			// We already implicitly pre-fetched the
+			// remainder of the current segment by calling
+			// ReadAt above.
+			prefetch -= fn.segments[inext].Len() - ptr.segmentOff
+			continue
+		}
+		if next, ok := fn.segments[inext].(storedSegment); ok && !next.didRead {
+			next.didRead = true
+			fn.segments[inext] = next
+			go next.ReadAt([]byte{}, 0)
+		}
+		prefetch -= fn.segments[inext].Len()
+	}
+
 	return
 }
 
@@ -1766,6 +1786,11 @@ type storedSegment struct {
 	size    int // size of stored block (also encoded in locator)
 	offset  int // position of segment within the stored block
 	length  int // bytes in this segment (offset + length <= size)
+
+	// set when we first try to read from this segment, and
+	// checked before pre-fetch, to avoid unnecessary cache
+	// thrashing
+	didRead bool
 }
 
 func (se storedSegment) Len() int {
