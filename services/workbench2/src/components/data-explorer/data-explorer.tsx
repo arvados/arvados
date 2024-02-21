@@ -320,7 +320,7 @@ export const DataExplorer = withStyles(styles)(
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
                                 working={working}
-                                isNotFound={this.props.isNotFound}
+                                isNotFound={this.props.isNotFound || false}
                             />
                         </Grid>
                         <Grid
