@@ -1,0 +1,17 @@
+2018-10-03T18:21:07.823780191Z notice: reading stats from /sys/fs/cgroup/cpuacct//slurm_compute0/uid_0/job_6478/step_batch/c1df52c9940aae3f0fd586cacd7c0d7cb81b33aec973a67c9a7519bfe38ea914/cgroup.procs
+2018-10-03T18:21:07.823841282Z notice: monitoring temp dir /tmp/crunch-run.9tee4-dz642-lymtndkpy39eibk.438029160
+2018-10-03T18:21:07.823917514Z notice: reading stats from /sys/fs/cgroup/memory//slurm_compute0/uid_0/job_6478/step_batch/c1df52c9940aae3f0fd586cacd7c0d7cb81b33aec973a67c9a7519bfe38ea914/memory.stat
+2018-10-03T18:21:07.824136521Z mem 0 cache 0 swap 0 pgmajfault 1187840 rss
+2018-10-03T18:21:07.824187182Z notice: reading stats from /sys/fs/cgroup/cpuacct//slurm_compute0/uid_0/job_6478/step_batch/c1df52c9940aae3f0fd586cacd7c0d7cb81b33aec973a67c9a7519bfe38ea914/cpuacct.stat
+2018-10-03T18:21:07.824253726Z notice: reading stats from /sys/fs/cgroup/cpuset//slurm_compute0/uid_0/job_6478/step_batch/c1df52c9940aae3f0fd586cacd7c0d7cb81b33aec973a67c9a7519bfe38ea914/cpuset.cpus
+2018-10-03T18:21:07.824296720Z cpu 0.0000 user 0.0100 sys 20.00 cpus
+2018-10-03T18:21:07.824361476Z notice: reading stats from /sys/fs/cgroup/blkio//slurm_compute0/uid_0/job_6478/step_batch/c1df52c9940aae3f0fd586cacd7c0d7cb81b33aec973a67c9a7519bfe38ea914/blkio.io_service_bytes
+2018-10-03T18:21:07.824551021Z statfs 397741461504 available 4869779456 used 402611240960 total
+2018-10-03T18:21:17.824503045Z mem 172032 cache 0 swap 0 pgmajfault 68247552 rss
+2018-10-03T18:21:17.824702097Z cpu 2.0000 user 0.3800 sys 20.00 cpus -- interval 10.0004 seconds 2.0000 user 0.3700 sys
+2018-10-03T18:21:17.824984621Z net:eth0 51930 tx 844687 rx
+2018-10-03T18:21:17.825021992Z statfs 397740937216 available 4870303744 used 402611240960 total -- interval 10.0005 seconds 524288 used
+2018-10-03T18:21:27.824480114Z mem 172032 cache 0 swap 0 pgmajfault 69525504 rss
+2018-10-03T18:21:27.826909728Z cpu 2.0600 user 0.3900 sys 20.00 cpus -- interval 10.0022 seconds 0.0600 user 0.0100 sys
+2018-10-03T18:21:27.827141860Z net:eth0 55888 tx 859480 rx -- interval 10.0022 seconds 3958 tx 14793 rx
+2018-10-03T18:21:27.827177703Z statfs 397744787456 available 4866453504 used 402611240960 total -- interval 10.0022 seconds -3850240 used

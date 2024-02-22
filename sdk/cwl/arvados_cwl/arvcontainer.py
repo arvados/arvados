@@ -28,6 +28,7 @@ from cwltool.job import JobBase
 import arvados.collection
 
 import crunchstat_summary.summarizer
+import crunchstat_summary.reader
 
 from .arvdocker import arv_docker_get_image
 from . import done
@@ -535,7 +536,8 @@ class ArvadosContainer(JobBase):
 
             if logc is not None:
                 try:
-                    summerizer = crunchstat_summary.summarizer.NewSummarizer(self.uuid, arv=self.arvrunner.api)
+                    summerizer = crunchstat_summary.summarizer.Summarizer(crunchstat_summary.reader.CollectionReader(logc.manifest_locator(), collection_object=logc),
+                                                                          label=self.name, arv=self.arvrunner.api)
                     summerizer.run()
                     with logc.open("usage_report.html", "wt") as mr:
                         mr.write(summerizer.html_report())

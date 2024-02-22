@@ -23,6 +23,7 @@ import cwltool.load_tool
 from cwltool.update import INTERNAL_VERSION
 from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
+import io
 
 from .matcher import JsonDiffMatcher, StripYAMLComments
 from .mock_discovery import get_rootDesc
@@ -518,11 +519,47 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
 
+        runner.api.container_requests().get().execute.return_value = {"container_uuid":"zzzzz-xvhdp-zzzzzzzzzzzzzzz"}
+
         runner.api.containers().get().execute.return_value = {"state":"Complete",
                                                               "output": "abc+123",
                                                               "exit_code": 0}
 
-        col().open.return_value = []
+        # Need to noop-out the close method otherwise it gets
+        # discarded when closed and we can't call getvalue() to check
+        # it.
+        class NoopCloseStringIO(io.StringIO):
+            def close(self):
+                pass
+
+        usage_report = NoopCloseStringIO()
+        def colreader_action(name, mode):
+            nonlocal usage_report
+            if name == "node.json":
+                return io.StringIO("""{
+    "ProviderType": "c5.large",
+    "VCPUs": 2,
+    "RAM": 4294967296,
+    "IncludedScratch": 8000000000000,
+    "AddedScratch": 0,
+    "Price": 0.085,
+    "Preemptible": false,
+    "CUDA": {
+        "DriverVersion": "",
+        "HardwareCapability": "",
+        "DeviceCount": 0
+    }
+}""")
+            if name == 'crunchstat.txt':
+                return open("tests/container_request_9tee4-xvhdp-kk0ja1cl8b2kr1y-arv-mount.txt", "rt")
+            if name == 'arv-mount.txt':
+                return open("tests/container_request_9tee4-xvhdp-kk0ja1cl8b2kr1y-crunchstat.txt", "rt")
+            if name == 'usage_report.html':
+                return usage_report
+            return None
+
+        col().open.side_effect = colreader_action
+        col().__iter__.return_value = ['node.json', 'crunchstat.txt', 'arv-mount.txt']
 
         loadingContext, runtimeContext = self.helper(runner)
 
@@ -550,11 +587,15 @@ class TestContainer(unittest.TestCase):
             "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
             "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
             "modified_at": "2017-05-26T12:01:22Z",
-            "properties": {}
+            "properties": {},
+            "name": "testjob"
         })
 
         self.assertFalse(api.collections().create.called)
         self.assertFalse(runner.runtime_status_error.called)
+
+        # Assert that something was written to the usage report
+        self.assertTrue(len(usage_report.getvalue()) > 0)
 
         arvjob.collect_outputs.assert_called_with("keep:abc+123", 0)
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")

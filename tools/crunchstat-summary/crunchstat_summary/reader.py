@@ -12,12 +12,12 @@ from crunchstat_summary import logger
 
 
 class CollectionReader(object):
-    def __init__(self, collection_id, api_client=None):
+    def __init__(self, collection_id, api_client=None, collection_object=None):
         self._collection_id = collection_id
         self._label = collection_id
         self._readers = []
         self._api_client = api_client
-        self._collection = arvados.collection.CollectionReader(self._collection_id, api_client=self._api_client)
+        self._collection = collection_object or arvados.collection.CollectionReader(self._collection_id, api_client=self._api_client)
 
     def __str__(self):
         return self._label
@@ -31,7 +31,7 @@ class CollectionReader(object):
             filenames = ['crunchstat.txt', 'arv-mount.txt']
         for filename in filenames:
             try:
-                self._readers.append(self._collection.open(filename))
+                self._readers.append(self._collection.open(filename, "rt"))
             except IOError:
                 logger.warn('Unable to open %s', filename)
         self._label = "{}/{}".format(self._collection_id, filenames[0])
@@ -48,7 +48,7 @@ class CollectionReader(object):
 
     def node_info(self):
         try:
-            with self._collection.open("node.json") as f:
+            with self._collection.open("node.json", "rt") as f:
                 return json.load(f)
         except IOError:
             logger.warn('Unable to open node.json')
