@@ -606,7 +606,7 @@ func (s *keepstoreSuite) TestBlockWrite_SkipReadOnly(c *C) {
 	c.Check(ks.mounts["zzzzz-nyw5e-222222222222222"].volume.(*stubVolume).stubLog.String(), HasLen, 0)
 }
 
-func (s *keepstoreSuite) TestParseLocator(c *C) {
+func (s *keepstoreSuite) TestGetLocatorInfo(c *C) {
 	for _, trial := range []struct {
 		locator string
 		ok      bool
@@ -622,6 +622,15 @@ func (s *keepstoreSuite) TestParseLocator(c *C) {
 			ok: true, expect: locatorInfo{size: 1234, remote: true}},
 		{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+12345+Zexample+Rzzzzz-abcdef",
 			ok: true, expect: locatorInfo{size: 12345, remote: true}},
+		{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+123456+👶🦈+Rzzzzz-abcdef",
+			ok: true, expect: locatorInfo{size: 123456, remote: true}},
+		// invalid: bad hash char
+		{locator: "aaaaaaaaaaaaaazaaaaaaaaaaaaaaaaa+1234",
+			ok: false},
+		{locator: "aaaaaaaaaaaaaaFaaaaaaaaaaaaaaaaa+1234",
+			ok: false},
+		{locator: "aaaaaaaaaaaaaa⛵aaaaaaaaaaaaaaaaa+1234",
+			ok: false},
 		// invalid: hash length != 32
 		{locator: "",
 			ok: false},
@@ -635,6 +644,15 @@ func (s *keepstoreSuite) TestParseLocator(c *C) {
 			ok: false},
 		// invalid: first hint is not size
 		{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+Abcdef+1234",
+			ok: false},
+		// invalid: leading/trailing/double +
+		{locator: "+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1234",
+			ok: false},
+		{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1234+",
+			ok: false},
+		{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa++1234",
+			ok: false},
+		{locator: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1234++Abcdef@abcdef",
 			ok: false},
 	} {
 		c.Logf("=== %s", trial.locator)

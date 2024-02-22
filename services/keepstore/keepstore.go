@@ -719,31 +719,44 @@ type locatorInfo struct {
 
 func getLocatorInfo(loc string) (locatorInfo, error) {
 	var li locatorInfo
-	for i, part := range strings.Split(loc, "+") {
-		if i == 0 {
-			if len(part) != 32 {
+	plus := 0    // number of '+' chars seen so far
+	partlen := 0 // chars since last '+'
+	for i, c := range loc + "+" {
+		if c == '+' {
+			if partlen == 0 {
+				// double/leading/trailing '+'
 				return li, errInvalidLocator
 			}
-			li.hash = part
+			if plus == 0 {
+				if i != 32 {
+					return li, errInvalidLocator
+				}
+				li.hash = loc[:i]
+			}
+			if plus == 1 {
+				if size, err := strconv.Atoi(loc[i-partlen : i]); err == nil {
+					li.size = size
+				}
+			}
+			plus++
+			partlen = 0
 			continue
 		}
-		if i == 1 {
-			if size, err := strconv.Atoi(part); err == nil {
-				li.size = size
-				continue
+		partlen++
+		if partlen == 1 {
+			if c == 'A' {
+				li.signed = true
+			}
+			if c == 'R' {
+				li.remote = true
+			}
+			if plus > 1 && c >= '0' && c <= '9' {
+				// size, if present at all, must come first
+				return li, errInvalidLocator
 			}
 		}
-		if len(part) == 0 {
-			return li, errInvalidLocator
-		}
-		if part[0] == 'A' {
-			li.signed = true
-		}
-		if part[0] == 'R' {
-			li.remote = true
-		}
-		if part[0] >= '0' && part[0] <= '9' {
-			// size, if present at all, must come first
+		if plus == 0 && !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			// non-hexadecimal char in hash part
 			return li, errInvalidLocator
 		}
 	}
