@@ -168,7 +168,10 @@ export const DataTable = withStyles(styles)(
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([])
             }
-            if((prevProps.working === true && this.props.working === false || this.props.items.length > 0) && !this.state.isLoaded) {
+            if(prevProps.working === true && this.props.working === false) {
+                this.setState({ isLoaded: true });
+            }
+            if((this.props.items.length > 0) && !this.state.isLoaded) {
                 this.setState({ isLoaded: true });
             }
         }
@@ -295,7 +298,6 @@ export const DataTable = withStyles(styles)(
             const { isLoaded } = this.state;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
-            console.log(items)
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
@@ -315,7 +317,6 @@ export const DataTable = withStyles(styles)(
             const { isLoaded } = this.state;
             const { working, isNotFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            console.log('isNotFound', isNotFound, 'isLoaded', isLoaded, 'working', working, )
             if (isNotFound && isLoaded) {
                 return (
                     <DataTableDefaultView 
@@ -410,7 +411,6 @@ export const DataTable = withStyles(styles)(
         );
 
         renderBodyRow = (item: any, index: number) => {
-            console.log('item', item)
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
             return (
                 <TableRow
