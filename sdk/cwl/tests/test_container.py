@@ -651,11 +651,14 @@ class TestContainer(unittest.TestCase):
             "properties": {}
         })
 
-        rts_mock.assert_called_with(
-            'error',
-            'arvados.cwl-runner: [container testjob] (zzzzz-xvhdp-zzzzzzzzzzzzzzz) error log:',
-            '  ** log is empty **'
-        )
+        rts_mock.assert_has_calls([
+            mock.call('error',
+                      'arvados.cwl-runner: [container testjob] (zzzzz-xvhdp-zzzzzzzzzzzzzzz) error log:',
+                      '  ** log is empty **'
+                      ),
+            mock.call('warning',
+                      'arvados.cwl-runner: [container testjob] unable to generate resource usage report'
+        )])
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "permanentFail")
 
     # The test passes no builder.resources

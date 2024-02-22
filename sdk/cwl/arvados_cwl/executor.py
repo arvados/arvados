@@ -146,6 +146,7 @@ class ArvCwlExecutor(object):
         self.stdout = stdout
         self.fast_submit = False
         self.git_info = arvargs.git_info
+        self.debug = False
 
         if keep_client is not None:
             self.keep_client = keep_client
