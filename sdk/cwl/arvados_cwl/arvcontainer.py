@@ -541,7 +541,7 @@ class ArvadosContainer(JobBase):
                         mr.write(summerizer.html_report())
                     logc.save()
                 except Exception as e:
-                    logger.error("%s unable to generate resource usage report",
+                    logger.warning("%s unable to generate resource usage report",
                                  self.arvrunner.label(self),
                                  exc_info=(e if self.arvrunner.debug else False))
 

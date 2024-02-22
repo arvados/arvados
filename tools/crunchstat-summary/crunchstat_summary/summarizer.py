@@ -277,11 +277,11 @@ class Summarizer(object):
         label = ""
         s = (self.finishtime - self.starttime).total_seconds()
         if s > 86400:
-            label += '{}d'.format(int(s/86400))
+            label += '{}d '.format(int(s/86400))
         if s > 3600:
-            label += '{}h'.format(int(s/3600) % 24)
+            label += '{}h '.format(int(s/3600) % 24)
         if s > 60:
-            label += '{}m'.format(int(s/60) % 60)
+            label += '{}m '.format(int(s/60) % 60)
         label += '{}s'.format(int(s) % 60)
         return label
 
@@ -312,57 +312,97 @@ class Summarizer(object):
         by_single_task = ""
         if len(self.tasks) > 1:
             by_single_task = " by a single task"
+
         metrics = [
             ('Elapsed time',
              self.elapsed_time(),
              None,
              ''),
-                ('CPU time spent{}'.format(by_single_task),
-                 self.stats_max['cpu']['user+sys'],
-                 None,
-                 's'),
-                ('Max CPU usage in a single interval',
-                 self.stats_max['cpu']['user+sys__rate'],
-                 lambda x: x * 100,
-                 '%'),
-                ('Overall CPU usage',
-                 float(self.job_tot['cpu']['user+sys']) /
-                 self.job_tot['time']['elapsed']
-                 if self.job_tot['time']['elapsed'] > 0 else 0,
-                 lambda x: x * 100,
-                 '%'),
-                ('Max memory used{}'.format(by_single_task),
-                 self.stats_max['mem']['rss'],
-                 lambda x: x / 1e9,
-                 'GB'),
-                ('Max network traffic{}'.format(by_single_task),
-                 self.stats_max['net:eth0']['tx+rx'] +
-                 self.stats_max['net:keep0']['tx+rx'],
-                 lambda x: x / 1e9,
-                 'GB'),
-                ('Max network speed in a single interval',
-                 self.stats_max['net:eth0']['tx+rx__rate'] +
-                 self.stats_max['net:keep0']['tx+rx__rate'],
-                 lambda x: x / 1e6,
-                 'MB/s'),
-                ('Keep cache miss rate',
-                 (float(self.job_tot['keepcache']['miss']) /
-                 float(self.job_tot['keepcalls']['get']))
-                 if self.job_tot['keepcalls']['get'] > 0 else 0,
-                 lambda x: x * 100.0,
-                 '%'),
-                ('Keep cache utilization',
-                 (float(self.job_tot['blkio:0:0']['read']) /
-                 float(self.job_tot['net:keep0']['rx']))
-                 if self.job_tot['net:keep0']['rx'] > 0 else 0,
-                 lambda x: x * 100.0,
-                 '%'),
-               ('Temp disk utilization',
-                 (float(self.job_tot['statfs']['used']) /
-                 float(self.job_tot['statfs']['total']))
-                 if self.job_tot['statfs']['total'] > 0 else 0,
-                 lambda x: x * 100.0,
-                '%'),
+
+            ('Estimated cost',
+             '${:.3f}'.format(self.cost),
+             None,
+             '') if self.cost > 0 else None,
+
+            ('Assigned instance type',
+             self.node_info.get('ProviderType'),
+             None,
+             '') if self.node_info.get('ProviderType') else None,
+
+            ('Instance hourly price',
+             '${:.3f}'.format(self.node_info.get('Price')),
+             None,
+             '') if self.node_info.get('Price') else None,
+
+            ('Max CPU usage in a single interval',
+             self.stats_max['cpu']['user+sys__rate'],
+             lambda x: x * 100,
+             '%'),
+
+            ('Overall CPU usage',
+             float(self.job_tot['cpu']['user+sys']) /
+             self.job_tot['time']['elapsed']
+             if self.job_tot['time']['elapsed'] > 0 else 0,
+             lambda x: x * 100,
+             '%'),
+
+            ('Requested CPU cores',
+             self.existing_constraints.get(self._map_runtime_constraint('vcpus')),
+             None,
+             ''),
+
+            ('Instance VCPUs',
+             self.node_info.get('VCPUs'),
+             None,
+             '') if self.node_info.get('VCPUs') else None,
+
+            ('Max memory used{}'.format(by_single_task),
+             self.stats_max['mem']['rss'],
+             lambda x: x / 2**20,
+             'MB'),
+
+            ('Requested RAM',
+             self.existing_constraints.get(self._map_runtime_constraint('ram')),
+             lambda x: x / 2**20,
+             'MB'),
+
+            ('Maximum RAM request for this instance type',
+             (self.node_info.get('RAM') - self.arv_config.get('Containers', {}).get('ReserveExtraRAM', {}))*.95,
+             lambda x: x / 2**20,
+             'MB'),
+
+            ('Max network traffic{}'.format(by_single_task),
+             self.stats_max['net:eth0']['tx+rx'] +
+             self.stats_max['net:keep0']['tx+rx'],
+             lambda x: x / 1e9,
+             'GB'),
+
+            ('Max network speed in a single interval',
+             self.stats_max['net:eth0']['tx+rx__rate'] +
+             self.stats_max['net:keep0']['tx+rx__rate'],
+             lambda x: x / 1e6,
+             'MB/s'),
+
+            ('Keep cache miss rate',
+             (float(self.job_tot['keepcache']['miss']) /
+              float(self.job_tot['keepcalls']['get']))
+             if self.job_tot['keepcalls']['get'] > 0 else 0,
+             lambda x: x * 100.0,
+             '%'),
+
+            ('Keep cache utilization',
+             (float(self.job_tot['blkio:0:0']['read']) /
+              float(self.job_tot['net:keep0']['rx']))
+             if self.job_tot['net:keep0']['rx'] > 0 else 0,
+             lambda x: x * 100.0,
+             '%'),
+
+            ('Temp disk utilization',
+             (float(self.job_tot['statfs']['used']) /
+              float(self.job_tot['statfs']['total']))
+             if self.job_tot['statfs']['total'] > 0 else 0,
+             lambda x: x * 100.0,
+             '%'),
         ]
 
         if len(self.tasks) > 1:
@@ -371,6 +411,8 @@ class Summarizer(object):
                  None,
                  ''))
         for args in metrics:
+            if args is None:
+                continue
             format_string, val, transform, suffix = args
             if val == float('-Inf'):
                 continue
@@ -581,6 +623,7 @@ class ProcessSummarizer(Summarizer):
     def __init__(self, process, label=None, **kwargs):
         rdr = None
         self.process = process
+        arv = kwargs.get("arv") or arvados.api('v1')
         if label is None:
             label = self.process.get('name', self.process['uuid'])
         # Pre-Arvados v1.4 everything is in 'log'
@@ -588,7 +631,7 @@ class ProcessSummarizer(Summarizer):
         log_collection = self.process.get('log', self.process.get('log_uuid'))
         if log_collection and self.process.get('state') != 'Uncommitted': # arvados.util.CR_UNCOMMITTED:
             try:
-                rdr = crunchstat_summary.reader.CollectionReader(log_collection)
+                rdr = crunchstat_summary.reader.CollectionReader(log_collection, api_client=arv)
             except arvados.errors.NotFoundError as e:
                 logger.warning("Trying event logs after failing to read "
                                "log collection %s: %s", self.process['log'], e)
@@ -596,8 +639,14 @@ class ProcessSummarizer(Summarizer):
             uuid = self.process.get('container_uuid', self.process.get('uuid'))
             rdr = crunchstat_summary.reader.LiveLogReader(uuid)
             label = label + ' (partial)'
+        else:
+            self.node_info = rdr.node_info()
+
         super(ProcessSummarizer, self).__init__(rdr, label=label, **kwargs)
         self.existing_constraints = self.process.get('runtime_constraints', {})
+        self.arv_config = arv.config()
+        self.cost = self.process.get('cost', 0)
+
 
 
 class JobSummarizer(ProcessSummarizer):

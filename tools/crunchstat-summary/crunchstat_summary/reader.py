@@ -4,6 +4,7 @@
 
 import arvados
 import itertools
+import json
 import queue
 import threading
 
@@ -11,24 +12,26 @@ from crunchstat_summary import logger
 
 
 class CollectionReader(object):
-    def __init__(self, collection_id):
+    def __init__(self, collection_id, api_client=None):
         self._collection_id = collection_id
         self._label = collection_id
         self._readers = []
+        self._api_client = api_client
+        self._collection = arvados.collection.CollectionReader(self._collection_id, api_client=self._api_client)
 
     def __str__(self):
         return self._label
 
     def __iter__(self):
         logger.debug('load collection %s', self._collection_id)
-        collection = arvados.collection.CollectionReader(self._collection_id)
-        filenames = [filename for filename in collection]
+
+        filenames = [filename for filename in self._collection]
         # Crunch2 has multiple stats files
         if len(filenames) > 1:
             filenames = ['crunchstat.txt', 'arv-mount.txt']
         for filename in filenames:
             try:
-                self._readers.append(collection.open(filename))
+                self._readers.append(self._collection.open(filename))
             except IOError:
                 logger.warn('Unable to open %s', filename)
         self._label = "{}/{}".format(self._collection_id, filenames[0])
@@ -42,6 +45,14 @@ class CollectionReader(object):
             for reader in self._readers:
                 reader.close()
             self._readers = []
+
+    def node_info(self):
+        try:
+            with self._collection.open("node.json") as f:
+                return json.load(f)
+        except IOError:
+            logger.warn('Unable to open node.json')
+        return {}
 
 
 class LiveLogReader(object):
