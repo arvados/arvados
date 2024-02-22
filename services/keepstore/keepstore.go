@@ -322,7 +322,10 @@ func (ks *keepstore) blockReadRemote(ctx context.Context, opts arvados.BlockRead
 	}
 	var remoteClient *keepclient.KeepClient
 	var parts []string
-	var size int
+	li, err := getLocatorInfo(opts.Locator)
+	if err != nil {
+		return 0, err
+	}
 	for i, part := range strings.Split(opts.Locator, "+") {
 		switch {
 		case i == 0:
@@ -344,8 +347,6 @@ func (ks *keepstore) blockReadRemote(ctx context.Context, opts arvados.BlockRead
 			}
 			remoteClient = kc
 			part = "A" + part[7:]
-		case len(part) > 0 && part[0] >= '0' && part[0] <= '9':
-			size, _ = strconv.Atoi(part)
 		}
 		parts = append(parts, part)
 	}
@@ -356,8 +357,8 @@ func (ks *keepstore) blockReadRemote(ctx context.Context, opts arvados.BlockRead
 	if opts.LocalLocator == nil {
 		// Read from remote cluster and stream response back
 		// to caller
-		if rw, ok := opts.WriteTo.(http.ResponseWriter); ok && size > 0 {
-			rw.Header().Set("Content-Length", fmt.Sprintf("%d", size))
+		if rw, ok := opts.WriteTo.(http.ResponseWriter); ok && li.size > 0 {
+			rw.Header().Set("Content-Length", fmt.Sprintf("%d", li.size))
 		}
 		return remoteClient.BlockRead(ctx, arvados.BlockReadOptions{
 			Locator: locator,
