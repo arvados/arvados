@@ -23,8 +23,8 @@ func (f *filehandle) Read(p []byte) (n int, err error) {
 	if !f.readable {
 		return 0, ErrWriteOnlyMode
 	}
-	f.inode.RLock()
-	defer f.inode.RUnlock()
+	f.inode.Lock()
+	defer f.inode.Unlock()
 	n, f.ptr, err = f.inode.Read(p, f.ptr)
 	return
 }

@@ -649,10 +649,14 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 		fn.segments[ptr.segmentIdx] = ss
 	}
 
-	n, err = fn.segments[ptr.segmentIdx].ReadAt(p, int64(ptr.segmentOff))
+	current := fn.segments[ptr.segmentIdx]
+	n, err = current.ReadAt(p, int64(ptr.segmentOff))
 	if n > 0 {
 		ptr.off += int64(n)
 		ptr.segmentOff += n
+		if dn, ok := fn.parent.(*dirnode); ok {
+			go dn.prefetch(fn, fn.fileinfo.name, ptr)
+		}
 		if ptr.segmentOff == fn.segments[ptr.segmentIdx].Len() {
 			ptr.segmentIdx++
 			ptr.segmentOff = 0
@@ -661,24 +665,6 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 			}
 		}
 	}
-
-	prefetch := maxBlockSize
-	for inext := ptr.segmentIdx; inext < len(fn.segments) && prefetch > 0; inext++ {
-		if inext == ptr.segmentIdx && ptr.segmentOff > 0 {
-			// We already implicitly pre-fetched the
-			// remainder of the current segment by calling
-			// ReadAt above.
-			prefetch -= fn.segments[inext].Len() - ptr.segmentOff
-			continue
-		}
-		if next, ok := fn.segments[inext].(storedSegment); ok && !next.didRead {
-			next.didRead = true
-			fn.segments[inext] = next
-			go next.ReadAt([]byte{}, 0)
-		}
-		prefetch -= fn.segments[inext].Len()
-	}
-
 	return
 }
 
@@ -1003,6 +989,9 @@ func (fn *filenode) Splice(repl inode) error {
 type dirnode struct {
 	fs *collectionFileSystem
 	treenode
+
+	prefetchNames []string
+	prefetchDone  map[string]int64
 }
 
 func (dn *dirnode) FS() FileSystem {
@@ -1222,6 +1211,139 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 		goCommit(pending, pendingLen)
 	}
 	return cg.Wait()
+}
+
+// Prefetch file data based on expected future usage.
+//
+// After a read from this dirnode's child fn with the given name that
+// leaves the file pointer at ptr (which may be at the end of a
+// segment), guess the next maxBlockSize bytes most likely to be read
+// soon, and prod the cache layer to start loading the needed blocks.
+//
+// This implementation prioritizes efficiency over completeness. The
+// main requirements are:
+//
+//   - when reading a large file sequentially, pre-fetch the next
+//     maxBlockSize bytes that will be needed (regardless of actual
+//     block size)
+//
+//   - when reading many small files in lexical order, pre-fetch the
+//     next maxBlockSize bytes that will be needed (regardless of
+//     actual block size)
+//
+//   - minimize the overhead cost for typical sequences of read
+//     operations (e.g., when a caller reads a file sequentially 1024
+//     bytes at a time, and prefetch is called on each read, most of
+//     the calls should be nearly free)
+func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
+	// pre-fetch following blocks until we're this many bytes ahead
+	todo := maxBlockSize
+
+	// Check the common case where there was a recent read from a
+	// slightly earlier offset in the same file, and as a result
+	// we have already prefetched enough data to cover
+	// ptr.off+todo.
+	{
+		dn.Lock()
+		done, ok := dn.prefetchDone[name]
+		dn.Unlock()
+		if ok && done >= ptr.off && done < ptr.off+int64(todo) {
+			return
+		}
+	}
+
+	// last locator prefetched, if any
+	var lastlocator string
+
+	fn.Lock()
+	for inext := ptr.segmentIdx; inext < len(fn.segments) && todo > 0; inext++ {
+		if inext == ptr.segmentIdx {
+			// Caller (i.e., (*filenode)Read()) has
+			// already fetched the current segment.
+			todo -= fn.segments[inext].Len() - ptr.segmentOff
+			continue
+		}
+		if next, ok := fn.segments[inext].(storedSegment); !ok {
+			todo -= fn.segments[inext].Len()
+		} else if next.didRead {
+			todo -= next.size
+			lastlocator = next.locator
+		} else {
+			next.didRead = true
+			fn.segments[inext] = next
+			go next.ReadAt([]byte{}, 0)
+			todo -= next.size
+			lastlocator = next.locator
+		}
+	}
+	fn.Unlock()
+
+	dn.Lock()
+	defer dn.Unlock()
+	if dn.prefetchDone == nil {
+		dn.prefetchDone = make(map[string]int64)
+	}
+	if todo < 0 {
+		if done := ptr.off - int64(todo); done > dn.prefetchDone[name] {
+			dn.prefetchDone[name] = done
+		}
+		return
+	}
+	if dn.prefetchNames == nil {
+		dn.prefetchNames = make([]string, 0, len(dn.inodes))
+		for name, node := range dn.inodes {
+			if _, ok := node.(*filenode); ok {
+				dn.prefetchNames = append(dn.prefetchNames, name)
+			}
+		}
+		sort.Strings(dn.prefetchNames)
+	}
+	for iname := sort.Search(len(dn.prefetchNames), func(x int) bool {
+		return dn.prefetchNames[x] > name
+	}); iname < len(dn.prefetchNames) && todo > 0; iname++ {
+		fn, ok := dn.inodes[dn.prefetchNames[iname]].(*filenode)
+		if !ok {
+			continue
+		}
+		fn.Lock()
+		for inext := 0; inext < len(fn.segments) && todo > 0; inext++ {
+			next, ok := fn.segments[inext].(storedSegment)
+			if !ok {
+				// count in-memory data as already
+				// prefetched
+				todo -= fn.segments[inext].Len()
+				continue
+			}
+			if next.locator == lastlocator {
+				// we already subtracted this block's
+				// size from todo
+			} else if next.didRead {
+				// we already prefetched this block
+				todo -= next.size
+			} else {
+				next.didRead = true
+				fn.segments[inext] = next
+				go next.ReadAt([]byte{}, 0)
+				todo -= next.size
+			}
+			lastlocator = next.locator
+		}
+		fn.Unlock()
+	}
+	// Typically we exceed our target and a future call to
+	// prefetch(), referencing the same file with a slightly
+	// larger offset, will be a no-op.  Here we record the highest
+	// ptr.off for this file that we expect to be a no-op based on
+	// the work we've just done.
+	//
+	// Note this means reading from the end of a file, then
+	// reading sequentially from the beginning, will effectively
+	// prevent prefetching data for that file.  This is not ideal,
+	// but it is preferable to the performance hit of checking
+	// prefetch on every single read.
+	if done := ptr.off - int64(todo); done > dn.prefetchDone[name] {
+		dn.prefetchDone[name] = done
+	}
 }
 
 func (dn *dirnode) MemorySize() (size int64) {
