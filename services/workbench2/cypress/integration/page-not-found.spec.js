@@ -45,7 +45,7 @@ describe('Page not found tests', function() {
             cy.goToPath(path);
 
             // then
-            cy.get('[data-cy=data-table-default-view]').should('exist');
+            cy.get('[data-cy=not-found-view]').should('exist');
         });
     });
 })
