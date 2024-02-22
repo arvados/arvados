@@ -195,15 +195,16 @@ file "sdk/java-v2/javadoc/index.html" do |t|
 end
 
 task :linkchecker => [ :generate ] do
-  if !can_run?("linkchecker", "--version")
-    puts "Warning: linkchecker not found, skipping run".colorize(:light_red)
-    next
-  end
   # we need --check-extern to check relative links, weird but true
-  system(
+  result = system(
     "linkchecker", "index.html", "--check-extern", "--ignore-url=!file://",
     chdir: ".site",
-  ) or exit $?.exitstatus
+  )
+  if result.nil?
+    fail "could not run linkchecker command (is it installed?)"
+  elsif !result
+    fail "linkchecker exited #{$?.exitstatus}"
+  end
 end
 
 task :import_vscode_training do
