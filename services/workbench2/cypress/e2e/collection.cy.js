@@ -165,8 +165,6 @@ describe("Collection panel tests", function () {
         cy.get("[data-cy=form-dialog]").should("exist").and("contain", "Collection with the same name already exists");
     });
 
-    
-
     it("uses the property editor (from edit dialog) with vocabulary terms", function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
@@ -209,8 +207,6 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=collection-info-panel").should("contain", this.testCollection.name).and("contain", "Color: Magenta");
             });
     });
-
-    
 
     it("uses the editor (from details panel) with vocabulary terms", function () {
         cy.createCollection(adminUser.token, {
@@ -1320,8 +1316,7 @@ describe("Collection panel tests", function () {
 
                     cy.get("[data-cy=form-submit-btn]").click();
 
-                    cy.get("button[aria-label=Remove]").should("exist");
-                    cy.get("button[aria-label=Remove]").click({ multiple: true, force: true });
+                    cy.get("button[aria-label=Remove]").should("exist").click({ multiple: true});
 
                     cy.get("[data-cy=form-submit-btn]").should("not.exist");
 
