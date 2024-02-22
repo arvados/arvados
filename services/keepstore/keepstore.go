@@ -223,7 +223,7 @@ func (ks *keepstore) signLocator(token, locator string) string {
 }
 
 func (ks *keepstore) BlockRead(ctx context.Context, opts arvados.BlockReadOptions) (n int, err error) {
-	li, err := parseLocator(opts.Locator)
+	li, err := getLocatorInfo(opts.Locator)
 	if err != nil {
 		return 0, err
 	}
@@ -611,7 +611,7 @@ func (ce *checkEqual) WriteAt(p []byte, offset int64) (int, error) {
 }
 
 func (ks *keepstore) BlockUntrash(ctx context.Context, locator string) error {
-	li, err := parseLocator(locator)
+	li, err := getLocatorInfo(locator)
 	if err != nil {
 		return err
 	}
@@ -631,7 +631,7 @@ func (ks *keepstore) BlockUntrash(ctx context.Context, locator string) error {
 }
 
 func (ks *keepstore) BlockTouch(ctx context.Context, locator string) error {
-	li, err := parseLocator(locator)
+	li, err := getLocatorInfo(locator)
 	if err != nil {
 		return err
 	}
@@ -655,7 +655,7 @@ func (ks *keepstore) BlockTrash(ctx context.Context, locator string) error {
 	if !ks.cluster.Collections.BlobTrash {
 		return errMethodNotAllowed
 	}
-	li, err := parseLocator(locator)
+	li, err := getLocatorInfo(locator)
 	if err != nil {
 		return err
 	}
@@ -708,14 +708,16 @@ func ctxToken(ctx context.Context) string {
 	}
 }
 
+// locatorInfo expresses the attributes of a locator that are relevant
+// for keepstore decision-making.
 type locatorInfo struct {
 	hash   string
 	size   int
-	remote bool
-	signed bool
+	remote bool // locator has a +R hint
+	signed bool // locator has a +A hint
 }
 
-func parseLocator(loc string) (locatorInfo, error) {
+func getLocatorInfo(loc string) (locatorInfo, error) {
 	var li locatorInfo
 	for i, part := range strings.Split(loc, "+") {
 		if i == 0 {

@@ -120,7 +120,7 @@ func (p *puller) runWorker(ctx context.Context) {
 
 			logger := p.keepstore.logger.WithField("locator", item.Locator)
 
-			li, err := parseLocator(item.Locator)
+			li, err := getLocatorInfo(item.Locator)
 			if err != nil {
 				logger.Warn("ignoring pull request for invalid locator")
 				return

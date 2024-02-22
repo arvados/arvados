@@ -85,7 +85,7 @@ func (rtr *router) handleBlockRead(w http.ResponseWriter, req *http.Request) {
 	out := w
 	if req.Method == http.MethodHead {
 		out = discardWrite{ResponseWriter: w}
-	} else if li, err := parseLocator(mux.Vars(req)["locator"]); err != nil {
+	} else if li, err := getLocatorInfo(mux.Vars(req)["locator"]); err != nil {
 		rtr.handleError(w, req, err)
 		return
 	} else if li.size == 0 && li.hash != "d41d8cd98f00b204e9800998ecf8427e" {

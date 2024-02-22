@@ -638,7 +638,7 @@ func (s *keepstoreSuite) TestParseLocator(c *C) {
 			ok: false},
 	} {
 		c.Logf("=== %s", trial.locator)
-		li, err := parseLocator(trial.locator)
+		li, err := getLocatorInfo(trial.locator)
 		if !trial.ok {
 			c.Check(err, NotNil)
 			continue

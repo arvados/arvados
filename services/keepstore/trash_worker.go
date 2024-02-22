@@ -107,7 +107,7 @@ func (t *trasher) runWorker(ctx context.Context, mntsAllowTrash []*mount) {
 			defer t.inprogress.Add(-1)
 			logger := t.keepstore.logger.WithField("locator", item.Locator)
 
-			li, err := parseLocator(item.Locator)
+			li, err := getLocatorInfo(item.Locator)
 			if err != nil {
 				logger.Warn("ignoring trash request for invalid locator")
 				return
