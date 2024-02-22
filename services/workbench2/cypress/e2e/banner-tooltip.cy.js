@@ -73,43 +73,41 @@ describe('Banner / tooltip tests', function () {
     });
 
     const setupTheEnvironment = () => {
-            cy.createCollection(adminUser.token, {
-                name: `BannerTooltipTest${Math.floor(Math.random() * 999999)}`,
-                owner_uuid: adminUser.user.uuid,
-            }).as('bannerCollection');
+        cy.createCollection(adminUser.token, {
+            name: `BannerTooltipTest${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+        }).as('bannerCollection');
 
-            cy.getAll('@bannerCollection')
-                .then(function ([bannerCollection]) {
+        cy.getAll('@bannerCollection').then(function ([bannerCollection]) {
+            collectionUUID=bannerCollection.uuid;
 
-                    collectionUUID=bannerCollection.uuid;
+            cy.loginAs(adminUser);
 
-                    cy.loginAs(adminUser);
+            cy.goToPath(`/collections/${bannerCollection.uuid}`);
 
-                    cy.goToPath(`/collections/${bannerCollection.uuid}`);
+            cy.get('[data-cy=upload-button]').click();
 
-                    cy.get('[data-cy=upload-button]').click();
+            cy.fixture('files/banner.html').as('banner');
+            cy.fixture('files/tooltips.txt').as('tooltips');
 
-                    cy.fixture('files/banner.html').as('banner');
-                    cy.fixture('files/tooltips.txt').as('tooltips');
-
-                    cy.getAll('@banner', '@tooltips')
-                        .then(([banner, tooltips]) => {
-                            cy.get('[data-cy=drag-and-drop]').upload(banner, 'banner.html', false);
-                            cy.get('[data-cy=drag-and-drop]').upload(tooltips, 'tooltips.json', false);
-                        });
-
-                    cy.get('[data-cy=form-submit-btn]').click();
-                    cy.get('[data-cy=form-submit-btn]').should('not.exist');
-                    cy.get('[data-cy=collection-files-right-panel]')
-                        .contains('banner.html').should('exist');
-                    cy.get('[data-cy=collection-files-right-panel]')
-                        .contains('tooltips.json').should('exist');
-
-                        cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
-                            req.reply((res) => {
-                                res.body.Workbench.BannerUUID = collectionUUID;
-                            });
-                        });
+            cy.getAll('@banner', '@tooltips')
+                .then(([banner, tooltips]) => {
+                    cy.get('[data-cy=drag-and-drop]').upload(banner, 'banner.html', false);
+                    cy.get('[data-cy=drag-and-drop]').upload(tooltips, 'tooltips.json', false);
                 });
+
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=form-submit-btn]').should('not.exist');
+            cy.get('[data-cy=collection-files-right-panel]')
+                .contains('banner.html').should('exist');
+            cy.get('[data-cy=collection-files-right-panel]')
+                .contains('tooltips.json').should('exist');
+
+            cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
+                req.reply((res) => {
+                    res.body.Workbench.BannerUUID = collectionUUID;
+                });
+            });
+        });
     }
 });
