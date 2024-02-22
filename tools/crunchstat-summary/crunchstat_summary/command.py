@@ -7,6 +7,7 @@ import gzip
 from io import open
 import logging
 import sys
+import arvados
 
 from crunchstat_summary import logger, summarizer
 from crunchstat_summary._version import __version__
@@ -86,6 +87,7 @@ class Command(object):
         kwargs = {
             'skip_child_jobs': self.args.skip_child_jobs,
             'threads': self.args.threads,
+            'arv': arvados.api('v1')
         }
         if self.args.pipeline_instance:
             self.summer = summarizer.NewSummarizer(self.args.pipeline_instance, **kwargs)
