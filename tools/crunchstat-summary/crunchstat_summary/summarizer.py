@@ -432,6 +432,11 @@ class Summarizer(object):
 
     def _recommend_gen(self, recommendformat):
         # TODO recommend fixing job granularity if elapsed time is too short
+
+        if self.stats_max['time'].get('elapsed', 0) <= 20:
+            # Not enough data
+            return []
+
         return itertools.chain(
             self._recommend_cpu(recommendformat),
             self._recommend_ram(recommendformat),
