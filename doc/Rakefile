@@ -19,6 +19,8 @@
 #
 # and then visit http://localhost:8000 in a browser.
 
+require "uri"
+
 require "rubygems"
 require "colorize"
 
@@ -31,18 +33,30 @@ def can_run?(*command, **options)
 end
 
 class JavaSDK
+  def self.build_path
+    "sdk/java-v2"
+  end
+
   def self.can_build?
     can_run?("gradle", "--version")
   end
 end
 
 class PythonSDK
+  def self.build_path
+    "sdk/python/arvados"
+  end
+
   def self.can_build?
     can_run?("./pysdk_pdoc.py", "--version")
   end
 end
 
 class RSDK
+  def self.build_path
+    "sdk/R"
+  end
+
   def self.can_build?
     can_run?("R", "--version")
   end
@@ -196,8 +210,17 @@ end
 
 task :linkchecker => [ :generate ] do
   # we need --check-extern to check relative links, weird but true
+  opts = [
+    "--check-extern",
+    "--ignore-url=!^file://",
+  ]
+  ([JavaSDK, PythonSDK, RSDK] - $build_sdks).map(&:build_path).each do |sdk_path|
+    sdk_url = URI.join(ENV["baseurl"], sdk_path)
+    url_re = Regexp.escape(sdk_url.to_s)
+    opts << "--ignore-url=^#{url_re}[./]"
+  end
   result = system(
-    "linkchecker", "index.html", "--check-extern", "--ignore-url=!file://",
+    "linkchecker", *opts, "index.html",
     chdir: ".site",
   )
   if result.nil?
