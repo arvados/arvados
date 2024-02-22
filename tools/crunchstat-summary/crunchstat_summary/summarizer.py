@@ -251,26 +251,29 @@ class Summarizer(object):
                     self.job_tot[category][stat] += val
         logger.debug('%s: done totals', self.label)
 
-        missing_category = {
-            'cpu': 'CPU',
-            'mem': 'memory',
-            'net:': 'network I/O',
-            'statfs': 'storage space',
-        }
-        for task_stat in self.task_stats.values():
-            for category in task_stat.keys():
-                for checkcat in missing_category:
-                    if checkcat.endswith(':'):
-                        if category.startswith(checkcat):
-                            missing_category.pop(checkcat)
-                            break
-                    else:
-                        if category == checkcat:
-                            missing_category.pop(checkcat)
-                            break
-        for catlabel in missing_category.values():
-            logger.warning('%s: %s stats are missing -- possible cluster configuration issue',
-                        self.label, catlabel)
+        if self.stats_max['time'].get('elapsed', 0) > 20:
+            # needs to have executed for at least 20 seconds or we may
+            # not have collected any metrics and these warnings are duds.
+            missing_category = {
+                'cpu': 'CPU',
+                'mem': 'memory',
+                'net:': 'network I/O',
+                'statfs': 'storage space',
+            }
+            for task_stat in self.task_stats.values():
+                for category in task_stat.keys():
+                    for checkcat in missing_category:
+                        if checkcat.endswith(':'):
+                            if category.startswith(checkcat):
+                                missing_category.pop(checkcat)
+                                break
+                        else:
+                            if category == checkcat:
+                                missing_category.pop(checkcat)
+                                break
+            for catlabel in missing_category.values():
+                logger.warning('%s: %s stats are missing -- possible cluster configuration issue',
+                            self.label, catlabel)
 
     def long_label(self):
         label = self.label
