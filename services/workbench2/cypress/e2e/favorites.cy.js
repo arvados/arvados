@@ -21,11 +21,6 @@ describe('Favorites tests', function () {
             });
     });
 
-    beforeEach(function () {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    });
-
     it('creates and removes a public favorite', function () {
         cy.loginAs(adminUser);
 

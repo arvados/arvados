@@ -23,11 +23,6 @@ describe("Search tests", function () {
             });
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it("can search for old collection versions", function () {
         const colName = `Versioned Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
         let colUuid = "";

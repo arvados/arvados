@@ -27,11 +27,6 @@ describe("Collection panel tests", function () {
         downloadsFolder = Cypress.config("downloadsFolder");
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it('shows the appropriate buttons in the toolbar', () => {
 
         const msButtonTooltips = [

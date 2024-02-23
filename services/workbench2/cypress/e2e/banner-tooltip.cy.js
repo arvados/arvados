@@ -23,9 +23,6 @@ describe('Banner / tooltip tests', function () {
     });
 
     beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-
         cy.on('uncaught:exception', (err, runnable, promise) => {
             Cypress.log({ message: `Application Error: ${err}`});
             if (promise) {

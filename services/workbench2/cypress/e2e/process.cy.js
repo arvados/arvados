@@ -25,11 +25,6 @@ describe("Process tests", function () {
             });
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     function setupDockerImage(image_name) {
         // Create a collection that will be used as a docker image for the tests.
         cy.createCollection(adminUser.token, {

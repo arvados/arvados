@@ -23,11 +23,6 @@ describe("Project tests", function () {
             });
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it("creates a new project with multiple properties", function () {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);

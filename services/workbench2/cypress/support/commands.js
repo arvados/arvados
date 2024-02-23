@@ -350,8 +350,11 @@ Cypress.Commands.add("updateResource", (token, suffix, uuid, data) => {
 });
 
 Cypress.Commands.add("loginAs", user => {
+    // This shouldn't be necessary unless we need to call loginAs multiple times
+    // in the same test.
     cy.clearCookies();
-    cy.clearLocalStorage();
+    cy.clearAllLocalStorage();
+    cy.clearAllSessionStorage();
     cy.visit(`/token/?api_token=${user.token}`);
     // Use waitUntil to avoid permafail race conditions with window.location being undefined
     cy.waitUntil(() => cy.window().then(win =>

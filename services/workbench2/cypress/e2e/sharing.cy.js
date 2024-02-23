@@ -21,11 +21,6 @@ describe('Sharing tests', function () {
             });
     })
 
-    beforeEach(function () {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    });
-
     it('can create and delete sharing URLs on collections', () => {
         const collName = 'shared-collection ' + new Date().getTime();
         cy.createCollection(adminUser.token, {

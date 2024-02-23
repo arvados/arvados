@@ -23,11 +23,6 @@ describe('Multiselect Toolbar Tests', () => {
             });
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it('exists in DOM in neutral state', () => {
         cy.loginAs(activeUser);
         cy.get('[data-cy=multiselect-toolbar]').should('exist');
