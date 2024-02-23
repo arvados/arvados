@@ -34,8 +34,6 @@ describe('Page not found tests', function() {
         [
             '/projects/zzzzz-j7d0g-nonexistingproj',
             '/projects/zzzzz-tpzed-nonexistinguser',
-            '/processes/zzzzz-xvhdp-nonexistingproc',
-            '/collections/zzzzz-4zz18-nonexistingcoll'
         ].forEach(function(path) {
             // Using de slower loginAs() method to avoid bumping into dialog
             // dismissal issues that are not related to this test.
@@ -45,6 +43,17 @@ describe('Page not found tests', function() {
             cy.goToPath(path);
 
             // then
+            cy.get('[data-cy=default-view]').should('exist');
+        });
+
+        [
+            '/processes/zzzzz-xvhdp-nonexistingproc',
+            '/collections/zzzzz-4zz18-nonexistingcoll'
+        ].forEach(function(path) {
+            cy.loginAs(adminUser);
+
+            cy.goToPath(path);
+
             cy.get('[data-cy=not-found-view]').should('exist');
         });
     });

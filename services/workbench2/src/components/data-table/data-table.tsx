@@ -333,7 +333,7 @@ export const DataTable = withStyles(styles)(
                     />
                 );
             } else {
-                //if (isLoaded && !working && !isNotFound)
+                // isLoaded && !working && !isNotFound
                 return (
                     <DataTableDefaultView
                         icon={this.props.defaultViewIcon}

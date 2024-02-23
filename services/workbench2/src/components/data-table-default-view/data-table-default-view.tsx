@@ -24,5 +24,5 @@ export const DataTableDefaultView = withStyles(styles)(
         const icon = props.icon || DetailsIcon;
         const filterWarning: string[] = props.filtersApplied ? ['Filters are applied to the data.'] : [];
         const messages = filterWarning.concat(props.messages || ['No items found']);
-        return <DefaultView data-cy="data-table-default-view" {...classes} {...{ icon, messages }} />;
+        return <DefaultView {...classes} {...{ icon, messages }} />;
     });
