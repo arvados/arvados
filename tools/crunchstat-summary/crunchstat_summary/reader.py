@@ -74,7 +74,7 @@ class LiveLogReader(object):
             ['event_type', 'in', self.event_types]]
         try:
             while True:
-                page = arvados.api().logs().index(
+                page = arvados.api().logs().list(
                     limit=1000,
                     order=['id asc'],
                     filters=filters + [['id','>',str(last_id)]],
@@ -116,3 +116,25 @@ class LiveLogReader(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
+    def node_info(self):
+        return {}
+
+class StubReader(object):
+    def __init__(self, fh):
+        self.fh = fh
+
+    def __str__(self):
+        return ""
+
+    def __iter__(self):
+        return iter(self.fh)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def node_info(self):
+        return {}

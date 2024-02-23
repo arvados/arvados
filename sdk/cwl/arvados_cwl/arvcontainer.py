@@ -536,8 +536,11 @@ class ArvadosContainer(JobBase):
 
             if logc is not None:
                 try:
-                    summerizer = crunchstat_summary.summarizer.Summarizer(crunchstat_summary.reader.CollectionReader(logc.manifest_locator(), collection_object=logc),
-                                                                          label=self.name, arv=self.arvrunner.api)
+                    summerizer = crunchstat_summary.summarizer.ContainerRequestSummarizer(
+                        record,
+                        collection_object=logc,
+                        label=self.name,
+                        arv=self.arvrunner.api)
                     summerizer.run()
                     with logc.open("usage_report.html", "wt") as mr:
                         mr.write(summerizer.html_report())

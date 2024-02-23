@@ -9,7 +9,7 @@ import logging
 import sys
 import arvados
 
-from crunchstat_summary import logger, summarizer
+from crunchstat_summary import logger, summarizer, reader
 from crunchstat_summary._version import __version__
 
 
@@ -30,9 +30,6 @@ class ArgumentParser(argparse.ArgumentParser):
             help='[Deprecated] Look up the specified container find its container request '
             'and read its log data from Keep (or from the Arvados event log, '
             'if the job is still running)')
-        src.add_argument(
-            '--pipeline-instance', type=str, metavar='UUID',
-            help='[Deprecated] Summarize each component of the given pipeline instance (historical pre-1.4)')
         src.add_argument(
             '--log-file', type=str,
             help='Read log data from a regular file')
@@ -89,9 +86,7 @@ class Command(object):
             'threads': self.args.threads,
             'arv': arvados.api('v1')
         }
-        if self.args.pipeline_instance:
-            self.summer = summarizer.NewSummarizer(self.args.pipeline_instance, **kwargs)
-        elif self.args.job:
+        if self.args.job:
             self.summer = summarizer.NewSummarizer(self.args.job, **kwargs)
         elif self.args.container:
             self.summer = summarizer.NewSummarizer(self.args.container, **kwargs)
@@ -100,9 +95,9 @@ class Command(object):
                 fh = UTF8Decode(gzip.open(self.args.log_file))
             else:
                 fh = open(self.args.log_file, mode = 'r', encoding = 'utf-8')
-            self.summer = summarizer.Summarizer(fh, **kwargs)
+            self.summer = summarizer.Summarizer(reader.StubReader(fh), **kwargs)
         else:
-            self.summer = summarizer.Summarizer(sys.stdin, **kwargs)
+            self.summer = summarizer.Summarizer(reader.StubReader(sys.stdin), **kwargs)
         return self.summer.run()
 
     def report(self):
