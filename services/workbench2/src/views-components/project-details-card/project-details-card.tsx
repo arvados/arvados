@@ -32,14 +32,12 @@ type CssRules =
     | 'descriptionLabel'
     | 'showMore'
     | 'noDescription'
-    | 'nameContainer'
+    | 'userNameContainer'
     | 'cardContent'
-    | 'subHeader'
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
     | 'contextMenuSection'
-    | 'chipSection'
     | 'tag'
     | 'description';
 
@@ -48,7 +46,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         marginBottom: '1rem',
         flex: '0 0 auto',
-        paddingTop: '0.2rem',
+        padding: 0,
         border: '2px solid transparent',
     },
     selected: {
@@ -62,32 +60,25 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey['600'],
         fontStyle: 'italic',
     },
-    nameContainer: {
+    userNameContainer: {
         display: 'flex',
     },
     cardHeader: {
-        paddingTop: '0.4rem',
+        padding: '0.2rem 0.4rem 0.1rem 1rem',
     },
     descriptionLabel: {
-        paddingTop: '1rem',
-        marginBottom: 0,
-        minHeight: '2.5rem',
-        marginRight: '0.8rem',
     },
     cardContent: {
         display: 'flex',
         flexDirection: 'column',
-        transition: 'height 0.3s ease',
-    },
-    subHeader: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: '-2rem',
+        marginTop: '-1.75rem',
     },
     namePlate: {
         display: 'flex',
         flexDirection: 'row',
+        alignItems: 'center',
+        margin: 0,
+        paddingBottom: '0.5rem',
     },
     faveIcon: {
         fontSize: '0.8rem',
@@ -97,7 +88,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     frozenIcon: {
         fontSize: '0.5rem',
         marginLeft: '0.3rem',
-        marginTop: '0.57rem',
+        marginTop: '0.1rem',
         height: '1rem',
         color: theme.palette.text.primary,
     },
@@ -105,11 +96,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: '0.6rem',
-    },
-    chipSection: {
-        display: 'flex',
-        flexWrap: 'wrap',
+        paddingTop: '0.25rem',
     },
     tag: {
         marginRight: '1rem',
@@ -240,11 +227,15 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
     const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
-        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)} data-cy='user-details-card'>
+        <Card
+            className={classNames(classes.root, isSelected ? classes.selected : '')}
+            onClick={() => handleCardClick(uuid)}
+            data-cy='user-details-card'
+        >
             <CardHeader
                 className={classes.cardHeader}
                 title={
-                    <section className={classes.nameContainer}>
+                    <section className={classes.userNameContainer}>
                         <Typography
                             noWrap
                             variant='h6'
@@ -288,7 +279,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     };
 
     return (
-        <Card className={classNames(classes.root, isSelected ? classes.selected : '')} onClick={()=>handleCardClick(uuid)} data-cy='project-details-card'>
+        <Card
+            className={classNames(classes.root, isSelected ? classes.selected : '')}
+            onClick={() => handleCardClick(uuid)}
+            data-cy='project-details-card'
+        >
             <CardHeader
                 className={classes.cardHeader}
                 title={
@@ -321,10 +316,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                 }
                 action={
                     <section className={classes.contextMenuSection}>
+                        <section
+                            className={classes.descriptionLabel}
+                            onClick={(ev) => ev.stopPropagation()}
+                        >
+                            {description ? (
+                                <Typography
+                                    className={classes.showMore}
+                                    onClick={toggleDescription}
+                                    data-cy='toggle-description'
+                                >
+                                    {!showDescription ? 'Show full description' : 'Hide full description'}
+                                </Typography>
+                            ) : (
+                                <Typography
+                                    className={classes.noDescription}
+                                    data-cy='no-description'
+                                >
+                                    no description available
+                                </Typography>
+                            )}
+                        </section>
                         <Tooltip
                             title='More options'
                             disableFocusListener
-                            >
+                        >
                             <IconButton
                                 aria-label='More options'
                                 onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
@@ -335,40 +351,30 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 }
             />
-            <CardContent className={classes.cardContent}>
-                <section className={classes.subHeader}>
-                    <section className={classes.chipSection}>
+            {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 && (
+                <CardContent className={classes.cardContent}>
                         <Typography component='div'>
-                            {typeof currentResource.properties === 'object' &&
-                                Object.keys(currentResource.properties).map((k) =>
-                                    Array.isArray(currentResource.properties[k])
-                                        ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                        : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                                )}
+                            {Object.keys(currentResource.properties).map((k) =>
+                                Array.isArray(currentResource.properties[k])
+                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                            )}
                         </Typography>
-                    </section>
-                    <section className={classes.descriptionLabel} onClick={(ev)=>ev.stopPropagation()}>
-                        {description ? (
-                            <Typography
-                                className={classes.showMore}
-                                onClick={toggleDescription}
-                                data-cy='toggle-description'
-                            >
-                                {!showDescription ? "Show full description" : "Hide full description"}
-                            </Typography>
-                        ) : (
-                            <Typography className={classes.noDescription} data-cy="no-description">no description available</Typography>
-                        )}
-                    </section>
+                </CardContent>
+            )}
+            <Collapse
+                in={showDescription}
+                timeout='auto'
+            >
+                <section onClick={(ev) => ev.stopPropagation()}>
+                    <Typography
+                        className={classes.description}
+                        data-cy='project-description'
+                    >
+                        {description}
+                    </Typography>
                 </section>
-                <Collapse in={showDescription} timeout='auto'>
-                    <section onClick={(ev)=>ev.stopPropagation()}>
-                        <Typography className={classes.description} data-cy='project-description'>
-                            {description}
-                        </Typography>
-                    </section>
-                </Collapse>
-            </CardContent>
+            </Collapse>
         </Card>
     );
 };
