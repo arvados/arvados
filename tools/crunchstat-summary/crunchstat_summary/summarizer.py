@@ -492,39 +492,55 @@ class Summarizer(object):
                 recommend_mib)
 
     def _recommend_keep_cache(self, recommendformat):
-        """Recommend increasing keep cache if utilization < 80%"""
+        """Recommend increasing keep cache if utilization < 50%.
+
+        This means the amount of data returned to the program is less
+        than 50% of the amount of data actually downloaded by
+        arv-mount.
+        """
+
         constraint_key = self._map_runtime_constraint('keep_cache_ram')
         if self.job_tot['net:keep0']['rx'] == 0:
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
         # FIXME: the default on this get won't work correctly
-        asked_cache = self.existing_constraints.get(constraint_key, 256) * self._runtime_constraint_mem_unit()
+        asked_cache = self.existing_constraints.get('keep_cache_ram') or self.existing_constraints.get('keep_cache_disk')
 
-        if utilization < 0.8:
+        if utilization < 0.5:
             yield recommendformat(
                 '{} Keep cache utilization was {:.2f}% -- '
-                'try doubling runtime_constraints to "{}":{} (or more)'
+                'try increasing keep_cache to {} MB'
             ).format(
                 self.label,
                 utilization * 100.0,
-                constraint_key,
-                math.ceil(asked_cache * 2 / self._runtime_constraint_mem_unit()))
+                math.ceil((asked_cache * 2) / (1024*1024)))
 
 
     def _recommend_temp_disk(self, recommendformat):
-        """Recommend decreasing temp disk if utilization < 50%"""
-        total = float(self.job_tot['statfs']['total'])
-        utilization = (float(self.job_tot['statfs']['used']) / total) if total > 0 else 0.0
+        """Recommend decreasing temp disk if utilization < 50%.
 
-        if utilization < 50.8 and total > 0:
-            yield recommendformat(
-                '{} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
-                'consider reducing "tmpdirMin" and/or "outdirMin"'
-            ).format(
-                self.label,
-                utilization * 100.0,
-                total / MB)
+        This recommendation is disabled for the time being.  It uses
+        the total disk on the node and not the amount of disk
+        requested, so it triggers a false positive basically every
+        time.  To get the amount of disk requested we need to fish it
+        out of the mounts, which is extra work I don't want do right
+        now.
+        """
+
+        return []
+
+        # total = float(self.job_tot['statfs']['total'])
+        # utilization = (float(self.job_tot['statfs']['used']) / total) if total > 0 else 0.0
+
+        # if utilization < 50.0 and total > 0:
+        #     yield recommendformat(
+        #         '{} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
+        #         'consider reducing "tmpdirMin" and/or "outdirMin"'
+        #     ).format(
+        #         self.label,
+        #         utilization * 100.0,
+        #         total / MB)
 
 
     def _format(self, val):
