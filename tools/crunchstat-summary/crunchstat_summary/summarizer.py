@@ -422,7 +422,7 @@ class Summarizer(object):
         if asked_cores is None:
             asked_cores = 1
         # TODO: This should be more nuanced in cases where max >> avg
-        if used_cores < asked_cores:
+        if used_cores < (asked_cores*.5):
             yield recommendformat(
                 '{} max CPU usage was {}% -- '
                 'try reducing runtime_constraints to "{}":{}'

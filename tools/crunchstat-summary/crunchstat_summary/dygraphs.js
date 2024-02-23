@@ -69,6 +69,17 @@ window.onload = function() {
                     valueFormatter: fmt.iso,
                 },
             }
+            var div2 = document.createElement('div');
+            div2.setAttribute('style', 'width: 150px; height: 150px');
+            chart.options.labelsDiv = div2;
+            chart.options.labelsSeparateLines = true;
+
+            var div3 = document.createElement('div');
+            div3.setAttribute('style', 'display: flex; padding-bottom: 16px');
+            div3.appendChild(div);
+            div3.appendChild(div2);
+            chartDiv.appendChild(div3);
+
             charts[id] = new Dygraph(div, chart.data, chart.options);
         });
     });

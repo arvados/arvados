@@ -52,6 +52,9 @@ class WebChart(object):
           padding-right: 2em;
           border-top: 1px solid rgba(224, 224, 224, 1);
         }
+        #chart {
+          margin-left: -20px;
+        }
     '''
 
     def __init__(self, label, summarizers):
