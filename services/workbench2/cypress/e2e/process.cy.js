@@ -679,6 +679,51 @@ describe("Process tests", function () {
                 });
             });
         });
+
+        it("correctly break long lines when no obvious line separation exists", function () {
+            function randomString(length) {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let res = '';
+                for (let i = 0; i < length; i++) {
+                    res += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return res;
+            }
+
+            const logLinesQty = 10;
+            const logLines = [];
+            for (let i = 0; i < logLinesQty; i++) {
+                const length = Math.floor(Math.random() * 500) + 500;
+                logLines.push(randomString(length));
+            }
+
+            createContainerRequest(activeUser, "test_container_request", "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
+                containerRequest
+            ) {
+                cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", logLines).as("stdoutLogs");
+
+                cy.getAll("@stdoutLogs").then(function () {
+                    cy.loginAs(activeUser);
+                    cy.goToPath(`/processes/${containerRequest.uuid}`);
+                    // Select 'stdout' log filter
+                    cy.get("[data-cy=process-logs-filter]").click();
+                    cy.get("body").contains("li", "stdout").click();
+                    cy.get("[data-cy=process-logs] span > p")
+                        .should('have.length', logLinesQty)
+                        .each($p => {
+                            expect($p.text().length).to.be.greaterThan(499);
+
+                            // This looks like an ugly hack, but I was not able
+                            // to get [client|scroll]Width attributes through
+                            // the usual Cypress methods.
+                            const parentClientWidth = $p[0].parentElement.clientWidth;
+                            const parentScrollWidth = $p[0].parentElement.scrollWidth
+                            // Scrollbar should not be visible
+                            expect(parentClientWidth).to.be.eq(parentScrollWidth);
+                        });
+                });
+            });
+        });
     });
 
     describe("I/O panel", function () {
