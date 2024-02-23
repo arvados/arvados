@@ -147,10 +147,11 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         if (resource.groupClass === 'filter') {
             readOnly = true;
         }
-        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readOnly));
+        let menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readOnly));
         if (menuKind === ContextMenuKind.ROOT_PROJECT) {
-            dispatch<any>(openUserContextMenu(event, resource as UserResource));
-        } else if (menuKind && resource) {
+            menuKind = ContextMenuKind.USER_DETAILS;
+        }
+        if (menuKind && resource) {
             dispatch<any>(
                 openContextMenu(event, {
                     name: resource.name,
