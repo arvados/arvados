@@ -46,18 +46,9 @@ Mount Keep data under the local filesystem.  Default mode is --home
             'mountpoint',
             help="""Mount point.""",
         )
-        self.add_argument(
-            '--allow-other',
-            action='store_true',
-            help="""Let other users read the mount""",
-        )
-        self.add_argument(
-            '--subtype',
-            metavar='STRING',
-            help="""Report mounted filesystem type as "fuse.STRING", instead of just "fuse".""",
-        )
 
-        mode = self.add_mutually_exclusive_group()
+        mode_group = self.add_argument_group("Mount contents")
+        mode = mode_group.add_mutually_exclusive_group()
         mode.add_argument(
             '--all',
             action='store_const',
@@ -79,6 +70,11 @@ Mount a top level meta-directory with subdirectories as specified by additional 
 """,
         )
         mode.add_argument(
+            '--collection',
+            metavar='UUID_or_PDH',
+            help="""Mount only the specified collection.""",
+        )
+        mode.add_argument(
             '--home',
             action='store_const',
             const='home',
@@ -86,18 +82,16 @@ Mount a top level meta-directory with subdirectories as specified by additional 
             help="""Mount only the user's home project.""",
         )
         mode.add_argument(
+            '--project',
+            metavar='UUID',
+            help="""Mount the specified project.""",
+        )
+        mode.add_argument(
             '--shared',
             action='store_const',
             const='shared',
             dest='mode',
             help="""Mount only list of projects shared with the user.""",
-        )
-        mode.add_argument(
-            '--by-tag',
-            action='store_const',
-            const='by_tag',
-            dest='mode',
-            help="""Mount subdirectories listed by tag.""",
         )
         mode.add_argument(
             '--by-id',
@@ -114,26 +108,29 @@ Mount a top level meta-directory with subdirectories as specified by additional 
             help="""Mount subdirectories listed by portable data hash.""",
         )
         mode.add_argument(
-            '--project',
-            metavar='UUID',
-            help="""Mount the specified project.""",
-        )
-        mode.add_argument(
-            '--collection',
-            metavar='UUID_or_PDH',
-            help="""Mount only the specified collection.""",
+            '--by-tag',
+            action='store_const',
+            const='by_tag',
+            dest='mode',
+            help="""Mount subdirectories listed by tag.""",
         )
 
-        mounts = self.add_argument_group('Custom mount options')
+        mounts = self.add_argument_group("Mount custom layout and filtering")
         mounts.add_argument(
-            '--mount-by-pdh',
+            '--filters',
+            type=arv_cmd.JSONArgument(arv_cmd.validate_filters),
+            help="""
+Filters to apply to all project, shared, and tag directory contents.
+Pass filters as either a JSON string or a path to a JSON file.
+The JSON object should be a list of filters in Arvados API list filter syntax.
+""",
+        )
+        mounts.add_argument(
+            '--mount-home',
             metavar='PATH',
             action='append',
             default=[],
-            help="""
-Mount each readable collection at mountpoint/PATH/P
-where P is the collection's portable data hash.
-""",
+            help="Mount the current user's home project at mountpoint/PATH.",
         )
         mounts.add_argument(
             '--mount-by-id',
@@ -146,18 +143,14 @@ where PDH is the collection's portable data hash and UUID is its UUID.
 """,
         )
         mounts.add_argument(
-            '--mount-by-tag',
+            '--mount-by-pdh',
             metavar='PATH',
             action='append',
             default=[],
-            help="Mount all collections with tag TAG at mountpoint/PATH/TAG/UUID.",
-        )
-        mounts.add_argument(
-            '--mount-home',
-            metavar='PATH',
-            action='append',
-            default=[],
-            help="Mount the current user's home project at mountpoint/PATH.",
+            help="""
+Mount each readable collection at mountpoint/PATH/P
+where P is the collection's portable data hash.
+""",
         )
         mounts.add_argument(
             '--mount-shared',
@@ -165,6 +158,13 @@ where PDH is the collection's portable data hash and UUID is its UUID.
             action='append',
             default=[],
             help="Mount projects shared with the current user at mountpoint/PATH.",
+        )
+        mounts.add_argument(
+            '--mount-by-tag',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="Mount all collections with tag TAG at mountpoint/PATH/TAG/UUID.",
         )
         mounts.add_argument(
             '--mount-tmp',
@@ -177,103 +177,55 @@ and delete it when unmounting.
 """,
         )
 
-        self.add_argument(
-            '--debug',
+        perms = self.add_argument_group("Mount access and permissions")
+        perms.add_argument(
+            '--allow-other',
             action='store_true',
-            help="""Debug mode""",
+            help="""Let other users read the mount""",
         )
-        self.add_argument(
-            '--logfile',
-            help="""Write debug logs and errors to the specified file (default stderr).""",
-        )
-        self.add_argument(
-            '--foreground',
-            action='store_true',
-            default=False,
-            help="""Run in foreground (default is to daemonize unless --exec specified)""",
-        )
-        self.add_argument(
-            '--encoding',
-            default="utf-8",
-            help="""
-Character encoding to use for filesystem, default is utf-8
-(see Python codec registry for list of available encodings)"
-""",
-        )
-
-        self.add_argument(
-            '--file-cache',
-            type=int,
-            default=0,
-            help="""
-File data cache size, in bytes
-(default 8 GiB for disk-based cache or 256 MiB with RAM-only cache)
-""",
-        )
-        self.add_argument(
-            '--directory-cache',
-            type=int,
-            default=128*1024*1024,
-            help="Directory data cache size, in bytes (default 128 MiB)",
-        )
-
-        cachetype = self.add_mutually_exclusive_group()
-        cachetype.add_argument(
-            '--ram-cache',
-            action='store_false',
-            default=True,
-            dest='disk_cache',
-            help="Use in-memory caching only",
-        )
-        cachetype.add_argument(
-            '--disk-cache',
-            action='store_true',
-            default=True,
-            dest='disk_cache',
-            help="Use disk based caching (default)",
-        )
-
-        self.add_argument(
-            '--disk-cache-dir',
-            help="Disk cache location (default ~/.cache/arvados/keep)",
-        )
-
-        self.add_argument(
-            '--disable-event-listening',
-            action='store_true',
-            dest='disable_event_listening',
-            default=False,
-            help="Don't subscribe to events on the API server",
-        )
-
-        self.add_argument(
+        perms.add_argument(
             '--read-only',
             action='store_false',
             default=False,
             dest='enable_write',
             help="Mount will be read only (default)",
         )
-        self.add_argument(
+        perms.add_argument(
             '--read-write',
             action='store_true',
             default=False,
             dest='enable_write',
             help="Mount will be read-write",
         )
-        self.add_argument(
-            '--storage-classes',
-            metavar='CLASSES',
-            help="Specify comma separated list of storage classes to be used when saving data of new collections",
-        )
 
-        self.add_argument(
-            '--crunchstat-interval',
-            type=float,
-            default=0.0,
-            help="Write stats to stderr every N seconds (default disabled)",
+        lifecycle = self.add_argument_group("Mount lifecycle management")
+        lifecycle.add_argument(
+            '--exec',
+            nargs=argparse.REMAINDER,
+            dest="exec_args",
+            metavar=('command', 'args', '...', '--'),
+            help="""Mount, run a command, then unmount and exit""",
         )
-
-        unmount = self.add_mutually_exclusive_group()
+        lifecycle.add_argument(
+            '--foreground',
+            action='store_true',
+            default=False,
+            help="""Run in foreground (default is to daemonize unless --exec specified)""",
+        )
+        lifecycle.add_argument(
+            '--subtype',
+            metavar='STRING',
+            help="""Report mounted filesystem type as "fuse.STRING", instead of just "fuse".""",
+        )
+        unmount = lifecycle.add_mutually_exclusive_group()
+        unmount.add_argument(
+            '--replace',
+            action='store_true',
+            default=False,
+            help="""
+If a fuse mount is already present at mountpoint, forcefully unmount it before mounting
+""",
+        )
         unmount.add_argument(
             '--unmount',
             action='store_true',
@@ -295,15 +247,7 @@ Exit non-zero if any other types of mounts are found at or below the given path.
 WARNING: This command can affect any kind of fuse mount, not just arv-mount.
 """,
         )
-        unmount.add_argument(
-            '--replace',
-            action='store_true',
-            default=False,
-            help="""
-If a fuse mount is already present at mountpoint, forcefully unmount it before mounting
-""",
-        )
-        self.add_argument(
+        lifecycle.add_argument(
             '--unmount-timeout',
             type=float,
             default=2.0,
@@ -311,21 +255,80 @@ If a fuse mount is already present at mountpoint, forcefully unmount it before m
 Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted
 """,
         )
-        self.add_argument(
-            '--filters',
-            type=arv_cmd.JSONArgument(arv_cmd.validate_filters),
+
+        reporting = self.add_argument_group("Mount logging and statistics")
+        reporting.add_argument(
+            '--crunchstat-interval',
+            type=float,
+            default=0.0,
+            help="Write stats to stderr every N seconds (default disabled)",
+        )
+        reporting.add_argument(
+            '--debug',
+            action='store_true',
+            help="""Debug mode""",
+        )
+        reporting.add_argument(
+            '--logfile',
+            help="""Write debug logs and errors to the specified file (default stderr).""",
+        )
+
+        cache = self.add_argument_group("Mount local cache setup")
+        cachetype = cache.add_mutually_exclusive_group()
+        cachetype.add_argument(
+            '--disk-cache',
+            action='store_true',
+            default=True,
+            dest='disk_cache',
+            help="Use disk based caching (default)",
+        )
+        cachetype.add_argument(
+            '--ram-cache',
+            action='store_false',
+            default=True,
+            dest='disk_cache',
+            help="Use in-memory caching only",
+        )
+        cache.add_argument(
+            '--disk-cache-dir',
+            help="Disk cache location (default ~/.cache/arvados/keep)",
+        )
+        cache.add_argument(
+            '--directory-cache',
+            type=int,
+            default=128*1024*1024,
+            help="Directory data cache size, in bytes (default 128 MiB)",
+        )
+        cache.add_argument(
+            '--file-cache',
+            type=int,
+            default=0,
             help="""
-Filters to apply to all project, shared, and tag directory contents.
-Pass filters as either a JSON string or a path to a JSON file.
-The JSON object should be a list of filters in Arvados API list filter syntax.
+File data cache size, in bytes
+(default 8 GiB for disk-based cache or 256 MiB with RAM-only cache)
 """,
         )
-        self.add_argument(
-            '--exec',
-            nargs=argparse.REMAINDER,
-            dest="exec_args",
-            metavar=('command', 'args', '...', '--'),
-            help="""Mount, run a command, then unmount and exit""",
+
+        plumbing = self.add_argument_group("Mount interactions with Arvados and Linux")
+        plumbing.add_argument(
+            '--disable-event-listening',
+            action='store_true',
+            dest='disable_event_listening',
+            default=False,
+            help="Don't subscribe to events on the API server",
+        )
+        plumbing.add_argument(
+            '--encoding',
+            default="utf-8",
+            help="""
+Character encoding to use for filesystem, default is utf-8
+(see Python codec registry for list of available encodings)
+""",
+        )
+        plumbing.add_argument(
+            '--storage-classes',
+            metavar='CLASSES',
+            help="Specify comma separated list of storage classes to be used when saving data of new collections",
         )
 
 
