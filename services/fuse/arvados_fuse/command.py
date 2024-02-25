@@ -44,6 +44,7 @@ Mount Keep data under the local filesystem.  Default mode is --home
         )
         self.add_argument(
             'mountpoint',
+            metavar='MOUNT_DIR',
             help="""Mount point.""",
         )
 
@@ -71,7 +72,7 @@ Mount a top level meta-directory with subdirectories as specified by additional 
         )
         mode.add_argument(
             '--collection',
-            metavar='UUID_or_PDH',
+            metavar='UUID_OR_PDH',
             help="""Mount only the specified collection.""",
         )
         mode.add_argument(
@@ -203,7 +204,6 @@ and delete it when unmounting.
             '--exec',
             nargs=argparse.REMAINDER,
             dest="exec_args",
-            metavar=('command', 'args', '...', '--'),
             help="""Mount, run a command, then unmount and exit""",
         )
         lifecycle.add_argument(
@@ -214,8 +214,7 @@ and delete it when unmounting.
         )
         lifecycle.add_argument(
             '--subtype',
-            metavar='STRING',
-            help="""Report mounted filesystem type as "fuse.STRING", instead of just "fuse".""",
+            help="""Report mounted filesystem type as "fuse.SUBTYPE", instead of just "fuse".""",
         )
         unmount = lifecycle.add_mutually_exclusive_group()
         unmount.add_argument(
@@ -251,6 +250,7 @@ WARNING: This command can affect any kind of fuse mount, not just arv-mount.
             '--unmount-timeout',
             type=float,
             default=2.0,
+            metavar='SECONDS',
             help="""
 Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted
 """,
@@ -261,6 +261,7 @@ Time to wait for graceful shutdown after --exec program exits and filesystem is 
             '--crunchstat-interval',
             type=float,
             default=0.0,
+            metavar='SECONDS',
             help="Write stats to stderr every N seconds (default disabled)",
         )
         reporting.add_argument(
@@ -291,18 +292,21 @@ Time to wait for graceful shutdown after --exec program exits and filesystem is 
         )
         cache.add_argument(
             '--disk-cache-dir',
+            metavar="DIRECTORY",
             help="Disk cache location (default ~/.cache/arvados/keep)",
         )
         cache.add_argument(
             '--directory-cache',
             type=int,
             default=128*1024*1024,
+            metavar='BYTES',
             help="Directory data cache size, in bytes (default 128 MiB)",
         )
         cache.add_argument(
             '--file-cache',
             type=int,
             default=0,
+            metavar='BYTES',
             help="""
 File data cache size, in bytes
 (default 8 GiB for disk-based cache or 256 MiB with RAM-only cache)
