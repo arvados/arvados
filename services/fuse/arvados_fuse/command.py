@@ -28,14 +28,8 @@ class ArgumentParser(argparse.ArgumentParser):
     def __init__(self):
         super(ArgumentParser, self).__init__(
             parents=[arv_cmd.retry_opt],
-            description="""
-Mount Keep data under the local filesystem.  Default mode is --home
-""",
-            epilog="""
-    Note: When using the --exec feature, you must either specify the
-    mountpoint before --exec, or mark the end of your --exec arguments
-    with "--".
-            """)
+            description="Interact with Arvados data through a local filesystem",
+        )
         self.add_argument(
             '--version',
             action='version',
@@ -204,7 +198,13 @@ and delete it when unmounting.
             '--exec',
             nargs=argparse.REMAINDER,
             dest="exec_args",
-            help="""Mount, run a command, then unmount and exit""",
+            help="""
+Mount data, run the specified command, then unmount and exit.
+--exec reads all remaining options as the command to run,
+so it must be the last option you specify.
+Either end your command arguments (and other options) with a `--` argument,
+or specify --exec after your mount point.
+""",
         )
         lifecycle.add_argument(
             '--foreground',
