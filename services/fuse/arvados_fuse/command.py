@@ -34,12 +34,12 @@ class ArgumentParser(argparse.ArgumentParser):
             '--version',
             action='version',
             version=u"%s %s" % (sys.argv[0], __version__),
-            help='Print version and exit.',
+            help="Print version and exit",
         )
         self.add_argument(
             'mountpoint',
             metavar='MOUNT_DIR',
-            help="""Mount point.""",
+            help="Directory path to mount data",
         )
 
         mode_group = self.add_argument_group("Mount contents")
@@ -50,8 +50,8 @@ class ArgumentParser(argparse.ArgumentParser):
             const='all',
             dest='mode',
             help="""
-Mount a subdirectory for each mode: home, shared, by_tag, by_id
-(default if no --mount-* arguments are given).
+Mount a subdirectory for each mode: home, shared, by_id, and by_tag
+(default if no --mount-* options are given)
 """,
         )
         mode.add_argument(
@@ -60,54 +60,61 @@ Mount a subdirectory for each mode: home, shared, by_tag, by_id
             const=None,
             dest='mode',
             help="""
-Mount a top level meta-directory with subdirectories as specified by additional --mount-* arguments
-(default if any --mount-* arguments are given).
+Mount a subdirectory for each mode specified by a --mount-* option
+(default if any --mount-* options are given;
+see "Mount custom layout and filtering" section)
 """,
         )
         mode.add_argument(
             '--collection',
             metavar='UUID_OR_PDH',
-            help="""Mount only the specified collection.""",
+            help="Mount the specified collection",
         )
         mode.add_argument(
             '--home',
             action='store_const',
             const='home',
             dest='mode',
-            help="""Mount only the user's home project.""",
+            help="Mount your home project",
         )
         mode.add_argument(
             '--project',
             metavar='UUID',
-            help="""Mount the specified project.""",
+            help="Mount the specified project",
         )
         mode.add_argument(
             '--shared',
             action='store_const',
             const='shared',
             dest='mode',
-            help="""Mount only list of projects shared with the user.""",
+            help="Mount a subdirectory for each project shared with you",
         )
         mode.add_argument(
             '--by-id',
             action='store_const',
             const='by_id',
             dest='mode',
-            help="""Mount subdirectories listed by portable data hash or uuid.""",
+            help="""
+Mount a magic directory where collections and projects are accessible through
+subdirectories named after their UUID or portable data hash
+""",
         )
         mode.add_argument(
             '--by-pdh',
             action='store_const',
             const='by_pdh',
             dest='mode',
-            help="""Mount subdirectories listed by portable data hash.""",
+            help="""
+Mount a magic directory where collections are accessible through
+subdirectories named after their portable data hash
+""",
         )
         mode.add_argument(
             '--by-tag',
             action='store_const',
             const='by_tag',
             dest='mode',
-            help="""Mount subdirectories listed by tag.""",
+            help="Mount a subdirectory for each tag attached to a collection or project",
         )
 
         mounts = self.add_argument_group("Mount custom layout and filtering")
@@ -125,7 +132,7 @@ The JSON object should be a list of filters in Arvados API list filter syntax.
             metavar='PATH',
             action='append',
             default=[],
-            help="Mount the current user's home project at mountpoint/PATH.",
+            help="Make your home project available under the mount at PATH",
         )
         mounts.add_argument(
             '--mount-by-id',
@@ -133,8 +140,9 @@ The JSON object should be a list of filters in Arvados API list filter syntax.
             action='append',
             default=[],
             help="""
-Mount each readable collection at mountpoint/PATH/UUID and mountpoint/PATH/PDH
-where PDH is the collection's portable data hash and UUID is its UUID.
+Make a magic directory available under the mount at PATH where collections and
+projects are accessible through subdirectories named after their UUID or
+portable data hash
 """,
         )
         mounts.add_argument(
@@ -143,8 +151,8 @@ where PDH is the collection's portable data hash and UUID is its UUID.
             action='append',
             default=[],
             help="""
-Mount each readable collection at mountpoint/PATH/P
-where P is the collection's portable data hash.
+Make a magic directory available under the mount at PATH where collections
+are accessible through subdirectories named after portable data hash
 """,
         )
         mounts.add_argument(
@@ -152,14 +160,17 @@ where P is the collection's portable data hash.
             metavar='PATH',
             action='append',
             default=[],
-            help="Mount projects shared with the current user at mountpoint/PATH.",
+            help="Make projects shared with you available under the mount at PATH",
         )
         mounts.add_argument(
             '--mount-by-tag',
             metavar='PATH',
             action='append',
             default=[],
-            help="Mount all collections with tag TAG at mountpoint/PATH/TAG/UUID.",
+            help="""
+Make a subdirectory for each tag attached to a collection or project available
+under the mount at PATH
+""" ,
         )
         mounts.add_argument(
             '--mount-tmp',
@@ -167,8 +178,8 @@ where P is the collection's portable data hash.
             action='append',
             default=[],
             help="""
-Create a new collection, mount it in read/write mode at mountpoint/PATH,
-and delete it when unmounting.
+Make a new temporary writable collection available under the mount at PATH.
+This collection is deleted when the mount is unmounted.
 """,
         )
 
@@ -176,21 +187,21 @@ and delete it when unmounting.
         perms.add_argument(
             '--allow-other',
             action='store_true',
-            help="""Let other users read the mount""",
+            help="Let other users on this system read mounted data (default false)",
         )
         perms.add_argument(
             '--read-only',
             action='store_false',
             default=False,
             dest='enable_write',
-            help="Mount will be read only (default)",
+            help="Mounted data cannot be modified from the mount (default)",
         )
         perms.add_argument(
             '--read-write',
             action='store_true',
             default=False,
             dest='enable_write',
-            help="Mount will be read-write",
+            help="Mounted data can be modified from the mount",
         )
 
         lifecycle = self.add_argument_group("Mount lifecycle management")
@@ -210,11 +221,11 @@ or specify --exec after your mount point.
             '--foreground',
             action='store_true',
             default=False,
-            help="""Run in foreground (default is to daemonize unless --exec specified)""",
+            help="Run mount process in the foreground instead of daemonizing (default false)",
         )
         lifecycle.add_argument(
             '--subtype',
-            help="""Report mounted filesystem type as "fuse.SUBTYPE", instead of just "fuse".""",
+            help="Set mounted filesystem type to `fuse.SUBTYPE` (default is just `fuse`)",
         )
         unmount = lifecycle.add_mutually_exclusive_group()
         unmount.add_argument(
@@ -222,7 +233,10 @@ or specify --exec after your mount point.
             action='store_true',
             default=False,
             help="""
-If a fuse mount is already present at mountpoint, forcefully unmount it before mounting
+If a FUSE mount is already mounted at the given directory,
+unmount it before mounting the requested data.
+If --subtype is specified, unmount only if the mount has that subtype.
+WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
 """,
         )
         unmount.add_argument(
@@ -230,9 +244,9 @@ If a fuse mount is already present at mountpoint, forcefully unmount it before m
             action='store_true',
             default=False,
             help="""
-Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit.
-If --subtype is given, unmount only if the mount has the specified subtype.
-WARNING: This command can affect any kind of fuse mount, not just arv-mount.
+If a FUSE mount is already mounted at the given directory, unmount it and exit.
+If --subtype is specified, unmount only if the mount has that subtype.
+WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
 """,
         )
         unmount.add_argument(
@@ -240,10 +254,9 @@ WARNING: This command can affect any kind of fuse mount, not just arv-mount.
             action='store_true',
             default=False,
             help="""
-Forcefully unmount every fuse mount at or below the specified path and exit.
-If --subtype is given, unmount only mounts that have the specified subtype.
-Exit non-zero if any other types of mounts are found at or below the given path.
-WARNING: This command can affect any kind of fuse mount, not just arv-mount.
+Unmount all FUSE mounts at or below the given directory, then exit.
+If --subtype is specified, unmount only if the mount has that subtype.
+WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
 """,
         )
         lifecycle.add_argument(
@@ -252,7 +265,9 @@ WARNING: This command can affect any kind of fuse mount, not just arv-mount.
             default=2.0,
             metavar='SECONDS',
             help="""
-Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted
+The number of seconds to wait for a clean unmount after an --exec command has
+exited (default %(default).01f).
+After this time, the mount will be forcefully unmounted.
 """,
         )
 
@@ -267,11 +282,11 @@ Time to wait for graceful shutdown after --exec program exits and filesystem is 
         reporting.add_argument(
             '--debug',
             action='store_true',
-            help="""Debug mode""",
+            help="Log debug information",
         )
         reporting.add_argument(
             '--logfile',
-            help="""Write debug logs and errors to the specified file (default stderr).""",
+            help="Write debug logs and errors to the specified file (default stderr)",
         )
 
         cache = self.add_argument_group("Mount local cache setup")
@@ -281,26 +296,26 @@ Time to wait for graceful shutdown after --exec program exits and filesystem is 
             action='store_true',
             default=True,
             dest='disk_cache',
-            help="Use disk based caching (default)",
+            help="Cache data on the local filesystem (default)",
         )
         cachetype.add_argument(
             '--ram-cache',
             action='store_false',
             default=True,
             dest='disk_cache',
-            help="Use in-memory caching only",
+            help="Cache data in memory",
         )
         cache.add_argument(
             '--disk-cache-dir',
             metavar="DIRECTORY",
-            help="Disk cache location (default ~/.cache/arvados/keep)",
+            help="Filesystem cache location (default ~/.cache/arvados/keep)",
         )
         cache.add_argument(
             '--directory-cache',
             type=int,
             default=128*1024*1024,
             metavar='BYTES',
-            help="Directory data cache size, in bytes (default 128 MiB)",
+            help="Size of directory data cache in bytes (default 128 MiB)",
         )
         cache.add_argument(
             '--file-cache',
@@ -308,8 +323,8 @@ Time to wait for graceful shutdown after --exec program exits and filesystem is 
             default=0,
             metavar='BYTES',
             help="""
-File data cache size, in bytes
-(default 8 GiB for disk-based cache or 256 MiB with RAM-only cache)
+Size of file data cache in bytes
+(default 8 GiB for filesystem cache, 256 MiB for memory cache)
 """,
         )
 
@@ -319,20 +334,20 @@ File data cache size, in bytes
             action='store_true',
             dest='disable_event_listening',
             default=False,
-            help="Don't subscribe to events on the API server",
+            help="Don't subscribe to events on the API server to update mount contents",
         )
         plumbing.add_argument(
             '--encoding',
             default="utf-8",
             help="""
-Character encoding to use for filesystem, default is utf-8
-(see Python codec registry for list of available encodings)
+Filesystem character encoding
+(default %(default)r; specify a name from the Python codec registry)
 """,
         )
         plumbing.add_argument(
             '--storage-classes',
             metavar='CLASSES',
-            help="Specify comma separated list of storage classes to be used when saving data of new collections",
+            help="Comma-separated list of storage classes to request for new collections",
         )
 
 
