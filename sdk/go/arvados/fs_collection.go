@@ -1213,6 +1213,22 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 	return cg.Wait()
 }
 
+var (
+	// These prefetch* counters are used by tests to check that
+	// the short-circuit optimizations in prefetch() are working
+	// as expected.
+	prefetchCall        atomic.Int64
+	prefetchWalkCurrent atomic.Int64
+	prefetchSearchNext  atomic.Int64
+	prefetchWalkNext    atomic.Int64
+	prefetchReadCurrent atomic.Int64
+	prefetchReadNext    atomic.Int64
+
+	// At runtime this is a no-op. Test cases replace this func
+	// with a call to Add(1).
+	profAdd1 = func(*atomic.Int64) {}
+)
+
 // Prefetch file data based on expected future usage.
 //
 // After a read from this dirnode's child fn with the given name that
@@ -1227,15 +1243,17 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 //     maxBlockSize bytes that will be needed (regardless of actual
 //     block size)
 //
-//   - when reading many small files in lexical order, pre-fetch the
-//     next maxBlockSize bytes that will be needed (regardless of
-//     actual block size)
+//   - when reading many consecutive small files in lexical order,
+//     pre-fetch the next maxBlockSize bytes that will be needed
+//     (regardless of actual block size)
 //
 //   - minimize the overhead cost for typical sequences of read
 //     operations (e.g., when a caller reads a file sequentially 1024
 //     bytes at a time, and prefetch is called on each read, most of
 //     the calls should be nearly free)
 func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
+	profAdd1(&prefetchCall)
+
 	// pre-fetch following blocks until we're this many bytes ahead
 	todo := maxBlockSize
 
@@ -1255,6 +1273,7 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 	// last locator prefetched, if any
 	var lastlocator string
 
+	profAdd1(&prefetchWalkCurrent)
 	fn.Lock()
 	for inext := ptr.segmentIdx; inext < len(fn.segments) && todo > 0; inext++ {
 		if inext == ptr.segmentIdx {
@@ -1269,6 +1288,7 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 			todo -= next.size
 			lastlocator = next.locator
 		} else {
+			profAdd1(&prefetchReadCurrent)
 			next.didRead = true
 			fn.segments[inext] = next
 			go next.ReadAt([]byte{}, 0)
@@ -1298,9 +1318,12 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 		}
 		sort.Strings(dn.prefetchNames)
 	}
-	for iname := sort.Search(len(dn.prefetchNames), func(x int) bool {
+	profAdd1(&prefetchSearchNext)
+	iname := sort.Search(len(dn.prefetchNames), func(x int) bool {
 		return dn.prefetchNames[x] > name
-	}); iname < len(dn.prefetchNames) && todo > 0; iname++ {
+	})
+	for ; iname < len(dn.prefetchNames) && todo > 0; iname++ {
+		profAdd1(&prefetchWalkNext)
 		fn, ok := dn.inodes[dn.prefetchNames[iname]].(*filenode)
 		if !ok {
 			continue
@@ -1318,9 +1341,11 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 				// we already subtracted this block's
 				// size from todo
 			} else if next.didRead {
-				// we already prefetched this block
+				// someone already fetched this
+				// segment
 				todo -= next.size
 			} else {
+				profAdd1(&prefetchReadNext)
 				next.didRead = true
 				fn.segments[inext] = next
 				go next.ReadAt([]byte{}, 0)
@@ -1330,19 +1355,22 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 		}
 		fn.Unlock()
 	}
-	// Typically we exceed our target and a future call to
-	// prefetch(), referencing the same file with a slightly
-	// larger offset, will be a no-op.  Here we record the highest
-	// ptr.off for this file that we expect to be a no-op based on
-	// the work we've just done.
-	//
-	// Note this means reading from the end of a file, then
-	// reading sequentially from the beginning, will effectively
-	// prevent prefetching data for that file.  This is not ideal,
-	// but it is preferable to the performance hit of checking
-	// prefetch on every single read.
-	if done := ptr.off - int64(todo); done > dn.prefetchDone[name] {
-		dn.prefetchDone[name] = done
+	// Typically we overshoot our target by enough margin that a
+	// future call to prefetch(), referencing the same file with a
+	// slightly larger offset, will be a no-op.  Here we record
+	// the maximum file offset for which prefetch will be a no-op
+	// based on the work we've just done.
+	if iname == len(dn.prefetchNames) && todo > 0 {
+		// If we reached the end of the last file without
+		// reaching our target, "done" as computed above would
+		// suggest that we might be able to prefetch more
+		// blocks after a future read ending at ptr.off+1.  In
+		// fact, that would be futile, so we set done to be an
+		// imaginary offset past the end of the file, so
+		// subsequent prefetch calls can return early.
+		dn.prefetchDone[name] = ptr.off + int64(maxBlockSize)
+	} else {
+		dn.prefetchDone[name] = ptr.off - int64(todo)
 	}
 }
 

@@ -1501,11 +1501,8 @@ func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
 	c.Check(string(buf), check.Equals, filedata1)
 }
 
-func (s *CollectionFSSuite) TestPrefetchLargeFile(c *check.C) {
-	defer func(orig int) { maxBlockSize = orig }(maxBlockSize)
-	maxBlockSize = 1_000_000
+func (s *CollectionFSSuite) makeManifest_BigFile(c *check.C, nblocks int) string {
 	txt := "."
-	nblocks := 10
 	locator := make([]string, nblocks)
 	data := make([]byte, maxBlockSize)
 	for i := 0; i < nblocks; i++ {
@@ -1516,7 +1513,34 @@ func (s *CollectionFSSuite) TestPrefetchLargeFile(c *check.C) {
 		txt += " " + resp.Locator
 	}
 	txt += fmt.Sprintf(" 0:%d:bigfile\n", nblocks*maxBlockSize)
-	fs, err := (&Collection{ManifestText: txt}).FileSystem(s.client, s.kc)
+	return txt
+}
+
+func (s *CollectionFSSuite) makeManifest_SmallFiles(c *check.C, nblocks, nfiles int) string {
+	txt := "."
+	locator := make([]string, nblocks)
+	data := make([]byte, maxBlockSize)
+	for i := 0; i < nblocks; i++ {
+		data[0] = byte(i)
+		resp, err := s.kc.BlockWrite(context.Background(), BlockWriteOptions{Data: data})
+		c.Assert(err, check.IsNil)
+		locator[i] = resp.Locator
+		txt += " " + resp.Locator
+	}
+	filesize := int64(maxBlockSize) * int64(nblocks) / int64(nfiles)
+	pos := int64(0)
+	for i := 0; i < nfiles; i++ {
+		txt += fmt.Sprintf(" %d:%d:smallfile%d", pos, filesize, i)
+		pos += filesize
+	}
+	txt += "\n"
+	return txt
+}
+
+func (s *CollectionFSSuite) TestPrefetchBigFile(c *check.C) {
+	defer func(orig int) { maxBlockSize = orig }(maxBlockSize)
+	maxBlockSize = 1_000_000
+	fs, err := (&Collection{ManifestText: s.makeManifest_BigFile(c, 10)}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
 	c.Assert(s.kc.reads, check.HasLen, 0)
 
@@ -1532,6 +1556,74 @@ func (s *CollectionFSSuite) TestPrefetchLargeFile(c *check.C) {
 	if c.Check(s.kc.reads, check.HasLen, 2) {
 		c.Check(s.kc.reads[1], check.Not(check.Equals), s.kc.reads[0])
 	}
+}
+
+func (s *CollectionFSSuite) startPrefetchCounters() {
+	prefetchCall.Store(0)
+	prefetchWalkCurrent.Store(0)
+	prefetchSearchNext.Store(0)
+	prefetchWalkNext.Store(0)
+	prefetchReadCurrent.Store(0)
+	prefetchReadNext.Store(0)
+	profAdd1 = func(counter *atomic.Int64) { counter.Add(1) }
+}
+
+func (s *CollectionFSSuite) logPrefetchCounters(c *check.C) {
+	c.Logf("prefetch counters: call %d walkCurrent %d searchNext %d walkNext %d readCurrent %d readNext %d",
+		prefetchCall.Load(),
+		prefetchWalkCurrent.Load(),
+		prefetchSearchNext.Load(),
+		prefetchWalkNext.Load(),
+		prefetchReadCurrent.Load(),
+		prefetchReadNext.Load())
+}
+
+func (s *CollectionFSSuite) TestPrefetchOptimizations_BigFile(c *check.C) {
+	defer func(orig int) { maxBlockSize = orig }(maxBlockSize)
+	maxBlockSize = 1_000_000
+	s.startPrefetchCounters()
+	fs, err := (&Collection{ManifestText: s.makeManifest_BigFile(c, 30)}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	f, err := fs.Open("bigfile")
+	c.Assert(err, check.IsNil)
+	for {
+		_, err = f.Read(make([]byte, 1024))
+		if err == io.EOF {
+			break
+		}
+		c.Check(err, check.IsNil)
+	}
+	s.logPrefetchCounters(c)
+	c.Check(prefetchCall.Load()/prefetchWalkCurrent.Load() > 50, check.Equals, true)
+}
+
+func (s *CollectionFSSuite) TestPrefetchOptimizations_SmallFiles(c *check.C) {
+	defer func(orig int) { maxBlockSize = orig }(maxBlockSize)
+	maxBlockSize = 1_000_000
+	nblocks := 30
+	nfiles := 1000
+	s.startPrefetchCounters()
+	fs, err := (&Collection{ManifestText: s.makeManifest_SmallFiles(c, nblocks, nfiles)}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	for i := 0; i < nfiles; i++ {
+		f, err := fs.Open(fmt.Sprintf("smallfile%d", i))
+		c.Assert(err, check.IsNil)
+		for {
+			_, err = f.Read(make([]byte, 128))
+			if err == io.EOF {
+				break
+			}
+			c.Check(err, check.IsNil)
+		}
+	}
+	s.logPrefetchCounters(c)
+	c.Check(prefetchCall.Load()/prefetchWalkCurrent.Load() > 20, check.Equals, true)
+	c.Check(prefetchCall.Load()/prefetchSearchNext.Load() > 20, check.Equals, true)
+	c.Check(prefetchCall.Load()/prefetchWalkNext.Load() > 20, check.Equals, true)
+	c.Check(prefetchReadCurrent.Load() <= int64(nblocks), check.Equals, true)
+	c.Check(prefetchReadNext.Load() <= int64(nfiles), check.Equals, true)
 }
 
 func (s *CollectionFSSuite) TestRefreshSignatures(c *check.C) {
