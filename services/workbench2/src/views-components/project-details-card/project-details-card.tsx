@@ -24,6 +24,7 @@ import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 import classNames from 'classnames';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
+import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 
 type CssRules =
     | 'root'
@@ -34,6 +35,7 @@ type CssRules =
     | 'noDescription'
     | 'userNameContainer'
     | 'cardContent'
+    | 'nameSection'
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
@@ -67,11 +69,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: '0.2rem 0.4rem 0.1rem 1rem',
     },
     descriptionLabel: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        cursor: 'pointer',
     },
     cardContent: {
         display: 'flex',
         flexDirection: 'column',
         marginTop: '-1.75rem',
+    },
+    nameSection: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     namePlate: {
         display: 'flex',
@@ -287,56 +299,50 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
             <CardHeader
                 className={classes.cardHeader}
                 title={
-                    <section className={classes.namePlate}>
-                        <Typography
-                            noWrap
-                            variant='h6'
-                            style={{ marginRight: '1rem' }}
-                        >
-                            {name}
-                        </Typography>
-                        <FavoriteStar
-                            className={classes.faveIcon}
-                            resourceUuid={currentResource.uuid}
-                        />
-                        <PublicFavoriteStar
-                            className={classes.faveIcon}
-                            resourceUuid={currentResource.uuid}
-                        />
-                        {!!frozenByFullName && (
-                            <Tooltip
-                                className={classes.frozenIcon}
-                                disableFocusListener
-                                title={<span>Project was frozen by {frozenByFullName}</span>}
+                    <section className={classes.nameSection}>
+                        <section className={classes.namePlate}>
+                            <Typography
+                                noWrap
+                                variant='h6'
+                                style={{ marginRight: '1rem' }}
                             >
-                                <FreezeIcon style={{ fontSize: 'inherit' }} />
-                            </Tooltip>
-                        )}
+                                {name}
+                            </Typography>
+                            <FavoriteStar
+                                className={classes.faveIcon}
+                                resourceUuid={currentResource.uuid}
+                            />
+                            <PublicFavoriteStar
+                                className={classes.faveIcon}
+                                resourceUuid={currentResource.uuid}
+                            />
+                            {!!frozenByFullName && (
+                                <Tooltip
+                                    className={classes.frozenIcon}
+                                    disableFocusListener
+                                    title={<span>Project was frozen by {frozenByFullName}</span>}
+                                >
+                                    <FreezeIcon style={{ fontSize: 'inherit' }} />
+                                </Tooltip>
+                            )}
+                        </section>
+                        <section onClick={(ev) => ev.stopPropagation()}>
+                            {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 && (
+                                <CardContent className={classes.cardContent}>
+                                    <Typography component='div'>
+                                        {Object.keys(currentResource.properties).map((k) =>
+                                            Array.isArray(currentResource.properties[k])
+                                                ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                                : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                        )}
+                                    </Typography>
+                                </CardContent>
+                            )}
+                        </section>
                     </section>
                 }
                 action={
                     <section className={classes.contextMenuSection}>
-                        <section
-                            className={classes.descriptionLabel}
-                            onClick={(ev) => ev.stopPropagation()}
-                        >
-                            {description ? (
-                                <Typography
-                                    className={classes.showMore}
-                                    onClick={toggleDescription}
-                                    data-cy='toggle-description'
-                                >
-                                    {!showDescription ? 'Show full description' : 'Hide full description'}
-                                </Typography>
-                            ) : (
-                                <Typography
-                                    className={classes.noDescription}
-                                    data-cy='no-description'
-                                >
-                                    no description available
-                                </Typography>
-                            )}
-                        </section>
                         <Tooltip
                             title='More options'
                             disableFocusListener
@@ -351,17 +357,29 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 }
             />
-            {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 && (
-                <CardContent className={classes.cardContent}>
-                        <Typography component='div'>
-                            {Object.keys(currentResource.properties).map((k) =>
-                                Array.isArray(currentResource.properties[k])
-                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                            )}
+            <section onClick={(ev) => ev.stopPropagation()}>
+                {description ? (
+                    <section
+                        className={classes.descriptionLabel}
+                        onClick={toggleDescription}
+                    >
+                        <ExpandChevronRight expanded={showDescription} />
+                        <Typography
+                            className={classes.showMore}
+                            data-cy='toggle-description'
+                        >
+                            {!showDescription ? 'Show full description' : 'Hide full description'}
                         </Typography>
-                </CardContent>
-            )}
+                    </section>
+                ) : (
+                    <Typography
+                        className={classes.noDescription}
+                        data-cy='no-description'
+                    >
+                        no description available
+                    </Typography>
+                )}
+            </section>
             <Collapse
                 in={showDescription}
                 timeout='auto'
