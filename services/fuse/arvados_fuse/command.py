@@ -135,6 +135,23 @@ The JSON object should be a list of filters in Arvados API list filter syntax.
             help="Make your home project available under the mount at PATH",
         )
         mounts.add_argument(
+            '--mount-shared',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="Make projects shared with you available under the mount at PATH",
+        )
+        mounts.add_argument(
+            '--mount-tmp',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="""
+Make a new temporary writable collection available under the mount at PATH.
+This collection is deleted when the mount is unmounted.
+""",
+        )
+        mounts.add_argument(
             '--mount-by-id',
             metavar='PATH',
             action='append',
@@ -156,13 +173,6 @@ are accessible through subdirectories named after portable data hash
 """,
         )
         mounts.add_argument(
-            '--mount-shared',
-            metavar='PATH',
-            action='append',
-            default=[],
-            help="Make projects shared with you available under the mount at PATH",
-        )
-        mounts.add_argument(
             '--mount-by-tag',
             metavar='PATH',
             action='append',
@@ -171,16 +181,6 @@ are accessible through subdirectories named after portable data hash
 Make a subdirectory for each tag attached to a collection or project available
 under the mount at PATH
 """ ,
-        )
-        mounts.add_argument(
-            '--mount-tmp',
-            metavar='PATH',
-            action='append',
-            default=[],
-            help="""
-Make a new temporary writable collection available under the mount at PATH.
-This collection is deleted when the mount is unmounted.
-""",
         )
 
         perms = self.add_argument_group("Mount access and permissions")
