@@ -90,6 +90,7 @@ navbar:
       - sdk/cli/subcommands.html.textile.liquid
     - FUSE Driver:
       - sdk/fuse/install.html.textile.liquid
+      - sdk/fuse/options.html.textile.liquid
     - Go:
       - sdk/go/index.html.textile.liquid
       - sdk/go/example.html.textile.liquid
