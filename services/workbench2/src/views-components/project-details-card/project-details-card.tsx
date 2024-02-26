@@ -55,8 +55,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         border: '2px solid #ccc',
     },
     showMore: {
-        color: theme.palette.primary.main,
         cursor: 'pointer',
+        background: 'linear-gradient(to right, black, transparent)',
+        backgroundClip: 'text',
+        color: 'transparent',
     },
     noDescription: {
         color: theme.palette.grey['600'],
@@ -112,7 +114,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     tag: {
         marginRight: '1rem',
-        marginTop: '0.5rem',
+        marginTop: '1rem',
     },
     description: {
         marginTop: '1rem',
@@ -368,7 +370,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                             className={classes.showMore}
                             data-cy='toggle-description'
                         >
-                            {!showDescription ? 'Show full description' : 'Hide full description'}
+                            {description.slice(0, 100)}
                         </Typography>
                     </section>
                 ) : (
