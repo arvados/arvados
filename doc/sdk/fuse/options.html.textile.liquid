@@ -140,3 +140,42 @@ For example, this generates a recursive listing of all the projects and collecti
 </notextile>
 
 The first @ArvadosHome@ is a path argument to @find@. The second is the mount point argument to @arv-mount@.
+
+h3(#systemd). Running arv-mount as a systemd service
+
+If you want to run @arv-mount@ as a long-running service, it's easy to write a systemd service definition for it. We do not publish one because the entire definition tends to be site-specific, but you can start from this template. You must change the @ExecStart@ path. Comments detail other changes you might want to make.
+
+<notextile>
+<pre><code>[Unit]
+Description=Arvados FUSE mount
+Documentation={{ site.baseurl }}/sdk/fuse/options.html
+
+[Service]
+Type=simple
+CacheDirectory=arvados/keep
+CacheDirectoryMode=0700
+
+# This unit makes the mount available as `Arvados` under the runtime directory root.
+# If this is a system service installed under /etc/systemd/system,
+# the mount will be at /run/Arvados.
+# If this is a user service installed under ~/.config/systemd/user,
+# the mount will be at $XDG_RUNTIME_DIR/Arvados.
+# If you want to mount at another location on the filesystem, remove RuntimeDirectory
+# and replace both instances of %t/Arvados with your desired path.
+RuntimeDirectory=Arvados
+# The arv-mount path must be the absolute path where you installed the command.
+# If you installed from a distribution package, make this /usr/bin/arv-mount.
+# If you installed from pip, replace ... with the path to your virtualenv.
+# You can add options to select what gets mounted, access permissions,
+# cache size, log level, etc.
+ExecStart=<span class="userinput">...</span>/bin/arv-mount --foreground --disk-cache-dir %C/arvados/keep %t/Arvados
+ExecStop=/usr/bin/fusermount -u %t/Arvados
+
+# This unit assumes the running user has a ~/.config/arvados/settings.conf
+# with ARVADOS_API_HOST and ARVADOS_API_TOKEN defined.
+# If not, you can write those in a separate file
+# and set its path as EnvironmentFile.
+# Make sure that file is owned and only readable by the running user (mode 0600).
+#EnvironmentFile=...
+</code></pre>
+</notextile>
