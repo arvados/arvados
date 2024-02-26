@@ -50,8 +50,8 @@ class ArgumentParser(argparse.ArgumentParser):
             const='all',
             dest='mode',
             help="""
-Mount a subdirectory for each mode: home, shared, by_id, and by_tag
-(default if no --mount-* options are given)
+Mount a subdirectory for each mode: `home`, `shared`, `by_id`, and `by_tag`
+(default if no `--mount-*` options are given)
 """,
         )
         mode.add_argument(
@@ -60,8 +60,8 @@ Mount a subdirectory for each mode: home, shared, by_id, and by_tag
             const=None,
             dest='mode',
             help="""
-Mount a subdirectory for each mode specified by a --mount-* option
-(default if any --mount-* options are given;
+Mount a subdirectory for each mode specified by a `--mount-*` option
+(default if any `--mount-*` options are given;
 see "Mount custom layout and filtering" section)
 """,
         )
@@ -132,14 +132,14 @@ The JSON object should be a list of filters in Arvados API list filter syntax.
             metavar='PATH',
             action='append',
             default=[],
-            help="Make your home project available under the mount at PATH",
+            help="Make your home project available under the mount at `PATH`",
         )
         mounts.add_argument(
             '--mount-shared',
             metavar='PATH',
             action='append',
             default=[],
-            help="Make projects shared with you available under the mount at PATH",
+            help="Make projects shared with you available under the mount at `PATH`",
         )
         mounts.add_argument(
             '--mount-tmp',
@@ -147,7 +147,7 @@ The JSON object should be a list of filters in Arvados API list filter syntax.
             action='append',
             default=[],
             help="""
-Make a new temporary writable collection available under the mount at PATH.
+Make a new temporary writable collection available under the mount at `PATH`.
 This collection is deleted when the mount is unmounted.
 """,
         )
@@ -157,7 +157,7 @@ This collection is deleted when the mount is unmounted.
             action='append',
             default=[],
             help="""
-Make a magic directory available under the mount at PATH where collections and
+Make a magic directory available under the mount at `PATH` where collections and
 projects are accessible through subdirectories named after their UUID or
 portable data hash
 """,
@@ -168,7 +168,7 @@ portable data hash
             action='append',
             default=[],
             help="""
-Make a magic directory available under the mount at PATH where collections
+Make a magic directory available under the mount at `PATH` where collections
 are accessible through subdirectories named after portable data hash
 """,
         )
@@ -179,7 +179,7 @@ are accessible through subdirectories named after portable data hash
             default=[],
             help="""
 Make a subdirectory for each tag attached to a collection or project available
-under the mount at PATH
+under the mount at `PATH`
 """ ,
         )
 
@@ -211,10 +211,10 @@ under the mount at PATH
             dest="exec_args",
             help="""
 Mount data, run the specified command, then unmount and exit.
---exec reads all remaining options as the command to run,
+`--exec` reads all remaining options as the command to run,
 so it must be the last option you specify.
 Either end your command arguments (and other options) with a `--` argument,
-or specify --exec after your mount point.
+or specify `--exec` after your mount point.
 """,
         )
         lifecycle.add_argument(
@@ -235,7 +235,7 @@ or specify --exec after your mount point.
             help="""
 If a FUSE mount is already mounted at the given directory,
 unmount it before mounting the requested data.
-If --subtype is specified, unmount only if the mount has that subtype.
+If `--subtype` is specified, unmount only if the mount has that subtype.
 WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
 """,
         )
@@ -245,7 +245,7 @@ WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
             default=False,
             help="""
 If a FUSE mount is already mounted at the given directory, unmount it and exit.
-If --subtype is specified, unmount only if the mount has that subtype.
+If `--subtype` is specified, unmount only if the mount has that subtype.
 WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
 """,
         )
@@ -255,7 +255,7 @@ WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
             default=False,
             help="""
 Unmount all FUSE mounts at or below the given directory, then exit.
-If --subtype is specified, unmount only if the mount has that subtype.
+If `--subtype` is specified, unmount only if the mount has that subtype.
 WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
 """,
         )
@@ -265,7 +265,7 @@ WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
             default=2.0,
             metavar='SECONDS',
             help="""
-The number of seconds to wait for a clean unmount after an --exec command has
+The number of seconds to wait for a clean unmount after an `--exec` command has
 exited (default %(default).01f).
 After this time, the mount will be forcefully unmounted.
 """,
@@ -308,7 +308,7 @@ After this time, the mount will be forcefully unmounted.
         cache.add_argument(
             '--disk-cache-dir',
             metavar="DIRECTORY",
-            help="Filesystem cache location (default ~/.cache/arvados/keep)",
+            help="Filesystem cache location (default `~/.cache/arvados/keep`)",
         )
         cache.add_argument(
             '--directory-cache',
