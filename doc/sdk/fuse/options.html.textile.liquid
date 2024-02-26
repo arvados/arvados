@@ -122,3 +122,21 @@ table(table table-bordered table-condensed).
 |@--encoding ENCODING@|Filesystem character encoding (default 'utf-8'; specify a name from the "Python codec registry":https://docs.python.org/3/library/codecs.html#standard-encodings)|
 |@--retries RETRIES@|Maximum number of times to retry server requests that encounter temporary failures (e.g., server down). Default 10.|
 |@--storage-classes CLASSES@|Comma-separated list of storage classes to request for new collections|
+
+h2(#examples). Examples
+
+h3(#exec). Using @--exec@
+
+There are a couple of details that are important to understand when you use @--exec@:
+
+* @--exec@ reads all remaining options as the command to run, so it must be the last option you specify. Either end your command arguments (and other options) with a @--@ argument, or specify @--exec@ after your mount point.
+* The command you specify runs from the same directory that you started @arv-mount@ from. To access data inside the mount, you will generally need to pass the path to the mount as an argument.
+
+For example, this generates a recursive listing of all the projects and collections under your home project:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv-mount --home --exec find -type d ArvadosHome -- ArvadosHome</span>
+</code></pre>
+</notextile>
+
+The first @ArvadosHome@ is a path argument to @find@. The second is the mount point argument to @arv-mount@.
