@@ -30,7 +30,7 @@ type CssRules =
     | 'root'
     | 'selected'
     | 'cardHeader'
-    | 'descriptionLabel'
+    | 'descriptionToggle'
     | 'showMore'
     | 'noDescription'
     | 'userNameContainer'
@@ -70,11 +70,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardHeader: {
         padding: '0.2rem 0.4rem 0.1rem 1rem',
     },
-    descriptionLabel: {
+    descriptionToggle: {
         display: 'flex',
         flexDirection: 'row',
-        alignItems: 'center',
         cursor: 'pointer',
+        paddingBottom: '0.5rem',
     },
     cardContent: {
         display: 'flex',
@@ -117,7 +117,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: '1rem',
     },
     description: {
-        marginTop: '1rem',
+        maxWidth: '90%',
+        marginTop: 0,
     },
 });
 
@@ -362,16 +363,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
             <section onClick={(ev) => ev.stopPropagation()}>
                 {description ? (
                     <section
-                        className={classes.descriptionLabel}
                         onClick={toggleDescription}
+                        className={classes.descriptionToggle}
                     >
                         <ExpandChevronRight expanded={showDescription} />
-                        <Typography
-                            className={classes.showMore}
-                            data-cy='toggle-description'
+                        <section className={classes.showMore}>
+                        <Collapse
+                            in={showDescription}
+                            timeout='auto'
+                            collapsedHeight='1.25rem'
                         >
-                            {description.slice(0, 100)}
-                        </Typography>
+                            <Typography
+                                className={classes.description}
+                                data-cy='project-description'
+                            >
+                                {description}
+                            </Typography>
+                        </Collapse>
+                        </section>
                     </section>
                 ) : (
                     <Typography
@@ -382,19 +391,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </Typography>
                 )}
             </section>
-            <Collapse
-                in={showDescription}
-                timeout='auto'
-            >
-                <section onClick={(ev) => ev.stopPropagation()}>
-                    <Typography
-                        className={classes.description}
-                        data-cy='project-description'
-                    >
-                        {description}
-                    </Typography>
-                </section>
-            </Collapse>
         </Card>
     );
 };
