@@ -17,7 +17,7 @@ import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star
 import { MoreVerticalIcon, FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
 import { IconButton } from '@material-ui/core';
-import { ContextMenuResource, openUserContextMenu } from 'store/context-menu/context-menu-actions';
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { CollectionResource } from 'models/collection';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';

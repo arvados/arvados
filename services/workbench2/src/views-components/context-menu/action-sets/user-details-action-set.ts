@@ -3,28 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
-import {
-    AdvancedIcon,
-    ProjectIcon,
-    AttributesIcon,
-    DeactivateUserIcon,
-    UserPanelIcon,
-    LoginAsIcon,
-    AdminMenuIcon,
-    ActiveIcon,
-} from 'components/icon/icon';
+import { AdvancedIcon, AttributesIcon, UserPanelIcon } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { loginAs, openUserAttributes, openUserProjects } from 'store/users/users-actions';
-import { openSetupDialog, openDeactivateDialog, openActivateDialog } from 'store/user-profile/user-profile-actions';
+import { openUserAttributes } from 'store/users/users-actions';
 import { navigateToUserProfile } from 'store/navigation/navigation-action';
-import {
-    canActivateUser,
-    canDeactivateUser,
-    canSetupUser,
-    isAdmin,
-    needsUserProfileLink,
-    isOtherUser,
-} from 'store/context-menu/context-menu-filters';
+import { needsUserProfileLink } from 'store/context-menu/context-menu-filters';
 
 export const UserDetailsActionSet: ContextMenuActionSet = [
     [
