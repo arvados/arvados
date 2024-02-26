@@ -645,7 +645,7 @@ func (fn *filenode) Read(p []byte, startPtr filenodePtr) (n int, ptr filenodePtr
 	}
 	if ss, ok := fn.segments[ptr.segmentIdx].(storedSegment); ok {
 		ss.locator = fn.fs.refreshSignature(ss.locator)
-		ss.didRead = true
+		ss.didRead = time.Now()
 		fn.segments[ptr.segmentIdx] = ss
 	}
 
@@ -1227,6 +1227,10 @@ var (
 	// At runtime this is a no-op. Test cases replace this func
 	// with a call to Add(1).
 	profAdd1 = func(*atomic.Int64) {}
+
+	// Don't pre-fetch a block if we already tried to read it this
+	// recently.
+	prefetchHoldDuration = 10 * time.Second
 )
 
 // Prefetch file data based on expected future usage.
@@ -1284,12 +1288,12 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 		}
 		if next, ok := fn.segments[inext].(storedSegment); !ok {
 			todo -= fn.segments[inext].Len()
-		} else if next.didRead {
+		} else if !next.didRead.IsZero() && time.Since(next.didRead) < prefetchHoldDuration {
 			todo -= next.size
 			lastlocator = next.locator
 		} else {
 			profAdd1(&prefetchReadCurrent)
-			next.didRead = true
+			next.didRead = time.Now()
 			fn.segments[inext] = next
 			go next.ReadAt([]byte{}, 0)
 			todo -= next.size
@@ -1340,13 +1344,13 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 			if next.locator == lastlocator {
 				// we already subtracted this block's
 				// size from todo
-			} else if next.didRead {
+			} else if !next.didRead.IsZero() && time.Since(next.didRead) < prefetchHoldDuration {
 				// someone already fetched this
 				// segment
 				todo -= next.size
 			} else {
 				profAdd1(&prefetchReadNext)
-				next.didRead = true
+				next.didRead = time.Now()
 				fn.segments[inext] = next
 				go next.ReadAt([]byte{}, 0)
 				todo -= next.size
@@ -1937,10 +1941,10 @@ type storedSegment struct {
 	offset  int // position of segment within the stored block
 	length  int // bytes in this segment (offset + length <= size)
 
-	// set when we first try to read from this segment, and
+	// Set when we first try to read from this segment, and
 	// checked before pre-fetch, to avoid unnecessary cache
-	// thrashing
-	didRead bool
+	// thrashing. See prefetchHoldDuration.
+	didRead time.Time
 }
 
 func (se storedSegment) Len() int {
