@@ -1,0 +1,42 @@
+---
+layout: default
+navsection: sdk
+navmenu: FUSE Driver
+title: Installing the FUSE Driver
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Arvados FUSE driver is a Python utility that allows you to browse Arvados projects and collections in a filesystem, so you can access that data using existing Unix tools.
+
+h2. Installation
+
+If you are logged in to a managed Arvados VM, the @arv-mount@ utility should already be installed.
+
+To use the FUSE driver elsewhere, you can install from a distribution package or pip.
+
+h2. Option 1: Install from distribution packages
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/packages.html.
+
+{% assign arvados_component = 'python3-arvados-fuse' %}
+
+{% include 'install_packages' %}
+
+h2. Option 2: Install with pip
+
+Run @pip install arvados_fuse@ in an appropriate installation environment, such as a virtualenv.
+
+Note: The FUSE driver depends on the @libcurl@ and @libfuse@ C libraries.  To install the module you may need to install development headers from your distribution.  On Debian-based distributions you can install them by running:
+
+<notextile>
+<pre><code># <span class="userinput">apt install build-essential python3-dev libcurl4-openssl-dev libfuse-dev libssl-dev</span>
+</code></pre>
+</notextile>
+
+h2. Usage
+
+For an introduction of how to mount and navigate data, refer to the "Access Keep as a GNU/Linux filesystem":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-gnu-linux.html tutorial.
