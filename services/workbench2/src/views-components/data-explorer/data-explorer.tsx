@@ -39,7 +39,6 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
         isMSToolbarVisible,
         checkedList: multiselect.checkedList,
         working,
-        isNotFound: dataExplorerState.isNotFound,
     };
 };
 

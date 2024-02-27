@@ -14,7 +14,6 @@ import { User } from "models/user";
 import { Config } from 'common/config';
 import { Session } from "models/session";
 import { toggleOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
-import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;
@@ -22,7 +21,6 @@ export interface SearchResultsPanelDataProps {
     sessions: Session[];
     remoteHostsConfig: { [key: string]: Config };
     localCluster: string;
-    numberOfItems: number;
 }
 
 export interface SearchResultsPanelActionProps {
@@ -35,14 +33,11 @@ export interface SearchResultsPanelActionProps {
 export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
 
 const mapStateToProps = (rootState: RootState) => {
-    const { dataExplorer } = rootState;
-    const numberOfItems = dataExplorer[SEARCH_RESULTS_PANEL_ID].items.length;
     return {
         user: rootState.auth.user,
         sessions: rootState.auth.sessions,
         remoteHostsConfig: rootState.auth.remoteHostsConfig,
         localCluster: rootState.auth.localCluster,
-        numberOfItems,
     };
 };
 
