@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch, MiddlewareAPI } from "redux";
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
+import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder } from 'services/api/filter-builder';
 import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupPermissionsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
@@ -27,12 +27,7 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
             // No-op if data explorer is not set since refresh may be triggered from elsewhere
         } else {
             try {
-                const permissionsOut = await this.services.permissionService.list({
-                    filters: new FilterBuilder()
-                        .addEqual('tail_uuid', groupUuid)
-                        .addEqual('link_class', LinkClass.PERMISSION)
-                        .getFilters()
-                });
+                const permissionsOut = await this.services.permissionService.list(getParams(dataExplorer, groupUuid));
                 api.dispatch(updateResources(permissionsOut.items));
 
                 api.dispatch(GroupPermissionsPanelActions.SET_ITEMS({
@@ -75,6 +70,20 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
         }
     }
 }
+
+export const getParams = (dataExplorer: DataExplorer, groupUuid: string) => ({
+    ...dataExplorerToListParams(dataExplorer),
+    filters: getFilters(groupUuid),
+});
+
+export const getFilters = (groupUuid: string) => {
+    const filters = new FilterBuilder()
+        .addEqual('tail_uuid', groupUuid)
+        .addEqual('link_class', LinkClass.PERMISSION)
+        .getFilters();
+
+    return filters;
+};
 
 const couldNotFetchGroupDetailsContents = () =>
     snackbarActions.OPEN_SNACKBAR({
