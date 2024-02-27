@@ -23,7 +23,6 @@ export interface SearchResultsPanelDataProps {
     remoteHostsConfig: { [key: string]: Config };
     localCluster: string;
     numberOfItems: number;
-    isNotFound: boolean;
 }
 
 export interface SearchResultsPanelActionProps {
@@ -38,14 +37,12 @@ export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResult
 const mapStateToProps = (rootState: RootState) => {
     const { dataExplorer } = rootState;
     const numberOfItems = dataExplorer[SEARCH_RESULTS_PANEL_ID].items.length;
-    const isNotFound = dataExplorer[SEARCH_RESULTS_PANEL_ID].isNotFound;
     return {
         user: rootState.auth.user,
         sessions: rootState.auth.sessions,
         remoteHostsConfig: rootState.auth.remoteHostsConfig,
         localCluster: rootState.auth.localCluster,
         numberOfItems,
-        isNotFound,
     };
 };
 

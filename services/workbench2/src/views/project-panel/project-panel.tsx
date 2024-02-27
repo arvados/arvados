@@ -256,7 +256,6 @@ interface ProjectPanelDataProps {
     userUuid: string;
     dataExplorerItems: any;
     working: boolean;
-    isNotFound: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
@@ -264,11 +263,9 @@ type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRu
 const mapStateToProps = (state: RootState) => {
     const currentItemId = getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
     const project = getResource<GroupResource>(currentItemId || "")(state.resources);
-    const isNotFound = state.dataExplorer[PROJECT_PANEL_ID] ? state.dataExplorer[PROJECT_PANEL_ID].isNotFound : false;
     return {
         currentItemId,
         project,
-        isNotFound,
         resources: state.resources,
         userUuid: state.auth.user!.uuid,
     };
@@ -289,7 +286,6 @@ export const ProjectPanel = withStyles(styles)(
                         contextMenuColumn={true}
                         defaultViewIcon={ProjectIcon}
                         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                        isNotFound={this.props.isNotFound}
                     />
                 </div>
             }
