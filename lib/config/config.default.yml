@@ -373,7 +373,7 @@ Clusters:
       # other admin users exist will automatically become an admin user.
       AutoAdminFirstUser: false
 
-      # Recipients for notification email sent out when a user sets a
+      # Recipient for notification email sent out when a user sets a
       # profile on their account.
       UserProfileNotificationAddress: ""
 
