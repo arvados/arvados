@@ -322,7 +322,7 @@ export const DataTable = withStyles(styles)(
                 return (
                     <DataTableDefaultView 
                         icon={this.props.defaultViewIcon} 
-                        messages={["Item not found"]} 
+                        messages={["No items found"]} 
                     />
                 );
             } else 
