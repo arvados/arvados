@@ -365,34 +365,59 @@ Clusters:
       # false.
       ActivatedUsersAreVisibleToOthers: true
 
-      # The e-mail address of the user you would like to become marked as an admin
-      # user on their first login.
+      # If a user creates an account with this email address, they
+      # will be automatically set to admin.
       AutoAdminUserWithEmail: ""
 
       # If AutoAdminFirstUser is set to true, the first user to log in when no
       # other admin users exist will automatically become an admin user.
       AutoAdminFirstUser: false
 
-      # Email address to notify whenever a user creates a profile for the
-      # first time
+      # Recipient for notification email sent out when a user sets a
+      # profile on their account.
       UserProfileNotificationAddress: ""
+
+      # When sending a NewUser, NewInactiveUser, or UserProfile
+      # notification, this is the 'From' address to use
       AdminNotifierEmailFrom: arvados@example.com
+
+      # Prefix for email subjects for NewUser and NewInactiveUser emails
       EmailSubjectPrefix: "[ARVADOS] "
+
+      # When sending a welcome email to the user, the 'From' address to use
       UserNotifierEmailFrom: arvados@example.com
-      UserNotifierEmailBcc: {}
-      NewUserNotificationRecipients: {}
-      NewInactiveUserNotificationRecipients: {}
+
+      # The welcome email sent to new users will be blind copied to
+      # these addresses.
+      UserNotifierEmailBcc:
+        SAMPLE: {}
+
+      # Recipients for notification email sent out when a user account
+      # is created and already set up to be able to log in
+      NewUserNotificationRecipients:
+        SAMPLE: {}
+
+      # Recipients for notification email sent out when a user account
+      # has been created but the user cannot log in until they are
+      # set up by an admin.
+      NewInactiveUserNotificationRecipients:
+        SAMPLE: {}
 
       # Set AnonymousUserToken to enable anonymous user access. Populate this
       # field with a random string at least 50 characters long.
       AnonymousUserToken: ""
 
-      # If a new user has an alternate email address (local@domain)
-      # with the domain given here, its local part becomes the new
-      # user's default username. Otherwise, the user's primary email
-      # address is used.
+      # The login provider for a user may supply a primary email
+      # address and one or more alternate email addresses.  If a new
+      # user has an alternate email address with the domain given
+      # here, use the username from the alternate email to generate
+      # the user's Arvados username. Otherwise, the username from
+      # user's primary email address is used for the Arvados username.
+      # Currently implemented for OpenID Connect only.
       PreferDomainForUsername: ""
 
+      # Ruby ERB template used for the email sent out to users when
+      # they have been set up.
       UserSetupMailText: |
         <% if not @user.full_name.empty? -%>
         <%= @user.full_name %>,
@@ -1798,8 +1823,18 @@ Clusters:
           Serialize: false
 
     Mail:
-      MailchimpAPIKey: ""
-      MailchimpListID: ""
+      # In order to send mail, Arvados expects a default SMTP server
+      # on localhost:25.  It cannot require authentication on
+      # connections from localhost.  That server should be configured
+      # to relay mail to a "real" SMTP server that is able to send
+      # email on behalf of your domain.
+
+      # See also the "Users" configuration section for additional
+      # email-related options.
+
+      # When a user has been set up (meaning they are able to log in)
+      # they will receive an email using the template specified
+      # earlier in Users.UserSetupMailText
       SendUserSetupNotificationEmail: true
 
       # Bug/issue report notification to and from addresses
@@ -1809,6 +1844,10 @@ Clusters:
 
       # Generic issue email from
       EmailFrom: "arvados@example.com"
+
+      # No longer supported, to be removed.
+      MailchimpAPIKey: ""
+      MailchimpListID: ""
     RemoteClusters:
       "*":
         Host: ""
