@@ -518,29 +518,16 @@ class Summarizer(object):
 
 
     def _recommend_temp_disk(self, recommendformat):
-        """Recommend decreasing temp disk if utilization < 50%.
+        """This recommendation is disabled for the time being.  It was
+        using the total disk on the node and not the amount of disk
+        requested, so it would trigger a false positive basically
+        every time.  To get the amount of disk requested we need to
+        fish it out of the mounts, which is extra work I don't want do
+        right now.  You can find the old code at commit 616d135e77
 
-        This recommendation is disabled for the time being.  It uses
-        the total disk on the node and not the amount of disk
-        requested, so it triggers a false positive basically every
-        time.  To get the amount of disk requested we need to fish it
-        out of the mounts, which is extra work I don't want do right
-        now.
         """
 
         return []
-
-        # total = float(self.job_tot['statfs']['total'])
-        # utilization = (float(self.job_tot['statfs']['used']) / total) if total > 0 else 0.0
-
-        # if utilization < 50.0 and total > 0:
-        #     yield recommendformat(
-        #         '{} max temp disk utilization was {:.0f}% of {:.0f} MiB -- '
-        #         'consider reducing "tmpdirMin" and/or "outdirMin"'
-        #     ).format(
-        #         self.label,
-        #         utilization * 100.0,
-        #         total / MB)
 
 
     def _format(self, val):

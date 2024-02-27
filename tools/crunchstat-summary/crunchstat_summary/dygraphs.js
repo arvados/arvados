@@ -40,9 +40,6 @@ window.onload = function() {
         },
     }
     chartdata.forEach(function(section, section_idx) {
-        //var h1 = document.createElement('h1');
-        //h1.appendChild(document.createTextNode(section.label));
-        //document.body.appendChild(h1);
         var chartDiv = document.getElementById("chart");
         section.charts.forEach(function(chart, chart_idx) {
             // Skip chart if every series has zero data points

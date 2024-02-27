@@ -46,6 +46,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.cached_docker_lookups = {}
         self.print_keep_deps = False
         self.git_info = {}
+        self.enable_usage_report = None
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

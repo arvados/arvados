@@ -534,17 +534,22 @@ class ArvadosContainer(JobBase):
                 body={"container_request": {"properties": properties}}
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            if logc is not None:
+            if logc is not None and self.job_runtime.enable_usage_report is not False:
                 try:
-                    summerizer = crunchstat_summary.summarizer.ContainerRequestSummarizer(
+                    summarizer = crunchstat_summary.summarizer.ContainerRequestSummarizer(
                         record,
                         collection_object=logc,
                         label=self.name,
                         arv=self.arvrunner.api)
-                    summerizer.run()
+                    summarizer.run()
                     with logc.open("usage_report.html", "wt") as mr:
-                        mr.write(summerizer.html_report())
+                        mr.write(summarizer.html_report())
                     logc.save()
+
+                    # Post warnings about nodes that are under-utilized.
+                    for rc in summarizer._recommend_gen(lambda x: x):
+                        logger.warning(x)
+
                 except Exception as e:
                     logger.warning("%s unable to generate resource usage report",
                                  self.arvrunner.label(self),
@@ -726,6 +731,12 @@ class RunnerContainer(Runner):
 
         if runtimeContext.prefer_cached_downloads:
             command.append("--prefer-cached-downloads")
+
+        if runtimeContext.enable_usage_report is True:
+            command.append("--enable-usage-report")
+
+        if runtimeContext.enable_usage_report is False:
+            command.append("--disable-usage-report")
 
         if self.fast_parser:
             command.append("--fast-parser")
