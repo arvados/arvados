@@ -288,9 +288,14 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
 const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, handleCardClick, isAdmin, isSelected }) => {
     const { name, description, uuid } = currentResource as ProjectResource;
     const [showDescription, setShowDescription] = React.useState(false);
+    const [showProperties, setShowProperties] = React.useState(false);
 
     const toggleDescription = () => {
         setShowDescription(!showDescription);
+    };
+
+    const toggleProperties = () => {
+        setShowProperties(!showProperties);
     };
 
     return (
@@ -329,19 +334,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                 </Tooltip>
                             )}
                         </section>
-                        <section onClick={(ev) => ev.stopPropagation()}>
-                            {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 && (
-                                <CardContent className={classes.cardContent}>
-                                    <Typography component='div'>
-                                        {Object.keys(currentResource.properties).map((k) =>
-                                            Array.isArray(currentResource.properties[k])
-                                                ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                                : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                                        )}
-                                    </Typography>
-                                </CardContent>
-                            )}
-                        </section>
                     </section>
                 }
                 action={
@@ -368,18 +360,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     >
                         <ExpandChevronRight expanded={showDescription} />
                         <section className={classes.showMore}>
-                        <Collapse
-                            in={showDescription}
-                            timeout='auto'
-                            collapsedHeight='1.25rem'
-                        >
-                            <Typography
-                                className={classes.description}
-                                data-cy='project-description'
+                            <Collapse
+                                in={showDescription}
+                                timeout='auto'
+                                collapsedHeight='1.25rem'
                             >
-                                {description}
-                            </Typography>
-                        </Collapse>
+                                <Typography
+                                    className={classes.description}
+                                    data-cy='project-description'
+                                >
+                                    {description}
+                                </Typography>
+                            </Collapse>
                         </section>
                     </section>
                 ) : (
@@ -390,6 +382,36 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         no description available
                     </Typography>
                 )}
+                {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 ? (
+                    <section
+                        onClick={toggleProperties}
+                        className={classes.descriptionToggle}
+                    >
+                        <ExpandChevronRight expanded={showProperties} />
+                        <section className={classes.showMore}>
+                            <Collapse
+                                in={showProperties}
+                                timeout='auto'
+                                collapsedHeight='35px'
+                            >
+                                <Typography
+                                    className={classes.description}
+                                    data-cy='project-description'
+                                >
+                                    <CardContent className={classes.cardContent}>
+                                        <Typography component='div'>
+                                            {Object.keys(currentResource.properties).map((k) =>
+                                                Array.isArray(currentResource.properties[k])
+                                                    ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                                    : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                            )}
+                                        </Typography>
+                                    </CardContent>
+                                </Typography>
+                            </Collapse>
+                        </section>
+                    </section>
+                ) : null}
             </section>
         </Card>
     );
