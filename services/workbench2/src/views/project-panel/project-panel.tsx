@@ -53,7 +53,7 @@ import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 
-type CssRules = 'root' | 'button' | 'loader' | 'notFoundView';
+type CssRules = 'root' | 'button' ;
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -61,18 +61,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit,
-    },
-    loader: {
-        top: "25%",
-        left: "46.5%",
-        marginLeft: "-84px",
-        position: "absolute",
-    },
-    notFoundView: {
-        top: "30%",
-        left: "50%",
-        marginLeft: "-84px",
-        position: "absolute",
     },
 });
 

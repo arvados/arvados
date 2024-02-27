@@ -27,7 +27,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const working = !!progressIndicator.some(p => p.id === id && p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
-    const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
+    // const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
     const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
     const isOnlyOneSelected = Object.values(multiselect.checkedList).filter(x => x === true).length === 1;
     const currentItemUuid =
@@ -35,7 +35,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
-        currentRefresh: currentRefresh,
+        // currentRefresh: currentRefresh,
         currentRoute: currentRoute,
         paperKey: currentRoute,
         currentItemUuid,

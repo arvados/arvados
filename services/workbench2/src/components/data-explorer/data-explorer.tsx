@@ -84,7 +84,6 @@ interface DataExplorerDataProps<T> {
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
     working?: boolean;
-    currentRefresh?: string;
     currentRoute?: string;
     hideColumnSelector?: boolean;
     paperProps?: PaperProps;
@@ -119,50 +118,15 @@ interface DataExplorerActionProps<T> {
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
-type DataExplorerState = {
-    prevRefresh: string;
-    prevRoute: string;
-};
-
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
-        state: DataExplorerState = {
-            prevRefresh: "",
-            prevRoute: "",
-        };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
-
-        componentDidUpdate(prevProps: DataExplorerProps<T>) {
-            const currentRefresh = this.props.currentRefresh || "";
-            const currentRoute = this.props.currentRoute || "";
-
-            if (currentRoute !== this.state.prevRoute) {
-                // Component already mounted, but the user comes from a route change,
-                // like browsing through a project hierarchy.
-                this.setState({
-                    prevRoute: currentRoute,
-                });
-            }
-
-            if (currentRefresh !== this.state.prevRefresh) {
-                // Component already mounted, but the user just clicked the
-                // refresh button.
-                this.setState({
-                    prevRefresh: currentRefresh,
-                });
-            }
-        }
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
-            // Component just mounted, so we need to show the loading indicator.
-            this.setState({
-                prevRefresh: this.props.currentRefresh || "",
-                prevRoute: this.props.currentRoute || "",
-            });
         }
 
         render() {
