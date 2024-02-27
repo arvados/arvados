@@ -29,6 +29,7 @@ import { SvgIconProps } from "@material-ui/core/SvgIcon";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { PendingIcon } from "components/icon/icon";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -328,7 +329,7 @@ export const DataTable = withStyles(styles)(
             if (isLoaded === false || working === true) {
                 return (
                     <DataTableDefaultView 
-                        icon={this.props.defaultViewIcon} 
+                        icon={PendingIcon} 
                         messages={["Loading data, please wait"]} 
                     />
                 );
