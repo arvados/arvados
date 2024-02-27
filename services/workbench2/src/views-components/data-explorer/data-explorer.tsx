@@ -11,7 +11,6 @@ import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { DataColumn } from "components/data-table/data-column";
 import { DataColumns, TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
-import { LAST_REFRESH_TIMESTAMP } from "components/refresh-button/refresh-button";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
 
 interface Props {
@@ -27,7 +26,6 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const working = !!progressIndicator.some(p => p.id === id && p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
-    // const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
     const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
     const isOnlyOneSelected = Object.values(multiselect.checkedList).filter(x => x === true).length === 1;
     const currentItemUuid =
@@ -35,7 +33,6 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
-        // currentRefresh: currentRefresh,
         currentRoute: currentRoute,
         paperKey: currentRoute,
         currentItemUuid,
