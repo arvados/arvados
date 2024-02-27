@@ -26,6 +26,10 @@ var (
 	concurrentWriters = 4 // max goroutines writing to Keep in background and during flush()
 )
 
+const (
+	prefetchAfterCurrentFile = 2 // max segments of next file(s) to prefetch
+)
+
 // A CollectionFileSystem is a FileSystem that can be serialized as a
 // manifest and stored as a collection.
 type CollectionFileSystem interface {
@@ -1313,6 +1317,11 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 		}
 		return
 	}
+
+	if prefetchAfterCurrentFile == 0 {
+		return
+	}
+
 	if dn.prefetchNames == nil {
 		dn.prefetchNames = make([]string, 0, len(dn.inodes))
 		for name, node := range dn.inodes {
@@ -1326,14 +1335,16 @@ func (dn *dirnode) prefetch(fn *filenode, name string, ptr filenodePtr) {
 	iname := sort.Search(len(dn.prefetchNames), func(x int) bool {
 		return dn.prefetchNames[x] > name
 	})
-	for ; iname < len(dn.prefetchNames) && todo > 0; iname++ {
+	todosegments := prefetchAfterCurrentFile
+	for ; iname < len(dn.prefetchNames) && todo > 0 && todosegments > 0; iname++ {
 		profAdd1(&prefetchWalkNext)
 		fn, ok := dn.inodes[dn.prefetchNames[iname]].(*filenode)
 		if !ok {
 			continue
 		}
 		fn.Lock()
-		for inext := 0; inext < len(fn.segments) && todo > 0; inext++ {
+		for inext := 0; inext < len(fn.segments) && todo > 0 && todosegments > 0; inext++ {
+			todosegments--
 			next, ok := fn.segments[inext].(storedSegment)
 			if !ok {
 				// count in-memory data as already
