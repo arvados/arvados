@@ -548,7 +548,7 @@ class ArvadosContainer(JobBase):
 
                     # Post warnings about nodes that are under-utilized.
                     for rc in summarizer._recommend_gen(lambda x: x):
-                        self.usage_report_notes.append(rc)
+                        self.job_runtime.usage_report_notes.append(rc)
 
                 except Exception as e:
                     logger.warning("%s unable to generate resource usage report",

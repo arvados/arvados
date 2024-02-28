@@ -930,7 +930,7 @@ The 'jobs' API is no longer supported.
             raise WorkflowException("Workflow did not return a result.")
 
         if runtimeContext.usage_report_notes:
-            logger.info("Resource report notifications:")
+            logger.info("Steps with low resource utilization (possible optimization opportunities):")
             for x in runtimeContext.usage_report_notes:
                 logger.info("  %s", x)
 

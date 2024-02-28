@@ -483,7 +483,7 @@ class Summarizer(object):
                 '{} peak RAM usage was only {}% ({} MiB used / {} MiB requested)'
             ).format(
                 self.label,
-                int(100*(used_mib / asked_mib)),
+                int(math.ceil(100*(used_mib / asked_mib))),
                 int(used_mib),
                 int(asked_mib))
 
@@ -497,18 +497,23 @@ class Summarizer(object):
 
         if self.job_tot['net:keep0']['rx'] == 0:
             return
+
+        miss_rate = (float(self.job_tot['keepcache']['miss']) /
+                     float(self.job_tot['keepcalls']['get']))
+
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
         # FIXME: the default on this get won't work correctly
         asked_cache = self.existing_constraints.get('keep_cache_ram') or self.existing_constraints.get('keep_cache_disk')
 
-        if utilization < 0.5:
+        if utilization < 0.5 and miss_rate > .05:
             yield recommendformat(
-                '{} Keep cache utilization was {:.2f}% -- '
+                '{} Keep cache utilization was only {:.2f}% and miss rate was {:.2f}% -- '
                 'recommend increasing keep_cache'
             ).format(
                 self.label,
-                utilization * 100.0)
+                utilization * 100.0,
+                miss_rate * 100.0)
 
 
     def _recommend_temp_disk(self, recommendformat):
