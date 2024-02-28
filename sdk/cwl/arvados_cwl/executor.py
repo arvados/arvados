@@ -929,6 +929,11 @@ The 'jobs' API is no longer supported.
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
+        if runtimeContext.usage_report_notes:
+            logger.info("Resource report notifications:")
+            for x in runtimeContext.usage_report_notes:
+                logger.info("  %s", x)
+
         if runtimeContext.submit and isinstance(tool, Runner):
             logger.info("Final output collection %s", tool.final_output)
             if workbench2 or workbench1:

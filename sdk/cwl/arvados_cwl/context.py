@@ -47,6 +47,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.print_keep_deps = False
         self.git_info = {}
         self.enable_usage_report = None
+        self.usage_report_notes = []
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

@@ -421,16 +421,14 @@ class Summarizer(object):
         asked_cores = self.existing_constraints.get(constraint_key)
         if asked_cores is None:
             asked_cores = 1
-        # TODO: This should be more nuanced in cases where max >> avg
+
         if used_cores < (asked_cores*.5):
             yield recommendformat(
-                '{} max CPU usage was {}% -- '
-                'try reducing runtime_constraints to "{}":{}'
+                '{} peak CPU usage was only {}% out of possible {}% ({} cores requested)'
             ).format(
                 self.label,
                 math.ceil(cpu_max_rate*100),
-                constraint_key,
-                int(used_cores))
+                asked_cores*100, asked_cores)
 
     # FIXME: This needs to be updated to account for current a-d-c algorithms
     def _recommend_ram(self, recommendformat):
@@ -482,14 +480,12 @@ class Summarizer(object):
         recommend_mib = int(math.ceil(nearlygibs(used_mib/ratio))*AVAILABLE_RAM_RATIO*1024)
         if used_mib > 0 and (used_mib / asked_mib) < ratio and asked_mib > recommend_mib:
             yield recommendformat(
-                '{} requested {} MiB of RAM but actual RAM usage was below {}% at {} MiB -- '
-                'suggest reducing RAM request to {} MiB'
+                '{} peak RAM usage was only {}% ({} MiB used / {} MiB requested)'
             ).format(
                 self.label,
-                int(asked_mib),
-                int(100*ratio),
+                int(100*(used_mib / asked_mib)),
                 int(used_mib),
-                recommend_mib)
+                int(asked_mib))
 
     def _recommend_keep_cache(self, recommendformat):
         """Recommend increasing keep cache if utilization < 50%.
@@ -499,7 +495,6 @@ class Summarizer(object):
         arv-mount.
         """
 
-        constraint_key = self._map_runtime_constraint('keep_cache_ram')
         if self.job_tot['net:keep0']['rx'] == 0:
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
@@ -510,11 +505,10 @@ class Summarizer(object):
         if utilization < 0.5:
             yield recommendformat(
                 '{} Keep cache utilization was {:.2f}% -- '
-                'try increasing keep_cache to {} MB'
+                'recommend increasing keep_cache'
             ).format(
                 self.label,
-                utilization * 100.0,
-                math.ceil((asked_cache * 2) / (1024*1024)))
+                utilization * 100.0)
 
 
     def _recommend_temp_disk(self, recommendformat):
