@@ -277,6 +277,12 @@ func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 	if *live == "" {
 		c.Check(ap.client.(*ec2stub).describeKeyPairsCalls, check.HasLen, 1)
 		c.Check(ap.client.(*ec2stub).importKeyPairCalls, check.HasLen, 1)
+
+		runcalls := ap.client.(*ec2stub).runInstancesCalls
+		if c.Check(runcalls, check.HasLen, 1) {
+			c.Check(runcalls[0].MetadataOptions.HttpEndpoint, check.DeepEquals, aws.String("enabled"))
+			c.Check(runcalls[0].MetadataOptions.HttpTokens, check.DeepEquals, aws.String("required"))
+		}
 	}
 }
 
