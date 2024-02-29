@@ -62,6 +62,7 @@
     "react-dropzone": "5.1.1",
     "react-highlight-words": "0.14.0",
     "react-idle-timer": "4.3.6",
+    "react-loader-spinner": "^6.1.6",
     "react-redux": "5.0.7",
     "react-router": "4.3.1",
     "react-router-dom": "4.3.1",
