@@ -5,8 +5,7 @@
 import { LinkResource } from 'models/link';
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
-import { ServiceRepository } from 'services/services';
-import { getResourceService } from 'services/services';
+import { ServiceRepository, getResourceService } from 'services/services';
 import { Resource, extractUuidKind } from 'models/resource';
 
 type NameableResource = Resource & { name?: string };
@@ -14,10 +13,11 @@ type NameableResource = Resource & { name?: string };
 export const verifyAndUpdateLinkName = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository):Promise<string> => {
   //check if head resource is already in the store
     let headResource: Resource | undefined = getState().resources[link.headUuid];
+    //if not, fetch it
     if (!headResource) {
         headResource = await fetchResource(link.headUuid)(dispatch, getState, services);
         if(!headResource) {
-            console.error('Could not verify link', link);
+            console.error('Could not validate link', link, 'because link head', link.headUuid, 'is not available');
             return link.name;
         }
     }
@@ -25,7 +25,8 @@ export const verifyAndUpdateLinkName = async (link: LinkResource, dispatch: Disp
     if (validateLinkNameProp(link, headResource) === true) return link.name;
 
     const updatedLink = updateLinkNameProp(link, headResource);
-
+    updateRemoteLinkName(updatedLink)(dispatch, getState, services);
+    
     return updatedLink.name;
 };
 
@@ -53,3 +54,15 @@ const updateLinkNameProp = (link: LinkResource, head: NameableResource) => {
   if(head.name) updatedLink.name = head.name;
   return updatedLink;
 }
+
+const updateRemoteLinkName = (link: LinkResource) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    try {
+        const kind = extractUuidKind(link.uuid);
+        const service = getResourceService(kind)(services);
+        if (service) {
+            service.update(link.uuid, {name: link.name});
+        }
+    } catch (error) {
+        console.error('Could not update link name', link, error);
+    }
+};
