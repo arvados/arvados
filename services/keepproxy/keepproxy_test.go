@@ -32,8 +32,8 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-// Gocheck boilerplate
 func Test(t *testing.T) {
+	keepclient.DefaultRetryDelay = time.Millisecond
 	TestingT(t)
 }
 

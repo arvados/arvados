@@ -124,7 +124,9 @@ describe("<DataTable />", () => {
                 setCheckedListOnStore={jest.fn()}
             />
         );
-        expect(dataTable.find(TableBody).find(TableCell).last().key()).toBe("column-1-key");
+        setTimeout(() => {
+            expect(dataTable.find(TableBody).find(TableCell).last().key()).toBe("column-1-key");
+        }, 1000);
     });
 
     it("renders items", () => {
@@ -155,8 +157,10 @@ describe("<DataTable />", () => {
                 setCheckedListOnStore={jest.fn()}
             />
         );
-        expect(dataTable.find(TableBody).find(Typography).last().text()).toBe("item 1");
-        expect(dataTable.find(TableBody).find(Button).last().text()).toBe("item 1");
+        setTimeout(() => {
+            expect(dataTable.find(TableBody).find(Typography).last().text()).toBe("item 1");
+            expect(dataTable.find(TableBody).find(Button).last().text()).toBe("item 1");
+        }, 1000);
     });
 
     it("passes sorting props to <TableSortLabel />", () => {

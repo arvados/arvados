@@ -42,7 +42,7 @@ const initialState: SearchBar = {
     selectedItem: {
         id: '',
         query: ''
-    }
+    },
 };
 
 const makeSelectedItem = (id: string, query?: string): SearchBarSelectedItem => ({ id, query: query ? query : id });

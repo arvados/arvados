@@ -702,7 +702,7 @@ fpm_build_virtualenv_worker () {
   cd $WORKSPACE/$PKG_DIR
 
   rm -rf dist/*
-  local venv_dir="dist/build/usr/share/python$PYTHON3_VERSION/dist/$PYTHON_PKG"
+  local venv_dir="dist/build/usr/lib/$PYTHON_PKG"
   echo "Creating virtualenv..."
   if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
     printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
@@ -865,17 +865,18 @@ fpm_build_virtualenv_worker () {
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("usr/share/python$PYTHON3_VERSION/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("$sys_venv_dir/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
 
-  # Make sure to install all our package binaries in /usr/bin.
-  # We have to walk $WORKSPACE/$PKG_DIR/bin rather than
-  # $WORKSPACE/build/usr/share/$python/dist/$PYTHON_PKG/bin/ to get the list
-  # because the latter also includes all the python binaries for the virtualenv.
-  # We have to take the copies of our binaries from the latter directory, though,
-  # because those are the ones we rewrote the shebang line of, above.
+  # Make sure to install all our package binaries in /usr/bin. We have to
+  # walk $WORKSPACE/$PKG_DIR/bin rather than $venv_dir/bin to get the list
+  # because the latter also includes scripts installed by all the
+  # dependencies in the virtualenv, which may conflict with other
+  # packages. We have to take the copies of our binaries from the latter
+  # directory, though, because those are the ones we rewrote the shebang
+  # line of, above.
   if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
       COMMAND_ARR+=("$sys_venv_dir/bin/$binary=/usr/bin/")

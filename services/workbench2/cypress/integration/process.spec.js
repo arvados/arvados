@@ -106,7 +106,7 @@ describe("Process tests", function () {
                 'Share',
                 'View details',
             ];
-    
+
             createContainerRequest(
                 activeUser,
                 `test_container_request ${Math.floor(Math.random() * 999999)}`,
@@ -133,7 +133,7 @@ describe("Process tests", function () {
             });
         })
     })
- 
+
     describe("Details panel", function () {
         it("shows process details", function () {
             createContainerRequest(
@@ -1364,7 +1364,7 @@ describe("Process tests", function () {
             cy.getAll("@containerRequest", "@testOutputCollection").then(function ([containerRequest, testOutputCollection]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-io-card] h6")
-                    .contains("Inputs")
+                    .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
                     .within(() => {
                         verifyIOParameter("input_file", null, "Label Description", "input1.tar", "00000000000000000000000000000000+01");
@@ -1399,7 +1399,7 @@ describe("Process tests", function () {
                         verifyIOParameter("input_file_url", null, null, "http://example.com/index.html");
                     });
                 cy.get("[data-cy=process-io-card] h6")
-                    .contains("Outputs")
+                    .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
                     .within(ctx => {
                         cy.get(ctx).scrollIntoView();
@@ -1499,7 +1499,7 @@ describe("Process tests", function () {
                 cy.waitForDom();
 
                 cy.get("[data-cy=process-io-card] h6")
-                    .contains("Inputs")
+                    .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
                     .within(() => {
                         cy.wait(2000);
@@ -1509,7 +1509,7 @@ describe("Process tests", function () {
                         });
                     });
                 cy.get("[data-cy=process-io-card] h6")
-                    .contains("Outputs")
+                    .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
                     .within(() => {
                         cy.get("tbody tr").each(item => {

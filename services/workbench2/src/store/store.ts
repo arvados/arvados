@@ -20,9 +20,11 @@ import { collectionPanelFilesReducer } from "./collection-panel/collection-panel
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
 import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
+import { WORKFLOW_PROCESSES_PANEL_ID } from "./workflow-panel/workflow-panel-actions";
 import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { AllProcessesPanelMiddlewareService } from "./all-processes-panel/all-processes-panel-middleware-service";
+import { WorkflowProcessesMiddlewareService } from "./workflow-panel/workflow-middleware-service";
 import { collectionPanelReducer } from "./collection-panel/collection-panel-reducer";
 import { dialogReducer } from "./dialog/dialog-reducer";
 import { ServiceRepository } from "services/services";
@@ -96,6 +98,7 @@ export function configureStore(history: History, services: ServiceRepository, co
     const projectPanelMiddleware = dataExplorerMiddleware(new ProjectPanelMiddlewareService(services, PROJECT_PANEL_ID));
     const favoritePanelMiddleware = dataExplorerMiddleware(new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID));
     const allProcessessPanelMiddleware = dataExplorerMiddleware(new AllProcessesPanelMiddlewareService(services, ALL_PROCESSES_PANEL_ID));
+    const workflowProcessessPanelMiddleware = dataExplorerMiddleware(new WorkflowProcessesMiddlewareService(services, WORKFLOW_PROCESSES_PANEL_ID));
     const trashPanelMiddleware = dataExplorerMiddleware(new TrashPanelMiddlewareService(services, TRASH_PANEL_ID));
     const searchResultsPanelMiddleware = dataExplorerMiddleware(new SearchResultsMiddlewareService(services, SEARCH_RESULTS_PANEL_ID));
     const sharedWithMePanelMiddleware = dataExplorerMiddleware(new SharedWithMeMiddlewareService(services, SHARED_WITH_ME_PANEL_ID));
@@ -152,6 +155,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         collectionsContentAddress,
         subprocessMiddleware,
         treePickerSearchMiddleware,
+        workflowProcessessPanelMiddleware
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[], b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);
