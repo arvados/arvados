@@ -17,6 +17,7 @@ import { ResourceKind } from 'models/resource';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass } from 'models/link';
+import { verifyAndUpdateLinkName } from 'common/link-update-name';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
@@ -144,7 +145,11 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
         limit: SIDEPANEL_TREE_NODE_LIMIT,
     };
 
-    const { items } = await services.linkService.list(params);
+    let items = (await services.linkService.list(params)).items;
+    for(let item of items) {
+        const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
+        item.name = verifiedName;
+    }
 
     dispatch(
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
@@ -174,7 +179,11 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
         limit: SIDEPANEL_TREE_NODE_LIMIT,
     };
 
-    const { items } = await services.linkService.list(params);
+    let items = (await services.linkService.list(params)).items;
+    for(let item of items) {
+        const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
+        item.name = verifiedName;
+    }
 
     dispatch(
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
