@@ -83,7 +83,7 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
                 // Handle another user root project
                 const user = getResource<UserResource>(uuid)(getState().resources);
                 breadcrumbs.push({
-                    label: (user as any)?.fullName || SidePanelTreeCategory.PROJECTS,
+                    label: (user as any)?.fullName || user?.username || uuid,
                     uuid: user?.uuid || uuid,
                     icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
                 });
