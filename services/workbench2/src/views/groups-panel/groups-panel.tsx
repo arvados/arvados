@@ -4,12 +4,12 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Typography, StyleRulesCallback, WithStyles, withStyles, withTheme, Tooltip } from "@material-ui/core";
+import { Grid, Button, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
-import { ResourceUuid } from 'views-components/data-explorer/renderers';
-import { AddIcon, ErrorIcon } from 'components/icon/icon';
+import { GroupMembersCount, ResourceUuid } from 'views-components/data-explorer/renderers';
+import { AddIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
@@ -20,7 +20,6 @@ import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
-import { InlinePulser } from 'components/loading/inline-pulser';
 
 type CssRules = "root";
 
@@ -121,31 +120,3 @@ export const GroupsPanel = withStyles(styles)(connect(
             }
         }
     }));
-
-
-const GroupMembersCount = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const group = getResource<GroupResource>(props.uuid)(state.resources);
-
-        return {
-            value: group?.memberCount,
-        };
-
-    }
-)(withTheme()((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
-    if (props.value === undefined) {
-        // Loading
-        return <Typography>
-            <InlinePulser />
-        </Typography>;
-    } else if (props.value === null) {
-        // Error
-        return <Typography>
-            <Tooltip title="Failed to load member count">
-                <ErrorIcon style={{color: props.theme.customs.colors.greyL}}/>
-            </Tooltip>
-        </Typography>;
-    } else {
-        return <Typography children={props.value} />;
-    }
-}));
