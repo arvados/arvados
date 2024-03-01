@@ -105,6 +105,7 @@ import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
 import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
+import { Breadcrumb } from "components/breadcrumbs/breadcrumbs";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -247,7 +248,10 @@ export const loadProject = (uuid: string) =>
             if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
                 // Load another users home projects
                 dispatch(finishLoadingProject(uuid));
-                dispatch<any>(setSidePanelBreadcrumbs(uuid));
+                const prevBreadcrumbs = getState().properties.breadcrumbs as Breadcrumb[] || [];
+                if (prevBreadcrumbs.length === 0) {
+                    dispatch<any>(setSidePanelBreadcrumbs(uuid));
+                }
             } else if (userUuid !== uuid) {
                 await dispatch(finishLoadingProject(uuid));
                 const match = await loadGroupContentsResource({
