@@ -79,6 +79,14 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
                     uuid: SidePanelTreeCategory.PROJECTS,
                     icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
                 });
+            } else if (uuidKind === ResourceKind.USER) {
+                // Handle another user root project
+                const user = getResource<UserResource>(uuid)(getState().resources);
+                breadcrumbs.push({
+                    label: (user as any)?.fullName || SidePanelTreeCategory.PROJECTS,
+                    uuid: user?.uuid || uuid,
+                    icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
+                });
             } else if (Object.values(SidePanelTreeCategory).includes(uuid as SidePanelTreeCategory)) {
                 // Handle SidePanelTreeCategory root
                 breadcrumbs.push({
