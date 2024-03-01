@@ -1150,7 +1150,7 @@ export const GroupMembersCount = connect(
 )(withTheme()((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
     if (props.value === undefined) {
         // Loading
-        return <Typography>
+        return <Typography component={"div"}>
             <InlinePulser />
         </Typography>;
     } else if (props.value === null) {
