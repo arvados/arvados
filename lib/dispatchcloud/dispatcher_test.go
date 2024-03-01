@@ -8,12 +8,14 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -159,7 +161,6 @@ func (s *DispatcherSuite) arvClientProxy(c *check.C) func(*http.Request) (*url.U
 // artificial errors in order to exercise a variety of code paths.
 func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	Drivers["test"] = s.stubDriver
-	s.disp.setupOnce.Do(s.disp.initialize)
 	queue := &test.Queue{
 		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
@@ -179,6 +180,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		})
 	}
 	s.disp.queue = queue
+	s.disp.setupOnce.Do(s.disp.initialize)
 
 	var mtx sync.Mutex
 	done := make(chan struct{})
@@ -323,7 +325,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*max_concurrent_containers [1-9][0-9e+.]*`)
 }
 
-func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
+func (s *DispatcherSuite) TestManagementAPI_Permissions(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
@@ -345,7 +347,7 @@ func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
 	}
 }
 
-func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
+func (s *DispatcherSuite) TestManagementAPI_Disabled(c *check.C) {
 	s.cluster.ManagementToken = ""
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
@@ -363,13 +365,122 @@ func (s *DispatcherSuite) TestAPIDisabled(c *check.C) {
 	}
 }
 
-func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
+func (s *DispatcherSuite) TestManagementAPI_Containers(c *check.C) {
+	s.cluster.ManagementToken = "abcdefgh"
+	s.cluster.Containers.CloudVMs.InitialQuotaEstimate = 4
+	Drivers["test"] = s.stubDriver
+	queue := &test.Queue{
+		MaxDispatchAttempts: 5,
+		ChooseType: func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
+			return ChooseInstanceType(s.cluster, ctr)
+		},
+		Logger: ctxlog.TestLogger(c),
+	}
+	s.stubDriver.Queue = queue
+	s.stubDriver.QuotaMaxInstances = 4
+	s.stubDriver.SetupVM = func(stubvm *test.StubVM) error {
+		if stubvm.Instance().ProviderType() >= test.InstanceType(4).ProviderType {
+			return test.CapacityError{InstanceTypeSpecific: true}
+		}
+		stubvm.ExecuteContainer = func(ctr arvados.Container) int {
+			time.Sleep(5 * time.Second)
+			return 0
+		}
+		return nil
+	}
+	s.disp.queue = queue
+	s.disp.setupOnce.Do(s.disp.initialize)
+
+	go s.disp.run()
+
+	type queueEnt struct {
+		Container        arvados.Container
+		InstanceType     arvados.InstanceType `json:"instance_type"`
+		SchedulingStatus string               `json:"scheduling_status"`
+	}
+	type containersResponse struct {
+		Items []queueEnt
+	}
+	getContainers := func() containersResponse {
+		sQueueRefresh = time.Millisecond
+		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/containers", nil)
+		req.Header.Set("Authorization", "Bearer abcdefgh")
+		resp := httptest.NewRecorder()
+		s.disp.ServeHTTP(resp, req)
+		var cresp containersResponse
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		err := json.Unmarshal(resp.Body.Bytes(), &cresp)
+		c.Check(err, check.IsNil)
+		return cresp
+	}
+
+	c.Check(getContainers().Items, check.HasLen, 0)
+
+	for i := 0; i < 20; i++ {
+		queue.Containers = append(queue.Containers, arvados.Container{
+			UUID:     test.ContainerUUID(i),
+			State:    arvados.ContainerStateQueued,
+			Priority: int64(100 - i),
+			RuntimeConstraints: arvados.RuntimeConstraints{
+				RAM:   int64(i%3+1) << 30,
+				VCPUs: i%8 + 1,
+			},
+		})
+	}
+	queue.Update()
+
+	expect := `
+ 0 zzzzz-dz642-000000000000000 (Running) ""
+ 1 zzzzz-dz642-000000000000001 (Running) ""
+ 2 zzzzz-dz642-000000000000002 (Locked) "waiting for suitable instance type to become available: queue position 1"
+ 3 zzzzz-dz642-000000000000003 (Locked) "waiting for suitable instance type to become available: queue position 2"
+ 4 zzzzz-dz642-000000000000004 (Queued) "waiting while cluster is running at capacity: queue position 3"
+ 5 zzzzz-dz642-000000000000005 (Queued) "waiting while cluster is running at capacity: queue position 4"
+ 6 zzzzz-dz642-000000000000006 (Queued) "waiting while cluster is running at capacity: queue position 5"
+ 7 zzzzz-dz642-000000000000007 (Queued) "waiting while cluster is running at capacity: queue position 6"
+ 8 zzzzz-dz642-000000000000008 (Queued) "waiting while cluster is running at capacity: queue position 7"
+ 9 zzzzz-dz642-000000000000009 (Queued) "waiting while cluster is running at capacity: queue position 8"
+ 10 zzzzz-dz642-000000000000010 (Queued) "waiting while cluster is running at capacity: queue position 9"
+ 11 zzzzz-dz642-000000000000011 (Queued) "waiting while cluster is running at capacity: queue position 10"
+ 12 zzzzz-dz642-000000000000012 (Queued) "waiting while cluster is running at capacity: queue position 11"
+ 13 zzzzz-dz642-000000000000013 (Queued) "waiting while cluster is running at capacity: queue position 12"
+ 14 zzzzz-dz642-000000000000014 (Queued) "waiting while cluster is running at capacity: queue position 13"
+ 15 zzzzz-dz642-000000000000015 (Queued) "waiting while cluster is running at capacity: queue position 14"
+ 16 zzzzz-dz642-000000000000016 (Queued) "waiting while cluster is running at capacity: queue position 15"
+ 17 zzzzz-dz642-000000000000017 (Queued) "waiting while cluster is running at capacity: queue position 16"
+ 18 zzzzz-dz642-000000000000018 (Queued) "waiting while cluster is running at capacity: queue position 17"
+ 19 zzzzz-dz642-000000000000019 (Queued) "waiting while cluster is running at capacity: queue position 18"
+`
+	sequence := make(map[string][]string)
+	var summary string
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); time.Sleep(time.Millisecond) {
+		cresp := getContainers()
+		summary = "\n"
+		for i, ent := range cresp.Items {
+			summary += fmt.Sprintf("% 2d %s (%s) %q\n", i, ent.Container.UUID, ent.Container.State, ent.SchedulingStatus)
+			s := sequence[ent.Container.UUID]
+			if len(s) == 0 || s[len(s)-1] != ent.SchedulingStatus {
+				sequence[ent.Container.UUID] = append(s, ent.SchedulingStatus)
+			}
+		}
+		if summary == expect {
+			break
+		}
+	}
+	c.Check(summary, check.Equals, expect)
+	for i := 0; i < 5; i++ {
+		c.Logf("sequence for container %d:\n... %s", i, strings.Join(sequence[test.ContainerUUID(i)], "\n... "))
+	}
+}
+
+func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
 	s.cluster.Containers.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	s.disp.queue = &test.Queue{}
 	go s.disp.run()
+	defer s.disp.Close()
 
 	type instance struct {
 		Instance             string
