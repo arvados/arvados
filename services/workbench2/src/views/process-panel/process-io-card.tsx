@@ -854,7 +854,7 @@ const KeepUrlPath = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
                 className={classes.keepLink}
                 href={keepUrlPathNav}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
             >
                 {keepUrlPath || "/"}
             </a>
@@ -934,6 +934,7 @@ const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, p
                 <MuiLink
                     href={file.location}
                     target="_blank"
+                    rel="noopener"
                 >
                     {file.location}
                 </MuiLink>

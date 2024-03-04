@@ -12,9 +12,9 @@ export const openInNewTabAction = (resource: any) => (dispatch: Dispatch, getSta
     const url = getNavUrl(resource.uuid, getState().auth);
 
     if (url[0] === "/") {
-        window.open(`${window.location.origin}${url}`, "_blank");
+        window.open(`${window.location.origin}${url}`, "_blank", "noopener");
     } else if (url.length) {
-        window.open(url, "_blank");
+        window.open(url, "_blank", "noopener");
     }
 };
 
