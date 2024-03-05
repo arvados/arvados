@@ -1244,10 +1244,22 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 
 	var ctr arvados.Container
 	var lastState arvados.ContainerState
+	var status, lastStatus arvados.ContainerStatus
+	var allStatus string
+	checkstatus := func() {
+		err := ac.RequestAndDecode(&status, "GET", "/arvados/v1/container_requests/"+cr.UUID+"/container_status", nil, nil)
+		c.Assert(err, check.IsNil)
+		if status != lastStatus {
+			c.Logf("container status: %s, %s", status.State, status.SchedulingStatus)
+			allStatus += fmt.Sprintf("%s, %s\n", status.State, status.SchedulingStatus)
+			lastStatus = status
+		}
+	}
 	deadline := time.Now().Add(time.Minute)
-	for cr.State != arvados.ContainerRequestStateFinal {
+	for cr.State != arvados.ContainerRequestStateFinal || (lastStatus.State != arvados.ContainerStateComplete && lastStatus.State != arvados.ContainerStateCancelled) {
 		err = ac.RequestAndDecode(&cr, "GET", "/arvados/v1/container_requests/"+cr.UUID, nil, nil)
 		c.Assert(err, check.IsNil)
+		checkstatus()
 		err = ac.RequestAndDecode(&ctr, "GET", "/arvados/v1/containers/"+cr.ContainerUUID, nil, nil)
 		if err != nil {
 			c.Logf("error getting container state: %s", err)
@@ -1267,6 +1279,7 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 			time.Sleep(time.Second / 2)
 		}
 	}
+	checkstatus()
 	c.Logf("cr.CumulativeCost == %f", cr.CumulativeCost)
 	c.Check(cr.CumulativeCost, check.Not(check.Equals), 0.0)
 	if expectExitCode >= 0 {
@@ -1274,6 +1287,13 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		c.Check(ctr.ExitCode, check.Equals, expectExitCode)
 		err = ac.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
 		c.Assert(err, check.IsNil)
+		c.Check(allStatus, check.Matches, `Queued, waiting for dispatch\n`+
+			`(Queued, waiting.*\n)*`+
+			`(Locked, waiting for dispatch\n)?`+
+			`(Locked, waiting for new instance to be ready\n)?`+
+			`(Locked, preparing runtime environment\n)?`+
+			`(Running, \n)?`+
+			`Complete, \n`)
 	}
 	logcfs = showlogs(cr.LogUUID)
 	checkwebdavlogs(cr)
