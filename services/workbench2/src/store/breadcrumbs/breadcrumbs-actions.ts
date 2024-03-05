@@ -282,11 +282,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
                 { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
             ];    
-            const breadcrumbsWithPreviousCrumbs: Breadcrumb[] = [
-                ...currentCrumbs,
-                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
-            ];
-            dispatch(setBreadcrumbs(currentCrumbs.some((crumb) => crumb.label === SidePanelTreeCategory.GROUPS) ? breadcrumbsWithPreviousCrumbs : userProfileBreadcrumbs));
+            dispatch(setBreadcrumbs(userProfileBreadcrumbs));
         } catch (e) {
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
