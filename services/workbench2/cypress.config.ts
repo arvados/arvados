@@ -18,5 +18,8 @@ export default defineConfig({
     },
     baseUrl: 'https://localhost:3000/',
     experimentalRunAllSpecs: true,
+    // The 2 options below make Electron crash a lot less and Firefox behave better
+    experimentalMemoryManagement: true,
+    numTestsKeptInMemory: 0,
   },
 })
