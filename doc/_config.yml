@@ -83,28 +83,29 @@ navbar:
       - sdk/python/api-client.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
       - sdk/python/python.html.textile.liquid
-      - sdk/python/arvados-fuse.html.textile.liquid
       - sdk/python/arvados-cwl-runner.html.textile.liquid
       - sdk/python/events.html.textile.liquid
-    - CLI:
+    - Command line tools (CLI SDK):
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
       - sdk/cli/reference.html.textile.liquid
       - sdk/cli/subcommands.html.textile.liquid
-      - sdk/cli/project-management.html.textile.liquid
+    - FUSE Driver:
+      - sdk/fuse/install.html.textile.liquid
+      - sdk/fuse/options.html.textile.liquid
     - Go:
       - sdk/go/index.html.textile.liquid
       - sdk/go/example.html.textile.liquid
+    - Java:
+      - sdk/java-v2/index.html.textile.liquid
+      - sdk/java-v2/example.html.textile.liquid
+      - sdk/java-v2/javadoc.html.textile.liquid
     - R:
       - sdk/R/index.html.md
       - sdk/R/arvados/index.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
       - sdk/ruby/example.html.textile.liquid
-    - Java v2:
-      - sdk/java-v2/index.html.textile.liquid
-      - sdk/java-v2/example.html.textile.liquid
-      - sdk/java-v2/javadoc.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
