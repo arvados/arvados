@@ -160,7 +160,9 @@ describe("Search tests", function () {
         });
     });
 
-    it("shows search context menu", function () {
+    // The following test is enabled on Electron only, as Chromium and Firefox
+    // require permissions to access the clipboard.
+    it("shows search context menu", { browser: 'electron' } , function () {
         const colName = `Home Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
         const federatedColName = `Federated Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
         const federatedColUuid = "xxxxx-4zz18-000000000000000";

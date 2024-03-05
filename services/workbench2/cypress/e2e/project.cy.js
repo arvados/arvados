@@ -39,20 +39,22 @@ describe("Project tests", function () {
         cy.get("[data-cy=form-dialog]").should("not.contain", "Color: Magenta");
         cy.get("[data-cy=resource-properties-form]").within(() => {
             cy.get("[data-cy=property-field-key]").within(() => {
-                cy.get("input").type("Color");
+                cy.get("input").type("Color").blur();
             });
             cy.get("[data-cy=property-field-value]").within(() => {
-                cy.get("input").type("Magenta");
+                cy.get("input").type("Magenta").blur();
             });
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
+
             cy.get("[data-cy=property-field-value]").within(() => {
-                cy.get("input").type("Pink");
+                cy.get("input").type("Pink").blur();
             });
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
+
             cy.get("[data-cy=property-field-value]").within(() => {
-                cy.get("input").type("Yellow");
+                cy.get("input").type("Yellow").blur();
             });
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
         });
         // Confirm proper vocabulary labels are displayed on the UI.
         cy.get("[data-cy=form-dialog]").should("contain", "Color: Magenta");
@@ -95,14 +97,14 @@ describe("Project tests", function () {
         // Add another property
         cy.get("[data-cy=resource-properties-form]").within(() => {
             cy.get("[data-cy=property-field-key]").within(() => {
-                cy.get("input").type("Animal");
+                cy.get("input").type("Animal").blur();
             });
             cy.get("[data-cy=property-field-value]").within(() => {
-                cy.get("input").type("Dog");
+                cy.get("input").type("Dog").blur();
             });
-            cy.root().submit();
+            cy.get("[data-cy=property-add-btn]").click();
         });
-        cy.get("[data-cy=form-submit-btn]").click({ force: true });
+        cy.get("[data-cy=form-submit-btn]").click();
         // Reopen edit via breadcrumbs and verify properties
         cy.get("[data-cy=breadcrumbs]").contains(projName).rightclick();
         cy.get("[data-cy=context-menu]").contains("Edit").click();
@@ -612,7 +614,9 @@ describe("Project tests", function () {
         });
     });
 
-    it("copies project URL to clipboard", () => {
+    // The following test is enabled on Electron only, as Chromium and Firefox
+    // require permissions to access the clipboard.
+    it("copies project URL to clipboard", { browser: 'electron' }, () => {
         const projectName = `Test project (${Math.floor(999999 * Math.random())})`;
 
         cy.loginAs(activeUser);
