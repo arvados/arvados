@@ -224,6 +224,26 @@ Setting the priority of a committed container_request to 0 may cancel a running 
 See "Canceling a container request":{{site.baseurl}}/api/methods/container_requests.html#cancel_container for further details.
 {% include 'notebox_end' %}
 
+h3(#container_status). container_status
+
+Get container status.
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |
+{background:#ccffcc}.|uuid|string|The UUID of the container request in question.|path|
+
+Example request: @GET /arvados/v1/container_requests/zzzzz-xvdhp-0123456789abcde/container_status@
+
+Response attributes:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Examples|
+|uuid|string|The UUID of the container assigned to this request.||
+|state|string|The state of the container assigned to this request (see "container resource attributes":containers.html).||
+|scheduling_status|string|A brief explanation of the container's status in the dispatch queue. Empty if scheduling is not applicable, e.g., the container is running or finished.|@waiting for cloud resources: queue position 3@
+@creating new instance@
+@preparing runtime environment@|
+
 h3(#log). log
 
 Get container log data using WebDAV methods.

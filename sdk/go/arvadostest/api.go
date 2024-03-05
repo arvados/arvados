@@ -168,6 +168,10 @@ func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.D
 	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
 }
+func (as *APIStub) ContainerRequestContainerStatus(ctx context.Context, options arvados.GetOptions) (arvados.ContainerStatus, error) {
+	as.appendCall(ctx, as.ContainerRequestContainerStatus, options)
+	return arvados.ContainerStatus{}, as.Error
+}
 func (as *APIStub) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
 	as.appendCall(ctx, as.ContainerRequestLog, options)
 	// Return a handler that responds with the configured
