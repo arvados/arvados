@@ -277,7 +277,6 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
         try {
             const user = getResource<UserResource>(userUuid)(getState().resources)
                 || await services.userService.get(userUuid, false);
-            const currentCrumbs = getState().properties.breadcrumbs as Breadcrumb[] || [];
             const userProfileBreadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
                 { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
