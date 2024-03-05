@@ -15,8 +15,8 @@ wait_for_apt_locks() {
   done
 }
 
-# $DIST should not have a dot if there is one in /etc/os-release (e.g. 18.04)
-DIST=$(. /etc/os-release; echo $ID$VERSION_ID | tr -d '.')
+. /etc/os-release
+DISTRO_ID="$ID"
 
 # Run apt-get update
 $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
@@ -36,9 +36,6 @@ if [[ ! -d /var/lib/cloud/scripts/per-boot ]]; then
   mkdir -p /var/lib/cloud/scripts/per-boot
 fi
 
-TMP_LSB=`/usr/bin/lsb_release -c -s`
-LSB_RELEASE_CODENAME=${TMP_LSB//[$'\t\r\n ']}
-
 SET_RESOLVER=
 if [ -n "$RESOLVER" ]; then
   SET_RESOLVER="--dns ${RESOLVER}"
@@ -46,7 +43,7 @@ fi
 
 # Add the arvados apt repository
 echo "# apt.arvados.org" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
-echo "deb http://apt.arvados.org/$LSB_RELEASE_CODENAME $LSB_RELEASE_CODENAME${REPOSUFFIX} main" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
+echo "deb http://apt.arvados.org/$VERSION_CODENAME $VERSION_CODENAME${REPOSUFFIX} main" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
 
 # Add the arvados signing key
 cat /tmp/1078ECD7.asc | $SUDO apt-key add -
@@ -78,29 +75,12 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
 # We want Docker 20.10 or later so that we support glibc 2.33 and up in the container, cf.
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1005906
 dockerversion=5:20.10.13~3-0
-if [[ "$DIST" =~ ^debian ]]; then
-  family="debian"
-  if [ "$DIST" == "debian11" ]; then
-    distro="bullseye"
-  elif [ "$DIST" == "debian12" ]; then
-    distro="bookworm"
-  fi
-elif [[ "$DIST" =~ ^ubuntu ]]; then
-  family="ubuntu"
-  if [ "$DIST" == "ubuntu2004" ]; then
-    distro="focal"
-  elif [ "$DIST" == "ubuntu2204" ]; then
-    distro="jammy"
-  fi
-else
-  echo "Unsupported distribution $DIST"
-  exit 1
-fi
-curl -fsSL https://download.docker.com/linux/$family/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/$family/ $distro stable | \
+DOCKER_URL="https://download.docker.com/linux/$DISTRO_ID"
+curl -fsSL "$DOCKER_URL/gpg" | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] $DOCKER_URL/ $VERSION_CODENAME stable" | \
     $SUDO tee /etc/apt/sources.list.d/docker.list
 $SUDO apt-get update
-$SUDO apt-get -yq --no-install-recommends install docker-ce=${dockerversion}~${family}-${distro}
+$SUDO apt-get -yq --no-install-recommends install docker-ce="${dockerversion}~${DISTRO_ID}-${VERSION_CODENAME}"
 
 # Set a higher ulimit and the resolver (if set) for docker
 $SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
@@ -173,7 +153,7 @@ $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.c
 
 if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # We need a kernel and matching headers
-  if [[ "$DIST" =~ ^debian ]]; then
+  if [[ "$DISTRO_ID" == debian ]]; then
     $SUDO apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
   elif [ "$CLOUD" == "azure" ]; then
     $SUDO apt-get -y install linux-image-azure linux-headers-azure
@@ -182,10 +162,11 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   fi
 
   # Install CUDA
-  $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
-  $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/3bf863cc.pub
+  NVIDIA_URL="https://developer.download.nvidia.com/compute/cuda/repos/$(echo "$DISTRO_ID$VERSION_ID" | tr -d .)/x86_64"
+  $SUDO apt-key adv --fetch-keys "$NVIDIA_URL/7fa2af80.pub"
+  $SUDO apt-key adv --fetch-keys "$NVIDIA_URL/3bf863cc.pub"
   $SUDO apt-get -y install software-properties-common
-  $SUDO add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
+  $SUDO add-apt-repository "deb $NVIDIA_URL/ /"
   $SUDO add-apt-repository contrib
   $SUDO apt-get update
   $SUDO apt-get -y install cuda
@@ -193,7 +174,7 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # Install libnvidia-container, the tooling for Docker/Singularity
   curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
     $SUDO apt-key add -
-  if [ "$DIST" == "debian11" ]; then
+  if [[ "$VERSION_CODENAME" == bullseye ]]; then
     # As of 2021-12-16 libnvidia-container and friends are only available for
     # Debian 10, not yet Debian 11. Install experimental rc1 package as per this
     # workaround:
@@ -202,9 +183,7 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
       $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
     $SUDO sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
   else
-    # here, $DIST should have a dot if there is one in /etc/os-release (e.g. 18.04)...
-    DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
-    curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.list | \
+    curl -s -L "https://nvidia.github.io/libnvidia-container/$DISTRO_ID$VERSION_ID/libnvidia-container.list" | \
       $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
   fi
 
