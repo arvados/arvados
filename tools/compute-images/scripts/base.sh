@@ -72,15 +72,12 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   python3-arvados-fuse \
   arvados-docker-cleaner
 
-# We want Docker 20.10 or later so that we support glibc 2.33 and up in the container, cf.
-# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1005906
-dockerversion=5:20.10.13~3-0
 DOCKER_URL="https://download.docker.com/linux/$DISTRO_ID"
 curl -fsSL "$DOCKER_URL/gpg" | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] $DOCKER_URL/ $VERSION_CODENAME stable" | \
     $SUDO tee /etc/apt/sources.list.d/docker.list
 $SUDO apt-get update
-$SUDO apt-get -yq --no-install-recommends install docker-ce="${dockerversion}~${DISTRO_ID}-${VERSION_CODENAME}"
+$SUDO apt-get -yq --no-install-recommends install docker-ce
 
 # Set a higher ulimit and the resolver (if set) for docker
 $SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
