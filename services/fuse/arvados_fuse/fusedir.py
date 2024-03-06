@@ -176,29 +176,43 @@ class Directory(FreshBase):
         changed = False
         for i in items:
             name = self.sanitize_filename(fn(i))
-            if name:
-                if name in oldentries and same(oldentries[name], i):
+            if not name:
+                continue
+            if name in oldentries:
+                ent = oldentries[name]
+                ent.inc_use()
+                if same(ent, i):
                     # move existing directory entry over
-                    self._entries[name] = oldentries[name]
+                    self._entries[name] = ent
                     del oldentries[name]
-                else:
-                    _logger.debug("Adding entry '%s' to inode %i", name, self.inode)
-                    # create new directory entry
-                    ent = new_entry(i)
-                    if ent is not None:
-                        self._entries[name] = self.inodes.add_entry(ent)
-                        changed = True
+
+        for i in items:
+            name = self.sanitize_filename(fn(i))
+            if not name:
+                continue
+            if name not in self._entries:
+                _logger.debug("Adding entry '%s' to inode %i", name, self.inode)
+                # create new directory entry
+                ent = new_entry(i)
+                if ent is not None:
+                    ent.inc_use()
+                    self._entries[name] = self.inodes.add_entry(ent)
+                    changed = True
 
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:
             _logger.debug("Forgetting about entry '%s' on inode %i", i, self.inode)
             self.inodes.invalidate_entry(self, i)
             self.inodes.del_entry(oldentries[i])
+            ent.dec_use()
             changed = True
 
         if changed:
             self.inodes.invalidate_inode(self)
             self._mtime = time.time()
+
+        for ent in self._entries.values():
+           ent.dec_use()
 
         self.fresh()
 
@@ -1060,9 +1074,13 @@ class ProjectDirectory(Directory):
 
         try:
             with llfuse.lock_released:
+                _logger.debug("Getting lock to update %s", self.project_uuid)
                 self._updating_lock.acquire()
                 if not self.stale():
+                    _logger.debug("%s was updated already", self.project_uuid)
                     return
+
+                _logger.debug("Requesting update of %s", self.project_uuid)
 
                 if group_uuid_pattern.match(self.project_uuid):
                     self.project_object = self.api.groups().get(
@@ -1092,7 +1110,6 @@ class ProjectDirectory(Directory):
                         *self._filters_for('collections', qualified=True),
                     ],
                 ) if obj['current_version_uuid'] == obj['uuid'])
-
             # end with llfuse.lock_released, re-acquire lock
 
             self.merge(contents,

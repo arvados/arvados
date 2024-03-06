@@ -133,6 +133,13 @@ class DirectoryHandle(Handle):
     def __init__(self, fh, dirobj, entries):
         super(DirectoryHandle, self).__init__(fh, dirobj)
         self.entries = entries
+        for ent in self.entries:
+            ent[1].inc_use()
+
+    def release(self):
+        for ent in self.entries:
+            ent[1].dec_use()
+        super(DirectoryHandle, self).release()
 
 
 class InodeCache(object):
@@ -176,11 +183,11 @@ class InodeCache(object):
             # has_ref() check first.
 
             if obj.has_ref(True):
-                _logger.debug("InodeCache cannot clear inode %i, still referenced", obj.inode)
+                #_logger.debug("InodeCache cannot clear inode %i, still referenced", obj.inode)
                 return
 
             if obj.in_use():
-                _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
+                #_logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
                 return
 
             obj.kernel_invalidate()
@@ -564,14 +571,13 @@ class Operations(llfuse.Operations):
 
         if name == '.':
             inode = parent_inode
-        else:
-            if parent_inode in self.inodes:
-                p = self.inodes[parent_inode]
-                self.inodes.touch(p)
-                if name == '..':
-                    inode = p.parent_inode
-                elif isinstance(p, Directory) and name in p:
-                    inode = p[name].inode
+        elif parent_inode in self.inodes:
+            p = self.inodes[parent_inode]
+            self.inodes.touch(p)
+            if name == '..':
+                inode = p.parent_inode
+            elif isinstance(p, Directory) and name in p:
+                inode = p[name].inode
 
         if inode != None:
             _logger.debug("arv-mount lookup: parent_inode %i name '%s' inode %i",
@@ -703,7 +709,10 @@ class Operations(llfuse.Operations):
         if p.parent_inode in self.inodes:
             parent = self.inodes[p.parent_inode]
         else:
+            _logger.warning("arv-mount opendir: parent inode %i of %i is missing", p.parent_inode, inode)
             raise llfuse.FUSEError(errno.EIO)
+
+        _logger.debug("arv-mount opendir: inode %i fh %i ", inode, fh)
 
         # update atime
         self.inodes.touch(p)
@@ -722,8 +731,9 @@ class Operations(llfuse.Operations):
 
         e = off
         while e < len(handle.entries):
-            if handle.entries[e][1].inode in self.inodes:
-                yield (handle.entries[e][0].encode(self.inodes.encoding), self.getattr(handle.entries[e][1].inode), e+1)
+            ent = handle.entries[e]
+            if ent[1].inode in self.inodes:
+                yield (ent[0].encode(self.inodes.encoding), self.getattr(ent[1].inode), e+1)
             e += 1
 
     @statfs_time.time()
