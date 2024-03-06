@@ -618,6 +618,7 @@ if [ -z "${ROLES:-}" ]; then
   # Pillars
   echo "    - docker" >> ${PILLARS_TOP}
   echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
+  echo "    - logrotate" >> ${PILLARS_TOP}
   echo "    - logrotate_api" >> ${PILLARS_TOP}
   echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_keepproxy_configuration" >> ${PILLARS_TOP}
@@ -853,6 +854,7 @@ else
         grep -q "arvados.controller" ${STATES_TOP} || echo "    - arvados.controller" >> ${STATES_TOP}
 
         ### Pillars ###
+        grep -q "logrotate" ${PILLARS_TOP}                || echo "    - logrotate" >> ${PILLARS_TOP}
         grep -q "logrotate_api" ${PILLARS_TOP}            || echo "    - logrotate_api" >> ${PILLARS_TOP}
         grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
         grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
