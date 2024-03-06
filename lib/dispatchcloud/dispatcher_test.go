@@ -129,6 +129,10 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		ArvClient: arvClient,
 		AuthToken: arvadostest.AdminToken,
 		Registry:  prometheus.NewRegistry(),
+		// Providing a stub queue here prevents
+		// disp.initialize() from making a real one that uses
+		// the integration test servers/database.
+		queue: &test.Queue{},
 	}
 	// Test cases can modify s.cluster before calling
 	// initialize(), and then modify private state before calling
@@ -329,7 +333,6 @@ func (s *DispatcherSuite) TestManagementAPI_Permissions(c *check.C) {
 	s.cluster.ManagementToken = "abcdefgh"
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
-	s.disp.queue = &test.Queue{}
 	go s.disp.run()
 
 	for _, token := range []string{"abc", ""} {
@@ -351,7 +354,6 @@ func (s *DispatcherSuite) TestManagementAPI_Disabled(c *check.C) {
 	s.cluster.ManagementToken = ""
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
-	s.disp.queue = &test.Queue{}
 	go s.disp.run()
 
 	for _, token := range []string{"abc", ""} {
@@ -478,7 +480,6 @@ func (s *DispatcherSuite) TestManagementAPI_Instances(c *check.C) {
 	s.cluster.Containers.CloudVMs.TimeoutBooting = arvados.Duration(time.Second)
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
-	s.disp.queue = &test.Queue{}
 	go s.disp.run()
 	defer s.disp.Close()
 
