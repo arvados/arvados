@@ -216,6 +216,8 @@ class Directory(FreshBase):
 
         self.fresh()
 
+        self.inodes.inode_cache.cap_cache()
+
     def in_use(self):
         if super(Directory, self).in_use():
             return True

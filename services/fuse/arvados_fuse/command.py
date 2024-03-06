@@ -381,7 +381,7 @@ class Mount(object):
         e = self.operations.inodes.add_entry(Directory(
             llfuse.ROOT_INODE,
             self.operations.inodes,
-            self.api.config,
+            lambda: self.api.config(),
             self.args.enable_write,
             self.args.filters,
         ))

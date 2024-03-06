@@ -232,13 +232,13 @@ class InodeCache(object):
             self._total += obj.objsize()
             _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i (%i entries)",
                           obj.inode, obj.objsize(), obj.cache_uuid, self._total, len(self._entries))
-            self.cap_cache()
 
     def touch(self, obj):
         if obj.persisted():
             if obj.inode in self._entries:
-                self._remove(obj, False)
-            self.manage(obj)
+                self._entries.move_to_end(obj.inode)
+            else:
+                self.manage(obj)
 
     def unmanage(self, obj):
         if obj.persisted() and obj.inode in self._entries:
