@@ -77,16 +77,6 @@ import arvados.keep
 from prometheus_client import Summary
 import queue
 
-# Default _notify_queue has a limit of 1000 items, but it really needs to be
-# unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
-# details.
-
-if hasattr(llfuse, 'capi'):
-    # llfuse < 0.42
-    llfuse.capi._notify_queue = queue.Queue()
-else:
-    # llfuse >= 0.42
-    llfuse._notify_queue = queue.Queue()
 
 LLFUSE_VERSION_0 = llfuse.__version__.startswith('0')
 
@@ -161,66 +151,127 @@ class InodeCache(object):
         self._total = 0
         self.min_entries = min_entries
 
+        self._cache_remove_queue = queue.Queue()
+        self._cache_remove_thread = threading.Thread(None, self._cache_remove)
+        self._cache_remove_thread.daemon = True
+        self._cache_remove_thread.start()
+
+        self._cache_cap_event = threading.Event()
+        self._cache_cap_thread = threading.Thread(None, self._cache_cap)
+        self._cache_cap_thread.daemon = True
+        self._cache_cap_thread.start()
+
+
     def total(self):
         return self._total
 
-    def _remove(self, obj, clear):
-        if obj.inode is None:
-            return
-        if clear:
-            # Kernel behavior seems to be that if a file is
-            # referenced, its parents remain referenced too. This
-            # means has_ref() exits early when a collection is not
-            # candidate for eviction.
-            #
-            # By contrast, in_use() doesn't increment references on
-            # parents, so it requires a full tree walk to determine if
-            # a collection is a candidate for eviction.  This takes
-            # .07s for 240000 files, which becomes a major drag when
-            # cap_cache is being called several times a second and
-            # there are multiple non-evictable collections in the
-            # cache.
-            #
-            # So it is important for performance that we do the
-            # has_ref() check first.
+    def _cache_cap(self):
+        while True:
+            self._cache_cap_event.wait()
+            self._cache_cap_event.clear()
 
-            if obj.has_ref(True):
-                #_logger.debug("InodeCache cannot clear inode %i, still referenced", obj.inode)
+            if self._total > self.cap:
+                with llfuse.lock:
+                    _logger.debug("InodeCache cap_cache %i, %i", self._total, self.cap)
+                    for ent in listvalues(self._entries):
+                        if self._total < self.cap or len(self._entries) < self.min_entries:
+                            break
+                        self._remove(ent)
+
+
+    def _cache_remove(self):
+        while True:
+            entry = self._cache_remove_queue.get()
+            _logger.debug("InodeCache got %s", entry)
+            if entry is None:
                 return
 
-            if obj.in_use():
-                #_logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
-                return
+            if entry.inode not in self._entries:
+                # removed already
+                continue
 
-            obj.kernel_invalidate()
-            _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
-            obj.clear()
+            _logger.debug("InodeCache will remove inode %i", entry.inode)
+            with llfuse.lock:
+                _logger.debug("InodeCache removing inode %i", entry.inode)
+                try:
+                    parent = self._entries.get(entry.parent_inode)
+                    if parent is not None and parent.has_ref(False):
+                        continue
 
-        # The llfuse lock is released in del_entry(), which is called by
-        # Directory.clear().  While the llfuse lock is released, it can happen
-        # that a reentrant call removes this entry before this call gets to it.
-        # Ensure that the entry is still valid before trying to remove it.
-        if obj.inode not in self._entries:
+                    if parent is not None and parent.in_use():
+                        #_logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
+                        return
+
+                    # Invalidate the entry for self on the parent
+                    entry.kernel_invalidate()
+
+                    # For directories, clear the contents
+                    entry.clear()
+
+                    # manage cache size running sum
+                    self._total -= entry.cache_size
+
+                    # manage the mapping of uuid to object
+                    if entry.cache_uuid:
+                        self._by_uuid[entry.cache_uuid].remove(entry)
+                        if not self._by_uuid[entry.cache_uuid]:
+                            del self._by_uuid[entry.cache_uuid]
+                        entry.cache_uuid = None
+
+                    # Now fully forget about it
+                    del self._entries[entry.inode]
+
+                    _logger.debug("InodeCache removed inode %i, total %i", entry.inode, self._total)
+                    entry.inode = None
+
+                    # stop anything else
+                    with llfuse.lock_released:
+                        entry.finalize()
+                except Exception as e:
+                    _logger.exception("failed remove")
+
+    def _remove(self, entry):
+        if entry.inode not in self._entries:
             return
 
-        self._total -= obj.cache_size
-        del self._entries[obj.inode]
-        if obj.cache_uuid:
-            self._by_uuid[obj.cache_uuid].remove(obj)
-            if not self._by_uuid[obj.cache_uuid]:
-                del self._by_uuid[obj.cache_uuid]
-            obj.cache_uuid = None
-        if clear:
-            _logger.debug("InodeCache cleared inode %i total now %i", obj.inode, self._total)
+        # Kernel behavior seems to be that if a file is
+        # referenced, its parents remain referenced too. This
+        # means has_ref() exits early when a collection is not
+        # candidate for eviction.
+        #
+        # By contrast, in_use() doesn't increment references on
+        # parents, so it requires a full tree walk to determine if
+        # a collection is a candidate for eviction.  This takes
+        # .07s for 240000 files, which becomes a major drag when
+        # cap_cache is being called several times a second and
+        # there are multiple non-evictable collections in the
+        # cache.
+        #
+        # So it is important for performance that we do the
+        # has_ref() check first.
+
+        # if entry.has_ref(True):
+        #     #_logger.debug("InodeCache cannot clear inode %i, still referenced", entry.inode)
+        #     return
+
+        parent = self._entries.get(entry.parent_inode)
+        if parent is not None and parent.has_ref(False):
+            #_logger.debug("InodeCache cannot clear inode %i, still referenced", entry.inode)
+            return
+
+        # if entry.has_ref(True):
+        #     #_logger.debug("InodeCache cannot clear inode %i, still referenced", entry.inode)
+        #     return
+
+        if parent is not None and parent.in_use():
+            #_logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
+            return
+
+        _logger.debug("InodeCache queuing %i", entry.inode)
+        self._cache_remove_queue.put(entry)
 
     def cap_cache(self):
-        _logger.debug("in cap_cache %i, %i", self._total, self.cap)
-        if self._total > self.cap:
-            for ent in listvalues(self._entries):
-                if self._total < self.cap or len(self._entries) < self.min_entries:
-                    break
-                self._remove(ent, True)
-            _logger.debug("end cap_cache %i, %i", self._total, self.cap)
+        self._cache_cap_event.set()
 
     def manage(self, obj):
         if obj.persisted():
@@ -236,6 +287,7 @@ class InodeCache(object):
             self._total += obj.cache_size
             _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i (%i entries)",
                           obj.inode, obj.objsize(), obj.cache_uuid, self._total, len(self._entries))
+            self.cap_cache()
 
     def update_cache_size(self, obj):
         if obj.inode in self._entries:
@@ -252,7 +304,7 @@ class InodeCache(object):
 
     def unmanage(self, obj):
         if obj.persisted() and obj.inode in self._entries:
-            self._remove(obj, True)
+            self._remove(obj)
 
     def find_by_uuid(self, uuid):
         return self._by_uuid.get(uuid, [])
@@ -271,7 +323,6 @@ class Inodes(object):
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self.inode_cache = inode_cache
         self.encoding = encoding
-        self.deferred_invalidations = []
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -303,10 +354,6 @@ class Inodes(object):
     def del_entry(self, entry):
         if entry.ref_count == 0:
             self.inode_cache.unmanage(entry)
-            del self._entries[entry.inode]
-            with llfuse.lock_released:
-                entry.finalize()
-            entry.inode = None
         else:
             entry.dead = True
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
@@ -315,13 +362,17 @@ class Inodes(object):
         if entry.has_ref(False):
             # Only necessary if the kernel has previously done a lookup on this
             # inode and hasn't yet forgotten about it.
-            llfuse.invalidate_inode(entry.inode)
+            with llfuse.lock_released:
+                _logger.debug("sending invalidate %i", entry.inode)
+                llfuse.invalidate_inode(entry.inode)
 
     def invalidate_entry(self, entry, name):
         if entry.has_ref(False):
             # Only necessary if the kernel has previously done a lookup on this
             # inode and hasn't yet forgotten about it.
-            llfuse.invalidate_entry(entry.inode, native(name.encode(self.encoding)))
+            with llfuse.lock_released:
+                _logger.debug("sending invalidate to inode %i entry %s", entry.inode, name)
+                llfuse.invalidate_entry(entry.inode, native(name.encode(self.encoding)))
 
     def clear(self):
         self.inode_cache.clear()
@@ -710,6 +761,7 @@ class Operations(llfuse.Operations):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
+            _logger.warning("arv-mount opendir: called with inode %i but it is missing", inode)
             raise llfuse.FUSEError(errno.ENOENT)
 
         if not isinstance(p, Directory):

@@ -387,7 +387,7 @@ class Mount(object):
         e = self.operations.inodes.add_entry(Directory(
             llfuse.ROOT_INODE,
             self.operations.inodes,
-            lambda: self.api.config(),
+            self.api.config(),
             self.args.enable_write,
             self.args.filters,
         ))
@@ -472,7 +472,7 @@ From here, the following directories are available:
 
     def _llfuse_main(self):
         try:
-            llfuse.main(workers=1)
+            llfuse.main(workers=8)
         except:
             llfuse.close(unmount=False)
             raise
