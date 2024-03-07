@@ -360,23 +360,24 @@ fi
 if [ "${DUMP_CONFIG}" = "yes" ]; then
   echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  # Install a few dependency packages
-  # First, let's figure out the OS we're working on
   OS_IDS="$(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}")"
   echo "Detected distro families: $OS_IDS"
 
+  # Several of our formulas use the cron module, which requires the crontab
+  # command. We install systemd-cron to ensure we have that.
+  # The rest of these packages are required by the rest of the script.
   for OS_ID in $OS_IDS; do
     case "$OS_ID" in
       rhel)
         echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
         sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
         setenforce permissive
-        yum install -y  curl git jq
+        yum install -y curl git jq systemd-cron
         break
         ;;
       debian)
         DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
-        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
+        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq systemd-cron
         break
         ;;
     esac
