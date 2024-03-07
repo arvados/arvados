@@ -18,6 +18,12 @@ import sys
 import time
 import resource
 
+# This is speculative, but we're having low frequency SSL crashes
+# early in the execution and so I thought maybe importing the SSL module
+# before we start any threads might be helpful.
+# On the other hand, I've still had it crash on me.
+import _ssl
+
 import arvados.commands._util as arv_cmd
 from arvados_fuse import crunchstat
 from arvados_fuse import *

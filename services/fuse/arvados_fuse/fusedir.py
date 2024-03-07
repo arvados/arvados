@@ -211,12 +211,12 @@ class Directory(FreshBase):
             self.inodes.invalidate_inode(self)
             self._mtime = time.time()
 
+        self.inodes.inode_cache.cap_cache()
+
         for ent in self._entries.values():
            ent.dec_use()
 
         self.fresh()
-
-        self.inodes.inode_cache.cap_cache()
 
     def in_use(self):
         if super(Directory, self).in_use():
