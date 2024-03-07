@@ -27,6 +27,9 @@ from cwltool.job import JobBase
 
 import arvados.collection
 
+import crunchstat_summary.summarizer
+import crunchstat_summary.reader
+
 from .arvdocker import arv_docker_get_image
 from . import done
 from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields, make_builder
@@ -497,11 +500,14 @@ class ArvadosContainer(JobBase):
             else:
                 processStatus = "permanentFail"
 
-            if processStatus == "permanentFail" and record["log_uuid"]:
-                logc = arvados.collection.CollectionReader(record["log_uuid"],
-                                                           api_client=self.arvrunner.api,
-                                                           keep_client=self.arvrunner.keep_client,
-                                                           num_retries=self.arvrunner.num_retries)
+            logc = None
+            if record["log_uuid"]:
+                logc = arvados.collection.Collection(record["log_uuid"],
+                                                     api_client=self.arvrunner.api,
+                                                     keep_client=self.arvrunner.keep_client,
+                                                     num_retries=self.arvrunner.num_retries)
+
+            if processStatus == "permanentFail" and logc is not None:
                 label = self.arvrunner.label(self)
                 done.logtail(
                     logc, logger.error,
@@ -527,6 +533,28 @@ class ArvadosContainer(JobBase):
                 uuid=self.uuid,
                 body={"container_request": {"properties": properties}}
             ).execute(num_retries=self.arvrunner.num_retries)
+
+            if logc is not None and self.job_runtime.enable_usage_report is not False:
+                try:
+                    summarizer = crunchstat_summary.summarizer.ContainerRequestSummarizer(
+                        record,
+                        collection_object=logc,
+                        label=self.name,
+                        arv=self.arvrunner.api)
+                    summarizer.run()
+                    with logc.open("usage_report.html", "wt") as mr:
+                        mr.write(summarizer.html_report())
+                    logc.save()
+
+                    # Post warnings about nodes that are under-utilized.
+                    for rc in summarizer._recommend_gen(lambda x: x):
+                        self.job_runtime.usage_report_notes.append(rc)
+
+                except Exception as e:
+                    logger.warning("%s unable to generate resource usage report",
+                                 self.arvrunner.label(self),
+                                 exc_info=(e if self.arvrunner.debug else False))
+
         except WorkflowException as e:
             # Only include a stack trace if in debug mode.
             # A stack trace may obfuscate more useful output about the workflow.
@@ -703,6 +731,12 @@ class RunnerContainer(Runner):
 
         if runtimeContext.prefer_cached_downloads:
             command.append("--prefer-cached-downloads")
+
+        if runtimeContext.enable_usage_report is True:
+            command.append("--enable-usage-report")
+
+        if runtimeContext.enable_usage_report is False:
+            command.append("--disable-usage-report")
 
         if self.fast_parser:
             command.append("--fast-parser")

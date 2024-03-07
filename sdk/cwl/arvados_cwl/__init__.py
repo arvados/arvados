@@ -258,6 +258,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=False, dest="trash_intermediate",
                         help="Do not trash intermediate outputs (default).")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--enable-usage-report", dest="enable_usage_report", default=None, action="store_true", help="Create usage_report.html with a summary of each step's resource usage.")
+    exgroup.add_argument("--disable-usage-report", dest="enable_usage_report", default=None, action="store_false", help="Disable usage report.")
+
     parser.add_argument("workflow", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
 
