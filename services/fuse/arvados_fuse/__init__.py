@@ -165,6 +165,8 @@ class InodeCache(object):
         return self._total
 
     def _remove(self, obj, clear):
+        if obj.inode is None:
+            return
         if clear:
             # Kernel behavior seems to be that if a file is
             # referenced, its parents remain referenced too. This
@@ -212,11 +214,13 @@ class InodeCache(object):
             _logger.debug("InodeCache cleared inode %i total now %i", obj.inode, self._total)
 
     def cap_cache(self):
+        _logger.debug("in cap_cache %i, %i", self._total, self.cap)
         if self._total > self.cap:
             for ent in listvalues(self._entries):
                 if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
                 self._remove(ent, True)
+            _logger.debug("end cap_cache %i, %i", self._total, self.cap)
 
     def manage(self, obj):
         if obj.persisted():
@@ -229,9 +233,15 @@ class InodeCache(object):
                 else:
                     if obj not in self._by_uuid[obj.cache_uuid]:
                         self._by_uuid[obj.cache_uuid].append(obj)
-            self._total += obj.objsize()
+            self._total += obj.cache_size
             _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i (%i entries)",
                           obj.inode, obj.objsize(), obj.cache_uuid, self._total, len(self._entries))
+
+    def update_cache_size(self, obj):
+        if obj.inode in self._entries:
+            self._total -= obj.cache_size
+            obj.cache_size = obj.objsize()
+            self._total += obj.cache_size
 
     def touch(self, obj):
         if obj.persisted():

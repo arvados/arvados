@@ -150,6 +150,9 @@ class Directory(FreshBase):
         self.inodes.touch(self)
         super(Directory, self).fresh()
 
+    def objsize(self):
+        return len(self._entries) * 64
+
     def merge(self, items, fn, same, new_entry):
         """Helper method for updating the contents of the directory.
 
@@ -210,8 +213,8 @@ class Directory(FreshBase):
         if changed:
             self.inodes.invalidate_inode(self)
             self._mtime = time.time()
-
-        self.inodes.inode_cache.cap_cache()
+            self.inodes.inode_cache.update_cache_size(self)
+            self.inodes.inode_cache.cap_cache()
 
         for ent in self._entries.values():
            ent.dec_use()
@@ -239,7 +242,6 @@ class Directory(FreshBase):
         oldentries = self._entries
         self._entries = {}
         for n in oldentries:
-            oldentries[n].clear()
             self.inodes.del_entry(oldentries[n])
         self.invalidate()
 
@@ -531,6 +533,7 @@ class CollectionDirectory(CollectionDirectoryBase):
             self.collection_record_file.invalidate()
             self.inodes.invalidate_inode(self.collection_record_file)
             _logger.debug("%s invalidated collection record file", self)
+        self.inodes.inode_cache.update_cache_size(self)
         self.fresh()
 
     def uuid(self):
@@ -657,6 +660,7 @@ class CollectionDirectory(CollectionDirectoryBase):
             self.collection.stop_threads()
         super(CollectionDirectory, self).clear()
         self._manifest_size = 0
+        self.inodes.inode_cache.update_cache_size(self)
 
 
 class TmpCollectionDirectory(CollectionDirectoryBase):
