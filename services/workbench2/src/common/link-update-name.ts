@@ -39,7 +39,7 @@ const fetchResource = (uuid: string, showErrors?: boolean) => async (dispatch: D
             return resource;
         }
     } catch(e) {
-        console.error(e);
+        console.error(`Could not fetch resource ${uuid}`, e);
     }
     return undefined;
 };

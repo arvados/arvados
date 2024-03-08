@@ -179,8 +179,31 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
         limit: SIDEPANEL_TREE_NODE_LIMIT,
     };
 
-    let items = (await services.linkService.list(params)).items;
-    for(let item of items) {
+    const items = (await services.linkService.list(params)).items;
+
+    const uuids = items.map(it => it.headUuid);
+    const groupItems: any = await services.groupsService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addIsA("uuid", typeFilters)
+            .getFilters()
+    });
+    const collectionItems: any = await services.collectionService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addIsA("uuid", typeFilters)
+            .getFilters()
+    });
+    const processItems: any = await services.containerRequestService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addIsA("uuid", typeFilters)
+            .getFilters()
+    });
+
+    const filtereditems = groupItems.items.concat(collectionItems.items).concat(processItems.items);
+
+    for(const item of filtereditems) {
         const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
         item.name = verifiedName;
     }
@@ -189,11 +212,11 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: SidePanelTreeCategory.PUBLIC_FAVORITES,
             pickerId: SIDE_PANEL_TREE,
-            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item })),
+            nodes: filtereditems.map(item => initTreeNode({ id: item.headUuid, value: item })),
         })
     );
 
-    dispatch(resourcesActions.SET_RESOURCES(items));
+    dispatch(resourcesActions.SET_RESOURCES(filtereditems));
 };
 
 export const activateSidePanelTreeItem = (id: string) =>
