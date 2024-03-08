@@ -252,7 +252,7 @@ const FlatTree = (props: FlatTreeProps) =>
     >
         {
             (props.it.items || [])
-                .map((item: any) => <div key={item.id} data-id={item.id}
+                .map((item: any, index: number) => <div key={item.id || index} data-id={item.id}
                     className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
                     style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
                     {isInFavoritesTree(props.it) ? 

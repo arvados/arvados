@@ -201,9 +201,11 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
             .getFilters()
     });
 
-    const filtereditems = groupItems.items.concat(collectionItems.items).concat(processItems.items);
+    const responseItems = groupItems.items.concat(collectionItems.items).concat(processItems.items);
 
-    for(const item of filtereditems) {
+    const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
+
+    for(const item of filteredItems) {
         const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
         item.name = verifiedName;
     }
@@ -212,11 +214,11 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: SidePanelTreeCategory.PUBLIC_FAVORITES,
             pickerId: SIDE_PANEL_TREE,
-            nodes: filtereditems.map(item => initTreeNode({ id: item.headUuid, value: item })),
+            nodes: filteredItems.map(item => initTreeNode({ id: item.headUuid, value: item })),
         })
     );
 
-    dispatch(resourcesActions.SET_RESOURCES(filtereditems));
+    dispatch(resourcesActions.SET_RESOURCES(responseItems));
 };
 
 export const activateSidePanelTreeItem = (id: string) =>
