@@ -228,21 +228,14 @@ class Directory(FreshBase):
                 return True
         return False
 
-    def has_ref(self, only_children):
-        if super(Directory, self).has_ref(only_children):
-            return True
-        for v in self._entries.values():
-            if v.has_ref(False):
-                return True
-        return False
-
     def clear(self):
         """Delete all entries"""
         oldentries = self._entries
         self._entries = {}
+        self.invalidate()
         for n in oldentries:
             self.inodes.del_entry(oldentries[n])
-        self.invalidate()
+        self.inodes.inode_cache.update_cache_size(self)
 
     def kernel_invalidate(self):
         # Invalidating the dentry on the parent implies invalidating all paths
@@ -1138,7 +1131,9 @@ class ProjectDirectory(Directory):
 
     def _add_entry(self, i, name):
         ent = self.createDirectory(i)
+        ent.inc_use()
         self._entries[name] = self.inodes.add_entry(ent)
+        ent.dec_use()
         return self._entries[name]
 
     @use_counter

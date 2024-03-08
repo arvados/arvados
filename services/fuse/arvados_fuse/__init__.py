@@ -145,174 +145,98 @@ class InodeCache(object):
     """
 
     def __init__(self, cap, min_entries=4):
-        self._entries = collections.OrderedDict()
+        self._cache_entries = collections.OrderedDict()
         self._by_uuid = {}
         self.cap = cap
         self._total = 0
         self.min_entries = min_entries
-
-        self._cache_remove_queue = queue.Queue()
-        self._cache_remove_thread = threading.Thread(None, self._cache_remove)
-        self._cache_remove_thread.daemon = True
-        self._cache_remove_thread.start()
-
-        self._cache_cap_event = threading.Event()
-        self._cache_cap_thread = threading.Thread(None, self._cache_cap)
-        self._cache_cap_thread.daemon = True
-        self._cache_cap_thread.start()
-
+        self._total_lock = threading.Lock()
 
     def total(self):
         return self._total
 
-    def _cache_cap(self):
-        while True:
-            self._cache_cap_event.wait()
-            self._cache_cap_event.clear()
-
-            if self._total > self.cap:
-                with llfuse.lock:
-                    _logger.debug("InodeCache cap_cache %i, %i", self._total, self.cap)
-                    for ent in listvalues(self._entries):
-                        if self._total < self.cap or len(self._entries) < self.min_entries:
-                            break
-                        self._remove(ent)
-
-
-    def _cache_remove(self):
-        while True:
-            entry = self._cache_remove_queue.get()
-            _logger.debug("InodeCache got %s", entry)
-            if entry is None:
-                return
-
-            if entry.inode not in self._entries:
-                # removed already
-                continue
-
-            _logger.debug("InodeCache will remove inode %i", entry.inode)
-            with llfuse.lock:
-                _logger.debug("InodeCache removing inode %i", entry.inode)
-                try:
-                    parent = self._entries.get(entry.parent_inode)
-                    if parent is not None and parent.has_ref(False):
-                        continue
-
-                    if parent is not None and parent.in_use():
-                        #_logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
-                        return
-
-                    # Invalidate the entry for self on the parent
-                    entry.kernel_invalidate()
-
-                    # For directories, clear the contents
-                    entry.clear()
-
-                    # manage cache size running sum
-                    self._total -= entry.cache_size
-
-                    # manage the mapping of uuid to object
-                    if entry.cache_uuid:
-                        self._by_uuid[entry.cache_uuid].remove(entry)
-                        if not self._by_uuid[entry.cache_uuid]:
-                            del self._by_uuid[entry.cache_uuid]
-                        entry.cache_uuid = None
-
-                    # Now fully forget about it
-                    del self._entries[entry.inode]
-
-                    _logger.debug("InodeCache removed inode %i, total %i", entry.inode, self._total)
-                    entry.inode = None
-
-                    # stop anything else
-                    with llfuse.lock_released:
-                        entry.finalize()
-                except Exception as e:
-                    _logger.exception("failed remove")
-
-    def _remove(self, entry):
-        if entry.inode not in self._entries:
+    def evict_candidates(self):
+        with self._total_lock:
+            total = self._total
+        if total <= self.cap:
             return
 
-        # Kernel behavior seems to be that if a file is
-        # referenced, its parents remain referenced too. This
-        # means has_ref() exits early when a collection is not
-        # candidate for eviction.
-        #
-        # By contrast, in_use() doesn't increment references on
-        # parents, so it requires a full tree walk to determine if
-        # a collection is a candidate for eviction.  This takes
-        # .07s for 240000 files, which becomes a major drag when
-        # cap_cache is being called several times a second and
-        # there are multiple non-evictable collections in the
-        # cache.
-        #
-        # So it is important for performance that we do the
-        # has_ref() check first.
-
-        # if entry.has_ref(True):
-        #     #_logger.debug("InodeCache cannot clear inode %i, still referenced", entry.inode)
-        #     return
-
-        parent = self._entries.get(entry.parent_inode)
-        if parent is not None and parent.has_ref(False):
-            #_logger.debug("InodeCache cannot clear inode %i, still referenced", entry.inode)
-            return
-
-        # if entry.has_ref(True):
-        #     #_logger.debug("InodeCache cannot clear inode %i, still referenced", entry.inode)
-        #     return
-
-        if parent is not None and parent.in_use():
-            #_logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
-            return
-
-        _logger.debug("InodeCache queuing %i", entry.inode)
-        self._cache_remove_queue.put(entry)
-
-    def cap_cache(self):
-        self._cache_cap_event.set()
+        _logger.debug("InodeCache evict_candidates total %i cap %i entries %i", self._total, self.cap, len(self._cache_entries))
+        for ent in listvalues(self._cache_entries):
+            with self._total_lock:
+                total = self._total
+            if total < self.cap or len(self._cache_entries) < self.min_entries:
+                break
+            yield ent
 
     def manage(self, obj):
-        if obj.persisted():
-            obj.cache_size = obj.objsize()
-            self._entries[obj.inode] = obj
-            obj.cache_uuid = obj.uuid()
-            if obj.cache_uuid:
-                if obj.cache_uuid not in self._by_uuid:
-                    self._by_uuid[obj.cache_uuid] = [obj]
-                else:
-                    if obj not in self._by_uuid[obj.cache_uuid]:
-                        self._by_uuid[obj.cache_uuid].append(obj)
+        if obj.inode in self._cache_entries:
+            return
+
+        obj.cache_size = obj.objsize()
+
+        with self._total_lock:
+            _logger.debug("InodeCache b4 cache_size %i total %i", obj.cache_size, self._total)
             self._total += obj.cache_size
-            _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i (%i entries)",
-                          obj.inode, obj.objsize(), obj.cache_uuid, self._total, len(self._entries))
-            self.cap_cache()
+            _logger.debug("InodeCache after cache_size %i total %i", obj.cache_size, self._total)
+            total = self._total
+
+        self._cache_entries[obj.inode] = obj
+
+        obj.cache_uuid = obj.uuid()
+        if obj.cache_uuid:
+            if obj.cache_uuid not in self._by_uuid:
+                self._by_uuid[obj.cache_uuid] = [obj]
+            else:
+                if obj not in self._by_uuid[obj.cache_uuid]:
+                    self._by_uuid[obj.cache_uuid].append(obj)
+
+        _logger.debug("InodeCache managing inode %i (size %i) (uuid %s) total now %i (%i entries)",
+                      obj.inode, obj.cache_size, obj.cache_uuid, total, len(self._cache_entries))
+
+    def unmanage(self, entry):
+        if entry.inode not in self._cache_entries:
+            return
+
+        # manage cache size running sum
+        # with self._total_lock:
+        #     self._total -= entry.cache_size
+        # entry.cache_size = 0
+
+        # manage the mapping of uuid to object
+        if entry.cache_uuid:
+            self._by_uuid[entry.cache_uuid].remove(entry)
+            if not self._by_uuid[entry.cache_uuid]:
+                del self._by_uuid[entry.cache_uuid]
+            entry.cache_uuid = None
+
+        # Now forget about it
+        del self._cache_entries[entry.inode]
 
     def update_cache_size(self, obj):
-        if obj.inode in self._entries:
-            self._total -= obj.cache_size
-            obj.cache_size = obj.objsize()
-            self._total += obj.cache_size
+        pass
+        # if obj.inode in self._cache_entries:
+        #     with self._total_lock:
+        #         _logger.debug("update_cache_size b4 cache_size %i total %i", obj.cache_size, self._total)
+        #         self._total -= obj.cache_size
+        #         obj.cache_size = obj.objsize()
+        #         self._total += obj.cache_size
+        #         _logger.debug("update_cache_size after cache_size %i total %i", obj.cache_size, self._total)
 
     def touch(self, obj):
-        if obj.persisted():
-            if obj.inode in self._entries:
-                self._entries.move_to_end(obj.inode)
-            else:
-                self.manage(obj)
-
-    def unmanage(self, obj):
-        if obj.persisted() and obj.inode in self._entries:
-            self._remove(obj)
+        if obj.inode in self._cache_entries:
+            self._cache_entries.move_to_end(obj.inode)
+        else:
+            self.manage(obj)
 
     def find_by_uuid(self, uuid):
         return self._by_uuid.get(uuid, [])
 
     def clear(self):
-        self._entries.clear()
+        self._cache_entries.clear()
         self._by_uuid.clear()
         self._total = 0
+
 
 class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
@@ -323,6 +247,11 @@ class Inodes(object):
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self.inode_cache = inode_cache
         self.encoding = encoding
+
+        self._inode_remove_queue = queue.Queue()
+        self._inode_remove_thread = threading.Thread(None, self._inode_remove)
+        self._inode_remove_thread.daemon = True
+        self._inode_remove_thread.start()
 
     def __getitem__(self, item):
         return self._entries[item]
@@ -343,36 +272,124 @@ class Inodes(object):
         entry._atime = time.time()
         self.inode_cache.touch(entry)
 
+    def cap_cache(self):
+        self._inode_remove_queue.put(("evict_candidates",))
+
     def add_entry(self, entry):
+        # Assign a inode to a new entry
         entry.inode = next(self._counter)
         if entry.inode == llfuse.ROOT_INODE:
             entry.inc_ref()
         self._entries[entry.inode] = entry
-        self.inode_cache.manage(entry)
+        if entry.persisted():
+            # only "persisted" items can be reloaded from the server
+            # making them safe to evict automatically.
+            self.inode_cache.manage(entry)
+        self.cap_cache()
         return entry
 
     def del_entry(self, entry):
+        # Remove entry from the inode table
         if entry.ref_count == 0:
-            self.inode_cache.unmanage(entry)
+            self._inode_remove_queue.put(("remove", entry))
         else:
             entry.dead = True
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
+    def _inode_remove(self):
+        while True:
+            try:
+                entry = self._inode_remove_queue.get(True)
+                with llfuse.lock:
+                    # Process this entry
+                    _logger.debug("_inode_remove %s", entry)
+                    self._inode_op(entry)
+
+                    while True:
+                        try:
+                            # Drain the queue of any other entries
+                            entry = self._inode_remove_queue.get(False)
+                            _logger.debug("_inode_remove %s", entry)
+                            self._inode_op(entry)
+                        except queue.Empty:
+                            break
+
+                    for entry in self.inode_cache.evict_candidates():
+                        self._remove(entry)
+            except Exception as e:
+                _logger.exception("_inode_remove")
+
+    def _inode_op(self, op):
+        if op[0] == "remove":
+            self._remove(op[1])
+        if op[0] == "invalidate_inode":
+            with llfuse.lock_released:
+                _logger.debug("sending invalidate inode %i", op[1])
+                llfuse.invalidate_inode(op[1])
+        if op[0] == "invalidate_entry":
+            with llfuse.lock_released:
+                _logger.debug("sending invalidate to inode %i entry %s", op[1], op[2])
+                llfuse.invalidate_entry(op[1], op[2])
+        if op[0] == "evict_candidates":
+            pass
+
+
+    def _remove(self, entry):
+        try:
+            if entry.inode is None:
+                # Removed already
+                return
+
+            if entry.has_ref():
+                # has kernel reference, can't be removed.
+                #_logger.debug("InodeCache cannot clear inode %i, is referenced", entry.inode)
+                return
+
+            if entry.in_use():
+                # referenced internally, stay pinned
+                #_logger.debug("InodeCache cannot clear inode %i, in use", entry.inode)
+                return
+
+            forget_inode = True
+            parent = self._entries.get(entry.parent_inode)
+            if parent is not None and parent.has_ref():
+                # the parent is still referenced, so we'll keep the
+                # entry but wipe out the stuff under it
+                forget_inode = False
+
+            if forget_inode:
+                self.inode_cache.unmanage(entry)
+
+            _logger.debug("InodeCache removing inode %i", entry.inode)
+
+            # Invalidate the entry for self on the parent
+            entry.kernel_invalidate()
+
+            # For directories, clear the contents
+            entry.clear()
+
+            _logger.debug("InodeCache clearing inode %i, total %i, forget_inode %s",
+                          entry.inode, self.inode_cache.total(), forget_inode)
+            if forget_inode:
+                entry.inode = None
+
+            # stop anything else
+            with llfuse.lock_released:
+                entry.finalize()
+        except Exception as e:
+            _logger.exception("failed remove")
+
     def invalidate_inode(self, entry):
-        if entry.has_ref(False):
+        if entry.has_ref():
             # Only necessary if the kernel has previously done a lookup on this
             # inode and hasn't yet forgotten about it.
-            with llfuse.lock_released:
-                _logger.debug("sending invalidate %i", entry.inode)
-                llfuse.invalidate_inode(entry.inode)
+            self._inode_remove_queue.put(("invalidate_inode", entry.inode))
 
     def invalidate_entry(self, entry, name):
-        if entry.has_ref(False):
+        if entry.has_ref():
             # Only necessary if the kernel has previously done a lookup on this
             # inode and hasn't yet forgotten about it.
-            with llfuse.lock_released:
-                _logger.debug("sending invalidate to inode %i entry %s", entry.inode, name)
-                llfuse.invalidate_entry(entry.inode, native(name.encode(self.encoding)))
+            self._inode_remove_queue.put(("invalidate_entry", entry.inode, native(name.encode(self.encoding))))
 
     def clear(self):
         self.inode_cache.clear()
@@ -557,6 +574,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def getattr(self, inode, ctx=None):
         if inode not in self.inodes:
+            _logger.debug("arv-mount getattr: inode %i missing", inode)
             raise llfuse.FUSEError(errno.ENOENT)
 
         e = self.inodes[inode]
@@ -667,6 +685,7 @@ class Operations(llfuse.Operations):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
+            _logger.debug("arv-mount open: inode %i missing", inode)
             raise llfuse.FUSEError(errno.ENOENT)
 
         if isinstance(p, Directory):
@@ -748,7 +767,7 @@ class Operations(llfuse.Operations):
             finally:
                 self._filehandles[fh].release()
                 del self._filehandles[fh]
-        self.inodes.inode_cache.cap_cache()
+        self.inodes.cap_cache()
 
     def releasedir(self, fh):
         self.release(fh)
@@ -761,7 +780,7 @@ class Operations(llfuse.Operations):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
-            _logger.warning("arv-mount opendir: called with inode %i but it is missing", inode)
+            _logger.debug("arv-mount opendir: called with unknown or removed inode %i", inode)
             raise llfuse.FUSEError(errno.ENOENT)
 
         if not isinstance(p, Directory):
@@ -778,7 +797,9 @@ class Operations(llfuse.Operations):
 
         # update atime
         self.inodes.touch(p)
+        p.inc_use()
         self._filehandles[fh] = DirectoryHandle(fh, p, [('.', p), ('..', parent)] + listitems(p))
+        p.dec_use()
         return fh
 
     @readdir_time.time()
