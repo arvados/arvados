@@ -472,7 +472,7 @@ From here, the following directories are available:
 
     def _llfuse_main(self):
         try:
-            llfuse.main(workers=8)
+            llfuse.main(workers=10)
         except:
             llfuse.close(unmount=False)
             raise

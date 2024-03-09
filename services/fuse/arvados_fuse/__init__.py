@@ -162,7 +162,9 @@ class InodeCache(object):
         for ent in listvalues(self._cache_entries):
             if self._total < self.cap or len(self._cache_entries) < self.min_entries:
                 break
-            yield ent
+            if ent.cache_size > 0:
+                # if cache_size is zero it's been cleared already
+                yield ent
 
     def manage(self, obj):
         if obj.inode in self._cache_entries:
@@ -288,6 +290,8 @@ class Inodes(object):
                 locked_ops.clear()
 
                 entry = self._inode_remove_queue.get(True)
+                if entry is None:
+                    return
                 # Process this entry
                 _logger.debug("_inode_remove %s", entry)
                 self._inode_op(entry, locked_ops)
@@ -296,6 +300,8 @@ class Inodes(object):
                 while True:
                     try:
                         entry = self._inode_remove_queue.get(False)
+                        if entry is None:
+                            return
                         _logger.debug("_inode_remove %s", entry)
                         self._inode_op(entry, locked_ops)
                     except queue.Empty:
@@ -348,6 +354,10 @@ class Inodes(object):
                 # entry but wipe out the stuff under it
                 forget_inode = False
 
+            if entry.cache_size == 0 and not forget_inode:
+                # Was cleared already
+                return
+
             if forget_inode:
                 self.inode_cache.unmanage(entry)
 
@@ -384,6 +394,10 @@ class Inodes(object):
             self._inode_remove_queue.put(("invalidate_entry", entry.inode, native(name.encode(self.encoding))))
 
     def clear(self):
+        self._inode_remove_queue.put(None)
+        with llfuse.lock_released:
+            self._inode_remove_thread.join()
+
         self.inode_cache.clear()
 
         for k,v in viewitems(self._entries):
