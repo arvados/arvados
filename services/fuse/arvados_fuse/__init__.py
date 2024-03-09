@@ -282,39 +282,45 @@ class Inodes(object):
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
     def _inode_remove(self):
+        locked_ops = []
         while True:
             try:
+                locked_ops.clear()
+
                 entry = self._inode_remove_queue.get(True)
+                # Process this entry
+                _logger.debug("_inode_remove %s", entry)
+                self._inode_op(entry, locked_ops)
+
+                # Drain the queue of any other entries
+                while True:
+                    try:
+                        entry = self._inode_remove_queue.get(False)
+                        _logger.debug("_inode_remove %s", entry)
+                        self._inode_op(entry, locked_ops)
+                    except queue.Empty:
+                        break
+
                 with llfuse.lock:
-                    # Process this entry
-                    _logger.debug("_inode_remove %s", entry)
-                    self._inode_op(entry)
-
-                    while True:
-                        try:
-                            # Drain the queue of any other entries
-                            entry = self._inode_remove_queue.get(False)
-                            _logger.debug("_inode_remove %s", entry)
-                            self._inode_op(entry)
-                        except queue.Empty:
-                            break
-
+                    for lk in locked_ops:
+                        self._inode_op(entry, None)
                     for entry in self.inode_cache.evict_candidates():
                         self._remove(entry)
             except Exception as e:
                 _logger.exception("_inode_remove")
 
-    def _inode_op(self, op):
+    def _inode_op(self, op, locked_ops):
         if op[0] == "remove":
-            self._remove(op[1])
+            if locked_ops is None:
+                self._remove(op[1])
+            else:
+                locked_ops.append(op)
         if op[0] == "invalidate_inode":
-            with llfuse.lock_released:
-                _logger.debug("sending invalidate inode %i", op[1])
-                llfuse.invalidate_inode(op[1])
+            _logger.debug("sending invalidate inode %i", op[1])
+            llfuse.invalidate_inode(op[1])
         if op[0] == "invalidate_entry":
-            with llfuse.lock_released:
-                _logger.debug("sending invalidate to inode %i entry %s", op[1], op[2])
-                llfuse.invalidate_entry(op[1], op[2])
+            _logger.debug("sending invalidate to inode %i entry %s", op[1], op[2])
+            llfuse.invalidate_entry(op[1], op[2])
         if op[0] == "evict_candidates":
             pass
 
