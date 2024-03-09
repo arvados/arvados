@@ -150,22 +150,17 @@ class InodeCache(object):
         self.cap = cap
         self._total = 0
         self.min_entries = min_entries
-        self._total_lock = threading.Lock()
 
     def total(self):
         return self._total
 
     def evict_candidates(self):
-        with self._total_lock:
-            total = self._total
-        if total <= self.cap:
+        if self._total <= self.cap:
             return
 
         _logger.debug("InodeCache evict_candidates total %i cap %i entries %i", self._total, self.cap, len(self._cache_entries))
         for ent in listvalues(self._cache_entries):
-            with self._total_lock:
-                total = self._total
-            if total < self.cap or len(self._cache_entries) < self.min_entries:
+            if self._total < self.cap or len(self._cache_entries) < self.min_entries:
                 break
             yield ent
 
@@ -174,12 +169,7 @@ class InodeCache(object):
             return
 
         obj.cache_size = obj.objsize()
-
-        with self._total_lock:
-            _logger.debug("InodeCache b4 cache_size %i total %i", obj.cache_size, self._total)
-            self._total += obj.cache_size
-            _logger.debug("InodeCache after cache_size %i total %i", obj.cache_size, self._total)
-            total = self._total
+        self._total += obj.cache_size
 
         self._cache_entries[obj.inode] = obj
 
@@ -192,16 +182,15 @@ class InodeCache(object):
                     self._by_uuid[obj.cache_uuid].append(obj)
 
         _logger.debug("InodeCache managing inode %i (size %i) (uuid %s) total now %i (%i entries)",
-                      obj.inode, obj.cache_size, obj.cache_uuid, total, len(self._cache_entries))
+                      obj.inode, obj.cache_size, obj.cache_uuid, self._total, len(self._cache_entries))
 
     def unmanage(self, entry):
         if entry.inode not in self._cache_entries:
             return
 
         # manage cache size running sum
-        # with self._total_lock:
-        #     self._total -= entry.cache_size
-        # entry.cache_size = 0
+        self._total -= entry.cache_size
+        entry.cache_size = 0
 
         # manage the mapping of uuid to object
         if entry.cache_uuid:
@@ -214,14 +203,10 @@ class InodeCache(object):
         del self._cache_entries[entry.inode]
 
     def update_cache_size(self, obj):
-        pass
-        # if obj.inode in self._cache_entries:
-        #     with self._total_lock:
-        #         _logger.debug("update_cache_size b4 cache_size %i total %i", obj.cache_size, self._total)
-        #         self._total -= obj.cache_size
-        #         obj.cache_size = obj.objsize()
-        #         self._total += obj.cache_size
-        #         _logger.debug("update_cache_size after cache_size %i total %i", obj.cache_size, self._total)
+        if obj.inode in self._cache_entries:
+            self._total -= obj.cache_size
+            obj.cache_size = obj.objsize()
+            self._total += obj.cache_size
 
     def touch(self, obj):
         if obj.inode in self._cache_entries:
@@ -371,6 +356,7 @@ class Inodes(object):
             _logger.debug("InodeCache clearing inode %i, total %i, forget_inode %s",
                           entry.inode, self.inode_cache.total(), forget_inode)
             if forget_inode:
+                del self._entries[entry.inode]
                 entry.inode = None
 
             # stop anything else

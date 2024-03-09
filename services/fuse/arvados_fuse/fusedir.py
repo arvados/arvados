@@ -151,7 +151,7 @@ class Directory(FreshBase):
         super(Directory, self).fresh()
 
     def objsize(self):
-        return len(self._entries) * 64
+        return len(self._entries) * 128
 
     def merge(self, items, fn, same, new_entry):
         """Helper method for updating the contents of the directory.
@@ -183,11 +183,11 @@ class Directory(FreshBase):
                 continue
             if name in oldentries:
                 ent = oldentries[name]
-                ent.inc_use()
                 if same(ent, i):
                     # move existing directory entry over
                     self._entries[name] = ent
                     del oldentries[name]
+                    self.inodes.inode_cache.touch(ent)
 
         for i in items:
             name = self.sanitize_filename(fn(i))
@@ -197,7 +197,6 @@ class Directory(FreshBase):
                 # create new directory entry
                 ent = new_entry(i)
                 if ent is not None:
-                    ent.inc_use()
                     self._entries[name] = self.inodes.add_entry(ent)
                     changed = True
                 _logger.debug("Added entry '%s' as inode %i to parent inode %i", name, ent.inode, self.inode)
@@ -207,16 +206,12 @@ class Directory(FreshBase):
             _logger.debug("Forgetting about entry '%s' on inode %i", i, self.inode)
             self.inodes.invalidate_entry(self, i)
             self.inodes.del_entry(oldentries[i])
-            ent.dec_use()
             changed = True
 
         if changed:
             self.inodes.invalidate_inode(self)
             self._mtime = time.time()
             self.inodes.inode_cache.update_cache_size(self)
-
-        for ent in self._entries.values():
-           ent.dec_use()
 
         self.fresh()
 
@@ -644,10 +639,8 @@ class CollectionDirectory(CollectionDirectoryBase):
         return (self.collection_locator is not None)
 
     def objsize(self):
-        # This is an empirically-derived heuristic to estimate the memory used
-        # to store this collection's metadata.  Calculating the memory
-        # footprint directly would be more accurate, but also more complicated.
-        return self._manifest_size * 128
+        # Very rough estimate of memory footprint
+        return self._manifest_size * 4
 
     def finalize(self):
         if self.collection is not None:
@@ -1131,9 +1124,7 @@ class ProjectDirectory(Directory):
 
     def _add_entry(self, i, name):
         ent = self.createDirectory(i)
-        ent.inc_use()
         self._entries[name] = self.inodes.add_entry(ent)
-        ent.dec_use()
         return self._entries[name]
 
     @use_counter
