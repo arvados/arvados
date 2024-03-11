@@ -93,11 +93,11 @@ func (m *metrics) track(handler http.Handler, w http.ResponseWriter, r *http.Req
 // transfer).
 func sizeRange(size int64) string {
 	switch {
-	case size <= 1_000_000:
+	case size < 1_000_000:
 		return "0"
-	case size <= 10_000_000:
+	case size < 10_000_000:
 		return "1M"
-	case size <= 100_000_000:
+	case size < 100_000_000:
 		return "10M"
 	default:
 		return "100M"
