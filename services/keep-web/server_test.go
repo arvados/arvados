@@ -518,7 +518,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	allmetrics, err := ioutil.ReadAll(resp.Body)
 	c.Check(err, check.IsNil)
 
-	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_download_limiting_backend_speed_bucket{size_range="0",le="1e\+06"} 4\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_download_apparent_backend_speed_bucket{size_range="0",le="1e\+06"} 4\n.*`)
 	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_download_speed_bucket{size_range="0",le="\+Inf"} 4\n.*`)
 	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_upload_speed_bucket{size_range="0",le="\+Inf"} 2\n.*`)
 	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_upload_sync_delay_seconds_bucket{size_range="0",le="10"} 2\n.*`)

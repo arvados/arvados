@@ -32,8 +32,8 @@ func newMetrics(reg *prometheus.Registry) *metrics {
 		mDownloadBackendSpeed: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: "arvados",
 			Subsystem: "keepweb",
-			Name:      "download_limiting_backend_speed",
-			Help:      "Limiting backend speed (bytes per second) when serving file downloads, bucketed by transfer size range",
+			Name:      "download_apparent_backend_speed",
+			Help:      "Apparent download speed from the backend (bytes per second) when serving file downloads, bucketed by transfer size range (see https://dev.arvados.org/issues/15317#note-25 for explanation)",
 			Buckets:   []float64{10_000, 1_000_000, 10_000_000, 100_000_000, 1_000_000_000, math.Inf(+1)},
 		}, []string{"size_range"}),
 		mUploadSpeed: prometheus.NewHistogramVec(prometheus.HistogramOpts{
