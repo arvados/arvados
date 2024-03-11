@@ -36,7 +36,7 @@ fi
 
 ensure_umount "$MOUNTPATH/docker/aufs"
 
-/bin/bash /opt/amazon-ebs-autoscale/install.sh -f lvm.ext4 -m $MOUNTPATH 2>&1 > /var/log/ebs-autoscale-install.log
+/bin/bash /opt/amazon-ebs-autoscale/install.sh --imdsv2 -f lvm.ext4 -m $MOUNTPATH 2>&1 > /var/log/ebs-autoscale-install.log
 
 # Make sure docker uses the big partition
 cat <<EOF > /etc/docker/daemon.json

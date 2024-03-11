@@ -80,7 +80,7 @@ $build_sdks = begin
       if sdk.can_build?
         sdk
       else
-        puts "Warning: cannot build #{name.replace(/SDK$/, ' SDK')} documentation, skipping".colorize(:light_red)
+        puts "Warning: cannot build #{name.gsub(/SDK$/, ' SDK')} documentation, skipping".colorize(:light_red)
       end
     end
   else
