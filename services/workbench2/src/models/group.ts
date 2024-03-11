@@ -18,6 +18,8 @@ export interface GroupResource extends TrashableResource, ResourceWithProperties
     ensure_unique_name: boolean;
     canWrite: boolean;
     canManage: boolean;
+    // Optional local-only field, undefined for not loaded, null for failed to load
+    memberCount?: number | null;
 }
 
 export enum GroupClass {
