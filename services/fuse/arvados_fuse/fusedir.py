@@ -1014,6 +1014,19 @@ class ProjectDirectory(Directory):
         self._current_user = None
         self._full_listing = False
         self.storage_classes = storage_classes
+        self.recursively_contained = False
+
+        # Filter groups can contain themselves, which causes tools
+        # that walk the filesystem to get stuck in an infinite loop,
+        # so suppress returning a listing in that case.
+        if self.project_object.get("group_class") == "filter":
+            iter_parent_inode = parent_inode
+            while iter_parent_inode != llfuse.ROOT_INODE:
+                parent_dir = self.inodes[iter_parent_inode]
+                if isinstance(parent_dir, ProjectDirectory) and parent_dir.project_uuid == self.project_uuid:
+                    self.recursively_contained = True
+                    break
+                iter_parent_inode = parent_dir.parent_inode
 
     def want_event_subscribe(self):
         return True
@@ -1064,7 +1077,7 @@ class ProjectDirectory(Directory):
             self.project_object_file = ObjectFile(self.inode, self.project_object)
             self.inodes.add_entry(self.project_object_file)
 
-        if not self._full_listing:
+        if self.recursively_contained or not self._full_listing:
             return True
 
         def samefn(a, i):
