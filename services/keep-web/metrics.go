@@ -117,6 +117,7 @@ type downloadTracker struct {
 func newDownloadTracker(w http.ResponseWriter) *downloadTracker {
 	return &downloadTracker{ResponseWriter: w, t0: time.Now()}
 }
+
 func (dt *downloadTracker) Write(p []byte) (int, error) {
 	if dt.lastByte.IsZero() {
 		dt.backendWait += time.Since(dt.t0)
