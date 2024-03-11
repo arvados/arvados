@@ -51,9 +51,10 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const response = await services.workflowService.list();
         dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
-
+        
         const workflows = getState().runProcessPanel.searchWorkflows;
-        const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
+        const listedWorkflow = workflows.find(workflow => workflow.uuid === workflowUuid);
+        const workflow = listedWorkflow || await services.workflowService.get(workflowUuid);
         if (workflow) {
             dispatch<any>(navigateToRunProcess);
             dispatch<any>(goToStep(1));

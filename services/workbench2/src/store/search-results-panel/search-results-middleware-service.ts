@@ -17,7 +17,7 @@ import { searchResultsPanelActions } from 'store/search-results-panel/search-res
 import {
     getSearchSessions,
     queryToFilters,
-    getAdvancedDataFromQuery
+    getAdvancedDataFromQuery,
 } from 'store/search-bar/search-bar-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
@@ -26,6 +26,8 @@ import { serializeResourceTypeFilters } from 'store//resource-type-filters/resou
 import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -55,12 +57,24 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(setItems(initial));
         }
 
+        const numberOfSessions = sessions.length;
+        let numberOfResolvedResponses = 0;
+        let totalNumItemsAvailable = 0;
+        api.dispatch(progressIndicatorActions.START_WORKING(this.id))
+        api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
+
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
+                    numberOfResolvedResponses++;
+                    totalNumItemsAvailable += response.itemsAvailable;
+                    if (numberOfResolvedResponses === numberOfSessions) {
+                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                        if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true }))
+                    }
                     // Request all containers for process status to be available
                     const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
                     const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
@@ -73,10 +87,11 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                         .then((containers) => {
                             api.dispatch(updateResources(containers.items));
                         });
-                }).catch(() => {
-                    api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                });
-        }
+                    }).catch(() => {
+                        api.dispatch(couldNotFetchSearchResults(session.clusterId));
+                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                    });
+            }
         );
     }
 }

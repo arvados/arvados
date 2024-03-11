@@ -30,7 +30,7 @@ fi
 context_dir="$(mktemp --directory --tmpdir dev-jobs.XXXXXXXX)"
 trap 'rm -rf "$context_dir"' EXIT INT TERM QUIT
 
-for src_dir in "$WORKSPACE/sdk/python" "${CWLTOOL:-}" "${CWL_UTILS:-}" "${SALAD:-}" "$WORKSPACE/sdk/cwl"; do
+for src_dir in "$WORKSPACE/sdk/python" "${CWLTOOL:-}" "${CWL_UTILS:-}" "${SALAD:-}" "$WORKSPACE/tools/crunchstat-summary" "$WORKSPACE/sdk/cwl"; do
     if [[ -z "$src_dir" ]]; then
         continue
     fi

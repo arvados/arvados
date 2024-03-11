@@ -20,7 +20,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
-	"git.arvados.org/arvados.git/services/keepstore"
 	. "gopkg.in/check.v1"
 )
 
@@ -195,7 +194,9 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 			volume.Replication = 2
 			cluster.Volumes[uuid] = volume
 
-			var v keepstore.UnixVolume
+			var v struct {
+				Root string
+			}
 			err = json.Unmarshal(volume.DriverParameters, &v)
 			c.Assert(err, IsNil)
 			err = os.Mkdir(v.Root, 0777)

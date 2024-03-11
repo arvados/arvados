@@ -8,21 +8,21 @@ import (
 	"io"
 )
 
-func NewCountingWriter(w io.Writer, f func(uint64)) io.WriteCloser {
+func newCountingWriter(w io.Writer, f func(uint64)) io.WriteCloser {
 	return &countingReadWriter{
 		writer:  w,
 		counter: f,
 	}
 }
 
-func NewCountingReader(r io.Reader, f func(uint64)) io.ReadCloser {
+func newCountingReader(r io.Reader, f func(uint64)) io.ReadCloser {
 	return &countingReadWriter{
 		reader:  r,
 		counter: f,
 	}
 }
 
-func NewCountingReaderAtSeeker(r readerAtSeeker, f func(uint64)) *countingReaderAtSeeker {
+func newCountingReaderAtSeeker(r readerAtSeeker, f func(uint64)) *countingReaderAtSeeker {
 	return &countingReaderAtSeeker{readerAtSeeker: r, counter: f}
 }
 

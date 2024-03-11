@@ -987,14 +987,13 @@ install_services/workbench2() {
 }
 
 test_doc() {
-    (
-        set -e
-        cd "$WORKSPACE/doc"
-        ARVADOS_API_HOST=pirca.arvadosapi.com
-        # Make sure python-epydoc is installed or the next line won't
-        # do much good!
-        PYTHONPATH=$WORKSPACE/sdk/python/ "$bundle" exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
-    )
+    local arvados_api_host=pirca.arvadosapi.com && \
+        env -C "$WORKSPACE/doc" \
+        "$bundle" exec rake linkchecker \
+        arvados_api_host="$arvados_api_host" \
+        arvados_workbench_host="https://workbench.$arvados_api_host" \
+        baseurl="file://$WORKSPACE/doc/.site/" \
+        ${testargs[doc]}
 }
 
 test_gofmt() {

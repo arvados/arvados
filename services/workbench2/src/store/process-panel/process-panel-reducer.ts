@@ -14,6 +14,7 @@ const initialState: ProcessPanel = {
     nodeInfo: null,
     outputDefinitions: [],
     outputParams: null,
+    usageReport: null,
 };
 
 export type OutputDataUpdate = {
@@ -74,6 +75,9 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
         },
         SET_OUTPUT_PARAMS: outputParams => {
             return { ...state, outputParams };
+        },
+        SET_USAGE_REPORT: ({ usageReport }) => {
+            return { ...state, usageReport };
         },
         default: () => state,
     });
