@@ -36,7 +36,7 @@ describe('Group manage tests', function() {
         );
     });
 
-    it('creates a new group', function() {
+    it('creates a new group, add users to it and changes permission level', function() {
         cy.loginAs(activeUser);
 
         // Navigate to Groups
@@ -59,9 +59,7 @@ describe('Group manage tests', function() {
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
         cy.get('[data-cy=group-members-data-explorer]').contains(activeUser.user.full_name);
         cy.get('[data-cy=group-members-data-explorer]').contains(userThree.user.full_name);
-    });
 
-    it('adds users to the group', function() {
         // Add other user to the group
         cy.get('[data-cy=group-member-add]').click();
         cy.get('.sharing-dialog')
@@ -93,9 +91,7 @@ describe('Group manage tests', function() {
             .within(() => {
                 cy.contains('Manage');
             });
-    });
 
-    it('changes permission level of a member', function() {
         // Test change permission level
         cy.get('[data-cy=group-members-data-explorer]')
             .contains(otherUser.user.full_name)
@@ -213,6 +209,8 @@ describe('Group manage tests', function() {
     });
 
     it('removes users from the group', function() {
+        cy.loginAs(activeUser);
+
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
 
@@ -266,6 +264,8 @@ describe('Group manage tests', function() {
     });
 
     it('deletes the group', function() {
+        cy.loginAs(adminUser);
+
         // Navigate to Groups
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
 

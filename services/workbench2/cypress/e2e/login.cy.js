@@ -33,11 +33,6 @@ describe('Login tests', function() {
         randomUser.password = 'topsecret';
     })
 
-    beforeEach(function() {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    })
-
     it('shows login page on first visit', function() {
         cy.visit('/')
         cy.get('div#root').should('contain', 'Please log in')

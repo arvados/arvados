@@ -19,11 +19,6 @@ describe('Multi-file deletion tests', function () {
             );
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it('deletes all files from root dir', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,

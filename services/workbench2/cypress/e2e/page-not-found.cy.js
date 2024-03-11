@@ -13,11 +13,6 @@ describe('Page not found tests', function() {
         );
     });
 
-    beforeEach(function() {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    });
-
     it('shows not found page', function() {
         // when
         cy.loginAs(adminUser);

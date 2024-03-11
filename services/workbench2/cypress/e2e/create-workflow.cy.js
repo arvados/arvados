@@ -19,11 +19,6 @@ describe('Create workflow tests', function () {
             );
     });
 
-    beforeEach(function () {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it('can create project with nested data', function () {
         cy.createGroup(adminUser.token, {
             group_class: "project",

@@ -23,11 +23,6 @@ describe('Side panel tests', function() {
         );
     })
 
-    beforeEach(function() {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    })
-
     it('enables the +NEW side panel button on users home project', function() {
         cy.loginAs(activeUser);
         cy.get('[data-cy=side-panel-button]')
