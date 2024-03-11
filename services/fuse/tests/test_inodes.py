@@ -68,19 +68,21 @@ class InodeTests(unittest.TestCase):
         inodes.add_entry(ent3)
 
         # Won't clear anything because min_entries = 4
-        self.assertEqual(2, len(cache._entries))
+        self.assertEqual(2, len(cache._cache_entries))
         self.assertFalse(ent1.clear.called)
         self.assertEqual(1100, cache.total())
 
         # Change min_entries
         cache.min_entries = 1
-        cache.cap_cache()
+        inodes.cap_cache()
+        inodes.wait_remove_queue_empty()
         self.assertEqual(600, cache.total())
         self.assertTrue(ent1.clear.called)
 
         # Touching ent1 should cause ent3 to get cleared
         self.assertFalse(ent3.clear.called)
-        cache.touch(ent1)
+        inodes.touch(ent1)
+        inodes.wait_remove_queue_empty()
         self.assertTrue(ent3.clear.called)
         self.assertEqual(500, cache.total())
 
@@ -121,6 +123,7 @@ class InodeTests(unittest.TestCase):
         ent1.clear.called = False
         ent3.clear.called = False
         cache.touch(ent3)
+        inodes.wait_remove_queue_empty()
         self.assertFalse(ent1.clear.called)
         self.assertTrue(ent3.clear.called)
         self.assertEqual(500, cache.total())
@@ -147,6 +150,7 @@ class InodeTests(unittest.TestCase):
         ent1.ref_count = 0
         with llfuse.lock:
             inodes.del_entry(ent1)
+        inodes.wait_remove_queue_empty()
         self.assertEqual(0, cache.total())
         cache.touch(ent3)
         self.assertEqual(600, cache.total())

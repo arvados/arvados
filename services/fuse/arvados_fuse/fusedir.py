@@ -36,7 +36,7 @@ class Directory(FreshBase):
     and the value referencing a File or Directory object.
     """
 
-    def __init__(self, parent_inode, inodes, apiconfig, enable_write, filters):
+    def __init__(self, parent_inode, inodes, enable_write, filters):
         """parent_inode is the integer inode number"""
 
         super(Directory, self).__init__()
@@ -46,7 +46,6 @@ class Directory(FreshBase):
             raise Exception("parent_inode should be an int")
         self.parent_inode = parent_inode
         self.inodes = inodes
-        self.apiconfig = apiconfig
         self._entries = {}
         self._mtime = time.time()
         self._enable_write = enable_write
@@ -64,23 +63,9 @@ class Directory(FreshBase):
             else:
                 yield [f_name, *f[1:]]
 
-    def forward_slash_subst(self):
-        if not hasattr(self, '_fsns'):
-            self._fsns = None
-            config = self.apiconfig
-            try:
-                self._fsns = config["Collections"]["ForwardSlashNameSubstitution"]
-            except KeyError:
-                # old API server with no FSNS config
-                self._fsns = '_'
-            else:
-                if self._fsns == '' or self._fsns == '/':
-                    self._fsns = None
-        return self._fsns
-
     def unsanitize_filename(self, incoming):
         """Replace ForwardSlashNameSubstitution value with /"""
-        fsns = self.forward_slash_subst()
+        fsns = self.inodes.forward_slash_subst()
         if isinstance(fsns, str):
             return incoming.replace(fsns, '/')
         else:
@@ -99,7 +84,7 @@ class Directory(FreshBase):
         elif dirty == '..':
             return '__'
         else:
-            fsns = self.forward_slash_subst()
+            fsns = self.inodes.forward_slash_subst()
             if isinstance(fsns, str):
                 dirty = dirty.replace('/', fsns)
             return _disallowed_filename_characters.sub('_', dirty)
@@ -249,6 +234,8 @@ class Directory(FreshBase):
                 self.inodes.invalidate_entry(parent, k)
                 break
 
+        self.inodes.invalidate_inode(self)
+
     def mtime(self):
         return self._mtime
 
@@ -292,9 +279,8 @@ class CollectionDirectoryBase(Directory):
 
     """
 
-    def __init__(self, parent_inode, inodes, apiconfig, enable_write, filters, collection, collection_root):
-        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, apiconfig, enable_write, filters)
-        self.apiconfig = apiconfig
+    def __init__(self, parent_inode, inodes, enable_write, filters, collection, collection_root):
+        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, enable_write, filters)
         self.collection = collection
         self.collection_root = collection_root
         self.collection_record_file = None
@@ -312,7 +298,6 @@ class CollectionDirectoryBase(Directory):
             self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(
                 self.inode,
                 self.inodes,
-                self.apiconfig,
                 self._enable_write,
                 self._filters,
                 item,
@@ -469,7 +454,7 @@ class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree representing a collection."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters=None, collection_record=None, explicit_collection=None):
-        super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config(), enable_write, filters, None, self)
+        super(CollectionDirectory, self).__init__(parent_inode, inodes, enable_write, filters, None, self)
         self.api = api
         self.num_retries = num_retries
         self._poll = True
@@ -654,9 +639,8 @@ class CollectionDirectory(CollectionDirectoryBase):
     def clear(self):
         if self.collection is not None:
             self.collection.stop_threads()
-        super(CollectionDirectory, self).clear()
         self._manifest_size = 0
-        self.inodes.inode_cache.update_cache_size(self)
+        super(CollectionDirectory, self).clear()
 
 
 class TmpCollectionDirectory(CollectionDirectoryBase):
@@ -683,7 +667,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         # This is always enable_write=True because it never tries to
         # save to the backend
         super(TmpCollectionDirectory, self).__init__(
-            parent_inode, inodes, api_client.config, True, filters, collection, self)
+            parent_inode, inodes, True, filters, collection, self)
         self.populate(self.mtime())
 
     def on_event(self, *args, **kwargs):
@@ -780,7 +764,7 @@ and the directory will appear if it exists.
 """.lstrip()
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters, pdh_only=False, storage_classes=None):
-        super(MagicDirectory, self).__init__(parent_inode, inodes, api.config(), enable_write, filters)
+        super(MagicDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.pdh_only = pdh_only
@@ -879,7 +863,7 @@ class TagsDirectory(Directory):
     """A special directory that contains as subdirectories all tags visible to the user."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters, poll_time=60):
-        super(TagsDirectory, self).__init__(parent_inode, inodes, api.config(), enable_write, filters)
+        super(TagsDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self._poll = True
@@ -959,7 +943,7 @@ class TagDirectory(Directory):
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters, tag,
                  poll=False, poll_time=60):
-        super(TagDirectory, self).__init__(parent_inode, inodes, api.config(), enable_write, filters)
+        super(TagDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.tag = tag
@@ -1002,7 +986,7 @@ class ProjectDirectory(Directory):
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
                  project_object, poll=True, poll_time=3, storage_classes=None):
-        super(ProjectDirectory, self).__init__(parent_inode, inodes, api.config(), enable_write, filters)
+        super(ProjectDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.project_object = project_object
@@ -1326,7 +1310,7 @@ class SharedDirectory(Directory):
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
                  exclude, poll=False, poll_time=60, storage_classes=None):
-        super(SharedDirectory, self).__init__(parent_inode, inodes, api.config(), enable_write, filters)
+        super(SharedDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
         self.api = api
         self.num_retries = num_retries
         self.current_user = api.users().current().execute(num_retries=num_retries)

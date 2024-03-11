@@ -229,11 +229,13 @@ class Inodes(object):
     """Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object"""
 
-    def __init__(self, inode_cache, encoding="utf-8"):
+    def __init__(self, inode_cache, encoding="utf-8", fsns=None, shutdown_started=None):
         self._entries = {}
         self._counter = itertools.count(llfuse.ROOT_INODE)
         self.inode_cache = inode_cache
         self.encoding = encoding
+        self._fsns = fsns
+        self._shutdown_started = shutdown_started or threading.Event()
 
         self._inode_remove_queue = queue.Queue()
         self._inode_remove_thread = threading.Thread(None, self._inode_remove)
@@ -258,6 +260,7 @@ class Inodes(object):
     def touch(self, entry):
         entry._atime = time.time()
         self.inode_cache.touch(entry)
+        self.cap_cache()
 
     def cap_cache(self):
         self._inode_remove_queue.put(("evict_candidates",))
@@ -316,6 +319,8 @@ class Inodes(object):
                 _logger.exception("_inode_remove")
 
     def _inode_op(self, op, locked_ops):
+        if self._shutdown_started.is_set():
+            return
         if op[0] == "remove":
             if locked_ops is None:
                 self._remove(op[1])
@@ -330,6 +335,10 @@ class Inodes(object):
         if op[0] == "evict_candidates":
             pass
 
+    def wait_remove_queue_empty(self):
+        # used by tests
+        while not self._inode_remove_queue.empty():
+            time.sleep(.1)
 
     def _remove(self, entry):
         try:
@@ -337,8 +346,12 @@ class Inodes(object):
                 # Removed already
                 return
 
+            # Tell the kernel it should forget about it.
+            entry.kernel_invalidate()
+
             if entry.has_ref():
-                # has kernel reference, can't be removed.
+                # has kernel reference, could still be accessed.
+                # when the kernel forgets about it, we can delete it.
                 #_logger.debug("InodeCache cannot clear inode %i, is referenced", entry.inode)
                 return
 
@@ -363,14 +376,12 @@ class Inodes(object):
 
             _logger.debug("InodeCache removing inode %i", entry.inode)
 
-            # Invalidate the entry for self on the parent
-            entry.kernel_invalidate()
-
             # For directories, clear the contents
             entry.clear()
 
-            _logger.debug("InodeCache clearing inode %i, total %i, forget_inode %s",
-                          entry.inode, self.inode_cache.total(), forget_inode)
+            _logger.debug("InodeCache clearing inode %i, total %i, forget_inode %s, inode entries %i, type %s",
+                          entry.inode, self.inode_cache.total(), forget_inode,
+                          len(self._entries), type(entry))
             if forget_inode:
                 del self._entries[entry.inode]
                 entry.inode = None
@@ -407,6 +418,9 @@ class Inodes(object):
                 _logger.exception("Error during finalize of inode %i", k)
 
         self._entries.clear()
+
+    def forward_slash_subst(self):
+        return self._fsns
 
 
 def catch_exceptions(orig_func):
@@ -468,14 +482,32 @@ class Operations(llfuse.Operations):
     rename_time = fuse_time.labels(op='rename')
     flush_time = fuse_time.labels(op='flush')
 
-    def __init__(self, uid, gid, api_client, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
+    def __init__(self, uid, gid, api_client, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False, fsns=None):
         super(Operations, self).__init__()
 
         self._api_client = api_client
 
         if not inode_cache:
             inode_cache = InodeCache(cap=256*1024*1024)
-        self.inodes = Inodes(inode_cache, encoding=encoding)
+
+        if fsns is None:
+            try:
+                fsns = self._api_client.config()["Collections"]["ForwardSlashNameSubstitution"]
+            except KeyError:
+                # old API server with no FSNS config
+                fsns = '_'
+            else:
+                if fsns == '' or fsns == '/':
+                    fsns = None
+
+        # If we get overlapping shutdown events (e.g., fusermount -u
+        # -z and operations.destroy()) llfuse calls forget() on inodes
+        # that have already been deleted. To avoid this, we make
+        # forget() a no-op if called after destroy().
+        self._shutdown_started = threading.Event()
+
+        self.inodes = Inodes(inode_cache, encoding=encoding, fsns=fsns,
+                             shutdown_started=self._shutdown_started)
         self.uid = uid
         self.gid = gid
         self.enable_write = enable_write
@@ -487,12 +519,6 @@ class Operations(llfuse.Operations):
         # Other threads that need to wait until the fuse driver
         # is fully initialized should wait() on this event object.
         self.initlock = threading.Event()
-
-        # If we get overlapping shutdown events (e.g., fusermount -u
-        # -z and operations.destroy()) llfuse calls forget() on inodes
-        # that have already been deleted. To avoid this, we make
-        # forget() a no-op if called after destroy().
-        self._shutdown_started = threading.Event()
 
         self.num_retries = num_retries
 

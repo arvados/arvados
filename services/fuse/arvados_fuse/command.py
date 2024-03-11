@@ -113,6 +113,8 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
+        self.add_argument('--fsns', type=str, default=None, help=argparse.SUPPRESS)
+
         unmount = self.add_mutually_exclusive_group()
         unmount.add_argument('--unmount', action='store_true', default=False,
                              help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit. If --subtype is given, unmount only if the mount has the specified subtype. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
@@ -298,7 +300,8 @@ class Mount(object):
             api_client=self.api,
             encoding=self.args.encoding,
             inode_cache=InodeCache(cap=self.args.directory_cache),
-            enable_write=self.args.enable_write)
+            enable_write=self.args.enable_write,
+            fsns=self.args.fsns)
 
         if self.args.crunchstat_interval:
             statsthread = threading.Thread(
@@ -387,7 +390,6 @@ class Mount(object):
         e = self.operations.inodes.add_entry(Directory(
             llfuse.ROOT_INODE,
             self.operations.inodes,
-            self.api.config(),
             self.args.enable_write,
             self.args.filters,
         ))
