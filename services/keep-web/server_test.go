@@ -509,23 +509,21 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 		c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 	}
 
-	// Dump entire metrics output in test logs
 	req, _ = http.NewRequest("GET", srvaddr+"/metrics", nil)
 	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
 	resp, err = http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	buf, err := ioutil.ReadAll(resp.Body)
+	allmetrics, err := ioutil.ReadAll(resp.Body)
 	c.Check(err, check.IsNil)
 
-	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_download_limiting_backend_speed_bucket{size_range="0",le="1e\+06"} 4\n.*`)
-	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_download_speed_bucket{size_range="0",le="\+Inf"} 4\n.*`)
-	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_upload_speed_bucket{size_range="0",le="\+Inf"} 2\n.*`)
-	c.Check(string(buf), check.Matches, `(?ms).*\narvados_keepweb_upload_sync_delay_seconds_bucket{size_range="0",le="10"} 2\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_download_limiting_backend_speed_bucket{size_range="0",le="1e\+06"} 4\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_download_speed_bucket{size_range="0",le="\+Inf"} 4\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_upload_speed_bucket{size_range="0",le="\+Inf"} 2\n.*`)
+	c.Check(string(allmetrics), check.Matches, `(?ms).*\narvados_keepweb_upload_sync_delay_seconds_bucket{size_range="0",le="10"} 2\n.*`)
 
-	// Dump entire metrics output in test logs
-	c.Logf("%s", buf)
+	c.Logf("%s", allmetrics)
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
