@@ -16,8 +16,8 @@ import { OrderBuilder } from 'services/api/order-builder';
 import { ResourceKind } from 'models/resource';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
-import { LinkClass } from 'models/link';
-import { verifyAndUpdateLinkName } from 'common/link-update-name';
+import { LinkClass, LinkResource } from 'models/link';
+import { verifyAndUpdateLinks } from 'common/link-update-name';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
@@ -103,7 +103,8 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         if (projectUuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
             await dispatch<any>(loadPublicFavoritesTree());
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
-            await dispatch<any>(loadFavoritesTree());
+            const unverifiedLinks = await dispatch<any>(loadFavoritesTree());
+            verifyAndUpdateLinkNames(unverifiedLinks, dispatch, getState, services);
         } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
         }
@@ -145,11 +146,7 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
         limit: SIDEPANEL_TREE_NODE_LIMIT,
     };
 
-    let items = (await services.linkService.list(params)).items;
-    for(let item of items) {
-        const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
-        item.name = verifiedName;
-    }
+    const { items } = await services.linkService.list(params);
 
     dispatch(
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
@@ -159,7 +156,19 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
         })
     );
 
-    dispatch(resourcesActions.SET_RESOURCES(items));
+    return items;
+};
+
+const verifyAndUpdateLinkNames = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const verfifiedLinks = await verifyAndUpdateLinks(links, dispatch, getState, services);
+
+    dispatch(
+        treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+            id: SidePanelTreeCategory.FAVORITES,
+            pickerId: SIDE_PANEL_TREE,
+            nodes: verfifiedLinks.map(item => initTreeNode({ id: item.headUuid, value: item })),
+        })
+    );
 };
 
 export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -205,10 +214,10 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
 
     const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
 
-    for(const item of filteredItems) {
-        const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
-        item.name = verifiedName;
-    }
+    // for(const item of filteredItems) {
+    //     const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
+    //     item.name = verifiedName;
+    // }
 
     dispatch(
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({

@@ -10,24 +10,29 @@ import { Resource, extractUuidKind } from 'models/resource';
 
 type NameableResource = Resource & { name?: string };
 
-export const verifyAndUpdateLinkName = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository):Promise<string> => {
-  //check if head resource is already in the store
+export const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource> => {
+    //check if head resource is already in the store
     let headResource: Resource | undefined = getState().resources[link.headUuid];
     //if not, fetch it
     if (!headResource) {
         headResource = await fetchResource(link.headUuid)(dispatch, getState, services);
-        if(!headResource) {
-            console.error('Could not validate link', link, 'because link head', link.headUuid, 'is not available');
-            return link.name;
+        if (!headResource) {
+            if (!link.name) console.error('Could not validate link', link, 'because link head', link.headUuid, 'is not available');
+            return link;
         }
     }
 
-    if (validateLinkNameProp(link, headResource) === true) return link.name;
+    if (validateLinkNameProp(link, headResource) === true) return link;
 
     const updatedLink = updateLinkNameProp(link, headResource);
     updateRemoteLinkName(updatedLink)(dispatch, getState, services);
-    
-    return updatedLink.name;
+
+    return updatedLink;
+};
+
+export const verifyAndUpdateLinks = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const updatedLinks = links.map((link) => verifyAndUpdateLink(link, dispatch, getState, services));
+        return Promise.all(updatedLinks);
 };
 
 const fetchResource = (uuid: string, showErrors?: boolean) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -38,29 +43,29 @@ const fetchResource = (uuid: string, showErrors?: boolean) => async (dispatch: D
             const resource = await service.get(uuid, showErrors);
             return resource;
         }
-    } catch(e) {
+    } catch (e) {
         console.error(`Could not fetch resource ${uuid}`, e);
     }
     return undefined;
 };
 
 const validateLinkNameProp = (link: LinkResource, head: NameableResource) => {
-  if(!link.name || link.name !== head.name) return false;
+    if (!link.name || link.name !== head.name) return false;
     return true;
 };
 
 const updateLinkNameProp = (link: LinkResource, head: NameableResource) => {
-  const updatedLink = {...link};
-  if(head.name) updatedLink.name = head.name;
-  return updatedLink;
-}
+    const updatedLink = { ...link };
+    if (head.name) updatedLink.name = head.name;
+    return updatedLink;
+};
 
 const updateRemoteLinkName = (link: LinkResource) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     try {
         const kind = extractUuidKind(link.uuid);
         const service = getResourceService(kind)(services);
         if (service) {
-            service.update(link.uuid, {name: link.name});
+            service.update(link.uuid, { name: link.name });
         }
     } catch (error) {
         console.error('Could not update link name', link, error);
