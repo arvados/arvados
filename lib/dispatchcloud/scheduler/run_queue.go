@@ -24,6 +24,17 @@ type QueueEnt struct {
 	SchedulingStatus string `json:"scheduling_status"`
 }
 
+const (
+	schedStatusPreparingRuntimeEnvironment = "preparing runtime environment"
+	schedStatusPriorityZero                = "not scheduling: priority 0" // ", state X" appended at runtime
+	schedStatusContainerLimitReached       = "not starting: supervisor container limit has been reached"
+	schedStatusWaitingForPreviousAttempt   = "waiting for previous attempt to exit"
+	schedStatusWaitingNewInstance          = "waiting for new instance to be ready"
+	schedStatusWaitingInstanceType         = "waiting for suitable instance type to become available" // ": queue position X" appended at runtime
+	schedStatusWaitingCloudResources       = "waiting for cloud resources"
+	schedStatusWaitingClusterCapacity      = "waiting while cluster is running at capacity" // ": queue position X" appended at runtime
+)
+
 // Queue returns the sorted queue from the last scheduling iteration.
 func (sch *Scheduler) Queue() []QueueEnt {
 	ents, _ := sch.lastQueue.Load().([]QueueEnt)
@@ -188,17 +199,17 @@ tryrun:
 		}
 		if _, running := running[ctr.UUID]; running {
 			if ctr.State == arvados.ContainerStateQueued || ctr.State == arvados.ContainerStateLocked {
-				sorted[i].SchedulingStatus = "preparing runtime environment"
+				sorted[i].SchedulingStatus = schedStatusPreparingRuntimeEnvironment
 			}
 			continue
 		}
 		if ctr.Priority < 1 {
-			sorted[i].SchedulingStatus = "not scheduling: priority 0, state " + string(ctr.State)
+			sorted[i].SchedulingStatus = schedStatusPriorityZero + ", state " + string(ctr.State)
 			continue
 		}
 		if ctr.SchedulingParameters.Supervisor && maxSupervisors > 0 && supervisors > maxSupervisors {
 			overmaxsuper = append(overmaxsuper, sorted[i])
-			sorted[i].SchedulingStatus = "not starting: supervisor container limit has been reached"
+			sorted[i].SchedulingStatus = schedStatusContainerLimitReached
 			continue
 		}
 		// If we have unalloc instances of any of the eligible
@@ -270,13 +281,13 @@ tryrun:
 					// same instance type. Don't let this
 					// one sneak in ahead of it.
 				} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
-					sorted[i].SchedulingStatus = "waiting for previous attempt to exit"
+					sorted[i].SchedulingStatus = schedStatusWaitingForPreviousAttempt
 					logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 				} else if sch.pool.StartContainer(unallocType, ctr) {
-					sorted[i].SchedulingStatus = "preparing runtime environment"
+					sorted[i].SchedulingStatus = schedStatusPreparingRuntimeEnvironment
 					logger.Trace("StartContainer => true")
 				} else {
-					sorted[i].SchedulingStatus = "waiting for new instance to be ready"
+					sorted[i].SchedulingStatus = schedStatusWaitingNewInstance
 					logger.Trace("StartContainer => false")
 					containerAllocatedWorkerBootingCount += 1
 					dontstart[unallocType] = true
@@ -307,7 +318,7 @@ tryrun:
 				// runQueue(), rather than run
 				// container B now.
 				qpos++
-				sorted[i].SchedulingStatus = fmt.Sprintf("waiting for suitable instance type to become available: queue position %d", qpos)
+				sorted[i].SchedulingStatus = schedStatusWaitingInstanceType + fmt.Sprintf(": queue position %d", qpos)
 				logger.Trace("all eligible types at capacity")
 				continue
 			}
@@ -322,7 +333,7 @@ tryrun:
 			// asynchronously and does its own logging
 			// about the eventual outcome, so we don't
 			// need to.)
-			sorted[i].SchedulingStatus = "waiting for new instance to be ready"
+			sorted[i].SchedulingStatus = schedStatusWaitingNewInstance
 			logger.Info("creating new instance")
 			// Don't bother trying to start the container
 			// yet -- obviously the instance will take
@@ -337,9 +348,9 @@ tryrun:
 
 	var qreason string
 	if sch.pool.AtQuota() {
-		qreason = "waiting for cloud resources"
+		qreason = schedStatusWaitingCloudResources
 	} else {
-		qreason = "waiting while cluster is running at capacity"
+		qreason = schedStatusWaitingClusterCapacity
 	}
 	for i, ent := range sorted {
 		if ent.SchedulingStatus == "" && (ent.Container.State == arvados.ContainerStateQueued || ent.Container.State == arvados.ContainerStateLocked) {
