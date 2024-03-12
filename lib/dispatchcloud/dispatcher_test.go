@@ -404,7 +404,7 @@ func (s *DispatcherSuite) TestManagementAPI_Containers(c *check.C) {
 		Items []queueEnt
 	}
 	getContainers := func() containersResponse {
-		sQueueRefresh = time.Millisecond
+		schedQueueRefresh = time.Millisecond
 		req := httptest.NewRequest("GET", "/arvados/v1/dispatch/containers", nil)
 		req.Header.Set("Authorization", "Bearer abcdefgh")
 		resp := httptest.NewRecorder()

@@ -69,13 +69,13 @@ type dispatcher struct {
 	stop      chan struct{}
 	stopped   chan struct{}
 
-	sQueueMtx       sync.Mutex
-	sQueueRefreshed time.Time
-	sQueue          []scheduler.QueueEnt
-	sQueueMap       map[string]scheduler.QueueEnt
+	schedQueueMtx       sync.Mutex
+	schedQueueRefreshed time.Time
+	schedQueue          []scheduler.QueueEnt
+	schedQueueMap       map[string]scheduler.QueueEnt
 }
 
-var sQueueRefresh = time.Second
+var schedQueueRefresh = time.Second
 
 // Start starts the dispatcher. Start can be called multiple times
 // with no ill effect.
@@ -221,23 +221,23 @@ func (disp *dispatcher) run() {
 }
 
 // Get a snapshot of the scheduler's queue, no older than
-// sQueueRefresh.
+// schedQueueRefresh.
 //
 // First return value is in the sorted order used by the scheduler.
 // Second return value is a map of the same entries, for efficiently
 // looking up a single container.
-func (disp *dispatcher) sQueueCurrent() ([]scheduler.QueueEnt, map[string]scheduler.QueueEnt) {
-	disp.sQueueMtx.Lock()
-	defer disp.sQueueMtx.Unlock()
-	if time.Since(disp.sQueueRefreshed) > sQueueRefresh {
-		disp.sQueue = disp.sched.Queue()
-		disp.sQueueMap = make(map[string]scheduler.QueueEnt)
-		for _, ent := range disp.sQueue {
-			disp.sQueueMap[ent.Container.UUID] = ent
+func (disp *dispatcher) schedQueueCurrent() ([]scheduler.QueueEnt, map[string]scheduler.QueueEnt) {
+	disp.schedQueueMtx.Lock()
+	defer disp.schedQueueMtx.Unlock()
+	if time.Since(disp.schedQueueRefreshed) > schedQueueRefresh {
+		disp.schedQueue = disp.sched.Queue()
+		disp.schedQueueMap = make(map[string]scheduler.QueueEnt)
+		for _, ent := range disp.schedQueue {
+			disp.schedQueueMap[ent.Container.UUID] = ent
 		}
-		disp.sQueueRefreshed = time.Now()
+		disp.schedQueueRefreshed = time.Now()
 	}
-	return disp.sQueue, disp.sQueueMap
+	return disp.schedQueue, disp.schedQueueMap
 }
 
 // Management API: scheduling queue entries for all active and queued
@@ -246,13 +246,13 @@ func (disp *dispatcher) apiContainers(w http.ResponseWriter, r *http.Request) {
 	var resp struct {
 		Items []scheduler.QueueEnt `json:"items"`
 	}
-	resp.Items, _ = disp.sQueueCurrent()
+	resp.Items, _ = disp.schedQueueCurrent()
 	json.NewEncoder(w).Encode(resp)
 }
 
 // Management API: scheduling queue entry for a specified container.
 func (disp *dispatcher) apiContainer(w http.ResponseWriter, r *http.Request) {
-	_, sq := disp.sQueueCurrent()
+	_, sq := disp.schedQueueCurrent()
 	ent, ok := sq[r.FormValue("container_uuid")]
 	if !ok {
 		httpserver.Error(w, "container not found", http.StatusNotFound)
