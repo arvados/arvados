@@ -101,10 +101,11 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (projectUuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
-            await dispatch<any>(loadPublicFavoritesTree());
+            const unverifiedPubFaves = await dispatch<any>(loadPublicFavoritesTree());
+            verifyAndUpdateLinkNames(unverifiedPubFaves, dispatch, getState, services);
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
-            const unverifiedLinks = await dispatch<any>(loadFavoritesTree());
-            verifyAndUpdateLinkNames(unverifiedLinks, dispatch, getState, services);
+            const unverifiedFaves = await dispatch<any>(loadFavoritesTree());
+            verifyAndUpdateLinkNames(unverifiedFaves, dispatch, getState, services);
         } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
         }
@@ -188,7 +189,7 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
         limit: SIDEPANEL_TREE_NODE_LIMIT,
     };
 
-    const items = (await services.linkService.list(params)).items;
+    const { items } = await services.linkService.list(params);
 
     const uuids = items.map(it => it.headUuid);
     const groupItems: any = await services.groupsService.list({
@@ -214,11 +215,6 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
 
     const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
 
-    // for(const item of filteredItems) {
-    //     const verifiedName = await verifyAndUpdateLinkName(item, dispatch, getState, services);
-    //     item.name = verifiedName;
-    // }
-
     dispatch(
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: SidePanelTreeCategory.PUBLIC_FAVORITES,
@@ -227,7 +223,7 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
         })
     );
 
-    dispatch(resourcesActions.SET_RESOURCES(responseItems));
+    return filteredItems;
 };
 
 export const activateSidePanelTreeItem = (id: string) =>
