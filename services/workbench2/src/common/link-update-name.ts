@@ -11,7 +11,7 @@ import { Resource, extractUuidKind } from 'models/resource';
 type NameableResource = Resource & { name?: string };
 
 export const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<LinkResource> => {
-    //check if head resource is already in the store
+    //head resource should already be in the store
     let headResource: Resource | undefined = getState().resources[link.headUuid];
     //if not, fetch it
     if (!headResource) {
@@ -31,6 +31,7 @@ export const verifyAndUpdateLink = async (link: LinkResource, dispatch: Dispatch
 };
 
 export const verifyAndUpdateLinks = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    
     const updatedLinks = links.map((link) => verifyAndUpdateLink(link, dispatch, getState, services));
         return Promise.all(updatedLinks);
 };

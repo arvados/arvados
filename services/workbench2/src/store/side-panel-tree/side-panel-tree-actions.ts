@@ -105,6 +105,7 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
             verifyAndUpdateLinkNames(unverifiedPubFaves, dispatch, getState, services);
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
             const unverifiedFaves = await dispatch<any>(loadFavoritesTree());
+            await setFaves(unverifiedFaves, dispatch, getState, services);
             verifyAndUpdateLinkNames(unverifiedFaves, dispatch, getState, services);
         } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
@@ -158,6 +159,37 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
     );
 
     return items;
+};
+
+const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+
+    const responseLinks = await services.linkService.list({
+        filters: new FilterBuilder()
+            .addEqual("link_class", LinkClass.STAR)
+            .addEqual('tail_uuid', getUserUuid(getState()))
+            .addEqual('tail_kind', ResourceKind.USER)
+            .getFilters()
+    }).then(results => results);
+    const uuids = responseLinks.items.map(it => it.headUuid);
+    const groupItems: any = await services.groupsService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .getFilters()
+    });
+    const collectionItems: any = await services.collectionService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .getFilters()
+    });
+    const processItems: any = await services.containerRequestService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .getFilters()
+    });
+    const responseItems = groupItems.items.concat(collectionItems.items).concat(processItems.items);
+
+    //setting resources here so they won't be re-fetched in validation step
+    dispatch(resourcesActions.SET_RESOURCES(responseItems));
 };
 
 const verifyAndUpdateLinkNames = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -222,6 +254,9 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
             nodes: filteredItems.map(item => initTreeNode({ id: item.headUuid, value: item })),
         })
     );
+
+    //setting resources here so they won't be re-fetched in validation step
+    dispatch(resourcesActions.SET_RESOURCES(responseItems));
 
     return filteredItems;
 };
