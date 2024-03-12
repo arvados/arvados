@@ -32,7 +32,7 @@ Return a list of containers that are either ready to dispatch, or being started/
 Each entry in the returned list of @items@ includes:
 * an @instance_type@ entry with the name and attributes of the instance type that will be used to schedule the container (chosen from the @InstanceTypes@ section of your cluster config file); and
 * a @container@ entry with selected attributes of the container itself, including @uuid@, @priority@, @runtime_constraints@, and @state@. Other fields of the container records are not loaded by the dispatcher, and will have empty/zero values here (e.g., @{...,"created_at":"0001-01-01T00:00:00Z","command":[],...}@).
-* a @scheduling_status@ entry: a brief explanation of the container's status in the dispatch queue, or empty if scheduling is not applicable, e.g., the container has already started running.
+* a @scheduling_status@ field with a brief explanation of the container's status in the dispatch queue, or the empty string if scheduling is not applicable, e.g., the container has already started running.
 
 Example response:
 
