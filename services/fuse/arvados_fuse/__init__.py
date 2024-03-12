@@ -77,7 +77,6 @@ import arvados.keep
 from prometheus_client import Summary
 import queue
 
-
 LLFUSE_VERSION_0 = llfuse.__version__.startswith('0')
 
 from .fusedir import Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
@@ -86,10 +85,10 @@ from .fusefile import StringFile, FuseArvadosFile
 _logger = logging.getLogger('arvados.arvados_fuse')
 
 # Uncomment this to enable llfuse debug logging.
-# log_handler = logging.StreamHandler()
-# llogger = logging.getLogger('llfuse')
-# llogger.addHandler(log_handler)
-# llogger.setLevel(logging.DEBUG)
+#log_handler = logging.StreamHandler()
+llogger = logging.getLogger('llfuse')
+#llogger.addHandler(log_handler)
+llogger.setLevel(logging.DEBUG)
 
 class Handle(object):
     """Connects a numeric file handle to a File or Directory object that has
@@ -287,17 +286,16 @@ class Inodes(object):
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
     def _inode_remove(self):
-        locked_ops = []
+        locked_ops = collections.deque()
         while True:
             try:
-                locked_ops.clear()
-
                 entry = self._inode_remove_queue.get(True)
                 if entry is None:
                     return
                 # Process this entry
                 _logger.debug("_inode_remove %s", entry)
-                self._inode_op(entry, locked_ops)
+                if self._inode_op(entry, locked_ops):
+                    self._inode_remove_queue.task_done()
 
                 # Drain the queue of any other entries
                 while True:
@@ -306,13 +304,15 @@ class Inodes(object):
                         if entry is None:
                             return
                         _logger.debug("_inode_remove %s", entry)
-                        self._inode_op(entry, locked_ops)
+                        if self._inode_op(entry, locked_ops):
+                            self._inode_remove_queue.task_done()
                     except queue.Empty:
                         break
 
                 with llfuse.lock:
-                    for lk in locked_ops:
-                        self._inode_op(entry, None)
+                    while len(locked_ops) > 0:
+                        if self._inode_op(locked_ops.popleft(), None):
+                            self._inode_remove_queue.task_done()
                     for entry in self.inode_cache.evict_candidates():
                         self._remove(entry)
             except Exception as e:
@@ -320,25 +320,28 @@ class Inodes(object):
 
     def _inode_op(self, op, locked_ops):
         if self._shutdown_started.is_set():
-            return
+            return True
         if op[0] == "remove":
             if locked_ops is None:
                 self._remove(op[1])
+                return True
             else:
                 locked_ops.append(op)
+                return False
         if op[0] == "invalidate_inode":
             _logger.debug("sending invalidate inode %i", op[1])
             llfuse.invalidate_inode(op[1])
+            return True
         if op[0] == "invalidate_entry":
             _logger.debug("sending invalidate to inode %i entry %s", op[1], op[2])
             llfuse.invalidate_entry(op[1], op[2])
+            return True
         if op[0] == "evict_candidates":
-            pass
+            return True
 
     def wait_remove_queue_empty(self):
         # used by tests
-        while not self._inode_remove_queue.empty():
-            time.sleep(.1)
+        self._inode_remove_queue.join()
 
     def _remove(self, entry):
         try:
@@ -362,7 +365,7 @@ class Inodes(object):
 
             forget_inode = True
             parent = self._entries.get(entry.parent_inode)
-            if parent is not None and parent.has_ref():
+            if (parent is not None and parent.has_ref()) or entry.inode == llfuse.ROOT_INODE:
                 # the parent is still referenced, so we'll keep the
                 # entry but wipe out the stuff under it
                 forget_inode = False
@@ -404,10 +407,15 @@ class Inodes(object):
             # inode and hasn't yet forgotten about it.
             self._inode_remove_queue.put(("invalidate_entry", entry.inode, native(name.encode(self.encoding))))
 
-    def clear(self):
+    def begin_shutdown(self):
         self._inode_remove_queue.put(None)
-        with llfuse.lock_released:
+        if self._inode_remove_thread is not None:
             self._inode_remove_thread.join()
+        self._inode_remove_thread = None
+
+    def clear(self):
+        with llfuse.lock_released:
+            self.begin_shutdown()
 
         self.inode_cache.clear()
 
@@ -555,23 +563,42 @@ class Operations(llfuse.Operations):
     def metric_count_func(self, opname):
         return lambda: int(self.metric_value(opname, "arvmount_fuse_operations_seconds_count"))
 
+    def begin_shutdown(self):
+        self._shutdown_started.set()
+        self.inodes.begin_shutdown()
+
     @destroy_time.time()
     @catch_exceptions
     def destroy(self):
-        self._shutdown_started.set()
-        if self.events:
-            self.events.close()
-            self.events = None
+        try:
+            _logger.error("arv-mount destroy: start")
 
-        # Different versions of llfuse require and forbid us to
-        # acquire the lock here. See #8345#note-37, #10805#note-9.
-        if LLFUSE_VERSION_0 and llfuse.lock.acquire():
-            # llfuse < 0.42
-            self.inodes.clear()
-            llfuse.lock.release()
-        else:
-            # llfuse >= 0.42
-            self.inodes.clear()
+            self.begin_shutdown()
+            _logger.error("arv-mount destroy start1.1")
+
+            if self.events:
+                _logger.error("arv-mount destroy start1.2")
+                self.events.close()
+                self.events = None
+
+            _logger.error("arv-mount destroy start2")
+
+            # Different versions of llfuse require and forbid us to
+            # acquire the lock here. See #8345#note-37, #10805#note-9.
+            if LLFUSE_VERSION_0 and llfuse.lock.acquire():
+                # llfuse < 0.42
+                _logger.error("arv-mount destroy start3")
+                self.inodes.clear()
+                llfuse.lock.release()
+            else:
+                # llfuse >= 0.42
+                _logger.error("arv-mount destroy start4")
+                self.inodes.clear()
+
+            _logger.error("arv-mount destroy: complete")
+        except Exception as e:
+            _logger.exception("Error during destroy")
+
 
     def access(self, inode, mode, ctx):
         return True
@@ -704,6 +731,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def forget(self, inodes):
         if self._shutdown_started.is_set():
+            _logger.debug("arv-mount forget: shutdown_started.is_set")
             return
         for inode, nlookup in inodes:
             ent = self.inodes[inode]

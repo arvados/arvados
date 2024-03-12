@@ -37,14 +37,16 @@ class CacheTest(IntegrationTest):
 
     @staticmethod
     def _test_cache_spill(self, mnt, pdh):
+        logging.error("################################################################## WAH WAH1")
         for i,v in enumerate(pdh):
             j = os.path.join(mnt, "by_id", v, "blurg%i" % i)
             self.assertTrue(os.path.exists(j))
             j = os.path.join(mnt, "by_id", v, "dir%i/blurg" % i)
             self.assertTrue(os.path.exists(j))
-
+        logging.error("################################################################## WAH WAH2")
         for i,v in enumerate(pdh):
             j = os.path.join(mnt, "by_id", v, "blurg%i" % i)
             self.assertTrue(os.path.exists(j))
             j = os.path.join(mnt, "by_id", v, "dir%i/blurg" % i)
             self.assertTrue(os.path.exists(j))
+        logging.error("################################################################## WAH WAH3")

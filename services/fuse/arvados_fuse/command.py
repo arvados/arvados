@@ -478,4 +478,8 @@ From here, the following directories are available:
         except:
             llfuse.close(unmount=False)
             raise
+        self.logger.error('calling begin_shutdown')
+        self.operations.begin_shutdown()
+        time.sleep(1)
+        self.logger.error('calling llfuse.close')
         llfuse.close()
