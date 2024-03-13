@@ -863,7 +863,7 @@ Clusters:
         # OpenID claim field containing the email verification
         # flag. Normally "email_verified".  To accept every returned
         # email address without checking a "verified" field at all,
-        # use the empty string "".
+        # use an empty string "".
         EmailVerifiedClaim: "email_verified"
 
         # OpenID claim field containing the user's preferred
@@ -1561,7 +1561,7 @@ Clusters:
         # container runner/supervisor. The default value is the
         # dispatcher program itself.
         #
-        # Use the empty string to disable this step: nothing will be
+        # Use an empty string to disable this step: nothing will be
         # copied, and cloud instances are assumed to have a suitable
         # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
