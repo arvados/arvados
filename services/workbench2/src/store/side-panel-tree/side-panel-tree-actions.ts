@@ -163,25 +163,21 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
 
 const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
-    const responseLinks = await services.linkService.list({
-        filters: new FilterBuilder()
-            .addEqual("link_class", LinkClass.STAR)
-            .addEqual('tail_uuid', getUserUuid(getState()))
-            .addEqual('tail_kind', ResourceKind.USER)
-            .getFilters()
-    }).then(results => results);
-    const uuids = responseLinks.items.map(it => it.headUuid);
+    const uuids = links.map(it => it.headUuid);
     const groupItems: any = await services.groupsService.list({
+        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
     const collectionItems: any = await services.collectionService.list({
+        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
     const processItems: any = await services.containerRequestService.list({
+        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
@@ -225,18 +221,21 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
 
     const uuids = items.map(it => it.headUuid);
     const groupItems: any = await services.groupsService.list({
+        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
     const collectionItems: any = await services.collectionService.list({
+        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
     const processItems: any = await services.containerRequestService.list({
+        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
