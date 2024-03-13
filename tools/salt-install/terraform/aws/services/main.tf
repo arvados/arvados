@@ -67,7 +67,10 @@ resource "aws_instance" "arvados_service" {
     volume_type = "gp3"
     volume_size = try(var.instance_volume_size[each.value], var.instance_volume_size.default)
   }
-
+  metadata_options {
+    # Sets IMDSv2 to required. Default is "optional".
+    http_tokens = "required"
+  }
   lifecycle {
     ignore_changes = [
       # Avoids recreating the instance when the latest AMI changes.
