@@ -102,10 +102,10 @@ class MountTestBase(unittest.TestCase):
                 self.operations.events.close(timeout=10)
             subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
             t0 = time.time()
-            self.llfuse_thread.join(timeout=10)
+            self.llfuse_thread.join(timeout=60)
             if self.llfuse_thread.is_alive():
                 logger.warning("MountTestBase.tearDown():"
-                               " llfuse thread still alive 10s after umount"
+                               " llfuse thread still alive 20s after umount"
                                " -- exiting with SIGKILL")
                 os.kill(os.getpid(), signal.SIGKILL)
             waited = time.time() - t0

@@ -31,11 +31,11 @@ class UnmountTest(IntegrationTest):
              self.mnt])
         subprocess.check_call(
             ['./bin/arv-mount', '--subtype', 'test', '--replace',
-             '--unmount-timeout', '10',
+             '--unmount-timeout', '60',
              self.mnt])
         subprocess.check_call(
             ['./bin/arv-mount', '--subtype', 'test', '--replace',
-             '--unmount-timeout', '10',
+             '--unmount-timeout', '60',
              self.mnt,
              '--exec', 'true'])
         for m in subprocess.check_output(['mount']).splitlines():

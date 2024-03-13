@@ -85,10 +85,10 @@ from .fusefile import StringFile, FuseArvadosFile
 _logger = logging.getLogger('arvados.arvados_fuse')
 
 # Uncomment this to enable llfuse debug logging.
-#log_handler = logging.StreamHandler()
-llogger = logging.getLogger('llfuse')
-#llogger.addHandler(log_handler)
-llogger.setLevel(logging.DEBUG)
+# log_handler = logging.StreamHandler()
+# llogger = logging.getLogger('llfuse')
+# llogger.addHandler(log_handler)
+# llogger.setLevel(logging.DEBUG)
 
 class Handle(object):
     """Connects a numeric file handle to a File or Directory object that has
@@ -570,34 +570,25 @@ class Operations(llfuse.Operations):
     @destroy_time.time()
     @catch_exceptions
     def destroy(self):
-        try:
-            _logger.error("arv-mount destroy: start")
+        _logger.debug("arv-mount destroy: start")
 
-            self.begin_shutdown()
-            _logger.error("arv-mount destroy start1.1")
+        self.begin_shutdown()
 
-            if self.events:
-                _logger.error("arv-mount destroy start1.2")
-                self.events.close()
-                self.events = None
+        if self.events:
+            self.events.close()
+            self.events = None
 
-            _logger.error("arv-mount destroy start2")
+        # Different versions of llfuse require and forbid us to
+        # acquire the lock here. See #8345#note-37, #10805#note-9.
+        if LLFUSE_VERSION_0 and llfuse.lock.acquire():
+            # llfuse < 0.42
+            self.inodes.clear()
+            llfuse.lock.release()
+        else:
+            # llfuse >= 0.42
+            self.inodes.clear()
 
-            # Different versions of llfuse require and forbid us to
-            # acquire the lock here. See #8345#note-37, #10805#note-9.
-            if LLFUSE_VERSION_0 and llfuse.lock.acquire():
-                # llfuse < 0.42
-                _logger.error("arv-mount destroy start3")
-                self.inodes.clear()
-                llfuse.lock.release()
-            else:
-                # llfuse >= 0.42
-                _logger.error("arv-mount destroy start4")
-                self.inodes.clear()
-
-            _logger.error("arv-mount destroy: complete")
-        except Exception as e:
-            _logger.exception("Error during destroy")
+        _logger.debug("arv-mount destroy: complete")
 
 
     def access(self, inode, mode, ctx):
@@ -731,7 +722,6 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def forget(self, inodes):
         if self._shutdown_started.is_set():
-            _logger.debug("arv-mount forget: shutdown_started.is_set")
             return
         for inode, nlookup in inodes:
             ent = self.inodes[inode]

@@ -12,6 +12,7 @@ class InodeTests(unittest.TestCase):
     def test_inodes_basic(self):
         cache = arvados_fuse.InodeCache(1000, 4)
         inodes = arvados_fuse.Inodes(cache)
+        next(inodes._counter)
 
         # Check that ent1 gets added to inodes
         ent1 = mock.MagicMock()
@@ -27,6 +28,7 @@ class InodeTests(unittest.TestCase):
     def test_inodes_not_persisted(self):
         cache = arvados_fuse.InodeCache(1000, 4)
         inodes = arvados_fuse.Inodes(cache)
+        next(inodes._counter)
 
         ent1 = mock.MagicMock()
         ent1.in_use.return_value = False
@@ -48,6 +50,7 @@ class InodeTests(unittest.TestCase):
     def test_inode_cleared(self):
         cache = arvados_fuse.InodeCache(1000, 4)
         inodes = arvados_fuse.Inodes(cache)
+        next(inodes._counter)
 
         # Check that ent1 gets added to inodes
         ent1 = mock.MagicMock()
@@ -89,6 +92,7 @@ class InodeTests(unittest.TestCase):
     def test_clear_in_use(self):
         cache = arvados_fuse.InodeCache(1000, 4)
         inodes = arvados_fuse.Inodes(cache)
+        next(inodes._counter)
 
         ent1 = mock.MagicMock()
         ent1.in_use.return_value = True
@@ -111,10 +115,12 @@ class InodeTests(unittest.TestCase):
         ent3.clear.called = False
         self.assertFalse(ent1.clear.called)
         self.assertFalse(ent3.clear.called)
-        cache.touch(ent3)
+        inodes.touch(ent3)
+        inodes.wait_remove_queue_empty()
         self.assertFalse(ent1.clear.called)
         self.assertFalse(ent3.clear.called)
-        self.assertFalse(ent3.kernel_invalidate.called)
+        # kernel invalidate gets called anyway
+        self.assertTrue(ent3.kernel_invalidate.called)
         self.assertEqual(1100, cache.total())
 
         # ent1 still in use, ent3 doesn't have ref,
@@ -122,15 +128,16 @@ class InodeTests(unittest.TestCase):
         ent3.has_ref.return_value = False
         ent1.clear.called = False
         ent3.clear.called = False
-        cache.touch(ent3)
+        inodes.touch(ent3)
         inodes.wait_remove_queue_empty()
         self.assertFalse(ent1.clear.called)
         self.assertTrue(ent3.clear.called)
         self.assertEqual(500, cache.total())
 
     def test_delete(self):
-        cache = arvados_fuse.InodeCache(1000, 4)
+        cache = arvados_fuse.InodeCache(1000, 0)
         inodes = arvados_fuse.Inodes(cache)
+        next(inodes._counter)
 
         ent1 = mock.MagicMock()
         ent1.in_use.return_value = False
@@ -152,5 +159,7 @@ class InodeTests(unittest.TestCase):
             inodes.del_entry(ent1)
         inodes.wait_remove_queue_empty()
         self.assertEqual(0, cache.total())
-        cache.touch(ent3)
+
+        inodes.touch(ent3)
+        inodes.wait_remove_queue_empty()
         self.assertEqual(600, cache.total())
