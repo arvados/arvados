@@ -165,19 +165,16 @@ const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () =
 
     const uuids = links.map(it => it.headUuid);
     const groupItems: any = await services.groupsService.list({
-        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
     const collectionItems: any = await services.collectionService.list({
-        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
     const processItems: any = await services.containerRequestService.list({
-        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
@@ -221,21 +218,18 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
 
     const uuids = items.map(it => it.headUuid);
     const groupItems: any = await services.groupsService.list({
-        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
     const collectionItems: any = await services.collectionService.list({
-        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
     const processItems: any = await services.containerRequestService.list({
-        select: ['uuid', 'name'],
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
