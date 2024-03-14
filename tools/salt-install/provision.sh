@@ -615,6 +615,7 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
   echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
   echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+  echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
 
   # Pillars
   echo "    - docker" >> ${PILLARS_TOP}
