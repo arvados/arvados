@@ -921,6 +921,33 @@ const _resourceWithName = withStyles(
     );
 });
 
+const _resourceWithNameWrap = withStyles(
+    {},
+    { withTheme: true }
+)((props: { uuid: string; userFullname: string; dispatch: Dispatch; theme: ArvadosTheme }) => {
+    const { uuid, userFullname, dispatch, theme } = props;
+    if (userFullname === "") {
+        dispatch<any>(loadResource(uuid, false));
+        return (
+            <Typography
+                style={{ color: theme.palette.primary.main }}
+                inline
+            >
+                {uuid}
+            </Typography>
+        );
+    }
+
+    return (
+        <Typography
+            style={{ color: theme.palette.primary.main }}
+            inline
+        >
+            {userFullname} ({uuid})
+        </Typography>
+    );
+});
+
 const _resourceWithNameLink = withStyles(
     {},
     { withTheme: true }
@@ -948,6 +975,8 @@ export const ResourceOwnerWithNameLink = ownerFromResourceId(_resourceWithNameLi
 export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);
+
+export const ResourceWithNameWrap = userFromID(_resourceWithNameWrap);
 
 export const UserNameFromID = compose(userFromID)((props: { uuid: string; displayAsText?: string; userFullname: string; dispatch: Dispatch }) => {
     const { uuid, userFullname, dispatch } = props;
