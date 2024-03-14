@@ -915,6 +915,10 @@ else
         if [[ "${R}" != "webshell" && "${R}" != "workbench" ]]; then
           grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
         fi
+        # Make sure wb1's package get uninstalled
+        if [[ "${R}" == "workbench" ]]; then
+          grep -q "workbench1_uninstall" ${STATES_TOP} || echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
+        fi
 
         ### Pillars ###
         grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
