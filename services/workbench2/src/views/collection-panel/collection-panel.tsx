@@ -34,7 +34,7 @@ import { UserResource } from 'models/user';
 import { getUserUuid } from 'common/getuser';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
-import { ResourceWithNameWrap, ResponsiblePerson } from 'views-components/data-explorer/renderers';
+import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
@@ -307,7 +307,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Owner' linkToUuid={item.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceWithNameWrap uuid={uuid} />} />
+                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
         </Grid>
         <div data-cy="responsible-person-wrapper" ref={responsiblePersonRef}>
             <Grid item xs={12} md={12}>

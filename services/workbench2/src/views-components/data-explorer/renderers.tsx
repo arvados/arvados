@@ -903,35 +903,6 @@ const _resourceWithName = withStyles(
             <Typography
                 style={{ color: theme.palette.primary.main }}
                 inline
-                noWrap
-            >
-                {uuid}
-            </Typography>
-        );
-    }
-
-    return (
-        <Typography
-            style={{ color: theme.palette.primary.main }}
-            inline
-            noWrap
-        >
-            {userFullname} ({uuid})
-        </Typography>
-    );
-});
-
-const _resourceWithNameWrap = withStyles(
-    {},
-    { withTheme: true }
-)((props: { uuid: string; userFullname: string; dispatch: Dispatch; theme: ArvadosTheme }) => {
-    const { uuid, userFullname, dispatch, theme } = props;
-    if (userFullname === "") {
-        dispatch<any>(loadResource(uuid, false));
-        return (
-            <Typography
-                style={{ color: theme.palette.primary.main }}
-                inline
             >
                 {uuid}
             </Typography>
@@ -976,7 +947,6 @@ export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);
 
-export const ResourceWithNameWrap = userFromID(_resourceWithNameWrap);
 
 export const UserNameFromID = compose(userFromID)((props: { uuid: string; displayAsText?: string; userFullname: string; dispatch: Dispatch }) => {
     const { uuid, userFullname, dispatch } = props;
