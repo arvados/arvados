@@ -947,7 +947,6 @@ export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);
 
-
 export const UserNameFromID = compose(userFromID)((props: { uuid: string; displayAsText?: string; userFullname: string; dispatch: Dispatch }) => {
     const { uuid, userFullname, dispatch } = props;
 
