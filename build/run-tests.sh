@@ -1058,6 +1058,9 @@ install_deps() {
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install services/api
+    # lib/controller integration tests depend on arv-mount to run
+    # containers.
+    do_install services/fuse pip "${VENV3DIR}/bin/"
     do_install services/keepproxy go
     do_install services/keep-web go
 }

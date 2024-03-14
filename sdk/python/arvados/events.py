@@ -162,7 +162,7 @@ class EventClient(threading.Thread):
           disconnecting. Default 1000.
 
         * reason: str --- The WebSocket close reason sent to the server when
-          disconnecting. Default is the empty string.
+          disconnecting. Default is an empty string.
 
         * timeout: float --- How long to wait for the WebSocket server to
           acknowledge the disconnection, in seconds. Default 0, which means
