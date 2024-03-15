@@ -79,6 +79,7 @@ import { sidePanelReducer } from "./side-panel/side-panel-reducer";
 import { bannerReducer } from "./banner/banner-reducer";
 import { multiselectReducer } from "./multiselect/multiselect-reducer";
 import { composeWithDevTools } from "redux-devtools-extension";
+import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
 
 declare global {
     interface Window {
@@ -182,6 +183,7 @@ const createRootReducer = (services: ServiceRepository) =>
         properties: propertiesReducer,
         resources: resourcesReducer,
         router: routerReducer,
+        selectedResource: selectedResourceReducer,
         snackbar: snackbarReducer,
         treePicker: treePickerReducer,
         treePickerSearch: treePickerSearchReducer,
