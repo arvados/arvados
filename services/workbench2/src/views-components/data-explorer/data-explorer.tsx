@@ -12,8 +12,8 @@ import { DataColumn } from "components/data-table/data-column";
 import { DataColumns, TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 import { LAST_REFRESH_TIMESTAMP } from "components/refresh-button/refresh-button";
-import { toggleMSToolbar, setCheckedListOnStore, setSelectedUuid, isExactlyOneSelected } from "store/multiselect/multiselect-actions";
-import { DetailsPanelState } from "store/details-panel/details-panel-reducer";
+import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
+import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 
 interface Props {
     id: string;
@@ -23,34 +23,11 @@ interface Props {
     extractKey?: (item: any) => React.Key;
 }
 
-const getCurrentItemUuid = (
-    currentRoute: string,
-    workflowPanelDetailsUuid: string,
-    isDetailsResourceChecked: boolean,
-    isOnlyOneSelected: boolean,
-    detailsPanel: DetailsPanelState,
-    multiselectSelectedUuid: string
-) => {
-    if(currentRoute === '/workflows') {
-        return workflowPanelDetailsUuid;
-    }
-    if(isDetailsResourceChecked && isOnlyOneSelected) {
-        return detailsPanel.resourceUuid;
-    }
-    if(!detailsPanel.isOpened){
-        return multiselectSelectedUuid;
-    }
-    return detailsPanel.resourceUuid;
-};
-
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, properties, selectedResourceUuid}: RootState, { id }: Props) => {
     const progress = progressIndicator.find(p => p.id === id);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || "";
-    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
-    const isOnlyOneSelected = Object.values(multiselect.checkedList).filter(x => x === true).length === 1;
-    const currentItemUuid = getCurrentItemUuid(currentRoute, properties.workflowPanelDetailsUuid, isDetailsResourceChecked, isOnlyOneSelected, detailsPanel, multiselect.selectedUuid);
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
@@ -58,7 +35,8 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
         currentRefresh: currentRefresh,
         currentRoute: currentRoute,
         paperKey: currentRoute,
-        currentItemUuid,
+        currentRouteUuid: properties.currentRouteUuid,
+        selectedResourceUuid: selectedResourceUuid,
         isMSToolbarVisible,
         checkedList: multiselect.checkedList,
     };
@@ -106,11 +84,10 @@ const mapDispatchToProps = () => {
             dispatch<any>(setCheckedListOnStore(checkedList));
         },
 
-        setSelectedUuid: (checkedList: TCheckedList) => {
-            dispatch<any>(setSelectedUuid(isExactlyOneSelected(checkedList)))
+        setSelectedUuid: (uuid: string) => {
+            dispatch<any>(setSelectedResourceUuid(uuid));
         },
         
-
         onRowClick,
 
         onRowDoubleClick,

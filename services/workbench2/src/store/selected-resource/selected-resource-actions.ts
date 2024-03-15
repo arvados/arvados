@@ -11,7 +11,7 @@ type SelectedResourceAction = {
     payload: string;
 };
 
-export const setSelectedResource = (resourceUuid: string): SelectedResourceAction => ({
+export const setSelectedResourceUuid = (resourceUuid: string): SelectedResourceAction => ({
     type: selectedResourceActions.SET_SELECTED_RESOURCE,
     payload: resourceUuid
 });

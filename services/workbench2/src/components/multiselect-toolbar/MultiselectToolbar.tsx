@@ -76,7 +76,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
-    selectedResource: string | null;
+    selectedResourceUuid: string | null;
     iconProps: IconProps
     user: User | null
     disabledButtons: Set<string>
@@ -96,8 +96,8 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, selectedResource, location } = props;
-        const singleResourceKind = selectedResource ? [resourceToMsResourceKind(selectedResource, iconProps.resources, user)] : null
+        const { classes, checkedList, iconProps, user, disabledButtons, selectedResourceUuid, location } = props;
+        const singleResourceKind = selectedResourceUuid ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = location.includes("/trash");
         const [isTransitioning, setIsTransitioning] = useState(false);
@@ -122,7 +122,7 @@ export const MultiselectToolbar = connect(
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
                 : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
-                        selectedResource === null ? action.isForMulti : true
+                        selectedResourceUuid === null ? action.isForMulti : true
                     );
 
         return (
@@ -140,7 +140,7 @@ export const MultiselectToolbar = connect(
                                 <Tooltip
                                     className={classes.button}
                                     data-targetid={name}
-                                    title={currentPathIsTrash || (useAlts && useAlts(selectedResource, iconProps)) ? altName : name}
+                                    title={currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}
                                     key={i}
                                     disableFocusListener
                                     >
@@ -148,10 +148,10 @@ export const MultiselectToolbar = connect(
                                         <IconButton
                                             data-cy='multiselect-button'
                                             disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, selectedResource, checkedList, iconProps.resources)}
+                                            onClick={() => props.executeMulti(action, selectedResourceUuid, checkedList, iconProps.resources)}
                                             className={classes.icon}
                                         >
-                                            {currentPathIsTrash || (useAlts && useAlts(selectedResource, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                            {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                         </IconButton>
                                     </span>
                                 </Tooltip>
@@ -167,8 +167,7 @@ export const MultiselectToolbar = connect(
                                         <IconButton
                                             data-cy='multiselect-button'
                                             onClick={() => {
-                                                console.log('executing action', action.name, 'with checkedList', checkedList, 'and iconProps', iconProps.resources)
-                                                props.executeMulti(action, selectedResource, checkedList, iconProps.resources)}}
+                                                props.executeMulti(action, selectedResourceUuid, checkedList, iconProps.resources)}}
                                             className={classes.icon}
                                         >
                                             {action.icon({})}
@@ -328,13 +327,13 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
 //--------------------------------------------------//
 
-function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResource}: RootState) {
+function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResourceUuid}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
         user: auth && auth.user ? auth.user : null,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
-        selectedResource,
+        selectedResourceUuid,
         location: window.location.pathname,
         iconProps: {
             resources,

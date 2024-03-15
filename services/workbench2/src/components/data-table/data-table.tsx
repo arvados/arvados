@@ -50,12 +50,13 @@ export interface DataTableDataProps<I> {
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
-    currentItemUuid?: string;
-    currentRoute?: string;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    currentRoute?: string;
+    currentRouteUuid: string;
     checkedList: TCheckedList;
-    setSelectedUuid: (checkedList: TCheckedList) => void;
+    selectedResourceUuid: string;
+    setSelectedUuid: (uuid: string) => void;
 }
 
 type CssRules =
@@ -163,8 +164,9 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items, setCheckedListOnStore } = this.props;
+            const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
+            const singleSelected = isExactlyOneSelected(this.props.checkedList);
             if (prevProps.items !== items) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items);
@@ -173,8 +175,11 @@ export const DataTable = withStyles(styles)(
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([])
             }
-            if (isExactlyOneSelected(prevProps.checkedList) !== isExactlyOneSelected(this.props.checkedList)) {
-                this.props.setSelectedUuid(this.props.checkedList)
+            if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
+                this.props.setSelectedUuid(singleSelected);
+            }
+            if (!singleSelected) {
+                this.props.setSelectedUuid(currentRouteUuid);
             }
         }
 
@@ -401,7 +406,7 @@ export const DataTable = withStyles(styles)(
         );
 
         renderBodyRow = (item: any, index: number) => {
-            const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
+            const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -410,7 +415,7 @@ export const DataTable = withStyles(styles)(
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={item === currentItemUuid}>
+                    selected={item === selectedResourceUuid}>
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}

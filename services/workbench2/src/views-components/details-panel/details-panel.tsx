@@ -28,8 +28,6 @@ import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from 'store/detai
 import { FileDetails } from 'views-components/details-panel/file-details';
 import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { DetailsPanelState } from 'store/details-panel/details-panel-reducer';
-import { MultiselectToolbarState } from 'store/multiselect/multiselect-reducer';
 import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
@@ -86,27 +84,8 @@ const getItem = (res: DetailsResource): DetailsData => {
     }
 };
 
-const getCurrentItemUuid = (
-    isDetailsResourceChecked: boolean,
-    currentRoute: string,
-    detailsPanel: DetailsPanelState,
-    multiselect: MultiselectToolbarState,
-    currentRouteSplit: string[]
-) => {
-    if (isDetailsResourceChecked || currentRoute.includes('collections') || detailsPanel.isOpened) {
-        return detailsPanel.resourceUuid;
-    }
-    if (!!multiselect.selectedUuid) {
-        return multiselect.selectedUuid;
-    }
-    return currentRouteSplit[currentRouteSplit.length - 1];
-};
-
-const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, multiselect, router }: RootState) => {
-    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid] === true;
-    const currentRoute = router.location ? router.location.pathname : "";
-    const currentRouteSplit = currentRoute.split('/');
-    const currentItemUuid = getCurrentItemUuid(isDetailsResourceChecked, currentRoute, detailsPanel, multiselect, currentRouteSplit);
+const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, selectedResourceUuid: selectedResource }: RootState) => {
+    const currentItemUuid = selectedResource;
     const resource = getResource(currentItemUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
@@ -127,8 +106,6 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
     };
 };
 
-// export const CLOSE_DRAWER = 'CLOSE_DRAWER'
-
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: (currentItemId) => {
         dispatch<any>(toggleDetailsPanel(currentItemId));
@@ -146,7 +123,6 @@ export interface DetailsPanelDataProps {
     tabNr: number;
     res: DetailsResource;
     isFrozen: boolean;
-    currentItemUuid: string;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;

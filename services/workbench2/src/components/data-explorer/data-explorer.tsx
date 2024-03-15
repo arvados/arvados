@@ -95,7 +95,8 @@ interface DataExplorerDataProps<T> {
     title?: React.ReactNode;
     progressBar?: React.ReactNode;
     paperKey?: string;
-    currentItemUuid: string;
+    currentRouteUuid: string;
+    selectedResourceUuid: string;
     elementPath?: string;
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
@@ -116,7 +117,7 @@ interface DataExplorerActionProps<T> {
     extractKey?: (item: T) => React.Key;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
-    setSelectedUuid: (checkedList: TCheckedList) => void;
+    setSelectedUuid: (uuid: string) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -197,7 +198,7 @@ export const DataExplorer = withStyles(styles)(
                 hideSearchInput,
                 paperKey,
                 fetchMode,
-                currentItemUuid,
+                selectedResourceUuid,
                 currentRoute,
                 title,
                 progressBar,
@@ -320,12 +321,13 @@ export const DataExplorer = withStyles(styles)(
                                 working={this.state.showLoading}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
-                                currentItemUuid={currentItemUuid}
                                 currentRoute={paperKey}
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
+                                selectedResourceUuid={selectedResourceUuid}
                                 setSelectedUuid={this.props.setSelectedUuid}
+                                currentRouteUuid={this.props.currentRouteUuid}
                             />
                         </Grid>
                         <Grid

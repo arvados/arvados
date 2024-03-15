@@ -8,14 +8,12 @@ import { TCheckedList } from "components/data-table/data-table";
 export type MultiselectToolbarState = {
     isVisible: boolean;
     checkedList: TCheckedList;
-    selectedUuid: string;
     disabledButtons: string[];
 };
 
 const multiselectToolbarInitialState = {
     isVisible: false,
     checkedList: {},
-    selectedUuid: '',
     disabledButtons: []
 };
 
@@ -49,8 +47,6 @@ export const multiselectReducer = (state: MultiselectToolbarState = multiselectT
             return { ...state, checkedList: uncheckAllOthers(state.checkedList, action.payload) };
         case TOGGLE_ONE:
             return { ...state, checkedList: toggleOneCheck(state.checkedList, action.payload) };
-        case SET_SELECTED_UUID:
-            return {...state, selectedUuid: action.payload || ''}
         case ADD_DISABLED:
             return { ...state, disabledButtons: [...state.disabledButtons, action.payload]}
         case REMOVE_DISABLED:
