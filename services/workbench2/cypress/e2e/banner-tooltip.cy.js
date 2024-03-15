@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Banner / tooltip tests', function () {
+describe.only('Banner / tooltip tests', function () {
     let activeUser;
     let adminUser;
     let collectionUUID;
@@ -67,20 +67,20 @@ describe('Banner / tooltip tests', function () {
         });
     });
 
-    it.only('should re-show the banner', () => {
+    it('should re-show the banner', () => {
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
         cy.get('[title=Notifications]').click({ force: true });
-        cy.waitForDom();
+        cy.wait(3000);
         cy.get('li').contains('Restore Banner').click({ force: true });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
     });
 
 
-    it.only('should show tooltips and remove tooltips as localStorage key is present', () => {
+    it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
