@@ -60,7 +60,7 @@ describe('Banner / tooltip tests', function () {
                 .should('contain', 'tooltips.json');
 
             cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
-                req.reply((res) => {
+                req.on('response', (res) => {
                     res.body.Workbench.BannerUUID = collectionUUID;
                 });
             });
