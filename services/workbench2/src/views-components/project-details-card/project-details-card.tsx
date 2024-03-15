@@ -25,6 +25,7 @@ import { Dispatch } from 'redux';
 import classNames from 'classnames';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
+import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
 
 type CssRules =
     | 'root'
@@ -337,19 +338,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 }
                 action={
-                    <section className={classes.contextMenuSection}>
-                        <Tooltip
-                            title='More options'
-                            disableFocusListener
-                        >
-                            <IconButton
-                                aria-label='More options'
-                                onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
-                            >
-                                <MoreVerticalIcon data-cy='kebab-icon' />
-                            </IconButton>
-                        </Tooltip>
-                    </section>
+                    <MultiselectToolbar inputSelectedUuid={currentResource.uuid} />
+                    // <section className={classes.contextMenuSection}>
+                    //     <Tooltip
+                    //         title='More options'
+                    //         disableFocusListener
+                    //     >
+                    //         <IconButton
+                    //             aria-label='More options'
+                    //             onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+                    //         >
+                    //             <MoreVerticalIcon data-cy='kebab-icon' />
+                    //         </IconButton>
+                    //     </Tooltip>
+                    // </section>
                 }
             />
             <section onClick={(ev) => ev.stopPropagation()}>

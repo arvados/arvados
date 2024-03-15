@@ -83,7 +83,7 @@ export type MultiselectToolbarProps = {
     user: User | null
     disabledButtons: Set<string>
     auth: AuthState;
-    executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, inputSelectedUuid: string | undefined, checkedList: TCheckedList, resources: ResourcesState) => void;
+    executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, inputSelectedUuid: string | null, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 type IconProps = {
@@ -150,7 +150,7 @@ export const MultiselectToolbar = connect(
                                         <IconButton
                                             data-cy='multiselect-button'
                                             disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, undefined, checkedList, iconProps.resources)}
+                                            onClick={() => props.executeMulti(action, singleSelectedUuid, checkedList, iconProps.resources)}
                                             className={classes.icon}
                                         >
                                             {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
@@ -168,7 +168,9 @@ export const MultiselectToolbar = connect(
                                     <span className={classes.iconContainer}>
                                         <IconButton
                                             data-cy='multiselect-button'
-                                            onClick={() => props.executeMulti(action, undefined, checkedList, iconProps.resources)}
+                                            onClick={() => {
+                                                console.log('executing action', action.name, 'with checkedList', checkedList, 'and iconProps', iconProps.resources)
+                                                props.executeMulti(action, singleSelectedUuid, checkedList, iconProps.resources)}}
                                             className={classes.icon}
                                         >
                                             {action.icon({})}
@@ -345,7 +347,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        executeMulti: (selectedAction: ContextMenuAction, inputSelectedUuid: string | undefined, checkedList: TCheckedList, resources: ResourcesState): void => {
+        executeMulti: (selectedAction: ContextMenuAction, inputSelectedUuid: string | null, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = inputSelectedUuid ? groupByKind({[inputSelectedUuid]: true}, resources) : groupByKind(checkedList, resources);
             const currentList = inputSelectedUuid ? [inputSelectedUuid] : selectedToArray(checkedList)
             switch (selectedAction.name) {
