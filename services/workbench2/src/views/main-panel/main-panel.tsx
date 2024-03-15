@@ -11,6 +11,7 @@ import { isWorkbenchLoading } from 'store/workbench/workbench-actions';
 import { LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
 import { matchLinkAccountRoute } from 'routes/routes';
 import { toggleSidePanel } from "store/side-panel/side-panel-action";
+import { propertiesActions } from 'store/properties/properties-actions';
 
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {
@@ -25,7 +26,8 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
         sidePanelIsCollapsed: state.sidePanel.collapsedState,
         isTransitioning: state.detailsPanel.isTransitioning,
-        currentSideWidth: state.sidePanel.currentSideWidth
+        currentSideWidth: state.sidePanel.currentSideWidth,
+        currentRoute: state.router.location ? state.router.location.pathname : '',
     };
 };
 
@@ -33,7 +35,9 @@ const mapDispatchToProps = (dispatch) => {
     return {
         toggleSidePanel: (collapsedState)=>{
             return dispatch(toggleSidePanel(collapsedState))
-        }
+        },
+        setCurrentRouteUuid: (uuid: string) => {
+            return dispatch(propertiesActions.SET_PROPERTY({key: 'currentRouteUuid', value: uuid}))}
     }
 };
 

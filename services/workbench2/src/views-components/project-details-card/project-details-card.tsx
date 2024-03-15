@@ -338,7 +338,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 }
                 action={
-                    <MultiselectToolbar inputSelectedUuid={currentResource.uuid} />
+                    <MultiselectToolbar />
                     // <section className={classes.contextMenuSection}>
                     //     <Tooltip
                     //         title='More options'

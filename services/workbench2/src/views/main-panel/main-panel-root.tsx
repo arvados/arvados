@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Grid, LinearProgress } from '@material-ui/core';
 import { User } from "models/user";
 import { ArvadosTheme } from 'common/custom-theme';
@@ -35,10 +35,12 @@ export interface MainPanelRootDataProps {
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
     currentSideWidth: number;
+    currentRoute: string;
 }
 
 interface MainPanelRootDispatchProps {
-    toggleSidePanel: () => void
+    toggleSidePanel: () => void,
+    setCurrentRouteUuid: (uuid: string) => void;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
@@ -46,7 +48,14 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, loading, working, user, buildInfo, uuidPrefix,
         isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
-        sidePanelIsCollapsed, isTransitioning, currentSideWidth}: MainPanelRootProps) =>{
+        sidePanelIsCollapsed, isTransitioning, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
+
+            useEffect(() => {
+                const splitRoute = currentRoute.split('/');
+                const uuid = splitRoute[splitRoute.length - 1];
+                setCurrentRouteUuid(uuid);
+            }, [currentRoute]);
+
         return loading
             ? <WorkbenchLoadingScreen />
             : <>
