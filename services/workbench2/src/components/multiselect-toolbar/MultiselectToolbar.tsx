@@ -33,7 +33,6 @@ import { CollectionResource } from "models/collection";
 import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
-import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 

@@ -196,7 +196,6 @@ type ProjectCardProps = WithStyles<CssRules> & {
     frozenByFullName: string | undefined;
     isAdmin: boolean;
     isSelected: boolean;
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
     handleCardClick: (resource: any) => void;
 };
 
@@ -229,7 +228,6 @@ export const ProjectDetailsCard = connect(
                         frozenByFullName={frozenByFullName}
                         isAdmin={isAdmin}
                         isSelected={isSelected}
-                        handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                         handleCardClick={handleCardClick}
                     />
                 );
@@ -286,7 +284,7 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
     );
 };
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleContextMenu, handleCardClick, isAdmin, isSelected }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleCardClick, isSelected }) => {
     const { name, description, uuid } = currentResource as ProjectResource;
     const [showDescription, setShowDescription] = React.useState(false);
     const [showProperties, setShowProperties] = React.useState(false);

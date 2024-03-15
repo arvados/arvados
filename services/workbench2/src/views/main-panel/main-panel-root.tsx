@@ -54,6 +54,7 @@ export const MainPanelRoot = withStyles(styles)(
                 const splitRoute = currentRoute.split('/');
                 const uuid = splitRoute[splitRoute.length - 1];
                 setCurrentRouteUuid(uuid);
+                // eslint-disable-next-line react-hooks/exhaustive-deps
             }, [currentRoute]);
 
         return loading
