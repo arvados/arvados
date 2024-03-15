@@ -73,7 +73,7 @@ describe('Banner / tooltip tests', function () {
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
         cy.get('[title=Notifications]').click({ force: true });
-        cy.get('li').contains('Restore Banner').click();
+        cy.get('li').contains('Restore Banner').click({ force: true });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
     });
