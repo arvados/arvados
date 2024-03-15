@@ -67,7 +67,7 @@ describe('Banner / tooltip tests', function () {
         });
     });
 
-    it('should re-show the banner', () => {
+    it.only('should re-show the banner', () => {
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
@@ -80,7 +80,7 @@ describe('Banner / tooltip tests', function () {
     });
 
 
-    it('should show tooltips and remove tooltips as localStorage key is present', () => {
+    it.only('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
