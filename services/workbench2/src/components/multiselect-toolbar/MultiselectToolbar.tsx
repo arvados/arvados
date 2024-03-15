@@ -81,6 +81,7 @@ export type MultiselectToolbarProps = {
     user: User | null
     disabledButtons: Set<string>
     auth: AuthState;
+    location: string;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, inputSelectedUuid: string | null, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -95,10 +96,10 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, selectedResource } = props;
+        const { classes, checkedList, iconProps, user, disabledButtons, selectedResource, location } = props;
         const singleResourceKind = selectedResource ? [resourceToMsResourceKind(selectedResource, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
-        const currentPathIsTrash = window.location.pathname === "/trash";
+        const currentPathIsTrash = location.includes("/trash");
         const [isTransitioning, setIsTransitioning] = useState(false);
         let transitionTimeout;
         
@@ -334,6 +335,7 @@ function mapStateToProps({auth, multiselect, resources, favorites, publicFavorit
         disabledButtons: new Set<string>(multiselect.disabledButtons),
         auth,
         selectedResource,
+        location: window.location.pathname,
         iconProps: {
             resources,
             favorites,
