@@ -12,6 +12,7 @@
 #    it reads _version.py and generates dependencies from it.
 
 import os
+import re
 import runpy
 import subprocess
 import sys
@@ -122,6 +123,22 @@ def get_version(setup_dir=SETUP_DIR, module=MODULE_NAME):
     version = version.replace("~dev", ".dev").replace("~rc", "rc")
     save_version(setup_dir, module, version)
     return version
+
+def iter_dependencies(version=None):
+    if version is None:
+        version = get_version()
+    # A packaged development release should be installed with other
+    # development packages built from the same source, but those
+    # dependencies may have earlier "dev" versions (read: less recent
+    # Git commit timestamps). This compatible version dependency
+    # expresses that as closely as possible. Allowing versions
+    # compatible with .dev0 allows any development release.
+    # Regular expression borrowed partially from
+    # <https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers-regex>
+    dep_ver, match_count = re.subn(r'\.dev(0|[1-9][0-9]*)$', '.dev0', version, 1)
+    dep_op = '~=' if match_count else '=='
+    for dep_pkg in PACKAGE_DEPENDENCY_MAP.get(PACKAGE_NAME, ()):
+        yield f'{dep_pkg}{dep_op}{dep_ver}'
 
 # Called from calculate_python_sdk_cwl_package_versions() in run-library.sh
 if __name__ == '__main__':

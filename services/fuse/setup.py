@@ -10,17 +10,10 @@ import re
 
 from setuptools import setup, find_packages
 
-SETUP_DIR = os.path.dirname(__file__) or '.'
-README = os.path.join(SETUP_DIR, 'README.rst')
-
 import arvados_version
-version = arvados_version.get_version(SETUP_DIR, "arvados_fuse")
-if os.environ.get('ARVADOS_BUILDING_VERSION', False):
-    pysdk_dep = "=={}".format(version)
-else:
-    # On dev releases, arvados-python-client may have a different timestamp
-    pysdk_dep = "<={}".format(version)
+version = arvados_version.get_version()
 short_tests_only = arvados_version.short_tests_only()
+README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 setup(name='arvados_fuse',
       version=version,
@@ -39,7 +32,7 @@ setup(name='arvados_fuse',
           ('share/doc/arvados_fuse', ['agpl-3.0.txt', 'README.rst']),
       ],
       install_requires=[
-        'arvados-python-client{}'.format(pysdk_dep),
+        *arvados_version.iter_dependencies(version),
         'llfuse >= 1.3.6',
         'future',
         'python-daemon',
