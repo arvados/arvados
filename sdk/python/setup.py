@@ -17,11 +17,7 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvados")
-
-short_tests_only = False
-if '--short-tests-only' in sys.argv:
-    short_tests_only = True
-    sys.argv.remove('--short-tests-only')
+short_tests_only = arvados_version.short_tests_only()
 
 class BuildPython(build_py.build_py):
     """Extend setuptools `build_py` to generate API documentation

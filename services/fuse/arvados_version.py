@@ -71,6 +71,14 @@ if REPO_PATH is None:
         if (SETUP_DIR / mod_name).is_dir()
     )
 
+def short_tests_only(arglist=sys.argv):
+    try:
+        arglist.remove('--short-tests-only')
+    except ValueError:
+        return False
+    else:
+        return True
+
 def git_log_output(path, *args):
     return subprocess.check_output(
         ['git', '-C', str(REPO_PATH),

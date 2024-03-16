@@ -20,11 +20,7 @@ if os.environ.get('ARVADOS_BUILDING_VERSION', False):
 else:
     # On dev releases, arvados-python-client may have a different timestamp
     pysdk_dep = "<={}".format(version)
-
-short_tests_only = False
-if '--short-tests-only' in sys.argv:
-    short_tests_only = True
-    sys.argv.remove('--short-tests-only')
+short_tests_only = arvados_version.short_tests_only()
 
 setup(name='crunchstat_summary',
       version=version,
