@@ -363,6 +363,57 @@ func (*EC2InstanceSetSuite) TestCreateFailoverSecondSubnet(c *check.C) {
 		`.*`)
 }
 
+func (*EC2InstanceSetSuite) TestIsErrorSubnetSpecific(c *check.C) {
+	c.Check(isErrorSubnetSpecific(nil), check.Equals, false)
+	c.Check(isErrorSubnetSpecific(errors.New("misc error")), check.Equals, false)
+
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code: "InsufficientInstanceCapacity",
+	}), check.Equals, true)
+
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code: "InsufficientVolumeCapacity",
+	}), check.Equals, true)
+
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code:    "InsufficientFreeAddressesInSubnet",
+		message: "Not enough free addresses in subnet subnet-abcdefg\n\tstatus code: 400, request id: abcdef01-2345-6789-abcd-ef0123456789",
+	}), check.Equals, true)
+
+	// #21603: (Sometimes?) EC2 returns code InvalidParameterValue
+	// even though the code "InsufficientFreeAddressesInSubnet"
+	// seems like it must be meant for exactly this error.
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code:    "InvalidParameterValue",
+		message: "Not enough free addresses in subnet subnet-abcdefg\n\tstatus code: 400, request id: abcdef01-2345-6789-abcd-ef0123456789",
+	}), check.Equals, true)
+
+	// Similarly, AWS docs
+	// (https://repost.aws/knowledge-center/vpc-insufficient-ip-errors)
+	// suggest the following code/message combinations also exist.
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code:    "Client.InvalidParameterValue",
+		message: "There aren't sufficient free Ipv4 addresses or prefixes",
+	}), check.Equals, true)
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code:    "InvalidParameterValue",
+		message: "There aren't sufficient free Ipv4 addresses or prefixes",
+	}), check.Equals, true)
+	// Meanwhile, other AWS docs
+	// (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html)
+	// suggest Client.InvalidParameterValue is not a real code but
+	// ClientInvalidParameterValue is.
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code:    "ClientInvalidParameterValue",
+		message: "There aren't sufficient free Ipv4 addresses or prefixes",
+	}), check.Equals, true)
+
+	c.Check(isErrorSubnetSpecific(&ec2stubError{
+		code:    "InvalidParameterValue",
+		message: "Some other invalid parameter error",
+	}), check.Equals, false)
+}
+
 func (*EC2InstanceSetSuite) TestCreateAllSubnetsFailing(c *check.C) {
 	if *live != "" {
 		c.Skip("not applicable in live mode")
