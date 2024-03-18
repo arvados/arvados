@@ -433,7 +433,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                             getInlineFileUrl(enhancedItem.url, config.keepWebServiceUrl, config.keepWebInlineServiceUrl),
                             true
                         );
-                        window.open(fileUrl, "_blank");
+                        window.open(fileUrl, "_blank", "noopener");
                     }
                 }
 

@@ -75,6 +75,7 @@ Template variables starting with % will be substituted as follows:
 %M memory in MB
 %T tmp in MB
 %G number of GPU devices (@runtime_constraints.cuda.device_count@)
+%W maximum job run time in minutes, suitable for use with @-W@ or @-We@ flags (see MaxRunTimeOverhead MaxRunTimeDefault below)
 
 Use %% to express a literal %. The %%J in the default will be changed to %J, which is interpreted by @bsub@ itself.
 
@@ -83,7 +84,7 @@ For example:
 <notextile>
 <pre>    Containers:
       LSF:
-        <code class="userinput">BsubArgumentsList: <b>["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]"]</b></code>
+        <code class="userinput">BsubArgumentsList: <b>["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]", "-We", "%W"]</b></code>
 </pre>
 </notextile>
 
@@ -99,6 +100,14 @@ If the container requests access to GPUs (@runtime_constraints.cuda.device_count
         <code class="userinput">BsubCUDAArguments: <b>["-gpu", "num=%G"]</b></code>
 </pre>
 </notextile>
+
+h3(#MaxRunTimeOverhead). Containers.LSF.MaxRunTimeOverhead
+
+Extra time to add to each container's @scheduling_parameters.max_run_time@ value when substituting for @%W@ in @BsubArgumentsList@, to account for time spent setting up the container image, copying output files, etc.
+
+h3(#MaxRunTimeDefault). Containers.LSF.MaxRunTimeDefault
+
+Default @max_run_time@ value to use for containers that do not specify one in @scheduling_parameters.max_run_time@. If this is zero, and @BsubArgumentsList@ contains @"-W", "%W"@ or @"-We", "%W"@, those arguments will be dropped when submitting containers that do not specify @scheduling_parameters.max_run_time@.
 
 h3(#PollInterval). Containers.PollInterval
 

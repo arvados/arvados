@@ -169,7 +169,7 @@ describe("Search tests", function () {
 
         // Intercept config to insert remote cluster
         cy.intercept({ method: "GET", hostname: "127.0.0.1", url: "**/arvados/v1/config?nocache=*" }, req => {
-            req.reply(res => {
+            req.on('response', res => {
                 res.body.RemoteClusters = {
                     "*": res.body.RemoteClusters["*"],
                     xxxxx: {
@@ -249,7 +249,7 @@ describe("Search tests", function () {
 
             // Intercept search results to add federated result
             cy.intercept({ method: "GET", url: "**/arvados/v1/groups/contents?*" }, req => {
-                req.reply(res => {
+                req.on('response', res => {
                     res.body.items = [
                         res.body.items[0],
                         {
