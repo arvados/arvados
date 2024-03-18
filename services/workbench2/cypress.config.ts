@@ -17,7 +17,7 @@ export default defineConfig({
       return require('./cypress/plugins/index.js')(on, config)
     },
     baseUrl: 'https://localhost:3000/',
-    experimentalRunAllSpecs: true,
+    // experimentalRunAllSpecs: true,
     // The 2 options below make Electron crash a lot less and Firefox behave better
     experimentalMemoryManagement: true,
     numTestsKeptInMemory: 0,
