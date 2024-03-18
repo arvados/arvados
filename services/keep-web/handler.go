@@ -34,6 +34,7 @@ import (
 type handler struct {
 	Cache   cache
 	Cluster *arvados.Cluster
+	metrics *metrics
 
 	lockMtx    sync.Mutex
 	lock       map[string]*sync.RWMutex
@@ -592,7 +593,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if webdavPrefix == "" {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
 	}
-	wh := webdav.Handler{
+	wh := &webdav.Handler{
 		Prefix: webdavPrefix,
 		FileSystem: &webdavfs.FS{
 			FileSystem:    sessionFS,
@@ -607,7 +608,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			}
 		},
 	}
-	wh.ServeHTTP(w, r)
+	h.metrics.track(wh, w, r)
 	if r.Method == http.MethodGet && w.WroteStatus() == http.StatusOK {
 		wrote := int64(w.WroteBodyBytes())
 		fnm := strings.Join(pathParts[stripParts:], "/")

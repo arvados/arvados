@@ -971,11 +971,14 @@ install_services/api() {
 
 declare -a pythonstuff
 pythonstuff=(
+    # The ordering of sdk/python, tools/crunchstat-summary, and
+    # sdk/cwl here is significant. See
+    # https://dev.arvados.org/issues/19744#note-26
     sdk/python:py3
+    tools/crunchstat-summary:py3
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse:py3
-    tools/crunchstat-summary:py3
 )
 
 declare -a gostuff
@@ -1055,9 +1058,13 @@ install_deps() {
     do_install cmd/arvados-server go
     do_install sdk/cli
     do_install sdk/python pip "${VENV3DIR}/bin/"
+    do_install tools/crunchstat-summary pip "${VENV3DIR}/bin/"
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install services/api
+    # lib/controller integration tests depend on arv-mount to run
+    # containers.
+    do_install services/fuse pip "${VENV3DIR}/bin/"
     do_install services/keepproxy go
     do_install services/keep-web go
 }

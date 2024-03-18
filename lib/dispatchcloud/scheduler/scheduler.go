@@ -9,6 +9,7 @@ package scheduler
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -57,6 +58,8 @@ type Scheduler struct {
 	mLongestWaitTimeSinceQueue       prometheus.Gauge
 	mLast503Time                     prometheus.Gauge
 	mMaxContainerConcurrency         prometheus.Gauge
+
+	lastQueue atomic.Value // stores a []QueueEnt
 }
 
 // New returns a new unstarted Scheduler.

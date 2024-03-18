@@ -903,7 +903,6 @@ const _resourceWithName = withStyles(
             <Typography
                 style={{ color: theme.palette.primary.main }}
                 inline
-                noWrap
             >
                 {uuid}
             </Typography>
@@ -914,7 +913,6 @@ const _resourceWithName = withStyles(
         <Typography
             style={{ color: theme.palette.primary.main }}
             inline
-            noWrap
         >
             {userFullname} ({uuid})
         </Typography>

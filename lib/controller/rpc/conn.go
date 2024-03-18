@@ -529,6 +529,13 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return resp, err
 }
 
+func (conn *Conn) ContainerRequestContainerStatus(ctx context.Context, options arvados.GetOptions) (arvados.ContainerStatus, error) {
+	ep := arvados.EndpointContainerRequestContainerStatus
+	var resp arvados.ContainerStatus
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
 	proxy := &httputil.ReverseProxy{
 		Transport: conn.httpClient.Transport,
