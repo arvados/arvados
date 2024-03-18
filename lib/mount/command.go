@@ -50,6 +50,7 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
 	cacheSizeStr := flags.String("cache-size", "0", "cache size as percent of home filesystem size (\"5%\") or size (\"10GiB\") or 0 for automatic")
 	logLevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
+	debug := flags.Bool("debug", false, "alias for -log-level=debug")
 	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "[FUSE mount options]", stderr); !ok {
 		return code
@@ -62,6 +63,9 @@ func (c *mountCommand) RunCommand(prog string, args []string, stdin io.Reader, s
 	if err != nil {
 		logger.WithError(err).Error("invalid argument for -log-level flag")
 		return 2
+	}
+	if *debug {
+		lvl = logrus.DebugLevel
 	}
 	logger.SetLevel(lvl)
 	if *pprof != "" {
