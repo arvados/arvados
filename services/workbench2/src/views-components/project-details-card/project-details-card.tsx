@@ -337,19 +337,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                 }
                 action={
                     <MultiselectToolbar />
-                    // <section className={classes.contextMenuSection}>
-                    //     <Tooltip
-                    //         title='More options'
-                    //         disableFocusListener
-                    //     >
-                    //         <IconButton
-                    //             aria-label='More options'
-                    //             onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
-                    //         >
-                    //             <MoreVerticalIcon data-cy='kebab-icon' />
-                    //         </IconButton>
-                    //     </Tooltip>
-                    // </section>
                 }
             />
             <section onClick={(ev) => ev.stopPropagation()}>
@@ -394,7 +381,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                 timeout='auto'
                                 collapsedHeight='35px'
                             >
-                                <Typography
+                                <div
                                     className={classes.description}
                                     data-cy='project-description'
                                 >
@@ -407,7 +394,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                             )}
                                         </Typography>
                                     </CardContent>
-                                </Typography>
+                                </div>
                             </Collapse>
                         </section>
                     </section>

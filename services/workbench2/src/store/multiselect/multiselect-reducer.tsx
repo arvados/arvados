@@ -31,7 +31,7 @@ const toggleOneCheck = (inputList: TCheckedList, uuid: string)=>{
     return { ...inputList, [uuid]: (checkedlist[uuid] && checkedlist[uuid] === true) && isOnlyOneSelected ? false : true };
 }
 
-const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, SELECT_ONE, DESELECT_ONE, DESELECT_ALL_OTHERS, TOGGLE_ONE, SET_SELECTED_UUID, ADD_DISABLED, REMOVE_DISABLED } = multiselectActionConstants;
+const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, SELECT_ONE, DESELECT_ONE, DESELECT_ALL_OTHERS, TOGGLE_ONE, ADD_DISABLED, REMOVE_DISABLED } = multiselectActionConstants;
 
 export const multiselectReducer = (state: MultiselectToolbarState = multiselectToolbarInitialState, action) => {
     switch (action.type) {
