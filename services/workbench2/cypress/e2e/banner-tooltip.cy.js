@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe.only('Banner / tooltip tests', function () {
+describe('Banner / tooltip tests', function () {
     let activeUser;
     let adminUser;
     let collectionUUID;
@@ -72,8 +72,8 @@ describe.only('Banner / tooltip tests', function () {
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
-        cy.get('[title=Notifications]').click({ force: true });
-        cy.get('li').should('contain', 'Restore Banner').click({ force: true });
+        cy.get('[title=Notifications]').click();
+        cy.get('[data-cy=restore-banner-li]').click();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
     });

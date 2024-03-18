@@ -40,7 +40,7 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
 
     if (!isOpen && bannerResult) {
         menuItems.push(
-            <MenuItem onClick={openBanner}>
+            <MenuItem onClick={openBanner} data-cy="restore-banner-li">
                 <span>Restore Banner</span>
             </MenuItem>
         );
