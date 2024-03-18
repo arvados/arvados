@@ -72,8 +72,8 @@ describe('Banner / tooltip tests', function () {
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
-        cy.get('[title=Notifications]').click();
-        cy.get('[data-cy=restore-banner-li]').click();
+        cy.get('[title=Notifications]').click({ force: true });
+        cy.get('[data-cy=restore-banner-li]').click({ force: true });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
     });
@@ -90,7 +90,7 @@ describe('Banner / tooltip tests', function () {
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
         cy.get('[title=Notifications]').click();
-        cy.get('li').contains('Disable tooltips').click();
+        cy.get('[data-cy=disable-tooltip-toggle]').click({ force: true });
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
             const el = $el.get(0) //native DOM element
