@@ -54,8 +54,8 @@ const mapStateToProps = (state: RootState): CodeSnippetAuthProps => ({
 export const CodeSnippet = withStyles(styles)(connect(mapStateToProps)(
     ({ classes, lines, linked, className, apiResponse, dispatch, auth, children, inline }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) =>
         <Typography
-        component="div"
-        className={classNames([classes.root, className, inline ? classes.inlineRoot: undefined])}>
+            component="div"
+            className={classNames([classes.root, className, inline ? classes.inlineRoot : undefined])}>
             <Typography className={apiResponse ? classes.space : classNames([className, inline ? classes.inline : undefined])} component="pre">
                 {children}
                 {linked ?
@@ -64,7 +64,7 @@ export const CodeSnippet = withStyles(styles)(connect(mapStateToProps)(
                 }
             </Typography>
         </Typography>
-    ));
+));
 
 const renderLinks = (auth: FederationConfig, dispatch: Dispatch) => (text: string): JSX.Element => {
     // Matches UUIDs & PDHs
@@ -78,18 +78,18 @@ const renderLinks = (auth: FederationConfig, dispatch: Dispatch) => (text: strin
             <React.Fragment key={index}>
                 {part}
                 {links[index] &&
-                <Link onClick={() => {
-                    const url = getNavUrl(links[index], auth)
-                    if (url) {
-                        window.open(`${window.location.origin}${url}`, '_blank');
-                    } else {
-                        dispatch(navigationNotAvailable(links[index]));
-                    }
-                }}
-                    style={ {cursor: 'pointer'} }>
-                    {links[index]}
-                </Link>}
+                    <Link onClick={() => {
+                        const url = getNavUrl(links[index], auth)
+                        if (url) {
+                            window.open(`${window.location.origin}${url}`, '_blank', "noopener");
+                        } else {
+                            dispatch(navigationNotAvailable(links[index]));
+                        }
+                    }}
+                        style={{ cursor: 'pointer' }}>
+                        {links[index]}
+                    </Link>}
             </React.Fragment>
         )}
     </>;
-  };
+};
