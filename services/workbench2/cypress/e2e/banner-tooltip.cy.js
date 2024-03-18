@@ -67,7 +67,7 @@ describe.only('Banner / tooltip tests', function () {
         });
     });
 
-    it('should re-show the banner', () => {
+    it.only('should re-show the banner', () => {
         cy.loginAs(adminUser);
         cy.waitForDom();
 
@@ -82,7 +82,7 @@ describe.only('Banner / tooltip tests', function () {
     });
 
 
-    it('should show tooltips and remove tooltips as localStorage key is present', () => {
+    it.only('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
         cy.waitForDom();
 
