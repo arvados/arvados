@@ -148,7 +148,7 @@ describe("Process tests", function () {
 
             // Fake submitted by another user
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
-                req.reply(res => {
+                req.on('response', res => {
                     res.body.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
                 });
             });
@@ -219,7 +219,7 @@ describe("Process tests", function () {
             // Force container_count for testing
             let containerCount = 2;
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
-                req.reply(res => {
+                req.on('response', res => {
                     res.body.container_count = containerCount;
                 });
             });
@@ -349,7 +349,7 @@ describe("Process tests", function () {
             ) {
                 // Fake container uuid
                 cy.intercept({ method: "GET", url: `**/arvados/v1/container_requests/${containerRequest.uuid}` }, req => {
-                    req.reply(res => {
+                    req.on('response', res => {
                         res.body.output_uuid = fakeCrUuid;
                         res.body.priority = 500;
                         res.body.state = "Committed";
@@ -381,7 +381,7 @@ describe("Process tests", function () {
             ) {
                 // Fake container uuid
                 cy.intercept({ method: "GET", url: `**/arvados/v1/container_requests/${containerRequest.uuid}` }, req => {
-                    req.reply(res => {
+                    req.on('response', res => {
                         res.body.output_uuid = fakeCrLockedUuid;
                         res.body.priority = 500;
                         res.body.state = "Committed";
@@ -413,7 +413,7 @@ describe("Process tests", function () {
             ) {
                 // Fake container uuid
                 cy.intercept({ method: "GET", url: `**/arvados/v1/container_requests/${containerRequest.uuid}` }, req => {
-                    req.reply(res => {
+                    req.on('response', res => {
                         res.body.output_uuid = fakeCrOnHoldUuid;
                         res.body.priority = 0;
                         res.body.state = "Committed";
@@ -443,7 +443,7 @@ describe("Process tests", function () {
     describe("Logs panel", function () {
         it("shows live process logs", function () {
             cy.intercept({ method: "GET", url: "**/arvados/v1/containers/*" }, req => {
-                req.reply(res => {
+                req.on('response', res => {
                     res.body.state = ContainerState.RUNNING;
                 });
             });
@@ -1349,7 +1349,7 @@ describe("Process tests", function () {
             cy.getAll("@testOutputCollection").then(([testOutputCollection]) => {
                 // Add output uuid and inputs to container request
                 cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
-                    req.reply(res => {
+                    req.on('response', res => {
                         res.body.output_uuid = testOutputCollection.uuid;
                         res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                             content: testInputs.map(param => param.input).reduce((acc, val) => Object.assign(acc, val), {}),
@@ -1480,7 +1480,7 @@ describe("Process tests", function () {
 
             // Add output uuid and inputs to container request
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
-                req.reply(res => {
+                req.on('response', res => {
                     res.body.output_uuid = fakeOutputUUID;
                     res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                         content: {},
