@@ -69,10 +69,13 @@ describe('Banner / tooltip tests', function () {
 
     it('should re-show the banner', () => {
         cy.loginAs(adminUser);
+        cy.waitForDom();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=confirmation-dialog]').should('not.exist');
 
-        cy.get('[title=Notifications]').click({ force: true });
+        cy.get('[title=Notifications]').click();
         cy.get('li').contains('Restore Banner').click();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
@@ -81,6 +84,7 @@ describe('Banner / tooltip tests', function () {
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
+        cy.waitForDom();
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
             const el = $el.get(0) //native DOM element
@@ -88,9 +92,12 @@ describe('Banner / tooltip tests', function () {
         });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=confirmation-dialog]').should('not.exist');
 
         cy.get('[title=Notifications]').click();
         cy.get('li').contains('Disable tooltips').click();
+        cy.waitForDom();
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
             const el = $el.get(0) //native DOM element
