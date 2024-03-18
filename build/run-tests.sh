@@ -1056,11 +1056,11 @@ install_deps() {
     # Install parts needed by test suites
     do_install env
     do_install cmd/arvados-server go
-    do_install sdk/cli
     do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install tools/crunchstat-summary pip "${VENV3DIR}/bin/"
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
+    do_install sdk/cli
     do_install services/api
     # lib/controller integration tests depend on arv-mount to run
     # containers.
