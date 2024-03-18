@@ -71,30 +71,39 @@ describe('Banner / tooltip tests', function () {
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom();
 
-        // cy.get('[title=Notifications]').click({ force: true });
-        // cy.get('[data-cy=restore-banner-li]').click({ force: true });
+        cy.get('[title=Notifications]').click({ force: true });
+        cy.waitForDom();
+        cy.get('[data-cy=restore-banner-li]').click({ force: true });
+        cy.waitForDom();
 
-        // cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
     });
 
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
 
-        // cy.get('[data-cy=side-panel-tree]').then(($el) => {
-        //     const el = $el.get(0) //native DOM element
-        //     expect(el._tippy).to.not.be.undefined;
-        // });
+        cy.get('[data-cy=side-panel-tree]').then(($el) => {
+            if(!!$el) {
+                const el = $el.get(0) //native DOM element
+                expect(el._tippy).to.not.be.undefined;
+            }
+        });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom();
 
-        // cy.get('[title=Notifications]').click();
-        // cy.get('[data-cy=disable-tooltip-toggle]').click({ force: true });
+        cy.get('[title=Notifications]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=disable-tooltip-toggle]').click({ force: true });
 
-        // cy.get('[data-cy=side-panel-tree]').then(($el) => {
-        //     const el = $el.get(0) //native DOM element
-        //     expect(el._tippy).to.be.undefined;
-        // });
+        cy.get('[data-cy=side-panel-tree]').then(($el) => {
+            if(!!$el) {
+                const el = $el.get(0) //native DOM element
+                expect(el._tippy).to.be.undefined;
+            }
+        });
     });
 });
