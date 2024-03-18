@@ -84,7 +84,7 @@ describe('Banner / tooltip tests', function () {
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
             const el = $el.get(0) //native DOM element
-            expect(el._tippy).to.exist;
+            expect(el._tippy).to.not.be.undefined;
         });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
