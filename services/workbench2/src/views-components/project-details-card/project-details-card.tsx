@@ -41,6 +41,7 @@ type CssRules =
     | 'faveIcon'
     | 'frozenIcon'
     | 'contextMenuSection'
+    | 'toolbarSection'
     | 'tag'
     | 'description';
 
@@ -50,10 +51,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '1rem',
         flex: '0 0 auto',
         padding: 0,
-        border: '2px solid transparent',
+        borderLeft: '2px solid transparent',
     },
     selected: {
-        border: '2px solid #ccc',
+        border: '2pcx solid #ccc',
     },
     showMore: {
         cursor: 'pointer',
@@ -113,6 +114,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center',
         paddingTop: '0.25rem',
     },
+    toolbarSection: {
+        marginTop: '-1rem',
+    },
     tag: {
         marginRight: '1rem',
         marginTop: '1rem',
@@ -123,16 +127,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = (state: RootState) => {
-    const currentRoute = state.router.location?.pathname.split('/') || [];
-    const currentItemUuid = currentRoute[currentRoute.length - 1];
-    const currentResource = getResource(currentItemUuid)(state.resources);
-    const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(state.resources);
+const mapStateToProps = ({auth, selectedResourceUuid, resources, properties}: RootState) => {
+    const currentResource = getResource(properties.currentRouteUuid)(resources);
+    const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(resources);
     const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
-    const isSelected = currentItemUuid === state.detailsPanel.resourceUuid && state.detailsPanel.isOpened === true;
+    const isSelected = selectedResourceUuid === properties.currentRouteUuid;
 
     return {
-        isAdmin: state.auth.user?.isAdmin,
+        isAdmin: auth.user?.isAdmin,
         currentResource,
         frozenByFullName,
         isSelected,
@@ -336,7 +338,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     </section>
                 }
                 action={
-                    <MultiselectToolbar />
+                    <section className={classes.toolbarSection}>
+                        {isSelected && <MultiselectToolbar />}
+                    </section>
                 }
             />
             <section onClick={(ev) => ev.stopPropagation()}>
