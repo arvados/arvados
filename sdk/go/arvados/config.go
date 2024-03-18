@@ -561,9 +561,11 @@ type ContainersConfig struct {
 		}
 	}
 	LSF struct {
-		BsubSudoUser      string
-		BsubArgumentsList []string
-		BsubCUDAArguments []string
+		BsubSudoUser       string
+		BsubArgumentsList  []string
+		BsubCUDAArguments  []string
+		MaxRunTimeOverhead Duration
+		MaxRunTimeDefault  Duration
 	}
 }
 

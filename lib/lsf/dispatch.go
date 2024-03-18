@@ -306,6 +306,15 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		container.RuntimeConstraints.KeepCacheRAM+
 		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
 
+	maxruntime := time.Duration(container.SchedulingParameters.MaxRunTime) * time.Second
+	if maxruntime == 0 {
+		maxruntime = disp.Cluster.Containers.LSF.MaxRunTimeDefault.Duration()
+	}
+	if maxruntime > 0 {
+		maxruntime += disp.Cluster.Containers.LSF.MaxRunTimeOverhead.Duration()
+	}
+	maxrunminutes := int64(math.Ceil(float64(maxruntime.Seconds()) / 60))
+
 	repl := map[string]string{
 		"%%": "%",
 		"%C": fmt.Sprintf("%d", vcpus),
@@ -313,6 +322,7 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		"%T": fmt.Sprintf("%d", tmp),
 		"%U": container.UUID,
 		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.CUDA.DeviceCount),
+		"%W": fmt.Sprintf("%d", maxrunminutes),
 	}
 
 	re := regexp.MustCompile(`%.`)
@@ -321,7 +331,16 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 	if container.RuntimeConstraints.CUDA.DeviceCount > 0 {
 		argumentTemplate = append(argumentTemplate, disp.Cluster.Containers.LSF.BsubCUDAArguments...)
 	}
-	for _, a := range argumentTemplate {
+	for idx, a := range argumentTemplate {
+		if idx > 0 && (argumentTemplate[idx-1] == "-W" || argumentTemplate[idx-1] == "-We") && a == "%W" && maxrunminutes == 0 {
+			// LSF docs don't specify an argument to "-W"
+			// or "-We" that indicates "unknown", so
+			// instead we drop the "-W %W" part of the
+			// command line entirely when max runtime is
+			// unknown.
+			args = args[:len(args)-1]
+			continue
+		}
 		args = append(args, re.ReplaceAllStringFunc(a, func(s string) string {
 			subst := repl[s]
 			if len(subst) == 0 {

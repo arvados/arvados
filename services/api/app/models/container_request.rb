@@ -467,8 +467,9 @@ class ContainerRequest < ArvadosModel
 
   def validate_scheduling_parameters
     if self.state == Committed
-      if scheduling_parameters.include? 'partitions' and
-         (!scheduling_parameters['partitions'].is_a?(Array) ||
+      if scheduling_parameters.include?('partitions') and
+        !scheduling_parameters['partitions'].nil? and
+        (!scheduling_parameters['partitions'].is_a?(Array) ||
           scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"

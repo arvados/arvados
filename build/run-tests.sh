@@ -1070,9 +1070,9 @@ install_deps() {
     # Install parts needed by test suites
     do_install env
     do_install cmd/arvados-server go
-    do_install sdk/cli
     do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
+    do_install sdk/cli
     do_install services/api
     do_install services/keepproxy go
     do_install services/keep-web go
