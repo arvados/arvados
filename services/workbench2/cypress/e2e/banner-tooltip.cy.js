@@ -60,7 +60,7 @@ describe('Banner / tooltip tests', function () {
                 .should('contain', 'tooltips.json');
 
             cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
-                req.reply((res) => {
+                req.on('response', (res) => {
                     res.body.Workbench.BannerUUID = collectionUUID;
                 });
             });
@@ -69,14 +69,14 @@ describe('Banner / tooltip tests', function () {
 
     it('should re-show the banner', () => {
         cy.loginAs(adminUser);
+        cy.waitForDom();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.waitForDom();
+        cy.get('[data-cy=confirmation-dialog]').should('not.exist');
 
-        cy.get('[title=Notifications]').click({ force: true });
-        cy.waitForDom();
-        cy.get('[data-cy=restore-banner-li]').click({ force: true });
-        cy.waitForDom();
+        cy.get('[title=Notifications]').click();
+        cy.get('li').contains('Restore Banner').click();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
     });
@@ -84,26 +84,24 @@ describe('Banner / tooltip tests', function () {
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
+        cy.waitForDom();
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
-            if(!!$el) {
-                const el = $el.get(0) //native DOM element
-                expect(el._tippy).to.not.be.undefined;
-            }
+            const el = $el.get(0) //native DOM element
+            expect(el._tippy).to.exist;
         });
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.waitForDom();
+        cy.get('[data-cy=confirmation-dialog]').should('not.exist');
 
         cy.get('[title=Notifications]').click();
+        cy.get('li').contains('Disable tooltips').click();
         cy.waitForDom();
-        cy.get('[data-cy=disable-tooltip-toggle]').click({ force: true });
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
-            if(!!$el) {
-                const el = $el.get(0) //native DOM element
-                expect(el._tippy).to.be.undefined;
-            }
+            const el = $el.get(0) //native DOM element
+            expect(el._tippy).to.be.undefined;
         });
     });
 });
