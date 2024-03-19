@@ -801,6 +801,10 @@ Clusters:
       # load on the API server and you don't need it.
       WebDAVLogEvents: true
 
+      # Per-connection output buffer for WebDAV downloads. May improve
+      # throughput for large files.
+      WebDAVOutputBuffer: 1M
+
     Login:
       # One of the following mechanisms (Google, PAM, LDAP, or
       # LoginCluster) should be enabled; see

@@ -178,7 +178,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		r.URL.Scheme = xfp
 	}
 
-	w := httpserver.WrapResponseWriter(wOrig)
+	wbuffer := newWriteBuffer(wOrig, int(h.Cluster.Collections.WebDAVOutputBuffer))
+	defer wbuffer.Close()
+	w := httpserver.WrapResponseWriter(responseWriter{
+		Writer:         wbuffer,
+		ResponseWriter: wOrig,
+	})
 
 	if r.Method == "OPTIONS" && ServeCORSPreflight(w, r.Header) {
 		return

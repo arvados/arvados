@@ -159,6 +159,7 @@ type Cluster struct {
 		KeepproxyPermission UploadDownloadRolePermissions
 		WebDAVPermission    UploadDownloadRolePermissions
 		WebDAVLogEvents     bool
+		WebDAVOutputBuffer  ByteSize
 	}
 	Git struct {
 		GitCommand   string
