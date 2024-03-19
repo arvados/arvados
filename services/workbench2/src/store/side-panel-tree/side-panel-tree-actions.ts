@@ -164,22 +164,25 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
 const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
     const uuids = links.map(it => it.headUuid);
-    const groupItems: any = await services.groupsService.list({
+    const groupItems: Promise<any> = services.groupsService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
-    const collectionItems: any = await services.collectionService.list({
+    const collectionItems: Promise<any> = services.collectionService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
-    const processItems: any = await services.containerRequestService.list({
+    const processItems: Promise<any> = services.containerRequestService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .getFilters()
     });
-    const responseItems = groupItems.items.concat(collectionItems.items).concat(processItems.items);
+
+    const resolvedItems = await Promise.all([groupItems, collectionItems, processItems]);
+
+    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), []);
 
     //setting resources here so they won't be re-fetched in validation step
     dispatch(resourcesActions.SET_RESOURCES(responseItems));
@@ -217,26 +220,28 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
     const { items } = await services.linkService.list(params);
 
     const uuids = items.map(it => it.headUuid);
-    const groupItems: any = await services.groupsService.list({
+    const groupItems: Promise<any> = services.groupsService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
-    const collectionItems: any = await services.collectionService.list({
+    const collectionItems: Promise<any> = services.collectionService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
-    const processItems: any = await services.containerRequestService.list({
+    const processItems: Promise<any> = services.containerRequestService.list({
         filters: new FilterBuilder()
             .addIn("uuid", uuids)
             .addIsA("uuid", typeFilters)
             .getFilters()
     });
 
-    const responseItems = groupItems.items.concat(collectionItems.items).concat(processItems.items);
+    const resolvedItems = await Promise.all([groupItems, collectionItems, processItems]);
+
+    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), []);
 
     const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
 
