@@ -636,13 +636,15 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
+    # wheel modernizes the venv (as of early 2024) and makes it more closely
+    # match our package build environment.
     # PyYAML is a test requirement used by run_test_server.py and needed for
     # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
     # We run `setup.py build` first to generate _version.py.
-    env -C "$WORKSPACE/sdk/python" python3 setup.py build \
-        && python3 -m pip install "$WORKSPACE/sdk/python" \
-        && python3 -m pip install PyYAML pdoc \
+    pip install PyYAML pdoc wheel \
+        && env -C "$WORKSPACE/sdk/python" python3 setup.py build \
+        && pip install "$WORKSPACE/sdk/python" \
         || fatal "installing Python SDK and related dependencies failed"
 }
 
