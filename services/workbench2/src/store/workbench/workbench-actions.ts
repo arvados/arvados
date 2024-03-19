@@ -247,6 +247,7 @@ export const loadProject = (uuid: string) =>
             if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
                 // Load another users home projects
                 dispatch(finishLoadingProject(uuid));
+                dispatch<any>(setSidePanelBreadcrumbs(uuid));
             } else if (userUuid !== uuid) {
                 await dispatch(finishLoadingProject(uuid));
                 const match = await loadGroupContentsResource({
