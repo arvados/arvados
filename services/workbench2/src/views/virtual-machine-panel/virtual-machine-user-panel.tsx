@@ -174,7 +174,7 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                         {virtualMachineSendRequest(props)}
                     </div>
                     <div className={props.classes.icon}>
-                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener noreferrer" className={props.classes.linkIcon}>
+                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener" className={props.classes.linkIcon}>
                             <Tooltip title="Access VM using webshell">
                                 <HelpIcon />
                             </Tooltip>
@@ -219,7 +219,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                         const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
                         let tokenParam = "";
                         if (props.tokenLocation === SESSION_STORAGE || props.tokenLocation === EXTRA_TOKEN) {
-                          tokenParam = `&token=${encodeURIComponent(props.token)}`;
+                            tokenParam = `&token=${encodeURIComponent(props.token)}`;
                         }
                         const loginHref = `/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`;
                         return <TableRow key={lk.uuid}>
@@ -228,11 +228,11 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             <TableCell>
                                 <Grid container spacing={8} className={props.classes.chipsRoot}>
                                     {
-                                    (lk.properties.groups || []).map((group, i) => (
-                                        <Grid item key={i}>
-                                            <Chip label={group} />
-                                        </Grid>
-                                    ))
+                                        (lk.properties.groups || []).map((group, i) => (
+                                            <Grid item key={i}>
+                                                <Chip label={group} />
+                                            </Grid>
+                                        ))
                                     }
                                 </Grid>
                             </TableCell>
@@ -253,8 +253,8 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                                     size="small"
                                     href={loginHref}
                                     target="_blank"
-                                    rel="noopener noreferrer">
-                                        Log in as {username}
+                                    rel="noopener">
+                                    Log in as {username}
                                 </Button>
                             </TableCell>
                         </TableRow>;

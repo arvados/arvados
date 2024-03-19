@@ -63,6 +63,7 @@ export const FileViewerActions = connect(mapStateToProps)(
                     style={{ textDecoration: 'none' }}
                     href={fillViewerUrl(fileUrl, viewer)}
                     onClick={onClick}
+                    rel="noopener"
                     target='_blank'>
                     <ListItemIcon>
                         {

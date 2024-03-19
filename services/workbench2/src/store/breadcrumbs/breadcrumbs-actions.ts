@@ -79,6 +79,14 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
                     uuid: SidePanelTreeCategory.PROJECTS,
                     icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
                 });
+            } else if (uuidKind === ResourceKind.USER) {
+                // Handle another user root project
+                const user = getResource<UserResource>(uuid)(getState().resources);
+                breadcrumbs.push({
+                    label: (user as any)?.fullName || user?.username || uuid,
+                    uuid: user?.uuid || uuid,
+                    icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
+                });
             } else if (Object.values(SidePanelTreeCategory).includes(uuid as SidePanelTreeCategory)) {
                 // Handle SidePanelTreeCategory root
                 breadcrumbs.push({
@@ -269,16 +277,11 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
         try {
             const user = getResource<UserResource>(userUuid)(getState().resources)
                 || await services.userService.get(userUuid, false);
-            const currentCrumbs = getState().properties.breadcrumbs as Breadcrumb[]
             const userProfileBreadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
                 { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
             ];    
-            const breadcrumbsWithPreviousCrumbs: Breadcrumb[] = [
-                ...currentCrumbs,
-                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
-            ];
-            dispatch(setBreadcrumbs(currentCrumbs.some((crumb) => crumb.label === SidePanelTreeCategory.GROUPS) ? breadcrumbsWithPreviousCrumbs : userProfileBreadcrumbs));
+            dispatch(setBreadcrumbs(userProfileBreadcrumbs));
         } catch (e) {
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },

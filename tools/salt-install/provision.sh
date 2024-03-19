@@ -615,6 +615,7 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
   echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
   echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+  echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
 
   # Pillars
   echo "    - docker" >> ${PILLARS_TOP}
@@ -914,6 +915,10 @@ else
         # workbench role is deprecated since 2.7.0
         if [[ "${R}" != "webshell" && "${R}" != "workbench" ]]; then
           grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
+        fi
+        # Make sure wb1's package get uninstalled
+        if [[ "${R}" == "workbench" ]]; then
+          grep -q "workbench1_uninstall" ${STATES_TOP} || echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
         fi
 
         ### Pillars ###

@@ -48,6 +48,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
+	logBuffer.Reset()
 	logOutput := io.MultiWriter(&logBuffer)
 	log.SetOutput(logOutput)
 }
@@ -55,7 +56,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
 	arvadostest.StopKeep(2)
 	log.SetOutput(os.Stdout)
-	log.Printf("%v", logBuffer.String())
+	c.Log(logBuffer.String())
 }
 
 func (s *DoMainTestSuite) SetUpSuite(c *C) {
@@ -226,7 +227,9 @@ func (s *ServerRequiredSuite) TestBlockCheck_BadSignature(c *C) {
 	setupTestData(c)
 	err := performKeepBlockCheck(kc, blobSignatureTTL, "badblobsigningkey", []string{TestHash, TestHash2}, false)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix")
-	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "HTTP 403")
+	// older versions of keepstore return 403 Forbidden for
+	// invalid signatures, newer versions return 400 Bad Request.
+	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "HTTP 40[03]")
 	// verbose logging not requested
 	c.Assert(strings.Contains(logBuffer.String(), "Verifying block 1 of 2"), Equals, false)
 }

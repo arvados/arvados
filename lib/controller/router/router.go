@@ -319,6 +319,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerRequestContainerStatus,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestContainerStatus(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
 			arvados.EndpointContainerRequestLog,
 			func() interface{} { return &arvados.ContainerLogOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

@@ -242,22 +242,20 @@ if test -z "$packages" ; then
         crunch-dispatch-local
         crunch-dispatch-slurm
         crunch-run
-        keepproxy
-        keepstore
         keep-balance
         keep-block-check
-        keep-rsync
         keep-exercise
         keep-rsync
-        keep-block-check
         keep-web
+        keepproxy
+        keepstore
         libpam-arvados-go
-        python3-cwltest
+        python3-arvados-cwl-runner
         python3-arvados-fuse
         python3-arvados-python-client
-        python3-arvados-cwl-runner
+        python3-arvados-user-activity
         python3-crunchstat-summary
-        python3-arvados-user-activity"
+        python3-cwltest"
 fi
 
 FINAL_EXITCODE=0

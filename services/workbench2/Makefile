@@ -9,6 +9,9 @@ SHELL := /bin/bash
 GOPATH?=~/go
 APP_NAME?=arvados-workbench2
 
+# Cypress test file that can be passed to the integration-test target
+SPECFILE?=ALL
+
 # VERSION uses all the above to produce X.Y.Z.timestamp
 # something in the lines of 1.2.0.20180612145021, this will be the package version
 # it can be overwritten when invoking make as in make packages VERSION=1.2.0
@@ -82,7 +85,11 @@ unit-tests: yarn-install
 
 integration-tests: yarn-install check-arvados-directory
 	yarn run cypress install
+ifeq ($(SPECFILE), ALL)
 	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
+else
+	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY) -- --spec $(SPECFILE)
+endif
 
 integration-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run -ti --rm \
@@ -92,7 +99,7 @@ integration-tests-in-docker: workbench2-build-image check-arvados-directory
 		-v $(ARVADOS_DIRECTORY):/usr/src/arvados \
 		-w /usr/src/arvados/services/workbench2 \
 		workbench2-build \
-		make arvados-server-install integration-tests
+		make arvados-server-install integration-tests SPECFILE=$(SPECFILE)
 
 unit-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run -ti --rm \
@@ -187,4 +194,5 @@ packages-in-docker: check-arvados-directory workbench2-build-image
 		sh -c 'git config --global --add safe.directory /tmp/workbench2 && make packages'
 
 workbench2-build-image:
-	(cd docker && docker build -t workbench2-build .)
+	docker inspect workbench2-build &> /dev/null || \
+		docker build -t workbench2-build -f docker/Dockerfile ${ARVADOS_DIRECTORY}

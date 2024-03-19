@@ -23,90 +23,91 @@ type APIEndpoint struct {
 }
 
 var (
-	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
-	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
-	EndpointDiscoveryDocument             = APIEndpoint{"GET", "discovery/v1/apis/arvados/v1/rest", ""}
-	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
-	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
-	EndpointAuthorizedKeyCreate           = APIEndpoint{"POST", "arvados/v1/authorized_keys", "authorized_key"}
-	EndpointAuthorizedKeyUpdate           = APIEndpoint{"PATCH", "arvados/v1/authorized_keys/{uuid}", "authorized_key"}
-	EndpointAuthorizedKeyGet              = APIEndpoint{"GET", "arvados/v1/authorized_keys/{uuid}", ""}
-	EndpointAuthorizedKeyList             = APIEndpoint{"GET", "arvados/v1/authorized_keys", ""}
-	EndpointAuthorizedKeyDelete           = APIEndpoint{"DELETE", "arvados/v1/authorized_keys/{uuid}", ""}
-	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
-	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
-	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
-	EndpointCollectionList                = APIEndpoint{"GET", "arvados/v1/collections", ""}
-	EndpointCollectionProvenance          = APIEndpoint{"GET", "arvados/v1/collections/{uuid}/provenance", ""}
-	EndpointCollectionUsedBy              = APIEndpoint{"GET", "arvados/v1/collections/{uuid}/used_by", ""}
-	EndpointCollectionDelete              = APIEndpoint{"DELETE", "arvados/v1/collections/{uuid}", ""}
-	EndpointCollectionTrash               = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/trash", ""}
-	EndpointCollectionUntrash             = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/untrash", ""}
-	EndpointSpecimenCreate                = APIEndpoint{"POST", "arvados/v1/specimens", "specimen"}
-	EndpointSpecimenUpdate                = APIEndpoint{"PATCH", "arvados/v1/specimens/{uuid}", "specimen"}
-	EndpointSpecimenGet                   = APIEndpoint{"GET", "arvados/v1/specimens/{uuid}", ""}
-	EndpointSpecimenList                  = APIEndpoint{"GET", "arvados/v1/specimens", ""}
-	EndpointSpecimenDelete                = APIEndpoint{"DELETE", "arvados/v1/specimens/{uuid}", ""}
-	EndpointContainerCreate               = APIEndpoint{"POST", "arvados/v1/containers", "container"}
-	EndpointContainerUpdate               = APIEndpoint{"PATCH", "arvados/v1/containers/{uuid}", "container"}
-	EndpointContainerPriorityUpdate       = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/update_priority", "container"}
-	EndpointContainerGet                  = APIEndpoint{"GET", "arvados/v1/containers/{uuid}", ""}
-	EndpointContainerList                 = APIEndpoint{"GET", "arvados/v1/containers", ""}
-	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
-	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
-	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
-	EndpointContainerSSH                  = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/ssh", ""}
-	EndpointContainerSSHCompat            = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""} // for compatibility with arvados <2.7
-	EndpointContainerGatewayTunnel        = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/gateway_tunnel", ""}
-	EndpointContainerGatewayTunnelCompat  = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/gateway_tunnel", ""} // for compatibility with arvados <2.7
-	EndpointContainerRequestCreate        = APIEndpoint{"POST", "arvados/v1/container_requests", "container_request"}
-	EndpointContainerRequestUpdate        = APIEndpoint{"PATCH", "arvados/v1/container_requests/{uuid}", "container_request"}
-	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
-	EndpointContainerRequestList          = APIEndpoint{"GET", "arvados/v1/container_requests", ""}
-	EndpointContainerRequestDelete        = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
-	EndpointContainerRequestLog           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}/log{path:|/.*}", ""}
-	EndpointGroupCreate                   = APIEndpoint{"POST", "arvados/v1/groups", "group"}
-	EndpointGroupUpdate                   = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
-	EndpointGroupGet                      = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
-	EndpointGroupList                     = APIEndpoint{"GET", "arvados/v1/groups", ""}
-	EndpointGroupContents                 = APIEndpoint{"GET", "arvados/v1/groups/contents", ""}
-	EndpointGroupContentsUUIDInPath       = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""} // Alternative HTTP route; client-side code should always use EndpointGroupContents instead
-	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
-	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
-	EndpointGroupTrash                    = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/trash", ""}
-	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
-	EndpointLinkCreate                    = APIEndpoint{"POST", "arvados/v1/links", "link"}
-	EndpointLinkUpdate                    = APIEndpoint{"PATCH", "arvados/v1/links/{uuid}", "link"}
-	EndpointLinkGet                       = APIEndpoint{"GET", "arvados/v1/links/{uuid}", ""}
-	EndpointLinkList                      = APIEndpoint{"GET", "arvados/v1/links", ""}
-	EndpointLinkDelete                    = APIEndpoint{"DELETE", "arvados/v1/links/{uuid}", ""}
-	EndpointLogCreate                     = APIEndpoint{"POST", "arvados/v1/logs", "log"}
-	EndpointLogUpdate                     = APIEndpoint{"PATCH", "arvados/v1/logs/{uuid}", "log"}
-	EndpointLogGet                        = APIEndpoint{"GET", "arvados/v1/logs/{uuid}", ""}
-	EndpointLogList                       = APIEndpoint{"GET", "arvados/v1/logs", ""}
-	EndpointLogDelete                     = APIEndpoint{"DELETE", "arvados/v1/logs/{uuid}", ""}
-	EndpointSysTrashSweep                 = APIEndpoint{"POST", "sys/trash_sweep", ""}
-	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
-	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
-	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
-	EndpointUserDelete                    = APIEndpoint{"DELETE", "arvados/v1/users/{uuid}", ""}
-	EndpointUserGet                       = APIEndpoint{"GET", "arvados/v1/users/{uuid}", ""}
-	EndpointUserGetCurrent                = APIEndpoint{"GET", "arvados/v1/users/current", ""}
-	EndpointUserGetSystem                 = APIEndpoint{"GET", "arvados/v1/users/system", ""}
-	EndpointUserList                      = APIEndpoint{"GET", "arvados/v1/users", ""}
-	EndpointUserMerge                     = APIEndpoint{"POST", "arvados/v1/users/merge", ""}
-	EndpointUserSetup                     = APIEndpoint{"POST", "arvados/v1/users/setup", "user"}
-	EndpointUserSystem                    = APIEndpoint{"GET", "arvados/v1/users/system", ""}
-	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
-	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
-	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
-	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
-	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
-	EndpointAPIClientAuthorizationCreate  = APIEndpoint{"POST", "arvados/v1/api_client_authorizations", "api_client_authorization"}
-	EndpointAPIClientAuthorizationUpdate  = APIEndpoint{"PUT", "arvados/v1/api_client_authorizations/{uuid}", "api_client_authorization"}
-	EndpointAPIClientAuthorizationList    = APIEndpoint{"GET", "arvados/v1/api_client_authorizations", ""}
-	EndpointAPIClientAuthorizationDelete  = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
-	EndpointAPIClientAuthorizationGet     = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
+	EndpointConfigGet                       = APIEndpoint{"GET", "arvados/v1/config", ""}
+	EndpointVocabularyGet                   = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
+	EndpointDiscoveryDocument               = APIEndpoint{"GET", "discovery/v1/apis/arvados/v1/rest", ""}
+	EndpointLogin                           = APIEndpoint{"GET", "login", ""}
+	EndpointLogout                          = APIEndpoint{"GET", "logout", ""}
+	EndpointAuthorizedKeyCreate             = APIEndpoint{"POST", "arvados/v1/authorized_keys", "authorized_key"}
+	EndpointAuthorizedKeyUpdate             = APIEndpoint{"PATCH", "arvados/v1/authorized_keys/{uuid}", "authorized_key"}
+	EndpointAuthorizedKeyGet                = APIEndpoint{"GET", "arvados/v1/authorized_keys/{uuid}", ""}
+	EndpointAuthorizedKeyList               = APIEndpoint{"GET", "arvados/v1/authorized_keys", ""}
+	EndpointAuthorizedKeyDelete             = APIEndpoint{"DELETE", "arvados/v1/authorized_keys/{uuid}", ""}
+	EndpointCollectionCreate                = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
+	EndpointCollectionUpdate                = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
+	EndpointCollectionGet                   = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
+	EndpointCollectionList                  = APIEndpoint{"GET", "arvados/v1/collections", ""}
+	EndpointCollectionProvenance            = APIEndpoint{"GET", "arvados/v1/collections/{uuid}/provenance", ""}
+	EndpointCollectionUsedBy                = APIEndpoint{"GET", "arvados/v1/collections/{uuid}/used_by", ""}
+	EndpointCollectionDelete                = APIEndpoint{"DELETE", "arvados/v1/collections/{uuid}", ""}
+	EndpointCollectionTrash                 = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/trash", ""}
+	EndpointCollectionUntrash               = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/untrash", ""}
+	EndpointSpecimenCreate                  = APIEndpoint{"POST", "arvados/v1/specimens", "specimen"}
+	EndpointSpecimenUpdate                  = APIEndpoint{"PATCH", "arvados/v1/specimens/{uuid}", "specimen"}
+	EndpointSpecimenGet                     = APIEndpoint{"GET", "arvados/v1/specimens/{uuid}", ""}
+	EndpointSpecimenList                    = APIEndpoint{"GET", "arvados/v1/specimens", ""}
+	EndpointSpecimenDelete                  = APIEndpoint{"DELETE", "arvados/v1/specimens/{uuid}", ""}
+	EndpointContainerCreate                 = APIEndpoint{"POST", "arvados/v1/containers", "container"}
+	EndpointContainerUpdate                 = APIEndpoint{"PATCH", "arvados/v1/containers/{uuid}", "container"}
+	EndpointContainerPriorityUpdate         = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/update_priority", "container"}
+	EndpointContainerGet                    = APIEndpoint{"GET", "arvados/v1/containers/{uuid}", ""}
+	EndpointContainerList                   = APIEndpoint{"GET", "arvados/v1/containers", ""}
+	EndpointContainerDelete                 = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
+	EndpointContainerLock                   = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
+	EndpointContainerUnlock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
+	EndpointContainerSSH                    = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/ssh", ""}
+	EndpointContainerSSHCompat              = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""} // for compatibility with arvados <2.7
+	EndpointContainerGatewayTunnel          = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/gateway_tunnel", ""}
+	EndpointContainerGatewayTunnelCompat    = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/gateway_tunnel", ""} // for compatibility with arvados <2.7
+	EndpointContainerRequestCreate          = APIEndpoint{"POST", "arvados/v1/container_requests", "container_request"}
+	EndpointContainerRequestUpdate          = APIEndpoint{"PATCH", "arvados/v1/container_requests/{uuid}", "container_request"}
+	EndpointContainerRequestGet             = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
+	EndpointContainerRequestList            = APIEndpoint{"GET", "arvados/v1/container_requests", ""}
+	EndpointContainerRequestDelete          = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
+	EndpointContainerRequestContainerStatus = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}/container_status", ""}
+	EndpointContainerRequestLog             = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}/log{path:|/.*}", ""}
+	EndpointGroupCreate                     = APIEndpoint{"POST", "arvados/v1/groups", "group"}
+	EndpointGroupUpdate                     = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
+	EndpointGroupGet                        = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupList                       = APIEndpoint{"GET", "arvados/v1/groups", ""}
+	EndpointGroupContents                   = APIEndpoint{"GET", "arvados/v1/groups/contents", ""}
+	EndpointGroupContentsUUIDInPath         = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""} // Alternative HTTP route; client-side code should always use EndpointGroupContents instead
+	EndpointGroupShared                     = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
+	EndpointGroupDelete                     = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupTrash                      = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/trash", ""}
+	EndpointGroupUntrash                    = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
+	EndpointLinkCreate                      = APIEndpoint{"POST", "arvados/v1/links", "link"}
+	EndpointLinkUpdate                      = APIEndpoint{"PATCH", "arvados/v1/links/{uuid}", "link"}
+	EndpointLinkGet                         = APIEndpoint{"GET", "arvados/v1/links/{uuid}", ""}
+	EndpointLinkList                        = APIEndpoint{"GET", "arvados/v1/links", ""}
+	EndpointLinkDelete                      = APIEndpoint{"DELETE", "arvados/v1/links/{uuid}", ""}
+	EndpointLogCreate                       = APIEndpoint{"POST", "arvados/v1/logs", "log"}
+	EndpointLogUpdate                       = APIEndpoint{"PATCH", "arvados/v1/logs/{uuid}", "log"}
+	EndpointLogGet                          = APIEndpoint{"GET", "arvados/v1/logs/{uuid}", ""}
+	EndpointLogList                         = APIEndpoint{"GET", "arvados/v1/logs", ""}
+	EndpointLogDelete                       = APIEndpoint{"DELETE", "arvados/v1/logs/{uuid}", ""}
+	EndpointSysTrashSweep                   = APIEndpoint{"POST", "sys/trash_sweep", ""}
+	EndpointUserActivate                    = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
+	EndpointUserCreate                      = APIEndpoint{"POST", "arvados/v1/users", "user"}
+	EndpointUserCurrent                     = APIEndpoint{"GET", "arvados/v1/users/current", ""}
+	EndpointUserDelete                      = APIEndpoint{"DELETE", "arvados/v1/users/{uuid}", ""}
+	EndpointUserGet                         = APIEndpoint{"GET", "arvados/v1/users/{uuid}", ""}
+	EndpointUserGetCurrent                  = APIEndpoint{"GET", "arvados/v1/users/current", ""}
+	EndpointUserGetSystem                   = APIEndpoint{"GET", "arvados/v1/users/system", ""}
+	EndpointUserList                        = APIEndpoint{"GET", "arvados/v1/users", ""}
+	EndpointUserMerge                       = APIEndpoint{"POST", "arvados/v1/users/merge", ""}
+	EndpointUserSetup                       = APIEndpoint{"POST", "arvados/v1/users/setup", "user"}
+	EndpointUserSystem                      = APIEndpoint{"GET", "arvados/v1/users/system", ""}
+	EndpointUserUnsetup                     = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
+	EndpointUserUpdate                      = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
+	EndpointUserBatchUpdate                 = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
+	EndpointUserAuthenticate                = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
+	EndpointAPIClientAuthorizationCurrent   = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
+	EndpointAPIClientAuthorizationCreate    = APIEndpoint{"POST", "arvados/v1/api_client_authorizations", "api_client_authorization"}
+	EndpointAPIClientAuthorizationUpdate    = APIEndpoint{"PUT", "arvados/v1/api_client_authorizations/{uuid}", "api_client_authorization"}
+	EndpointAPIClientAuthorizationList      = APIEndpoint{"GET", "arvados/v1/api_client_authorizations", ""}
+	EndpointAPIClientAuthorizationDelete    = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
+	EndpointAPIClientAuthorizationGet       = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
 )
 
 type ContainerSSHOptions struct {
@@ -242,8 +243,9 @@ type LogoutOptions struct {
 }
 
 type BlockReadOptions struct {
-	Locator string
-	WriteTo io.Writer
+	Locator      string
+	WriteTo      io.Writer
+	LocalLocator func(string)
 }
 
 type BlockWriteOptions struct {
@@ -258,8 +260,9 @@ type BlockWriteOptions struct {
 }
 
 type BlockWriteResponse struct {
-	Locator  string
-	Replicas int
+	Locator        string
+	Replicas       int
+	StorageClasses map[string]int
 }
 
 type WebDAVOptions struct {
@@ -308,6 +311,7 @@ type API interface {
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)
 	ContainerRequestList(ctx context.Context, options ListOptions) (ContainerRequestList, error)
 	ContainerRequestDelete(ctx context.Context, options DeleteOptions) (ContainerRequest, error)
+	ContainerRequestContainerStatus(ctx context.Context, options GetOptions) (ContainerStatus, error)
 	ContainerRequestLog(ctx context.Context, options ContainerLogOptions) (http.Handler, error)
 	GroupCreate(ctx context.Context, options CreateOptions) (Group, error)
 	GroupUpdate(ctx context.Context, options UpdateOptions) (Group, error)

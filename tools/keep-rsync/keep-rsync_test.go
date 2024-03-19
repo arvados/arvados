@@ -161,7 +161,7 @@ func testNoCrosstalk(c *C, testData string, kc1, kc2 *keepclient.KeepClient) {
 	locator, _, err := kc1.PutB([]byte(testData))
 	c.Assert(err, Equals, nil)
 
-	locator = strings.Split(locator, "+")[0]
+	locator = strings.Join(strings.Split(locator, "+")[:2], "+")
 	_, _, _, err = kc2.Get(keepclient.SignLocator(locator, kc2.Arvados.ApiToken, time.Now().AddDate(0, 0, 1), blobSignatureTTL, []byte(blobSigningKey)))
 	c.Assert(err, NotNil)
 	c.Check(err.Error(), Equals, "Block not found")
@@ -330,7 +330,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 
 	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, blobSigningKey, "")
 	c.Assert(err, NotNil)
-	c.Check(err.Error(), Matches, ".*HTTP 403 \"Forbidden\".*")
+	c.Check(err.Error(), Matches, ".*HTTP 400 \"invalid signature\".*")
 }
 
 // Test rsync with error during Put to src.

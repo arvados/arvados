@@ -53,6 +53,8 @@ sdk/cwl/tests/tool/blub.txt
 sdk/cwl/tests/19109-upload-secondary/*
 sdk/cwl/tests/federation/data/*
 sdk/cwl/tests/fake-keep-mount/fake_collection_dir/.arvados#collection
+sdk/cwl/tests/container_request_9tee4-xvhdp-kk0ja1cl8b2kr1y-arv-mount.txt
+sdk/cwl/tests/container_request_9tee4-xvhdp-kk0ja1cl8b2kr1y-crunchstat.txt
 sdk/go/manifest/testdata/*_manifest
 sdk/java/.classpath
 sdk/java/pom.xml

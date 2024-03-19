@@ -2186,6 +2186,26 @@
             "https://api.arvados.org/auth/arvados"
           ]
         },
+        "container_status": {
+          "id": "arvados.container_requests.container_status",
+          "path": "container_requests/{uuid}/container_status",
+          "httpMethod": "GET",
+          "description": "container_status container_requests",
+          "parameters": {
+            "uuid": {
+              "type": "string",
+              "required": true,
+              "description": "The UUID of the ContainerRequest in question.",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "ContainerRequest"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados"
+          ]
+        },
         "list": {
           "id": "arvados.container_requests.list",
           "path": "container_requests",

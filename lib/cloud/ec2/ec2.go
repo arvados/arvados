@@ -251,6 +251,12 @@ func (instanceSet *ec2InstanceSet) Create(
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
+		MetadataOptions: &ec2.InstanceMetadataOptionsRequest{
+			// Require IMDSv2, as described at
+			// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-IMDS-new-instances.html
+			HttpEndpoint: aws.String(ec2.InstanceMetadataEndpointStateEnabled),
+			HttpTokens:   aws.String(ec2.HttpTokensStateRequired),
+		},
 		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 	}
 

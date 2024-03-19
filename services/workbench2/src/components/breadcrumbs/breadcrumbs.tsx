@@ -78,7 +78,7 @@ export const Breadcrumbs = withStyles(styles)(
             return (
                 <React.Fragment key={index}>
                     {isFirstItem ? null : <IllegalNamingWarning name={item.label} />}
-                    <Tooltip title={item.label}>
+                    <Tooltip title={item.label} disableFocusListener>
                         <Button
                             data-cy={
                                 isFirstItem

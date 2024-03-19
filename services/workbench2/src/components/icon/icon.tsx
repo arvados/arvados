@@ -77,6 +77,7 @@ import NotInterested from "@material-ui/icons/NotInterested";
 import Image from "@material-ui/icons/Image";
 import Stop from "@material-ui/icons/Stop";
 import FileCopy from "@material-ui/icons/FileCopy";
+import ShowChart from "@material-ui/icons/ShowChart";
 
 // Import FontAwesome icons
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -274,3 +275,4 @@ export const StartIcon: IconType = props => <PlayArrow {...props} />;
 export const StopIcon: IconType = props => <Stop {...props} />;
 export const SelectAllIcon: IconType = props => <CheckboxMultipleOutline {...props} />;
 export const SelectNoneIcon: IconType = props => <CheckboxMultipleBlankOutline {...props} />;
+export const ShowChartIcon: IconType = props => <ShowChart {...props} />;

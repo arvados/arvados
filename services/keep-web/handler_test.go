@@ -60,6 +60,7 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 			logger:   logger,
 			registry: prometheus.NewRegistry(),
 		},
+		metrics: newMetrics(prometheus.NewRegistry()),
 	}
 }
 

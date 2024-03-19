@@ -863,7 +863,7 @@ Clusters:
         # OpenID claim field containing the email verification
         # flag. Normally "email_verified".  To accept every returned
         # email address without checking a "verified" field at all,
-        # use the empty string "".
+        # use an empty string "".
         EmailVerifiedClaim: "email_verified"
 
         # OpenID claim field containing the user's preferred
@@ -1379,15 +1379,23 @@ Clusters:
         # %M memory in MB
         # %T tmp in MB
         # %G number of GPU devices (runtime_constraints.cuda.device_count)
+        # %W maximum run time in minutes (see MaxRunTimeOverhead and
+        #    MaxRunTimeDefault below)
         #
-        # Use %% to express a literal %. The %%J in the default will be changed
-        # to %J, which is interpreted by bsub itself.
+        # Use %% to express a literal %. For example, the %%J in the
+        # default argument list will be changed to %J, which is
+        # interpreted by bsub itself.
         #
         # Note that the default arguments cause LSF to write two files
         # in /tmp on the compute node each time an Arvados container
         # runs. Ensure you have something in place to delete old files
         # from /tmp, or adjust the "-o" and "-e" arguments accordingly.
-        BsubArgumentsList: ["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]"]
+        #
+        # If ["-We", "%W"] or ["-W", "%W"] appear in this argument
+        # list, and MaxRunTimeDefault is not set (see below), both of
+        # those arguments will be dropped from the argument list when
+        # running a container that has no max_run_time value.
+        BsubArgumentsList: ["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]", "-We", "%W"]
 
         # Arguments that will be appended to the bsub command line
         # when submitting Arvados containers as LSF jobs with
@@ -1401,6 +1409,19 @@ Clusters:
         # ("execution hosts"), as well as on the host where the
         # Arvados LSF dispatcher runs ("submission host").
         BsubSudoUser: "crunch"
+
+        # When passing the scheduling_constraints.max_run_time value
+        # to LSF via "%W", add this much time to account for
+        # crunch-run startup/shutdown overhead.
+        MaxRunTimeOverhead: 5m
+
+        # If non-zero, MaxRunTimeDefault is used as the default value
+        # for max_run_time for containers that do not specify a time
+        # limit.  MaxRunTimeOverhead will be added to this.
+        #
+        # Example:
+        # MaxRunTimeDefault: 2h
+        MaxRunTimeDefault: 0
 
       JobsAPI:
         # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.
@@ -1561,7 +1582,7 @@ Clusters:
         # container runner/supervisor. The default value is the
         # dispatcher program itself.
         #
-        # Use the empty string to disable this step: nothing will be
+        # Use an empty string to disable this step: nothing will be
         # copied, and cloud instances are assumed to have a suitable
         # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
