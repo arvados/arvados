@@ -236,7 +236,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                             {!!progressBar && progressBar}
-                            {this.multiSelectToolbarInTitle && <MultiselectToolbar />}
+                            {this.multiSelectToolbarInTitle && !!selectedResourceUuid && <MultiselectToolbar />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -302,7 +302,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar />}
+                        {!this.multiSelectToolbarInTitle && !!selectedResourceUuid && <MultiselectToolbar />}
                         <Grid
                             item
                             xs="auto"

@@ -178,7 +178,7 @@ export const DataTable = withStyles(styles)(
             if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
                 this.props.setSelectedUuid(singleSelected);
             }
-            if (!singleSelected) {
+            if (!singleSelected && !!currentRouteUuid) {
                 this.props.setSelectedUuid(currentRouteUuid);
             }
         }
