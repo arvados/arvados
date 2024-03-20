@@ -82,6 +82,7 @@ export type MultiselectToolbarProps = {
     disabledButtons: Set<string>
     auth: AuthState;
     location: string;
+    isSubPanel?: boolean;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, inputSelectedUuid: string | null, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -96,8 +97,8 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, selectedResourceUuid, location } = props;
-        const singleResourceKind = selectedResourceUuid ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
+        const { classes, checkedList, iconProps, user, disabledButtons, selectedResourceUuid, location, isSubPanel } = props;
+        const singleResourceKind = selectedResourceUuid && !isSubPanel ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = location.includes("/trash");
         const [isTransitioning, setIsTransitioning] = useState(false);

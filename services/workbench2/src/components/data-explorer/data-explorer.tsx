@@ -308,7 +308,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar />}
+                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar isSubPanel={true}/>}
                         <Grid
                             item
                             xs="auto"
