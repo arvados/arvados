@@ -56,7 +56,7 @@ export interface DataTableDataProps<I> {
     currentRouteUuid: string;
     checkedList: TCheckedList;
     selectedResourceUuid: string;
-    setSelectedUuid: (uuid: string) => void;
+    setSelectedUuid: (uuid: string | null) => void;
 }
 
 type CssRules =
@@ -178,8 +178,11 @@ export const DataTable = withStyles(styles)(
             if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
                 this.props.setSelectedUuid(singleSelected);
             }
-            if (!singleSelected && !!currentRouteUuid) {
+            if (!singleSelected && !!currentRouteUuid && !this.isAnySelected()) {
                 this.props.setSelectedUuid(currentRouteUuid);
+            }
+            if (!singleSelected && this.isAnySelected()) {
+                this.props.setSelectedUuid(null);
             }
         }
 

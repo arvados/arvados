@@ -128,10 +128,11 @@ export const DataExplorer = withStyles(styles)(
             showLoading: false,
             prevRefresh: "",
             prevRoute: "",
+            msToolbarInDetailsCard: false,
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
-
+        
         componentDidUpdate(prevProps: DataExplorerProps<T>) {
             const currentRefresh = this.props.currentRefresh || "";
             const currentRoute = this.props.currentRoute || "";
@@ -156,6 +157,11 @@ export const DataExplorer = withStyles(styles)(
             if (this.state.showLoading && !this.props.working) {
                 this.setState({
                     showLoading: false,
+                });
+            }
+            if (this.props.selectedResourceUuid !== prevProps.selectedResourceUuid) {
+                this.setState({
+                    msToolbarInDetailsCard: this.props.selectedResourceUuid === this.props.currentRouteUuid,
                 });
             }
         }
@@ -236,7 +242,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                             {!!progressBar && progressBar}
-                            {this.multiSelectToolbarInTitle && !!selectedResourceUuid && <MultiselectToolbar />}
+                            {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -302,7 +308,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle && !!selectedResourceUuid && <MultiselectToolbar />}
+                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar />}
                         <Grid
                             item
                             xs="auto"
