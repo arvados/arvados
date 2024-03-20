@@ -154,7 +154,7 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: SidePanelTreeCategory.FAVORITES,
             pickerId: SIDE_PANEL_TREE,
-            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item })),
+            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item.name })),
         })
     );
 
