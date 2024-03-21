@@ -802,7 +802,8 @@ Clusters:
       WebDAVLogEvents: true
 
       # Per-connection output buffer for WebDAV downloads. May improve
-      # throughput for large files.
+      # throughput for large files, particularly when storage volumes
+      # have high latency.
       WebDAVOutputBuffer: 1M
 
     Login:
