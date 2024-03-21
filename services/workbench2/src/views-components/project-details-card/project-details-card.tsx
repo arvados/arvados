@@ -116,6 +116,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbarSection: {
         marginTop: '-1rem',
+        paddingBottom: '-1rem',
     },
     tag: {
         marginRight: '1rem',
