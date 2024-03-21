@@ -46,7 +46,8 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
     echo "gem: --no-document" >> ~/.gemrc && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
-    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
+    /usr/local/rvm/bin/rvm-exec default gem install dotenv --version '~> 2.8' && \
+    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.15.1
 
 # Install Bash 4.4.12 // see https://dev.arvados.org/issues/15612
 RUN cd /usr/local/src \
