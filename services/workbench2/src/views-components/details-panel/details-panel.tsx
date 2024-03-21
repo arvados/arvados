@@ -15,6 +15,7 @@ import { EmptyResource } from 'models/empty';
 import { Dispatch } from "redux";
 import { ResourceKind } from "models/resource";
 import { ProjectDetails } from "./project-details";
+import { RootProjectDetails } from './root-project-details';
 import { CollectionDetails } from "./collection-details";
 import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
@@ -76,6 +77,8 @@ const getItem = (res: DetailsResource): DetailsData => {
                 return new ProcessDetails(res);
             case ResourceKind.WORKFLOW:
                 return new WorkflowDetails(res);
+            case ResourceKind.USER:
+                return new RootProjectDetails(res);
             default:
                 return new EmptyDetails(res);
         }
@@ -161,7 +164,6 @@ export const DetailsPanel = withStyles(styles)(
 
             renderContent() {
                 const { classes, onCloseDrawer, res, tabNr, authConfig } = this.props;
-
                 let shouldShowInlinePreview = false;
                 if (!('kind' in res)) {
                     shouldShowInlinePreview = isInlineFileUrlSafe(
