@@ -307,7 +307,7 @@ cd "${tmp}/ruby-`+rubyversion+`"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
 make install
-/var/lib/arvados/bin/gem install bundler -v 2.4.22 --no-document
+/var/lib/arvados/bin/gem install bundler -v `+bundlerversion+` --no-document
 `, stdout, stderr)
 		if err != nil {
 			return 1
