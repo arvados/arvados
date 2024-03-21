@@ -351,7 +351,7 @@ make install
 if [[ "$rubyversion" > "3" ]]; then
   /var/lib/arvados/bin/gem update --no-document --system 3.4.21
 fi
-/var/lib/arvados/bin/gem install bundler --no-document
+/var/lib/arvados/bin/gem install bundler:`+inst.BundlerVersion+` --no-document
 `, stdout, stderr)
 		if err != nil {
 			return 1
