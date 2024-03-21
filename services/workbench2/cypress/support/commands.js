@@ -182,11 +182,11 @@ Cypress.Commands.add("createWorkflow", (token, data) => {
     });
 });
 
-Cypress.Commands.add("createCollection", (token, data) => {
+Cypress.Commands.add("createCollection", (token, data, keep = false) => {
     return cy.createResource(token, "collections", {
         collection: JSON.stringify(data),
         ensure_unique_name: true,
-    });
+    }, keep);
 });
 
 Cypress.Commands.add("getCollection", (token, uuid) => {
@@ -321,15 +321,18 @@ Cypress.Commands.add("getResource", (token, suffix, uuid) => {
         });
 });
 
-Cypress.Commands.add("createResource", (token, suffix, data) => {
+Cypress.Commands.add("createResource", (token, suffix, data, keep = false) => {
     return cy
         .doRequest("POST", "/arvados/v1/" + suffix, data, null, token, true)
         .its("body")
         .then(function (resource) {
-            createdResources.push({ suffix, uuid: resource.uuid });
+            if (! keep) {
+                createdResources.push({ suffix, uuid: resource.uuid });
+            };
             return resource;
         });
 });
+
 
 Cypress.Commands.add("deleteResource", (token, suffix, uuid, failOnStatusCode = true) => {
     return cy

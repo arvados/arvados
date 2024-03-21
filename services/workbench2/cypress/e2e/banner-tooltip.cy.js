@@ -1,3 +1,4 @@
+
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
@@ -20,23 +21,18 @@ describe('Banner / tooltip tests', function () {
             .as('activeUser').then(function () {
                 activeUser = this.activeUser;
             });
-    });
 
-    beforeEach(function () {
-        cy.on('uncaught:exception', (err, runnable, promise) => {
-            Cypress.log({ message: `Application Error: ${err}`});
-            if (promise) {
-                return false;
-            }
+        cy.getAll('@adminUser').then(([adminUser]) => {
+            // This collection will not be deleted after each test, we'll
+            // clean it up manually.
+            cy.createCollection(adminUser.token, {
+                name: `BannerTooltipTest${Math.floor(Math.random() * 999999)}`,
+                owner_uuid: adminUser.user.uuid,
+            }, true).as('bannerCollection');
         });
 
-        cy.createCollection(adminUser.token, {
-            name: `BannerTooltipTest${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: adminUser.user.uuid,
-        }).as('bannerCollection');
-
         cy.getAll('@bannerCollection').then(function ([bannerCollection]) {
-            collectionUUID=bannerCollection.uuid;
+            collectionUUID = bannerCollection.uuid;
 
             cy.loginAs(adminUser);
 
@@ -58,21 +54,37 @@ describe('Banner / tooltip tests', function () {
                 .should('contain', 'banner.html');
             cy.get('[data-cy=collection-files-right-panel]')
                 .should('contain', 'tooltips.json');
+        });
+    });
 
-            cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
-                req.on('response', (res) => {
-                    res.body.Workbench.BannerUUID = collectionUUID;
-                });
+    beforeEach(function () {
+        cy.on('uncaught:exception', (err, runnable, promise) => {
+            Cypress.log({ message: `Application Error: ${err}`});
+            if (promise) {
+                return false;
+            }
+        });
+        cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
+            req.on('response', (res) => {
+                res.body.Workbench.BannerUUID = collectionUUID;
             });
         });
     });
 
+    after(function () {
+        // Delete banner collection after all test used it.
+        cy.deleteResource(adminUser.token, "collections", collectionUUID);
+    });
+
     it('should re-show the banner', () => {
         cy.loginAs(adminUser);
+        cy.waitForDom();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=confirmation-dialog]').should('not.exist');
 
-        cy.get('[title=Notifications]').click({ force: true });
+        cy.get('[title=Notifications]').click();
         cy.get('li').contains('Restore Banner').click();
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
@@ -82,19 +94,19 @@ describe('Banner / tooltip tests', function () {
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
 
-        cy.get('[data-cy=side-panel-tree]').then(($el) => {
-            const el = $el.get(0) //native DOM element
-            expect(el._tippy).to.exist;
-        });
-
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+
+        cy.contains('This allows you to navigate through the app').should('not.exist'); // This content comes from tooltips.txt
+        cy.get('[data-cy=side-panel-tree]').trigger('mouseover');
+        cy.get('[data-cy=side-panel-tree]').trigger('mouseenter');
+        cy.contains('This allows you to navigate through the app').should('be.visible');
 
         cy.get('[title=Notifications]').click();
         cy.get('li').contains('Disable tooltips').click();
 
-        cy.get('[data-cy=side-panel-tree]').then(($el) => {
-            const el = $el.get(0) //native DOM element
-            expect(el._tippy).to.be.undefined;
-        });
+        cy.contains('This allows you to navigate through the app').should('not.exist');
+        cy.get('[data-cy=side-panel-tree]').trigger('mouseover');
+        cy.get('[data-cy=side-panel-tree]').trigger('mouseenter');
+        cy.contains('This allows you to navigate through the app').should('not.exist');
     });
 });
