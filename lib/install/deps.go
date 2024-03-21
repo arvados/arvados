@@ -235,6 +235,10 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			} else {
 				pkgs = append(pkgs, "firefox")
 			}
+			if osv.Debian && osv.Major >= 11 {
+				// not available in Debian <11
+				pkgs = append(pkgs, "s3cmd")
+			}
 		}
 		if dev || test {
 			pkgs = append(pkgs,
