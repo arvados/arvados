@@ -162,7 +162,7 @@ export const DataExplorer = withStyles(styles)(
                     showLoading: false,
                 });
             }
-            if (this.props.selectedResourceUuid !== prevProps.selectedResourceUuid) {
+            if (this.props.selectedResourceUuid !== prevProps.selectedResourceUuid || this.props.currentRouteUuid !== prevProps.currentRouteUuid) {
                 this.setState({
                     msToolbarInDetailsCard: this.props.selectedResourceUuid === this.props.currentRouteUuid,
                 });
