@@ -81,6 +81,7 @@ const getItem = (res: DetailsResource, pathName: string): DetailsData => {
                 if(pathName.includes('projects')) {
                     return new RootProjectDetails(res);
                 }
+                return new EmptyDetails(EMPTY_RESOURCE);
             default:
                 return new EmptyDetails(res as EmptyResource);
         }
