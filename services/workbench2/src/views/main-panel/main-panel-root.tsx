@@ -41,7 +41,7 @@ export interface MainPanelRootDataProps {
 
 interface MainPanelRootDispatchProps {
     toggleSidePanel: () => void,
-    setCurrentRouteUuid: (uuid: string) => void;
+    setCurrentRouteUuid: (uuid: string | null) => void;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
@@ -56,6 +56,8 @@ export const MainPanelRoot = withStyles(styles)(
                 const uuid = splitRoute[splitRoute.length - 1];
                 if(Object.values(Routes).includes(`/${uuid}`) === false) {
                     setCurrentRouteUuid(uuid);
+                } else {
+                    setCurrentRouteUuid(null);
                 }
                 // eslint-disable-next-line react-hooks/exhaustive-deps
             }, [currentRoute]);

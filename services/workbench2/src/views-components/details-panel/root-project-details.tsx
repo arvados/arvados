@@ -15,6 +15,7 @@ import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/proj
 import { RootState } from 'store/store';
 import { ResourcesState } from 'store/resources/resources';
 import { UserResource } from 'models/user';
+import { UserResourceFullName } from 'views-components/data-explorer/renderers';
 
 export class RootProjectDetails extends DetailsData<UserResource> {
     getIcon(className?: string) {
@@ -22,7 +23,6 @@ export class RootProjectDetails extends DetailsData<UserResource> {
     }
 
     getDetails() {
-      console.log('RootProjectDetails getDetails', this.item);
         return <RootProjectDetailsComponent rootProject={this.item} />;
     }
 }
@@ -66,7 +66,8 @@ const RootProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)
     withStyles(styles)(
         ({ rootProject}: RootProjectDetailsComponentProps & { resources: ResourcesState }) => <div>
             <DetailsAttribute label='Type' value="Root Project" />
-            <DetailsAttribute label='User' value={rootProject.fullName} />
+            <DetailsAttribute label='User' />
+            <UserResourceFullName uuid={rootProject.uuid} link={true} />
             <DetailsAttribute label='Created at' value={formatDate(rootProject.createdAt)} />
             <DetailsAttribute label='UUID' linkToUuid={rootProject.uuid} value={rootProject.uuid} />
         </div>

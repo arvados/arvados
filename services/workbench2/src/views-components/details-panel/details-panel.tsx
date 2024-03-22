@@ -66,7 +66,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const EMPTY_RESOURCE: EmptyResource = { kind: undefined, name: 'Projects' };
 
-const getItem = (res: DetailsResource): DetailsData => {
+const getItem = (res: DetailsResource, pathName: string): DetailsData => {
     if ('kind' in res) {
         switch (res.kind) {
             case ResourceKind.PROJECT:
@@ -78,16 +78,18 @@ const getItem = (res: DetailsResource): DetailsData => {
             case ResourceKind.WORKFLOW:
                 return new WorkflowDetails(res);
             case ResourceKind.USER:
-                return new RootProjectDetails(res);
+                if(pathName.includes('projects')) {
+                    return new RootProjectDetails(res);
+                }
             default:
-                return new EmptyDetails(res);
+                return new EmptyDetails(res as EmptyResource);
         }
     } else {
         return new FileDetails(res);
     }
 };
 
-const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, selectedResourceUuid, properties }: RootState) => {
+const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, selectedResourceUuid, properties, router }: RootState) => {
     const resource = getResource(selectedResourceUuid ?? properties.currentRouteUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
@@ -104,6 +106,7 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
         isOpened: detailsPanel.isOpened,
         tabNr: detailsPanel.tabNr,
         res: resource || (file && file.value) || EMPTY_RESOURCE,
+        pathname: router.location ? router.location.pathname : "",
     };
 };
 
@@ -124,6 +127,7 @@ export interface DetailsPanelDataProps {
     tabNr: number;
     res: DetailsResource;
     isFrozen: boolean;
+    pathname: string;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -163,7 +167,7 @@ export const DetailsPanel = withStyles(styles)(
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, res, tabNr, authConfig } = this.props;
+                const { classes, onCloseDrawer, res, tabNr, authConfig, pathname } = this.props;
                 let shouldShowInlinePreview = false;
                 if (!('kind' in res)) {
                     shouldShowInlinePreview = isInlineFileUrlSafe(
@@ -173,7 +177,7 @@ export const DetailsPanel = withStyles(styles)(
                     ) || authConfig.clusterConfig.Collections.TrustAllContent;
                 }
 
-                const item = getItem(res);
+                const item = getItem(res, pathname);
                 return <Grid
                     data-cy='details-panel'
                     container

@@ -84,7 +84,7 @@ const mapDispatchToProps = () => {
             dispatch<any>(setCheckedListOnStore(checkedList));
         },
 
-        setSelectedUuid: (uuid: string) => {
+        setSelectedUuid: (uuid: string | null) => {
             dispatch<any>(setSelectedResourceUuid(uuid));
         },
         

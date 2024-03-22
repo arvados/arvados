@@ -8,10 +8,10 @@ export const selectedResourceActions = {
 
 type SelectedResourceAction = {
     type: string;
-    payload: string;
+    payload: string | null;
 };
 
-export const setSelectedResourceUuid = (resourceUuid: string): SelectedResourceAction => ({
+export const setSelectedResourceUuid = (resourceUuid: string | null): SelectedResourceAction => ({
     type: selectedResourceActions.SET_SELECTED_RESOURCE,
     payload: resourceUuid
 });

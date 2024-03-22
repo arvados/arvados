@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { DetailsResource } from "models/details";
-import { ResourceKind } from 'models/resource';
 
 interface GetDetailsParams {
   tabNr?: number
@@ -15,7 +14,6 @@ export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
     constructor(protected item: T) { }
 
     getTitle(): string {
-        if((this.item as any).kind === ResourceKind.USER) return 'Home Projects'
         return this.item.name || 'Projects';
     }
 
