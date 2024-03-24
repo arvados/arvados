@@ -691,6 +691,12 @@ fpm_build_virtualenv_worker () {
   if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
     printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
     exit 1
+  # We must have the dependency resolver introduced in late 2020 for the rest
+  # of our install process to work.
+  # <https://blog.python.org/2020/11/pip-20-3-release-new-resolver.html>
+  elif ! "$venv_dir/bin/pip" install "pip>=20.3"; then
+    printf "Error, unable to run\n  %s/bin/pip install 'pip>=20.3'\n" "$venv_dir"
+    exit 1
   fi
 
   local pip_wheel="$(ls --sort=time --reverse "$PYTHON_BUILDROOT/wheelhouse/$(echo "$PKG" | sed s/-/_/g)-"*.whl | tail -n1)"
