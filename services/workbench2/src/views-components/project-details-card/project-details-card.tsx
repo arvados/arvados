@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse } from '@material-ui/core';
+import { StyleRulesCallback, Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse, Grid } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
@@ -30,6 +30,7 @@ import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectTo
 type CssRules =
     | 'root'
     | 'selected'
+    | 'cardHeaderContainer'
     | 'cardHeader'
     | 'descriptionToggle'
     | 'showMore'
@@ -69,7 +70,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     userNameContainer: {
         display: 'flex',
     },
+    cardHeaderContainer: {
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
     cardHeader: {
+        minWidth: '50rem',
         padding: '0.2rem 0.4rem 0.1rem 1rem',
     },
     descriptionToggle: {
@@ -306,44 +314,41 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
             onClick={() => handleCardClick(uuid)}
             data-cy='project-details-card'
         >
-            <CardHeader
-                className={classes.cardHeader}
-                title={
-                    <section className={classes.nameSection}>
-                        <section className={classes.namePlate}>
-                            <Typography
-                                noWrap
-                                variant='h6'
-                                style={{ marginRight: '1rem' }}
-                            >
-                                {name}
-                            </Typography>
-                            <FavoriteStar
-                                className={classes.faveIcon}
-                                resourceUuid={currentResource.uuid}
-                            />
-                            <PublicFavoriteStar
-                                className={classes.faveIcon}
-                                resourceUuid={currentResource.uuid}
-                            />
-                            {!!frozenByFullName && (
-                                <Tooltip
-                                    className={classes.frozenIcon}
-                                    disableFocusListener
-                                    title={<span>Project was frozen by {frozenByFullName}</span>}
+            <Grid container wrap='nowrap' className={classes.cardHeaderContainer}>
+                <CardHeader
+                    className={classes.cardHeader}
+                    title={
+                        <section className={classes.nameSection}>
+                            <section className={classes.namePlate}>
+                                <Typography
+                                    variant='h6'
+                                    style={{ marginRight: '1rem' }}
                                 >
-                                    <FreezeIcon style={{ fontSize: 'inherit' }} />
-                                </Tooltip>
-                            )}
+                                    {name}
+                                </Typography>
+                                <FavoriteStar
+                                    className={classes.faveIcon}
+                                    resourceUuid={currentResource.uuid}
+                                />
+                                <PublicFavoriteStar
+                                    className={classes.faveIcon}
+                                    resourceUuid={currentResource.uuid}
+                                />
+                                {!!frozenByFullName && (
+                                    <Tooltip
+                                        className={classes.frozenIcon}
+                                        disableFocusListener
+                                        title={<span>Project was frozen by {frozenByFullName}</span>}
+                                    >
+                                        <FreezeIcon style={{ fontSize: 'inherit' }} />
+                                    </Tooltip>
+                                )}
+                            </section>
                         </section>
-                    </section>
-                }
-                action={
-                    <section className={classes.toolbarSection}>
-                        {isSelected && <MultiselectToolbar />}
-                    </section>
-                }
-            />
+                    }
+                />
+                {isSelected && <MultiselectToolbar />}
+            </Grid>
             <section onClick={(ev) => ev.stopPropagation()}>
                 {description ? (
                     <section
