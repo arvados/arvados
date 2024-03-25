@@ -81,13 +81,16 @@ class InodeTests(unittest.TestCase):
 
         # Change min_entries
         cache.min_entries = 1
+        ent1.parent_inode = None
         inodes.cap_cache()
         inodes.wait_remove_queue_empty()
         self.assertEqual(600, cache.total())
         self.assertTrue(ent1.clear.called)
 
         # Touching ent1 should cause ent3 to get cleared
+        ent3.parent_inode = None
         self.assertFalse(ent3.clear.called)
+        inodes.inode_cache.update_cache_size(ent1)
         inodes.touch(ent1)
         inodes.wait_remove_queue_empty()
         self.assertTrue(ent3.clear.called)
@@ -132,6 +135,7 @@ class InodeTests(unittest.TestCase):
         ent3.has_ref.return_value = False
         ent1.clear.called = False
         ent3.clear.called = False
+        ent3.parent_inode = None
         inodes.touch(ent3)
         inodes.wait_remove_queue_empty()
         self.assertFalse(ent1.clear.called)
@@ -164,6 +168,6 @@ class InodeTests(unittest.TestCase):
         inodes.wait_remove_queue_empty()
         self.assertEqual(0, cache.total())
 
-        inodes.touch(ent3)
+        inodes.add_entry(ent3)
         inodes.wait_remove_queue_empty()
         self.assertEqual(600, cache.total())

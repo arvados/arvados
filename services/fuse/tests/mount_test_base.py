@@ -105,7 +105,7 @@ class MountTestBase(unittest.TestCase):
             self.llfuse_thread.join(timeout=60)
             if self.llfuse_thread.is_alive():
                 logger.warning("MountTestBase.tearDown():"
-                               " llfuse thread still alive 20s after umount"
+                               " llfuse thread still alive 60s after umount"
                                " -- exiting with SIGKILL")
                 os.kill(os.getpid(), signal.SIGKILL)
             waited = time.time() - t0

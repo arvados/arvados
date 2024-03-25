@@ -62,7 +62,7 @@ class FreshBase(object):
     """
 
     __slots__ = ("_stale", "_poll", "_last_update", "_atime", "_poll_time", "use_count",
-                 "ref_count", "dead", "cache_size", "cache_uuid", "allow_attr_cache")
+                 "ref_count", "cache_size", "cache_uuid", "allow_attr_cache")
 
     def __init__(self):
         self._stale = True
@@ -72,7 +72,6 @@ class FreshBase(object):
         self._poll_time = 60
         self.use_count = 0
         self.ref_count = 0
-        self.dead = False
         self.cache_size = 0
         self.cache_uuid = None
 

@@ -36,6 +36,8 @@ class Directory(FreshBase):
     and the value referencing a File or Directory object.
     """
 
+    __slots__ = ("inode", "parent_inode", "inodes", "_entries", "_mtime", "_enable_write", "_filters")
+
     def __init__(self, parent_inode, inodes, enable_write, filters):
         """parent_inode is the integer inode number"""
 
@@ -136,9 +138,8 @@ class Directory(FreshBase):
         super(Directory, self).fresh()
 
     def objsize(self):
-        # This is a very rough guess of the amount of overhead involved for
-        # each directory entry (128 bytes is 16 * 8-byte pointers).
-        return len(self._entries) * 128
+        # Rough estimate of memory footprint based on using pympler
+        return len(self._entries) * 1024
 
     def merge(self, items, fn, same, new_entry):
         """Helper method for updating the contents of the directory.
@@ -171,7 +172,7 @@ class Directory(FreshBase):
                 continue
             if name in oldentries:
                 ent = oldentries[name]
-                if same(ent, i):
+                if same(ent, i) and ent.parent_inode == self.inode:
                     # move existing directory entry over
                     self._entries[name] = ent
                     del oldentries[name]
@@ -186,18 +187,22 @@ class Directory(FreshBase):
                 ent = new_entry(i)
                 if ent is not None:
                     self._entries[name] = self.inodes.add_entry(ent)
+                    # need to invalidate this just in case there was a
+                    # previous entry that couldn't be moved over or a
+                    # lookup that returned file not found and cached
+                    # a negative result
+                    self.inodes.invalidate_entry(self, name)
                     changed = True
                 _logger.debug("Added entry '%s' as inode %i to parent inode %i", name, ent.inode, self.inode)
 
         # delete any other directory entries that were not in found in 'items'
-        for i in oldentries:
-            _logger.debug("Forgetting about entry '%s' on inode %i", i, self.inode)
-            self.inodes.invalidate_entry(self, i)
-            self.inodes.del_entry(oldentries[i])
+        for name, ent in oldentries.items():
+            _logger.debug("Detaching entry '%s' from parent_inode %i", name, self.inode)
+            self.inodes.invalidate_entry(self, name)
+            self.inodes.del_entry(ent)
             changed = True
 
         if changed:
-            self.inodes.invalidate_inode(self)
             self._mtime = time.time()
             self.inodes.inode_cache.update_cache_size(self)
 
@@ -213,11 +218,15 @@ class Directory(FreshBase):
 
     def clear(self):
         """Delete all entries"""
+        if len(self._entries) == 0:
+            return
         oldentries = self._entries
         self._entries = {}
         self.invalidate()
-        for n in oldentries:
-            self.inodes.del_entry(oldentries[n])
+        for name, ent in oldentries.items():
+            ent.clear()
+            self.inodes.invalidate_entry(self, name)
+            self.inodes.del_entry(ent)
         self.inodes.inode_cache.update_cache_size(self)
 
     def kernel_invalidate(self):
@@ -236,8 +245,6 @@ class Directory(FreshBase):
             if v is self:
                 self.inodes.invalidate_entry(parent, k)
                 break
-
-        self.inodes.invalidate_inode(self)
 
     def mtime(self):
         return self._mtime
@@ -282,6 +289,8 @@ class CollectionDirectoryBase(Directory):
 
     """
 
+    __slots__ = ("collection", "collection_root", "collection_record_file")
+
     def __init__(self, parent_inode, inodes, enable_write, filters, collection, collection_root):
         super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, enable_write, filters)
         self.collection = collection
@@ -291,11 +300,11 @@ class CollectionDirectoryBase(Directory):
     def new_entry(self, name, item, mtime):
         name = self.sanitize_filename(name)
         if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
-            if item.fuse_entry.dead is not True:
-                raise Exception("Can only reparent dead inode entry")
+            if item.fuse_entry.parent_inode is not None:
+                raise Exception("Can only reparent unparented inode entry")
             if item.fuse_entry.inode is None:
                 raise Exception("Reparented entry must still have valid inode")
-            item.fuse_entry.dead = False
+            item.fuse_entry.parent_inode = self.inode
             self._entries[name] = item.fuse_entry
         elif isinstance(item, arvados.collection.RichCollectionBase):
             self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(
@@ -446,6 +455,8 @@ class CollectionDirectoryBase(Directory):
 
     def clear(self):
         super(CollectionDirectoryBase, self).clear()
+        if self.collection is not None:
+            self.collection.unsubscribe()
         self.collection = None
 
     def objsize(self):
@@ -455,6 +466,9 @@ class CollectionDirectoryBase(Directory):
 
 class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree representing a collection."""
+
+    __slots__ = ("api", "num_retries", "collection_locator",
+                 "_manifest_size", "_writable", "_updating_lock")
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters=None, collection_record=None, explicit_collection=None):
         super(CollectionDirectory, self).__init__(parent_inode, inodes, enable_write, filters, None, self)
@@ -515,7 +529,9 @@ class CollectionDirectory(CollectionDirectoryBase):
         if self.collection_record_file is not None:
             self.collection_record_file.invalidate()
             self.inodes.invalidate_inode(self.collection_record_file)
-            _logger.debug("%s invalidated collection record file", self)
+            _logger.debug("parent_inode %s invalidated collection record file inode %s", self.inode,
+                          self.collection_record_file.inode)
+        self.inodes.update_uuid(self)
         self.inodes.inode_cache.update_cache_size(self)
         self.fresh()
 
@@ -594,6 +610,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         return False
 
     @use_counter
+    @check_update
     def collection_record(self):
         self.flush()
         return self.collection.api_response()
@@ -627,28 +644,31 @@ class CollectionDirectory(CollectionDirectoryBase):
         return (self.collection_locator is not None)
 
     def objsize(self):
-        # This is a very rough guess of the amount of overhead
-        # involved for a collection; you've got the manifest text
-        # itself which is not discarded by the Collection class, then
-        # the block identifiers that get copied into their own
-        # strings, then the rest of the overhead of the Python
-        # objects.
-        return self._manifest_size * 4
+        # This is a rough guess of the amount of overhead involved for
+        # a collection; the calculation is each file averages 128
+        # bytes in the manifest, but consume 1024 bytes when blown up
+        # into Python data structures.
+        return self._manifest_size * 8
 
     def finalize(self):
-        if self.collection is not None:
-            if self.writable():
-                try:
-                    self.collection.save()
-                except Exception as e:
-                    _logger.exception("Failed to save collection %s", self.collection_locator)
-            self.collection.stop_threads()
+        if self.collection is None:
+            return
+
+        if self.writable():
+            try:
+                self.collection.save()
+            except Exception as e:
+                _logger.exception("Failed to save collection %s", self.collection_locator)
+        self.collection.stop_threads()
 
     def clear(self):
         if self.collection is not None:
             self.collection.stop_threads()
         self._manifest_size = 0
         super(CollectionDirectory, self).clear()
+        if self.collection_record_file is not None:
+            self.inodes.del_entry(self.collection_record_file)
+        self.collection_record_file = None
 
 
 class TmpCollectionDirectory(CollectionDirectoryBase):
@@ -697,7 +717,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
                 with self.collection.lock:
                     self.collection_record_file.invalidate()
                     self.inodes.invalidate_inode(self.collection_record_file)
-                    _logger.debug("%s invalidated collection record", self)
+                    _logger.debug("%s invalidated collection record", self.inode)
         finally:
             while lockcount > 0:
                 self.collection.lock.acquire()
@@ -992,6 +1012,10 @@ class TagDirectory(Directory):
 class ProjectDirectory(Directory):
     """A special directory that contains the contents of a project."""
 
+    __slots__ = ("api", "num_retries", "project_object", "project_object_file",
+                 "project_uuid", "_updating_lock",
+                 "_current_user", "_full_listing", "storage_classes", "recursively_contained")
+
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, filters,
                  project_object, poll=True, poll_time=3, storage_classes=None):
         super(ProjectDirectory, self).__init__(parent_inode, inodes, enable_write, filters)
@@ -1194,6 +1218,12 @@ class ProjectDirectory(Directory):
 
     def persisted(self):
         return True
+
+    def clear(self):
+        super(ProjectDirectory, self).clear()
+        if self.project_object_file is not None:
+            self.inodes.del_entry(self.project_object_file)
+        self.project_object_file = None
 
     @use_counter
     @check_update
