@@ -141,6 +141,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         alignItems: "flex-start",
         flexDirection: "column",
+        '& pre': {
+            margin: 0,
+        },
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -211,7 +214,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: "120px",
     },
     primaryRow: {
-        height: "24px",
+        height: "26px",
         "& td": {
             paddingTop: "2px",
             paddingBottom: "2px",
