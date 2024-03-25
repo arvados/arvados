@@ -633,6 +633,7 @@ const ProcessValuePreview = withStyles(styles)(({ value, showImagePreview, class
             <img
                 className={classes.imagePreview}
                 src={value.imageUrl}
+                crossOrigin="anonymous"
                 alt="Inline Preview"
             />
         ) : (
