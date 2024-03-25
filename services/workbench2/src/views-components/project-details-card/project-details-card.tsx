@@ -77,7 +77,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: 'space-between',
     },
     cardHeader: {
-        minWidth: '50rem',
+        minWidth: '40rem',
         padding: '0.2rem 0.4rem 0.1rem 1rem',
     },
     descriptionToggle: {
@@ -131,7 +131,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: '1rem',
     },
     description: {
-        maxWidth: '90%',
+        maxWidth: '95%',
         marginTop: 0,
     },
 });
