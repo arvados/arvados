@@ -22,8 +22,10 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC)')
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
     arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
-    arg_parser.add_argument('--cluster', type=str, help='Cluster to query')
     arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
+    arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
+    arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
+
     args = arg_parser.parse_args(arguments)
 
     if args.days and args.start:
@@ -62,6 +64,13 @@ def parse_arguments(arguments):
             print("\nError: start date must be in YYYY-MM-DD format")
             exit(1)
 
+
+    if args.prometheus_auth:
+        with open(args.prometheus_auth, "rt") as f:
+            for line in f:
+                sp = line.split("=")
+                if sp[0].startswith("PROMETHEUS_"):
+                    os.environ[sp[0]] = sp[1]
 
     return args, since, to
 
@@ -275,7 +284,7 @@ def main(arguments=None):
 
     args, since, to = parse_arguments(arguments)
 
-    if "PROMETHEUS_HOST" in os.environ:
+    if "PROMETHEUS_HOST" in os.environ and args.cluster:
         report_from_prometheus(args.cluster, since, to)
 
     if args.cost_report_file:
