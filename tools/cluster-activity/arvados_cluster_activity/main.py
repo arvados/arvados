@@ -237,7 +237,7 @@ def flush_containers(arv_client, csvwriter, pending):
             container_request["name"],
             containers[container_request["container_uuid"]]["started_at"],
             "%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
-            container_request["cumulative_cost"],
+            round(container_request["cumulative_cost"], 3),
             ))
 
 
