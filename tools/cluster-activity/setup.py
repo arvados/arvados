@@ -33,6 +33,6 @@ setup(name='arvados-user-activity',
       install_requires=[
           'arvados-python-client >= 2.2.0.dev20201118185221',
       ],
-      extras_require={"prometheus": ["prometheus-api-client"]}
+      extras_require={"prometheus": ["prometheus-api-client"]},
       zip_safe=True,
 )
