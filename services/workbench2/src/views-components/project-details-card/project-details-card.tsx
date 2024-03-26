@@ -256,7 +256,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     const [showProperties, setShowProperties] = React.useState(false);
 
     const toggleDescription = () => {
-        console.log(showDescription, showProperties);
         setShowDescription(!showDescription);
     };
 
