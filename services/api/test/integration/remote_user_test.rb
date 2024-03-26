@@ -593,15 +593,31 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'zzzzz-tpzed-anonymouspublic', json_response['uuid']
   end
 
-  [401, 403, 422, 500, 502, 503].each do |status|
-    test "propagate #{status} response from getting remote token" do
+  [400, 401, 403, 422, 500, 502, 503].each do |status|
+    test "handle #{status} response from getting remote token" do
       @stub_token_status = status
       get "/arvados/v1/users/#{@stub_content[:uuid]}",
           params: {format: "json"},
           headers: auth(remote: "zbbbb")
-      assert_response status
-    end
+      assert_response(status < 500 ? 401 : status)
+      get "/arvados/v1/keep_services/accessible",
+          params: {format: "json"},
+          headers: auth(remote: "zbbbb")
+      assert_response(status < 500 ? :success : status)
 
+      Rails.configuration.Login.LoginCluster = "zbbbb"
+      get "/arvados/v1/users/current",
+          params: {format: "json"},
+          headers: {'HTTP_AUTHORIZATION' => "Bearer badtoken"}
+      assert_response(status < 500 ? 401 : status)
+      get "/arvados/v1/keep_services/accessible",
+          params: {format: "json"},
+          headers: {'HTTP_AUTHORIZATION' => "Bearer badtoken"}
+      assert_response(status < 500 ? :success : status)
+    end
+  end
+
+  [401, 403, 422, 500, 502, 503].each do |status|
     test "propagate #{status} response from getting uncached user" do
       @stub_status = status
       get "/arvados/v1/users/#{@stub_content[:uuid]}",
