@@ -272,7 +272,7 @@ def main(arguments=None):
     if "PROMETHEUS_HOST" in os.environ:
         report_from_prometheus(args.cluster, since, to)
 
-    if args.cost_report_file and "ARVADOS_API_HOST" in os.environ:
+    if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
             report_from_api(since, to, f)
 
