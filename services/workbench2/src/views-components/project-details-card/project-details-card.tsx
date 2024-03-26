@@ -16,10 +16,6 @@ import { UserResourceAccountStatus } from 'views-components/data-explorer/render
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
 import { FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
-import { CollectionResource } from 'models/collection';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
@@ -151,35 +147,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
         dispatch<any>(setSelectedResourceUuid(uuid));
         dispatch<any>(deselectAllOthers(uuid));
     },
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: any, isAdmin: boolean) => {
-        event.stopPropagation();
-        // When viewing the contents of a filter group, all contents should be treated as read only.
-        let readOnly = false;
-        if (resource.groupClass === 'filter') {
-            readOnly = true;
-        }
-        let menuKind = dispatch<any>(resourceUuidToContextMenuKind(resource.uuid, readOnly));
-        if (menuKind === ContextMenuKind.ROOT_PROJECT) {
-            menuKind = ContextMenuKind.USER_DETAILS;
-        }
-        if (menuKind && resource) {
-            dispatch<any>(
-                openContextMenu(event, {
-                    name: resource.name,
-                    uuid: resource.uuid,
-                    ownerUuid: resource.ownerUuid,
-                    isTrashed: 'isTrashed' in resource ? resource.isTrashed : false,
-                    kind: resource.kind,
-                    menuKind,
-                    isAdmin,
-                    isFrozen: !!resource.frozenByUuid,
-                    description: resource.description,
-                    storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
-                    properties: 'properties' in resource ? resource.properties : {},
-                })
-            );
-        }
-    },
+    
 });
 
 type DetailsCardProps = WithStyles<CssRules> & {
@@ -187,7 +155,6 @@ type DetailsCardProps = WithStyles<CssRules> & {
     frozenByFullName?: string;
     isAdmin: boolean;
     isSelected: boolean;
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
     handleCardClick: (resource: any) => void;
 };
 
@@ -195,7 +162,6 @@ type UserCardProps = WithStyles<CssRules> & {
     currentResource: UserResource;
     isAdmin: boolean;
     isSelected: boolean;
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource, isAdmin: boolean) => void;
     handleCardClick: (resource: any) => void;
 };
 
@@ -212,7 +178,7 @@ export const ProjectDetailsCard = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: DetailsCardProps) => {
-        const { classes, currentResource, frozenByFullName, handleContextMenu, handleCardClick, isAdmin, isSelected } = props;
+        const { classes, currentResource, frozenByFullName, handleCardClick, isAdmin, isSelected } = props;
         if (!currentResource) {
             return null;
         }
@@ -224,7 +190,6 @@ export const ProjectDetailsCard = connect(
                         currentResource={currentResource as UserResource}
                         isAdmin={isAdmin}
                         isSelected={isSelected}
-                        handleContextMenu={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
                         handleCardClick={handleCardClick}
                     />
                 );
