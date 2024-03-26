@@ -41,6 +41,7 @@ type CssRules =
     | 'faveIcon'
     | 'frozenIcon'
     | 'accountStatusSection'
+    | 'chipSection'
     | 'tag'
     | 'description';
 
@@ -84,7 +85,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 0,
-        paddingBottom: '-1rem',
         paddingLeft: '0.5rem',
     },
     nameSection: {
@@ -115,6 +115,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingLeft: '1rem',
+    },
+    chipSection: {
+        marginBottom: '-2rem',
     },
     tag: {
         marginRight: '0.75rem',
@@ -386,7 +389,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                     data-cy='project-description'
                                 >
                                     <CardContent className={classes.cardContent}>
-                                        <Typography component='div'>
+                                        <Typography component='div' className={classes.chipSection}>
                                             {Object.keys(currentResource.properties).map((k) =>
                                                 Array.isArray(currentResource.properties[k])
                                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
