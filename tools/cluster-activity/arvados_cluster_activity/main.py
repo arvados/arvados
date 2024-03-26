@@ -25,6 +25,7 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
     arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
     arg_parser.add_argument('--cluster', type=str, help='Cluster to query')
+    arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
     args = arg_parser.parse_args(arguments)
 
     if args.days and args.start:
@@ -149,16 +150,8 @@ def container_usage(prom, start_time, end_time, metric, label, fn=None):
 
     print(label % cumulative)
 
-
-def main(arguments=None):
-    if arguments is None:
-        arguments = sys.argv[1:]
-
-    args, since, to = parse_arguments(arguments)
-
-    #arv = arvados.api()
-
-    prom_host = os.environ["PROMETHEUS_HOST"]
+def report_from_prometheus(cluster, since, to):
+    prom_host = os.environ.get("PROMETHEUS_HOST")
     prom_token = os.environ.get("PROMETHEUS_APIKEY")
     prom_user = os.environ.get("PROMETHEUS_USER")
     prom_pw = os.environ.get("PROMETHEUS_PASSWORD")
@@ -171,8 +164,6 @@ def main(arguments=None):
         headers["Authorization"] = "Basic %s" % str(base64.b64encode(bytes("%s:%s" % (prom_user, prom_pw), 'utf-8')), 'utf-8')
 
     prom = PrometheusConnect(url=prom_host, headers=headers)
-
-    cluster = args.cluster
 
     print(cluster, "between", since, "and", to, "timespan", (to-since))
 
@@ -188,6 +179,102 @@ def main(arguments=None):
     container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
     container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
     print()
+
+def flush_containers(arv_client, csvwriter, pending):
+    containers = {}
+
+    for container in arvados.util.keyset_list_all(
+        arv_client.containers().list,
+        filters=[
+            ["uuid", "in", [c["container_uuid"] for c in pending]],
+        ],
+        select=["uuid", "started_at", "finished_at"]):
+
+        containers[container["uuid"]] = container
+
+    workflows = {}
+    workflows["none"] = "workflow run from command line"
+
+    for wf in arvados.util.keyset_list_all(
+            arv_client.workflows().list,
+            filters=[
+                ["uuid", "in", [c["properties"]["template_uuid"] for c in pending if "template_uuid" in c["properties"]]],
+            ],
+            select=["uuid", "name"]):
+        workflows[wf["uuid"]] = wf["name"]
+
+    projects = {}
+
+    for pr in arvados.util.keyset_list_all(
+            arv_client.groups().list,
+            filters=[
+                ["uuid", "in", [c["owner_uuid"] for c in pending if c["owner_uuid"][6:11] == 'j7d0g']],
+            ],
+            select=["uuid", "name"]):
+        projects[pr["uuid"]] = pr["name"]
+
+    for pr in arvados.util.keyset_list_all(
+            arv_client.users().list,
+            filters=[
+                ["uuid", "in", [c["owner_uuid"] for c in pending if c["owner_uuid"][6:11] == 'tpzed']],
+            ],
+            select=["uuid", "full_name", "first_name", "last_name"]):
+        projects[pr["uuid"]] = pr["full_name"]
+
+    for container_request in pending:
+        length = ciso8601.parse_datetime(containers[container_request["container_uuid"]]["finished_at"]) - ciso8601.parse_datetime(containers[container_request["container_uuid"]]["started_at"])
+
+        hours = length.seconds // 3600
+        minutes = (length.seconds // 60) % 60
+        seconds = length.seconds % 60
+
+        csvwriter.writerow((
+            projects.get(container_request["owner_uuid"], "unknown owner"),
+            workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+            container_request["name"],
+            containers[container_request["container_uuid"]]["started_at"],
+            "%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
+            container_request["cumulative_cost"],
+            ))
+
+
+def report_from_api(since, to, out):
+    arv_client = arvados.api()
+
+    csvwriter = csv.writer(out)
+    csvwriter.writerow(("Project", "Workflow", "Sample", "Started", "Runtime", "Cost"))
+
+    pending = []
+
+    print(since.isoformat())
+    for container_request in arvados.util.keyset_list_all(
+            arv_client.container_requests().list,
+            filters=[
+                ["command", "like", "[\"arvados-cwl-runner%"],
+                ["created_at", ">=", since.strftime("%Y%m%dT%H%M%SZ")],
+            ],
+            select=["uuid", "owner_uuid", "container_uuid", "name", "cumulative_cost", "properties"]):
+
+        if len(pending) < 1000:
+            pending.append(container_request)
+        else:
+            flush_containers(arv_client, csvwriter, pending)
+            pending.clear()
+
+    flush_containers(arv_client, csvwriter, pending)
+
+def main(arguments=None):
+    if arguments is None:
+        arguments = sys.argv[1:]
+
+    args, since, to = parse_arguments(arguments)
+
+    if "PROMETHEUS_HOST" in os.environ:
+        report_from_prometheus(args.cluster, since, to)
+
+    if args.cost_report_file and "ARVADOS_API_HOST" in os.environ:
+        with open(args.cost_report_file, "wt") as f:
+            report_from_api(since, to, f)
 
 if __name__ == "__main__":
     main()
