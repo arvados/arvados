@@ -59,6 +59,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     noDescription: {
         color: theme.palette.grey['600'],
         fontStyle: 'italic',
+        padding: '0  0 0.5rem 1rem',
+        marginTop: '-0.5rem',
     },
     userNameContainer: {
         display: 'flex',
@@ -97,16 +99,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         margin: 0,
+        minHeight: '2.7rem',
     },
     faveIcon: {
         fontSize: '0.8rem',
-        margin: 'auto 0 0.5rem 0.3rem',
+        margin: 'auto 0 1rem 0.3rem',
         color: theme.palette.text.primary,
     },
     frozenIcon: {
         fontSize: '0.5rem',
         marginLeft: '0.3rem',
-        marginTop: '0.1rem',
         height: '1rem',
         color: theme.palette.text.primary,
     },
