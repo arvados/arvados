@@ -83,7 +83,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardContent: {
         display: 'flex',
         flexDirection: 'column',
-        marginTop: '-1.75rem',
+        paddingTop: 0,
+        paddingBottom: '-1rem',
+        paddingLeft: '0.5rem',
     },
     nameSection: {
         display: 'flex',
@@ -115,8 +117,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: '1rem',
     },
     tag: {
-        marginRight: '1rem',
-        marginTop: '1rem',
+        marginRight: '0.75rem',
+        marginBottom: '0.5rem',
     },
     description: {
         maxWidth: '95%',
@@ -284,6 +286,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
     const [showProperties, setShowProperties] = React.useState(false);
 
     const toggleDescription = () => {
+        console.log(showDescription, showProperties);
         setShowDescription(!showDescription);
     };
 
