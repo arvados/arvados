@@ -12,12 +12,10 @@ import datetime
 import ciso8601
 import csv
 import os
-from prometheus_api_client.utils import parse_datetime
+
 from datetime import timedelta
-import pandas
 import base64
 
-from prometheus_api_client import PrometheusConnect, MetricsList, Metric
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
@@ -111,6 +109,10 @@ def data_usage(prom, timestamp, cluster, label):
 
 
 def container_usage(prom, start_time, end_time, metric, label, fn=None):
+    from prometheus_api_client.utils import parse_datetime
+    from prometheus_api_client import PrometheusConnect, MetricsList, Metric
+    import pandas
+
     start = start_time
     chunk_size = timedelta(days=1)
     cumulative = 0
@@ -151,6 +153,8 @@ def container_usage(prom, start_time, end_time, metric, label, fn=None):
     print(label % cumulative)
 
 def report_from_prometheus(cluster, since, to):
+    from prometheus_api_client import PrometheusConnect
+
     prom_host = os.environ.get("PROMETHEUS_HOST")
     prom_token = os.environ.get("PROMETHEUS_APIKEY")
     prom_user = os.environ.get("PROMETHEUS_USER")
