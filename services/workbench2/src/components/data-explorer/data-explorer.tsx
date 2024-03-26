@@ -17,12 +17,15 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules = "titleWrapper" | "msToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
+    },
+    msToolbarStyles: {
+        paddingTop: "0.6rem",
     },
     searchBox: {
         paddingBottom: 0,
@@ -242,7 +245,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                             {!!progressBar && progressBar}
-                            {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar />}
+                            {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}

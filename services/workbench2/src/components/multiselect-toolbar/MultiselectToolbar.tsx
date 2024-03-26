@@ -35,6 +35,7 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
+import classNames from "classnames";
 
 const WIDTH_TRANSITION = 150
 
@@ -81,6 +82,7 @@ export type MultiselectToolbarProps = {
     auth: AuthState;
     location: string;
     isSubPanel?: boolean;
+    injectedStyles?: string;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
@@ -106,7 +108,7 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, location, isSubPanel } = props;
+        const { classes, checkedList, iconProps, user, disabledButtons, location, isSubPanel, injectedStyles } = props;
         const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
         const singleResourceKind = selectedResourceUuid && !isSubPanel ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
@@ -141,7 +143,7 @@ export const MultiselectToolbar = connect(
         return (
             <React.Fragment>
                 <Toolbar
-                    className={isTransitioning ? classes.transition: classes.root}
+                    className={classNames((isTransitioning ? classes.transition: classes.root), injectedStyles)}
                     style={{ width: `${(actions.length * 2.5) + 2}rem`}}
                     data-cy='multiselect-toolbar'
                     >
