@@ -41,6 +41,8 @@ Add a DispatchSLURM entry to the Services section, using the hostname where @cru
 
 The following configuration parameters are optional.
 
+{% include 'hpc_max_gateway_tunnels' %}
+
 h3(#PollPeriod). Containers.PollInterval
 
 crunch-dispatch-slurm polls the API server periodically for new containers to run.  The @PollInterval@ option controls how often this poll happens.  Set this to a string of numbers suffixed with one of the time units @ns@, @us@, @ms@, @s@, @m@, or @h@.  For example:

@@ -15,8 +15,10 @@ import { TagProperty } from 'models/tag';
 import { change, formValueSelector } from 'redux-form';
 import { ResourcePropertiesFormData } from 'views-components/resource-properties-form/resource-properties-form';
 
+export type ResourceWithDescription = Resource & { description?: string }
+
 export const resourcesActions = unionize({
-    SET_RESOURCES: ofType<Resource[]>(),
+    SET_RESOURCES: ofType<ResourceWithDescription[] >(),
     DELETE_RESOURCES: ofType<string[]>()
 });
 

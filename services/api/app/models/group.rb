@@ -168,9 +168,9 @@ with temptable as (select * from project_subtree_with_trash_at($1, LEAST($2, $3)
       select uuid from frozen_groups, temptable where uuid = target_uuid
 },
       "Group.update_trash.select",
-      [[nil, self.uuid],
-       [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
-       [nil, self.trash_at]])
+      [self.uuid,
+       TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
+       self.trash_at])
     if frozen_descendants.any?
       raise ArgumentError.new("cannot trash project containing frozen project #{frozen_descendants[0]["uuid"]}")
     end
@@ -189,9 +189,9 @@ select container_uuid from container_requests where
   requesting_container_uuid is NULL and state = 'Committed' and container_uuid is not NULL
 },
       "Group.update_trash.select",
-      [[nil, self.uuid],
-       [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
-       [nil, self.trash_at]]).each do |container_uuid|
+      [self.uuid,
+       TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
+       self.trash_at]).each do |container_uuid|
       update_priorities container_uuid["container_uuid"]
     end
   end
@@ -208,10 +208,10 @@ select cr.uuid, cr.state from container_requests cr, temptable frozen
   and cr.state not in ($3, $4) limit 1
 },
                                                       "Group.update_frozen.check_container_requests",
-                                                      [[nil, self.uuid],
-                                                       [nil, !self.frozen_by_uuid.nil?],
-                                                       [nil, ContainerRequest::Uncommitted],
-                                                       [nil, ContainerRequest::Final]])
+                                                      [self.uuid,
+                                                       !self.frozen_by_uuid.nil?,
+                                                       ContainerRequest::Uncommitted,
+                                                       ContainerRequest::Final])
       if rows.any?
         raise ArgumentError.new("cannot freeze project containing container request #{rows.first['uuid']} with state = #{rows.first['state']}")
       end
@@ -224,8 +224,8 @@ delete_rows as (delete from frozen_groups where uuid in (select uuid from tempta
 
 insert into frozen_groups (uuid) select uuid from temptable where is_frozen on conflict do nothing
 }, "Group.update_frozen.update",
-                                         [[nil, self.uuid],
-                                          [nil, !self.frozen_by_uuid.nil?]])
+                                         [self.uuid,
+                                          !self.frozen_by_uuid.nil?])
 
   end
 
@@ -247,11 +247,11 @@ insert into frozen_groups (uuid) select uuid from temptable where is_frozen on c
     ActiveRecord::Base.connection.exec_delete(
       "delete from trashed_groups where group_uuid=$1",
       "Group.clear_permissions_trash_frozen",
-      [[nil, self.uuid]])
+      [self.uuid])
     ActiveRecord::Base.connection.exec_delete(
       "delete from frozen_groups where uuid=$1",
       "Group.clear_permissions_trash_frozen",
-      [[nil, self.uuid]])
+      [self.uuid])
   end
 
   def assign_name

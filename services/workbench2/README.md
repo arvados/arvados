@@ -49,8 +49,7 @@ make integration-tests-in-docker
 
 ```
 xhost +local:root
-ARVADOS_DIR=/path/to/arvados
-docker run -ti -v$PWD:$PWD -v$ARVADOS_DIR:/usr/src/arvados -w$PWD --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" workbench2-build /bin/bash
+docker run -ti -v$PWD:$PWD -v$(realpath ../..):/usr/src/arvados -w$PWD --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" workbench2-build /bin/bash
 (inside container)
 yarn run cypress install
 tools/run-integration-tests.sh -i -a /usr/src/arvados

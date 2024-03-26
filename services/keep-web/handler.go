@@ -27,15 +27,14 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
-	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
 
 type handler struct {
-	Cache     cache
-	Cluster   *arvados.Cluster
-	setupOnce sync.Once
+	Cache   cache
+	Cluster *arvados.Cluster
+	metrics *metrics
 
 	lockMtx    sync.Mutex
 	lock       map[string]*sync.RWMutex
@@ -58,10 +57,6 @@ func parseCollectionIDFromURL(s string) string {
 		return pdh
 	}
 	return ""
-}
-
-func (h *handler) setup() {
-	keepclient.DefaultBlockCache.MaxBlocks = h.Cluster.Collections.WebDAVCache.MaxBlockEntries
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -179,8 +174,6 @@ func (h *handler) Done() <-chan struct{} {
 
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
-	h.setupOnce.Do(h.setup)
-
 	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
 		r.URL.Scheme = xfp
 	}
@@ -293,12 +286,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		reqTokens = auth.CredentialsFromRequest(r).Tokens
 	}
 
-	formToken := r.FormValue("api_token")
+	r.ParseForm()
 	origin := r.Header.Get("Origin")
 	cors := origin != "" && !strings.HasSuffix(origin, "://"+r.Host)
 	safeAjax := cors && (r.Method == http.MethodGet || r.Method == http.MethodHead)
-	safeAttachment := attachment && r.URL.Query().Get("api_token") == ""
-	if formToken == "" {
+	// Important distinction: safeAttachment checks whether api_token exists
+	// as a query parameter. haveFormTokens checks whether api_token exists
+	// as request form data *or* a query parameter. Different checks are
+	// necessary because both the request disposition and the location of
+	// the API token affect whether or not the request needs to be
+	// redirected. The different branch comments below explain further.
+	safeAttachment := attachment && !r.URL.Query().Has("api_token")
+	if formTokens, haveFormTokens := r.Form["api_token"]; !haveFormTokens {
 		// No token to use or redact.
 	} else if safeAjax || safeAttachment {
 		// If this is a cross-origin request, the URL won't
@@ -313,7 +312,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// form?" problem, so provided the token isn't
 		// embedded in the URL, there's no reason to do
 		// redirect-with-cookie in this case either.
-		reqTokens = append(reqTokens, formToken)
+		for _, tok := range formTokens {
+			reqTokens = append(reqTokens, tok)
+		}
 	} else if browserMethod[r.Method] {
 		// If this is a page view, and the client provided a
 		// token via query string or POST body, we must put
@@ -592,7 +593,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if webdavPrefix == "" {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
 	}
-	wh := webdav.Handler{
+	wh := &webdav.Handler{
 		Prefix: webdavPrefix,
 		FileSystem: &webdavfs.FS{
 			FileSystem:    sessionFS,
@@ -607,7 +608,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			}
 		},
 	}
-	wh.ServeHTTP(w, r)
+	h.metrics.track(wh, w, r)
 	if r.Method == http.MethodGet && w.WroteStatus() == http.StatusOK {
 		wrote := int64(w.WroteBodyBytes())
 		fnm := strings.Join(pathParts[stripParts:], "/")
@@ -776,7 +777,7 @@ func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename
 }
 
 func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, location string, credentialsOK bool) {
-	if formToken := r.FormValue("api_token"); formToken != "" {
+	if formTokens, haveFormTokens := r.Form["api_token"]; haveFormTokens {
 		if !credentialsOK {
 			// It is not safe to copy the provided token
 			// into a cookie unless the current vhost
@@ -797,13 +798,19 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 		// bar, and in the case of a POST request to avoid
 		// raising warnings when the user refreshes the
 		// resulting page.
-		http.SetCookie(w, &http.Cookie{
-			Name:     "arvados_api_token",
-			Value:    auth.EncodeTokenCookie([]byte(formToken)),
-			Path:     "/",
-			HttpOnly: true,
-			SameSite: http.SameSiteLaxMode,
-		})
+		for _, tok := range formTokens {
+			if tok == "" {
+				continue
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "arvados_api_token",
+				Value:    auth.EncodeTokenCookie([]byte(tok)),
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+			break
+		}
 	}
 
 	// Propagate query parameters (except api_token) from

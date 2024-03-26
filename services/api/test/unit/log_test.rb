@@ -319,7 +319,7 @@ class LogTest < ActiveSupport::TestCase
       assert_logged(coll, :create) do |props|
         assert_equal(txt, props['new_attributes']['manifest_text'])
       end
-      coll.update_attributes!(name: "testing")
+      coll.update!(name: "testing")
       assert_logged(coll, :update) do |props|
         assert_equal(txt, props['old_attributes']['manifest_text'])
         assert_equal(txt, props['new_attributes']['manifest_text'])

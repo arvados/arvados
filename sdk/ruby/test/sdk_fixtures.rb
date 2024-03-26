@@ -33,7 +33,7 @@ module SDKFixtures
         file = IO.read(path)
         trim_index = file.index('# Test Helper trims the rest of the file')
         file = file[0, trim_index] if trim_index
-        YAML.load(file)
+        YAML.safe_load(file, permitted_classes: [Time])
       end
   end
 

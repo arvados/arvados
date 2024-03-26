@@ -40,7 +40,7 @@ class KeepDisk < ArvadosModel
     end
 
     @bypass_arvados_authorization = true
-    self.update_attributes!(o.select { |k,v|
+    self.update!(o.select { |k,v|
                              [:bytes_total,
                               :bytes_free,
                               :is_readable,

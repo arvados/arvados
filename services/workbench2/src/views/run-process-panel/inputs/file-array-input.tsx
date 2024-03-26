@@ -144,7 +144,9 @@ const FileArrayInputComponent = connect(mapStateToProps)(
             ids.forEach(pickerId => {
                 this.props.dispatch(
                     treePickerActions.DESELECT_TREE_PICKER_NODE({
-                        pickerId, id: deletedFiles.map(({ id }) => id),
+                        pickerId,
+                        id: deletedFiles.map(({ id }) => id),
+                        cascade: true,
                     })
                 );
             });
@@ -164,7 +166,9 @@ const FileArrayInputComponent = connect(mapStateToProps)(
             ids.forEach(pickerId => {
                 this.props.dispatch(
                     treePickerActions.SELECT_TREE_PICKER_NODE({
-                        pickerId, id: addedFiles.map(({ id }) => id),
+                        pickerId,
+                        id: addedFiles.map(({ id }) => id),
+                        cascade: true,
                     })
                 );
             });
@@ -257,6 +261,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                                     includeDirectories
                                     includeFiles
                                     showSelection
+                                    cascadeSelection={true}
                                     options={this.props.options}
                                     toggleItemSelection={this.refreshFiles} />
                             </div>

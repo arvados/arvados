@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# If you change this file, you'll probably also want to make the same
-# changes in apps/workbench/lib/app_version.rb.
-
 class AppVersion
   def self.git(*args, &block)
     IO.popen(["git", "--git-dir", ".git"] + args, "r",

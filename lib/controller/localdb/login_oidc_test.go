@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -95,6 +96,75 @@ func (s *OIDCLoginSuite) TestGoogleLogout(c *check.C) {
 	resp, err = s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://192.168.1.1/bar"})
 	c.Check(err, check.IsNil)
 	c.Check(resp.RedirectLocation, check.Equals, "https://192.168.1.1/bar")
+}
+
+func (s *OIDCLoginSuite) checkRPInitiatedLogout(c *check.C, returnTo string) {
+	if !c.Check(s.fakeProvider.EndSessionEndpoint, check.NotNil,
+		check.Commentf("buggy test: EndSessionEndpoint not configured")) {
+		return
+	}
+	expURL, err := url.Parse(s.fakeProvider.Issuer.URL)
+	if !c.Check(err, check.IsNil, check.Commentf("error parsing expected URL")) {
+		return
+	}
+	expURL.Path = expURL.Path + s.fakeProvider.EndSessionEndpoint.Path
+
+	accessToken := s.fakeProvider.ValidAccessToken()
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, accessToken)
+	resp, err := s.localdb.Logout(ctx, arvados.LogoutOptions{ReturnTo: returnTo})
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	loc, err := url.Parse(resp.RedirectLocation)
+	if !c.Check(err, check.IsNil, check.Commentf("error parsing response URL")) {
+		return
+	}
+
+	c.Check(loc.Scheme, check.Equals, "https")
+	c.Check(loc.Host, check.Equals, expURL.Host)
+	c.Check(loc.Path, check.Equals, expURL.Path)
+
+	var expReturn string
+	switch returnTo {
+	case "":
+		expReturn = s.cluster.Services.Workbench2.ExternalURL.String()
+	default:
+		expReturn = returnTo
+	}
+	values := loc.Query()
+	c.Check(values.Get("client_id"), check.Equals, s.cluster.Login.Google.ClientID)
+	c.Check(values.Get("post_logout_redirect_uri"), check.Equals, expReturn)
+}
+
+func (s *OIDCLoginSuite) TestRPInitiatedLogoutWithoutReturnTo(c *check.C) {
+	s.fakeProvider.EndSessionEndpoint = &url.URL{Path: "/logout/fromRP"}
+	s.checkRPInitiatedLogout(c, "")
+}
+
+func (s *OIDCLoginSuite) TestRPInitiatedLogoutWithReturnTo(c *check.C) {
+	s.fakeProvider.EndSessionEndpoint = &url.URL{Path: "/rp_logout"}
+	u := arvados.URL{Scheme: "https", Host: "foo.example", Path: "/"}
+	s.cluster.Login.TrustedClients[u] = struct{}{}
+	s.checkRPInitiatedLogout(c, u.String())
+}
+
+func (s *OIDCLoginSuite) TestEndSessionEndpointBadScheme(c *check.C) {
+	// RP-Initiated Logout 1.0 says: "This URL MUST use the https scheme..."
+	u := url.URL{Scheme: "http", Host: "example.com"}
+	s.fakeProvider.EndSessionEndpoint = &u
+	_, err := s.localdb.Logout(s.ctx, arvados.LogoutOptions{})
+	c.Check(err, check.ErrorMatches,
+		`.*\bend_session_endpoint MUST use HTTPS but does not: `+regexp.QuoteMeta(u.String()))
+}
+
+func (s *OIDCLoginSuite) TestNoRPInitiatedLogoutWithoutToken(c *check.C) {
+	endPath := "/TestNoRPInitiatedLogoutWithoutToken"
+	s.fakeProvider.EndSessionEndpoint = &url.URL{Path: endPath}
+	resp, _ := s.localdb.Logout(s.ctx, arvados.LogoutOptions{})
+	u, err := url.Parse(resp.RedirectLocation)
+	c.Check(err, check.IsNil)
+	c.Check(strings.HasSuffix(u.Path, endPath), check.Equals, false,
+		check.Commentf("logout redirected to end_session_endpoint without token"))
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_Start_Bogus(c *check.C) {

@@ -37,6 +37,7 @@ import { Link as ButtonLink } from '@material-ui/core';
 import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
 type CssRules = 'root'
     | 'button'
@@ -229,7 +230,11 @@ export const CollectionPanel = withStyles(styles)(connect(
                             </Card>
                         </MPVPanelContent>
                     </MPVContainer >
-                    : null;
+                    : <NotFoundView
+                        icon={CollectionIcon}
+                        messages={["Collection not found"]}
+                    />
+                    ;
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
@@ -345,7 +350,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Storage classes' value={item.storageClassesDesired.join(', ')} />
+                label='Storage classes' value={item.storageClassesDesired ? item.storageClassesDesired.join(', ') : ["default"]} />
         </Grid>
 
         {/*

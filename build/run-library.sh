@@ -115,6 +115,25 @@ handle_ruby_gem() {
     fi
 }
 
+# Usage: package_workbench2
+package_workbench2() {
+    local pkgname=arvados-workbench2
+    local src=services/workbench2
+    local dst=/var/www/arvados-workbench2/workbench2
+    local description="Arvados Workbench 2"
+    local version="$(version_from_git)"
+    cd "$WORKSPACE/$src"
+    rm -rf ./build
+    NODE_ENV=production yarn install
+    VERSION="$version" BUILD_NUMBER="$(default_iteration "$pkgname" "$version" yarn)" GIT_COMMIT="$(git rev-parse HEAD | head -c9)" yarn build
+    cd "$WORKSPACE/packages/$TARGET"
+    fpm_build "${WORKSPACE}/$src" "${WORKSPACE}/$src/build/=$dst" "$pkgname" dir "$version" \
+              --license="GNU Affero General Public License, version 3.0" \
+              --description="${description}" \
+              --config-files="/etc/arvados/$pkgname/workbench2.example.json" \
+              "$WORKSPACE/services/workbench2/etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$pkgname/workbench2.example.json"
+}
+
 calculate_go_package_version() {
   # $__returnvar has the nameref attribute set, which means it is a reference
   # to another variable that is passed in as the first argument to this function.
@@ -159,12 +178,8 @@ package_go_binary() {
   local license_file="${1:-agpl-3.0.txt}"; shift
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
-    # arvados-workbench depends on arvados-server at build time, so even when
-    # only arvados-workbench is being built, we need to build arvados-server too
-    if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
       debug_echo -e "Skipping build of $prog package."
       return 0
-    fi
   fi
 
   native_arch=$(get_native_arch)
@@ -175,12 +190,12 @@ package_go_binary() {
   fi
 
   case "$package_format-$TARGET" in
-    # Older Debian/Ubuntu do not support cross compilation because the
+    # Ubuntu 20.04 does not support cross compilation because the
     # libfuse package does not support multiarch. See
     # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477>.
     # Red Hat-based distributions do not support native cross compilation at
     # all (they use a qemu-based solution we haven't implemented yet).
-    deb-debian10|deb-ubuntu1804|deb-ubuntu2004|rpm-*)
+    deb-ubuntu2004|rpm-*)
       cross_compilation=0
       if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
         echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
@@ -330,7 +345,7 @@ rails_package_version() {
         return
     fi
     local version="$(version_from_git)"
-    if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
+    if [ $pkgname = "arvados-api-server" ] ; then
         calculate_go_package_version version cmd/arvados-server "$srcdir"
     fi
     echo $version
@@ -410,11 +425,7 @@ test_package_presence() {
     local iteration="$1"; shift
     local arch="$1"; shift
     if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
-      # arvados-workbench depends on arvados-server at build time, so even when
-      # only arvados-workbench is being built, we need to build arvados-server too
-      if [[ "$pkgname" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
         return 1
-      fi
     fi
 
     local full_pkgname
@@ -429,10 +440,10 @@ test_package_presence() {
       echo "Package $full_pkgname build forced with --force-build, building"
     elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
-      dd[debian10]=buster
       dd[debian11]=bullseye
-      dd[ubuntu1804]=bionic
+      dd[debian12]=bookworm
       dd[ubuntu2004]=focal
+      dd[ubuntu2204]=jammy
       D=${dd[$TARGET]}
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
@@ -456,7 +467,6 @@ test_package_presence() {
     else
       local rpm_root
       case "$TARGET" in
-        centos7) rpm_root="CentOS/7/dev" ;;
         rocky8) rpm_root="CentOS/8/dev" ;;
         *)
           echo "FIXME: Don't know RPM URL path for $TARGET, building"
@@ -516,13 +526,10 @@ handle_rails_package() {
     fi
     # For some reason fpm excludes need to not start with /.
     local exclude_root="${railsdir#/}"
-    local -a exclude_list=(tmp log coverage Capfile\* \
-                           config/deploy\* config/application.yml)
-    # for arvados-workbench, we need to have the (dummy) config/database.yml in the package
-    if  [[ "$pkgname" != "arvados-workbench" ]]; then
-      exclude_list+=('config/database.yml')
-    fi
-    for exclude in ${exclude_list[@]}; do
+    for exclude in tmp log coverage Capfile\* \
+                       config/deploy\* \
+                       config/application.yml \
+                       config/database.yml; do
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
@@ -559,89 +566,6 @@ handle_api_server () {
   fi
 }
 
-# Usage: handle_workbench [amd64|arm64]
-handle_workbench () {
-  local target_arch="${1:-amd64}"; shift
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "arvados-workbench" ]] ; then
-    debug_echo -e "Skipping build of arvados-workbench package."
-    return 0
-  fi
-
-  native_arch=$(get_native_arch)
-  if [[ "$target_arch" != "$native_arch" ]]; then
-    echo "Error: no cross compilation support for Rails yet, can not build arvados-workbench for $native_arch"
-    echo
-    exit 1
-  fi
-
-  if [[ "$native_arch" != "amd64" ]]; then
-    echo "Error: building the arvados-workbench package is not yet supported on this architecture ($native_arch)."
-    echo
-    exit 1
-  fi
-
-  # Build the workbench server package
-  test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
-  if [[ "$?" == "0" ]] ; then
-    calculate_go_package_version arvados_server_version cmd/arvados-server
-    arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
-
-    (
-        set -e
-
-        # The workbench package has a build-time dependency on the arvados-server
-        # package for config manipulation, so install it first.
-        cd $WORKSPACE/cmd/arvados-server
-        get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
-
-        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
-        if [[ ! -e ${arvados_server_pkg_path} ]]; then
-          arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
-        fi
-        if [[ "$FORMAT" == "deb" ]]; then
-          dpkg -i ${arvados_server_pkg_path}
-        else
-          rpm -i ${arvados_server_pkg_path}
-        fi
-
-        cd "$WORKSPACE/apps/workbench"
-
-        # We need to bundle to be ready even when we build a package without vendor directory
-        # because asset compilation requires it.
-        bundle config set --local system 'true' >"$STDOUT_IF_DEBUG"
-        bundle install >"$STDOUT_IF_DEBUG"
-
-        # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
-        # and we want that in the package, so it's easier to not exclude the tmp directory
-        # from the package - empty it instead.
-        rm -rf tmp
-        mkdir tmp
-
-        # Set up an appropriate config.yml
-        arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
-        mkdir -p /etc/arvados/
-        mv /tmp/x /etc/arvados/config.yml
-        perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
-
-        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
-        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
-
-        # Remove generated configuration files so they don't go in the package.
-        rm -rf /etc/arvados/
-    )
-
-    if [[ "$?" != "0" ]]; then
-      echo "ERROR: Asset precompilation failed"
-      EXITCODE=1
-    else
-      handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
-          "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
-          --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-          --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
-    fi
-  fi
-}
-
 # Usage: handle_cwltest [deb|rpm] [amd64|arm64]
 handle_cwltest () {
   local package_format="$1"; shift
@@ -666,8 +590,6 @@ handle_cwltest () {
   # signal to our build script that we want a cwltest executable installed in /usr/bin/
   mkdir cwltest/bin && touch cwltest/bin/cwltest
   fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
-  # The python->python3 metapackage
-  build_metapackage "cwltest" "cwltest"
   cd "$WORKSPACE"
   rm -rf "$WORKSPACE/cwltest"
 }
@@ -769,10 +691,7 @@ fpm_build_virtualenv_worker () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
-  local python=$PYTHON3_EXECUTABLE
-  pip=pip3
   PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
-
   if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
@@ -783,20 +702,26 @@ fpm_build_virtualenv_worker () {
   cd $WORKSPACE/$PKG_DIR
 
   rm -rf dist/*
-
-  # Get the latest setuptools
-  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
+  local venv_dir="dist/build/usr/lib/$PYTHON_PKG"
+  echo "Creating virtualenv..."
+  if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
+    printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
     exit 1
   fi
+
+  local venv_py="$venv_dir/bin/python$PYTHON3_VERSION"
+  if ! "$venv_py" -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel; then
+    printf "Error, unable to upgrade pip, setuptools, and wheel with
+  %s -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel
+" "$venv_py"
+    exit 1
+  fi
+
   # filter a useless warning (when building the cwltest package) from the stderr output
-  if ! $python setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
-    echo "Error, unable to run $python setup.py sdist for $PKG"
+  if ! "$venv_py" setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
+    echo "Error, unable to run $venv_py setup.py sdist for $PKG"
     exit 1
   fi
-
-  PACKAGE_PATH=`(cd dist; ls *tar.gz)`
 
   if [[ "arvados-python-client" == "$PKG" ]]; then
     PYSDK_PATH="-f $(pwd)/dist/"
@@ -816,92 +741,44 @@ fpm_build_virtualenv_worker () {
   fi
 
   # See if we actually need to build this package; does it exist already?
-  # We can't do this earlier than here, because we need PYTHON_VERSION...
-  # This isn't so bad; the sdist call above is pretty quick compared to
-  # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" "$python" "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
+  # We can't do this earlier than here, because we need PYTHON_VERSION.
+  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" python3 "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
     return 0
   fi
 
   echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
 
-  # Package the sdist in a virtualenv
-  echo "Creating virtualenv..."
-
-  cd dist
-
-  rm -rf build
-  rm -f $PYTHON_PKG*deb
-  echo "virtualenv version: `virtualenv --version`"
-  virtualenv_command="virtualenv --python `which $python` $DASHQ_UNLESS_DEBUG build/usr/share/$python/dist/$PYTHON_PKG"
-
-  if ! $virtualenv_command; then
-    echo "Error, unable to run"
-    echo "  $virtualenv_command"
+  local sdist_path="$(ls dist/*.tar.gz)"
+  if ! "$venv_py" -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH "$sdist_path"; then
+    printf "Error, unable to run
+  %s -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG %s %s
+" "$venv_py" "$PYSDK_PATH" "$sdist_path"
     exit 1
   fi
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip; then
-    echo "Error, unable to upgrade pip with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U pip"
-    exit 1
-  fi
-  echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
-
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
-    exit 1
-  fi
-  echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"
-
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel; then
-    echo "Error, unable to upgrade wheel with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U wheel"
-    exit 1
-  fi
-  echo "wheel version:      `build/usr/share/$python/dist/$PYTHON_PKG/bin/wheel version`"
-
-  if [[ "$TARGET" != "centos7" ]] || [[ "$PYTHON_PKG" != "python-arvados-fuse" ]]; then
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
-  else
-    # centos7 needs these special tweaks to install python-arvados-fuse
-    build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG docutils
-    PYCURL_SSL_LIBRARY=nss build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH
-  fi
-
-  if [[ "$?" != "0" ]]; then
-    echo "Error, unable to run"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH $PACKAGE_PATH"
-    exit 1
-  fi
-
-  cd build/usr/share/$python/dist/$PYTHON_PKG/
+  pushd "$venv_dir" >$STDOUT_IF_DEBUG
 
   # Replace the shebang lines in all python scripts, and handle the activate
   # scripts too. This is a functional replacement of the 237 line
   # virtualenv_tools.py script that doesn't work in python3 without serious
   # patching, minus the parts we don't need (modifying pyc files, etc).
+  local sys_venv_dir="${venv_dir#dist/build/}"
+  local sys_venv_py="$sys_venv_dir/bin/python$PYTHON3_VERSION"
   for binfile in `ls bin/`; do
-    if ! file --mime bin/$binfile |grep -q binary; then
-      # Not a binary file
-      if [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
-        # these 'activate' scripts need special treatment
-        sed -i "s/VIRTUAL_ENV=\".*\"/VIRTUAL_ENV=\"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
-        sed -i "s/VIRTUAL_ENV \".*\"/VIRTUAL_ENV \"\/usr\/share\/$python\/dist\/$PYTHON_PKG\"/" bin/$binfile
-      else
-        if grep -q -E '^#!.*/bin/python\d?' bin/$binfile; then
-          # Replace shebang line
-          sed -i "1 s/^.*$/#!\/usr\/share\/$python\/dist\/$PYTHON_PKG\/bin\/python/" bin/$binfile
-        fi
-      fi
+    if file --mime "bin/$binfile" | grep -q binary; then
+      :  # Nothing to do for binary files
+    elif [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
+      sed -ri "s@VIRTUAL_ENV(=| )\".*\"@VIRTUAL_ENV\\1\"/$sys_venv_dir\"@" "bin/$binfile"
+    else
+      # Replace shebang line
+      sed -ri "1 s@^#\![^[:space:]]+/bin/python[0-9.]*@#\!/$sys_venv_py@" "bin/$binfile"
     fi
   done
 
-  cd - >$STDOUT_IF_DEBUG
+  popd >$STDOUT_IF_DEBUG
+  cd dist
 
-  find build -iname '*.pyc' -exec rm {} \;
-  find build -iname '*.pyo' -exec rm {} \;
+  find build -iname '*.py[co]' -delete
 
   # Finally, generate the package
   echo "Creating package..."
@@ -988,26 +865,27 @@ fpm_build_virtualenv_worker () {
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("$sys_venv_dir/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
 
-  # Make sure to install all our package binaries in /usr/bin.
-  # We have to walk $WORKSPACE/$PKG_DIR/bin rather than
-  # $WORKSPACE/build/usr/share/$python/dist/$PYTHON_PKG/bin/ to get the list
-  # because the latter also includes all the python binaries for the virtualenv.
-  # We have to take the copies of our binaries from the latter directory, though,
-  # because those are the ones we rewrote the shebang line of, above.
+  # Make sure to install all our package binaries in /usr/bin. We have to
+  # walk $WORKSPACE/$PKG_DIR/bin rather than $venv_dir/bin to get the list
+  # because the latter also includes scripts installed by all the
+  # dependencies in the virtualenv, which may conflict with other
+  # packages. We have to take the copies of our binaries from the latter
+  # directory, though, because those are the ones we rewrote the shebang
+  # line of, above.
   if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
-      COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
+      COMMAND_ARR+=("$sys_venv_dir/bin/$binary=/usr/bin/")
     done
   fi
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/cwltool=/usr/bin/")
+  if [[ -e "$WORKSPACE/$PKG_DIR/$venv_dir/bin/cwltool" ]]; then
+    COMMAND_ARR+=("$sys_venv_dir/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")
@@ -1029,138 +907,8 @@ fpm_build_virtualenv_worker () {
   echo
 }
 
-# build_metapackage builds meta packages that help with the python to python 3 package migration
-build_metapackage() {
-  # base package name (e.g. arvados-python-client)
-  BASE_NAME=$1
-  shift
-  PKG_DIR=$1
-  shift
-
-  if [[ -n "$ONLY_BUILD" ]] && [[ "python-$BASE_NAME" != "$ONLY_BUILD" ]]; then
-    return 0
-  fi
-
-  if [[ "$ARVADOS_BUILDING_ITERATION" == "" ]]; then
-    ARVADOS_BUILDING_ITERATION=1
-  fi
-
-  if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
-    cd $WORKSPACE/$PKG_DIR
-    pwd
-    rm -rf dist/*
-
-    # Get the latest setuptools
-    if ! pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-      echo "Error, unable to upgrade setuptools with XY"
-      echo "  pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
-      exit 1
-    fi
-    # filter a useless warning (when building the cwltest package) from the stderr output
-    if ! python3 setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
-      echo "Error, unable to run python3 setup.py sdist for $PKG"
-      exit 1
-    fi
-
-    PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
-    UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
-
-  else
-    UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
-    PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
-  fi
-
-  cd - >$STDOUT_IF_DEBUG
-  if [[ -d "$BASE_NAME" ]]; then
-    rm -rf $BASE_NAME
-  fi
-  mkdir $BASE_NAME
-  cd $BASE_NAME
-
-  if [[ "$FORMAT" == "deb" ]]; then
-    cat >ns-control <<EOF
-Section: misc
-Priority: optional
-Standards-Version: 3.9.2
-
-Package: python-${BASE_NAME}
-Version: ${PYTHON_VERSION}-${ARVADOS_BUILDING_ITERATION}
-Maintainer: Arvados Package Maintainers <packaging@arvados.org>
-Depends: python3-${BASE_NAME}
-Description: metapackage to ease the upgrade to the Pyhon 3 version of ${BASE_NAME}
- This package is a metapackage that will automatically install the new version of
- ${BASE_NAME} which is Python 3 based and has a different name.
-EOF
-
-    /usr/bin/equivs-build ns-control
-    if [[ $? -ne 0 ]]; then
-      echo "Error running 'equivs-build ns-control', is the 'equivs' package installed?"
-      return 1
-    fi
-  elif [[ "$FORMAT" == "rpm" ]]; then
-    cat >meta.spec <<EOF
-Summary: metapackage to ease the upgrade to the Python 3 version of ${BASE_NAME}
-Name: python-${BASE_NAME}
-Version: ${PYTHON_VERSION}
-Release: ${ARVADOS_BUILDING_ITERATION}
-License: distributable
-
-Requires: python3-${BASE_NAME}
-
-%description
-This package is a metapackage that will automatically install the new version of
-python-${BASE_NAME} which is Python 3 based and has a different name.
-
-%prep
-
-%build
-
-%clean
-
-%install
-
-%post
-
-%files
-
-
-%changelog
-* Mon Apr 12 2021 Arvados Package Maintainers <packaging@arvados.org>
-- initial release
-EOF
-
-    /usr/bin/rpmbuild -ba meta.spec
-    if [[ $? -ne 0 ]]; then
-      echo "Error running 'rpmbuild -ba meta.spec', is the 'rpm-build' package installed?"
-      return 1
-    else
-      mv /root/rpmbuild/RPMS/x86_64/python-${BASE_NAME}*.${FORMAT} .
-      if [[ $? -ne 0 ]]; then
-        echo "Error finding rpm file output of 'rpmbuild -ba meta.spec'"
-        return 1
-      fi
-    fi
-  else
-    echo "Unknown format"
-    return 1
-  fi
-
-  if [[ $EXITCODE -ne 0 ]]; then
-    return 1
-  else
-    echo `ls *$FORMAT`
-    mv *$FORMAT $WORKSPACE/packages/$TARGET/
-  fi
-
-  # clean up
-  cd - >$STDOUT_IF_DEBUG
-  if [[ -d "$BASE_NAME" ]]; then
-    rm -rf $BASE_NAME
-  fi
-}
-
 # Build packages for everything
-fpm_build () {
+fpm_build() {
   # Source dir where fpm-info.sh (if any) will be found.
   SRC_DIR=$1
   shift
@@ -1180,11 +928,7 @@ fpm_build () {
   shift
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PACKAGE_NAME" != "$ONLY_BUILD" ]] && [[ "$PACKAGE" != "$ONLY_BUILD" ]] ; then
-    # arvados-workbench depends on arvados-server at build time, so even when
-    # only arvados-workbench is being built, we need to build arvados-server too
-    if [[ "$PACKAGE_NAME" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
       return 0
-    fi
   fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"
@@ -1284,6 +1028,8 @@ fpm_build () {
 
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
+  echo "fpm: exit code $FPM_EXIT_CODE" >>$STDOUT_IF_DEBUG
+  echo "$FPM_RESULTS" >>$STDOUT_IF_DEBUG
 
   fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
 
@@ -1300,7 +1046,7 @@ fpm_verify () {
   FPM_RESULTS=$@
 
   FPM_PACKAGE_NAME=''
-  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\.-]*\.)(deb|rpm) ]]; then
+  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\.~-]*\.)(deb|rpm) ]]; then
     FPM_PACKAGE_NAME=${BASH_REMATCH[1]}${BASH_REMATCH[2]}
   fi
 

@@ -1,9 +1,0 @@
-<%# Copyright (C) The Arvados Authors. All rights reserved.
-
-SPDX-License-Identifier: AGPL-3.0 %>
-
-<% if object.editable? %>
-    <%= link_to(url_for(object), {title: "Untrash", style: 'cursor: pointer;'}) do %>
-      <i class="fa fa-fw fa-recycle"></i>
-    <% end %>
-<% end %>

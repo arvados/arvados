@@ -60,7 +60,7 @@ class WorkflowTest < ActiveSupport::TestCase
     definition = "k1:\n v1: x\n  v2: y"
 
     assert_raises(ActiveRecord::RecordInvalid) do
-      w.update_attributes!(definition: definition)
+      w.update!(definition: definition)
     end
   end
 
@@ -71,7 +71,7 @@ class WorkflowTest < ActiveSupport::TestCase
     # when it does not already have custom values for these fields
     w = Workflow.find_by_uuid(workflows(:workflow_with_no_name_and_desc).uuid)
     definition = "name: test name 1\ndescription: test desc 1\nother: some more"
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     assert_equal "test name 1", w.name
     assert_equal "test desc 1", w.description
@@ -79,7 +79,7 @@ class WorkflowTest < ActiveSupport::TestCase
     # Workflow name and desc should be set with values from definition yaml
     # when it does not already have custom values for these fields
     definition = "name: test name 2\ndescription: test desc 2\nother: some more"
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     assert_equal "test name 2", w.name
     assert_equal "test desc 2", w.description
@@ -87,7 +87,7 @@ class WorkflowTest < ActiveSupport::TestCase
     # Workflow name and desc should be set with values from definition yaml
     # even if it means emptying them out
     definition = "more: etc"
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     assert_nil w.name
     assert_nil w.description
@@ -95,17 +95,17 @@ class WorkflowTest < ActiveSupport::TestCase
     # Workflow name and desc set using definition yaml should be cleared
     # if definition yaml is cleared
     definition = "name: test name 2\ndescription: test desc 2\nother: some more"
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     definition = nil
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     assert_nil w.name
     assert_nil w.description
 
     # Workflow name and desc should be set to provided custom values
     definition = "name: test name 3\ndescription: test desc 3\nother: some more"
-    w.update_attributes!(name: "remains", description: "remains", definition: definition)
+    w.update!(name: "remains", description: "remains", definition: definition)
     w.reload
     assert_equal "remains", w.name
     assert_equal "remains", w.description
@@ -113,7 +113,7 @@ class WorkflowTest < ActiveSupport::TestCase
     # Workflow name and desc should retain provided custom values
     # and should not be overwritten by values from yaml
     definition = "name: test name 4\ndescription: test desc 4\nother: some more"
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     assert_equal "remains", w.name
     assert_equal "remains", w.description
@@ -121,7 +121,7 @@ class WorkflowTest < ActiveSupport::TestCase
     # Workflow name and desc should retain provided custom values
     # and not be affected by the clearing of the definition yaml
     definition = nil
-    w.update_attributes!(definition: definition)
+    w.update!(definition: definition)
     w.reload
     assert_equal "remains", w.name
     assert_equal "remains", w.description

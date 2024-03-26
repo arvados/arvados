@@ -201,12 +201,12 @@ apply_var_substitutions() {
        s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION:-}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
        s#__CONTROLLER_MAX_WORKERS__#${CONTROLLER_MAX_WORKERS:-}#g;
        s#__CONTROLLER_MAX_QUEUED_REQUESTS__#${CONTROLLER_MAX_QUEUED_REQUESTS:-128}#g;
+       s#__CONTROLLER_MAX_GATEWAY_TUNNELS__#${CONTROLLER_MAX_GATEWAY_TUNNELS:-1000}#g;
        s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
        s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
        s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
@@ -364,24 +364,25 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
 else
   # Install a few dependency packages
   # First, let's figure out the OS we're working on
-  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d=  |cut -f 2 -d \")
-  echo "Detected distro: ${OS_ID}"
+  OS_IDS="$(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}")"
+  echo "Detected distro families: $OS_IDS"
 
-  case ${OS_ID} in
-    "centos")
-      echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
-      sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
-      setenforce permissive
-      yum install -y  curl git jq
-      ;;
-    "debian"|"ubuntu")
-      # Wait 2 minutes for any apt locks to clear
-      # This option is supported from apt 1.9.1 and ignored in older apt versions.
-      # Cf. https://blog.sinjakli.co.uk/2021/10/25/waiting-for-apt-locks-without-the-hacky-bash-scripts/
-      DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
-      DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
-      ;;
-  esac
+  for OS_ID in $OS_IDS; do
+    case "$OS_ID" in
+      rhel)
+        echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
+        sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
+        setenforce permissive
+        yum install -y  curl git jq
+        break
+        ;;
+      debian)
+        DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
+        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
+        break
+        ;;
+    esac
+  done
 
   if which salt-call; then
     echo "Salt already installed"
@@ -457,7 +458,7 @@ test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git
 
 # If we want to try a specific branch of the formula
 if [[ ! -z "${BRANCH:-}" && "x${BRANCH}" != "xmain" ]]; then
-  ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
+  ( cd ${F_DIR}/arvados && git fetch && git checkout --quiet "${BRANCH}" || git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
 elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
@@ -599,10 +600,22 @@ if [ -z "${ROLES:-}" ]; then
   echo "    - postgres" >> ${STATES_TOP}
   echo "    - logrotate" >> ${STATES_TOP}
   echo "    - docker.software" >> ${STATES_TOP}
-  echo "    - arvados" >> ${STATES_TOP}
+  echo "    - arvados.repo" >> ${STATES_TOP}
+  echo "    - arvados.config" >> ${STATES_TOP}
+  echo "    - arvados.ruby" >> ${STATES_TOP}
+  echo "    - arvados.api" >> ${STATES_TOP}
+  echo "    - arvados.controller" >> ${STATES_TOP}
+  echo "    - arvados.keepstore" >> ${STATES_TOP}
+  echo "    - arvados.websocket" >> ${STATES_TOP}
+  echo "    - arvados.keepweb" >> ${STATES_TOP}
+  echo "    - arvados.workbench2" >> ${STATES_TOP}
+  echo "    - arvados.keepproxy" >> ${STATES_TOP}
+  echo "    - arvados.shell" >> ${STATES_TOP}
+  echo "    - arvados.dispatcher" >> ${STATES_TOP}
   echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
   echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
   echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+  echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
 
   # Pillars
   echo "    - docker" >> ${PILLARS_TOP}
@@ -722,7 +735,9 @@ else
         # "ArvadosPromDataSource" is the hardcoded UID for Prometheus' datasource
         # in Grafana.
         for f in $(ls "${GRAFANA_DASHBOARDS_DIR}"/*.json); do
-          sed 's#${DS_PROMETHEUS}#ArvadosPromDataSource#g' \
+          sed "s#__TLS_EXPIRATION_YELLOW__#${TLS_EXPIRATION_YELLOW}#g;
+               s#__TLS_EXPIRATION_GREEN__#${TLS_EXPIRATION_GREEN}#g;
+               s#\${DS_PROMETHEUS}#ArvadosPromDataSource#g" \
           "${f}" > "${GRAFANA_DASHBOARDS_DEST_DIR}"/$(basename "${f}")
         done
 
@@ -751,6 +766,7 @@ else
         for SVC in grafana prometheus; do
           grep -q "nginx_${SVC}_configuration" ${PILLARS_TOP} || echo "    - nginx_${SVC}_configuration" >> ${PILLARS_TOP}
         done
+        grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
           for SVC in grafana prometheus; do
@@ -843,6 +859,7 @@ else
         grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
         grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
         grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
+        grep -q "nginx_snippets" ${PILLARS_TOP}           || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
         grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
 
@@ -873,17 +890,7 @@ else
       ;;
       "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         ### States ###
-        if [ "${R}" = "workbench" ]; then
-          grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
-          NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-          if grep -q "    - nginx$" ${STATES_TOP}; then
-            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
-          else
-            echo "    - nginx.passenger" >> ${STATES_TOP}
-          fi
-        else
-          grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
-        fi
+        grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
@@ -905,16 +912,18 @@ else
         fi
 
         # webshell role is just a nginx vhost, so it has no state
-        if [ "${R}" != "webshell" ]; then
+        # workbench role is deprecated since 2.7.0
+        if [[ "${R}" != "webshell" && "${R}" != "workbench" ]]; then
           grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
+        fi
+        # Make sure wb1's package get uninstalled
+        if [[ "${R}" == "workbench" ]]; then
+          grep -q "workbench1_uninstall" ${STATES_TOP} || echo "    - extra.workbench1_uninstall" >> ${STATES_TOP}
         fi
 
         ### Pillars ###
-        if [ "${R}" = "workbench" ]; then
-          grep -q "logrotate_wb1" ${PILLARS_TOP} || echo "    - logrotate_wb1" >> ${PILLARS_TOP}
-        fi
-        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
         grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
+        grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         # Special case for keepweb
         if [ ${R} = "keepweb" ]; then
           grep -q "nginx_download_configuration" ${PILLARS_TOP} || echo "    - nginx_download_configuration" >> ${PILLARS_TOP}

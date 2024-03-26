@@ -12,12 +12,15 @@ class ContainerRequest < ArvadosModel
   include CommonApiTemplate
   include WhitelistUpdate
 
-  belongs_to :container, foreign_key: :container_uuid, primary_key: :uuid
-  belongs_to :requesting_container, {
-               class_name: 'Container',
-               foreign_key: :requesting_container_uuid,
-               primary_key: :uuid,
-             }
+  belongs_to :container,
+             foreign_key: 'container_uuid',
+             primary_key: 'uuid',
+             optional: true
+  belongs_to :requesting_container,
+             class_name: 'Container',
+             foreign_key: 'requesting_container_uuid',
+             primary_key: 'uuid',
+             optional: true
 
   # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
   # already know how to properly treat them.
@@ -164,7 +167,7 @@ class ContainerRequest < ArvadosModel
         end
       elsif state == Committed
         # Behave as if the container is cancelled
-        update_attributes!(state: Final)
+        update!(state: Final)
       end
       return true
     end
@@ -228,7 +231,7 @@ class ContainerRequest < ArvadosModel
         end
       end
     end
-    update_attributes!(state: Final)
+    update!(state: Final)
   end
 
   def update_collections(container:, collections: ['log', 'output'])
@@ -308,7 +311,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_priority_zero
-    self.update_attributes!(priority: 0) if self.priority > 0 && self.state != Final
+    self.update!(priority: 0) if self.priority > 0 && self.state != Final
   end
 
   protected
@@ -467,8 +470,9 @@ class ContainerRequest < ArvadosModel
 
   def validate_scheduling_parameters
     if self.state == Committed
-      if scheduling_parameters.include? 'partitions' and
-         (!scheduling_parameters['partitions'].is_a?(Array) ||
+      if scheduling_parameters.include?('partitions') and
+        !scheduling_parameters['partitions'].nil? and
+        (!scheduling_parameters['partitions'].is_a?(Array) ||
           scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"

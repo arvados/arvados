@@ -1,0 +1,18 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h3(#MaxGatewayTunnels). API.MaxGatewayTunnels
+
+Each Arvados container that runs on your HPC cluster will bring up a long-lived connection to the Arvados controller and keep it open for the entire duration of the container. This connection is used to access real-time container logs from Workbench, and to enable the "container shell":{{site.baseurl}}/install/container-shell-access.html feature.
+
+Set the @MaxGatewayTunnels@ config entry high enough to accommodate the maximum number of containers you expect to run concurrently on your HPC cluster, plus incoming container shell sessions.
+
+<notextile>
+<pre>    API:
+      MaxGatewayTunnels: 2000</pre>
+</notextile>
+
+Also, configure Nginx (and any other HTTP proxies or load balancers running between the HPC and Arvados controller) to allow the expected number of connections, i.e., @MaxConcurrentRequests + MaxQueuedRequests + MaxGatewayTunnels@.

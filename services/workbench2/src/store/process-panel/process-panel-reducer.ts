@@ -2,25 +2,32 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProcessPanel } from 'store/process-panel/process-panel';
-import { ProcessPanelAction, processPanelActions } from 'store/process-panel/process-panel-actions';
+import { OutputDetails, ProcessPanel } from "store/process-panel/process-panel";
+import { ProcessPanelAction, processPanelActions } from "store/process-panel/process-panel-actions";
 
 const initialState: ProcessPanel = {
     containerRequestUuid: "",
     filters: {},
     inputRaw: null,
     inputParams: null,
-    outputRaw: null,
+    outputData: null,
     nodeInfo: null,
     outputDefinitions: [],
     outputParams: null,
+    usageReport: null,
+};
+
+export type OutputDataUpdate = {
+    uuid: string;
+    payload: OutputDetails;
 };
 
 export const processPanelReducer = (state = initialState, action: ProcessPanelAction): ProcessPanel =>
     processPanelActions.match(action, {
         RESET_PROCESS_PANEL: () => initialState,
         SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: containerRequestUuid => ({
-            ...state, containerRequestUuid
+            ...state,
+            containerRequestUuid,
         }),
         SET_PROCESS_PANEL_FILTERS: statuses => {
             const filters = statuses.reduce((filters, status) => ({ ...filters, [status]: true }), {});
@@ -48,8 +55,12 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
                 return state;
             }
         },
-        SET_OUTPUT_RAW: outputRaw => {
-            return { ...state, outputRaw };
+        SET_OUTPUT_DATA: (update: OutputDataUpdate) => {
+            //never set output to {} unless initializing
+            if (state.outputData?.raw && Object.keys(state.outputData?.raw).length && state.containerRequestUuid === update.uuid) {
+                return state;
+            }
+            return { ...state, outputData: update.payload };
         },
         SET_NODE_INFO: ({ nodeInfo }) => {
             return { ...state, nodeInfo };
@@ -57,13 +68,16 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
         SET_OUTPUT_DEFINITIONS: outputDefinitions => {
             // Set output definitions is only additive to avoid clearing when mounts go temporarily missing
             if (outputDefinitions.length) {
-                return { ...state, outputDefinitions }
+                return { ...state, outputDefinitions };
             } else {
                 return state;
             }
         },
         SET_OUTPUT_PARAMS: outputParams => {
             return { ...state, outputParams };
+        },
+        SET_USAGE_REPORT: ({ usageReport }) => {
+            return { ...state, usageReport };
         },
         default: () => state,
     });

@@ -41,6 +41,7 @@ export const DefaultView = withStyles(styles)(
             {Icon && <Icon className={classnames([classes.icon, classIcon])} />}
             {messages.map((msg: string, index: number) => {
                 return <Typography key={index}
+                    data-cy='default-view'
                     className={classnames([classes.message, classMessage])}>{msg}</Typography>;
             })}
         </Typography>

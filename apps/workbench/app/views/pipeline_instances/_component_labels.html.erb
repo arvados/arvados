@@ -1,9 +1,0 @@
-<%# Copyright (C) The Arvados Authors. All rights reserved.
-
-SPDX-License-Identifier: AGPL-3.0 %>
-
-<% pipeline_jobs(object).each do |pj| %>
-  <span class="label label-<%= pj[:labeltype] %>">
-    <%= pj[:name] %>
-  </span>&nbsp;
-<% end %>

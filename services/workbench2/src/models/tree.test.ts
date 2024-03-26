@@ -99,4 +99,35 @@ describe('Tree', () => {
         const mappedTree = Tree.mapTreeValues<string, number>(value => parseInt(value.split(' ')[1], 10))(newTree);
         expect(Tree.getNode('Node 2')(mappedTree)).toEqual(initTreeNode({ id: 'Node 2', parent: 'Node 1', value: 2 }));
     });
+
+    it('expands node ancestor chains', () => {
+        const newTree = [
+            initTreeNode({ id: 'Root Node 1', parent: '', value: 'Value 1' }),
+            initTreeNode({ id: 'Node 1.1', parent: 'Root Node 1', value: 'Value 1' }),
+            initTreeNode({ id: 'Node 1.1.1', parent: 'Node 1.1', value: 'Value 1' }),
+            initTreeNode({ id: 'Node 1.2', parent: 'Root Node 1', value: 'Value 1' }),
+
+            initTreeNode({ id: 'Root Node 2', parent: '', value: 'Value 1' }),
+            initTreeNode({ id: 'Node 2.1', parent: 'Root Node 2', value: 'Value 1' }),
+            initTreeNode({ id: 'Node 2.1.1', parent: 'Node 2.1', value: 'Value 1' }),
+
+            initTreeNode({ id: 'Root Node 3', parent: '', value: 'Value 1' }),
+            initTreeNode({ id: 'Node 3.1', parent: 'Root Node 3', value: 'Value 1' }),
+        ].reduce((tree, node) => Tree.setNode(node)(tree), tree);
+
+        const expandedTree = Tree.expandNodeAncestors(
+            'Node 1.1.1', // Expands 1.1 and 1
+            'Node 2.1', // Expands 2
+        )(newTree);
+
+        expect(Tree.getNode('Root Node 1')(expandedTree)?.expanded).toEqual(true);
+        expect(Tree.getNode('Node 1.1')(expandedTree)?.expanded).toEqual(true);
+        expect(Tree.getNode('Node 1.1.1')(expandedTree)?.expanded).toEqual(false);
+        expect(Tree.getNode('Node 1.2')(expandedTree)?.expanded).toEqual(false);
+        expect(Tree.getNode('Root Node 2')(expandedTree)?.expanded).toEqual(true);
+        expect(Tree.getNode('Node 2.1')(expandedTree)?.expanded).toEqual(false);
+        expect(Tree.getNode('Node 2.1.1')(expandedTree)?.expanded).toEqual(false);
+        expect(Tree.getNode('Root Node 3')(expandedTree)?.expanded).toEqual(false);
+        expect(Tree.getNode('Node 3.1')(expandedTree)?.expanded).toEqual(false);
+    });
 });

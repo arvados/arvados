@@ -14,15 +14,12 @@ statfs	available	397744787456	-	397744787456
 statfs	total	402611240960	-	402611240960
 statfs	used	4870303744	52426.18	4866453504
 time	elapsed	20	-	20
-# Number of tasks: 1
-# Max CPU time spent by a single task: 2.45s
+# Elapsed time: 20s
 # Max CPU usage in a single interval: 23.70%
 # Overall CPU usage: 12.25%
-# Max memory used by a single task: 0.07GB
-# Max network traffic in a single task: 0.00GB
+# Max memory used: 66.30MB
+# Max network traffic: 0.00GB
 # Max network speed in a single interval: 0.00MB/s
-# Keep cache miss rate 0.00%
-# Keep cache utilization 0.00%
-# Temp disk utilization 1.21%
-#!! label #1 max RSS was 67 MiB -- try reducing runtime_constraints to "ram":1020054732
-#!! label #1 max temp disk utilization was 1% of 383960 MiB -- consider reducing "tmpdirMin" and/or "outdirMin"
+# Keep cache miss rate: 0.00%
+# Keep cache utilization: 0.00%
+# Temp disk utilization: 1.21%

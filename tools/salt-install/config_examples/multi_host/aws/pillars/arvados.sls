@@ -6,6 +6,7 @@
 {%- set _workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus']*2)|int %}
 {%- set max_workers = [_workers, 8]|max %}
 {%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
+{%- set max_tunnels = ("__CONTROLLER_MAX_GATEWAY_TUNNELS__" or 1000)|int %}
 {%- set database_host = ("__DATABASE_EXTERNAL_SERVICE_HOST_OR_IP__" or "__DATABASE_INT_IP__") %}
 {%- set database_name = "__DATABASE_NAME__" %}
 {%- set database_user = "__DATABASE_USER__" %}
@@ -54,7 +55,8 @@ arvados:
     #     - ruby-dev
     #     - zlib1g-dev
 
-  # config:
+  config:
+    check_command: /usr/bin/arvados-server config-check -strict=false -config
   #   file: /etc/arvados/config.yml
   #   user: root
   ## IMPORTANT!!!!!
@@ -105,7 +107,7 @@ arvados:
     ### KEYS
     secrets:
       blob_signing_key: __BLOB_SIGNING_KEY__
-      workbench_secret_key: __WORKBENCH_SECRET_KEY__
+      workbench_secret_key: "deprecated"
 
     Login:
       Test:
@@ -117,8 +119,10 @@ arvados:
 
     ### API
     API:
-      MaxConcurrentRequests: {{ max_workers * 2 }}
+      MaxConcurrentRailsRequests: {{ max_workers * 2 }}
+      MaxConcurrentRequests: {{ max_reqs }}
       MaxQueuedRequests: {{ max_reqs }}
+      MaxGatewayTunnels: {{ max_tunnels }}
 
     ### CONTAINERS
     {%- set dispatcher_ssh_privkey = "__DISPATCHER_SSH_PRIVKEY__" %}
@@ -152,6 +156,11 @@ arvados:
           Bucket: __KEEP_AWS_S3_BUCKET__
           IAMRole: __KEEP_AWS_IAM_ROLE__
           Region: __KEEP_AWS_REGION__
+          # IMPORTANT: The default value for PrefixLength is 0, and should not
+          # be changed once the volume is in use. For new installations it's
+          # recommended to set it to 3 for better performance.
+          # See: https://doc.arvados.org/install/configure-s3-object-storage.html
+          PrefixLength: 3
 
     Users:
       NewUsersAreActive: true

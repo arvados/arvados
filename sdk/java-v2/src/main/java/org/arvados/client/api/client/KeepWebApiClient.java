@@ -10,9 +10,14 @@ package org.arvados.client.api.client;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 import org.arvados.client.config.ConfigProvider;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class KeepWebApiClient extends BaseApiClient {
 
@@ -29,6 +34,27 @@ public class KeepWebApiClient extends BaseApiClient {
         return newFileCall(request);
     }
 
+    public InputStream get(String collectionUuid, String filePathName, long start, Long end) throws IOException {
+        Request.Builder builder = this.getRequestBuilder();
+        String rangeValue = "bytes=" + start + "-";
+        if (end != null) {
+            rangeValue += end;
+        }
+        builder.addHeader("Range", rangeValue);
+        Request request = builder.url(this.getUrlBuilder(collectionUuid, filePathName).build()).get().build();
+        Response response = client.newCall(request).execute();
+        if (!response.isSuccessful()) {
+            response.close();
+            throw new IOException("Failed to download file: " + response);
+        }
+        ResponseBody body = response.body();
+        if (body == null) {
+            response.close();
+            throw new IOException("Response body is null for request: " + request);
+        }
+        return body.byteStream();
+    }
+
     public String delete(String collectionUuid, String filePathName) {
         Request request = getRequestBuilder()
                 .url(getUrlBuilder(collectionUuid, filePathName).build())
@@ -43,6 +69,16 @@ public class KeepWebApiClient extends BaseApiClient {
 
         Request request = getRequestBuilder()
                 .url(getUrlBuilder(collectionUuid, file.getName()).build())
+                .put(requestBody)
+                .build();
+        return newCall(request);
+    }
+
+    public String upload(String collectionUuid, InputStream inputStream, String fileName, ProgressListener progressListener) {
+        RequestBody requestBody = new CountingStreamRequestBody(inputStream, progressListener);
+
+        Request request = getRequestBuilder()
+                .url(getUrlBuilder(collectionUuid, fileName).build())
                 .put(requestBody)
                 .build();
         return newCall(request);

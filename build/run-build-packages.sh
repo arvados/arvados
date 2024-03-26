@@ -9,16 +9,16 @@ read -rd "\000" helpmessage <<EOF
 $(basename "$0"): Build Arvados packages
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename "$0") [options]
+        WORKSPACE=/path/to/arvados $(basename "$0") --target <target> [options]
 
 Options:
 
 --build-bundle-packages  (default: false)
-    Build api server and workbench packages with vendor/bundle included
+    Build api server package with vendor/bundle included
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian10)
+    Distribution to build packages for
 --only-build <package>
     Build only a specific package (or ONLY_BUILD from environment)
 --arch <arch>
@@ -47,8 +47,8 @@ VENDOR="The Arvados Project"
 DEBUG=${ARVADOS_DEBUG:-0}
 FORCE_BUILD=${FORCE_BUILD:-0}
 EXITCODE=0
-TARGET=debian10
 COMMAND=
+TARGET=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
     help,build-bundle-packages,debug,target:,only-build:,arch:,force-build \
@@ -93,6 +93,14 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+if [[ -z "$TARGET" ]]; then
+    echo "FATAL: --target must be specified" >&2
+    exit 2
+elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+    echo "FATAL: unknown build target '$TARGET'" >&2
+    exit 2
+fi
+
 if [[ "$COMMAND" != "" ]]; then
   COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
 fi
@@ -106,25 +114,21 @@ if [[ "$DEBUG" != 0 ]]; then
     DASHQ_UNLESS_DEBUG=
 fi
 
-declare -a PYTHON3_BACKPORTS
-
-PYTHON3_EXECUTABLE=python3
+# The next section defines a bunch of constants used to build distro packages
+# for our Python tools. Because those packages include C extensions, they need
+# to depend on and refer to a specific minor version of Python 3. The logic
+# below should Just Work for most cases, but you can override variables for a
+# specific distro if you need to to do something weird.
+# * PYTHON3_VERSION: The major+minor version of Python we build against
+#   (e.g., "3.11")
+# * PYTHON3_EXECUTABLE: The command to run that version of Python,
+#   either a full path or something in $PATH (e.g., "python3.11")
+# * PYTHON3_PACKAGE: The name of the distro package that provides
+#   $PYTHON3_EXECUTABLE. Our Python packages will all depend on this.
+# * PYTHON3_PKG_PREFIX: The prefix used in the names of all of our Python
+#   packages. This should match distro convention.
 PYTHON3_PKG_PREFIX=python3
-PYTHON3_PREFIX=/usr
 case "$TARGET" in
-    centos7)
-        FORMAT=rpm
-        # In CentOS 7, libcurl is linked against libnss. pycurl needs to know
-        # that in order to link to it correctly. This environment variable tells
-        # it that.
-        # libcurl is linked against openssl in RH8+ so this should not be
-        # necessary in later versions.
-        export PYCURL_SSL_LIBRARY=nss
-        ;;
-    ubuntu1804)
-        FORMAT=deb
-        PYTHON3_EXECUTABLE=python3.8
-        ;;
     centos*|rocky*)
         FORMAT=rpm
         ;;
@@ -136,15 +140,14 @@ case "$TARGET" in
         exit 1
         ;;
 esac
-: "${PYTHON3_VERSION:=$("$PYTHON3_EXECUTABLE" -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')}"
+: "${PYTHON3_VERSION:=$("${PYTHON3_EXECUTABLE:-python3}" -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')}"
+: "${PYTHON3_EXECUTABLE:=python$PYTHON3_VERSION}"
 case "$FORMAT" in
     deb)
-        : "${PYTHON3_INSTALL_LIB:=lib/python$PYTHON3_VERSION/dist-packages}"
         : "${PYTHON3_PACKAGE:=python$PYTHON3_VERSION}"
         ;;
     rpm)
-        : "${PYTHON3_INSTALL_LIB:=lib/python$PYTHON3_VERSION/site-packages}"
-        : "${PYTHON3_PACKAGE:=$(rpm -qf "$(command -v "python$PYTHON3_VERSION")" --queryformat '%{NAME}\n')}"
+        : "${PYTHON3_PACKAGE:=$(rpm -qf "$(command -v "$PYTHON3_EXECUTABLE")" --queryformat '%{NAME}\n')}"
         ;;
 esac
 
@@ -293,24 +296,17 @@ fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "$FORMAT"
 # The Arvados user activity tool
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "$FORMAT" "$ARCH"
 
-# The python->python3 metapackages
-build_metapackage "arvados-fuse" "services/fuse"
-build_metapackage "arvados-python-client" "services/fuse"
-build_metapackage "arvados-cwl-runner" "sdk/cwl"
-build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
-build_metapackage "arvados-docker-cleaner" "services/dockercleaner"
-build_metapackage "arvados-user-activity" "tools/user-activity"
-
 # The cwltest package, which lives out of tree
 handle_cwltest "$FORMAT" "$ARCH"
+
+# Workbench2
+package_workbench2
 
 # Rails packages
 debug_echo -e "\nRails packages\n"
 
 # The rails api server package
 handle_api_server "$ARCH"
-# The rails workbench package
-handle_workbench "$ARCH"
 
 # clean up temporary GOPATH
 rm -rf "$GOPATH"

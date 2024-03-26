@@ -16,37 +16,13 @@ class Arvados::V1::UsersController < ApplicationController
   # records from LoginCluster.
   def batch_update
     @objects = []
-    params[:updates].andand.each do |uuid, attrs|
-      begin
-        u = User.find_or_create_by(uuid: uuid)
-      rescue ActiveRecord::RecordNotUnique
-        retry
-      end
-      needupdate = {}
-      nullify_attrs(attrs).each do |k,v|
-        if !v.nil? && u.send(k) != v
-          needupdate[k] = v
-        end
-      end
-      if needupdate.length > 0
-        begin
-          u.update_attributes!(needupdate)
-        rescue ActiveRecord::RecordInvalid
-          loginCluster = Rails.configuration.Login.LoginCluster
-          if u.uuid[0..4] == loginCluster && !needupdate[:username].nil?
-            local_user = User.find_by_username(needupdate[:username])
-            # A cached user record from the LoginCluster is stale, reset its username
-            # and retry the update operation.
-            if local_user.andand.uuid[0..4] == loginCluster && local_user.uuid != u.uuid
-              new_username = "#{needupdate[:username]}conflict#{rand(99999999)}"
-              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
-              local_user.update_attributes!({username: new_username})
-              retry
-            end
-          end
-          raise # Not the issue we're handling above
-        end
-      end
+    # update_remote_user takes a row lock on the User record, so sort
+    # the keys so we always lock them in the same order.
+    sorted = params[:updates].keys.sort
+    sorted.each do |uuid|
+      attrs = params[:updates][uuid]
+      attrs[:uuid] = uuid
+      u = User.update_remote_user nullify_attrs(attrs)
       @objects << u
     end
     @offset = 0
@@ -103,7 +79,7 @@ class Arvados::V1::UsersController < ApplicationController
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
         if todo_uuids.empty?
-          @object.update_attributes is_active: true
+          @object.update is_active: true
           logger.info "User #{@object.uuid} activated"
         else
           logger.warn "User #{@object.uuid} called users.activate " +
@@ -274,7 +250,7 @@ class Arvados::V1::UsersController < ApplicationController
     return super if @read_users.any?(&:is_admin)
     if params[:uuid] != current_user.andand.uuid
       # Non-admin index/show returns very basic information about readable users.
-      safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name", "username", "can_write", "can_manage", "kind"]
+      safe_attrs = ["uuid", "is_active", "is_admin", "is_invited", "email", "first_name", "last_name", "username", "can_write", "can_manage", "kind"]
       if @select
         @select = @select & safe_attrs
       else

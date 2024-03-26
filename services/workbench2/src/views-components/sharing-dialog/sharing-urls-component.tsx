@@ -72,7 +72,7 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
 
                 return <Grid container alignItems='center' key={token.uuid} className={props.classes.sharingUrlRow}>
                     <Grid item>
-                        <Link className={props.classes.sharingUrlText} href={url} target='_blank'>
+                        <Link className={props.classes.sharingUrlText} href={url} target='_blank' rel="noopener">
                             {urlLabel}
                         </Link>
                     </Grid>

@@ -68,10 +68,11 @@ type oidcLoginController struct {
 	// https://people.googleapis.com/)
 	peopleAPIBasePath string
 
-	provider   *oidc.Provider        // initialized by setup()
-	oauth2conf *oauth2.Config        // initialized by setup()
-	verifier   *oidc.IDTokenVerifier // initialized by setup()
-	mu         sync.Mutex            // protects setup()
+	provider      *oidc.Provider        // initialized by setup()
+	endSessionURL *url.URL              // initialized by setup()
+	oauth2conf    *oauth2.Config        // initialized by setup()
+	verifier      *oidc.IDTokenVerifier // initialized by setup()
+	mu            sync.Mutex            // protects setup()
 }
 
 // Initialize ctrl.provider and ctrl.oauth2conf.
@@ -101,11 +102,46 @@ func (ctrl *oidcLoginController) setup() error {
 		ClientID: ctrl.ClientID,
 	})
 	ctrl.provider = provider
+	var claims struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	err = provider.Claims(&claims)
+	if err != nil {
+		return fmt.Errorf("error parsing OIDC discovery metadata: %v", err)
+	} else if claims.EndSessionEndpoint == "" {
+		ctrl.endSessionURL = nil
+	} else {
+		u, err := url.Parse(claims.EndSessionEndpoint)
+		if err != nil {
+			return fmt.Errorf("OIDC end_session_endpoint is not a valid URL: %v", err)
+		} else if u.Scheme != "https" {
+			return fmt.Errorf("OIDC end_session_endpoint MUST use HTTPS but does not: %v", u.String())
+		} else {
+			ctrl.endSessionURL = u
+		}
+	}
 	return nil
 }
 
 func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return logout(ctx, ctrl.Cluster, opts)
+	err := ctrl.setup()
+	if err != nil {
+		return arvados.LogoutResponse{}, fmt.Errorf("error setting up OpenID Connect provider: %s", err)
+	}
+	resp, err := logout(ctx, ctrl.Cluster, opts)
+	if err != nil {
+		return arvados.LogoutResponse{}, err
+	}
+	creds, credsOK := auth.FromContext(ctx)
+	if ctrl.endSessionURL != nil && credsOK && len(creds.Tokens) > 0 {
+		values := ctrl.endSessionURL.Query()
+		values.Set("client_id", ctrl.ClientID)
+		values.Set("post_logout_redirect_uri", resp.RedirectLocation)
+		u := *ctrl.endSessionURL
+		u.RawQuery = values.Encode()
+		resp.RedirectLocation = u.String()
+	}
+	return resp, err
 }
 
 func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
@@ -154,10 +190,39 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 		return loginError(err)
 	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
-	return ctrl.Parent.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
-		ReturnTo: state.Remote + "," + state.ReturnTo,
+	resp, err := ctrl.Parent.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+		ReturnTo: state.Remote + ",https://controller.api.client.invalid",
 		AuthInfo: *authinfo,
 	})
+	if err != nil {
+		return resp, err
+	}
+	// Extract token from rails' UserSessionCreate response, and
+	// attach it to our caller's desired ReturnTo URL.  The Rails
+	// handler explicitly disallows sending the real ReturnTo as a
+	// belt-and-suspenders defence against Rails accidentally
+	// exposing an additional login relay.
+	u, err := url.Parse(resp.RedirectLocation)
+	if err != nil {
+		return resp, err
+	}
+	token := u.Query().Get("api_token")
+	if token == "" {
+		resp.RedirectLocation = state.ReturnTo
+	} else {
+		u, err := url.Parse(state.ReturnTo)
+		if err != nil {
+			return resp, err
+		}
+		q := u.Query()
+		if q == nil {
+			q = url.Values{}
+		}
+		q.Set("api_token", token)
+		u.RawQuery = q.Encode()
+		resp.RedirectLocation = u.String()
+	}
+	return resp, nil
 }
 
 func (ctrl *oidcLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {

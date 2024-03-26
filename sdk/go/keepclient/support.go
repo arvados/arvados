@@ -13,10 +13,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -127,7 +129,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	}
 }
 
-func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
 	var resp arvados.BlockWriteResponse
 	var getReader func() io.Reader
 	if req.Data == nil && req.Reader == nil {
@@ -149,8 +151,12 @@ func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOpti
 		getReader = func() io.Reader { return bytes.NewReader(req.Data[:req.DataSize]) }
 	} else {
 		buf := asyncbuf.NewBuffer(make([]byte, 0, req.DataSize))
+		reader := req.Reader
+		if req.Hash != "" {
+			reader = HashCheckingReader{req.Reader, md5.New(), req.Hash}
+		}
 		go func() {
-			_, err := io.Copy(buf, HashCheckingReader{req.Reader, md5.New(), req.Hash})
+			_, err := io.Copy(buf, reader)
 			buf.CloseWithError(err)
 		}()
 		getReader = buf.NewReader
@@ -214,6 +220,7 @@ func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOpti
 		replicasPerThread = req.Replicas
 	}
 
+	delay := delayCalculator{InitialMaxDelay: kc.RetryDelay}
 	retriesRemaining := req.Attempts
 	var retryServers []string
 
@@ -302,14 +309,17 @@ func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOpti
 			}
 
 			if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
-				(status.statusCode >= 500 && status.statusCode != 503) {
+				(status.statusCode >= 500 && status.statusCode != http.StatusInsufficientStorage) {
 				// Timeout, too many requests, or other server side failure
-				// Do not retry when status code is 503, which means the keep server is full
+				// (do not auto-retry status 507 "full")
 				retryServers = append(retryServers, status.url[0:strings.LastIndex(status.url, "/")])
 			}
 		}
 
 		sv = retryServers
+		if len(sv) > 0 {
+			time.Sleep(delay.Next())
+		}
 	}
 
 	return resp, nil
@@ -340,4 +350,38 @@ func parseStorageClassesConfirmedHeader(hdr string) (map[string]int, error) {
 		classesStored[className] = replicas
 	}
 	return classesStored, nil
+}
+
+// delayCalculator calculates a series of delays for implementing
+// exponential backoff with jitter.  The first call to Next() returns
+// a random duration between MinimumRetryDelay and the specified
+// InitialMaxDelay (or DefaultRetryDelay if 0).  The max delay is
+// doubled on each subsequent call to Next(), up to 10x the initial
+// max delay.
+type delayCalculator struct {
+	InitialMaxDelay time.Duration
+	n               int // number of delays returned so far
+	nextmax         time.Duration
+	limit           time.Duration
+}
+
+func (dc *delayCalculator) Next() time.Duration {
+	if dc.nextmax <= MinimumRetryDelay {
+		// initialize
+		if dc.InitialMaxDelay > 0 {
+			dc.nextmax = dc.InitialMaxDelay
+		} else {
+			dc.nextmax = DefaultRetryDelay
+		}
+		dc.limit = 10 * dc.nextmax
+	}
+	d := time.Duration(rand.Float64() * float64(dc.nextmax))
+	if d < MinimumRetryDelay {
+		d = MinimumRetryDelay
+	}
+	dc.nextmax *= 2
+	if dc.nextmax > dc.limit {
+		dc.nextmax = dc.limit
+	}
+	return d
 }

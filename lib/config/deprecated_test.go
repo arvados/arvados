@@ -199,7 +199,7 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 
 	c.Check(cluster.Collections.WebDAVCache.TTL, check.Equals, arvados.Duration(60*time.Second))
-	c.Check(cluster.Collections.WebDAVCache.MaxCollectionBytes, check.Equals, int64(1234567890))
+	c.Check(cluster.Collections.WebDAVCache.MaxCollectionBytes, check.Equals, arvados.ByteSize(1234567890))
 
 	c.Check(cluster.Services.WebDAVDownload.ExternalURL, check.Equals, arvados.URL{Host: "download.example.com", Path: "/"})
 	c.Check(cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)

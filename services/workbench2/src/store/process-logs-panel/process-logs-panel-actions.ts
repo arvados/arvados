@@ -13,7 +13,7 @@ import { Process, getProcess } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { CollectionFile, CollectionFileType } from "models/collection-file";
-import { ContainerRequestResource } from "models/container-request";
+import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 
 const SNIPLINE = `================ ✀ ================ ✀ ========= Some log(s) were skipped ========= ✀ ================ ✀ ================`;
 const LOG_TIMESTAMP_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{9}Z/;
@@ -33,6 +33,12 @@ type FileWithProgress = {
     lastByte: number;
 }
 
+type SortableLine = {
+    logType: LogEventType,
+    timestamp: string;
+    contents: string;
+}
+
 export type ProcessLogsPanelAction = UnionOf<typeof processLogsPanelActions>;
 
 export const setProcessLogsPanelFilter = (filter: string) =>
@@ -40,15 +46,16 @@ export const setProcessLogsPanelFilter = (filter: string) =>
 
 export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
+        let process: Process | undefined;
         try {
             dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
-            const process = getProcess(processUuid)(getState().resources);
+            process = getProcess(processUuid)(getState().resources);
             if (process?.containerRequest?.uuid) {
                 // Get log file size info
                 const logFiles = await loadContainerLogFileList(process.containerRequest, logService);
 
                 // Populate lastbyte 0 for each file
-                const filesWithProgress = logFiles.map((file) => ({file, lastByte: 0}));
+                const filesWithProgress = logFiles.map((file) => ({ file, lastByte: 0 }));
 
                 // Fetch array of LogFragments
                 const logLines = await loadContainerLogFileContents(filesWithProgress, logService, process);
@@ -57,13 +64,16 @@ export const initProcessLogsPanel = (processUuid: string) =>
                 const initialState = createInitialLogPanelState(logFiles, logLines);
                 dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
             }
-        } catch(e) {
+        } catch (e) {
             // On error, populate empty state to allow polling to start
             const initialState = createInitialLogPanelState([], []);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
             // Only show toast on errors other than 404 since 404 is expected when logs do not exist yet
             if (e.status !== 404) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not load process logs', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Error loading process logs', hideDuration: 4000, kind: SnackbarKind.ERROR }));
+            }
+            if (e.status === 404 && process?.containerRequest.state === ContainerRequestState.FINAL) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Log collection was trashed or deleted.', hideDuration: 4000, kind: SnackbarKind.WARNING }));
             }
         }
     };
@@ -88,7 +98,7 @@ export const pollProcessLogs = (processUuid: string) =>
                     const isChanged = !isNew && currentStateLogLastByte < updatedFile.size;
 
                     if (isNew || isChanged) {
-                        return acc.concat({file: updatedFile, lastByte: currentStateLogLastByte});
+                        return acc.concat({ file: updatedFile, lastByte: currentStateLogLastByte });
                     } else {
                         return acc;
                     }
@@ -132,17 +142,17 @@ const loadContainerLogFileList = async (containerRequest: ContainerRequestResour
  * @returns LogFragment[] containing a single LogFragment corresponding to each input file
  */
 const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgress[], logService: LogService, process: Process) => (
-    (await Promise.allSettled(logFilesWithProgress.filter(({file}) => file.size > 0).map(({file, lastByte}) => {
+    (await Promise.allSettled(logFilesWithProgress.filter(({ file }) => file.size > 0).map(({ file, lastByte }) => {
         const requestSize = file.size - lastByte;
         if (requestSize > maxLogFetchSize) {
             const chunkSize = Math.floor(maxLogFetchSize / 2);
-            const firstChunkEnd = lastByte+chunkSize-1;
+            const firstChunkEnd = lastByte + chunkSize - 1;
             return Promise.all([
                 logService.getLogFileContents(process.containerRequest, file, lastByte, firstChunkEnd),
-                logService.getLogFileContents(process.containerRequest, file, file.size-chunkSize, file.size-1)
+                logService.getLogFileContents(process.containerRequest, file, file.size - chunkSize, file.size - 1)
             ] as Promise<(LogFragment)>[]);
         } else {
-            return Promise.all([logService.getLogFileContents(process.containerRequest, file, lastByte, file.size-1)]);
+            return Promise.all([logService.getLogFileContents(process.containerRequest, file, lastByte, file.size - 1)]);
         }
     })).then((res) => {
         if (res.length && res.every(promiseResult => (promiseResult.status === 'rejected'))) {
@@ -150,7 +160,7 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
             //   error if every request failed
             const error = res.find(
                 (promiseResult): promiseResult is PromiseRejectedResult => promiseResult.status === 'rejected'
-              )?.reason;
+            )?.reason;
             return Promise.reject(error);
         }
         return res.filter((promiseResult): promiseResult is PromiseFulfilledResult<LogFragment[]> => (
@@ -161,16 +171,16 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
             //   (prevent incorrect snipline generation or an un-resumable situation)
             !!promiseResult.value.every(logFragment => logFragment.contents.length)
         )).map(one => one.value)
-    })).map((logResponseSet)=> {
+    })).map((logResponseSet) => {
         // For any multi fragment response set, modify the last line of non-final chunks to include a line break and snip line
         //   Don't add snip line as a separate line so that sorting won't reorder it
         for (let i = 1; i < logResponseSet.length; i++) {
-            const fragment = logResponseSet[i-1];
-            const lastLineIndex = fragment.contents.length-1;
+            const fragment = logResponseSet[i - 1];
+            const lastLineIndex = fragment.contents.length - 1;
             const lastLineContents = fragment.contents[lastLineIndex];
             const newLastLine = `${lastLineContents}\n${SNIPLINE}`;
 
-            logResponseSet[i-1].contents[lastLineIndex] = newLastLine;
+            logResponseSet[i - 1].contents[lastLineIndex] = newLastLine;
         }
 
         // Merge LogFragment Array (representing multiple log line arrays) into single LogLine[] / LogFragment
@@ -181,7 +191,7 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
     })
 );
 
-const createInitialLogPanelState = (logFiles: CollectionFile[], logFragments: LogFragment[]): {filters: string[], logs: ProcessLogs} => {
+const createInitialLogPanelState = (logFiles: CollectionFile[], logFragments: LogFragment[]): { filters: string[], logs: ProcessLogs } => {
     const logs = groupLogs(logFiles, logFragments);
     const filters = Object.keys(logs);
     return { filters, logs };
@@ -201,12 +211,12 @@ const groupLogs = (logFiles: CollectionFile[], logFragments: LogFragment[]): Pro
 
     const groupedLogs = logFragments.reduce((grouped, fragment) => ({
         ...grouped,
-        [fragment.logType as string]: {lastByte: fetchLastByteNumber(logFiles, fragment.logType), contents: fragment.contents}
+        [fragment.logType as string]: { lastByte: fetchLastByteNumber(logFiles, fragment.logType), contents: fragment.contents }
     }), {});
 
     return {
-        [MAIN_FILTER_TYPE]: {lastByte: undefined, contents: mainLogs},
-        [ALL_FILTER_TYPE]: {lastByte: undefined, contents: allLogs},
+        [MAIN_FILTER_TYPE]: { lastByte: undefined, contents: mainLogs },
+        [ALL_FILTER_TYPE]: { lastByte: undefined, contents: allLogs },
         ...groupedLogs,
     }
 };
@@ -233,9 +243,9 @@ const mergeMultilineLoglines = (logFragments: LogFragment[]) => (
                     // Partial line without timestamp detected
                     if (i > 0) {
                         // If not first line, copy line to previous line
-                        const previousLineContents = fragmentCopy.contents[i-1];
+                        const previousLineContents = fragmentCopy.contents[i - 1];
                         const newPreviousLineContents = `${previousLineContents}\n${lineContents}`;
-                        fragmentCopy.contents[i-1] = newPreviousLineContents;
+                        fragmentCopy.contents[i - 1] = newPreviousLineContents;
                     }
                     // Delete the current line and prevent iterating
                     fragmentCopy.contents.splice(i, 1);
@@ -253,18 +263,61 @@ const mergeMultilineLoglines = (logFragments: LogFragment[]) => (
  * @returns string[] of merged and sorted log lines
  */
 const mergeSortLogFragments = (logFragments: LogFragment[]): string[] => {
-    const sortableLines = fragmentsToLines(logFragments
-        .filter((fragment) => (!NON_SORTED_LOG_TYPES.includes(fragment.logType))));
+    const sortableFragments = logFragments
+        .filter((fragment) => (!NON_SORTED_LOG_TYPES.includes(fragment.logType)));
 
     const nonSortableLines = fragmentsToLines(logFragments
         .filter((fragment) => (NON_SORTED_LOG_TYPES.includes(fragment.logType)))
         .sort((a, b) => (a.logType.localeCompare(b.logType))));
 
-    return [...nonSortableLines, ...sortableLines.sort(sortLogLines)]
+    return [...nonSortableLines, ...sortLogFragments(sortableFragments)];
 };
 
-const sortLogLines = (a: string, b: string) => {
-    return a.localeCompare(b);
+/**
+ * Performs merge and sort of input log fragment lines
+ * @param logFragments set of sortable log fragments to be merged and sorted
+ * @returns A string array containing all lines, sorted by timestamp and
+ *          preserving line ordering and type grouping when timestamps match
+ */
+const sortLogFragments = (logFragments: LogFragment[]): string[] => {
+    const linesWithType: SortableLine[] = logFragments
+        // Map each logFragment into an array of SortableLine
+        .map((fragment: LogFragment): SortableLine[] => (
+            fragment.contents.map((singleLine: string) => {
+                const timestampMatch = singleLine.match(LOG_TIMESTAMP_PATTERN);
+                const timestamp = timestampMatch && timestampMatch[0] ? timestampMatch[0] : "";
+                return {
+                    logType: fragment.logType,
+                    timestamp: timestamp,
+                    contents: singleLine,
+                };
+            })
+        // Merge each array of SortableLine into single array
+        )).reduce((acc: SortableLine[], lines: SortableLine[]) => (
+            [...acc, ...lines]
+        ), [] as SortableLine[]);
+
+    return linesWithType
+        .sort(sortableLineSortFunc)
+        .map(lineWithType => lineWithType.contents);
+};
+
+/**
+ * Sort func to sort lines
+ *   Preserves original ordering of lines from the same source
+ *   Stably orders lines of differing type but same timestamp
+ *     (produces a block of same-timestamped lines of one type before a block
+ *     of same timestamped lines of another type for readability)
+ *   Sorts all other lines by contents (ie by timestamp)
+ */
+const sortableLineSortFunc = (a: SortableLine, b: SortableLine) => {
+    if (a.logType === b.logType) {
+        return 0;
+    } else if (a.timestamp === b.timestamp) {
+        return a.logType.localeCompare(b.logType);
+    } else {
+        return a.contents.localeCompare(b.contents);
+    }
 };
 
 const fragmentsToLines = (fragments: LogFragment[]): string[] => (
@@ -283,7 +336,7 @@ export const navigateToLogCollection = (uuid: string) =>
             await services.collectionService.get(uuid);
             dispatch<any>(navigateTo(uuid));
         } catch {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not request collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Log collection was trashed or deleted.', hideDuration: 4000, kind: SnackbarKind.WARNING }));
         }
     };
 

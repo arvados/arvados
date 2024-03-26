@@ -40,25 +40,40 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                     .addEqual('group_class', GroupClass.ROLE)
                     .addILike('name', dataExplorer.searchValue)
                     .getFilters();
-                const response = await this.services.groupsService
+                const groups = await this.services.groupsService
                     .list({
                         ...dataExplorerToListParams(dataExplorer),
                         filters,
                         order: order.getOrder(),
                     });
-                api.dispatch(updateResources(response.items));
+                api.dispatch(updateResources(groups.items));
                 api.dispatch(GroupsPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(response),
-                    items: response.items.map(item => item.uuid),
+                    ...listResultsToDataExplorerItemsMeta(groups),
+                    items: groups.items.map(item => item.uuid),
                 }));
-                const permissions = await this.services.permissionService.list({
-                    filters: new FilterBuilder()
-                        .addIn('head_uuid', response.items.map(item => item.uuid))
-                        .getFilters()
-                });
-                api.dispatch(updateResources(permissions.items));
+
+                // Get group member count
+                groups.items.map(group => (
+                    this.services.permissionService.list({
+                        limit: 0,
+                        filters: new FilterBuilder()
+                            .addEqual('head_uuid', group.uuid)
+                            .getFilters()
+                    }).then(members => {
+                        api.dispatch(updateResources([{
+                            ...group,
+                            memberCount: members.itemsAvailable,
+                        } as GroupResource]));
+                    }).catch(e => {
+                        // In case of error, store null to stop spinners and show failure icon
+                        api.dispatch(updateResources([{
+                            ...group,
+                            memberCount: null,
+                        } as GroupResource]));
+                    })
+                ));
             } catch (e) {
-                api.dispatch(couldNotFetchFavoritesContents());
+                api.dispatch(couldNotFetchGroupList());
             } finally {
                 api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
@@ -72,7 +87,7 @@ const groupsPanelDataExplorerIsNotSet = () =>
         kind: SnackbarKind.ERROR
     });
 
-const couldNotFetchFavoritesContents = () =>
+const couldNotFetchGroupList = () =>
     snackbarActions.OPEN_SNACKBAR({
         message: 'Could not fetch groups.',
         kind: SnackbarKind.ERROR

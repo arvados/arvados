@@ -15,6 +15,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -89,21 +90,29 @@ var stubMounts = map[string][]arvados.KeepMount{
 		UUID:           "zzzzz-ivpuk-000000000000000",
 		DeviceID:       "keep0-vol0",
 		StorageClasses: map[string]bool{"default": true},
+		AllowWrite:     true,
+		AllowTrash:     true,
 	}},
 	"keep1.zzzzz.arvadosapi.com:25107": {{
 		UUID:           "zzzzz-ivpuk-100000000000000",
 		DeviceID:       "keep1-vol0",
 		StorageClasses: map[string]bool{"default": true},
+		AllowWrite:     true,
+		AllowTrash:     true,
 	}},
 	"keep2.zzzzz.arvadosapi.com:25107": {{
 		UUID:           "zzzzz-ivpuk-200000000000000",
 		DeviceID:       "keep2-vol0",
 		StorageClasses: map[string]bool{"default": true},
+		AllowWrite:     true,
+		AllowTrash:     true,
 	}},
 	"keep3.zzzzz.arvadosapi.com:25107": {{
 		UUID:           "zzzzz-ivpuk-300000000000000",
 		DeviceID:       "keep3-vol0",
 		StorageClasses: map[string]bool{"default": true},
+		AllowWrite:     true,
+		AllowTrash:     true,
 	}},
 }
 
@@ -388,9 +397,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	_, err := s.db.Exec(`delete from collections`)
 	c.Assert(err, check.IsNil)
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
@@ -408,8 +415,6 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 
 func (s *runSuite) TestRefuseBadIndex(c *check.C) {
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
 		ChunkPrefix: "abc",
 		Logger:      ctxlog.TestLogger(c),
 	}
@@ -431,9 +436,7 @@ func (s *runSuite) TestRefuseBadIndex(c *check.C) {
 
 func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserNotAdmin()
 	s.stub.serveZeroCollections()
@@ -460,8 +463,6 @@ func (s *runSuite) TestInvalidChunkPrefix(c *check.C) {
 		s.SetUpTest(c)
 		c.Logf("trying invalid prefix %q", trial.prefix)
 		opts := RunOptions{
-			CommitPulls: true,
-			CommitTrash: true,
 			ChunkPrefix: trial.prefix,
 			Logger:      ctxlog.TestLogger(c),
 		}
@@ -481,9 +482,7 @@ func (s *runSuite) TestInvalidChunkPrefix(c *check.C) {
 
 func (s *runSuite) TestRefuseSameDeviceDifferentVolumes(c *check.C) {
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveZeroCollections()
@@ -511,9 +510,7 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	s.config.Collections.BlobMissingReport = lostf.Name()
 	defer os.Remove(lostf.Name())
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -532,10 +529,10 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 }
 
 func (s *runSuite) TestDryRun(c *check.C) {
+	s.config.Collections.BalanceTrashLimit = 0
+	s.config.Collections.BalancePullLimit = 0
 	opts := RunOptions{
-		CommitPulls: false,
-		CommitTrash: false,
-		Logger:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	collReqs := s.stub.serveFooBarFileCollections()
@@ -553,19 +550,24 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	}
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
-	c.Check(bal.stats.pulls, check.Not(check.Equals), 0)
+	c.Check(bal.stats.pulls, check.Equals, 0)
+	c.Check(bal.stats.pullsDeferred, check.Not(check.Equals), 0)
+	c.Check(bal.stats.trashes, check.Equals, 0)
+	c.Check(bal.stats.trashesDeferred, check.Not(check.Equals), 0)
 	c.Check(bal.stats.underrep.replicas, check.Not(check.Equals), 0)
 	c.Check(bal.stats.overrep.replicas, check.Not(check.Equals), 0)
+
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_trash_entries_deferred_count [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_pull_entries_deferred_count [1-9].*`)
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
 	s.config.Collections.BlobMissingReport = c.MkDir() + "/keep-balance-lost-blocks-test-"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
-		Dumper:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
+		Dumper: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -595,13 +597,41 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
 	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
+
+	for _, cat := range []string{
+		"dedup_byte_ratio", "dedup_block_ratio", "collection_bytes",
+		"referenced_bytes", "referenced_blocks", "reference_count",
+		"pull_entries_sent_count",
+		"trash_entries_sent_count",
+	} {
+		c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+` [1-9].*`)
+	}
+
+	for _, cat := range []string{
+		"pull_entries_deferred_count",
+		"trash_entries_deferred_count",
+	} {
+		c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+` 0\n.*`)
+	}
+
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="0"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="1"} [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_replicated_block_count{replicas="9"} 0\n.*`)
+
+	for _, sub := range []string{"replicas", "blocks", "bytes"} {
+		for _, cat := range []string{"needed", "unneeded", "unachievable", "pulling"} {
+			c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_usage_`+sub+`{status="`+cat+`",storage_class="default"} [1-9].*`)
+		}
+		for _, cat := range []string{"total", "garbage", "transient", "overreplicated", "underreplicated", "unachievable", "balanced", "desired", "lost"} {
+			c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_`+cat+`_`+sub+` [0-9].*`)
+		}
+	}
+	c.Logf("%s", metrics)
 }
 
 func (s *runSuite) TestChunkPrefix(c *check.C) {
 	s.config.Collections.BlobMissingReport = c.MkDir() + "/keep-balance-lost-blocks-test-"
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
 		ChunkPrefix: "ac", // catch "foo" but not "bar"
 		Logger:      ctxlog.TestLogger(c),
 		Dumper:      ctxlog.TestLogger(c),
@@ -628,13 +658,11 @@ func (s *runSuite) TestChunkPrefix(c *check.C) {
 	c.Check(string(lost), check.Equals, "")
 }
 
-func (s *runSuite) TestRunForever(c *check.C) {
+func (s *runSuite) TestRunForever_TriggeredByTimer(c *check.C) {
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
-		Dumper:      ctxlog.TestLogger(c),
+		Logger: ctxlog.TestLogger(c),
+		Dumper: ctxlog.TestLogger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
 	s.stub.serveFooBarFileCollections()
@@ -646,7 +674,7 @@ func (s *runSuite) TestRunForever(c *check.C) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	s.config.Collections.BalancePeriod = arvados.Duration(time.Millisecond)
+	s.config.Collections.BalancePeriod = arvados.Duration(10 * time.Millisecond)
 	srv := s.newServer(&opts)
 
 	done := make(chan bool)
@@ -657,10 +685,11 @@ func (s *runSuite) TestRunForever(c *check.C) {
 
 	// Each run should send 4 pull lists + 4 trash lists. The
 	// first run should also send 4 empty trash lists at
-	// startup. We should complete all four runs in much less than
-	// a second.
+	// startup. We should complete at least four runs in much less
+	// than 10s.
 	for t0 := time.Now(); time.Since(t0) < 10*time.Second; {
-		if pullReqs.Count() >= 16 && trashReqs.Count() == pullReqs.Count()+4 {
+		pulls := pullReqs.Count()
+		if pulls >= 16 && trashReqs.Count() == pulls+4 {
 			break
 		}
 		time.Sleep(time.Millisecond)
@@ -668,8 +697,70 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	cancel()
 	<-done
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
-	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
+	c.Check(trashReqs.Count() >= 20, check.Equals, true)
+
+	// We should have completed 4 runs before calling cancel().
+	// But the next run might also have started before we called
+	// cancel(), in which case the extra run will be included in
+	// the changeset_compute_seconds_count metric.
+	completed := pullReqs.Count() / 4
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, fmt.Sprintf(`(?ms).*\narvados_keepbalance_changeset_compute_seconds_count (%d|%d)\n.*`, completed, completed+1))
+}
+
+func (s *runSuite) TestRunForever_TriggeredBySignal(c *check.C) {
+	s.config.ManagementToken = "xyzzy"
+	opts := RunOptions{
+		Logger: ctxlog.TestLogger(c),
+		Dumper: ctxlog.TestLogger(c),
+	}
+	s.stub.serveCurrentUserAdmin()
+	s.stub.serveFooBarFileCollections()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
+	s.stub.serveKeepstoreIndexFoo4Bar1()
+	trashReqs := s.stub.serveKeepstoreTrash()
+	pullReqs := s.stub.serveKeepstorePull()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s.config.Collections.BalancePeriod = arvados.Duration(time.Minute)
+	srv := s.newServer(&opts)
+
+	done := make(chan bool)
+	go func() {
+		srv.runForever(ctx)
+		close(done)
+	}()
+
+	procself, err := os.FindProcess(os.Getpid())
+	c.Assert(err, check.IsNil)
+
+	// Each run should send 4 pull lists + 4 trash lists. The
+	// first run should also send 4 empty trash lists at
+	// startup. We should be able to complete four runs in much
+	// less than 10s.
+	completedRuns := 0
+	for t0 := time.Now(); time.Since(t0) < 10*time.Second; {
+		pulls := pullReqs.Count()
+		if pulls >= 16 && trashReqs.Count() == pulls+4 {
+			break
+		}
+		// Once the 1st run has started automatically, we
+		// start sending a single SIGUSR1 at the end of each
+		// run, to ensure we get exactly 4 runs in total.
+		if pulls > 0 && pulls%4 == 0 && pulls <= 12 && pulls/4 > completedRuns {
+			completedRuns = pulls / 4
+			c.Logf("completed run %d, sending SIGUSR1 to trigger next run", completedRuns)
+			procself.Signal(syscall.SIGUSR1)
+		}
+		time.Sleep(time.Millisecond)
+	}
+	cancel()
+	<-done
+	c.Check(pullReqs.Count(), check.Equals, 16)
+	c.Check(trashReqs.Count(), check.Equals, 20)
 
 	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
-	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 4\n.*`)
 }

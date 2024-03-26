@@ -13,7 +13,7 @@ ARG BUILDTYPE
 # tree, and use the $arvados_version commit (passed in via an argument).
 
 ###########################################################################################################
-FROM debian:10-slim as dev
+FROM debian:11-slim as dev
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
@@ -42,7 +42,7 @@ RUN --mount=type=bind,target=/usr/src/arvados \
     go install
 
 ###########################################################################################################
-FROM debian:10-slim as demo
+FROM debian:11-slim as demo
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
@@ -75,14 +75,14 @@ RUN cd /usr/src && \
 FROM ${BUILDTYPE} as base
 
 ###########################################################################################################
-FROM debian:10
+FROM debian:11
 ENV DEBIAN_FRONTEND noninteractive
 
 # The arvbox-specific dependencies are
-#  gnupg2 runit python3-pip python3-setuptools python3-yaml shellinabox netcat less
+#  gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    gnupg2 runit python3-pip python3-setuptools python3-yaml shellinabox netcat less vim-tiny && \
+    gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less vim-tiny && \
     apt-get clean
 
 ENV GOPATH /var/lib/gopath
@@ -92,6 +92,17 @@ RUN mkdir -p $GOPATH/bin/
 COPY --from=base $GOPATH/bin/arvados-server $GOPATH/bin/arvados-server
 RUN $GOPATH/bin/arvados-server --version
 RUN $GOPATH/bin/arvados-server install -type test
+
+# Set up a virtualenv for all Python tools in arvbox.
+# This is used mainly by the `sdk` service, but `doc` and internal scripts
+# also rely on it.
+# 1. Install wheel just to modernize the virtualenv.
+# 2. Install setuptools as an sdk build dependency; PyYAML for all tests
+#    and yml_override.py; and pdoc for the doc service.
+# Everything else is installed by the sdk service on boot.
+RUN python3 -m venv /opt/arvados-py \
+ && /opt/arvados-py/bin/pip install --no-cache-dir wheel \
+ && /opt/arvados-py/bin/pip install --no-cache-dir setuptools PyYAML pdoc
 
 RUN /etc/init.d/postgresql start && \
     su postgres -c 'dropuser arvados' && \

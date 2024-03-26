@@ -23,7 +23,7 @@ func (*CommandSuite) TestLegacyConfigPath(c *check.C) {
 	defer os.Remove(tmp.Name())
 	tmp.Write([]byte("Listen: \"1.2.3.4.5:invalidport\"\n"))
 	tmp.Close()
-	exited := runCommand("keepstore", []string{"-config", tmp.Name()}, &stdin, &stdout, &stderr)
+	exited := Command.RunCommand("keepstore", []string{"-config", tmp.Name()}, &stdin, &stdout, &stderr)
 	c.Check(exited, check.Equals, 1)
 	c.Check(stderr.String(), check.Matches, `(?ms).*unable to migrate Listen value.*`)
 }

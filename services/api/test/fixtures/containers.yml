@@ -33,9 +33,9 @@ running:
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
   priority: 12
-  created_at: <%= 1.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  started_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  started_at: <%= 1.minute.ago.to_fs(:db) %>
   container_image: test
   cwd: /tmp
   output_path: /tmp
@@ -59,9 +59,9 @@ running_older:
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
   priority: 1
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 2.minute.ago.to_s(:db) %>
-  started_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 2.minute.ago.to_fs(:db) %>
+  started_at: <%= 2.minute.ago.to_fs(:db) %>
   container_image: test
   cwd: /tmp
   output_path: /tmp
@@ -82,9 +82,9 @@ locked:
   state: Locked
   locked_by_uuid: zzzzz-gj3su-k9dvestay1plssr
   priority: 0
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 2.minute.ago.to_s(:db) %>
-  modified_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  updated_at: <%= 2.minute.ago.to_fs(:db) %>
+  modified_at: <%= 2.minute.ago.to_fs(:db) %>
   container_image: test
   cwd: test
   output_path: test
@@ -353,8 +353,8 @@ ancient_container_with_logs:
   state: Complete
   exit_code: 0
   priority: 1
-  created_at: <%= 2.year.ago.to_s(:db) %>
-  updated_at: <%= 2.year.ago.to_s(:db) %>
+  created_at: <%= 2.year.ago.to_fs(:db) %>
+  updated_at: <%= 2.year.ago.to_fs(:db) %>
   container_image: test
   cwd: test
   output_path: test
@@ -362,7 +362,7 @@ ancient_container_with_logs:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
-  finished_at: <%= 2.year.ago.to_s(:db) %>
+  finished_at: <%= 2.year.ago.to_fs(:db) %>
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: test
   secret_mounts: {}
@@ -374,8 +374,8 @@ previous_container_with_logs:
   state: Complete
   exit_code: 0
   priority: 1
-  created_at: <%= 1.month.ago.to_s(:db) %>
-  updated_at: <%= 1.month.ago.to_s(:db) %>
+  created_at: <%= 1.month.ago.to_fs(:db) %>
+  updated_at: <%= 1.month.ago.to_fs(:db) %>
   container_image: test
   cwd: test
   output_path: test
@@ -383,7 +383,7 @@ previous_container_with_logs:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
-  finished_at: <%= 1.month.ago.to_s(:db) %>
+  finished_at: <%= 1.month.ago.to_fs(:db) %>
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: test
   secret_mounts: {}
@@ -394,8 +394,8 @@ running_container_with_logs:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Running
   priority: 1
-  created_at: <%= 1.hour.ago.to_s(:db) %>
-  updated_at: <%= 1.hour.ago.to_s(:db) %>
+  created_at: <%= 1.hour.ago.to_fs(:db) %>
+  updated_at: <%= 1.hour.ago.to_fs(:db) %>
   container_image: test
   cwd: test
   output_path: test
@@ -416,9 +416,9 @@ running_to_be_deleted:
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
   priority: 1
-  created_at: <%= 1.minute.ago.to_s(:db) %>
-  updated_at: <%= 1.minute.ago.to_s(:db) %>
-  started_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
+  updated_at: <%= 1.minute.ago.to_fs(:db) %>
+  started_at: <%= 1.minute.ago.to_fs(:db) %>
   container_image: test
   cwd: test
   output_path: test

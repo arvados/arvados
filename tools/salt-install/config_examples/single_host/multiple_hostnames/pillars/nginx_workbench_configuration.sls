@@ -85,7 +85,6 @@ nginx:
             - rewrite: '^/container_requests /all_processes redirect'
             - rewrite: '^/job.* /all_processes redirect'
             - rewrite: '^/users/link_account /link_account redirect'
-            - rewrite: '^/search.* /search-results redirect'
             - rewrite: '^/keep_services.* /keep-services redirect'
             - rewrite: '^/trash_items.* /trash redirect'
 

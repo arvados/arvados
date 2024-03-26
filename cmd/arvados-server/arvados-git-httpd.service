@@ -7,8 +7,6 @@ Description=Arvados git server
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/config.yml
-
-# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
@@ -19,9 +17,7 @@ ExecStart=/usr/bin/arvados-git-httpd
 LimitNOFILE=65536
 Restart=always
 RestartSec=1
-
-# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
-StartLimitInterval=0
+RestartPreventExitStatus=2
 
 [Install]
 WantedBy=multi-user.target

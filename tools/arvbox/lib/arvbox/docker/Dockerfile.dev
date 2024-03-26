@@ -9,7 +9,6 @@ ADD service/ /var/lib/arvbox/service
 RUN ln -sf /var/lib/arvbox/service /etc
 RUN mkdir -p $ARVADOS_CONTAINER_PATH
 RUN echo "development" > $ARVADOS_CONTAINER_PATH/api_rails_env
-RUN echo "development" > $ARVADOS_CONTAINER_PATH/workbench_rails_env
 
 RUN mkdir /etc/test-service && \
     ln -sf /var/lib/arvbox/service/postgres /etc/test-service && \

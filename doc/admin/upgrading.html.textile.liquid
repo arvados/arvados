@@ -28,6 +28,81 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
+h2(#main). development main
+
+"previous: Upgrading to 2.7.1":#v2_7_1
+
+h3. Virtual environments inside distribution Python packages have moved
+
+The distribution packages that we publish for Python packages include an entire virtualenv with all required libraries. In Arvados 3.0 these virtualenvs have moved from @/usr/share/python3/dist/PACKAGE_NAME@ to @/usr/lib/PACKAGE_NAME@ to prevent conflicts with distribution packages and better conform to filesystem standards.
+
+If you only run the executables installed by these packages, you don't need to change anything. Those are still installed under @/usr/bin@ and will use the new location when you upgrade. If you have written your own scripts or tools that rely on these virtualenvs, you may need to update those with the new location. For example, if you have a shell script that activates the virtualenv by running:
+
+<pre><code class="shell">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code></pre>
+
+You must update it to:
+
+<notextile>
+<pre><code class="shell">source <span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/activate</code></pre>
+</notextile>
+
+If you have a Python script with this shebang line:
+
+<pre><code class="shell">#!/usr/share/python3/dist/python3-arvados-python-client/bin/python</code></pre>
+
+You must update it to:
+
+<notextile>
+<pre><code class="shell">#!<span class="userinput">/usr/lib/python3-arvados-python-client</span>/bin/python</code></pre>
+</notextile>
+
+h3. WebDAV service uses @/var/cache@ for file content
+
+@keep-web@ now stores copies of recently accessed data blocks in @/var/cache/arvados/keep@ instead of in memory. That directory will be created automatically. The default cache size is 10% of the filesystem size. Use the new @Collections.WebDAVCache.DiskCacheSize@ config to specify a different percentage or an absolute size.
+
+If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
+
+h3. Check MaxGatewayTunnels config
+
+If you use the LSF or Slurm dispatcher, ensure the new @API.MaxGatewayTunnels@ config entry is high enough to support the size of your cluster. See "LSF docs":{{site.baseurl}}/install/crunch2-lsf/install-dispatch.html#MaxGatewayTunnels or "Slurm docs":{{site.baseurl}}/install/crunch2-slurm/install-dispatch.html#MaxGatewayTunnels for details.
+
+h2(#2_7_1). v2.7.1 (2023-12-12)
+
+"previous: Upgrading to 2.7.0":#v2_7_0
+
+h3. Remove Workbench1 packages after upgrading the salt installer
+
+If you installed a previous version of Arvados with the Salt installer, and you upgrade your installer to upgrade the cluster, you should uninstall the @arvados-workbench@ package from the workbench instance afterwards.
+
+h3. Remove Workbench1 packages and configuration
+
+The Workbench1 application has been removed from the Arvados distribution. We recommend the following follow-up steps.
+* Remove the Workbench1 package from any service node where it is installed (e.g., @apt remove arvados-workbench@).
+* In your Nginx configuration, add your Workbench1 URL host (from @Services.Workbench1.ExternalURL@) to the @server_name@ directive in the Workbench2 section. For example: <notextile><pre>server {
+  listen 443 ssl;
+  server_name workbench.ClusterID.example.com workbench2.ClusterID.example.com;
+  ...
+}</pre></notextile>
+* In your Nginx configuration, remove the @upstream@ and @server@ sections for Workbench1.
+* Remove the @Services.Workbench1.InternalURLs@ section of your configuration file. (Do not remove @ExternalURL@.)
+* Run @arvados-server config-check@ to identify any Workbench1-specific entries in your configuration file, and remove them.
+
+h3. Check implications of Containers.MaximumPriceFactor 1.5
+
+When scheduling a container, Arvados now considers using instance types other than the lowest-cost type consistent with the container's resource constraints. If a larger instance is already running and idle, or the cloud provider reports that the optimal instance type is not currently available, Arvados will select a larger instance type, provided the cost does not exceed 1.5x the optimal instance type cost.
+
+This will typically reduce overall latency for containers and reduce instance booting/shutdown overhead, but may increase costs depending on workload and instance availability. To avoid this behavior, configure @Containers.MaximumPriceFactor: 1.0@.
+
+h3. Synchronize keepstore and keep-balance upgrades
+
+The internal communication between keepstore and keep-balance about read-only volumes has changed. After keep-balance is upgraded, old versions of keepstore will be treated as read-only. We recommend upgrading and restarting all keepstore services first, then upgrading and restarting keep-balance.
+
+h3. Separate configs for MaxConcurrentRequests and MaxConcurrentRailsRequests
+
+The default configuration value @API.MaxConcurrentRequests@ (the number of concurrent requests that will be processed by a single instance of an arvados service process) is raised from 8 to 64.
+
+A new configuration key @API.MaxConcurrentRailsRequests@ (default 8) limits the number of concurrent requests processed by a RailsAPI service process.
+
 h2(#v2_7_0). v2.7.0 (2023-09-21)
 
 "previous: Upgrading to 2.6.3":#v2_6_3

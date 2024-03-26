@@ -27,7 +27,8 @@ import { serializeResourceTypeFilters } from 'store//resource-type-filters/resou
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
 import { CollectionResource } from "models/collection";
-
+import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
@@ -84,6 +85,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             }));
             api.dispatch(couldNotFetchTrashContents());
         }
+        api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
     }
 }
 
@@ -95,9 +97,11 @@ const getOrder = (dataExplorer: DataExplorer) => {
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
+        // Use createdAt as a secondary sort column so we break ties consistently.
         return order
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
             .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
+            .addOrder(OrderDirection.DESC, "createdAt", GroupContentsResourcePrefix.PROCESS)
             .getOrder();
     } else {
         return order.getOrder();

@@ -44,7 +44,9 @@ Rails.application.routes.draw do
         get 'secret_mounts', on: :member
         get 'current', on: :collection
       end
-      resources :container_requests
+      resources :container_requests do
+        get 'container_status', on: :member
+      end
       resources :jobs do
         get 'queue', on: :collection
         get 'queue_size', on: :collection

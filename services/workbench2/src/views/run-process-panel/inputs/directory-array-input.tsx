@@ -15,7 +15,7 @@ import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divid
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
-import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds, getAllNodes } from 'store/tree-picker/tree-picker-actions';
+import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds, FileOperationLocation, getFileOperationLocation, fileOperationLocationToPickerId } from 'store/tree-picker/tree-picker-actions';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { createSelector, createStructuredSelector } from 'reselect';
 import { ChipsInput } from 'components/chips-input/chips-input';
@@ -26,8 +26,11 @@ import { RootState } from 'store/store';
 import { Chips } from 'components/chips/chips';
 import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withStyles';
 import { CollectionResource } from 'models/collection';
-import { ResourceKind } from 'models/resource';
+import { PORTABLE_DATA_HASH_PATTERN, ResourceKind } from 'models/resource';
+import { Dispatch } from 'redux';
+import { CollectionDirectory, CollectionFileType } from 'models/collection-file';
 
+const LOCATION_REGEX = new RegExp("^(?:keep:)?(" + PORTABLE_DATA_HASH_PATTERN + ")(/.*)?$");
 export interface DirectoryArrayInputProps {
     input: DirectoryArrayCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
@@ -45,26 +48,35 @@ export const DirectoryArrayInput = ({ input }: DirectoryArrayInputProps) =>
 interface FormattedDirectory {
     name: string;
     portableDataHash: string;
+    subpath: string;
 }
 
-const parseDirectories = (directories: CollectionResource[] | string) =>
+const parseDirectories = (directories: FileOperationLocation[] | string) =>
     typeof directories === 'string'
         ? undefined
         : directories.map(parse);
 
-const parse = (directory: CollectionResource): Directory => ({
+const parse = (directory: FileOperationLocation): Directory => ({
     class: CWLType.DIRECTORY,
     basename: directory.name,
-    location: `keep:${directory.portableDataHash}`,
+    location: `keep:${directory.pdh}${directory.subpath}`,
 });
 
-const formatDirectories = (directories: Directory[] = []) =>
-    directories ? directories.map(format) : [];
+const formatDirectories = (directories: Directory[] = []): FormattedDirectory[] =>
+    directories ? directories.map(format).filter((dir): dir is FormattedDirectory => Boolean(dir)) : [];
 
-const format = ({ location = '', basename = '' }: Directory): FormattedDirectory => ({
-    portableDataHash: location.replace('keep:', ''),
-    name: basename,
-});
+const format = ({ location = '', basename = '' }: Directory): FormattedDirectory | undefined => {
+    const match = LOCATION_REGEX.exec(location);
+
+    if (match) {
+        return {
+            portableDataHash: match[1],
+            subpath: match[2],
+            name: basename,
+        };
+    }
+    return undefined;
+};
 
 const validationSelector = createSelector(
     isRequiredInput,
@@ -79,11 +91,10 @@ const required = (value?: Directory[]) =>
         : ERROR_MESSAGE;
 interface DirectoryArrayInputComponentState {
     open: boolean;
-    directories: CollectionResource[];
-    prevDirectories: CollectionResource[];
+    directories: FileOperationLocation[];
 }
 
-interface DirectoryArrayInputComponentProps {
+interface DirectoryArrayInputDataProps {
     treePickerState: TreePicker;
 }
 
@@ -93,21 +104,39 @@ const mapStateToProps = createStructuredSelector({
     treePickerState: treePickerSelector,
 });
 
-const DirectoryArrayInputComponent = connect(mapStateToProps)(
-    class DirectoryArrayInputComponent extends React.Component<DirectoryArrayInputComponentProps & GenericInputProps & DispatchProp & {
+interface DirectoryArrayInputActionProps {
+    initProjectsTreePicker: (pickerId: string) => void;
+    selectTreePickerNode: (pickerId: string, id: string | string[]) => void;
+    deselectTreePickerNode: (pickerId: string, id: string | string[]) => void;
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
+}
+
+const mapDispatchToProps = (dispatch: Dispatch): DirectoryArrayInputActionProps => ({
+    initProjectsTreePicker: (pickerId: string) => dispatch<any>(initProjectsTreePicker(pickerId)),
+    selectTreePickerNode: (pickerId: string, id: string | string[]) =>
+        dispatch<any>(treePickerActions.SELECT_TREE_PICKER_NODE({
+            pickerId, id, cascade: false
+        })),
+    deselectTreePickerNode: (pickerId: string, id: string | string[]) =>
+        dispatch<any>(treePickerActions.DESELECT_TREE_PICKER_NODE({
+            pickerId, id, cascade: false
+        })),
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => dispatch<any>(getFileOperationLocation(item)),
+});
+
+const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps)(
+    class DirectoryArrayInputComponent extends React.Component<GenericInputProps & DirectoryArrayInputDataProps & DirectoryArrayInputActionProps & DispatchProp & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     }, DirectoryArrayInputComponentState> {
         state: DirectoryArrayInputComponentState = {
             open: false,
             directories: [],
-            prevDirectories: [],
         };
 
         directoryRefreshTimeout = -1;
 
         componentDidMount() {
-            this.props.dispatch<any>(
-                initProjectsTreePicker(this.props.commandInput.id));
+            this.props.initProjectsTreePicker(this.props.commandInput.id);
         }
 
         render() {
@@ -118,7 +147,6 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
         }
 
         openDialog = () => {
-            this.setDirectoriesFromProps(this.props.input.value);
             this.setState({ open: true });
         }
 
@@ -131,82 +159,52 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
             this.props.input.onChange(this.state.directories);
         }
 
-        setDirectories = (directories: CollectionResource[]) => {
+        setDirectoriesFromResources = async (directories: (CollectionResource | CollectionDirectory)[]) => {
+            const locations = (await Promise.all(
+                directories.map(directory => (this.props.getFileOperationLocation(directory)))
+            )).filter((location): location is FileOperationLocation => (
+                location !== undefined
+            ));
 
-            const deletedDirectories = this.state.directories
-                .reduce((deletedDirectories, directory) =>
-                    directories.some(({ uuid }) => uuid === directory.uuid)
-                        ? deletedDirectories
-                        : [...deletedDirectories, directory]
-                    , []);
-
-            this.setState({ directories });
-
-            const ids = values(getProjectsTreePickerIds(this.props.commandInput.id));
-            ids.forEach(pickerId => {
-                this.props.dispatch(
-                    treePickerActions.DESELECT_TREE_PICKER_NODE({
-                        pickerId, id: deletedDirectories.map(({ uuid }) => uuid),
-                    })
-                );
-            });
-
-        }
-
-        setDirectoriesFromProps = (formattedDirectories: FormattedDirectory[]) => {
-            const nodes = getAllNodes<ProjectsTreePickerItem>(this.props.commandInput.id)(this.props.treePickerState);
-            const initialDirectories: CollectionResource[] = [];
-            const directories = nodes
-                .reduce((directories, { value }) =>
-                    'kind' in value &&
-                        value.kind === ResourceKind.COLLECTION &&
-                        formattedDirectories.find(({ portableDataHash, name }) => value.portableDataHash === portableDataHash && value.name === name)
-                        ? directories.concat(value)
-                        : directories, initialDirectories);
-
-            const addedDirectories = directories
-                .reduce((addedDirectories, directory) =>
-                    this.state.directories.find(({ uuid }) =>
-                        uuid === directory.uuid)
-                        ? addedDirectories
-                        : [...addedDirectories, directory]
-                    , []);
-
-            const ids = values(getProjectsTreePickerIds(this.props.commandInput.id));
-            ids.forEach(pickerId => {
-                this.props.dispatch(
-                    treePickerActions.SELECT_TREE_PICKER_NODE({
-                        pickerId, id: addedDirectories.map(({ uuid }) => uuid),
-                    })
-                );
-            });
-
-            const orderedDirectories = formattedDirectories.reduce((dirs, formattedDir) => {
-                const dir = directories.find(({ portableDataHash, name }) => portableDataHash === formattedDir.portableDataHash && name === formattedDir.name);
-                return dir
-                    ? [...dirs, dir]
-                    : dirs;
-            }, []);
-
-            this.setDirectories(orderedDirectories);
-
+            this.setDirectories(locations);
         }
 
         refreshDirectories = () => {
             clearTimeout(this.directoryRefreshTimeout);
-            this.directoryRefreshTimeout = window.setTimeout(this.setSelectedFiles);
+            this.directoryRefreshTimeout = window.setTimeout(this.setDirectoriesFromTree);
         }
 
-        setSelectedFiles = () => {
+        setDirectoriesFromTree = () => {
             const nodes = getSelectedNodes<ProjectsTreePickerItem>(this.props.commandInput.id)(this.props.treePickerState);
-            const initialDirectories: CollectionResource[] = [];
+            const initialDirectories: (CollectionResource | CollectionDirectory)[] = [];
             const directories = nodes
                 .reduce((directories, { value }) =>
-                    'kind' in value && value.kind === ResourceKind.COLLECTION
+                    (('kind' in value && value.kind === ResourceKind.COLLECTION) ||
+                    ('type' in value && value.type === CollectionFileType.DIRECTORY))
                         ? directories.concat(value)
                         : directories, initialDirectories);
-            this.setDirectories(directories);
+            this.setDirectoriesFromResources(directories);
         }
+
+        setDirectories = (locations: FileOperationLocation[]) => {
+            const deletedDirectories = this.state.directories
+                .reduce((deletedDirectories, directory) =>
+                    locations.some(({ uuid, subpath }) => uuid === directory.uuid && subpath === directory.subpath)
+                        ? deletedDirectories
+                        : [...deletedDirectories, directory]
+                    , [] as FileOperationLocation[]);
+
+            this.setState({ directories: locations });
+
+            const ids = values(getProjectsTreePickerIds(this.props.commandInput.id));
+            ids.forEach(pickerId => {
+                this.props.deselectTreePickerNode(
+                    pickerId,
+                    deletedDirectories.map(fileOperationLocationToPickerId)
+                );
+            });
+        };
+
         input = () =>
             <GenericInput
                 component={this.chipsInput}
@@ -265,14 +263,17 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                     onClose={this.closeDialog}
                     fullWidth
                     maxWidth='md' >
-                    <DialogTitle>Choose collections</DialogTitle>
+                    <DialogTitle>Choose directories</DialogTitle>
                     <DialogContent className={classes.root}>
                         <div className={classes.pickerWrapper}>
                             <div className={classes.tree}>
                                 <ProjectsTreePicker
                                     pickerId={this.props.commandInput.id}
+                                    currentUuids={this.state.directories.map(dir => fileOperationLocationToPickerId(dir))}
                                     includeCollections
+                                    includeDirectories
                                     showSelection
+                                    cascadeSelection={false}
                                     options={this.props.options}
                                     toggleItemSelection={this.refreshDirectories} />
                             </div>

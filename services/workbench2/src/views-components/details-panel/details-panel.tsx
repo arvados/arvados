@@ -83,8 +83,11 @@ const getItem = (res: DetailsResource): DetailsData => {
     }
 };
 
-const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles }: RootState) => {
-    const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
+const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, multiselect, router }: RootState) => {
+    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
+    const currentRoute = router.location ? router.location.pathname : "";
+    const currentItemUuid = isDetailsResourceChecked || currentRoute.includes('collections') ? detailsPanel.resourceUuid : multiselect.selectedUuid ? multiselect.selectedUuid : currentRoute.split('/')[2];
+    const resource = getResource(currentItemUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);

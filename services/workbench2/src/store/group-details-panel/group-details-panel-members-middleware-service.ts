@@ -3,16 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch, MiddlewareAPI } from "redux";
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
+import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder } from 'services/api/filter-builder';
 import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupMembersPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
 import { ResourceKind } from 'models/resource';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 
 export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -28,15 +29,11 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             return;
         } else {
             try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const groupResource = await this.services.groupsService.get(groupUuid);
                 api.dispatch(updateResources([groupResource]));
 
-                const permissionsIn = await this.services.permissionService.list({
-                    filters: new FilterBuilder()
-                        .addEqual('head_uuid', groupUuid)
-                        .addEqual('link_class', LinkClass.PERMISSION)
-                        .getFilters()
-                });
+                const permissionsIn = await this.services.permissionService.list(getParams(dataExplorer, groupUuid));
                 api.dispatch(updateResources(permissionsIn.items));
 
                 api.dispatch(GroupMembersPanelActions.SET_ITEMS({
@@ -65,10 +62,26 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
                 api.dispatch(updateResources(projectsIn.items));
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
+            } finally {
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }
 }
+
+export const getParams = (dataExplorer: DataExplorer, groupUuid: string) => ({
+    ...dataExplorerToListParams(dataExplorer),
+    filters: getFilters(groupUuid),
+});
+
+export const getFilters = (groupUuid: string) => {
+    const filters = new FilterBuilder()
+        .addEqual('head_uuid', groupUuid)
+        .addEqual('link_class', LinkClass.PERMISSION)
+        .getFilters();
+
+    return filters;
+};
 
 const couldNotFetchGroupDetailsContents = () =>
     snackbarActions.OPEN_SNACKBAR({

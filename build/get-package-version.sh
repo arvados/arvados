@@ -33,7 +33,7 @@ if [[ "$WORKSPACE" == "" ]]; then
 fi
 
 
-debug_echo "package_go_binary $SRC_PATH"
+debug_echo "get-package-version.sh $TYPE_LANG $SRC_PATH"
 
 if [[ "$TYPE_LANG" == "go" ]]; then
   calculate_go_package_version go_package_version $SRC_PATH
@@ -44,12 +44,6 @@ elif [[ "$TYPE_LANG" == "python3" ]]; then
 
   rm -rf dist/*
 
-  # Get the latest setuptools
-  if ! pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-    echo "Error, unable to upgrade setuptools with"
-    echo "  pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
-    exit 1
-  fi
   # filter a useless warning (when building the cwltest package) from the stderr output
   if ! python3 setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching' |grep -v 'for version number calculation'); then
     echo "Error, unable to run python3 setup.py sdist for $SRC_PATH"

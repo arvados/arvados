@@ -707,7 +707,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	s.testHandler.Cluster.API.MaxTokenLifetime = arvados.Duration(time.Hour)
 
 	resp := s.testRequest(req).Result()
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	c.Assert(resp.StatusCode, check.Equals, http.StatusOK)
 
 	cr := s.getCRfromMockRequest(c)
 

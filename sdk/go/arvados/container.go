@@ -160,3 +160,9 @@ const (
 	ContainerRequestStateCommitted  = ContainerRequestState("Committed")
 	ContainerRequestStateFinal      = ContainerRequestState("Final")
 )
+
+type ContainerStatus struct {
+	UUID             string         `json:"uuid"`
+	State            ContainerState `json:"container_state"`
+	SchedulingStatus string         `json:"scheduling_status"`
+}

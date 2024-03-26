@@ -60,6 +60,7 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 			logger:   logger,
 			registry: prometheus.NewRegistry(),
 		},
+		metrics: newMetrics(prometheus.NewRegistry()),
 	}
 }
 
@@ -209,6 +210,10 @@ func (s *UnitSuite) TestWebdavPrefixAndSource(c *check.C) {
 }
 
 func (s *UnitSuite) TestEmptyResponse(c *check.C) {
+	// Ensure we start with an empty cache
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	os.Setenv("HOME", c.MkDir())
+
 	for _, trial := range []struct {
 		dataExists    bool
 		sendIMSHeader bool
@@ -328,9 +333,10 @@ func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
 func authzViaAuthzHeaderOAuth2(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "Bearer "+tok)
+	r.Header.Add("Authorization", "OAuth2 "+tok)
 	return http.StatusUnauthorized
 }
+
 func (s *IntegrationSuite) TestVhostViaAuthzHeaderBearer(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderBearer)
 }
@@ -348,6 +354,27 @@ func authzViaCookieValue(r *http.Request, tok string) int {
 		Value: auth.EncodeTokenCookie([]byte(tok)),
 	})
 	return http.StatusUnauthorized
+}
+
+func (s *IntegrationSuite) TestVhostViaHTTPBasicAuth(c *check.C) {
+	s.doVhostRequests(c, authzViaHTTPBasicAuth)
+}
+func authzViaHTTPBasicAuth(r *http.Request, tok string) int {
+	r.AddCookie(&http.Cookie{
+		Name:  "arvados_api_token",
+		Value: auth.EncodeTokenCookie([]byte(tok)),
+	})
+	return http.StatusUnauthorized
+}
+
+func (s *IntegrationSuite) TestVhostViaHTTPBasicAuthWithExtraSpaceChars(c *check.C) {
+	s.doVhostRequests(c, func(r *http.Request, tok string) int {
+		r.AddCookie(&http.Cookie{
+			Name:  "arvados_api_token",
+			Value: auth.EncodeTokenCookie([]byte(" " + tok + "\n")),
+		})
+		return http.StatusUnauthorized
+	})
 }
 
 func (s *IntegrationSuite) TestVhostViaPath(c *check.C) {
@@ -797,6 +824,34 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	c.Check(resp.Header().Get("Content-Disposition"), check.Equals, "attachment")
 }
 
+func (s *IntegrationSuite) TestVhostRedirectMultipleTokens(c *check.C) {
+	baseUrl := arvadostest.FooCollection + ".example.com/foo"
+	query := url.Values{}
+
+	// The intent of these tests is to check that requests are redirected
+	// correctly in the presence of multiple API tokens. The exact response
+	// codes and content are not closely considered: they're just how
+	// keep-web responded when we made the smallest possible fix. Changing
+	// those responses may be okay, but you should still test all these
+	// different cases and the associated redirect logic.
+	query["api_token"] = []string{arvadostest.ActiveToken, arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{arvadostest.ActiveToken, arvadostest.AnonymousToken, ""}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{arvadostest.ActiveToken, "", arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+	query["api_token"] = []string{"", arvadostest.ActiveToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusOK, "foo")
+
+	expectContent := regexp.QuoteMeta(unauthorizedMessage + "\n")
+	query["api_token"] = []string{arvadostest.AnonymousToken, "invalidtoo"}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+	query["api_token"] = []string{arvadostest.AnonymousToken, ""}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+	query["api_token"] = []string{"", arvadostest.AnonymousToken}
+	s.testVhostRedirectTokenToCookie(c, "GET", baseUrl, "?"+query.Encode(), nil, "", http.StatusUnauthorized, expectContent)
+}
+
 func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection+".example.com/foo",
@@ -999,20 +1054,36 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 
 	s.handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
+		attachment, _ := regexp.MatchString(`^attachment(;|$)`, resp.Header().Get("Content-Disposition"))
+		// Since we're not redirecting, check that any api_token in the URL is
+		// handled safely.
+		// If there is no token in the URL, then we're good.
+		// Otherwise, if the response code is an error, the body is expected to
+		// be static content, and nothing that might maliciously introspect the
+		// URL. It's considered safe and allowed.
+		// Otherwise, if the response content has attachment disposition,
+		// that's considered safe for all the reasons explained in the
+		// safeAttachment comment in handler.go.
+		c.Check(!u.Query().Has("api_token") || resp.Code >= 400 || attachment, check.Equals, true)
 		return resp
 	}
+
+	loc, err := url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Check(loc.Scheme, check.Equals, u.Scheme)
+	c.Check(loc.Host, check.Equals, u.Host)
+	c.Check(loc.RawPath, check.Equals, u.RawPath)
+	// If the response was a redirect, it should never include an API token.
+	c.Check(loc.Query().Has("api_token"), check.Equals, false)
 	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
-	c.Check(strings.Split(resp.Header().Get("Location"), "?")[0], check.Equals, "http://"+hostPath)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
-	u, err := u.Parse(resp.Header().Get("Location"))
-	c.Assert(err, check.IsNil)
 	c.Logf("following redirect to %s", u)
 	req = &http.Request{
 		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
+		Host:       loc.Host,
+		URL:        loc,
+		RequestURI: loc.RequestURI(),
 		Header:     reqHeader,
 	}
 	for _, c := range cookies {
@@ -1039,6 +1110,17 @@ func (s *IntegrationSuite) TestDirectoryListingWithNoAnonymousToken(c *check.C) 
 }
 
 func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
+	// The "ownership cycle" test fixtures are reachable from the
+	// "filter group without filters" group, causing webdav's
+	// walkfs to recurse indefinitely. Avoid that by deleting one
+	// of the bogus fixtures.
+	arv := arvados.NewClientFromEnv()
+	err := arv.RequestAndDecode(nil, "DELETE", "arvados/v1/groups/zzzzz-j7d0g-cx2al9cqkmsf1hs", nil, nil)
+	if err != nil {
+		c.Assert(err, check.FitsTypeOf, &arvados.TransactionError{})
+		c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 404)
+	}
+
 	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	authHeader := http.Header{
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
@@ -1175,8 +1257,32 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			expect:  []string{"waz"},
 			cutDirs: 2,
 		},
+		{
+			uri:     "download.example.com/users/active/This filter group/",
+			header:  authHeader,
+			expect:  []string{"A Subproject/"},
+			cutDirs: 3,
+		},
+		{
+			uri:     "download.example.com/users/active/This filter group/A Subproject",
+			header:  authHeader,
+			expect:  []string{"baz_file/"},
+			cutDirs: 4,
+		},
+		{
+			uri:     "download.example.com/by_id/" + arvadostest.AFilterGroupUUID,
+			header:  authHeader,
+			expect:  []string{"A Subproject/"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "download.example.com/by_id/" + arvadostest.AFilterGroupUUID + "/A Subproject",
+			header:  authHeader,
+			expect:  []string{"baz_file/"},
+			cutDirs: 3,
+		},
 	} {
-		comment := check.Commentf("HTML: %q => %q", trial.uri, trial.expect)
+		comment := check.Commentf("HTML: %q redir %q => %q", trial.uri, trial.redirect, trial.expect)
 		resp := httptest.NewRecorder()
 		u := mustParseURL("//" + trial.uri)
 		req := &http.Request{
@@ -1212,6 +1318,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 			for _, e := range trial.expect {
+				e = strings.Replace(e, " ", "%20", -1)
 				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./`+e+`".*`, comment)
 			}
 			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`, comment)
@@ -1244,6 +1351,12 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		}
 		resp = httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
+		// This check avoids logging a big XML document in the
+		// event webdav throws a 500 error after sending
+		// headers for a 207.
+		if !c.Check(strings.HasSuffix(resp.Body.String(), "Internal Server Error"), check.Equals, false) {
+			continue
+		}
 		if trial.expect == nil {
 			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
@@ -1254,6 +1367,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 				} else {
 					e = filepath.Join(u.Path, e)
 				}
+				e = strings.Replace(e, " ", "%20", -1)
 				c.Check(resp.Body.String(), check.Matches, `(?ms).*<D:href>`+e+`</D:href>.*`, comment)
 			}
 		}
@@ -1360,20 +1474,14 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
-	s.handler.Cluster.Collections.WebDAVCache.MaxBlockEntries = 42
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), 42)
-	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
-	req := &http.Request{
-		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
-	}
+func (s *IntegrationSuite) TestCacheSize(c *check.C) {
+	req, err := http.NewRequest("GET", "http://"+arvadostest.FooCollection+".example.com/foo", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	c.Assert(err, check.IsNil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
+	c.Assert(resp.Code, check.Equals, http.StatusOK)
+	c.Check(s.handler.Cache.sessions[arvadostest.ActiveTokenV2].client.DiskCacheSize.Percent(), check.Equals, int64(10))
 }
 
 // Writing to a collection shouldn't affect its entry in the

@@ -11,6 +11,10 @@ import java.io.File;
 
 public class ExternalConfigProvider implements ConfigProvider {
 
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 60000;
+    private static final int DEFAULT_READ_TIMEOUT = 60000;
+    private static final int DEFAULT_WRITE_TIMEOUT = 60000;
+
     private boolean apiHostInsecure;
     private String keepWebHost;
     private int keepWebPort;
@@ -41,9 +45,9 @@ public class ExternalConfigProvider implements ConfigProvider {
         this.fileSplitDirectory = fileSplitDirectory;
         this.numberOfCopies = numberOfCopies;
         this.numberOfRetries = numberOfRetries;
-	this.connectTimeout = 60000;
-	this.readTimeout = 60000;
-	this.writeTimeout = 60000;
+	this.connectTimeout = DEFAULT_CONNECTION_TIMEOUT;
+	this.readTimeout = DEFAULT_READ_TIMEOUT;
+	this.writeTimeout = DEFAULT_WRITE_TIMEOUT;
     }
 
     ExternalConfigProvider(boolean apiHostInsecure, String keepWebHost, int keepWebPort, String apiHost, int apiPort,
@@ -156,6 +160,9 @@ public class ExternalConfigProvider implements ConfigProvider {
         private File fileSplitDirectory;
         private int numberOfCopies;
         private int numberOfRetries;
+        private int connectTimeout = DEFAULT_CONNECTION_TIMEOUT;
+        private int readTimeout = DEFAULT_READ_TIMEOUT;
+        private int writeTimeout = DEFAULT_WRITE_TIMEOUT;
 
         ExternalConfigProviderBuilder() {
         }
@@ -215,8 +222,23 @@ public class ExternalConfigProvider implements ConfigProvider {
             return this;
         }
 
+        public ExternalConfigProvider.ExternalConfigProviderBuilder connectTimeout(int connectTimeout) {
+            this.connectTimeout = connectTimeout;
+            return this;
+        }
+
+        public ExternalConfigProvider.ExternalConfigProviderBuilder readTimeout(int readTimeout) {
+            this.readTimeout = readTimeout;
+            return this;
+        }
+
+        public ExternalConfigProvider.ExternalConfigProviderBuilder writeTimeout(int writeTimeout) {
+            this.writeTimeout = writeTimeout;
+            return this;
+        }
+
         public ExternalConfigProvider build() {
-            return new ExternalConfigProvider(apiHostInsecure, keepWebHost, keepWebPort, apiHost, apiPort, apiToken, apiProtocol, fileSplitSize, fileSplitDirectory, numberOfCopies, numberOfRetries);
+            return new ExternalConfigProvider(apiHostInsecure, keepWebHost, keepWebPort, apiHost, apiPort, apiToken, apiProtocol, fileSplitSize, fileSplitDirectory, numberOfCopies, numberOfRetries, connectTimeout, readTimeout, writeTimeout);
         }
 
     }

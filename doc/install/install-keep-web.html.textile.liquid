@@ -163,6 +163,15 @@ Normally, Keep-web accepts requests for multiple collections using the same host
 In such cases -- for example, a site which is not reachable from the internet, where some data is world-readable from Arvados's perspective but is intended to be available only to users within the local network -- the downstream proxy should configured to return 401 for all paths beginning with "/c="
 {% include 'notebox_end' %}
 
+h3. Configure filesystem cache size
+
+Keep-web stores copies of recently accessed data blocks in @/var/cache/arvados/keep@. The cache size defaults to 10% of the size of the filesystem where that directory is located (typically @/var@) and can be customized with the @DiskCacheSize@ config entry.
+
+<notextile>
+<pre><code>  Collections:
+    WebDAVCache:
+      DiskCacheSize: 20 GiB</code></pre></notextile>
+
 {% assign arvados_component = 'keep-web' %}
 
 {% include 'install_packages' %}

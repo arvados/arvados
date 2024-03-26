@@ -40,7 +40,9 @@ DEBUG = 1
 # if present, overriding base config parameters as specified
 path = File.dirname(__FILE__) + '/config/arvados-clients.yml'
 if File.exist?(path) then
-  cp_config = YAML.load_file(path)[ENV['RAILS_ENV']]
+  cp_config = File.open(path) do |f|
+    YAML.safe_load(f, filename: path)[ENV['RAILS_ENV']]
+  end
 else
   puts "Please create a\n " + File.dirname(__FILE__) + "/config/arvados-clients.yml\n file"
   exit 1

@@ -2,23 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-
-import email.utils
-import time
+import calendar
+import dataclasses
 import datetime
+import email.utils
+import logging
 import re
+import time
+import typing
+import urllib.parse
+
+import pycurl
+
 import arvados
 import arvados.collection
-import urllib.parse
-import logging
-import calendar
-import urllib.parse
-import pycurl
-import dataclasses
-import typing
 from arvados._pycurlhelper import PyCurlHelper
 
 logger = logging.getLogger('arvados.http_import')

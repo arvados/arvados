@@ -7,6 +7,7 @@ export GOPATH=/var/lib/gopath
 mkdir -p $GOPATH
 
 cd /usr/src/arvados
+RUNSU=""
 if [[ $UID = 0 ]] ; then
   RUNSU="/usr/local/lib/arvbox/runsu.sh"
 fi

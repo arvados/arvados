@@ -33,12 +33,12 @@ func (s *changeSetSuite) TestJSONFormat(c *check.C) {
 		To:          mnt,
 		From:        srv}})
 	c.Check(err, check.IsNil)
-	c.Check(string(buf), check.Equals, `[{"locator":"acbd18db4cc2f85cedef654fccc4a4d8","servers":["http://keep1.zzzzz.arvadosapi.com:25107"],"mount_uuid":"zzzzz-mount-abcdefghijklmno"}]`)
+	c.Check(string(buf), check.Equals, `[{"locator":"acbd18db4cc2f85cedef654fccc4a4d8+3","servers":["http://keep1.zzzzz.arvadosapi.com:25107"],"mount_uuid":"zzzzz-mount-abcdefghijklmno"}]`)
 
 	buf, err = json.Marshal([]Trash{{
 		SizedDigest: arvados.SizedDigest("acbd18db4cc2f85cedef654fccc4a4d8+3"),
 		From:        mnt,
 		Mtime:       123456789}})
 	c.Check(err, check.IsNil)
-	c.Check(string(buf), check.Equals, `[{"locator":"acbd18db4cc2f85cedef654fccc4a4d8","block_mtime":123456789,"mount_uuid":"zzzzz-mount-abcdefghijklmno"}]`)
+	c.Check(string(buf), check.Equals, `[{"locator":"acbd18db4cc2f85cedef654fccc4a4d8+3","block_mtime":123456789,"mount_uuid":"zzzzz-mount-abcdefghijklmno"}]`)
 }

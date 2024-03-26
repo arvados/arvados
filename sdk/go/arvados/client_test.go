@@ -341,6 +341,20 @@ func (s *clientRetrySuite) TestNonRetryableError(c *check.C) {
 	c.Check(s.reqs, check.HasLen, 1)
 }
 
+// as of 0.7.2., retryablehttp does not recognize this as a
+// non-retryable error.
+func (s *clientRetrySuite) TestNonRetryableStdlibError(c *check.C) {
+	s.respStatus <- http.StatusOK
+	req, err := http.NewRequest(http.MethodGet, "https://"+s.client.APIHost+"/test", nil)
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Good-Header", "T\033rrible header value")
+	err = s.client.DoAndDecode(&struct{}{}, req)
+	c.Check(err, check.ErrorMatches, `.*after 1 attempt.*net/http: invalid header .*`)
+	if !c.Check(s.reqs, check.HasLen, 0) {
+		c.Logf("%v", s.reqs[0])
+	}
+}
+
 func (s *clientRetrySuite) TestNonRetryableAfter503s(c *check.C) {
 	time.AfterFunc(time.Second, func() { s.respStatus <- http.StatusNotFound })
 	err := s.client.RequestAndDecode(&struct{}{}, http.MethodGet, "test", nil, nil)

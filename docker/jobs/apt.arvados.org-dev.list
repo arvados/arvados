@@ -1,2 +1,2 @@
 # apt.arvados.org
-deb http://apt.arvados.org/buster buster-dev main
+deb http://apt.arvados.org/bullseye bullseye-dev main

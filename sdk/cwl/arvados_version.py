@@ -12,6 +12,7 @@ SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
 VERSION_PATHS = {
         SETUP_DIR,
         os.path.abspath(os.path.join(SETUP_DIR, "../python")),
+        os.path.abspath(os.path.join(SETUP_DIR, "../../tools/crunchstat-summary")),
         os.path.abspath(os.path.join(SETUP_DIR, "../../build/version-at-commit.sh"))
         }
 

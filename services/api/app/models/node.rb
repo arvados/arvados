@@ -20,7 +20,10 @@ class Node < ArvadosModel
   # Only a controller can figure out whether or not the current API tokens
   # have access to the associated Job.  They're expected to set
   # job_readable=true if the Job UUID can be included in the API response.
-  belongs_to(:job, foreign_key: :job_uuid, primary_key: :uuid)
+  belongs_to :job,
+             foreign_key: 'job_uuid',
+             primary_key: 'uuid',
+             optional: true
   attr_accessor :job_readable
 
   UNUSED_NODE_IP = '127.40.4.0'
@@ -159,8 +162,8 @@ class Node < ArvadosModel
                           LIMIT 1',
                           # query label:
                           'Node.available_slot_number',
-                          # [col_id, val] for $1 vars:
-                          [[nil, MAX_VMS]],
+                          # bind vars:
+                          [MAX_VMS],
                          ).rows.first.andand.first
   end
 
@@ -176,7 +179,7 @@ class Node < ArvadosModel
         # as the new node. Clear the ip_address field on the stale
         # nodes. Otherwise, we (via SLURM) might inadvertently connect
         # to the new node using the old node's hostname.
-        stale_node.update_attributes!(ip_address: nil)
+        stale_node.update!(ip_address: nil)
       end
     end
     if hostname_before_last_save && saved_change_to_hostname?

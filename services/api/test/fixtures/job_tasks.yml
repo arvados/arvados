@@ -5,11 +5,11 @@
 running_job_task_1:
   uuid: zzzzz-ot0gb-runningjobtask1
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  created_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
   job_uuid: zzzzz-8i9sb-with2components
 
 running_job_task_2:
   uuid: zzzzz-ot0gb-runningjobtask2
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  created_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
   job_uuid: zzzzz-8i9sb-with2components

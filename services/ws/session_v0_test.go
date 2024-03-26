@@ -211,6 +211,41 @@ func (s *v0Suite) TestEventTypeDelete(c *check.C) {
 	}
 }
 
+func (s *v0Suite) TestEventPropertiesFields(c *check.C) {
+	ac := arvados.NewClientFromEnv()
+	ac.AuthToken = s.token
+
+	conn, r, w, err := s.testClient()
+	c.Assert(err, check.IsNil)
+	defer conn.Close()
+
+	c.Check(w.Encode(map[string]interface{}{
+		"method":  "subscribe",
+		"filters": [][]string{{"object_uuid", "=", arvadostest.RunningContainerUUID}},
+	}), check.IsNil)
+	s.expectStatus(c, r, 200)
+
+	err = ac.RequestAndDecode(nil, "POST", "arvados/v1/logs", s.jsonBody("log", map[string]interface{}{
+		"object_uuid": arvadostest.RunningContainerUUID,
+		"event_type":  "update",
+		"properties": map[string]interface{}{
+			"new_attributes": map[string]interface{}{
+				"name":                      "namevalue",
+				"requesting_container_uuid": "uuidvalue",
+				"state":                     "statevalue",
+			},
+		},
+	}), nil)
+	c.Assert(err, check.IsNil)
+
+	lg := s.expectLog(c, r)
+	c.Check(lg.ObjectUUID, check.Equals, arvadostest.RunningContainerUUID)
+	c.Check(lg.EventType, check.Equals, "update")
+	c.Check(lg.Properties["new_attributes"].(map[string]interface{})["requesting_container_uuid"], check.Equals, "uuidvalue")
+	c.Check(lg.Properties["new_attributes"].(map[string]interface{})["name"], check.Equals, "namevalue")
+	c.Check(lg.Properties["new_attributes"].(map[string]interface{})["state"], check.Equals, "statevalue")
+}
+
 // Trashing/deleting a collection produces an "update" event with
 // properties["new_attributes"]["is_trashed"] == true.
 func (s *v0Suite) TestTrashedCollection(c *check.C) {

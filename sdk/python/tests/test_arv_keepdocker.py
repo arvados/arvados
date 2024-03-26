@@ -2,23 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
 import arvados
 import collections
+import collections.abc
 import copy
 import hashlib
+import logging
 import mock
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
-import logging
+from pathlib import Path
+
+import parameterized
 
 import arvados.commands.keepdocker as arv_keepdocker
 from . import arvados_testutil as tutil
-from . import run_test_server
-
 
 class StopTest(Exception):
     pass
@@ -226,3 +227,30 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
         api().collections().update.assert_called_with(
             uuid=mocked_collection['uuid'],
             body={'properties': updated_properties})
+
+
+@parameterized.parameterized_class(('filename',), [
+    ('hello-world-ManifestV2.tar',),
+    ('hello-world-ManifestV2-OCILayout.tar',),
+])
+class ImageMetadataTestCase(unittest.TestCase):
+    DATA_PATH = Path(__file__).parent / 'data'
+
+    @classmethod
+    def setUpClass(cls):
+        cls.image_file = (cls.DATA_PATH / cls.filename).open('rb')
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.image_file.close()
+
+    def setUp(self):
+        self.manifest, self.config = arv_keepdocker.load_image_metadata(self.image_file)
+
+    def test_image_manifest(self):
+        self.assertIsInstance(self.manifest, collections.abc.Mapping)
+        self.assertEqual(self.manifest.get('RepoTags'), ['hello-world:latest'])
+
+    def test_image_config(self):
+        self.assertIsInstance(self.config, collections.abc.Mapping)
+        self.assertEqual(self.config.get('created'), '2023-05-02T16:49:27Z')

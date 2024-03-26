@@ -20,6 +20,8 @@ import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { StyleRulesCallback, Typography, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
+import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';
+import { Process } from 'store/processes/process';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
@@ -80,11 +82,12 @@ export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
 ];
 
 export interface SubprocessPanelDataProps {
+    process: Process;
     resources: ResourcesState;
 }
 
 export interface SubprocessPanelActionProps {
-    onItemClick: (item: string) => void;
+    onRowClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
     onItemDoubleClick: (item: string) => void;
 }
@@ -111,7 +114,7 @@ const SubProcessesTitle = withStyles(styles)(
 export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
-        onRowClick={props.onItemClick}
+        onRowClick={props.onRowClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
         contextMenuColumn={true}
@@ -122,5 +125,6 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         doUnMaximizePanel={props.doUnMaximizePanel}
         panelMaximized={props.panelMaximized}
         panelName={props.panelName}
-        title={<SubProcessesTitle/>} />;
+        title={<SubProcessesTitle/>}
+        progressBar={<SubprocessProgressBar process={props.process} />} />;
 };

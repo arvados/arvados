@@ -40,9 +40,9 @@ func (suite *IntegrationSuite) TearDownTest(c *check.C) {
 }
 
 func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
-	typeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+	typeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
 		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
-		return arvados.InstanceType{Name: "testType"}, nil
+		return []arvados.InstanceType{{Name: "testType"}}, nil
 	}
 
 	client := arvados.NewClientFromEnv()
@@ -62,7 +62,8 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 	var wg sync.WaitGroup
 	for uuid, ent := range ents {
 		c.Check(ent.Container.UUID, check.Equals, uuid)
-		c.Check(ent.InstanceType.Name, check.Equals, "testType")
+		c.Check(ent.InstanceTypes, check.HasLen, 1)
+		c.Check(ent.InstanceTypes[0].Name, check.Equals, "testType")
 		c.Check(ent.Container.State, check.Equals, arvados.ContainerStateQueued)
 		c.Check(ent.Container.Priority > 0, check.Equals, true)
 		// Mounts should be deleted to avoid wasting memory
@@ -108,7 +109,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 }
 
 func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
-	errorTypeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+	errorTypeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
 		// Make sure the relevant container fields are
 		// actually populated.
 		c.Check(ctr.ContainerImage, check.Equals, "test")
@@ -116,7 +117,7 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 		c.Check(ctr.RuntimeConstraints.RAM, check.Equals, int64(12000000000))
 		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
 		c.Check(ctr.Mounts["/var/spool/cwl"].Capacity, check.Equals, int64(24000000000))
-		return arvados.InstanceType{}, errors.New("no suitable instance type")
+		return nil, errors.New("no suitable instance type")
 	}
 
 	client := arvados.NewClientFromEnv()

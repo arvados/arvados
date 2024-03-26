@@ -9,7 +9,7 @@ package org.arvados.client.api.client;
 
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import org.arvados.client.api.client.CountingFileRequestBody.TransferData;
+import org.arvados.client.api.client.CountingRequestBody.TransferData;
 import org.arvados.client.common.Headers;
 import org.arvados.client.config.ConfigProvider;
 import org.slf4j.Logger;

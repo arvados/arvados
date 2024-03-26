@@ -14,6 +14,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     mkdir -p $ARVADOS_CONTAINER_PATH/git \
           /var/lib/passenger /var/lib/gopath \
           /var/lib/pip /var/lib/npm
+    /opt/arvados-py/bin/pip config --site set global.cache-dir /var/lib/pip
 
     if test -z "$ARVBOX_HOME" ; then
         ARVBOX_HOME=$ARVADOS_CONTAINER_PATH
@@ -31,7 +32,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     useradd --groups docker crunch
 
     if [[ "$1" != --no-chown ]] ; then
-        chown arvbox:arvbox -R /usr/local $ARVADOS_CONTAINER_PATH \
+        chown arvbox:arvbox -R /usr/local /opt/arvados-py $ARVADOS_CONTAINER_PATH \
               /var/lib/passenger /var/lib/postgresql \
               /var/lib/nginx /var/log/nginx /etc/ssl/private \
               /var/lib/gopath /var/lib/pip /var/lib/npm
@@ -43,7 +44,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 
     cat <<EOF > /etc/profile.d/paths.sh
-export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin:/usr/src/arvados/sdk/cli/binstubs
+export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin:/opt/arvados-py/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs

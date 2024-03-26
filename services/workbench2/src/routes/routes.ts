@@ -35,6 +35,7 @@ export const Routes = {
     SEARCH_RESULTS: '/search-results',
     SSH_KEYS_ADMIN: `/ssh-keys-admin`,
     SSH_KEYS_USER: `/ssh-keys-user`,
+    INSTANCE_TYPES: `/instance-types`,
     SITE_MANAGER: `/site-manager`,
     MY_ACCOUNT: '/my-account',
     LINK_ACCOUNT: '/link_account',
@@ -161,8 +162,11 @@ export const matchRepositoriesRoute = (route: string) =>
 export const matchSshKeysUserRoute = (route: string) =>
     matchPath(route, { path: Routes.SSH_KEYS_USER });
 
-export const matchSshKeysAdminRoute = (route: string) =>
+    export const matchSshKeysAdminRoute = (route: string) =>
     matchPath(route, { path: Routes.SSH_KEYS_ADMIN });
+
+export const matchInstanceTypesRoute = (route: string) =>
+    matchPath(route, { path: Routes.INSTANCE_TYPES });
 
 export const matchSiteManagerRoute = (route: string) =>
     matchPath(route, { path: Routes.SITE_MANAGER });

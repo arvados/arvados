@@ -4,28 +4,19 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 5.2.0'
-gem 'responders', '~> 2.0'
-
-# i18n 1.14.1 seems to be incompatible with rails 5
-gem 'i18n', '~> 0.9.5'
-
-# Pin sprockets to < 4.0 to avoid issues when upgrading rails to 5.2
-# See: https://github.com/rails/sprockets-rails/issues/443
-gem 'sprockets', '~> 3.0'
+gem 'rails', '~> 7.0.0'
+gem 'responders'
+gem 'i18n'
+gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
-
-  # As of now (2019-03-27) There's an open issue about incompatibilities with
-  # newer versions of this gem: https://github.com/rails/rails-perftest/issues/38
-  gem 'ruby-prof', '~> 0.15.0'
-
+  gem 'ruby-prof'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
-  gem 'test-unit', '~> 3.0', require: false
-  gem 'simplecov', '~> 0.7.1', require: false
+  gem 'test-unit', require: false
+  gem 'simplecov', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
   gem 'byebug'
@@ -55,7 +46,6 @@ gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 gem 'arvados', '~> 2.7.0.rc1'
 gem 'httpclient'
 
-gem 'safe_yaml'
 gem 'lograge'
 gem 'logstash-event'
 
@@ -63,6 +53,8 @@ gem 'rails-observers'
 
 gem 'rails-perftest'
 gem 'rails-controller-testing'
+
+gem 'webrick'
 
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 

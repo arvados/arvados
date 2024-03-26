@@ -148,9 +148,11 @@ DATABASE_USER="${CLUSTER}_arvados"
 #DATABASE_POSTGRESQL_VERSION=
 
 # Performance tuning parameters.  If these are not set, workers
-# defaults on the number of cpus and queued requests defaults to 128.
+# defaults on the number of cpus, queued requests defaults to 128
+# and gateway tunnels defaults to 1000.
 #CONTROLLER_MAX_WORKERS=
 #CONTROLLER_MAX_QUEUED_REQUESTS=
+#CONTROLLER_MAX_GATEWAY_TUNNELS=
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

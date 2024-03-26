@@ -22,7 +22,7 @@ type Queue struct {
 
 	// ChooseType will be called for each entry in Containers. It
 	// must not be nil.
-	ChooseType func(*arvados.Container) (arvados.InstanceType, error)
+	ChooseType func(*arvados.Container) ([]arvados.InstanceType, error)
 
 	// Mimic railsapi implementation of MaxDispatchAttempts config
 	MaxDispatchAttempts int
@@ -167,12 +167,12 @@ func (q *Queue) Update() error {
 			ent.Container = ctr
 			upd[ctr.UUID] = ent
 		} else {
-			it, _ := q.ChooseType(&ctr)
+			types, _ := q.ChooseType(&ctr)
 			ctr.Mounts = nil
 			upd[ctr.UUID] = container.QueueEnt{
-				Container:    ctr,
-				InstanceType: it,
-				FirstSeenAt:  time.Now(),
+				Container:     ctr,
+				InstanceTypes: types,
+				FirstSeenAt:   time.Now(),
 			}
 		}
 	}

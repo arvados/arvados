@@ -153,12 +153,12 @@ class UserTest < ActiveSupport::TestCase
     assert_equal("active/foo", repositories(:foo).name)
   end
 
-  [[false, 'foo@example.com', true, nil],
-   [false, 'bar@example.com', nil, true],
-   [true, 'foo@example.com', true, nil],
+  [[false, 'foo@example.com', true, false],
+   [false, 'bar@example.com', false, true],
+   [true, 'foo@example.com', true, false],
    [true, 'bar@example.com', true, true],
-   [false, '', nil, nil],
-   [true, '', true, nil]
+   [false, '', false, false],
+   [true, '', true, false]
   ].each do |auto_admin_first_user_config, auto_admin_user_config, foo_should_be_admin, bar_should_be_admin|
     # In each case, 'foo' is created first, then 'bar', then 'bar2', then 'baz'.
     test "auto admin with auto_admin_first=#{auto_admin_first_user_config} auto_admin=#{auto_admin_user_config}" do
@@ -166,7 +166,7 @@ class UserTest < ActiveSupport::TestCase
       if auto_admin_first_user_config
         # This test requires no admin users exist (except for the system user)
         act_as_system_user do
-          users(:admin).update_attributes!(is_admin: false)
+          users(:admin).update!(is_admin: false)
         end
         @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true)
         assert_equal 0, @all_users.count, "No admin users should exist (except for the system user)"
@@ -347,10 +347,12 @@ class UserTest < ActiveSupport::TestCase
   test "create new user with notifications" do
     set_user_from_auth :admin
 
+    Rails.configuration.Users.AutoSetupNewUsers = false
+
     create_user_and_verify_setup_and_notifications true, active_notify_list, inactive_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications true, active_notify_list, empty_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications true, empty_notify_list, empty_notify_list, nil, nil
-    create_user_and_verify_setup_and_notifications false, active_notify_list, inactive_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications false, empty_notify_list, inactive_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications false, empty_notify_list, inactive_notify_list, nil, nil
     create_user_and_verify_setup_and_notifications false, empty_notify_list, empty_notify_list, nil, nil
   end
@@ -379,13 +381,13 @@ class UserTest < ActiveSupport::TestCase
     [false, empty_notify_list, empty_notify_list, "arvados@example.com", false, false, "arvados2"],
     [true, active_notify_list, inactive_notify_list, "arvados@example.com", false, false, "arvados2"],
     [true, active_notify_list, inactive_notify_list, "root@example.com", true, false, "root2"],
-    [false, active_notify_list, inactive_notify_list, "root@example.com", true, false, "root2"],
+    [false, active_notify_list, empty_notify_list, "root@example.com", true, false, "root2"],
     [true, active_notify_list, inactive_notify_list, "roo_t@example.com", false, true, "root2"],
     [false, empty_notify_list, empty_notify_list, "^^incorrect_format@example.com", true, true, "incorrectformat"],
     [true, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
     [true, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
-    [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
-    [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
+    [false, active_notify_list, empty_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
+    [false, active_notify_list, empty_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
   ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, expect_username|
     test "create new user with auto setup active=#{active} email=#{email} vm=#{auto_setup_vm} repo=#{auto_setup_repo}" do
       set_user_from_auth :admin
@@ -800,7 +802,7 @@ class UserTest < ActiveSupport::TestCase
   test "empty identity_url saves as null" do
     set_user_from_auth :admin
     user = users(:active)
-    assert user.update_attributes(identity_url: '')
+    assert user.update(identity_url: '')
     user.reload
     assert_nil user.identity_url
   end

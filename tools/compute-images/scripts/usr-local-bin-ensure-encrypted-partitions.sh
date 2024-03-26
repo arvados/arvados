@@ -119,9 +119,16 @@ mkfs.xfs -f "$CRYPTPATH"
 # First make sure docker is not using /tmp, then unmount everything under it.
 if [ -d /etc/sv/docker.io ]
 then
+  # TODO: Actually detect Docker state with runit
+  DOCKER_ACTIVE=true
   sv stop docker.io || service stop docker.io || true
 else
-  systemctl disable --now docker.service docker.socket || true
+  if systemctl --quiet is-active docker.service docker.socket; then
+    systemctl stop docker.service docker.socket || true
+    DOCKER_ACTIVE=true
+  else
+    DOCKER_ACTIVE=false
+  fi
 fi
 
 ensure_umount "$MOUNTPATH/docker/aufs"
@@ -137,13 +144,18 @@ cat <<EOF > /etc/docker/daemon.json
 }
 EOF
 
+if ! $DOCKER_ACTIVE; then
+  # Nothing else to do
+  exit 0
+fi
+
 # restart docker
 if [ -d /etc/sv/docker.io ]
 then
   ## runit
   sv up docker.io
 else
-  systemctl enable --now docker.service docker.socket || true
+  systemctl start docker.service docker.socket || true
 fi
 
 end=$((SECONDS+60))

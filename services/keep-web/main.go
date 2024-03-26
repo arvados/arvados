@@ -41,5 +41,6 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 			logger:   logger,
 			registry: reg,
 		},
+		metrics: newMetrics(reg),
 	}, nil
 }

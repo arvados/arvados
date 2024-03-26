@@ -17,7 +17,7 @@ UNION
           and container_requests.requesting_container_uuid is not NULL
 )
         order by containers.uuid for update
-  }, 'select_for_update_priorities', [[nil, container_uuid]]
+  }, 'select_for_update_priorities', [container_uuid]
 end
 
 def update_priorities starting_container_uuid
@@ -27,5 +27,5 @@ def update_priorities starting_container_uuid
   ActiveRecord::Base.connection.exec_query %{
 update containers set priority=computed.upd_priority from container_tree_priorities($1) as computed
  where containers.uuid = computed.pri_container_uuid and priority != computed.upd_priority
-}, 'update_priorities', [[nil, starting_container_uuid]]
+}, 'update_priorities', [starting_container_uuid]
 end

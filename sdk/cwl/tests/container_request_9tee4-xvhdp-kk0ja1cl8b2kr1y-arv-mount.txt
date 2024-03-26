@@ -1,0 +1,10 @@
+2018-10-03T18:21:16.944508412Z crunchstat: keepcalls 0 put 0 get -- interval 10.0000 seconds 0 put 0 get
+2018-10-03T18:21:16.944508412Z crunchstat: net:keep0 0 tx 0 rx -- interval 10.0000 seconds 0 tx 0 rx
+2018-10-03T18:21:16.944508412Z crunchstat: keepcache 0 hit 0 miss -- interval 10.0000 seconds 0 hit 0 miss
+2018-10-03T18:21:16.944508412Z crunchstat: fuseops 0 write 0 read -- interval 10.0000 seconds 0 write 0 read
+2018-10-03T18:21:16.944508412Z crunchstat: blkio:0:0 0 write 0 read -- interval 10.0000 seconds 0 write 0 read
+2018-10-03T18:21:26.954764471Z crunchstat: keepcalls 0 put 0 get -- interval 10.0000 seconds 0 put 0 get
+2018-10-03T18:21:26.954764471Z crunchstat: net:keep0 0 tx 0 rx -- interval 10.0000 seconds 0 tx 0 rx
+2018-10-03T18:21:26.954764471Z crunchstat: keepcache 0 hit 0 miss -- interval 10.0000 seconds 0 hit 0 miss
+2018-10-03T18:21:26.954764471Z crunchstat: fuseops 0 write 0 read -- interval 10.0000 seconds 0 write 0 read
+2018-10-03T18:21:26.954764471Z crunchstat: blkio:0:0 0 write 0 read -- interval 10.0000 seconds 0 write 0 read

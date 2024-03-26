@@ -208,7 +208,7 @@ docker run --detach --rm --name=${ctrlctr} \
        -v "${tmpdir}/arvados-server":/bin/arvados-server:ro \
        -v "${tmpdir}/zzzzz.yml":/etc/arvados/config.yml:ro \
        -v $(realpath "${PWD}/../../.."):/arvados:ro \
-       debian:10 \
+       debian:11 \
        bash -c "${setup_pam_ldap:-true} && arvados-server controller"
 docker logs --follow ${ctrlctr} 2>$debug >$debug &
 ctrlhostports=$(docker port ${ctrlctr} 9999/tcp)

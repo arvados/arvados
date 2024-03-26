@@ -5,7 +5,7 @@
 import React from "react";
 import { Grid, StyleRulesCallback, withStyles } from "@material-ui/core";
 import { Dispatch } from 'redux';
-import { formatContainerCost, formatDate } from "common/formatters";
+import { formatCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
@@ -75,12 +75,12 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 };
 
 interface ProcessDetailsAttributesActionProps {
-    navigateToOutput: (uuid: string) => void;
+    navigateToOutput: (resource: ContainerRequestResource) => void;
     openWorkflow: (uuid: string) => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionProps => ({
-    navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
+    navigateToOutput: (resource) => dispatch<any>(navigateToOutput(resource)),
     openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
 });
 
@@ -156,13 +156,13 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 </Grid>
                 <Grid item xs={6}>
                     <DetailsAttribute label='Output collection' />
-                    {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
+                    {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest!)}>
                         <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
                     </span>}
                 </Grid>
                 {container && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Cost' value={
-                        `${hasTotalCost ? formatContainerCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatContainerCost(container.cost) : 'not available'} for this container`
+                        `${hasTotalCost ? formatCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatCost(container.cost) : 'not available'} for this container`
                     } />
 
                     {container && workflowCollection && <Grid item xs={12} md={mdSize}>

@@ -54,7 +54,7 @@ class CreateSuperUserTokenTest < ActiveSupport::TestCase
     apiClientAuth = ApiClientAuthorization.where(api_token: 'atesttoken').first
     refute_nil apiClientAuth
     Thread.current[:user] = users(:admin)
-    apiClientAuth.update_attributes expires_at: '2000-10-10'
+    apiClientAuth.update expires_at: '2000-10-10'
 
     token2 = create_superuser_token
     assert_not_nil token2

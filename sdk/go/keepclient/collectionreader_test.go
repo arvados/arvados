@@ -237,7 +237,9 @@ func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 }
 
 func (s *CollectionReaderUnit) TestCollectionReaderCloseEarly(c *check.C) {
-	s.kc.BlockCache = &BlockCache{}
+	// Disable cache
+	s.kc.gatewayStack = &keepViaHTTP{s.kc}
+
 	s.kc.PutB([]byte("foo"))
 	s.kc.PutB([]byte("bar"))
 	s.kc.PutB([]byte("baz"))

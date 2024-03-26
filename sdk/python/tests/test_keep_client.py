@@ -167,30 +167,30 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers, DiskCacheBase)
                          b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-        # GET with an unsigned locator => NotFound
+        # GET with an unsigned locator => bad request
         bar_locator = keep_client.put('bar')
         unsigned_bar_locator = "37b51d194a7513e45b56f6524f2d51f2+3"
         self.assertRegex(
             bar_locator,
             r'^37b51d194a7513e45b56f6524f2d51f2\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("bar"): ' + bar_locator)
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           keep_client.get,
                           unsigned_bar_locator)
 
-        # GET from a different user => NotFound
+        # GET from a different user => bad request
         run_test_server.authorize_with('spectator')
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           arvados.Keep.get,
                           bar_locator)
 
-        # Unauthenticated GET for a signed locator => NotFound
-        # Unauthenticated GET for an unsigned locator => NotFound
+        # Unauthenticated GET for a signed locator => bad request
+        # Unauthenticated GET for an unsigned locator => bad request
         keep_client.api_token = ''
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           keep_client.get,
                           bar_locator)
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           keep_client.get,
                           unsigned_bar_locator)
 

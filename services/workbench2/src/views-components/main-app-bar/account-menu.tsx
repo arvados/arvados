@@ -17,7 +17,7 @@ import {
     navigateToSiteManager,
     navigateToSshKeysUser,
     navigateToMyAccount,
-    navigateToLinkAccount
+    navigateToLinkAccount,
 } from 'store/navigation/navigation-action';
 import { openUserVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { pluginConfig } from 'plugins';
@@ -39,16 +39,6 @@ const mapStateToProps = (state: RootState): AccountMenuProps => ({
     localCluster: state.auth.localCluster
 });
 
-const wb1URL = (route: string) => {
-    const r = route.replace(/^\//, "");
-    if (r.match(/^(projects|collections)\//)) {
-        return r;
-    } else if (r.match(/^processes\//)) {
-        return r.replace(/^processes/, "container_requests");
-    }
-    return "";
-};
-
 type CssRules = 'link';
 
 const styles: StyleRulesCallback<CssRules> = () => ({
@@ -61,7 +51,7 @@ const styles: StyleRulesCallback<CssRules> = () => ({
 export const AccountMenuComponent =
     ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) => {
         let accountMenuItems = <>
-            <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
+            <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Shell Access</MenuItem>
             <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
             <MenuItem onClick={() => {
                 dispatch<any>(getNewExtraToken(true));

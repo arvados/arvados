@@ -99,7 +99,7 @@ At the console, enter the following commands to locate the ApiClient record for 
 =&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
 irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
 =&gt; true
-irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>
+irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update!(is_trusted: true) end</span>
 =&gt; true
 </code></pre>
 </notextile>

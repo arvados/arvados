@@ -47,12 +47,7 @@ func (hcr HashCheckingReader) Read(p []byte) (n int, err error) {
 // BadChecksum if writing is successful but the checksum doesn't
 // match.
 func (hcr HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error) {
-	if writeto, ok := hcr.Reader.(io.WriterTo); ok {
-		written, err = writeto.WriteTo(io.MultiWriter(dest, hcr.Hash))
-	} else {
-		written, err = io.Copy(io.MultiWriter(dest, hcr.Hash), hcr.Reader)
-	}
-
+	written, err = io.Copy(io.MultiWriter(dest, hcr.Hash), hcr.Reader)
 	if err != nil {
 		return written, err
 	}

@@ -48,7 +48,7 @@ Determine if you will use a single hostname, or multiple hostnames.
 
 If you are using multiple hostnames, determine the base domain for the cluster.  This will be referred to as @${DOMAIN}@.
 
-For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@" means @controller.xarv1.example.com@.
+For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@ means @controller.xarv1.example.com@.
 
 h3. Machine specification
 
@@ -190,13 +190,7 @@ The installer records log files for each deployment.
 
 Most service logs go to @/var/log/syslog@.
 
-The logs for Rails API server and for Workbench can be found in
-
-@/var/www/arvados-api/current/log/production.log@
-and
-@/var/www/arvados-workbench/current/log/production.log@
-
-on the appropriate instances.
+The logs for Rails API server can be found in @/var/www/arvados-api/current/log/production.log@ on the appropriate instance.
 
 Workbench 2 is a client-side Javascript application.  If you are having trouble loading Workbench 2, check the browser's developer console (this can be found in "Tools &rarr; Developer Tools").
 

@@ -25,7 +25,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
         boxSizing: 'border-box',
         color: theme.palette.grey["600"],
-        width: '100%'
+        width: '100%',
+        marginTop: "0.4em",
     },
     value: {
         boxSizing: 'border-box',
@@ -95,10 +96,10 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                 if (linkUrl[0] === '/') {
                     valueNode = <Link to={linkUrl} className={classes.link}>{uuid}</Link>;
                 } else {
-                    valueNode = <a href={linkUrl} className={classes.link} target='_blank' rel="noopener noreferrer">{uuid}</a>;
+                    valueNode = <a href={linkUrl} className={classes.link} target='_blank' rel="noopener">{uuid}</a>;
                 }
             } else if (link) {
-                valueNode = <a href={link} className={classes.link} target='_blank' rel="noopener noreferrer">{value}</a>;
+                valueNode = <a href={link} className={classes.link} target='_blank' rel="noopener">{value}</a>;
             } else {
                 valueNode = value;
             }
@@ -115,7 +116,7 @@ interface DetailsAttributeComponentProps {
 
 export const DetailsAttributeComponent = withStyles(styles)(
     (props: DetailsAttributeDataProps & WithStyles<CssRules> & DetailsAttributeComponentProps) =>
-        <Typography component="div" className={props.classes.attribute}>
+        <Typography component="div" className={props.classes.attribute} data-cy={`details-panel-${props.label.toLowerCase()}`}>
             <Typography component="div" className={classnames([props.classes.label, props.classLabel])}>{props.label}</Typography>
             <Typography
                 onClick={props.onValueClick}
@@ -132,4 +133,3 @@ export const DetailsAttributeComponent = withStyles(styles)(
                 </Tooltip>}
             </Typography>
         </Typography>);
-

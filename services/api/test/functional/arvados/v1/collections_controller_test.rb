@@ -409,7 +409,7 @@ EOS
         ensure_unique_name: true
       }
       assert_response :success
-      assert_match /^owned_by_active \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+      assert_match /^owned_by_active \(#{json_response['uuid'][-15..-1]}\)$/, json_response['name']
     end
   end
 
@@ -1222,6 +1222,20 @@ EOS
     assert_nil json_response['trash_at']
   end
 
+  test 'untrash a trashed collection by assigning nil to trash_at' do
+    authorize_with :active
+    post :update, params: {
+           id: collections(:expired_collection).uuid,
+           collection: {
+             trash_at: nil,
+           },
+           include_trash: true,
+    }
+    assert_response 200
+    assert_equal false, json_response['is_trashed']
+    assert_nil json_response['trash_at']
+  end
+
   test 'untrash error on not trashed collection' do
     authorize_with :active
     post :untrash, params: {
@@ -1271,7 +1285,7 @@ EOS
     assert_equal false, json_response['is_trashed']
     assert_nil json_response['trash_at']
     assert_nil json_response['delete_at']
-    assert_match /^same name for trashed and persisted collections \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+    assert_match /^same name for trashed and persisted collections \(#{json_response['uuid'][-15..-1]}\)$/, json_response['name']
   end
 
   test 'cannot show collection in trashed subproject' do

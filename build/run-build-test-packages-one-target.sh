@@ -7,10 +7,10 @@ read -rd "\000" helpmessage <<EOF
 $(basename $0): Build, test and (optionally) upload packages for one target
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename $0) [options]
+        WORKSPACE=/path/to/arvados $(basename $0) --target <target> [options]
 
 --target <target>
-    Distribution to build packages for (default: debian10)
+    Distribution to build packages for
 --only-build <package>
     Build only a specific package (or ONLY_BUILD from environment)
 --arch <arch>
@@ -61,10 +61,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian10
 UPLOAD=0
 RC=0
 DEBUG=
+TARGET=
 
 declare -a build_args=()
 
@@ -116,6 +116,14 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+if [[ -z "$TARGET" ]]; then
+    echo "FATAL: --target must be specified" >&2
+    exit 2
+elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+    echo "FATAL: unknown build target '$TARGET'" >&2
+    exit 2
+fi
 
 build_args+=(--target "$TARGET")
 

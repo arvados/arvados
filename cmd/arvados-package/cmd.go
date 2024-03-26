@@ -71,7 +71,7 @@ type opts struct {
 func parseFlags(prog string, args []string, stderr io.Writer) (_ opts, ok bool, exitCode int) {
 	opts := opts{
 		SourceDir:  ".",
-		TargetOS:   "debian:10",
+		TargetOS:   "debian:11",
 		Maintainer: "Arvados Package Maintainers <packaging@arvados.org>",
 		Vendor:     "The Arvados Project",
 	}

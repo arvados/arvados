@@ -32,10 +32,10 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.BoolVar(&options.Once, "once", false,
 		"balance once and then exit")
-	flags.BoolVar(&options.CommitPulls, "commit-pulls", false,
-		"send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)")
-	flags.BoolVar(&options.CommitTrash, "commit-trash", false,
-		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
+	deprCommitPulls := flags.Bool("commit-pulls", true,
+		"send pull requests (must be true -- configure Collections.BalancePullLimit = 0 to disable.)")
+	deprCommitTrash := flags.Bool("commit-trash", true,
+		"send trash requests (must be true -- configure Collections.BalanceTrashLimit = 0 to disable.)")
 	flags.BoolVar(&options.CommitConfirmedFields, "commit-confirmed-fields", true,
 		"update collection fields (replicas_confirmed, storage_classes_confirmed, etc.)")
 	flags.StringVar(&options.ChunkPrefix, "chunk-prefix", "",
@@ -53,6 +53,13 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	munged := loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepbalance-config")
 	if ok, code := cmd.ParseFlags(flags, prog, munged, "", stderr); !ok {
 		return code
+	}
+
+	if !*deprCommitPulls || !*deprCommitTrash {
+		fmt.Fprint(stderr,
+			"Usage error: the -commit-pulls or -commit-trash command line flags are no longer supported.\n",
+			"Use Collections.BalancePullLimit and Collections.BalanceTrashLimit instead.\n")
+		return cmd.EXIT_INVALIDARGUMENT
 	}
 
 	// Drop our custom args that would be rejected by the generic

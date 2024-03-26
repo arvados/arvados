@@ -17,11 +17,17 @@ import functools
 import os
 import sys
 
-import pdoc
-import pdoc.__main__
-import pdoc.markdown2
-import pdoc.render
-import pdoc.render_helpers
+try:
+    import pdoc.__main__
+    import pdoc.markdown2
+    import pdoc.render_helpers
+except ImportError as err:
+    if __name__ == '__main__':
+        _imp_err = err
+    else:
+        raise
+else:
+    _imp_err = None
 
 DEFAULT_ARGLIST = [
     '--output-directory=sdk/python',
@@ -33,17 +39,19 @@ MD_EXTENSIONS = {
 }
 
 def main(arglist=None):
+    if _imp_err is not None:
+        print("error: failed to import pdoc:", _imp_err, file=sys.stderr)
+        return os.EX_SOFTWARE
+    # Ensure markdown2 is new enough to support our desired extras.
+    elif pdoc.markdown2.__version_info__ < (2, 4, 3):
+        print("error: need markdown2>=2.4.3 to render admonitions", file=sys.stderr)
+        return os.EX_SOFTWARE
+
     # Configure pdoc to use extras we want.
     pdoc.render_helpers.markdown_extensions = collections.ChainMap(
         pdoc.render_helpers.markdown_extensions,
         MD_EXTENSIONS,
     )
-
-    # Ensure markdown2 is new enough to support our desired extras.
-    if pdoc.markdown2.__version_info__ < (2, 4, 3):
-        print("error: need markdown2>=2.4.3 to render admonitions", file=sys.stderr)
-        return os.EX_SOFTWARE
-
     pdoc.__main__.cli(arglist)
     return os.EX_OK
 

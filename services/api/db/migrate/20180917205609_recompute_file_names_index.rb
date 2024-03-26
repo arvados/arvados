@@ -8,7 +8,7 @@ class RecomputeFileNamesIndex < ActiveRecord::Migration[4.2]
     Collection.select(:portable_data_hash, :manifest_text).where(portable_data_hash: pdhs).distinct(:portable_data_hash).each do |c|
       ActiveRecord::Base.connection.exec_query("update collections set file_names=$1 where portable_data_hash=$2",
                                                "update file_names index",
-                                               [[nil, c.manifest_files], [nil, c.portable_data_hash]])
+                                               [c.manifest_files, c.portable_data_hash])
     end
     ActiveRecord::Base.connection.exec_query('COMMIT')
   end

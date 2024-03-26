@@ -18,9 +18,9 @@ Another example is situations where admin access is required but there is risk o
 
 h2. Defining scopes
 
-A "scope" consists of a HTTP method and API path.  A token can have multiple scopes.  Token scopes act as a whitelist, and the API server checks the HTTP method and the API path of every request against the scopes of the request token.  Scopes are also described on the "API Authorization":{{site.baseurl}}/api/tokens.html#scopes page of the "API documentation":{{site.baseurl}}/api .
+A "scope" consists of a HTTP method and API path.  A token can have multiple scopes.  Token scopes act as a whitelist, and the API server checks the HTTP method and the API path of every request against the scopes of the request token.  Scopes are also described on the "API Authorization":{{site.baseurl}}/api/tokens.html#scopes page of the "API documentation":{{site.baseurl}}/api/index.html.
 
-These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api to determine the endpoints for specific methods.
+These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api/index.html to determine the endpoints for specific methods.
 
 The scope @["GET", "/arvados/v1/collections"]@ will allow only GET or HEAD requests for the list of collections.  Any other HTTP method or path (including requests for a specific collection record, eg a request with path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) will return a permission error.
 
@@ -42,14 +42,14 @@ h2. Creating a scoped token
 
 A scoped token can be created at the command line:
 
-<pre>
-$ arv api_client_authorization create --api-client-authorization '{"scopes": [["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]}'
+<notextile>
+<pre><code>$ <span class="userinput">arv api_client_authorization create --api-client-authorization '{"scopes": [["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]}'</span>
 {
- "href":"/api_client_authorizations/x1u39-gj3su-bizbsw0mx5pju3w",
+ "href":"/api_client_authorizations/zzzzz-gj3su-bizbsw0mx5pju3w",
  "kind":"arvados#apiClientAuthorization",
  "etag":"9yk144t0v6cvyp0342exoh2vq",
- "uuid":"x1u39-gj3su-bizbsw0mx5pju3w",
- "owner_uuid":"x1u39-tpzed-fr97h9t4m5jffxs",
+ "uuid":"zzzzz-gj3su-bizbsw0mx5pju3w",
+ "owner_uuid":"zzzzz-tpzed-fr97h9t4m5jffxs",
  "created_at":"2020-03-12T20:36:12.517375422Z",
  "modified_by_client_uuid":null,
  "modified_by_user_uuid":null,
@@ -73,6 +73,7 @@ $ arv api_client_authorization create --api-client-authorization '{"scopes": [["
   ]
  ]
 }
-</pre>
+</code></pre>
+</notextile>
 
 The response will include @api_token@ field which is the newly issued secret token.  It can be passed directly to the API server that issued it, or can be used to construct a @v2@ token.  A @v2@ format token is required if the token will be used to access other clusters in an Arvados federation.  An Arvados @v2@ format token consists of three fields separate by slashes: the prefix @v2@, followed by the token uuid, followed by the token secret.  For example: @v2/x1u39-gj3su-bizbsw0mx5pju3w/5a74htnoqwkhtfo2upekpfbsg04hv7cy5v4nowf7dtpxer086m@.

@@ -63,8 +63,8 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 
 type WebDAVCacheConfig struct {
 	TTL                Duration
-	MaxBlockEntries    int
-	MaxCollectionBytes int64
+	DiskCacheSize      ByteSizeOrPercent
+	MaxCollectionBytes ByteSize
 	MaxSessions        int
 }
 
@@ -99,8 +99,10 @@ type Cluster struct {
 		DisabledAPIs                     StringSet
 		MaxIndexDatabaseRead             int
 		MaxItemsPerResponse              int
+		MaxConcurrentRailsRequests       int
 		MaxConcurrentRequests            int
 		MaxQueuedRequests                int
+		MaxGatewayTunnels                int
 		MaxQueueTimeForLockRequests      Duration
 		LogCreateRequestFraction         float64
 		MaxKeepBlobBuffers               int
@@ -149,6 +151,8 @@ type Cluster struct {
 		BalanceCollectionBuffers int
 		BalanceTimeout           Duration
 		BalanceUpdateLimit       int
+		BalancePullLimit         int
+		BalanceTrashLimit        int
 
 		WebDAVCache WebDAVCacheConfig
 
@@ -268,31 +272,15 @@ type Cluster struct {
 	StorageClasses map[string]StorageClassConfig
 	Volumes        map[string]Volume
 	Workbench      struct {
-		ActivationContactLink            string
-		APIClientConnectTimeout          Duration
-		APIClientReceiveTimeout          Duration
-		APIResponseCompression           bool
-		ApplicationMimetypesWithViewIcon StringSet
-		ArvadosDocsite                   string
-		ArvadosPublicDataDocURL          string
-		DefaultOpenIdPrefix              string
-		DisableSharingURLsUI             bool
-		EnableGettingStartedPopup        bool
-		EnablePublicProjectsPage         bool
-		FileViewersConfigURL             string
-		LogViewerMaxBytes                ByteSize
-		MultiSiteSearch                  string
-		ProfilingEnabled                 bool
-		Repositories                     bool
-		RepositoryCache                  string
-		RunningJobLogRecordsToFetch      int
-		SecretKeyBase                    string
-		ShowRecentCollectionsOnDashboard bool
-		ShowUserAgreementInline          bool
-		ShowUserNotifications            bool
-		SiteName                         string
-		Theme                            string
-		UserProfileFormFields            map[string]struct {
+		ActivationContactLink   string
+		ArvadosDocsite          string
+		ArvadosPublicDataDocURL string
+		DisableSharingURLsUI    bool
+		FileViewersConfigURL    string
+		ShowUserAgreementInline bool
+		SiteName                string
+		Theme                   string
+		UserProfileFormFields   map[string]struct {
 			Type                 string
 			FormFieldTitle       string
 			FormFieldDescription string
@@ -316,12 +304,13 @@ type StorageClassConfig struct {
 }
 
 type Volume struct {
-	AccessViaHosts   map[URL]VolumeAccess
-	ReadOnly         bool
-	Replication      int
-	StorageClasses   map[string]bool
-	Driver           string
-	DriverParameters json.RawMessage
+	AccessViaHosts         map[URL]VolumeAccess
+	ReadOnly               bool
+	AllowTrashWhenReadOnly bool
+	Replication            int
+	StorageClasses         map[string]bool
+	Driver                 string
+	DriverParameters       json.RawMessage
 }
 
 type S3VolumeDriverParameters struct {
@@ -515,6 +504,7 @@ type ContainersConfig struct {
 	SupportedDockerImageFormats   StringSet
 	AlwaysUsePreemptibleInstances bool
 	PreemptiblePriceFactor        float64
+	MaximumPriceFactor            float64
 	RuntimeEngine                 string
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string
@@ -555,9 +545,11 @@ type ContainersConfig struct {
 		}
 	}
 	LSF struct {
-		BsubSudoUser      string
-		BsubArgumentsList []string
-		BsubCUDAArguments []string
+		BsubSudoUser       string
+		BsubArgumentsList  []string
+		BsubCUDAArguments  []string
+		MaxRunTimeOverhead Duration
+		MaxRunTimeDefault  Duration
 	}
 }
 

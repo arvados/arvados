@@ -11,13 +11,12 @@ net:keep0	rx	0	0	0
 net:keep0	tx	0	0	0
 net:keep0	tx+rx	0	0	0
 time	elapsed	10	-	10
-# Number of tasks: 1
-# Max CPU time spent by a single task: 0s
+# Elapsed time: 10s
 # Max CPU usage in a single interval: 0%
 # Overall CPU usage: 0.00%
-# Max memory used by a single task: 0.00GB
-# Max network traffic in a single task: 0.00GB
+# Max memory used: 0.00MB
+# Max network traffic: 0.00GB
 # Max network speed in a single interval: 0.00MB/s
-# Keep cache miss rate 0.00%
-# Keep cache utilization 0.00%
-# Temp disk utilization 0.00%
+# Keep cache miss rate: 0.00%
+# Keep cache utilization: 0.00%
+# Temp disk utilization: 0.00%

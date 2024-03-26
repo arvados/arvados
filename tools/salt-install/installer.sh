@@ -103,8 +103,15 @@ sync() {
     # from that.
 
     $SSH $DEPLOY_USER@$NODE git init --bare --shared=0600 ${GITTARGET}.git
-    $GIT push $NODE $BRANCH
-    $SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout ${BRANCH}"
+    if [[ "$BRANCH" == "HEAD" ]]; then
+      # When deploying from an individual commit instead of a branch. This can
+      # happen when deploying from a Jenkins pipeline.
+      $GIT push $NODE HEAD:refs/heads/HEAD
+      $SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout remotes/origin/HEAD"
+    else
+      $GIT push $NODE $BRANCH
+      $SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout ${BRANCH}"
+    fi
   fi
 }
 
@@ -274,7 +281,7 @@ terraform-destroy)
   ;;
 
 generate-tokens)
-  for i in BLOB_SIGNING_KEY MANAGEMENT_TOKEN SYSTEM_ROOT_TOKEN ANONYMOUS_USER_TOKEN WORKBENCH_SECRET_KEY DATABASE_PASSWORD; do
+  for i in BLOB_SIGNING_KEY MANAGEMENT_TOKEN SYSTEM_ROOT_TOKEN ANONYMOUS_USER_TOKEN DATABASE_PASSWORD; do
     echo ${i}=$(
       tr -dc A-Za-z0-9 </dev/urandom | head -c 32
       echo ''

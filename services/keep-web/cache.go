@@ -221,7 +221,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 		// using the new fs).
 		sess.inuse.Lock()
 		if !sess.userLoaded || refresh {
-			err := sess.client.RequestAndDecode(&sess.user, "GET", "/arvados/v1/users/current", nil, nil)
+			err := sess.client.RequestAndDecode(&sess.user, "GET", "arvados/v1/users/current", nil, nil)
 			if he := errorWithHTTPStatus(nil); errors.As(err, &he) && he.HTTPStatus() == http.StatusForbidden {
 				// token is OK, but "get user id" api is out
 				// of scope -- use existing/expired info if
@@ -303,7 +303,7 @@ func (c *cache) pruneSessions() {
 	// Mark more sessions for deletion until reaching desired
 	// memory size limit, starting with the oldest entries.
 	for i, snap := range snaps {
-		if size <= c.cluster.Collections.WebDAVCache.MaxCollectionBytes {
+		if size <= int64(c.cluster.Collections.WebDAVCache.MaxCollectionBytes) {
 			break
 		}
 		if snap.prune {

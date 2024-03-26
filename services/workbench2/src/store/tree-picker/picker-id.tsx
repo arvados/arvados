@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React from "react";
 
 export interface PickerIdProp {
     pickerId: string;
@@ -10,7 +10,12 @@ export interface PickerIdProp {
 
 export const pickerId =
     (id: string) =>
-        <P extends PickerIdProp>(Component: React.ComponentType<P>) =>
-            (props: P) =>
-                <Component {...props} pickerId={id} />;
-                
+    <P extends PickerIdProp>(Component: React.ComponentType<P>) =>
+    (props: P) => {
+        return (
+            <Component
+                {...props}
+                pickerId={id}
+            />
+        );
+    };

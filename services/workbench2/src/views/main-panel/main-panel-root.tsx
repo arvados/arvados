@@ -33,6 +33,8 @@ export interface MainPanelRootDataProps {
     siteBanner: string;
     sessionIdleTimeout: number;
     sidePanelIsCollapsed: boolean;
+    isTransitioning: boolean;
+    currentSideWidth: number;
 }
 
 interface MainPanelRootDispatchProps {
@@ -44,7 +46,7 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, loading, working, user, buildInfo, uuidPrefix,
         isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
-        sidePanelIsCollapsed, toggleSidePanel }: MainPanelRootProps) =>{
+        sidePanelIsCollapsed, isTransitioning, currentSideWidth}: MainPanelRootProps) =>{
         return loading
             ? <WorkbenchLoadingScreen />
             : <>
@@ -62,7 +64,13 @@ export const MainPanelRoot = withStyles(styles)(
             <Grid container direction="column" className={classes.root}>
                 {user
                     ? (user.isActive || (!user.isActive && isLinkingPath)
-                    ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} sessionIdleTimeout={sessionIdleTimeout} sidePanelIsCollapsed={sidePanelIsCollapsed}/>
+                    ? <WorkbenchPanel 
+                        isNotLinking={isNotLinking}
+                        isUserActive={user.isActive}
+                        sessionIdleTimeout={sessionIdleTimeout}
+                        sidePanelIsCollapsed={sidePanelIsCollapsed}
+                        isTransitioning={isTransitioning}
+                        currentSideWidth={currentSideWidth}/>
                     : <InactivePanel />)
                     : <LoginPanel />}
             </Grid>

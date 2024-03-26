@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-export RUBY_VERSION=2.7.0
-export BUNDLER_VERSION=2.2.19
+export RUBY_VERSION=3.2.2
+export BUNDLER_VERSION=2.4.22
 
 export DEBIAN_FRONTEND=noninteractive
-export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/usr/src/arvados/sdk/cli/binstubs
+export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/opt/arvados-py/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
@@ -35,7 +35,6 @@ server_cert_key=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.key
 
 declare -A services
 services=(
-  [workbench]=3001
   [workbench2]=3000
   [workbench2-ssl]=443
   [api]=8004
@@ -68,43 +67,55 @@ fi
 
 run_bundler() {
     flock $GEMLOCK /var/lib/arvados/bin/gem install --no-document --user bundler:$BUNDLER_VERSION
-    if test -f Gemfile.lock ; then
-        frozen=--frozen
-    else
-        frozen=""
-    fi
+
     BUNDLER=bundle
     if test -x $PWD/bin/bundle ; then
-	# If present, use the one associated with rails workbench or API
+	# If present, use the one associated with rails API
 	BUNDLER=$PWD/bin/bundle
     fi
+
+    # Use Gemfile.lock only if it is git tracked.
+    if git ls-files --error-unmatch Gemfile.lock ; then
+	flock $GEMLOCK $BUNDLER config set --local frozen true
+    else
+	flock $GEMLOCK $BUNDLER config set --local frozen false
+    fi
+    flock $GEMLOCK $BUNDLER config set --local deployment false
 
     if test -z "$(flock $GEMLOCK /var/lib/arvados/bin/gem list | grep 'arvados[[:blank:]].*[0-9.]*dev')" ; then
         (cd /usr/src/arvados/sdk/ruby && \
         /var/lib/arvados/bin/gem build arvados.gemspec && flock $GEMLOCK /var/lib/arvados/bin/gem install $(ls -1 *.gem | sort -r | head -n1))
     fi
-    if ! flock $GEMLOCK $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
-        flock $GEMLOCK $BUNDLER install --verbose --no-deployment $frozen "$@"
+
+    if ! flock $GEMLOCK $BUNDLER install --verbose --local "$@" ; then
+        flock $GEMLOCK $BUNDLER install --verbose "$@"
     fi
 }
 
-PYCMD=""
-pip_install() {
-    pushd /var/lib/pip
-    for p in $(ls http*.tar.gz) $(ls http*.tar.bz2) $(ls http*.whl) $(ls http*.zip) ; do
-        if test -f $p ; then
-            ln -sf $p $(echo $p | sed 's/.*%2F\(.*\)/\1/')
-        fi
-    done
-    popd
-
-    if [ "$PYCMD" = "python3" ]; then
-        if ! pip3 install --prefix /usr/local --no-index --find-links /var/lib/pip $1 ; then
-            pip3 install --prefix /usr/local $1
-        fi
-    else
-        if ! pip install --no-index --find-links /var/lib/pip $1 ; then
-            pip install $1
-        fi
+bundler_binstubs() {
+    BUNDLER=bundle
+    if test -x $PWD/bin/bundle ; then
+	# If present, use the one associated with rails API
+	BUNDLER=$PWD/bin/bundle
     fi
+    flock $GEMLOCK $BUNDLER binstubs --all
+}
+
+# Usage: Pass any number of directories. Relative directories will be taken as
+# relative to /usr/src/arvados. This function will build an sdist from each,
+# then pip install them all in the arvbox virtualenv.
+pip_install_sdist() {
+    local sdist_dir="$(mktemp --directory --tmpdir py_sdist.XXXXXXXX)"
+    trap 'rm -rf "$sdist_dir"' RETURN
+    local src_dir
+    for src_dir in "$@"; do
+        case "$src_dir" in
+            /*) ;;
+            *) src_dir="/usr/src/arvados/$src_dir" ;;
+        esac
+        env -C "$src_dir" /opt/arvados-py/bin/python3 setup.py sdist --dist-dir="$sdist_dir" \
+            || return
+    done
+    /opt/arvados-py/bin/pip install "$sdist_dir"/* || return
+    return
 }

@@ -19,6 +19,25 @@ export interface ClusterConfigJSON {
         MaxItemsPerResponse: number
     },
     ClusterID: string;
+    Containers: {
+        ReserveExtraRAM: number;
+    },
+    InstanceTypes?: {
+        [key: string]: {
+            AddedScratch: number;
+            CUDA?: {
+                DeviceCount: number;
+                DriverVersion: string;
+                HardwareCapability: string;
+            };
+            IncludedScratch: number;
+            Preemptible: boolean;
+            Price: number;
+            ProviderType: string;
+            RAM: number;
+            VCPUs: number;
+        };
+    };
     RemoteClusters: {
         [key: string]: {
             ActivateUsers: boolean
@@ -276,6 +295,9 @@ export const mockClusterConfigJSON = (
         MaxItemsPerResponse: 1000,
     },
     ClusterID: '',
+    Containers: {
+        ReserveExtraRAM: 576716800,
+    },
     RemoteClusters: {},
     Services: {
         Controller: { ExternalURL: '' },

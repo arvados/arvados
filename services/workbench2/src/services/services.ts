@@ -131,6 +131,8 @@ export const getResourceService = (kind?: ResourceKind) => (serviceRepository: S
             return serviceRepository.groupsService;
         case ResourceKind.COLLECTION:
             return serviceRepository.collectionService;
+        case ResourceKind.LINK:
+            return serviceRepository.linkService;
         default:
             return undefined;
     }

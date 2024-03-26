@@ -20,16 +20,18 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { CollectionIcon, IconType, ProcessIcon, ProjectIcon, WorkflowIcon } from 'components/icon/icon';
+import { AdminMenuIcon, CollectionIcon, IconType, ProcessIcon, ProjectIcon, ResourceIcon, TerminalIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
 import { WorkflowResource } from 'models/workflow';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const BREADCRUMBS = 'breadcrumbs';
 
 export const setBreadcrumbs = (breadcrumbs: any, currentItem?: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) => {
     if (currentItem) {
-        breadcrumbs.push(resourceToBreadcrumb(currentItem));
+        const currentCrumb = resourceToBreadcrumb(currentItem)
+        if (currentCrumb.label.length) breadcrumbs.push(currentCrumb);
     }
     return propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
 };
@@ -49,68 +51,81 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
     }
 }
 
-const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource): Breadcrumb => ({
-    label: resource.name,
+const resourceToBreadcrumb = (resource: (CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) & {fullName?: string}  ): Breadcrumb => ({
+    label: resource.name || resource.fullName || '',
     uuid: resource.uuid,
     icon: resourceToBreadcrumbIcon(resource),
 })
 
 export const setSidePanelBreadcrumbs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const ancestors = await services.ancestorsService.ancestors(uuid, '');
-        dispatch(updateResources(ancestors));
+        try {
+            dispatch(progressIndicatorActions.START_WORKING(uuid + "-breadcrumbs"));
+            const ancestors = await services.ancestorsService.ancestors(uuid, '');
+            dispatch(updateResources(ancestors));
 
-        let breadcrumbs: Breadcrumb[] = [];
-        const { collectionPanel: { item } } = getState();
+            let breadcrumbs: Breadcrumb[] = [];
+            const { collectionPanel: { item } } = getState();
 
-        const path = getState().router.location!.pathname;
-        const currentUuid = path.split('/')[2];
-        const uuidKind = extractUuidKind(currentUuid);
-        const rootUuid = getUserUuid(getState());
+            const path = getState().router.location!.pathname;
+            const currentUuid = path.split('/')[2];
+            const uuidKind = extractUuidKind(currentUuid);
+            const rootUuid = getUserUuid(getState());
 
-        if (ancestors.find(ancestor => ancestor.uuid === rootUuid)) {
-            // Handle home project uuid root
-            breadcrumbs.push({
-                label: SidePanelTreeCategory.PROJECTS,
-                uuid: SidePanelTreeCategory.PROJECTS,
-                icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
-            });
-        } else if (Object.values(SidePanelTreeCategory).includes(uuid as SidePanelTreeCategory)) {
-            // Handle SidePanelTreeCategory root
-            breadcrumbs.push({
-                label: uuid,
-                uuid: uuid,
-                icon: getSidePanelIcon(uuid)
-            });
-        }
-
-        breadcrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
-            ancestor.kind === ResourceKind.GROUP
-                ? [...breadcrumbs, resourceToBreadcrumb(ancestor)]
-                : breadcrumbs,
-            breadcrumbs);
-
-        if (uuidKind === ResourceKind.COLLECTION) {
-            const collectionItem = item ? item : await services.collectionService.get(currentUuid);
-            const parentProcessItem = await getCollectionParent(collectionItem)(services);
-            if (parentProcessItem) {
-                const mainProcessItem = await getProcessParent(parentProcessItem)(services);
-                mainProcessItem && breadcrumbs.push(resourceToBreadcrumb(mainProcessItem));
-                breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
+            if (ancestors.find(ancestor => ancestor.uuid === rootUuid)) {
+                // Handle home project uuid root
+                breadcrumbs.push({
+                    label: SidePanelTreeCategory.PROJECTS,
+                    uuid: SidePanelTreeCategory.PROJECTS,
+                    icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
+                });
+            } else if (uuidKind === ResourceKind.USER) {
+                // Handle another user root project
+                const user = getResource<UserResource>(uuid)(getState().resources);
+                breadcrumbs.push({
+                    label: (user as any)?.fullName || user?.username || uuid,
+                    uuid: user?.uuid || uuid,
+                    icon: getSidePanelIcon(SidePanelTreeCategory.PROJECTS)
+                });
+            } else if (Object.values(SidePanelTreeCategory).includes(uuid as SidePanelTreeCategory)) {
+                // Handle SidePanelTreeCategory root
+                breadcrumbs.push({
+                    label: uuid,
+                    uuid: uuid,
+                    icon: getSidePanelIcon(uuid)
+                });
             }
-            dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
-        } else if (uuidKind === ResourceKind.PROCESS) {
-            const processItem = await services.containerRequestService.get(currentUuid);
-            const parentProcessItem = await getProcessParent(processItem)(services);
-            if (parentProcessItem) {
-                breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
+
+            breadcrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
+                ancestor.kind === ResourceKind.GROUP
+                    ? [...breadcrumbs, resourceToBreadcrumb(ancestor)]
+                    : breadcrumbs,
+                breadcrumbs);
+
+            if (uuidKind === ResourceKind.COLLECTION) {
+                const collectionItem = item ? item : await services.collectionService.get(currentUuid);
+                const parentProcessItem = await getCollectionParent(collectionItem)(services);
+                if (parentProcessItem) {
+                    const mainProcessItem = await getProcessParent(parentProcessItem)(services);
+                    mainProcessItem && breadcrumbs.push(resourceToBreadcrumb(mainProcessItem));
+                    breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
+                }
+                dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
+            } else if (uuidKind === ResourceKind.PROCESS) {
+                const processItem = await services.containerRequestService.get(currentUuid);
+                const parentProcessItem = await getProcessParent(processItem)(services);
+                if (parentProcessItem) {
+                    breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
+                }
+                dispatch(setBreadcrumbs(breadcrumbs, processItem));
+            } else if (uuidKind === ResourceKind.WORKFLOW) {
+                const workflowItem = await services.workflowService.get(currentUuid);
+                dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
             }
-            dispatch(setBreadcrumbs(breadcrumbs, processItem));
-        } else if (uuidKind === ResourceKind.WORKFLOW) {
-            const workflowItem = await services.workflowService.get(currentUuid);
-            dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
+            dispatch(setBreadcrumbs(breadcrumbs));
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-breadcrumbs"));
         }
-        dispatch(setBreadcrumbs(breadcrumbs));
     };
 
 export const setSharedWithMeBreadcrumbs = (uuid: string) =>
@@ -121,45 +136,50 @@ export const setTrashBreadcrumbs = (uuid: string) =>
 
 export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const ancestors = await services.ancestorsService.ancestors(uuid, '');
-        dispatch(updateResources(ancestors));
-        const initialBreadcrumbs: Breadcrumb[] = [
-            {
-                label: category,
-                uuid: category,
-                icon: getSidePanelIcon(category)
+        try {
+            dispatch(progressIndicatorActions.START_WORKING(uuid + "-breadcrumbs"));
+            const ancestors = await services.ancestorsService.ancestors(uuid, '');
+            dispatch(updateResources(ancestors));
+            const initialBreadcrumbs: Breadcrumb[] = [
+                {
+                    label: category,
+                    uuid: category,
+                    icon: getSidePanelIcon(category)
+                }
+            ];
+            const { collectionPanel: { item } } = getState();
+            const path = getState().router.location!.pathname;
+            const currentUuid = path.split('/')[2];
+            const uuidKind = extractUuidKind(currentUuid);
+            let breadcrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
+                ancestor.kind === ResourceKind.GROUP
+                    ? [...breadcrumbs, resourceToBreadcrumb(ancestor)]
+                    : breadcrumbs,
+                initialBreadcrumbs);
+            if (uuidKind === ResourceKind.COLLECTION) {
+                const collectionItem = item ? item : await services.collectionService.get(currentUuid);
+                const parentProcessItem = await getCollectionParent(collectionItem)(services);
+                if (parentProcessItem) {
+                    const mainProcessItem = await getProcessParent(parentProcessItem)(services);
+                    mainProcessItem && breadcrumbs.push(resourceToBreadcrumb(mainProcessItem));
+                    breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
+                }
+                dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
+            } else if (uuidKind === ResourceKind.PROCESS) {
+                const processItem = await services.containerRequestService.get(currentUuid);
+                const parentProcessItem = await getProcessParent(processItem)(services);
+                if (parentProcessItem) {
+                    breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
+                }
+                dispatch(setBreadcrumbs(breadcrumbs, processItem));
+            } else if (uuidKind === ResourceKind.WORKFLOW) {
+                const workflowItem = await services.workflowService.get(currentUuid);
+                dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
             }
-        ];
-        const { collectionPanel: { item } } = getState();
-        const path = getState().router.location!.pathname;
-        const currentUuid = path.split('/')[2];
-        const uuidKind = extractUuidKind(currentUuid);
-        let breadcrumbs = ancestors.reduce((breadcrumbs, ancestor) =>
-            ancestor.kind === ResourceKind.GROUP
-                ? [...breadcrumbs, resourceToBreadcrumb(ancestor)]
-                : breadcrumbs,
-            initialBreadcrumbs);
-        if (uuidKind === ResourceKind.COLLECTION) {
-            const collectionItem = item ? item : await services.collectionService.get(currentUuid);
-            const parentProcessItem = await getCollectionParent(collectionItem)(services);
-            if (parentProcessItem) {
-                const mainProcessItem = await getProcessParent(parentProcessItem)(services);
-                mainProcessItem && breadcrumbs.push(resourceToBreadcrumb(mainProcessItem));
-                breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
-            }
-            dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
-        } else if (uuidKind === ResourceKind.PROCESS) {
-            const processItem = await services.containerRequestService.get(currentUuid);
-            const parentProcessItem = await getProcessParent(processItem)(services);
-            if (parentProcessItem) {
-                breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
-            }
-            dispatch(setBreadcrumbs(breadcrumbs, processItem));
-        } else if (uuidKind === ResourceKind.WORKFLOW) {
-            const workflowItem = await services.workflowService.get(currentUuid);
-            dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
+            dispatch(setBreadcrumbs(breadcrumbs));
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-breadcrumbs"));
         }
-        dispatch(setBreadcrumbs(breadcrumbs));
     };
 
 const getProcessParent = (childProcess: ContainerRequestResource) =>
@@ -257,11 +277,11 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
         try {
             const user = getResource<UserResource>(userUuid)(getState().resources)
                 || await services.userService.get(userUuid, false);
-            const breadcrumbs: Breadcrumb[] = [
+            const userProfileBreadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
-                { label: user ? user.username : userUuid, uuid: userUuid },
-            ];
-            dispatch(setBreadcrumbs(breadcrumbs));
+                { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
+            ];    
+            dispatch(setBreadcrumbs(userProfileBreadcrumbs));
         } catch (e) {
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
@@ -277,5 +297,39 @@ export const setMyAccountBreadcrumbs = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(setBreadcrumbs([
             { label: MY_ACCOUNT_PANEL_LABEL, uuid: MY_ACCOUNT_PANEL_LABEL },
+        ]));
+    };
+
+export const INSTANCE_TYPES_PANEL_LABEL = 'Instance Types';
+
+export const setInstanceTypesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: INSTANCE_TYPES_PANEL_LABEL, uuid: INSTANCE_TYPES_PANEL_LABEL, icon: ResourceIcon },
+        ]));
+    };
+
+export const setVirtualMachinesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: SidePanelTreeCategory.SHELL_ACCESS, uuid: SidePanelTreeCategory.SHELL_ACCESS, icon: TerminalIcon },
+        ]));
+    };
+
+export const VIRTUAL_MACHINES_ADMIN_PANEL_LABEL = 'Shell Access Admin';
+
+export const setVirtualMachinesAdminBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, uuid: VIRTUAL_MACHINES_ADMIN_PANEL_LABEL, icon: AdminMenuIcon },
+        ]));
+    };
+
+export const REPOSITORIES_PANEL_LABEL = 'Repositories';
+
+export const setRepositoriesBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: REPOSITORIES_PANEL_LABEL, uuid: REPOSITORIES_PANEL_LABEL, icon: AdminMenuIcon },
         ]));
     };

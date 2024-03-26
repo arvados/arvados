@@ -38,8 +38,6 @@ services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.r
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
                Restrict Python SDK tests to the given class
-apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
-               Restrict Workbench tests to the given file
 services/githttpd_test="-check.vv"
                Show all log messages, even when tests pass (also works
                with services/keepstore_test etc.)
@@ -62,12 +60,6 @@ https://dev.arvados.org/projects/arvados/wiki/Running_tests
 
 Available tests:
 
-apps/workbench (*)
-apps/workbench_units (*)
-apps/workbench_functionals (*)
-apps/workbench_integration (*)
-apps/workbench_benchmark
-apps/workbench_profile
 cmd/arvados-client
 cmd/arvados-package
 cmd/arvados-server
@@ -135,9 +127,6 @@ tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
 
-(*) apps/workbench is shorthand for apps/workbench_units +
-    apps/workbench_functionals + apps/workbench_integration
-
 EOF
 
 # First make sure to remove any ARVADOS_ variables from the calling
@@ -184,10 +173,6 @@ fatal() {
 
 exit_cleanly() {
     trap - INT
-    if which create-plot-data-from-log.sh >/dev/null; then
-        create-plot-data-from-log.sh $BUILD_NUMBER "$WORKSPACE/apps/workbench/log/test.log" "$WORKSPACE/apps/workbench/log/"
-    fi
-    rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
     stop_services
     rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
     report_outcomes
@@ -223,7 +208,8 @@ sanity_checks() {
     find /usr/include -path '*gnutls/gnutls.h' | egrep --max-count=1 . \
         || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
     echo -n 'virtualenv: '
-    python3 -m venv -h | egrep --max-count=1 . \
+    python3 -m venv --help | grep -q '^usage: venv ' \
+        && echo "venv module found" \
         || fatal "No virtualenv. Try: apt-get install python3-venv"
     echo -n 'Python3 pyconfig.h: '
     find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
@@ -238,7 +224,7 @@ sanity_checks() {
         || fatal "No gitolite. Try: apt-get install gitolite3"
     echo -n 'npm: '
     npm --version \
-        || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v10.23.1/node-v10.23.1-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v10.23.1-linux-x64/bin/{node,npm} /usr/local/bin/"
+        || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v12.22.12-linux-x64/bin/{node,npm} /usr/local/bin/"
     echo -n 'cadaver: '
     cadaver --version | grep -w cadaver \
           || fatal "No cadaver. Try: apt-get install cadaver"
@@ -256,14 +242,10 @@ sanity_checks() {
         || fatal "No libpam pam_appl.h. Try: apt-get install libpam0g-dev"
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
-    echo -n 'phantomjs: '
-    phantomjs --version || fatal "No phantomjs. Try: apt-get install phantomjs"
     echo -n 'xvfb: '
     which Xvfb || fatal "No xvfb. Try: apt-get install xvfb"
     echo -n 'graphviz: '
     dot -V || fatal "No graphviz. Try: apt-get install graphviz"
-    echo -n 'geckodriver: '
-    geckodriver --version | grep ^geckodriver || echo "No geckodriver. Try: arvados-server install"
     echo -n 'singularity: '
     singularity --version || fatal "No singularity. Try: arvados-server install"
     echo -n 'docker client: '
@@ -289,7 +271,7 @@ sanity_checks() {
 }
 
 rotate_logfile() {
-  # i.e.  rotate_logfile "$WORKSPACE/apps/workbench/log/" "test.log"
+  # i.e.  rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
   # $BUILD_NUMBER is set by Jenkins if this script is being called as part of a Jenkins run
   if [[ -f "$1/$2" ]]; then
     THEDATE=`date +%Y%m%d%H%M%S`
@@ -302,7 +284,6 @@ declare -a failures
 declare -A skip
 declare -A only
 declare -A testargs
-skip[apps/workbench_profile]=1
 
 while [[ -n "$1" ]]
 do
@@ -592,7 +573,7 @@ setup_virtualenv() {
     elif [[ -n "$short" ]]; then
         return
     fi
-    "$venvdest/bin/pip3" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
+    "$venvdest/bin/pip3" install --no-cache-dir 'setuptools>=68' 'pip>=20'
 }
 
 initialize() {
@@ -690,9 +671,6 @@ retry() {
 
 do_test() {
     case "${1}" in
-        apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
-            suite=apps/workbench
-            ;;
         services/workbench2_units | services/workbench2_integration)
             suite=services/workbench2
             ;;
@@ -710,7 +688,21 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker | services/workbench2_units | services/workbench2_integration)
+        gofmt \
+            | cmd/arvados-package \
+            | doc \
+            | lib/boot \
+            | lib/cli \
+            | lib/cloud/azure \
+            | lib/cloud/cloudtest \
+            | lib/cloud/ec2 \
+            | lib/cmd \
+            | lib/dispatchcloud/sshexecutor \
+            | lib/dispatchcloud/worker \
+            | lib/install \
+            | services/workbench2_integration \
+            | services/workbench2_units \
+            )
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -979,22 +971,18 @@ install_services/api() {
 
 declare -a pythonstuff
 pythonstuff=(
+    # The ordering of sdk/python, tools/crunchstat-summary, and
+    # sdk/cwl here is significant. See
+    # https://dev.arvados.org/issues/19744#note-26
     sdk/python:py3
+    tools/crunchstat-summary:py3
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse:py3
-    tools/crunchstat-summary:py3
 )
 
 declare -a gostuff
 gostuff=($(cd "$WORKSPACE" && git ls-files | grep '\.go$' | sed -e 's/\/[^\/]*$//' | sort -u))
-
-install_apps/workbench() {
-    cd "$WORKSPACE/apps/workbench" \
-        && mkdir -p tmp/cache \
-        && RAILS_ENV=test bundle_install_trylocal \
-        && RAILS_ENV=test RAILS_GROUPS=assets "$bundle" exec rake npm:install
-}
 
 install_services/workbench2() {
     cd "$WORKSPACE/services/workbench2" \
@@ -1002,20 +990,20 @@ install_services/workbench2() {
 }
 
 test_doc() {
-    (
-        set -e
-        cd "$WORKSPACE/doc"
-        ARVADOS_API_HOST=pirca.arvadosapi.com
-        # Make sure python-epydoc is installed or the next line won't
-        # do much good!
-        PYTHONPATH=$WORKSPACE/sdk/python/ "$bundle" exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
-    )
+    local arvados_api_host=pirca.arvadosapi.com && \
+        env -C "$WORKSPACE/doc" \
+        "$bundle" exec rake linkchecker \
+        arvados_api_host="$arvados_api_host" \
+        arvados_workbench_host="https://workbench.$arvados_api_host" \
+        baseurl="file://$WORKSPACE/doc/.site/" \
+        ${testargs[doc]}
 }
 
 test_gofmt() {
     cd "$WORKSPACE" || return 1
     dirs=$(ls -d */ | egrep -v 'vendor|tmp')
     [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
+    go vet -composites=false ./...
 }
 
 test_services/api() {
@@ -1064,45 +1052,19 @@ test_services/workbench2_integration() {
     cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
 }
 
-test_apps/workbench_units() {
-    local TASK="test:units"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
-}
-
-test_apps/workbench_functionals() {
-    local TASK="test:functionals"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
-}
-
-test_apps/workbench_integration() {
-    local TASK="test:integration"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
-}
-
-test_apps/workbench_benchmark() {
-    local TASK="test:benchmark"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
-}
-
-test_apps/workbench_profile() {
-    local TASK="test:profile"
-    cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_profile]}
-}
-
 install_deps() {
     # Install parts needed by test suites
     do_install env
     do_install cmd/arvados-server go
-    do_install sdk/cli
     do_install sdk/python pip "${VENV3DIR}/bin/"
+    do_install tools/crunchstat-summary pip "${VENV3DIR}/bin/"
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
+    do_install sdk/cli
     do_install services/api
+    # lib/controller integration tests depend on arv-mount to run
+    # containers.
+    do_install services/fuse pip "${VENV3DIR}/bin/"
     do_install services/keepproxy go
     do_install services/keep-web go
 }
@@ -1127,7 +1089,6 @@ install_all() {
         do_install "$g" go
     done
     do_install services/api
-    do_install apps/workbench
     do_install services/workbench2
 }
 
@@ -1162,11 +1123,6 @@ test_all() {
     do
         do_test "$g" go
     done
-    do_test apps/workbench_units
-    do_test apps/workbench_functionals
-    do_test apps/workbench_integration
-    do_test apps/workbench_benchmark
-    do_test apps/workbench_profile
     do_test services/workbench2_units
     do_test services/workbench2_integration
 }
@@ -1209,11 +1165,6 @@ done
 testfuncargs["sdk/cli"]="sdk/cli"
 testfuncargs["sdk/R"]="sdk/R"
 testfuncargs["sdk/java-v2"]="sdk/java-v2"
-testfuncargs["apps/workbench_units"]="apps/workbench_units"
-testfuncargs["apps/workbench_functionals"]="apps/workbench_functionals"
-testfuncargs["apps/workbench_integration"]="apps/workbench_integration"
-testfuncargs["apps/workbench_benchmark"]="apps/workbench_benchmark"
-testfuncargs["apps/workbench_profile"]="apps/workbench_profile"
 
 if [[ -z ${interactive} ]]; then
     install_all

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -30,6 +31,8 @@ type Proxy struct {
 	// If non-nil, func will be called on each incoming request
 	// before proxying it.
 	Director func(*http.Request)
+
+	wg sync.WaitGroup
 }
 
 // NewProxy returns a new Proxy that saves a dump of each reqeust
@@ -66,14 +69,25 @@ func NewProxy(c *check.C, svc arvados.Service) *Proxy {
 		Server: srv,
 		URL:    u,
 	}
+	var mtx sync.Mutex
 	rp.Director = func(r *http.Request) {
+		proxy.wg.Add(1)
+		defer proxy.wg.Done()
 		if proxy.Director != nil {
 			proxy.Director(r)
 		}
 		dump, _ := httputil.DumpRequest(r, true)
+		mtx.Lock()
 		proxy.RequestDumps = append(proxy.RequestDumps, dump)
+		mtx.Unlock()
 		r.URL.Scheme = target.Scheme
 		r.URL.Host = target.Host
 	}
 	return proxy
+}
+
+// Wait waits until all of the proxied requests that have been sent to
+// Director() have also been recorded in RequestDumps.
+func (proxy *Proxy) Wait() {
+	proxy.wg.Wait()
 }

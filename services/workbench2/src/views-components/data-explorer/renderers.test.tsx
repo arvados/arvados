@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { mount, configure } from 'enzyme';
-import { ProcessStatus, ResourceFileSize } from './renderers';
+import { GroupMembersCount, ProcessStatus, ResourceFileSize } from './renderers';
 import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
 import configureMockStore from 'redux-mock-store'
@@ -12,6 +12,10 @@ import { ResourceKind } from '../../models/resource';
 import { ContainerRequestState as CR } from '../../models/container-request';
 import { ContainerState as C } from '../../models/container';
 import { ProcessStatus as PS } from '../../store/processes/process';
+import { MuiThemeProvider } from '@material-ui/core';
+import { CustomTheme } from 'common/custom-theme';
+import { InlinePulser} from 'components/loading/inline-pulser';
+import { ErrorIcon } from "components/icon/icon";
 
 const middlewares = [];
 const mockStore = configureMockStore(middlewares);
@@ -19,7 +23,7 @@ const mockStore = configureMockStore(middlewares);
 configure({ adapter: new Adapter() });
 
 describe('renderers', () => {
-    let props = null;
+    let props: any = null;
 
     describe('ProcessStatus', () => {
         props = {
@@ -161,4 +165,90 @@ describe('renderers', () => {
             expect(wrapper2.text()).toContain('');
         });
     });
+
+    describe('GroupMembersCount', () => {
+        let fakeGroup;
+        beforeEach(() => {
+            props = {
+                uuid: 'zzzzz-j7d0g-000000000000000',
+            };
+            fakeGroup = {
+                "canManage": true,
+                "canWrite": true,
+                "createdAt": "2020-09-24T22:52:57.546521000Z",
+                "deleteAt": null,
+                "description": "Test Group",
+                "etag": "0000000000000000000000000",
+                "frozenByUuid": null,
+                "groupClass": "role",
+                "href": `/groups/${props.uuid}`,
+                "isTrashed": false,
+                "kind": ResourceKind.GROUP,
+                "modifiedAt": "2020-09-24T22:52:57.545669000Z",
+                "modifiedByClientUuid": null,
+                "modifiedByUserUuid": "zzzzz-tpzed-000000000000000",
+                "name": "System group",
+                "ownerUuid": "zzzzz-tpzed-000000000000000",
+                "properties": {},
+                "trashAt": null,
+                "uuid": props.uuid,
+                "writableBy": [
+                    "zzzzz-tpzed-000000000000000",
+                ]
+            };
+        });
+
+        it('shows loading group count when no memberCount', () => {
+            // Given
+            const store = mockStore({resources: {
+                [props.uuid]: fakeGroup,
+            }});
+
+            const wrapper = mount(<Provider store={store}>
+                <MuiThemeProvider theme={CustomTheme}>
+                    <GroupMembersCount {...props} />
+                </MuiThemeProvider>
+            </Provider>);
+
+            expect(wrapper.find(InlinePulser)).toHaveLength(1);
+        });
+
+        it('shows group count when memberCount present', () => {
+            // Given
+            const store = mockStore({resources: {
+                [props.uuid]: {
+                    ...fakeGroup,
+                    "memberCount": 765,
+                }
+            }});
+
+            const wrapper = mount(<Provider store={store}>
+                <MuiThemeProvider theme={CustomTheme}>
+                    <GroupMembersCount {...props} />
+                </MuiThemeProvider>
+            </Provider>);
+
+            expect(wrapper.text()).toBe("765");
+        });
+
+        it('shows group count error icon when memberCount is null', () => {
+            // Given
+            const store = mockStore({resources: {
+                [props.uuid]: {
+                    ...fakeGroup,
+                    "memberCount": null,
+                }
+            }});
+
+            const wrapper = mount(<Provider store={store}>
+                <MuiThemeProvider theme={CustomTheme}>
+                    <GroupMembersCount {...props} />
+                </MuiThemeProvider>
+            </Provider>);
+
+            expect(wrapper.find(ErrorIcon)).toHaveLength(1);
+        });
+
+    });
+
 });

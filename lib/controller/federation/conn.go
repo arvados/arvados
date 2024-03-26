@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -224,7 +225,11 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 }
 
 func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
-	return conn.chooseBackend(conn.cluster.ClusterID).VocabularyGet(ctx)
+	return conn.local.VocabularyGet(ctx)
+}
+
+func (conn *Conn) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	return conn.local.DiscoveryDocument(ctx)
 }
 
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
@@ -253,30 +258,51 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 	return conn.local.Login(ctx, options)
 }
 
+var v2TokenRegexp = regexp.MustCompile(`^v2/[a-z0-9]{5}-gj3su-[a-z0-9]{15}/`)
+
 func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	// If the logout request comes with an API token from a known
-	// remote cluster, redirect to that cluster's logout handler
-	// so it has an opportunity to clear sessions, expire tokens,
-	// etc. Otherwise use the local endpoint.
-	reqauth, ok := auth.FromContext(ctx)
-	if !ok || len(reqauth.Tokens) == 0 || len(reqauth.Tokens[0]) < 8 || !strings.HasPrefix(reqauth.Tokens[0], "v2/") {
-		return conn.local.Logout(ctx, options)
+	// If the token was issued by another cluster, we want to issue a logout
+	// request to the issuing instance to invalidate the token federation-wide.
+	// If this federation has a login cluster, that's always considered the
+	// issuing cluster.
+	// Otherwise, if this is a v2 token, use the UUID to find the issuing
+	// cluster.
+	// Note that remoteBE may still be conn.local even *after* one of these
+	// conditions is true.
+	var remoteBE backend = conn.local
+	if conn.cluster.Login.LoginCluster != "" {
+		remoteBE = conn.chooseBackend(conn.cluster.Login.LoginCluster)
+	} else {
+		reqauth, ok := auth.FromContext(ctx)
+		if ok && len(reqauth.Tokens) > 0 && v2TokenRegexp.MatchString(reqauth.Tokens[0]) {
+			remoteBE = conn.chooseBackend(reqauth.Tokens[0][3:8])
+		}
 	}
-	id := reqauth.Tokens[0][3:8]
-	if id == conn.cluster.ClusterID {
-		return conn.local.Logout(ctx, options)
+
+	// We always want to invalidate the token locally. Start that process.
+	var localResponse arvados.LogoutResponse
+	var localErr error
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		localResponse, localErr = conn.local.Logout(ctx, options)
+		wg.Done()
+	}()
+
+	// If the token was issued by another cluster, log out there too.
+	if remoteBE != conn.local {
+		response, err := remoteBE.Logout(ctx, options)
+		// If the issuing cluster returns a redirect or error, that's more
+		// important to return to the user than anything that happens locally.
+		if response.RedirectLocation != "" || err != nil {
+			return response, err
+		}
 	}
-	remote, ok := conn.remotes[id]
-	if !ok {
-		return conn.local.Logout(ctx, options)
-	}
-	baseURL := remote.BaseURL()
-	target, err := baseURL.Parse(arvados.EndpointLogout.Path)
-	if err != nil {
-		return arvados.LogoutResponse{}, fmt.Errorf("internal error getting redirect target: %s", err)
-	}
-	target.RawQuery = url.Values{"return_to": {options.ReturnTo}}.Encode()
-	return arvados.LogoutResponse{RedirectLocation: target.String()}, nil
+
+	// Either the local cluster is the issuing cluster, or the issuing cluster's
+	// response was uninteresting.
+	wg.Wait()
+	return localResponse, localErr
 }
 
 func (conn *Conn) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {
@@ -484,6 +510,10 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
 }
 
+func (conn *Conn) ContainerRequestContainerStatus(ctx context.Context, options arvados.GetOptions) (arvados.ContainerStatus, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestContainerStatus(ctx, options)
+}
+
 func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
 	return conn.chooseBackend(options.UUID).ContainerRequestLog(ctx, options)
 }
@@ -605,6 +635,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"first_name":  true,
 	"is_active":   true,
 	"is_admin":    true,
+	"is_invited":  true,
 	"last_name":   true,
 	"modified_at": true,
 	"prefs":       true,
@@ -614,7 +645,6 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"etag":                    false,
 	"full_name":               false,
 	"identity_url":            false,
-	"is_invited":              false,
 	"modified_by_client_uuid": false,
 	"modified_by_user_uuid":   false,
 	"owner_uuid":              false,
@@ -626,7 +656,8 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 
 func (conn *Conn) batchUpdateUsers(ctx context.Context,
 	options arvados.ListOptions,
-	items []arvados.User) (err error) {
+	items []arvados.User,
+	includeAdminAndInvited bool) (err error) {
 
 	id := conn.cluster.Login.LoginCluster
 	logger := ctxlog.FromContext(ctx)
@@ -673,6 +704,11 @@ func (conn *Conn) batchUpdateUsers(ctx context.Context,
 				}
 			}
 		}
+		if !includeAdminAndInvited {
+			// make sure we don't send these fields.
+			delete(updates, "is_admin")
+			delete(updates, "is_invited")
+		}
 		batchOpts.Updates[user.UUID] = updates
 	}
 	if len(batchOpts.Updates) > 0 {
@@ -685,13 +721,47 @@ func (conn *Conn) batchUpdateUsers(ctx context.Context,
 	return nil
 }
 
+func (conn *Conn) includeAdminAndInvitedInBatchUpdate(ctx context.Context, be backend, updateUserUUID string) (bool, error) {
+	// API versions prior to 20231117 would only include the
+	// is_invited and is_admin fields if the current user is an
+	// admin, or is requesting their own user record.  If those
+	// fields aren't actually valid then we don't want to
+	// send them in the batch update.
+	dd, err := be.DiscoveryDocument(ctx)
+	if err != nil {
+		// couldn't get discovery document
+		return false, err
+	}
+	if dd.Revision >= "20231117" {
+		// newer version, fields are valid.
+		return true, nil
+	}
+	selfuser, err := be.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		// couldn't get our user record
+		return false, err
+	}
+	if selfuser.IsAdmin || selfuser.UUID == updateUserUUID {
+		// we are an admin, or the current user is the same as
+		// the user that we are updating.
+		return true, nil
+	}
+	// Better safe than sorry.
+	return false, nil
+}
+
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
 	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.BypassFederation {
-		resp, err := conn.chooseBackend(id).UserList(ctx, options)
+		be := conn.chooseBackend(id)
+		resp, err := be.UserList(ctx, options)
 		if err != nil {
 			return resp, err
 		}
-		err = conn.batchUpdateUsers(ctx, options, resp.Items)
+		includeAdminAndInvited, err := conn.includeAdminAndInvitedInBatchUpdate(ctx, be, "")
+		if err != nil {
+			return arvados.UserList{}, err
+		}
+		err = conn.batchUpdateUsers(ctx, options, resp.Items, includeAdminAndInvited)
 		if err != nil {
 			return arvados.UserList{}, err
 		}
@@ -708,13 +778,18 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	if options.BypassFederation {
 		return conn.local.UserUpdate(ctx, options)
 	}
-	resp, err := conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	be := conn.chooseBackend(options.UUID)
+	resp, err := be.UserUpdate(ctx, options)
 	if err != nil {
 		return resp, err
 	}
 	if !strings.HasPrefix(options.UUID, conn.cluster.ClusterID) {
+		includeAdminAndInvited, err := conn.includeAdminAndInvitedInBatchUpdate(ctx, be, options.UUID)
+		if err != nil {
+			return arvados.User{}, err
+		}
 		// Copy the updated user record to the local cluster
-		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp}, includeAdminAndInvited)
 		if err != nil {
 			return arvados.User{}, err
 		}
@@ -761,7 +836,8 @@ func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (
 }
 
 func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	resp, err := conn.chooseBackend(options.UUID).UserGet(ctx, options)
+	be := conn.chooseBackend(options.UUID)
+	resp, err := be.UserGet(ctx, options)
 	if err != nil {
 		return resp, err
 	}
@@ -769,7 +845,11 @@ func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arva
 		return arvados.User{}, httpErrorf(http.StatusBadGateway, "Had requested %v but response was for %v", options.UUID, resp.UUID)
 	}
 	if options.UUID[:5] != conn.cluster.ClusterID {
-		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{Select: options.Select}, []arvados.User{resp})
+		includeAdminAndInvited, err := conn.includeAdminAndInvitedInBatchUpdate(ctx, be, options.UUID)
+		if err != nil {
+			return arvados.User{}, err
+		}
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{Select: options.Select}, []arvados.User{resp}, includeAdminAndInvited)
 		if err != nil {
 			return arvados.User{}, err
 		}

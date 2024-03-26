@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-# When updating this, please make the same changes in
-# apps/workbench/config/initializers/reload_config.rb as well.
-
 def start_reload_thread
   Thread.new do
     lockfile = Rails.root.join('tmp', 'reload_config.lock')
@@ -29,7 +26,7 @@ def start_reload_thread
         # precision cannot represent multiple updates per second.
         if t.to_f != t_lastload.to_f || Time.now.to_f - t.to_f < 5
           Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-            confs = YAML.load(stdout, deserialize_symbols: false)
+            confs = YAML.safe_load(stdout)
             hash = confs["SourceSHA256"]
           rescue => e
             Rails.logger.info("reload_config: config file updated but could not be loaded: #{e}")

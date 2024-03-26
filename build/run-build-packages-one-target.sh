@@ -7,10 +7,10 @@ read -rd "\000" helpmessage <<EOF
 $(basename $0): Orchestrate run-build-packages.sh for one target
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename $0) [options]
+        WORKSPACE=/path/to/arvados $(basename $0) --target <target> [options]
 
 --target <target>
-    Distribution to build packages for (default: debian10)
+    Distribution to build packages for
 --command
     Build command to execute (default: use built-in Docker image command)
 --test-packages
@@ -64,10 +64,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian10
 FORCE_BUILD=0
 COMMAND=
 DEBUG=
+TARGET=
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -137,12 +137,27 @@ while [ $# -gt 0 ]; do
 done
 
 set -e
+orig_umask="$(umask)"
+
+if [[ -z "$TARGET" ]]; then
+    echo "FATAL: --target must be specified" >&2
+    exit 2
+elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
+    echo "FATAL: unknown build target '$TARGET'" >&2
+    exit 2
+fi
 
 if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
     echo "build version='$ARVADOS_BUILDING_VERSION', package iteration='$ARVADOS_BUILDING_ITERATION'"
 fi
 
 if [[ -n "$test_packages" ]]; then
+  # Packages are built world-readable, so package indexes should be too,
+  # especially because since 2022 apt uses an unprivileged user `_apt` to
+  # retrieve everything.  Ensure it has permissions to read the packages
+  # when mounted as a volume inside the Docker container.
+  chmod a+rx "$WORKSPACE" "$WORKSPACE/packages" "$WORKSPACE/packages/$TARGET"
+  umask 022
   if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
     CREATEREPO="$(command -v createrepo createrepo_c | tail -n1)"
     if [[ -z "$CREATEREPO" ]]; then
@@ -179,6 +194,7 @@ if [[ -n "$test_packages" ]]; then
 
   COMMAND="/jenkins/package-testing/test-packages-$TARGET.sh"
   IMAGE="arvados/package-test:$TARGET"
+  umask "$orig_umask"
 else
   IMAGE="arvados/build:$TARGET"
   if [[ "$COMMAND" != "" ]]; then
@@ -203,7 +219,7 @@ if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
     cd $TARGET
     time docker build --tag "$IMAGE" \
 	 --build-arg HOSTTYPE=$HOSTTYPE \
-	 --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+	 --build-arg BRANCH=$(git rev-parse HEAD) \
 	 --build-arg GOVERSION=$GOVERSION --no-cache .
     popd
 fi
@@ -221,44 +237,38 @@ if test -z "$packages" ; then
         arvados-src
         arvados-sync-groups
         arvados-sync-users
-        arvados-workbench
         arvados-workbench2
         arvados-ws
         crunch-dispatch-local
         crunch-dispatch-slurm
         crunch-run
-        keepproxy
-        keepstore
         keep-balance
         keep-block-check
-        keep-rsync
         keep-exercise
         keep-rsync
-        keep-block-check
         keep-web
+        keepproxy
+        keepstore
         libpam-arvados-go
-        python3-cwltest
+        python3-arvados-cwl-runner
         python3-arvados-fuse
         python3-arvados-python-client
-        python3-arvados-cwl-runner
+        python3-arvados-user-activity
         python3-crunchstat-summary
-        python3-arvados-user-activity"
+        python3-cwltest"
 fi
 
 FINAL_EXITCODE=0
 
 package_fails=""
 
-mkdir -p "$WORKSPACE/apps/workbench/vendor/cache-$TARGET"
 mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
 
 docker_volume_args=(
     -v "$JENKINS_DIR:/jenkins"
     -v "$WORKSPACE:/arvados"
     -v /arvados/services/api/vendor/bundle
-    -v /arvados/apps/workbench/vendor/bundle
     -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
-    -v "$WORKSPACE/apps/workbench/vendor/cache-$TARGET:/arvados/apps/workbench/vendor/cache"
 )
 
 if [[ -n "$test_packages" ]]; then

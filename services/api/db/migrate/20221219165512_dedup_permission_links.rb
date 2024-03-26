@@ -22,7 +22,7 @@ class DedupPermissionLinks < ActiveRecord::Migration[5.2]
           # This no-op update has the side effect that the update hooks
           # will merge the highest available permission into this one
           # and then delete the others.
-          link.update_attributes!(properties: link.properties.dup)
+          link.update!(properties: link.properties.dup)
         end
 
         rows = ActiveRecord::Base.connection.select_all("SELECT MIN(uuid) AS uuid, COUNT(uuid) AS n FROM links
@@ -35,7 +35,7 @@ class DedupPermissionLinks < ActiveRecord::Migration[5.2]
         rows.each do |row|
           Rails.logger.debug "DedupPermissionLinks: consolidating #{row['n']} links into #{row['uuid']}"
           link = Link.find_by_uuid(row['uuid'])
-          link.update_attributes!(properties: link.properties.dup)
+          link.update!(properties: link.properties.dup)
         end
       end
     end

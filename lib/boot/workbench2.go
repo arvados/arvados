@@ -38,21 +38,30 @@ func (runner runWorkbench2) Run(ctx context.Context, fail func(error), super *Su
 				user: "www-data",
 			}, "arvados-server", "workbench2", super.cluster.Services.Controller.ExternalURL.Host, net.JoinHostPort(host, port), ".")
 		} else {
+			// super.SourcePath might be readonly, so for
+			// dev/test mode we make a copy in a writable
+			// dir.
+			livedir := super.wwwtempdir + "/workbench2"
+			if err := super.RunProgram(ctx, super.SourcePath+"/services/workbench2", runOptions{}, "rsync", "-a", "--delete-after", super.SourcePath+"/services/workbench2/", livedir); err != nil {
+				fail(err)
+				return
+			}
+			if err = os.Mkdir(livedir+"/public/_health", 0777); err != nil && !errors.Is(err, fs.ErrExist) {
+				fail(err)
+				return
+			}
+			if err = ioutil.WriteFile(livedir+"/public/_health/ping", []byte(`{"health":"OK"}`), 0666); err != nil {
+				fail(err)
+				return
+			}
+
 			stdinr, stdinw := io.Pipe()
 			defer stdinw.Close()
 			go func() {
 				<-ctx.Done()
 				stdinw.Close()
 			}()
-			if err = os.Mkdir(super.SourcePath+"/services/workbench2/public/_health", 0777); err != nil && !errors.Is(err, fs.ErrExist) {
-				fail(err)
-				return
-			}
-			if err = ioutil.WriteFile(super.SourcePath+"/services/workbench2/public/_health/ping", []byte(`{"health":"OK"}`), 0666); err != nil {
-				fail(err)
-				return
-			}
-			err = super.RunProgram(ctx, super.SourcePath+"/services/workbench2", runOptions{
+			err = super.RunProgram(ctx, livedir, runOptions{
 				env: []string{
 					"CI=true",
 					"HTTPS=false",

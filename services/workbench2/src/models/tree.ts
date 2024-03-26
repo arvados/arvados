@@ -138,6 +138,11 @@ export const deactivateNode = <T>(tree: Tree<T>) =>
 export const expandNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
     mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);
 
+export const expandNodeAncestors = (...ids: string[]) => <T>(tree: Tree<T>) => {
+    const ancestors = ids.reduce((acc, id): string[] => ([...acc, ...getNodeAncestorsIds(id)(tree)]), [] as string[]);
+    return mapTree((node: TreeNode<T>) => ancestors.some(id => id === node.id) ? { ...node, expanded: true } : node)(tree);
+}
+
 export const collapseNode = (...ids: string[]) => <T>(tree: Tree<T>) =>
     mapTree((node: TreeNode<T>) => ids.some(id => id === node.id) ? { ...node, expanded: false } : node)(tree);
 
@@ -151,37 +156,40 @@ export const setNodeStatus = (id: string) => (status: TreeNodeStatus) => <T>(tre
         : tree;
 };
 
-export const toggleNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
+export const toggleNodeSelection = (id: string, cascade: boolean) => <T>(tree: Tree<T>) => {
     const node = getNode(id)(tree);
+
     return node
-        ? pipe(
-            setNode({ ...node, selected: !node.selected }),
-            toggleAncestorsSelection(id),
-            toggleDescendantsSelection(id))(tree)
+        ? cascade
+            ? pipe(
+                setNode({ ...node, selected: !node.selected }),
+                toggleAncestorsSelection(id),
+                toggleDescendantsSelection(id))(tree)
+            : setNode({ ...node, selected: !node.selected })(tree)
         : tree;
 };
 
-export const selectNode = (id: string) => <T>(tree: Tree<T>) => {
+export const selectNode = (id: string, cascade: boolean) => <T>(tree: Tree<T>) => {
     const node = getNode(id)(tree);
     return node && node.selected
         ? tree
-        : toggleNodeSelection(id)(tree);
+        : toggleNodeSelection(id, cascade)(tree);
 };
 
-export const selectNodes = (id: string | string[]) => <T>(tree: Tree<T>) => {
+export const selectNodes = (id: string | string[], cascade: boolean) => <T>(tree: Tree<T>) => {
     const ids = typeof id === 'string' ? [id] : id;
-    return ids.reduce((tree, id) => selectNode(id)(tree), tree);
+    return ids.reduce((tree, id) => selectNode(id, cascade)(tree), tree);
 };
-export const deselectNode = (id: string) => <T>(tree: Tree<T>) => {
+export const deselectNode = (id: string, cascade: boolean) => <T>(tree: Tree<T>) => {
     const node = getNode(id)(tree);
     return node && node.selected
-        ? toggleNodeSelection(id)(tree)
+        ? toggleNodeSelection(id, cascade)(tree)
         : tree;
 };
 
-export const deselectNodes = (id: string | string[]) => <T>(tree: Tree<T>) => {
+export const deselectNodes = (id: string | string[], cascade: boolean) => <T>(tree: Tree<T>) => {
     const ids = typeof id === 'string' ? [id] : id;
-    return ids.reduce((tree, id) => deselectNode(id)(tree), tree);
+    return ids.reduce((tree, id) => deselectNode(id, cascade)(tree), tree);
 };
 
 export const getSelectedNodes = <T>(tree: Tree<T>) =>

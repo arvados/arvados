@@ -5,55 +5,54 @@
 package keepstore
 
 import (
-	"context"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	. "gopkg.in/check.v1"
 )
 
 var _ = Suite(&BufferPoolSuite{})
 
+var bufferPoolTestSize = 10
+
 type BufferPoolSuite struct{}
 
-// Initialize a default-sized buffer pool for the benefit of test
-// suites that don't run main().
-func init() {
-	bufs = newBufferPool(ctxlog.FromContext(context.Background()), 12, BlockSize)
+func (s *BufferPoolSuite) SetUpTest(c *C) {
+	bufferPoolBlockSize = bufferPoolTestSize
 }
 
-// Restore sane default after bufferpool's own tests
 func (s *BufferPoolSuite) TearDownTest(c *C) {
-	bufs = newBufferPool(ctxlog.FromContext(context.Background()), 12, BlockSize)
+	bufferPoolBlockSize = BlockSize
 }
 
 func (s *BufferPoolSuite) TestBufferPoolBufSize(c *C) {
-	bufs := newBufferPool(ctxlog.TestLogger(c), 2, 10)
-	b1 := bufs.Get(1)
-	bufs.Get(2)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 2, prometheus.NewRegistry())
+	b1 := bufs.Get()
+	bufs.Get()
 	bufs.Put(b1)
-	b3 := bufs.Get(3)
-	c.Check(len(b3), Equals, 3)
+	b3 := bufs.Get()
+	c.Check(len(b3), Equals, bufferPoolTestSize)
 }
 
 func (s *BufferPoolSuite) TestBufferPoolUnderLimit(c *C) {
-	bufs := newBufferPool(ctxlog.TestLogger(c), 3, 10)
-	b1 := bufs.Get(10)
-	bufs.Get(10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 3, prometheus.NewRegistry())
+	b1 := bufs.Get()
+	bufs.Get()
 	testBufferPoolRace(c, bufs, b1, "Get")
 }
 
 func (s *BufferPoolSuite) TestBufferPoolAtLimit(c *C) {
-	bufs := newBufferPool(ctxlog.TestLogger(c), 2, 10)
-	b1 := bufs.Get(10)
-	bufs.Get(10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 2, prometheus.NewRegistry())
+	b1 := bufs.Get()
+	bufs.Get()
 	testBufferPoolRace(c, bufs, b1, "Put")
 }
 
 func testBufferPoolRace(c *C, bufs *bufferPool, unused []byte, expectWin string) {
 	race := make(chan string)
 	go func() {
-		bufs.Get(10)
+		bufs.Get()
 		time.Sleep(time.Millisecond)
 		race <- "Get"
 	}()
@@ -68,9 +67,9 @@ func testBufferPoolRace(c *C, bufs *bufferPool, unused []byte, expectWin string)
 }
 
 func (s *BufferPoolSuite) TestBufferPoolReuse(c *C) {
-	bufs := newBufferPool(ctxlog.TestLogger(c), 2, 10)
-	bufs.Get(10)
-	last := bufs.Get(10)
+	bufs := newBufferPool(ctxlog.TestLogger(c), 2, prometheus.NewRegistry())
+	bufs.Get()
+	last := bufs.Get()
 	// The buffer pool is allowed to throw away unused buffers
 	// (e.g., during sync.Pool's garbage collection hook, in the
 	// the current implementation). However, if unused buffers are
@@ -81,7 +80,7 @@ func (s *BufferPoolSuite) TestBufferPoolReuse(c *C) {
 	reuses := 0
 	for i := 0; i < allocs; i++ {
 		bufs.Put(last)
-		next := bufs.Get(10)
+		next := bufs.Get()
 		copy(last, []byte("last"))
 		copy(next, []byte("next"))
 		if last[0] == 'n' {

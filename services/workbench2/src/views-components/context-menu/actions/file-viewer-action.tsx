@@ -12,7 +12,7 @@ export const FileViewerAction = (props: any) => {
             style={{ textDecoration: 'none' }}
             href={props.href}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             onClick={props.onClick}>
             <ListItem button>
                 <ListItemIcon>
@@ -20,7 +20,7 @@ export const FileViewerAction = (props: any) => {
                 </ListItemIcon>
                 <ListItemText>
                     Open in new tab
-                    </ListItemText>
+                </ListItemText>
             </ListItem>
         </a>
         : null;

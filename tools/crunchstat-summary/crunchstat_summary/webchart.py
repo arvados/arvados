@@ -20,19 +20,91 @@ class WebChart(object):
     JSLIB = None
     JSASSET = None
 
+    STYLE = '''
+        body {
+          background: #fafafa;
+          font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+          font-size: 0.875rem;
+          color: rgba(0, 0, 0, 0.87);
+          font-weight: 400;
+        }
+        .card {
+          background: #ffffff;
+          box-shadow: 0px 1px 5px 0px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 3px 1px -2px rgba(0,0,0,0.12);
+          border-radius: 4px;
+          margin: 20px;
+        }
+        .content {
+          padding: 2px 16px 8px 16px;
+        }
+        table {
+          border-spacing: 0px;
+        }
+        tr {
+          height: 36px;
+          text-align: left;
+        }
+        th {
+          padding-right: 4em;
+          border-top: 1px solid rgba(224, 224, 224, 1);
+        }
+        td {
+          padding-right: 2em;
+          border-top: 1px solid rgba(224, 224, 224, 1);
+        }
+        #chart {
+          margin-left: -20px;
+        }
+    '''
+
     def __init__(self, label, summarizers):
         self.label = label
         self.summarizers = summarizers
 
-    def html(self):
+    def html(self, beforechart='', afterchart=''):
         return '''<!doctype html><html><head>
         <title>{} stats</title>
         <script type="text/javascript" src="{}"></script>
         <script type="text/javascript">{}</script>
+        <style>
         {}
-        </head><body></body></html>
+        </style>
+        {}
+        </head>
+        <body>
+        <div class="card">
+          <div class="content">
+            <h1>{}</h1>
+          </div>
+        </div>
+        <div class="card">
+          <div class="content" id="tophtml">
+          <h2>Summary</h2>
+          {}
+          </div>
+        </div>
+        <div class="card">
+          <div class="content">
+            <h2>Graph</h2>
+            <div id="chart"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="content" id="bottomhtml">
+          <h2>Metrics</h2>
+          {}
+          </div>
+        </div>
+        </body>
+        </html>
         '''.format(escape(self.label),
-                   self.JSLIB, self.js(), self.headHTML())
+                   self.JSLIB,
+                   self.js(),
+                   self.STYLE,
+                   self.headHTML(),
+                   escape(self.label),
+                   beforechart,
+                   afterchart)
 
     def js(self):
         return 'var chartdata = {};\n{}'.format(

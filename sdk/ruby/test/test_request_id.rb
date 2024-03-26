@@ -17,6 +17,6 @@ class RequestIdTest < Minitest::Test
             arv.collection.get(uuid: "zzzzz-4zz18-zzzzzzzzzzzzzzz")
         end
         assert clnt.request_id != nil
-        assert_match /Uh-oh.*\(Request ID: req-[0-9a-zA-Z]{20}\)/, err.message
+        assert_match(/Uh-oh.*\(Request ID: req-[0-9a-zA-Z]{20}\)/, err.message)
     end
 end

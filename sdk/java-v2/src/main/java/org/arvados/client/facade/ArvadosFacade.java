@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class ArvadosFacade {
 
@@ -199,6 +200,21 @@ public class ArvadosFacade {
         collection.setOwnerUuid(projectUuid);
         collection.setName(collectionName);
         return collectionsApiClient.create(collection);
+    }
+
+    /**
+     * Uploads multiple files to an existing collection.
+     *
+     * @param collectionUUID UUID of collection to which the files are to be copied
+     * @param files          map of files to be copied to existing collection.
+     *                       The map consists of a pair in the form of a filename and a filename
+     *                       along with the Portable data hash
+     * @return collection object mapped from JSON that is returned from server after successful copied
+     */
+    public Collection updateWithReplaceFiles(String collectionUUID, Map<String, String> files) {
+        CollectionReplaceFiles replaceFilesRequest = new CollectionReplaceFiles();
+        replaceFilesRequest.getReplaceFiles().putAll(files);
+        return collectionsApiClient.update(collectionUUID, replaceFilesRequest);
     }
 
     /**

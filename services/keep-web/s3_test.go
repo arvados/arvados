@@ -1295,7 +1295,11 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.URL[7:], "--host-bucket="+s.testServer.URL[7:], "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo,;$[|]bar", tmpfile)
 	buf, err = cmd.CombinedOutput()
 	c.Check(err, check.NotNil)
-	c.Check(string(buf), check.Matches, `(?ms).*NoSuchKey.*\n`)
+	// As of commit b7520e5c25e1bf25c1a8bf5aa2eadb299be8f606
+	// (between debian bullseye and bookworm versions), s3cmd
+	// started catching the NoSuchKey error code and replacing it
+	// with "Source object '%s' does not exist.".
+	c.Check(string(buf), check.Matches, `(?ms).*(NoSuchKey|Source object.*does not exist).*\n`)
 }
 
 func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {

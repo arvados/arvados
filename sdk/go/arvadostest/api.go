@@ -40,6 +40,10 @@ func (as *APIStub) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error
 	as.appendCall(ctx, as.VocabularyGet, nil)
 	return arvados.Vocabulary{}, as.Error
 }
+func (as *APIStub) DiscoveryDocument(ctx context.Context) (arvados.DiscoveryDocument, error) {
+	as.appendCall(ctx, as.DiscoveryDocument, nil)
+	return arvados.DiscoveryDocument{}, as.Error
+}
 func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	as.appendCall(ctx, as.Login, options)
 	return arvados.LoginResponse{}, as.Error
@@ -163,6 +167,10 @@ func (as *APIStub) ContainerRequestList(ctx context.Context, options arvados.Lis
 func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
 	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
+}
+func (as *APIStub) ContainerRequestContainerStatus(ctx context.Context, options arvados.GetOptions) (arvados.ContainerStatus, error) {
+	as.appendCall(ctx, as.ContainerRequestContainerStatus, options)
+	return arvados.ContainerStatus{}, as.Error
 }
 func (as *APIStub) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
 	as.appendCall(ctx, as.ContainerRequestLog, options)
@@ -355,6 +363,26 @@ func (as *APIStub) APIClientAuthorizationList(ctx context.Context, options arvad
 func (as *APIStub) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	as.appendCall(ctx, as.APIClientAuthorizationGet, options)
 	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) ReadAt(locator string, dst []byte, offset int) (int, error) {
+	as.appendCall(context.TODO(), as.ReadAt, struct {
+		locator string
+		dst     []byte
+		offset  int
+	}{locator, dst, offset})
+	return 0, as.Error
+}
+func (as *APIStub) BlockRead(ctx context.Context, options arvados.BlockReadOptions) (int, error) {
+	as.appendCall(ctx, as.BlockRead, options)
+	return 0, as.Error
+}
+func (as *APIStub) BlockWrite(ctx context.Context, options arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	as.appendCall(ctx, as.BlockWrite, options)
+	return arvados.BlockWriteResponse{}, as.Error
+}
+func (as *APIStub) LocalLocator(locator string) (int, error) {
+	as.appendCall(context.TODO(), as.LocalLocator, locator)
+	return 0, as.Error
 }
 
 func (as *APIStub) appendCall(ctx context.Context, method interface{}, options interface{}) {

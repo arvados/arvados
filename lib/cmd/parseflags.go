@@ -35,7 +35,7 @@ func ParseFlags(f FlagSet, prog string, args []string, positional string, stderr
 	case nil:
 		if f.NArg() > 0 && positional == "" {
 			fmt.Fprintf(stderr, "unrecognized command line arguments: %v (try -help)\n", f.Args())
-			return false, 2
+			return false, EXIT_INVALIDARGUMENT
 		}
 		return true, 0
 	case flag.ErrHelp:
@@ -55,6 +55,6 @@ func ParseFlags(f FlagSet, prog string, args []string, positional string, stderr
 		return false, 0
 	default:
 		fmt.Fprintf(stderr, "error parsing command line arguments: %s (try -help)\n", err)
-		return false, 2
+		return false, EXIT_INVALIDARGUMENT
 	}
 }

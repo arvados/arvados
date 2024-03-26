@@ -263,7 +263,7 @@ class RepositoryTest < ActiveSupport::TestCase
 
   test "non-admin can rename own repo" do
     act_as_user users(:active) do
-      assert repositories(:foo).update_attributes(name: 'active/foo12345')
+      assert repositories(:foo).update(name: 'active/foo12345')
     end
   end
 

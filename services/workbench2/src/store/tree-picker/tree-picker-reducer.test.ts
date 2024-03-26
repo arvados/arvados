@@ -93,7 +93,7 @@ describe('TreePickerReducer', () => {
         const newState = pipe(
             (state: TreePicker) => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '', nodes: [node], pickerId: "projects" })),
             state => treePickerReducer(state, treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({ id: '1', nodes: [subNode], pickerId: "projects" })),
-            state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: '1.1', pickerId: "projects" })),
+            state => treePickerReducer(state, treePickerActions.TOGGLE_TREE_PICKER_NODE_SELECTION({ id: '1.1', pickerId: "projects", cascade: true })),
         )({ projects: createTree<{}>() });
         expect(getNode('1')(newState.projects)).toEqual({
             ...initTreeNode({ id: '1', value: '1' }),

@@ -1,0 +1,16 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+<!-- Matomo analytics (used to be called "Piwik") -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push(["trackPageView"]);
+  _paq.push(["enableLinkTracking"]);
+  _paq.push(["setTrackerUrl", "{{ site.matomo_analytics_url }}/piwik.php"]);
+  _paq.push(["setSiteId", "{{ site.matomo_analytics_siteid }}"]);
+</script>
+<script defer src="{{ site.matomo_analytics_url }}/piwik.js"></script>
+<!-- End Matomo code -->

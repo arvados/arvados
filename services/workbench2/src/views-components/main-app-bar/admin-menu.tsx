@@ -13,7 +13,6 @@ import { openRepositoriesPanel } from "store/repositories/repositories-actions";
 import * as NavigationAction from 'store/navigation/navigation-action';
 import { openAdminVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
 import { openUserPanel } from "store/users/users-actions";
-
 interface AdminMenuProps {
     user?: User;
     currentRoute: string;
@@ -33,7 +32,7 @@ export const AdminMenu = connect(mapStateToProps)(
                 title="Admin Panel"
                 key={currentRoute}>
                 <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>
-                <MenuItem onClick={() => dispatch(openAdminVirtualMachines())}>Virtual Machines</MenuItem>
+                <MenuItem onClick={() => dispatch(openAdminVirtualMachines())}>Shell Access</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
                 <MenuItem onClick={() => dispatch(openUserPanel())}>Users</MenuItem>

@@ -222,7 +222,7 @@ Once your workflow has finished, you can see how long it took the workflow to ru
 
 If we click on the outputs of the workflow, we will see the output collection. It contains the GVCF, tabix index file, and HTML ClinVar report for each analyzed sample (e.g., set of FASTQs). You can open a report in the browser by selecting it from the listing. You can also download a file to your local machine by right-clicking a file and selecting "Download" from the context menu, or from the action menu available from the far right of each listing.
 
-Logs for the main process can be found back on the workflow process page. Selecting the "LOGS" button at the top navigates down to the logs. You can view the logs directly through that panel, or in the upper right-hand corner select the button with hover-over text "Go to Log collection". 
+Logs for the main process can be found back on the workflow process page. Selecting the "LOGS" button at the top navigates down to the logs. You can view the logs directly through that panel, or in the upper right-hand corner select the button with hover-over text "Go to Log collection".
 
 There are several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
 
@@ -238,6 +238,7 @@ node.json gives a high level overview about the instance such as name, price, an
 * @crunch-run.txt@ and @crunchstat.txt@
 ** @crunch-run.txt@ has info about how the container's execution environment was set up (e.g., time spent loading the docker image) and timing/results of copying output data to Keep (if applicable)
 ** @crunchstat.txt@ has info about resource consumption (RAM, cpu, disk, network) by the container while it was running.
+* @usage_report.html@ can be viewed directly in the browser by clicking on it.  It provides a summary and chart of the resource consumption derived from the raw data in @crunchstat.txt@.  (Available starting with @arvados-cwl-runner@ 2.7.2).
 * @container.json@
 ** Describes the container (unit of work to be done), contains CWL code, runtime constraints (RAM, vcpus) amongst other details
 * @arv-mount.txt@

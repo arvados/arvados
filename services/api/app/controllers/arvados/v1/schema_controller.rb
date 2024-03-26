@@ -36,7 +36,7 @@ class Arvados::V1::SchemaController < ApplicationController
       # format is YYYYMMDD, must be fixed width (needs to be lexically
       # sortable), updated manually, may be used by clients to
       # determine availability of API server features.
-      revision: "20220510",
+      revision: "20231117",
       source_version: AppVersion.hash,
       sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
       packageVersion: AppVersion.package_version,
@@ -118,7 +118,7 @@ class Arvados::V1::SchemaController < ApplicationController
       resources: {}
     }
 
-    ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+    ActiveRecord::Base.descendants.reject(&:abstract_class?).sort_by(&:to_s).each do |k|
       begin
         ctl_class = "Arvados::V1::#{k.to_s.pluralize}Controller".constantize
       rescue

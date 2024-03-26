@@ -17,6 +17,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -26,8 +27,8 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-// Gocheck boilerplate
 func Test(t *testing.T) {
+	DefaultRetryDelay = 50 * time.Millisecond
 	TestingT(t)
 }
 
@@ -39,10 +40,25 @@ var _ = Suite(&StandaloneSuite{})
 type ServerRequiredSuite struct{}
 
 // Standalone tests
-type StandaloneSuite struct{}
+type StandaloneSuite struct {
+	origDefaultRetryDelay time.Duration
+	origMinimumRetryDelay time.Duration
+}
+
+var origHOME = os.Getenv("HOME")
 
 func (s *StandaloneSuite) SetUpTest(c *C) {
 	RefreshServiceDiscovery()
+	// Prevent cache state from leaking between test cases
+	os.Setenv("HOME", c.MkDir())
+	s.origDefaultRetryDelay = DefaultRetryDelay
+	s.origMinimumRetryDelay = MinimumRetryDelay
+}
+
+func (s *StandaloneSuite) TearDownTest(c *C) {
+	os.Setenv("HOME", origHOME)
+	DefaultRetryDelay = s.origDefaultRetryDelay
+	MinimumRetryDelay = s.origMinimumRetryDelay
 }
 
 func pythonDir() string {
@@ -56,19 +72,22 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
+	os.Setenv("HOME", origHOME)
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	RefreshServiceDiscovery()
+	// Prevent cache state from leaking between test cases
+	os.Setenv("HOME", c.MkDir())
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	kc, err := MakeKeepClient(arv)
 
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 	c.Check(len(kc.LocalRoots()), Equals, 2)
 	for _, root := range kc.LocalRoots() {
 		c.Check(root, Matches, "http://localhost:\\d+")
@@ -129,7 +148,7 @@ func (sph *StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request
 		sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	}
 	body, err := ioutil.ReadAll(req.Body)
-	sph.c.Check(err, Equals, nil)
+	sph.c.Check(err, IsNil)
 	sph.c.Check(body, DeepEquals, []byte(sph.expectBody))
 	resp.Header().Set("X-Keep-Replicas-Stored", "1")
 	if sph.returnStorageClasses != "" {
@@ -410,17 +429,17 @@ func (fh FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 type FailThenSucceedHandler struct {
+	morefails      int // fail 1 + this many times before succeeding
 	handled        chan string
-	count          int
+	count          atomic.Int64
 	successhandler http.Handler
 	reqIDs         []string
 }
 
 func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	fh.reqIDs = append(fh.reqIDs, req.Header.Get("X-Request-Id"))
-	if fh.count == 0 {
+	if int(fh.count.Add(1)) <= fh.morefails+1 {
 		resp.WriteHeader(500)
-		fh.count++
 		fh.handled <- fmt.Sprintf("http://%s", req.Host)
 	} else {
 		fh.successhandler.ServeHTTP(resp, req)
@@ -549,14 +568,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
-	reader, writer := io.Pipe()
-
-	go func() {
-		writer.Write([]byte("foo"))
-		writer.Close()
-	}()
-
-	kc.PutHR(hash, reader, 3)
+	kc.PutHR(hash, bytes.NewBuffer([]byte("foo")), 3)
 
 	shuff := NewRootSorter(kc.LocalRoots(), hash).GetSortedRoots()
 
@@ -618,7 +630,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	<-fh.handled
 
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(phash, Equals, "")
 	c.Check(replicas, Equals, 2)
 
@@ -697,7 +709,7 @@ func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 }
 
 func (s *StandaloneSuite) TestGet(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetHandler{
 		c,
@@ -715,19 +727,18 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *StandaloneSuite) TestGet404(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := Error404Handler{make(chan string, 1)}
 
@@ -740,11 +751,10 @@ func (s *StandaloneSuite) TestGet404(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
-	c.Check(r, Equals, nil)
+	c.Check(r, IsNil)
 }
 
 func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
@@ -759,18 +769,18 @@ func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
-	r, n, url2, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e+0")
+	r, n, _, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e+0")
 	c.Check(err, IsNil)
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
 	c.Assert(r, NotNil)
 	buf, err := ioutil.ReadAll(r)
 	c.Check(err, IsNil)
 	c.Check(buf, DeepEquals, []byte{})
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *StandaloneSuite) TestGetFail(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := FailHandler{make(chan string, 1)}
 
@@ -784,57 +794,84 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 	kc.Retries = 0
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 	errNotFound, _ := err.(*ErrNotFound)
-	c.Check(errNotFound, NotNil)
-	c.Check(strings.Contains(errNotFound.Error(), "HTTP 500"), Equals, true)
-	c.Check(errNotFound.Temporary(), Equals, true)
+	if c.Check(errNotFound, NotNil) {
+		c.Check(strings.Contains(errNotFound.Error(), "HTTP 500"), Equals, true)
+		c.Check(errNotFound.Temporary(), Equals, true)
+	}
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
-	c.Check(r, Equals, nil)
+	c.Check(r, IsNil)
 }
 
 func (s *StandaloneSuite) TestGetFailRetry(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	defer func(origDefault, origMinimum time.Duration) {
+		DefaultRetryDelay = origDefault
+		MinimumRetryDelay = origMinimum
+	}(DefaultRetryDelay, MinimumRetryDelay)
+	DefaultRetryDelay = time.Second / 8
+	MinimumRetryDelay = time.Millisecond
 
-	st := &FailThenSucceedHandler{
-		handled: make(chan string, 1),
-		successhandler: StubGetHandler{
-			c,
-			hash,
-			"abc123",
-			http.StatusOK,
-			[]byte("foo")}}
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
-	ks := RunFakeKeepServer(st)
-	defer ks.listener.Close()
+	for _, delay := range []time.Duration{0, time.Nanosecond, time.Second / 8, time.Second / 16} {
+		c.Logf("=== initial delay %v", delay)
 
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Check(err, IsNil)
-	kc, _ := MakeKeepClient(arv)
-	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+		st := &FailThenSucceedHandler{
+			morefails: 2,
+			handled:   make(chan string, 4),
+			successhandler: StubGetHandler{
+				c,
+				hash,
+				"abc123",
+				http.StatusOK,
+				[]byte("foo")}}
 
-	r, n, url2, err := kc.Get(hash)
-	defer r.Close()
-	c.Check(err, Equals, nil)
-	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
+		ks := RunFakeKeepServer(st)
+		defer ks.listener.Close()
 
-	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
-	c.Check(content, DeepEquals, []byte("foo"))
+		arv, err := arvadosclient.MakeArvadosClient()
+		c.Check(err, IsNil)
+		kc, _ := MakeKeepClient(arv)
+		arv.ApiToken = "abc123"
+		kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+		kc.Retries = 3
+		kc.RetryDelay = delay
+		kc.DiskCacheSize = DiskCacheDisabled
 
-	c.Logf("%q", st.reqIDs)
-	c.Assert(len(st.reqIDs) > 1, Equals, true)
-	for _, reqid := range st.reqIDs {
-		c.Check(reqid, Not(Equals), "")
-		c.Check(reqid, Equals, st.reqIDs[0])
+		t0 := time.Now()
+		r, n, _, err := kc.Get(hash)
+		c.Assert(err, IsNil)
+		c.Check(n, Equals, int64(3))
+		elapsed := time.Since(t0)
+
+		nonsleeptime := time.Second / 10
+		expect := kc.RetryDelay
+		if expect == 0 {
+			expect = DefaultRetryDelay
+		}
+		min := MinimumRetryDelay * 3
+		max := expect + expect*2 + expect*2*2 + nonsleeptime
+		c.Check(elapsed >= min, Equals, true, Commentf("elapsed %v / expect min %v", elapsed, min))
+		c.Check(elapsed <= max, Equals, true, Commentf("elapsed %v / expect max %v", elapsed, max))
+
+		content, err := ioutil.ReadAll(r)
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte("foo"))
+		c.Check(r.Close(), IsNil)
+
+		c.Logf("%q", st.reqIDs)
+		if c.Check(st.reqIDs, Not(HasLen), 0) {
+			for _, reqid := range st.reqIDs {
+				c.Check(reqid, Not(Equals), "")
+				c.Check(reqid, Equals, st.reqIDs[0])
+			}
+		}
 	}
 }
 
 func (s *StandaloneSuite) TestGetNetError(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Check(err, IsNil)
@@ -842,19 +879,19 @@ func (s *StandaloneSuite) TestGetNetError(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, nil, nil)
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 	errNotFound, _ := err.(*ErrNotFound)
-	c.Check(errNotFound, NotNil)
-	c.Check(strings.Contains(errNotFound.Error(), "connection refused"), Equals, true)
-	c.Check(errNotFound.Temporary(), Equals, true)
+	if c.Check(errNotFound, NotNil) {
+		c.Check(strings.Contains(errNotFound.Error(), "connection refused"), Equals, true)
+		c.Check(errNotFound.Temporary(), Equals, true)
+	}
 	c.Check(n, Equals, int64(0))
-	c.Check(url2, Equals, "")
-	c.Check(r, Equals, nil)
+	c.Check(r, IsNil)
 }
 
 func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	uuid := "zzzzz-bi6l4-123451234512345"
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	// This one shouldn't be used:
 	ks0 := RunFakeKeepServer(StubGetHandler{
@@ -882,22 +919,21 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 		nil,
 		map[string]string{uuid: ks.url})
 
-	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash + "+K@" + uuid)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ks.url, hash+"+K@"+uuid))
 
 	content, err := ioutil.ReadAll(r)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 // Use a service hint to fetch from a local disk service, overriding
 // rendezvous probe order.
 func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 	uuid := "zzzzz-bi6l4-zzzzzzzzzzzzzzz"
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	// This one shouldn't be used, although it appears first in
 	// rendezvous probe order:
@@ -905,8 +941,8 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 		c,
 		"error if used",
 		"abc123",
-		http.StatusOK,
-		[]byte("foo")})
+		http.StatusBadGateway,
+		nil})
 	defer ks0.listener.Close()
 	// This one should be used:
 	ks := RunFakeKeepServer(StubGetHandler{
@@ -935,20 +971,19 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 			uuid:                          ks.url},
 	)
 
-	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
-	defer r.Close()
-	c.Check(err, Equals, nil)
+	r, n, _, err := kc.Get(hash + "+K@" + uuid)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ks.url, hash+"+K@"+uuid))
 
 	content, err := ioutil.ReadAll(r)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	uuid := "zzzzz-bi6l4-123451234512345"
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	ksLocal := RunFakeKeepServer(StubGetHandler{
 		c,
@@ -974,15 +1009,14 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 		nil,
 		map[string]string{uuid: ksGateway.url})
 
-	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
-	c.Assert(err, Equals, nil)
-	defer r.Close()
+	r, n, _, err := kc.Get(hash + "+K@" + uuid)
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(uri, Equals, fmt.Sprintf("%s/%s", ksLocal.url, hash+"+K@"+uuid))
 
 	content, err := ioutil.ReadAll(r)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(content, DeepEquals, []byte("foo"))
+	c.Check(r.Close(), IsNil)
 }
 
 type BarHandler struct {
@@ -995,8 +1029,8 @@ func (h BarHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (s *StandaloneSuite) TestChecksum(c *C) {
-	foohash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
-	barhash := fmt.Sprintf("%x", md5.Sum([]byte("bar")))
+	foohash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
+	barhash := fmt.Sprintf("%x+3", md5.Sum([]byte("bar")))
 
 	st := BarHandler{make(chan string, 1)}
 
@@ -1010,25 +1044,36 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, n, _, err := kc.Get(barhash)
-	c.Check(err, IsNil)
-	_, err = ioutil.ReadAll(r)
-	c.Check(n, Equals, int64(3))
-	c.Check(err, Equals, nil)
+	if c.Check(err, IsNil) {
+		_, err = ioutil.ReadAll(r)
+		c.Check(n, Equals, int64(3))
+		c.Check(err, IsNil)
+	}
 
-	<-st.handled
+	select {
+	case <-st.handled:
+	case <-time.After(time.Second):
+		c.Fatal("timed out")
+	}
 
 	r, n, _, err = kc.Get(foohash)
-	c.Check(err, IsNil)
-	_, err = ioutil.ReadAll(r)
-	c.Check(n, Equals, int64(3))
+	if err == nil {
+		buf, readerr := ioutil.ReadAll(r)
+		c.Logf("%q", buf)
+		err = readerr
+	}
 	c.Check(err, Equals, BadChecksum)
 
-	<-st.handled
+	select {
+	case <-st.handled:
+	case <-time.After(time.Second):
+		c.Fatal("timed out")
+	}
 }
 
 func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	content := []byte("waz")
-	hash := fmt.Sprintf("%x", md5.Sum(content))
+	hash := fmt.Sprintf("%x+3", md5.Sum(content))
 
 	fh := Error404Handler{
 		make(chan string, 4)}
@@ -1072,16 +1117,20 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	// an example that passes this Assert.)
 	c.Assert(NewRootSorter(localRoots, hash).GetSortedRoots()[0], Not(Equals), ks1[0].url)
 
-	r, n, url2, err := kc.Get(hash)
+	r, n, _, err := kc.Get(hash)
 
-	<-fh.handled
-	c.Check(err, Equals, nil)
+	select {
+	case <-fh.handled:
+	case <-time.After(time.Second):
+		c.Fatal("timed out")
+	}
+	c.Assert(err, IsNil)
 	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks1[0].url, hash))
 
 	readContent, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(readContent, DeepEquals, content)
+	c.Check(r.Close(), IsNil)
 }
 
 func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
@@ -1090,9 +1139,9 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Check(err, IsNil)
 	kc, err := MakeKeepClient(arv)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
-	hash := fmt.Sprintf("%x", md5.Sum(content))
+	hash := fmt.Sprintf("%x+%d", md5.Sum(content), len(content))
 
 	{
 		n, _, err := kc.Ask(hash)
@@ -1101,29 +1150,32 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	}
 	{
 		hash2, replicas, err := kc.PutB(content)
-		c.Check(hash2, Matches, fmt.Sprintf(`%s\+%d\b.*`, hash, len(content)))
+		c.Check(err, IsNil)
+		c.Check(hash2, Matches, `\Q`+hash+`\E\b.*`)
 		c.Check(replicas, Equals, 2)
-		c.Check(err, Equals, nil)
 	}
 	{
-		r, n, url2, err := kc.Get(hash)
-		c.Check(err, Equals, nil)
+		r, n, _, err := kc.Get(hash)
+		c.Check(err, IsNil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
-
-		readContent, err2 := ioutil.ReadAll(r)
-		c.Check(err2, Equals, nil)
-		c.Check(readContent, DeepEquals, content)
+		if c.Check(r, NotNil) {
+			readContent, err := ioutil.ReadAll(r)
+			c.Check(err, IsNil)
+			if c.Check(len(readContent), Equals, len(content)) {
+				c.Check(readContent, DeepEquals, content)
+			}
+			c.Check(r.Close(), IsNil)
+		}
 	}
 	{
 		n, url2, err := kc.Ask(hash)
-		c.Check(err, Equals, nil)
+		c.Check(err, IsNil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
+		c.Check(url2, Matches, "http://localhost:\\d+/\\Q"+hash+"\\E")
 	}
 	{
 		loc, err := kc.LocalLocator(hash)
-		c.Check(err, Equals, nil)
+		c.Check(err, IsNil)
 		c.Assert(len(loc) >= 32, Equals, true)
 		c.Check(loc[:32], Equals, hash[:32])
 	}
@@ -1170,7 +1222,7 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
 
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(replicas, Equals, 2)
 }
 
@@ -1204,7 +1256,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 func (s *StandaloneSuite) TestMakeLocator(c *C) {
 	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+3+Aabcde@12345678")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, 3)
 	c.Check(l.Hints, DeepEquals, []string{"3", "Aabcde@12345678"})
@@ -1212,7 +1264,7 @@ func (s *StandaloneSuite) TestMakeLocator(c *C) {
 
 func (s *StandaloneSuite) TestMakeLocatorNoHints(c *C) {
 	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, -1)
 	c.Check(l.Hints, DeepEquals, []string{})
@@ -1220,7 +1272,7 @@ func (s *StandaloneSuite) TestMakeLocatorNoHints(c *C) {
 
 func (s *StandaloneSuite) TestMakeLocatorNoSizeHint(c *C) {
 	l, err := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+Aabcde@12345678")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, -1)
 	c.Check(l.Hints, DeepEquals, []string{"Aabcde@12345678"})
@@ -1229,7 +1281,7 @@ func (s *StandaloneSuite) TestMakeLocatorNoSizeHint(c *C) {
 func (s *StandaloneSuite) TestMakeLocatorPreservesUnrecognizedHints(c *C) {
 	str := "91f372a266fe2bf2823cb8ec7fda31ce+3+Unknown+Kzzzzz+Afoobar"
 	l, err := MakeLocator(str)
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
 	c.Check(l.Size, Equals, 3)
 	c.Check(l.Hints, DeepEquals, []string{"3", "Unknown", "Kzzzzz", "Afoobar"})
@@ -1335,14 +1387,14 @@ func (h StubGetIndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reque
 }
 
 func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
 		"/index",
 		"abc123",
 		http.StatusOK,
-		[]byte(hash + "+3 1443559274\n\n")}
+		[]byte(hash + " 1443559274\n\n")}
 
 	ks := RunFakeKeepServer(st)
 	defer ks.listener.Close()
@@ -1358,19 +1410,19 @@ func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
 	c.Check(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
 func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
 		"/index/" + hash[0:3],
 		"abc123",
 		http.StatusOK,
-		[]byte(hash + "+3 1443559274\n\n")}
+		[]byte(hash + " 1443559274\n\n")}
 
 	ks := RunFakeKeepServer(st)
 	defer ks.listener.Close()
@@ -1382,15 +1434,15 @@ func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, err := kc.GetIndex("x", hash[0:3])
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
 func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
@@ -1413,7 +1465,7 @@ func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
 	st := StubGetIndexHandler{
 		c,
@@ -1453,55 +1505,78 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, err := kc.GetIndex("x", "abcd")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
+	c.Check(err2, IsNil)
 	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
 }
 
 func (s *StandaloneSuite) TestPutBRetry(c *C) {
-	st := &FailThenSucceedHandler{
-		handled: make(chan string, 1),
-		successhandler: &StubPutHandler{
-			c:                    c,
-			expectPath:           Md5String("foo"),
-			expectAPIToken:       "abc123",
-			expectBody:           "foo",
-			expectStorageClass:   "default",
-			returnStorageClasses: "",
-			handled:              make(chan string, 5),
-		},
+	DefaultRetryDelay = time.Second / 8
+	MinimumRetryDelay = time.Millisecond
+
+	for _, delay := range []time.Duration{0, time.Nanosecond, time.Second / 8, time.Second / 16} {
+		c.Logf("=== initial delay %v", delay)
+
+		st := &FailThenSucceedHandler{
+			morefails: 5, // handler will fail 6x in total, 3 for each server
+			handled:   make(chan string, 10),
+			successhandler: &StubPutHandler{
+				c:                    c,
+				expectPath:           Md5String("foo"),
+				expectAPIToken:       "abc123",
+				expectBody:           "foo",
+				expectStorageClass:   "default",
+				returnStorageClasses: "",
+				handled:              make(chan string, 5),
+			},
+		}
+
+		arv, _ := arvadosclient.MakeArvadosClient()
+		kc, _ := MakeKeepClient(arv)
+		kc.Retries = 3
+		kc.RetryDelay = delay
+		kc.DiskCacheSize = DiskCacheDisabled
+		kc.Want_replicas = 2
+
+		arv.ApiToken = "abc123"
+		localRoots := make(map[string]string)
+		writableLocalRoots := make(map[string]string)
+
+		ks := RunSomeFakeKeepServers(st, 2)
+
+		for i, k := range ks {
+			localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			defer k.listener.Close()
+		}
+
+		kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+		t0 := time.Now()
+		hash, replicas, err := kc.PutB([]byte("foo"))
+
+		c.Check(err, IsNil)
+		c.Check(hash, Equals, "")
+		c.Check(replicas, Equals, 2)
+		elapsed := time.Since(t0)
+
+		nonsleeptime := time.Second / 10
+		expect := kc.RetryDelay
+		if expect == 0 {
+			expect = DefaultRetryDelay
+		}
+		min := MinimumRetryDelay * 3
+		max := expect + expect*2 + expect*2*2
+		max += nonsleeptime
+		checkInterval(c, elapsed, min, max)
 	}
-
-	arv, _ := arvadosclient.MakeArvadosClient()
-	kc, _ := MakeKeepClient(arv)
-
-	kc.Want_replicas = 2
-	arv.ApiToken = "abc123"
-	localRoots := make(map[string]string)
-	writableLocalRoots := make(map[string]string)
-
-	ks := RunSomeFakeKeepServers(st, 2)
-
-	for i, k := range ks {
-		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		defer k.listener.Close()
-	}
-
-	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
-
-	hash, replicas, err := kc.PutB([]byte("foo"))
-
-	c.Check(err, Equals, nil)
-	c.Check(hash, Equals, "")
-	c.Check(replicas, Equals, 2)
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	// Add an additional "testblobstore" keepservice
 	blobKeepService := make(arvadosclient.Dict)
@@ -1511,13 +1586,13 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 			"service_port": "21321",
 			"service_type": "testblobstore"}},
 		&blobKeepService)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
 	RefreshServiceDiscovery()
 
 	// Make a keepclient and ensure that the testblobstore is included
 	kc, err := MakeKeepClient(arv)
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	// verify kc.LocalRoots
 	c.Check(len(kc.LocalRoots()), Equals, 3)
@@ -1543,4 +1618,61 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 	c.Assert(kc.replicasPerService, Equals, 0)
 	c.Assert(kc.foundNonDiskSvc, Equals, true)
 	c.Assert(kc.httpClient().(*http.Client).Timeout, Equals, 300*time.Second)
+}
+
+func (s *StandaloneSuite) TestDelayCalculator_Default(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	DefaultRetryDelay = time.Second
+
+	dc := delayCalculator{InitialMaxDelay: 0}
+	checkInterval(c, dc.Next(), time.Second/2, time.Second)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*2)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*4)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*8)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*10)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*10)
+}
+
+func (s *StandaloneSuite) TestDelayCalculator_SetInitial(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	DefaultRetryDelay = time.Second
+
+	dc := delayCalculator{InitialMaxDelay: time.Second * 2}
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*2)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*4)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*8)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*16)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+}
+
+func (s *StandaloneSuite) TestDelayCalculator_EnsureSomeLongDelays(c *C) {
+	dc := delayCalculator{InitialMaxDelay: time.Second * 5}
+	var d time.Duration
+	n := 4000
+	for i := 0; i < n; i++ {
+		if i < 20 || i%10 == 0 {
+			c.Logf("i=%d, delay=%v", i, d)
+		}
+		if d = dc.Next(); d > dc.InitialMaxDelay*9 {
+			return
+		}
+	}
+	c.Errorf("after %d trials, never got a delay more than 90%% of expected max %d; last was %v", n, dc.InitialMaxDelay*10, d)
+}
+
+// If InitialMaxDelay is less than MinimumRetryDelay/10, then delay is
+// always MinimumRetryDelay.
+func (s *StandaloneSuite) TestDelayCalculator_InitialLessThanMinimum(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	dc := delayCalculator{InitialMaxDelay: time.Millisecond}
+	for i := 0; i < 20; i++ {
+		c.Check(dc.Next(), Equals, time.Second/2)
+	}
+}
+
+func checkInterval(c *C, t, min, max time.Duration) {
+	c.Check(t >= min, Equals, true, Commentf("got %v which is below expected min %v", t, min))
+	c.Check(t <= max, Equals, true, Commentf("got %v which is above expected max %v", t, max))
 }

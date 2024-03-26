@@ -63,7 +63,7 @@ class OwnerTest < ActiveSupport::TestCase
 
         assert(Specimen.where(uuid: i.uuid).any?,
                "new item should really be in DB")
-        assert(i.update_attributes(owner_uuid: new_o.uuid),
+        assert(i.update(owner_uuid: new_o.uuid),
                "should change owner_uuid from #{o.uuid} to #{new_o.uuid}")
       end
     end
@@ -92,7 +92,7 @@ class OwnerTest < ActiveSupport::TestCase
              "new #{o_class} should really be in DB")
       old_uuid = o.uuid
       new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
-      assert(o.update_attributes(uuid: new_uuid),
+      assert(o.update(uuid: new_uuid),
               "should change #{o_class} uuid from #{old_uuid} to #{new_uuid}")
       assert_equal(false, o_class.where(uuid: old_uuid).any?,
                    "#{old_uuid} should disappear when renamed to #{new_uuid}")
@@ -118,7 +118,7 @@ class OwnerTest < ActiveSupport::TestCase
       assert_equal(true, Specimen.where(owner_uuid: o.uuid).any?,
                    "need something to be owned by #{o.uuid} for this test")
       new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
-      assert(!o.update_attributes(uuid: new_uuid),
+      assert(!o.update(uuid: new_uuid),
              "should not change uuid of #{ofixt} that owns objects")
     end
   end
@@ -126,7 +126,7 @@ class OwnerTest < ActiveSupport::TestCase
   test "delete User that owns self" do
     o = User.create!
     assert User.where(uuid: o.uuid).any?, "new User should really be in DB"
-    assert_equal(true, o.update_attributes(owner_uuid: o.uuid),
+    assert_equal(true, o.update(owner_uuid: o.uuid),
                  "setting owner to self should work")
 
     skip_check_permissions_against_full_refresh do

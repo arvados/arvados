@@ -7,22 +7,18 @@ Description=Arvados Keep Balance
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/config.yml
-
-# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
-ExecStart=/usr/bin/keep-balance -commit-pulls -commit-trash
+ExecStart=/usr/bin/keep-balance
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536
 Restart=always
 RestartSec=10s
 Nice=19
-
-# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
-StartLimitInterval=0
+RestartPreventExitStatus=2
 
 [Install]
 WantedBy=multi-user.target

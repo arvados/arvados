@@ -368,9 +368,6 @@ func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
 	return 0, errors.New("not implemented")
 }
 
-func (client *KeepTestClient) ClearBlockCache() {
-}
-
 func (client *KeepTestClient) Close() {
 	client.Content = nil
 }
@@ -1413,11 +1410,11 @@ func (am *ArvMountCmdLine) ArvMountTest(c []string, token string) (*exec.Cmd, er
 	return nil, nil
 }
 
-func stubCert(temp string) string {
+func stubCert(c *C, temp string) string {
 	path := temp + "/ca-certificates.crt"
-	crt, _ := os.Create(path)
-	crt.Close()
-	arvadosclient.CertFiles = []string{path}
+	err := os.WriteFile(path, []byte{}, 0666)
+	c.Assert(err, IsNil)
+	os.Setenv("SSL_CERT_FILE", path)
 	return path
 }
 
@@ -1432,7 +1429,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	realTemp := c.MkDir()
 	certTemp := c.MkDir()
-	stubCertPath := stubCert(certTemp)
+	stubCertPath := stubCert(c, certTemp)
 	cr.parentTemp = realTemp
 
 	i := 0

@@ -185,6 +185,16 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 		names = append(names, fi.Name())
 	}
 	c.Check(names, check.DeepEquals, []string{"baz"})
+	f, err = s.fs.Open("/by_id/" + fixtureAProjectUUID + "/A Subproject/baz_file/baz")
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	_, err = s.fs.Open("/by_id/" + fixtureAProjectUUID + "/A Subproject/baz_file/baz/")
+	c.Assert(err, check.Equals, ErrNotADirectory)
+	_, err = s.fs.Open("/by_id/" + fixtureAProjectUUID + "/A Subproject/baz_file/baz/z")
+	c.Assert(err, check.Equals, ErrNotADirectory)
+	_, err = s.fs.Open("/by_id/" + fixtureAProjectUUID + "/A Subproject/baz_file/baz/..")
+	c.Assert(err, check.Equals, ErrNotADirectory)
 
 	_, err = s.fs.OpenFile("/by_id/"+fixtureNonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
 	c.Check(err, ErrorIs, ErrInvalidOperation)

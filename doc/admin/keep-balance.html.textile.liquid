@@ -30,13 +30,11 @@ The @Collections.BalancePeriod@ value in @/etc/arvados/config.yml@ determines th
 
 Keep-balance can also be run with the @-once@ flag to do a single scan/balance operation and then exit. The exit code will be zero if the operation was successful.
 
-h3. Committing
-
-Keep-balance computes and reports changes but does not implement them by sending pull and trash lists to the Keep services unless the @-commit-pull@ and @-commit-trash@ flags are used.
-
 h3. Additional configuration
 
 For configuring resource usage tuning and lost block reporting, please see the @Collections.BlobMissingReport@, @Collections.BalanceCollectionBatch@, @Collections.BalanceCollectionBuffers@ option in the "default config.yml file":{{site.baseurl}}/admin/config.html.
+
+The @Collections.BalancePullLimit@ and @Collections.BalanceTrashLimit@ configuration entries determine the maximum number of pull and trash operations keep-balance will attempt to apply on each keepstore server. If both values are zero, keep-balance will operate in "dry run" mode, where all changes are computed but none are committed.
 
 h3. Limitations
 

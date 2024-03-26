@@ -46,6 +46,8 @@ import (
 
 type command struct{}
 
+var arvadosCertPath = "/etc/arvados/ca-certificates.crt"
+
 var Command = command{}
 
 // ConfigData contains environment variables and (when needed) cluster
@@ -76,7 +78,6 @@ type IKeepClient interface {
 	ReadAt(locator string, p []byte, off int) (int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	LocalLocator(locator string) (string, error)
-	ClearBlockCache()
 	SetStorageClasses(sc []string)
 }
 
@@ -494,7 +495,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 			}
 		}
 
-		if bind == "/etc/arvados/ca-certificates.crt" {
+		if bind == arvadosCertPath {
 			needCertMount = false
 		}
 
@@ -644,10 +645,19 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	}
 
 	if needCertMount && runner.Container.RuntimeConstraints.API {
-		for _, certfile := range arvadosclient.CertFiles {
-			_, err := os.Stat(certfile)
-			if err == nil {
-				bindmounts["/etc/arvados/ca-certificates.crt"] = bindmount{HostPath: certfile, ReadOnly: true}
+		for _, certfile := range []string{
+			// Populated by caller, or sdk/go/arvados init(), or test suite:
+			os.Getenv("SSL_CERT_FILE"),
+			// Copied from Go 1.21 stdlib (src/crypto/x509/root_linux.go):
+			"/etc/ssl/certs/ca-certificates.crt",                // Debian/Ubuntu/Gentoo etc.
+			"/etc/pki/tls/certs/ca-bundle.crt",                  // Fedora/RHEL 6
+			"/etc/ssl/ca-bundle.pem",                            // OpenSUSE
+			"/etc/pki/tls/cacert.pem",                           // OpenELEC
+			"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", // CentOS/RHEL 7
+			"/etc/ssl/cert.pem",                                 // Alpine Linux
+		} {
+			if _, err := os.Stat(certfile); err == nil {
+				bindmounts[arvadosCertPath] = bindmount{HostPath: certfile, ReadOnly: true}
 				break
 			}
 		}
@@ -1996,7 +2006,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	time.Sleep(*sleep)
 
 	if *caCertsPath != "" {
-		arvadosclient.CertFiles = []string{*caCertsPath}
+		os.Setenv("SSL_CERT_FILE", *caCertsPath)
 	}
 
 	keepstore, err := startLocalKeepstore(conf, io.MultiWriter(&keepstoreLogbuf, stderr))
@@ -2022,7 +2032,6 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		log.Printf("%s: %v", containerUUID, err)
 		return 1
 	}
-	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
 	kc.Retries = 4
 
 	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, containerUUID)

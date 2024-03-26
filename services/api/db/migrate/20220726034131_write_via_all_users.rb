@@ -14,11 +14,11 @@ class WriteViaAllUsers < ActiveRecord::Migration[5.2]
     ActiveRecord::Base.connection.exec_query(
       "update links set name=$1 where link_class=$2 and name=$3 and tail_uuid like $4 and head_uuid = $5",
       "migrate", [
-        [nil, to],
-        [nil, "permission"],
-        [nil, from],
-        [nil, "_____-tpzed-_______________"],
-        [nil, all_users_group_uuid],
+        to,
+        "permission",
+        from,
+        "_____-tpzed-_______________",
+        all_users_group_uuid,
       ])
   end
 end

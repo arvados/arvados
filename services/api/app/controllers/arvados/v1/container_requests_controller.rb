@@ -31,6 +31,22 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
       })
   end
 
+  def self._container_status_requires_parameters
+    (super rescue {}).
+      merge({
+        uuid: {
+          type: 'string', required: true, description: "The UUID of the ContainerRequest in question.",
+        },
+      })
+  end
+
+  # This API is handled entirely by controller, so this method is
+  # never called -- it's only here for the sake of adding the API to
+  # the generated discovery document.
+  def container_status
+    send_json({"errors" => "controller-only API, not handled by rails"}, status: 400)
+  end
+
   def update
     if (resource_attrs.keys.map(&:to_sym) - [:owner_uuid, :name, :description, :properties]).empty? or @object.container_uuid.nil?
       # If no attributes are being updated besides these, there are no

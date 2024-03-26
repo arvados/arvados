@@ -65,7 +65,7 @@ export const DirectoryPickerField = (props: PickerIdProp) =>
     <Field
         name="destination"
         pickerId={props.pickerId}
-        component={DirectoryTreePickerField}
+        component={DirectoryTreePickerField as any}
         validate={validateDirectory} />;
 
 interface StorageClassesProps {

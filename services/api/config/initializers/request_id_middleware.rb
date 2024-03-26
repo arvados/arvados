@@ -14,7 +14,7 @@ module CustomRequestId
   end
 
   def internal_request_id
-    "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+    "req-" + Random.new.rand(2**128).to_s(36)[0..19]
   end
 end
 

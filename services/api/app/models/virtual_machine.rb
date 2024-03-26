@@ -9,9 +9,9 @@ class VirtualMachine < ArvadosModel
 
   has_many(:login_permissions,
            -> { where("link_class = 'permission' and name = 'can_login'") },
-           foreign_key: :head_uuid,
+           foreign_key: 'head_uuid',
            class_name: 'Link',
-           primary_key: :uuid)
+           primary_key: 'uuid')
 
   api_accessible :user, extend: :common do |t|
     t.add :hostname

@@ -5,7 +5,7 @@
 import {
     createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus,
     expandNode, deactivateNode, selectNodes, deselectNodes,
-    activateNode, getNode, toggleNodeCollapse, toggleNodeSelection, appendSubtree
+    activateNode, getNode, toggleNodeCollapse, toggleNodeSelection, appendSubtree, expandNodeAncestors
 } from 'models/tree';
 import { TreePicker } from "./tree-picker";
 import { treePickerActions, treePickerSearchActions, TreePickerAction, TreePickerSearchAction, LoadProjectParams } from "./tree-picker-actions";
@@ -29,6 +29,9 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
         EXPAND_TREE_PICKER_NODE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, expandNode(id)),
 
+        EXPAND_TREE_PICKER_NODE_ANCESTORS: ({ id, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, expandNodeAncestors(id)),
+
         ACTIVATE_TREE_PICKER_NODE: ({ id, pickerId, relatedTreePickers = [] }) =>
             pipe(
                 () => relatedTreePickers.reduce(
@@ -41,14 +44,14 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
         DEACTIVATE_TREE_PICKER_NODE: ({ pickerId }) =>
             updateOrCreatePicker(state, pickerId, deactivateNode),
 
-        TOGGLE_TREE_PICKER_NODE_SELECTION: ({ id, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, toggleNodeSelection(id)),
+        TOGGLE_TREE_PICKER_NODE_SELECTION: ({ id, pickerId, cascade }) =>
+            updateOrCreatePicker(state, pickerId, toggleNodeSelection(id, cascade)),
 
-        SELECT_TREE_PICKER_NODE: ({ id, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, selectNodes(id)),
+        SELECT_TREE_PICKER_NODE: ({ id, pickerId, cascade }) =>
+            updateOrCreatePicker(state, pickerId, selectNodes(id, cascade)),
 
-        DESELECT_TREE_PICKER_NODE: ({ id, pickerId }) =>
-            updateOrCreatePicker(state, pickerId, deselectNodes(id)),
+        DESELECT_TREE_PICKER_NODE: ({ id, pickerId, cascade }) =>
+            updateOrCreatePicker(state, pickerId, deselectNodes(id, cascade)),
 
         RESET_TREE_PICKER: ({ pickerId }) =>
             updateOrCreatePicker(state, pickerId, createTree),

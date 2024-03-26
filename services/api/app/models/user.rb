@@ -31,9 +31,10 @@ class User < ArvadosModel
   after_update :setup_on_activate
 
   before_create :check_auto_admin
-  before_create :set_initial_username, :if => Proc.new {
-    username.nil? and email
+  before_validation :set_initial_username, :if => Proc.new {
+    new_record? && email
   }
+  before_create :active_is_not_nil
   after_create :after_ownership_change
   after_create :setup_on_activate
   after_create :add_system_group_permission_link
@@ -56,8 +57,8 @@ class User < ArvadosModel
   before_destroy :clear_permissions
   after_destroy :remove_self_from_permissions
 
-  has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
-  has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
+  has_many :authorized_keys, foreign_key: 'authorized_user_uuid', primary_key: 'uuid'
+  has_many :repositories, foreign_key: 'owner_uuid', primary_key: 'uuid'
 
   default_scope { where('redirect_to_user_uuid is null') }
 
@@ -104,6 +105,10 @@ class User < ArvadosModel
        self.groups_i_can(:read).select { |x| x.match(/-f+$/) }.first)
   end
 
+  def self.ignored_select_attributes
+    super + ["full_name", "is_invited"]
+  end
+
   def groups_i_can(verb)
     my_groups = self.group_permissions(VAL_FOR_PERM[verb]).keys
     if verb == :read
@@ -145,10 +150,10 @@ SELECT 1 FROM #{PERMISSION_VIEW}
 },
                   # "name" arg is a query label that appears in logs:
                    "user_can_query",
-                   [[nil, self.uuid],
-                    [nil, target_uuid],
-                    [nil, VAL_FOR_PERM[action]],
-                    [nil, target_owner_uuid]]
+                   [self.uuid,
+                    target_uuid,
+                    VAL_FOR_PERM[action],
+                    target_owner_uuid]
                   ).any?
         return false
       end
@@ -237,7 +242,7 @@ SELECT target_uuid, perm_level
                    # "name" arg is a query label that appears in logs:
                    "User.group_permissions",
                    # "binds" arg is an array of [col_id, value] for '$1' vars:
-                   [[nil, uuid]]).
+                   [uuid]).
         rows.each do |group_uuid, max_p_val|
         @group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
       end
@@ -259,8 +264,7 @@ SELECT target_uuid, perm_level
   def setup(repo_name: nil, vm_uuid: nil, send_notification_email: nil)
     newly_invited = Link.where(tail_uuid: self.uuid,
                               head_uuid: all_users_group_uuid,
-                              link_class: 'permission',
-                              name: 'can_read').empty?
+                              link_class: 'permission').empty?
 
     # Add can_read link from this user to "all users" which makes this
     # user "invited", and (depending on config) a link in the opposite
@@ -382,7 +386,11 @@ SELECT target_uuid, perm_level
   end
 
   def set_initial_username(requested: false)
-    if !requested.is_a?(String) || requested.empty?
+    if new_record? and requested == false and self.username != nil and self.username != ""
+      requested = self.username
+    end
+
+    if (!requested.is_a?(String) || requested.empty?) and email
       email_parts = email.partition("@")
       local_parts = email_parts.first.partition("+")
       if email_parts.any?(&:empty?)
@@ -393,11 +401,18 @@ SELECT target_uuid, perm_level
         requested = email_parts.first
       end
     end
-    requested.sub!(/^[^A-Za-z]+/, "")
-    requested.gsub!(/[^A-Za-z0-9]/, "")
-    unless requested.empty?
+    if requested
+      requested.sub!(/^[^A-Za-z]+/, "")
+      requested.gsub!(/[^A-Za-z0-9]/, "")
+    end
+    unless !requested || requested.empty?
       self.username = find_usable_username_from(requested)
     end
+  end
+
+  def active_is_not_nil
+    self.is_active = false if self.is_active.nil?
+    self.is_admin = false if self.is_admin.nil?
   end
 
   # Move this user's (i.e., self's) owned items to new_owner_uuid and
@@ -497,14 +512,14 @@ SELECT target_uuid, perm_level
       end
 
       if redirect_to_new_user
-        update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
+        update!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
-        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM
-        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
-        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM
+        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM, nil, true
+        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
+        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM, nil, true
       end
-      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM, nil, true
     end
   end
 
@@ -590,6 +605,151 @@ SELECT target_uuid, perm_level
     end
 
     primary_user
+  end
+
+  def self.update_remote_user remote_user
+    remote_user = remote_user.symbolize_keys
+    remote_user_prefix = remote_user[:uuid][0..4]
+
+    # interaction between is_invited and is_active
+    #
+    # either can flag can be nil, true or false
+    #
+    # in all cases, we create the user if they don't exist.
+    #
+    # invited nil, active nil: don't call setup or unsetup.
+    #
+    # invited nil, active false: call unsetup
+    #
+    # invited nil, active true: call setup and activate them.
+    #
+    #
+    # invited false, active nil: call unsetup
+    #
+    # invited false, active false: call unsetup
+    #
+    # invited false, active true: call unsetup
+    #
+    #
+    # invited true, active nil: call setup but don't change is_active
+    #
+    # invited true, active false: call setup but don't change is_active
+    #
+    # invited true, active true: call setup and activate them.
+
+    should_setup = (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+                    Rails.configuration.Users.AutoSetupNewUsers or
+                    Rails.configuration.Users.NewUsersAreActive or
+                    Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+
+    should_activate = (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+                       Rails.configuration.Users.NewUsersAreActive or
+                       Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+
+    remote_should_be_unsetup = (remote_user[:is_invited] == nil && remote_user[:is_active] == false) ||
+                               (remote_user[:is_invited] == false)
+
+    remote_should_be_setup = should_setup && (
+      (remote_user[:is_invited] == nil && remote_user[:is_active] == true) ||
+      (remote_user[:is_invited] == false && remote_user[:is_active] == true) ||
+      (remote_user[:is_invited] == true))
+
+    remote_should_be_active = should_activate && remote_user[:is_invited] != false && remote_user[:is_active] == true
+
+    # Make sure blank username is nil
+    remote_user[:username] = nil if remote_user[:username] == ""
+
+    begin
+      user = User.create_with(email: remote_user[:email],
+                              username: remote_user[:username],
+                              first_name: remote_user[:first_name],
+                              last_name: remote_user[:last_name],
+                              is_active: remote_should_be_active,
+                             ).find_or_create_by(uuid: remote_user[:uuid])
+    rescue ActiveRecord::RecordNotUnique
+      retry
+    end
+
+    user.with_lock do
+      needupdate = {}
+      [:email, :username, :first_name, :last_name, :prefs].each do |k|
+        v = remote_user[k]
+        if !v.nil? && user.send(k) != v
+          needupdate[k] = v
+        end
+      end
+
+      user.email = needupdate[:email] if needupdate[:email]
+
+      loginCluster = Rails.configuration.Login.LoginCluster
+      if user.username.nil? || user.username == ""
+        # Don't have a username yet, try to set one
+        initial_username = user.set_initial_username(requested: remote_user[:username])
+        needupdate[:username] = initial_username if !initial_username.nil?
+      elsif remote_user_prefix != loginCluster
+        # Upstream is not login cluster, don't try to change the
+        # username once set.
+        needupdate.delete :username
+      end
+
+      if needupdate.length > 0
+        begin
+          user.update!(needupdate)
+        rescue ActiveRecord::RecordInvalid
+          if remote_user_prefix == loginCluster && !needupdate[:username].nil?
+            local_user = User.find_by_username(needupdate[:username])
+            # The username of this record conflicts with an existing,
+            # different user record.  This can happen because the
+            # username changed upstream on the login cluster, or
+            # because we're federated with another cluster with a user
+            # by the same username.  The login cluster is the source
+            # of truth, so change the username on the conflicting
+            # record and retry the update operation.
+            if local_user.uuid != user.uuid
+              new_username = "#{needupdate[:username]}#{rand(99999999)}"
+              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
+              local_user.update!({username: new_username})
+              retry
+            end
+          end
+          raise # Not the issue we're handling above
+        end
+      elsif user.new_record?
+        begin
+          user.save!
+        rescue => e
+          Rails.logger.debug "Error saving user record: #{$!}"
+          Rails.logger.debug "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+          raise
+        end
+      end
+
+      if remote_should_be_unsetup
+        # Remote user is not "invited" or "active" state on their home
+        # cluster, so they should be unsetup, which also makes them
+        # inactive.
+        user.unsetup
+      else
+        if !user.is_invited && remote_should_be_setup
+          user.setup
+        end
+
+        if !user.is_active && remote_should_be_active
+          # remote user is active and invited, we need to activate them
+          user.update!(is_active: true)
+        end
+
+        if remote_user_prefix == Rails.configuration.Login.LoginCluster and
+          user.is_active and
+          !remote_user[:is_admin].nil? and
+          user.is_admin != remote_user[:is_admin]
+          # Remote cluster controls our user database, including the
+          # admin flag.
+          user.update!(is_admin: remote_user[:is_admin])
+        end
+      end
+    end
+    user
   end
 
   protected
@@ -810,8 +970,9 @@ SELECT target_uuid, perm_level
 
   # Send admin notifications
   def send_admin_notifications
-    AdminNotifier.new_user(self).deliver_now
-    if not self.is_active then
+    if self.is_invited then
+      AdminNotifier.new_user(self).deliver_now
+    else
       AdminNotifier.new_inactive_user(self).deliver_now
     end
   end

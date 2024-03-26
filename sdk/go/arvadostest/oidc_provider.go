@@ -33,6 +33,10 @@ type OIDCProvider struct {
 	AuthGivenName      string
 	AuthFamilyName     string
 	AccessTokenPayload map[string]interface{}
+	// end_session_endpoint metadata URL.
+	// If nil or empty, not included in discovery.
+	// If relative, built from Issuer.URL.
+	EndSessionEndpoint *url.URL
 
 	PeopleAPIResponse map[string]interface{}
 
@@ -71,13 +75,26 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch req.URL.Path {
 	case "/.well-known/openid-configuration":
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		configuration := map[string]interface{}{
 			"issuer":                 p.Issuer.URL,
 			"authorization_endpoint": p.Issuer.URL + "/auth",
 			"token_endpoint":         p.Issuer.URL + "/token",
 			"jwks_uri":               p.Issuer.URL + "/jwks",
 			"userinfo_endpoint":      p.Issuer.URL + "/userinfo",
-		})
+		}
+		if p.EndSessionEndpoint == nil {
+			// Not included in configuration
+		} else if p.EndSessionEndpoint.Scheme != "" {
+			configuration["end_session_endpoint"] = p.EndSessionEndpoint.String()
+		} else {
+			u, err := url.Parse(p.Issuer.URL)
+			p.c.Check(err, check.IsNil,
+				check.Commentf("error parsing IssuerURL for EndSessionEndpoint"))
+			u.Scheme = "https"
+			u.Path = u.Path + p.EndSessionEndpoint.Path
+			configuration["end_session_endpoint"] = u.String()
+		}
+		json.NewEncoder(w).Encode(configuration)
 	case "/token":
 		var clientID, clientSecret string
 		auth, _ := base64.StdEncoding.DecodeString(strings.TrimPrefix(req.Header.Get("Authorization"), "Basic "))

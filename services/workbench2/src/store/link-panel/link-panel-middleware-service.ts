@@ -12,6 +12,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { ListResults } from 'services/common-service/common-service';
 import { LinkResource } from 'models/link';
 import { linkPanelActions } from 'store/link-panel/link-panel-actions';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export class LinkMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -22,11 +23,14 @@ export class LinkMiddlewareService extends DataExplorerMiddlewareService {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
+            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const response = await this.services.linkService.list(getParams(dataExplorer));
             api.dispatch(updateResources(response.items));
             api.dispatch(setItems(response));
         } catch {
             api.dispatch(couldNotFetchLinks());
+        } finally {
+            api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
 }

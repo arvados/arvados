@@ -15,12 +15,11 @@ import {
 } from 'models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
-import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { FileOperationLocation, getFileOperationLocation, initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
-import { CollectionResource } from 'models/collection';
-import { ResourceKind } from 'models/resource';
 import { ERROR_MESSAGE } from 'validators/require';
+import { Dispatch } from 'redux';
 
 export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;
@@ -43,9 +42,9 @@ export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
 
 const format = (value?: Directory) => value ? value.basename : '';
 
-const parse = (directory: CollectionResource): Directory => ({
+const parse = (directory: FileOperationLocation): Directory => ({
     class: CWLType.DIRECTORY,
-    location: `keep:${directory.portableDataHash}`,
+    location: `keep:${directory.pdh}${directory.subpath}`,
     basename: directory.name,
 });
 
@@ -59,11 +58,21 @@ const getValidation = memoize(
 
 interface DirectoryInputComponentState {
     open: boolean;
-    directory?: CollectionResource;
+    directory?: FileOperationLocation;
 }
 
-const DirectoryInputComponent = connect()(
-    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp & {
+interface DirectoryInputActionProps {
+    initProjectsTreePicker: (pickerId: string) => void;
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
+}
+
+const mapDispatchToProps = (dispatch: Dispatch): DirectoryInputActionProps => ({
+    initProjectsTreePicker: (pickerId: string) => dispatch<any>(initProjectsTreePicker(pickerId)),
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => dispatch<any>(getFileOperationLocation(item)),
+});
+
+const DirectoryInputComponent = connect(null, mapDispatchToProps)(
+    class FileInputComponent extends React.Component<GenericInputProps & DirectoryInputActionProps & DispatchProp & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     }, DirectoryInputComponentState> {
         state: DirectoryInputComponentState = {
@@ -71,8 +80,7 @@ const DirectoryInputComponent = connect()(
         };
 
         componentDidMount() {
-            this.props.dispatch<any>(
-                initProjectsTreePicker(this.props.commandInput.id));
+            this.props.initProjectsTreePicker(this.props.commandInput.id);
         }
 
         render() {
@@ -95,12 +103,9 @@ const DirectoryInputComponent = connect()(
             this.props.input.onChange(this.state.directory);
         }
 
-        setDirectory = (_: {}, { data }: TreeItem<ProjectsTreePickerItem>) => {
-            if ('kind' in data && data.kind === ResourceKind.COLLECTION) {
-                this.setState({ directory: data });
-            } else {
-                this.setState({ directory: undefined });
-            }
+        setDirectory = async (_: {}, { data: item }: TreeItem<ProjectsTreePickerItem>) => {
+            const location = await this.props.getFileOperationLocation(item);
+            this.setState({ directory: location });
         }
 
         renderInput() {
@@ -143,6 +148,8 @@ const DirectoryInputComponent = connect()(
                             <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
                                 includeCollections
+                                includeDirectories
+                                cascadeSelection={false}
                                 options={this.props.options}
                                 toggleItemActive={this.setDirectory} />
                         </div>

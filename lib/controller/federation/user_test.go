@@ -78,7 +78,7 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 						"identity_url": false,
 						// virtual attrs
 						"full_name":  false,
-						"is_invited": false,
+						"is_invited": true,
 					}
 					if opts.Select != nil {
 						// Only the selected
@@ -146,7 +146,7 @@ func (s *UserSuite) TestLoginClusterUserGet(c *check.C) {
 			"identity_url": false,
 			// virtual attrs
 			"full_name":  false,
-			"is_invited": false,
+			"is_invited": true,
 		}
 		if opts.Select != nil {
 			// Only the selected

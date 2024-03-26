@@ -123,6 +123,10 @@ func (fs *customFileSystem) ForwardSlashNameSubstitution(repl string) {
 	fs.forwardSlashNameSubstitution = repl
 }
 
+func (fs *customFileSystem) MemorySize() int64 {
+	return fs.fileSystem.MemorySize() + fs.byIDRoot.MemorySize()
+}
+
 // SiteFileSystem returns a FileSystem that maps collections and other
 // Arvados objects onto a filesystem layout.
 //
@@ -385,4 +389,8 @@ func (hl *hardlink) FileInfo() os.FileInfo {
 		return fi
 	}
 	return fi
+}
+
+func (hl *hardlink) MemorySize() int64 {
+	return 64 + int64(len(hl.name))
 }

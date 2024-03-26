@@ -22,6 +22,7 @@ import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
 import { getResource } from "store/resources/resources";
 import { CollectionProperties } from "./collection-create-actions";
+import { loadSidePanelTreeProjects, SidePanelTreeCategory } from "store/side-panel-tree/side-panel-tree-actions";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
@@ -65,6 +66,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             }));
             dispatch<any>(updateResources([updatedCollection]));
             dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
+            dispatch<any>(loadSidePanelTreeProjects(SidePanelTreeCategory.FAVORITES))
         }).catch (e => {
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);

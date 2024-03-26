@@ -84,7 +84,7 @@ class PermissionTest < ActiveSupport::TestCase
     assert users(:active).can?(write: ob)
     assert users(:active).can?(read: ob)
 
-    l1.update_attributes!(name: 'can_read')
+    l1.update!(name: 'can_read')
 
     assert !users(:active).can?(write: ob)
     assert users(:active).can?(read: ob)
@@ -293,7 +293,7 @@ class PermissionTest < ActiveSupport::TestCase
                    "manager saw the minion's private stuff")
       assert_raises(ArvadosModel::PermissionDeniedError,
                    "manager could update minion's private stuff") do
-        minions_specimen.update_attributes(properties: {'x' => 'y'})
+        minions_specimen.update(properties: {'x' => 'y'})
       end
     end
 
@@ -310,7 +310,7 @@ class PermissionTest < ActiveSupport::TestCase
                          .where(uuid: minions_specimen.uuid),
                        "manager could not find minion's specimen by uuid")
       assert_equal(true,
-                   minions_specimen.update_attributes(properties: {'x' => 'y'}),
+                   minions_specimen.update(properties: {'x' => 'y'}),
                    "manager could not update minion's specimen object")
     end
   end
@@ -355,17 +355,17 @@ class PermissionTest < ActiveSupport::TestCase
                    "OTHER can see #{u.first_name} in the user list")
       act_as_user u do
         assert_raises ArvadosModel::PermissionDeniedError, "wrote without perm" do
-          other.update_attributes!(prefs: {'pwned' => true})
+          other.update!(prefs: {'pwned' => true})
         end
-        assert_equal(true, u.update_attributes!(prefs: {'thisisme' => true}),
+        assert_equal(true, u.update!(prefs: {'thisisme' => true}),
                      "#{u.first_name} can't update its own prefs")
       end
       act_as_user other do
         assert_raises(ArvadosModel::PermissionDeniedError,
                         "OTHER wrote #{u.first_name} without perm") do
-          u.update_attributes!(prefs: {'pwned' => true})
+          u.update!(prefs: {'pwned' => true})
         end
-        assert_equal(true, other.update_attributes!(prefs: {'thisisme' => true}),
+        assert_equal(true, other.update!(prefs: {'thisisme' => true}),
                      "OTHER can't update its own prefs")
       end
     end
@@ -382,7 +382,7 @@ class PermissionTest < ActiveSupport::TestCase
     set_user_from_auth :rominiadmin
     ob = Collection.create!
     assert_raises ArvadosModel::PermissionDeniedError, "changed owner to unwritable user" do
-      ob.update_attributes!(owner_uuid: users(:active).uuid)
+      ob.update!(owner_uuid: users(:active).uuid)
     end
   end
 
@@ -397,7 +397,7 @@ class PermissionTest < ActiveSupport::TestCase
     set_user_from_auth :rominiadmin
     ob = Collection.create!
     assert_raises ArvadosModel::PermissionDeniedError, "changed owner to unwritable group" do
-      ob.update_attributes!(owner_uuid: groups(:aproject).uuid)
+      ob.update!(owner_uuid: groups(:aproject).uuid)
     end
   end
 

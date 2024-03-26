@@ -21,7 +21,7 @@ import {
 } from 'views-components/data-explorer/renderers';
 import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
-import { getInitialResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
+import { getInitialSearchTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { SearchResultsPanelProps } from "./search-results-panel";
 import { Routes } from 'routes/routes';
 import { Link } from 'react-router-dom';
@@ -69,7 +69,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         name: SearchResultsPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sort: {direction: SortDirection.NONE, field: "name"},
+        sort: { direction: SortDirection.NONE, field: "name" },
         filters: createTree(),
         render: (uuid: string) => <ResourceName uuid={uuid} />
     },
@@ -84,7 +84,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         name: SearchResultsPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        filters: getInitialResourceTypeFilters(),
+        filters: getInitialSearchTypeFilters(),
         render: (uuid: string) => <ResourceType uuid={uuid} />,
     },
     {
@@ -105,7 +105,7 @@ export const searchResultsPanelColumns: DataColumns<string, GroupContentsResourc
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sort: {direction: SortDirection.DESC, field: "modifiedAt"},
+        sort: { direction: SortDirection.DESC, field: "modifiedAt" },
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
@@ -130,8 +130,8 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                         const clusterId = searchUuid.split('-')[0];
                         const serviceType = camelCase(itemKind?.replace('arvados#', ''));
                         const service = Object.values(servicesProvider.getServices())
-                            .filter(({resourceType}) => !!resourceType)
-                            .find(({resourceType}) => camelCase(resourceType).indexOf(serviceType) > -1);
+                            .filter(({ resourceType }) => !!resourceType)
+                            .find(({ resourceType }) => camelCase(resourceType).indexOf(serviceType) > -1);
                         const sessions = getSearchSessions(clusterId, props.sessions);
 
                         if (sessions.length > 0) {
@@ -150,35 +150,35 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                 }
             })();
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
         const onItemClick = useCallback((uuid) => {
             setSelectedItem(uuid);
             props.onItemClick(uuid);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        },[props.onItemClick]);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [props.onItemClick]);
 
         return <span data-cy='search-results' className={props.classes.searchResults}>
             <DataExplorer
-            id={SEARCH_RESULTS_PANEL_ID}
-            onRowClick={onItemClick}
-            onRowDoubleClick={props.onItemDoubleClick}
-            onContextMenu={props.onContextMenu}
-            contextMenuColumn={false}
-            elementPath={`/ ${itemPath.reverse().join(' / ')}`}
-            hideSearchInput
-            title={
-                <div>
-                    {loggedIn.length === 1 ?
-                        <span>Searching local cluster <ResourceCluster uuid={props.localCluster} /></span>
-                        : <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}>
-                            <a href={props.remoteHostsConfig[ss.clusterId] && props.remoteHostsConfig[ss.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={ss.clusterId} /></a>
-                        </span>)}</span>}
-                    {loggedIn.length === 1 && props.localCluster !== homeCluster ?
-                        <span>To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span>
-                        : <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>}
-                </div >
-            }
-        /></span>;
+                id={SEARCH_RESULTS_PANEL_ID}
+                onRowClick={onItemClick}
+                onRowDoubleClick={props.onItemDoubleClick}
+                onContextMenu={props.onContextMenu}
+                contextMenuColumn={false}
+                elementPath={`/ ${itemPath.reverse().join(' / ')}`}
+                hideSearchInput
+                title={
+                    <div>
+                        {loggedIn.length === 1 ?
+                            <span>Searching local cluster <ResourceCluster uuid={props.localCluster} /></span>
+                            : <span>Searching clusters: {loggedIn.map((ss) => <span key={ss.clusterId}>
+                                <a href={props.remoteHostsConfig[ss.clusterId] && props.remoteHostsConfig[ss.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={ss.clusterId} /></a>
+                            </span>)}</span>}
+                        {loggedIn.length === 1 && props.localCluster !== homeCluster ?
+                            <span>To search multiple clusters, <a href={props.remoteHostsConfig[homeCluster] && props.remoteHostsConfig[homeCluster].workbench2Url}> start from your home Workbench.</a></span>
+                            : <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>}
+                    </div >
+                }
+            /></span>;
     });

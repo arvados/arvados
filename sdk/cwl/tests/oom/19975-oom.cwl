@@ -8,7 +8,7 @@ $namespaces:
   arv: "http://arvados.org/cwl#"
 hints:
   arv:OutOfMemoryRetry:
-    memoryRetryMultipler: 2
+    memoryRetryMultiplier: 2
   ResourceRequirement:
     ramMin: 256
   arv:APIRequirement: {}

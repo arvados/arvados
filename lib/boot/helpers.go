@@ -45,7 +45,7 @@ func (super *Supervisor) ClientsWithToken(clusterID, token string) (context.Cont
 // communicating with the cluster on behalf of the 'example' user.
 func (super *Supervisor) UserClients(clusterID string, rootctx context.Context, c *check.C, conn *rpc.Conn, authEmail string, activate bool) (context.Context, *arvados.Client, *keepclient.KeepClient, arvados.User) {
 	login, err := conn.UserSessionCreate(rootctx, rpc.UserSessionCreateOptions{
-		ReturnTo: ",https://example.com",
+		ReturnTo: ",https://controller.api.client.invalid",
 		AuthInfo: rpc.UserSessionAuthInfo{
 			Email:     authEmail,
 			FirstName: "Example",

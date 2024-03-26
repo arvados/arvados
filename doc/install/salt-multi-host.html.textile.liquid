@@ -233,10 +233,10 @@ The installer will set up the Arvados services on your machines.  Here is the de
 # KEEPSTORE nodes (at least 1 if using S3 as a Keep backend, else 2)
 ## arvados keepstore   (recommendend hostnames @keep0.${DOMAIN}@ and @keep1.${DOMAIN}@)
 # WORKBENCH node
-## arvados workbench   (recommendend hostname @workbench.${DOMAIN}@)
-## arvados workbench2  (recommendend hostname @workbench2.${DOMAIN}@)
-## arvados webshell    (recommendend hostname @webshell.${DOMAIN}@)
-## arvados websocket   (recommendend hostname @ws.${DOMAIN}@)
+## arvados legacy workbench URLs   (recommendend hostname @workbench.${DOMAIN}@)
+## arvados workbench2              (recommendend hostname @workbench2.${DOMAIN}@)
+## arvados webshell                (recommendend hostname @webshell.${DOMAIN}@)
+## arvados websocket               (recommendend hostname @ws.${DOMAIN}@)
 ## arvados cloud dispatcher
 ## arvados keepbalance
 ## arvados keepproxy   (recommendend hostname @keep.${DOMAIN}@)
@@ -284,7 +284,6 @@ BLOB_SIGNING_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 MANAGEMENT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 SYSTEM_ROOT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ANONYMOUS_USER_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-WORKBENCH_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 DATABASE_PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 </code></pre>
 # Set @DATABASE_PASSWORD@ to a random string (unless you "already have a database":#ext-database then you should set it to that database's password)
@@ -409,13 +408,7 @@ The installer records log files for each deployment.
 
 Most service logs go to @/var/log/syslog@.
 
-The logs for Rails API server and for Workbench can be found in
-
-@/var/www/arvados-api/current/log/production.log@
-and
-@/var/www/arvados-workbench/current/log/production.log@
-
-on the appropriate instances.
+The logs for Rails API server can be found in @/var/www/arvados-api/current/log/production.log@ on the appropriate instance(s).
 
 Workbench 2 is a client-side Javascript application.  If you are having trouble loading Workbench 2, check the browser's developer console (this can be found in "Tools &rarr; Developer Tools").
 

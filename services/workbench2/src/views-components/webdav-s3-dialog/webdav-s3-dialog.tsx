@@ -170,7 +170,7 @@ export const WebDavS3InfoDialog = compose(
 
                     <DetailsAttribute
                         label='Internet address'
-                        value={<a href={winDav.toString()} target="_blank" rel="noopener noreferrer">{winDav.toString()}</a>}
+                        value={<a href={winDav.toString()} target="_blank" rel="noopener">{winDav.toString()}</a>}
                         copyValue={winDav.toString()} />
 
                     <DetailsAttribute
@@ -202,7 +202,7 @@ export const WebDavS3InfoDialog = compose(
                 <TabPanel index={0} value={activeTab}>
                     <DetailsAttribute
                         label='Server'
-                        value={<a href={cyberDavStr} target="_blank" rel="noopener noreferrer">{cyberDavStr}</a>}
+                        value={<a href={cyberDavStr} target="_blank" rel="noopener">{cyberDavStr}</a>}
                         copyValue={cyberDavStr} />
 
                     <DetailsAttribute

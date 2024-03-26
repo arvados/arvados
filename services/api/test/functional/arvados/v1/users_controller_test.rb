@@ -68,7 +68,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "respond 401 if given token exists but user record is missing" do
     authorize_with :valid_token_deleted_user
-    get :current, {format: :json}
+    get :current, format: :json
     assert_response 401
   end
 
@@ -889,7 +889,7 @@ The Arvados team.
    ['dst', :project_viewer_trustedclient]].each do |which_scoped, auth|
     test "refuse to merge with scoped #{which_scoped} token" do
       act_as_system_user do
-        api_client_authorizations(auth).update_attributes(scopes: ["GET /", "POST /", "PUT /"])
+        api_client_authorizations(auth).update(scopes: ["GET /", "POST /", "PUT /"])
       end
       authorize_with(:active_trustedclient)
       post(:merge, params: {
@@ -1043,11 +1043,15 @@ The Arvados team.
     existinguuid = 'remot-tpzed-foobarbazwazqux'
     newuuid = 'remot-tpzed-newnarnazwazqux'
     unchanginguuid = 'remot-tpzed-nochangingattrs'
+    conflictinguuid1 = 'remot-tpzed-conflictingnam1'
+    conflictinguuid2 = 'remot-tpzed-conflictingnam2'
     act_as_system_user do
       User.create!(uuid: existinguuid, email: 'root@existing.example.com')
       User.create!(uuid: unchanginguuid, email: 'root@unchanging.example.com', prefs: {'foo' => {'bar' => 'baz'}})
     end
     assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
+
+    Rails.configuration.Login.LoginCluster = 'remot'
 
     authorize_with(:admin)
     patch(:batch_update,
@@ -1059,15 +1063,28 @@ The Arvados team.
                 'is_active' => true,
                 'is_admin' => true,
                 'prefs' => {'foo' => 'bar'},
+                'is_invited' => true
               },
               newuuid => {
                 'first_name' => 'noot',
                 'email' => 'root@remot.example.com',
                 'username' => '',
+                'is_invited' => true
               },
               unchanginguuid => {
                 'email' => 'root@unchanging.example.com',
                 'prefs' => {'foo' => {'bar' => 'baz'}},
+                'is_invited' => true
+              },
+              conflictinguuid1 => {
+                'email' => 'root@conflictingname1.example.com',
+                'username' => 'active',
+                'is_invited' => true
+              },
+              conflictinguuid2 => {
+                'email' => 'root@conflictingname2.example.com',
+                'username' => 'federatedactive',
+                'is_invited' => true
               },
             }})
     assert_response(:success)
@@ -1084,7 +1101,38 @@ The Arvados team.
     assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
   end
 
-  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
+  test 'batch update does not produce spurious log events' do
+    # test for bug #21304
+
+    existinguuid = 'remot-tpzed-foobarbazwazqux'
+    act_as_system_user do
+      User.create!(uuid: existinguuid,
+                   first_name: 'root',
+                   is_active: true,
+                  )
+    end
+    assert_equal(1, Log.where(object_uuid: existinguuid).count)
+
+    Rails.configuration.Login.LoginCluster = 'remot'
+
+    authorize_with(:admin)
+    patch(:batch_update,
+          params: {
+            updates: {
+              existinguuid => {
+                'first_name' => 'root',
+                'email' => '',
+                'username' => '',
+                'is_active' => true,
+                'is_invited' => true
+              },
+            }})
+    assert_response(:success)
+
+    assert_equal(1, Log.where(object_uuid: existinguuid).count)
+  end
+
+  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "is_admin", "is_invited", "email", "first_name",
                          "last_name", "username", "can_write", "can_manage"].sort
 
   def check_non_admin_index

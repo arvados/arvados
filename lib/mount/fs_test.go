@@ -9,6 +9,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/arvados/cgofuse/fuse"
 	check "gopkg.in/check.v1"
@@ -37,6 +38,7 @@ func (*FSSuite) TestOpendir(c *check.C) {
 	var fs fuse.FileSystemInterface = &keepFS{
 		Client:     client,
 		KeepClient: kc,
+		Logger:     ctxlog.TestLogger(c),
 	}
 	fs.Init()
 	errc, fh := fs.Opendir("/by_id")

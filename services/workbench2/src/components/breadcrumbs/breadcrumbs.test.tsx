@@ -77,7 +77,7 @@ describe("<Breadcrumbs />", () => {
                 </MuiThemeProvider>
             </Provider>);
         breadcrumbs.find(Button).at(1).simulate('click');
-        expect(onClick).toBeCalledWith(items[1]);
+        expect(onClick).toHaveBeenCalledWith(expect.any(Function), items[1]);
     });
 
 });

@@ -22,7 +22,7 @@ import (
 // load at the cost of increased under light load.
 const queuedContainersTarget = 100
 
-type typeChooser func(*arvados.Container) (arvados.InstanceType, error)
+type typeChooser func(*arvados.Container) ([]arvados.InstanceType, error)
 
 // An APIClient performs Arvados API requests. It is typically an
 // *arvados.Client.
@@ -36,9 +36,9 @@ type QueueEnt struct {
 	// The container to run. Only the UUID, State, Priority,
 	// RuntimeConstraints, ContainerImage, SchedulingParameters,
 	// and CreatedAt fields are populated.
-	Container    arvados.Container    `json:"container"`
-	InstanceType arvados.InstanceType `json:"instance_type"`
-	FirstSeenAt  time.Time            `json:"first_seen_at"`
+	Container     arvados.Container      `json:"container"`
+	InstanceTypes []arvados.InstanceType `json:"instance_types"`
+	FirstSeenAt   time.Time              `json:"first_seen_at"`
 }
 
 // String implements fmt.Stringer by returning the queued container's
@@ -252,7 +252,7 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		logger.WithError(err).Warn("error getting mounts")
 		return
 	}
-	it, err := cq.chooseType(&ctr)
+	types, err := cq.chooseType(&ctr)
 
 	// Avoid wasting memory on a large Mounts attr (we don't need
 	// it after choosing type).
@@ -304,13 +304,20 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		}()
 		return
 	}
+	typeNames := ""
+	for _, it := range types {
+		if typeNames != "" {
+			typeNames += ", "
+		}
+		typeNames += it.Name
+	}
 	cq.logger.WithFields(logrus.Fields{
 		"ContainerUUID": ctr.UUID,
 		"State":         ctr.State,
 		"Priority":      ctr.Priority,
-		"InstanceType":  it.Name,
+		"InstanceTypes": typeNames,
 	}).Info("adding container to queue")
-	cq.current[uuid] = QueueEnt{Container: ctr, InstanceType: it, FirstSeenAt: time.Now()}
+	cq.current[uuid] = QueueEnt{Container: ctr, InstanceTypes: types, FirstSeenAt: time.Now()}
 }
 
 // Lock acquires the dispatch lock for the given container.
@@ -577,7 +584,7 @@ func (cq *Queue) runMetrics(reg *prometheus.Registry) {
 		}
 		ents, _ := cq.Entries()
 		for _, ent := range ents {
-			count[entKey{ent.Container.State, ent.InstanceType.Name}]++
+			count[entKey{ent.Container.State, ent.InstanceTypes[0].Name}]++
 		}
 		for k, v := range count {
 			mEntries.WithLabelValues(string(k.state), k.inst).Set(float64(v))

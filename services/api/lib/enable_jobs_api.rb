@@ -47,7 +47,7 @@ def check_enable_legacy_jobs_api
 
   if Rails.configuration.Containers.JobsAPI.Enable == "false" ||
      (Rails.configuration.Containers.JobsAPI.Enable == "auto" &&
-      Job.count == 0)
+      ActiveRecord::Base.connection.select_value("SELECT COUNT(*) FROM jobs LIMIT 1") == 0)
     Rails.configuration.API.DisabledAPIs.merge! Disable_jobs_api_method_list
   end
 end

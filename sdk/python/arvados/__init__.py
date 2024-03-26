@@ -1,42 +1,49 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
+"""Arvados Python SDK
 
-from __future__ import print_function
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-import bz2
-import fcntl
-import hashlib
-import http.client
-import httplib2
-import json
+This module provides the entire Python SDK for Arvados. The most useful modules
+include:
+
+* arvados.api - After you `import arvados`, you can call `arvados.api` as a
+  shortcut to the client constructor function `arvados.api.api`.
+
+* arvados.collection - The `arvados.collection.Collection` class provides a
+  high-level interface to read and write collections. It coordinates sending
+  data to and from Keep, and synchronizing updates with the collection object.
+
+* arvados.util - Utility functions to use mostly in conjunction with the API
+  client object and the results it returns.
+
+Other submodules provide lower-level functionality.
+"""
+
 import logging as stdliblog
 import os
-import pprint
-import re
-import string
 import sys
-import time
 import types
-import zlib
 
-if sys.version_info >= (3, 0):
-    from collections import UserDict
-else:
-    from UserDict import UserDict
+from collections import UserDict
 
-from .api import api, api_from_config, http_cache
+from . import api, errors, util
+from .api import api_from_config, http_cache
 from .collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
 from arvados.keep import *
 from arvados.stream import *
 from .arvfile import StreamFileReader
 from .logging import log_format, log_date_format, log_handler
 from .retry import RetryLoop
-import arvados.errors as errors
-import arvados.util as util
+
+# Previous versions of the PySDK used to say `from .api import api`.  This
+# made it convenient to call the API client constructor, but difficult to
+# access the rest of the `arvados.api` module. The magic below fixes that
+# bug while retaining backwards compatibility: `arvados.api` is now the
+# module and you can import it normally, but we make that module callable so
+# all the existing code that says `arvados.api('v1', ...)` still works.
+class _CallableAPIModule(api.__class__):
+    __call__ = staticmethod(api.api)
+api.__class__ = _CallableAPIModule
 
 # Override logging module pulled in via `from ... import *`
 # so users can `import arvados.logging`.

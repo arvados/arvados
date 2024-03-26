@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -33,24 +34,29 @@ var Command cmd.Handler = &installCommand{}
 const goversion = "1.20.6"
 
 const (
-	rubyversion             = "2.7.7"
-	bundlerversion          = "2.2.19"
-	singularityversion      = "3.10.4"
-	pjsversion              = "1.9.8"
-	geckoversion            = "0.24.0"
-	gradleversion           = "5.3.1"
-	nodejsversion           = "v12.22.12"
-	devtestDatabasePassword = "insecure_arvados_test"
+	defaultRubyVersion        = "3.2.2"
+	defaultBundlerVersion     = "2.2.19"
+	defaultSingularityVersion = "3.10.4"
+	pjsversion                = "1.9.8"
+	geckoversion              = "0.24.0"
+	gradleversion             = "5.3.1"
+	defaultNodejsVersion      = "14.21.3"
+	devtestDatabasePassword   = "insecure_arvados_test"
 )
 
 //go:embed arvados.service
 var arvadosServiceFile []byte
 
 type installCommand struct {
-	ClusterType    string
-	SourcePath     string
-	PackageVersion string
-	EatMyData      bool
+	ClusterType        string
+	SourcePath         string
+	Commit             string
+	PackageVersion     string
+	RubyVersion        string
+	BundlerVersion     string
+	SingularityVersion string
+	NodejsVersion      string
+	EatMyData          bool
 }
 
 func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -71,13 +77,26 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&inst.ClusterType, "type", "production", "cluster `type`: development, test, production, or package")
 	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
+	flags.StringVar(&inst.Commit, "commit", "", "source commit `hash` to embed (blank means use 'git log' or all-zero placeholder)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
+	flags.StringVar(&inst.RubyVersion, "ruby-version", defaultRubyVersion, "Ruby `version` to install (do not override in production mode)")
+	flags.StringVar(&inst.BundlerVersion, "bundler-version", defaultBundlerVersion, "Bundler `version` to install (do not override in production mode)")
+	flags.StringVar(&inst.SingularityVersion, "singularity-version", defaultSingularityVersion, "Singularity `version` to install (do not override in production mode)")
+	flags.StringVar(&inst.NodejsVersion, "nodejs-version", defaultNodejsVersion, "Nodejs `version` to install (not applicable in production mode)")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+	}
+
+	if inst.Commit == "" {
+		if commit, err := exec.Command("env", "-C", inst.SourcePath, "git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil {
+			inst.Commit = strings.TrimSpace(string(commit))
+		} else {
+			inst.Commit = "0000000000000000000000000000000000000000"
+		}
 	}
 
 	var dev, test, prod, pkg bool
@@ -98,6 +117,23 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	if prod {
 		err = errors.New("production install is not yet implemented")
 		return 1
+	}
+
+	if ok, _ := regexp.MatchString(`^\d\.\d+\.\d+$`, inst.RubyVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -ruby-version\n", inst.RubyVersion)
+		return 2
+	}
+	if ok, _ := regexp.MatchString(`^\d`, inst.BundlerVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -bundler-version\n", inst.BundlerVersion)
+		return 2
+	}
+	if ok, _ := regexp.MatchString(`^\d`, inst.SingularityVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -singularity-version\n", inst.SingularityVersion)
+		return 2
+	}
+	if ok, _ := regexp.MatchString(`^\d`, inst.NodejsVersion); !ok {
+		fmt.Fprintf(stderr, "invalid argument %q for -nodejs-version\n", inst.NodejsVersion)
+		return 2
 	}
 
 	osv, err := identifyOS()
@@ -154,6 +190,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jre-headless",
 			"gettext",
 			"libattr1-dev",
+			"libffi-dev",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests
 			"libgnutls28-dev",
@@ -164,6 +201,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libssl-dev",
 			"libxml2-dev",
 			"libxslt1-dev",
+			"libyaml-dev",
 			"linkchecker",
 			"lsof",
 			"make",
@@ -197,6 +235,10 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			} else {
 				pkgs = append(pkgs, "firefox")
 			}
+			if osv.Debian && osv.Major >= 11 {
+				// not available in Debian <11
+				pkgs = append(pkgs, "s3cmd")
+			}
 		}
 		if dev || test {
 			pkgs = append(pkgs,
@@ -206,13 +248,12 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				"gnupg")          // docker install recipe
 		}
 		switch {
-		case osv.Debian && osv.Major >= 11:
-			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev")
-		case osv.Debian && osv.Major >= 10:
+		case osv.Debian && osv.Major >= 10,
+			osv.Ubuntu && osv.Major >= 22:
 			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev")
 		case osv.Debian || osv.Ubuntu:
 			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev")
-		case osv.Centos:
+		case osv.RedHat:
 			pkgs = append(pkgs, "gcc", "gcc-c++", "libcurl-devel", "postgresql-devel")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get")
@@ -236,8 +277,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		} else if osv.Debian {
 			var codename string
 			switch osv.Major {
-			case 10:
-				codename = "buster"
 			case 11:
 				codename = "bullseye"
 			case 12:
@@ -249,7 +288,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			err = inst.runBash(`
 rm -f /usr/share/keyrings/docker-archive-keyring.gpg
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ `+codename+` stable' | \
+echo 'deb [arch=`+runtime.GOARCH+` signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ `+codename+` stable' | \
     tee /etc/apt/sources.list.d/docker.list
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install docker-ce
@@ -294,18 +333,24 @@ fi
 			return 1
 		}
 	}
-	rubymajorversion := rubyversion[:strings.LastIndex(rubyversion, ".")]
-	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
-		logger.Print("ruby " + rubyversion + " already installed")
+	rubyminorversion := inst.RubyVersion[:strings.LastIndex(inst.RubyVersion, ".")]
+	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+inst.RubyVersion)) {
+		logger.Print("ruby " + inst.RubyVersion + " already installed")
 	} else {
 		err = inst.runBash(`
+rubyversion="`+inst.RubyVersion+`"
+rubyminorversion="`+rubyminorversion+`"
 tmp="$(mktemp -d)"
 trap 'rm -r "${tmp}"' ERR EXIT
-wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/`+rubymajorversion+`/ruby-`+rubyversion+`.tar.gz | tar -C "${tmp}" -xzf -
-cd "${tmp}/ruby-`+rubyversion+`"
+wget --progress=dot:giga -O- "https://cache.ruby-lang.org/pub/ruby/$rubyminorversion/ruby-$rubyversion.tar.gz" | tar -C "${tmp}" -xzf -
+cd "${tmp}/ruby-$rubyversion"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
+rm -f /var/lib/arvados/bin/erb
 make install
+if [[ "$rubyversion" > "3" ]]; then
+  /var/lib/arvados/bin/gem update --no-document --system 3.4.21
+fi
 /var/lib/arvados/bin/gem install bundler --no-document
 `, stdout, stderr)
 		if err != nil {
@@ -320,7 +365,7 @@ make install
 			err = inst.runBash(`
 cd /tmp
 rm -rf /var/lib/arvados/go/
-wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-`+runtime.GOARCH+`.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
@@ -330,32 +375,6 @@ ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 	}
 
 	if !prod && !pkg {
-		if havepjsversion, err := exec.Command("/usr/local/bin/phantomjs", "--version").CombinedOutput(); err == nil && string(havepjsversion) == "1.9.8\n" {
-			logger.Print("phantomjs " + pjsversion + " already installed")
-		} else {
-			err = inst.runBash(`
-PJS=phantomjs-`+pjsversion+`-linux-x86_64
-wget --progress=dot:giga -O- https://cache.arvados.org/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
-ln -sfv /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		if havegeckoversion, err := exec.Command("/usr/local/bin/geckodriver", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegeckoversion), " "+geckoversion+" ") {
-			logger.Print("geckodriver " + geckoversion + " already installed")
-		} else {
-			err = inst.runBash(`
-GD=v`+geckoversion+`
-wget --progress=dot:giga -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
-ln -sfv /var/lib/arvados/bin/geckodriver /usr/local/bin/
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
 		if havegradleversion, err := exec.Command("/usr/local/bin/gradle", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegradleversion), "Gradle "+gradleversion+"\n") {
 			logger.Print("gradle " + gradleversion + " already installed")
 		} else {
@@ -373,11 +392,11 @@ rm ${zip}
 			}
 		}
 
-		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
-			logger.Print("singularity " + singularityversion + " already installed")
+		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), inst.SingularityVersion) {
+			logger.Print("singularity " + inst.SingularityVersion + " already installed")
 		} else if dev || test {
 			err = inst.runBash(`
-S=`+singularityversion+`
+S=`+inst.SingularityVersion+`
 tmp=/var/lib/arvados/tmp/singularity
 trap "rm -r ${tmp}" ERR EXIT
 cd /var/lib/arvados/tmp
@@ -522,15 +541,23 @@ setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
 		}
 	}
 
+	var njsArch string
+	switch runtime.GOARCH {
+	case "amd64":
+		njsArch = "x64"
+	default:
+		njsArch = runtime.GOARCH
+	}
+
 	if !prod {
-		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
-			logger.Print("nodejs " + nodejsversion + " already installed")
+		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == "v"+inst.NodejsVersion+"\n" {
+			logger.Print("nodejs " + inst.NodejsVersion + " already installed")
 		} else {
 			err = inst.runBash(`
-NJS=`+nodejsversion+`
-rm -rf /var/lib/arvados/node-*-linux-x64
-wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
-ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
+NJS=v`+inst.NodejsVersion+`
+rm -rf /var/lib/arvados/node-*-linux-`+njsArch+`
+wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-`+njsArch+`.tar.xz | sudo tar -C /var/lib/arvados -xJf -
+ln -sfv /var/lib/arvados/node-${NJS}-linux-`+njsArch+`/bin/{node,npm} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -542,7 +569,7 @@ ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		} else {
 			err = inst.runBash(`
 npm install -g yarn
-ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
+ln -sfv /var/lib/arvados/node-v`+inst.NodejsVersion+`-linux-`+njsArch+`/bin/{yarn,yarnpkg} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -557,7 +584,16 @@ ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /us
 			"cmd/arvados-server",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
+			// -buildvcs=false here avoids a fatal "error
+			// obtaining VCS status" when git refuses to
+			// run (for example) as root in a docker
+			// container using a non-root-owned git tree
+			// mounted from the host -- as in
+			// "arvados-package build".
+			cmd := exec.Command("go", "install", "-buildvcs=false",
+				"-ldflags", "-s -w"+
+					" -X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+
+					" -X git.arvados.org/arvados.git/lib/cmd.commit="+inst.Commit)
 			cmd.Env = append(cmd.Env, os.Environ()...)
 			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
@@ -592,94 +628,103 @@ v=/var/lib/arvados/lib/python
 tmp=/var/lib/arvados/tmp/python
 python3 -m venv "$v"
 . "$v/bin/activate"
-pip3 install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
+pip3 install --no-cache-dir 'setuptools>=68' 'pip>=20'
 export ARVADOS_BUILDING_VERSION="`+inst.PackageVersion+`"
 for src in "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"; do
   rsync -a --delete-after "$src/" "$tmp/"
-  cd "$tmp"
-  python3 setup.py install
-  cd ..
+  env -C "$tmp" python3 setup.py build
+  pip3 install "$tmp"
   rm -rf "$tmp"
 done
 `, stdout, stderr); err != nil {
 			return 1
 		}
 
-		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
-		for dstdir, srcdir := range map[string]string{
-			"railsapi":   "services/api",
-			"workbench1": "apps/workbench",
+		// Install RailsAPI to /var/lib/arvados/railsapi/
+		fmt.Fprintln(stderr, "building railsapi...")
+		cmd = exec.Command("rsync",
+			"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
+			"--exclude", "/coverage",
+			"--exclude", "/log",
+			"--exclude", "/node_modules",
+			"--exclude", "/tmp",
+			"--exclude", "/public/assets",
+			"--exclude", "/vendor",
+			"--exclude", "/config/environments",
+			"./", "/var/lib/arvados/railsapi/")
+		cmd.Dir = filepath.Join(inst.SourcePath, "services", "api")
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return 1
+		}
+		for _, cmdline := range [][]string{
+			{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
+			{"touch", "log/production.log"},
+			{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + inst.BundlerVersion},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU())},
+
+			{"chown", "www-data:www-data", ".", "public/assets"},
+			// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
+			{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
+			{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
+			{"chown", "root:root", "."},
+			{"chown", "-R", "root:root", "public/assets", "vendor"},
+
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
+			{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
 		} {
-			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("rsync",
-				"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
-				"--exclude", "/coverage",
-				"--exclude", "/log",
-				"--exclude", "/node_modules",
-				"--exclude", "/tmp",
-				"--exclude", "/public/assets",
-				"--exclude", "/vendor",
-				"--exclude", "/config/environments",
-				"./", "/var/lib/arvados/"+dstdir+"/")
-			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
+			if cmdline[len(cmdline)-2] == "rake" {
+				continue
+			}
+			cmd = exec.Command(cmdline[0], cmdline[1:]...)
+			cmd.Dir = "/var/lib/arvados/railsapi"
 			cmd.Stdout = stdout
 			cmd.Stderr = stderr
+			fmt.Fprintf(stderr, "... %s\n", cmd.Args)
 			err = cmd.Run()
 			if err != nil {
 				return 1
 			}
-			for _, cmdline := range [][]string{
-				{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
-				{"touch", "log/production.log"},
-				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU())},
-
-				{"chown", "www-data:www-data", ".", "public/assets"},
-				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
-				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
-				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
-				{"chown", "root:root", "."},
-				{"chown", "-R", "root:root", "public/assets", "vendor"},
-
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
-			} {
-				if cmdline[len(cmdline)-2] == "rake" && dstdir != "workbench1" {
-					continue
-				}
-				cmd = exec.Command(cmdline[0], cmdline[1:]...)
-				cmd.Dir = "/var/lib/arvados/" + dstdir
-				cmd.Stdout = stdout
-				cmd.Stderr = stderr
-				fmt.Fprintf(stderr, "... %s\n", cmd.Args)
-				err = cmd.Run()
-				if err != nil {
-					return 1
-				}
-			}
-			cmd = exec.Command("sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "validate-install")
-			cmd.Dir = "/var/lib/arvados/" + dstdir
-			cmd.Stdout = stdout
-			cmd.Stderr = stderr
-			err = cmd.Run()
-			if err != nil && !strings.Contains(err.Error(), "exit status 2") {
-				// Exit code 2 indicates there were warnings (like
-				// "other passenger installations have been detected",
-				// which we can't expect to avoid) but no errors.
-				// Other non-zero exit codes (1, 9) indicate errors.
-				return 1
-			}
+		}
+		cmd = exec.Command("sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "validate-install")
+		cmd.Dir = "/var/lib/arvados/railsapi"
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil && !strings.Contains(err.Error(), "exit status 2") {
+			// Exit code 2 indicates there were warnings (like
+			// "other passenger installations have been detected",
+			// which we can't expect to avoid) but no errors.
+			// Other non-zero exit codes (1, 9) indicate errors.
+			return 1
 		}
 
-		// Install workbench2 app to /var/lib/arvados/workbench2/
+		// Install workbench2 app to
+		// /var/lib/arvados/workbench2/.
+		//
+		// We copy the source tree from the (possibly
+		// readonly) source tree into a temp dir because `yarn
+		// build` writes to {source-tree}/build/. When we
+		// upgrade to react-scripts >= 4.0.2 we may be able to
+		// build from the source dir and write directly to the
+		// final destination (using
+		// YARN_INSTALL_STATE_PATH=/dev/null
+		// BUILD_PATH=/var/lib/arvados/workbench2) instead of
+		// using two rsync steps here.
 		if err = inst.runBash(`
-cd `+inst.SourcePath+`/services/workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
-rsync -a --delete-after build/ /var/lib/arvados/workbench2/
+src="`+inst.SourcePath+`/services/workbench2"
+tmp=/var/lib/arvados/tmp/workbench2
+trap "rm -r ${tmp}" ERR EXIT
+dst=/var/lib/arvados/workbench2
+rsync -a --delete-after "$src/" "$tmp/"
+env -C "$tmp" VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+inst.Commit[:9]+`" yarn build
+rsync -a --delete-after "$tmp/build/" "$dst/"
 `, stdout, stderr); err != nil {
 			return 1
 		}
@@ -758,7 +803,7 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 type osversion struct {
 	Debian bool
 	Ubuntu bool
-	Centos bool
+	RedHat bool
 	Major  int
 }
 
@@ -796,10 +841,24 @@ func identifyOS() (osversion, error) {
 		osv.Ubuntu = true
 	case "debian":
 		osv.Debian = true
-	case "centos":
-		osv.Centos = true
 	default:
-		return osv, fmt.Errorf("unsupported ID in /etc/os-release: %q", kv["ID"])
+		idLikeMatched := false
+		for _, idLike := range strings.Split(kv["ID_LIKE"], " ") {
+			switch idLike {
+			case "debian":
+				osv.Debian = true
+				idLikeMatched = true
+			case "rhel":
+				osv.RedHat = true
+				idLikeMatched = true
+			}
+			if idLikeMatched {
+				break
+			}
+		}
+		if !idLikeMatched {
+			return osv, fmt.Errorf("no supported ID found in /etc/os-release")
+		}
 	}
 	vstr := kv["VERSION_ID"]
 	if i := strings.Index(vstr, "."); i > 0 {
@@ -860,7 +919,7 @@ func prodpkgs(osv osversion) []string {
 		return append(pkgs,
 			"mime-support", // keep-web
 		)
-	} else if osv.Centos {
+	} else if osv.RedHat {
 		return append(pkgs,
 			"fuse-libs", // services/fuse
 			"mailcap",   // keep-web

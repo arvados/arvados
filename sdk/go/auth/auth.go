@@ -54,13 +54,13 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 	// Load plain token from "Authorization: OAuth2 ..." header
 	// (typically used by smart API clients)
 	if toks := strings.SplitN(r.Header.Get("Authorization"), " ", 2); len(toks) == 2 && (toks[0] == "OAuth2" || toks[0] == "Bearer") {
-		a.Tokens = append(a.Tokens, toks[1])
+		a.Tokens = append(a.Tokens, strings.TrimSpace(toks[1]))
 	}
 
 	// Load base64-encoded token from "Authorization: Basic ..."
 	// header (typically used by git via credential helper)
 	if _, password, ok := r.BasicAuth(); ok {
-		a.Tokens = append(a.Tokens, password)
+		a.Tokens = append(a.Tokens, strings.TrimSpace(password))
 	}
 
 	// Load tokens from query string. It's generally not a good
@@ -76,7 +76,9 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 	// find/report decoding errors in a suitable way.
 	qvalues, _ := url.ParseQuery(r.URL.RawQuery)
 	if val, ok := qvalues["api_token"]; ok {
-		a.Tokens = append(a.Tokens, val...)
+		for _, token := range val {
+			a.Tokens = append(a.Tokens, strings.TrimSpace(token))
+		}
 	}
 
 	a.loadTokenFromCookie(r)
@@ -94,7 +96,7 @@ func (a *Credentials) loadTokenFromCookie(r *http.Request) {
 	if err != nil {
 		return
 	}
-	a.Tokens = append(a.Tokens, string(token))
+	a.Tokens = append(a.Tokens, strings.TrimSpace(string(token)))
 }
 
 // LoadTokensFromHTTPRequestBody loads credentials from the request
@@ -111,7 +113,7 @@ func (a *Credentials) LoadTokensFromHTTPRequestBody(r *http.Request) error {
 		return err
 	}
 	if t := r.PostFormValue("api_token"); t != "" {
-		a.Tokens = append(a.Tokens, t)
+		a.Tokens = append(a.Tokens, strings.TrimSpace(t))
 	}
 	return nil
 }

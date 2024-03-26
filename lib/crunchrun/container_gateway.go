@@ -220,7 +220,7 @@ func (gw *Gateway) runTunnel(addr string) error {
 		AuthSecret: gw.AuthSecret,
 	})
 	if err != nil {
-		return fmt.Errorf("error creating gateway tunnel: %s", err)
+		return fmt.Errorf("error creating gateway tunnel: %w", err)
 	}
 	mux, err := yamux.Client(tun.Conn, nil)
 	if err != nil {

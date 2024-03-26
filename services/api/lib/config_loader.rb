@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+# When loading YAML, deserialize :foo as ":foo", rather than raising
+# "Psych::DisallowedClass: Tried to load unspecified class: Symbol"
+class Psych::ScalarScanner
+  alias :orig_tokenize :tokenize
+  def tokenize string
+    return string if string =~ /^:[a-zA-Z]/
+    orig_tokenize(string)
+  end
+end
+
 module Psych
   module Visitors
     class YAMLTree < Psych::Visitors::Visitor
@@ -226,7 +236,7 @@ class ConfigLoader
       if erb
         yaml = ERB.new(yaml).result(binding)
       end
-      YAML.load(yaml, deserialize_symbols: false)
+      YAML.safe_load(yaml)
     else
       {}
     end

@@ -17,11 +17,12 @@ class Link < ArvadosModel
   before_update :apply_max_overlapping_permissions
   before_create :apply_max_overlapping_permissions
   after_update :delete_overlapping_permissions
-  after_update :call_update_permissions
-  after_create :call_update_permissions
+  after_update :call_update_permissions, :if => Proc.new { @need_update_permissions }
+  after_create :call_update_permissions, :if => Proc.new { @need_update_permissions }
   before_destroy :clear_permissions
   after_destroy :delete_overlapping_permissions
   after_destroy :check_permissions
+  before_save :check_need_update_permissions
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -189,11 +190,13 @@ class Link < ArvadosModel
     'can_manage' => 3,
   }
 
+  def check_need_update_permissions
+    @need_update_permissions = self.link_class == 'permission' && (name != name_was || new_record?)
+  end
+
   def call_update_permissions
-    if self.link_class == 'permission'
       update_permissions tail_uuid, head_uuid, PERM_LEVEL[name], self.uuid
       current_user.forget_cached_group_perms
-    end
   end
 
   def clear_permissions

@@ -23,8 +23,9 @@ import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 
 export interface ToplevelPickerProps {
-    currentUuid?: string;
+    currentUuids?: string[];
     pickerId: string;
+    cascadeSelection: boolean;
     includeCollections?: boolean;
     includeDirectories?: boolean;
     includeFiles?: boolean;
@@ -107,7 +108,13 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             componentDidMount() {
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
 
-                this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, this.props.currentUuid));
+                const preloadParams = this.props.currentUuids ? {
+                    selectedItemUuids: this.props.currentUuids,
+                    includeDirectories: !!this.props.includeDirectories,
+                    includeFiles: !!this.props.includeFiles,
+                    multi: !!this.props.showSelection,
+                } : undefined;
+                this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, preloadParams));
 
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue: "" }));
@@ -135,6 +142,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
                 const relatedTreePickers = getRelatedTreePickers(pickerId);
                 const p = {
+                    cascadeSelection: this.props.cascadeSelection,
                     includeCollections: this.props.includeCollections,
                     includeDirectories: this.props.includeDirectories,
                     includeFiles: this.props.includeFiles,

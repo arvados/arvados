@@ -217,13 +217,13 @@ class ArvadosModelTest < ActiveSupport::TestCase
     assert group.valid?, "group is not valid"
 
     # update 1
-    group.update_attributes!(name: "test create and update name 1")
+    group.update!(name: "test create and update name 1")
     results = Group.where(uuid: group.uuid)
     assert_equal "test create and update name 1", results.first.name, "Expected name to be updated to 1"
     updated_at_1 = results.first.updated_at.to_f
 
     # update 2
-    group.update_attributes!(name: "test create and update name 2")
+    group.update!(name: "test create and update name 2")
     results = Group.where(uuid: group.uuid)
     assert_equal "test create and update name 2", results.first.name, "Expected name to be updated to 2"
     updated_at_2 = results.first.updated_at.to_f
@@ -237,15 +237,15 @@ class ArvadosModelTest < ActiveSupport::TestCase
     c = Collection.create!(properties: {})
     assert_equal({}, c.properties)
 
-    c.update_attributes(properties: {'foo' => 'foo'})
+    c.update(properties: {'foo' => 'foo'})
     c.reload
     assert_equal({'foo' => 'foo'}, c.properties)
 
-    c.update_attributes(properties: nil)
+    c.update(properties: nil)
     c.reload
     assert_equal({}, c.properties)
 
-    c.update_attributes(properties: {foo: 'bar'})
+    c.update(properties: {foo: 'bar'})
     assert_equal({'foo' => 'bar'}, c.properties)
     c.reload
     assert_equal({'foo' => 'bar'}, c.properties)

@@ -91,19 +91,19 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal 34, c.file_size_total
 
       # Updating the manifest should change file stats
-      c.update_attributes(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt 0:34:foo2.txt\n")
+      c.update(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt 0:34:foo2.txt\n")
       assert c.valid?
       assert_equal 2, c.file_count
       assert_equal 68, c.file_size_total
 
       # Updating file stats and the manifest should use manifest values
-      c.update_attributes(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", file_count:10, file_size_total: 10)
+      c.update(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:34:foo.txt\n", file_count:10, file_size_total: 10)
       assert c.valid?
       assert_equal 1, c.file_count
       assert_equal 34, c.file_size_total
 
       # Updating just the file stats should be ignored
-      c.update_attributes(file_count: 10, file_size_total: 10)
+      c.update(file_count: 10, file_size_total: 10)
       assert c.valid?
       assert_equal 1, c.file_count
       assert_equal 34, c.file_size_total
@@ -166,7 +166,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal 1, c.version
       assert_equal false, c.preserve_version
       # Make a versionable update, it shouldn't create a new version yet
-      c.update_attributes!({'name' => 'bar'})
+      c.update!({'name' => 'bar'})
       c.reload
       assert_equal 'bar', c.name
       assert_equal 1, c.version
@@ -175,12 +175,12 @@ class CollectionTest < ActiveSupport::TestCase
       c.update_column('modified_at', fifteen_min_ago) # Update without validations/callbacks
       c.reload
       assert_equal fifteen_min_ago.to_i, c.modified_at.to_i
-      c.update_attributes!({'name' => 'baz'})
+      c.update!({'name' => 'baz'})
       c.reload
       assert_equal 'baz', c.name
       assert_equal 2, c.version
       # Make another update, no new version should be created
-      c.update_attributes!({'name' => 'foobar'})
+      c.update!({'name' => 'foobar'})
       c.reload
       assert_equal 'foobar', c.name
       assert_equal 2, c.version
@@ -197,7 +197,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_not_nil c.replication_confirmed_at
       assert_not_nil c.replication_confirmed
       # Make the versionable update
-      c.update_attributes!({'name' => 'foobarbaz'})
+      c.update!({'name' => 'foobarbaz'})
       c.reload
       assert_equal 'foobarbaz', c.name
       assert_equal 3, c.version
@@ -214,7 +214,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal 1, c.version
       assert_equal false, c.preserve_version
       # This update shouldn't produce a new version, as the idle time is not up
-      c.update_attributes!({
+      c.update!({
         'name' => 'bar'
       })
       c.reload
@@ -223,7 +223,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal false, c.preserve_version
       # This update should produce a new version, even if the idle time is not up
       # and also keep the preserve_version=true flag to persist it.
-      c.update_attributes!({
+      c.update!({
         'name' => 'baz',
         'preserve_version' => true
       })
@@ -234,7 +234,7 @@ class CollectionTest < ActiveSupport::TestCase
       # Make sure preserve_version is not disabled after being enabled, unless
       # a new version is created.
       # This is a non-versionable update
-      c.update_attributes!({
+      c.update!({
         'preserve_version' => false,
         'replication_desired' => 2
       })
@@ -243,7 +243,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal 2, c.replication_desired
       assert_equal true, c.preserve_version
       # This is a versionable update
-      c.update_attributes!({
+      c.update!({
         'preserve_version' => false,
         'name' => 'foobar'
       })
@@ -252,7 +252,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal false, c.preserve_version
       assert_equal 'foobar', c.name
       # Flipping only 'preserve_version' to true doesn't create a new version
-      c.update_attributes!({'preserve_version' => true})
+      c.update!({'preserve_version' => true})
       c.reload
       assert_equal 3, c.version
       assert_equal true, c.preserve_version
@@ -265,7 +265,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
       assert_equal false, c.preserve_version
       modified_at = c.modified_at.to_f
-      c.update_attributes!({'preserve_version' => true})
+      c.update!({'preserve_version' => true})
       c.reload
       assert_equal true, c.preserve_version
       assert_equal modified_at, c.modified_at.to_f,
@@ -285,7 +285,7 @@ class CollectionTest < ActiveSupport::TestCase
         assert_equal 1, c.version
 
         assert_raises(ActiveRecord::RecordInvalid) do
-          c.update_attributes!({
+          c.update!({
             name => new_value
           })
         end
@@ -302,14 +302,14 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
       assert_equal 1, c.version
       # Make changes so that a new version is created
-      c.update_attributes!({'name' => 'bar'})
+      c.update!({'name' => 'bar'})
       c.reload
       assert_equal 2, c.version
       assert_equal 2, Collection.where(current_version_uuid: c.uuid).count
       new_uuid = 'zzzzz-4zz18-somefakeuuidnow'
       assert_empty Collection.where(uuid: new_uuid)
       # Update UUID on current version, check that both collections point to it
-      c.update_attributes!({'uuid' => new_uuid})
+      c.update!({'uuid' => new_uuid})
       c.reload
       assert_equal new_uuid, c.uuid
       assert_equal 2, Collection.where(current_version_uuid: new_uuid).count
@@ -364,7 +364,7 @@ class CollectionTest < ActiveSupport::TestCase
         # Set up initial collection
         c = create_collection 'foo', Encoding::US_ASCII
         assert c.valid?
-        c.update_attributes!({'properties' => value_1})
+        c.update!({'properties' => value_1})
         c.reload
         assert c.changes.keys.empty?
         c.properties = value_2
@@ -386,7 +386,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
       original_version_modified_at = c.modified_at.to_f
       # Make changes so that a new version is created
-      c.update_attributes!({'name' => 'bar'})
+      c.update!({'name' => 'bar'})
       c.reload
       assert_equal 2, c.version
       # Get the old version
@@ -400,7 +400,7 @@ class CollectionTest < ActiveSupport::TestCase
       # Make update on current version so old version get the attribute synced;
       # its modified_at should not change.
       new_replication = 3
-      c.update_attributes!({'replication_desired' => new_replication})
+      c.update!({'replication_desired' => new_replication})
       c.reload
       assert_equal new_replication, c.replication_desired
       c_old.reload
@@ -441,7 +441,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?
       # Make changes so that a new version is created
-      c.update_attributes!({'name' => 'bar'})
+      c.update!({'name' => 'bar'})
       c.reload
       assert_equal 2, c.version
       # Get the old version
@@ -479,7 +479,7 @@ class CollectionTest < ActiveSupport::TestCase
         assert_not_equal first_val, c.attributes[attr]
         # Make changes so that a new version is created and a synced field is
         # updated on both
-        c.update_attributes!({'name' => 'bar', attr => first_val})
+        c.update!({'name' => 'bar', attr => first_val})
         c.reload
         assert_equal 2, c.version
         assert_equal first_val, c.attributes[attr]
@@ -487,7 +487,7 @@ class CollectionTest < ActiveSupport::TestCase
         assert_equal first_val, Collection.where(current_version_uuid: c.uuid, version: 1).first.attributes[attr]
         # Only make an update on the same synced field & check that the previously
         # created version also gets it.
-        c.update_attributes!({attr => second_val})
+        c.update!({attr => second_val})
         c.reload
         assert_equal 2, c.version
         assert_equal second_val, c.attributes[attr]
@@ -525,7 +525,7 @@ class CollectionTest < ActiveSupport::TestCase
 
         # Update attribute and check if version number should be incremented
         old_value = c.attributes[attr]
-        c.update_attributes!({attr => val})
+        c.update!({attr => val})
         assert_equal new_version_expected, c.version == 2
         assert_equal val, c.attributes[attr]
 
@@ -559,11 +559,11 @@ class CollectionTest < ActiveSupport::TestCase
       col2 = create_collection 'bar', Encoding::US_ASCII
       assert col2.valid?
       assert_equal 1, col2.version
-      col2.update_attributes({name: 'baz'})
+      col2.update({name: 'baz'})
       assert_equal 2, col2.version
 
       # Try to make col2 a past version of col1. It shouldn't be possible
-      col2.update_attributes({current_version_uuid: col1.uuid})
+      col2.update({current_version_uuid: col1.uuid})
       assert col2.invalid?
       col2.reload
       assert_not_equal col1.uuid, col2.current_version_uuid
@@ -725,10 +725,10 @@ class CollectionTest < ActiveSupport::TestCase
   test "storage_classes_desired cannot be empty" do
     act_as_user users(:active) do
       c = collections(:collection_owned_by_active)
-      c.update_attributes storage_classes_desired: ["hot"]
+      c.update storage_classes_desired: ["hot"]
       assert_equal ["hot"], c.storage_classes_desired
       assert_raise ArvadosModel::InvalidStateTransitionError do
-        c.update_attributes storage_classes_desired: []
+        c.update storage_classes_desired: []
       end
     end
   end
@@ -736,7 +736,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "storage classes lists should only contain non-empty strings" do
     c = collections(:storage_classes_desired_default_unconfirmed)
     act_as_user users(:admin) do
-      assert c.update_attributes(storage_classes_desired: ["default", "a_string"],
+      assert c.update(storage_classes_desired: ["default", "a_string"],
                                  storage_classes_confirmed: ["another_string"])
       [
         ["storage_classes_desired", ["default", 42]],
@@ -745,7 +745,7 @@ class CollectionTest < ActiveSupport::TestCase
         ["storage_classes_confirmed", [""]],
       ].each do |attr, val|
         assert_raise ArvadosModel::InvalidStateTransitionError do
-          assert c.update_attributes({attr => val})
+          assert c.update({attr => val})
         end
       end
     end
@@ -754,7 +754,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "storage_classes_confirmed* can be set by admin user" do
     c = collections(:storage_classes_desired_default_unconfirmed)
     act_as_user users(:admin) do
-      assert c.update_attributes(storage_classes_confirmed: ["default"],
+      assert c.update(storage_classes_confirmed: ["default"],
                                  storage_classes_confirmed_at: Time.now)
     end
   end
@@ -764,16 +764,16 @@ class CollectionTest < ActiveSupport::TestCase
       c = collections(:storage_classes_desired_default_unconfirmed)
       # Cannot set just one at a time.
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes storage_classes_confirmed: ["default"]
+        c.update storage_classes_confirmed: ["default"]
       end
       c.reload
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes storage_classes_confirmed_at: Time.now
+        c.update storage_classes_confirmed_at: Time.now
       end
       # Cannot set bot at once, either.
       c.reload
       assert_raise ArvadosModel::PermissionDeniedError do
-        assert c.update_attributes(storage_classes_confirmed: ["default"],
+        assert c.update(storage_classes_confirmed: ["default"],
                                    storage_classes_confirmed_at: Time.now)
       end
     end
@@ -784,15 +784,15 @@ class CollectionTest < ActiveSupport::TestCase
       c = collections(:storage_classes_desired_default_confirmed_default)
       # Cannot clear just one at a time.
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes storage_classes_confirmed: []
+        c.update storage_classes_confirmed: []
       end
       c.reload
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes storage_classes_confirmed_at: nil
+        c.update storage_classes_confirmed_at: nil
       end
       # Can clear both at once.
       c.reload
-      assert c.update_attributes(storage_classes_confirmed: [],
+      assert c.update(storage_classes_confirmed: [],
                                  storage_classes_confirmed_at: nil)
     end
   end
@@ -802,7 +802,7 @@ class CollectionTest < ActiveSupport::TestCase
       Rails.configuration.Collections.DefaultReplication = 2
       act_as_user users(:active) do
         c = collections(:replication_undesired_unconfirmed)
-        c.update_attributes replication_desired: ask
+        c.update replication_desired: ask
         assert_equal ask, c.replication_desired
       end
     end
@@ -811,7 +811,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "replication_confirmed* can be set by admin user" do
     c = collections(:replication_desired_2_unconfirmed)
     act_as_user users(:admin) do
-      assert c.update_attributes(replication_confirmed: 2,
+      assert c.update(replication_confirmed: 2,
                                  replication_confirmed_at: Time.now)
     end
   end
@@ -821,14 +821,14 @@ class CollectionTest < ActiveSupport::TestCase
       c = collections(:replication_desired_2_unconfirmed)
       # Cannot set just one at a time.
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes replication_confirmed: 1
+        c.update replication_confirmed: 1
       end
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes replication_confirmed_at: Time.now
+        c.update replication_confirmed_at: Time.now
       end
       # Cannot set both at once, either.
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes(replication_confirmed: 1,
+        c.update(replication_confirmed: 1,
                             replication_confirmed_at: Time.now)
       end
     end
@@ -839,15 +839,15 @@ class CollectionTest < ActiveSupport::TestCase
       c = collections(:replication_desired_2_confirmed_2)
       # Cannot clear just one at a time.
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes replication_confirmed: nil
+        c.update replication_confirmed: nil
       end
       c.reload
       assert_raise ArvadosModel::PermissionDeniedError do
-        c.update_attributes replication_confirmed_at: nil
+        c.update replication_confirmed_at: nil
       end
       # Can clear both at once.
       c.reload
-      assert c.update_attributes(replication_confirmed: nil,
+      assert c.update(replication_confirmed: nil,
                                  replication_confirmed_at: nil)
     end
   end
@@ -855,7 +855,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "clear replication_confirmed* when introducing a new block in manifest" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      assert c.update_attributes(manifest_text: collections(:user_agreement).signed_manifest_text_only_for_tests)
+      assert c.update(manifest_text: collections(:user_agreement).signed_manifest_text_only_for_tests)
       assert_nil c.replication_confirmed
       assert_nil c.replication_confirmed_at
     end
@@ -865,7 +865,7 @@ class CollectionTest < ActiveSupport::TestCase
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
       new_manifest = c.signed_manifest_text_only_for_tests.sub(':bar', ':foo')
-      assert c.update_attributes(manifest_text: new_manifest)
+      assert c.update(manifest_text: new_manifest)
       assert_equal 2, c.replication_confirmed
       assert_not_nil c.replication_confirmed_at
     end
@@ -882,7 +882,7 @@ class CollectionTest < ActiveSupport::TestCase
       # not, this test would pass without testing the relevant case):
       assert_operator new_manifest.length+40, :<, c.signed_manifest_text_only_for_tests.length
 
-      assert c.update_attributes(manifest_text: new_manifest)
+      assert c.update(manifest_text: new_manifest)
       assert_equal 2, c.replication_confirmed
       assert_not_nil c.replication_confirmed_at
     end
@@ -892,7 +892,7 @@ class CollectionTest < ActiveSupport::TestCase
     act_as_user users(:active) do
       t0 = db_current_time
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n", name: 'foo')
-      c.update_attributes! trash_at: (t0 + 1.hours)
+      c.update! trash_at: (t0 + 1.hours)
       c.reload
       sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text_only_for_tests)[1].to_i
       assert_operator sig_exp.to_i, :<=, (t0 + 1.hours).to_i
@@ -932,7 +932,7 @@ class CollectionTest < ActiveSupport::TestCase
       assert_not_empty c, 'Should be able to find live collection'
 
       # mark collection as expired
-      c.first.update_attributes!(trash_at: Time.new.strftime("%Y-%m-%d"))
+      c.first.update!(trash_at: Time.new.strftime("%Y-%m-%d"))
       c = Collection.readable_by(current_user).where(uuid: uuid)
       assert_empty c, 'Should not be able to find expired collection'
 
@@ -947,7 +947,7 @@ class CollectionTest < ActiveSupport::TestCase
     act_as_user users(:active) do
       t0 = db_current_time
       c = Collection.create!(manifest_text: '', name: 'foo')
-      c.update_attributes! trash_at: (t0 - 2.weeks)
+      c.update! trash_at: (t0 - 2.weeks)
       c.reload
       assert_operator c.trash_at, :>, t0
     end
@@ -1002,7 +1002,7 @@ class CollectionTest < ActiveSupport::TestCase
         else
           c = collections(fixture_name)
         end
-        updates_ok = c.update_attributes(updates)
+        updates_ok = c.update(updates)
         expect_valid = expect[:state] != :invalid
         assert_equal expect_valid, updates_ok, c.errors.full_messages.to_s
         case expect[:state]
@@ -1039,13 +1039,13 @@ class CollectionTest < ActiveSupport::TestCase
     start = db_current_time
     act_as_user users(:active) do
       c = Collection.create!(manifest_text: '', name: 'foo')
-      c.update_attributes!(trash_at: start + 86400.seconds)
+      c.update!(trash_at: start + 86400.seconds)
       assert_operator c.delete_at, :>=, start + (86400*22).seconds
       assert_operator c.delete_at, :<, start + (86400*22 + 30).seconds
       c.destroy
 
       c = Collection.create!(manifest_text: '', name: 'foo')
-      c.update_attributes!(is_trashed: true)
+      c.update!(is_trashed: true)
       assert_operator c.delete_at, :>=, start + (86400*21).seconds
     end
   end

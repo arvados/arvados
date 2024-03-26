@@ -218,8 +218,11 @@ configure_version() {
   # Make sure postgres doesn't try to use a pager.
   export PAGER=
   case "$RAILSPKG_DATABASE_LOAD_TASK" in
-      db:schema:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb ;;
-      db:structure:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql ;;
+      # db:structure:load was deprecated in Rails 6.1 and shouldn't be used.
+      db:schema:load | db:structure:load)
+          chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb || true
+          chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql || true
+          ;;
   esac
   chmod 644 $SHARED_PATH/log/*
   chmod -R 2775 $RELEASE_PATH/tmp || true

@@ -33,7 +33,8 @@ type KeepService struct {
 type KeepMount struct {
 	UUID           string          `json:"uuid"`
 	DeviceID       string          `json:"device_id"`
-	ReadOnly       bool            `json:"read_only"`
+	AllowWrite     bool            `json:"allow_write"`
+	AllowTrash     bool            `json:"allow_trash"`
 	Replication    int             `json:"replication"`
 	StorageClasses map[string]bool `json:"storage_classes"`
 }

@@ -53,7 +53,8 @@ arvados:
     #     - ruby-dev
     #     - zlib1g-dev
 
-  # config:
+  config:
+    check_command: /usr/bin/arvados-server config-check -strict=false -config
   #   file: /etc/arvados/config.yml
   #   user: root
   ## IMPORTANT!!!!!
@@ -76,13 +77,6 @@ arvados:
       user: {{ database_user }}
       extra_conn_params:
         client_encoding: UTF8
-      # Centos7 does not enable SSL by default, so we disable
-      # it here just for testing of the formula purposes only.
-      # You should not do this in production, and should
-      # configure Postgres certificates correctly
-      {%- if grains.os_family in ('RedHat',) %}
-        sslmode: disable
-      {%- endif %}
 
     tls:
       # certificate: ''
@@ -106,7 +100,7 @@ arvados:
     ### KEYS
     secrets:
       blob_signing_key: __BLOB_SIGNING_KEY__
-      workbench_secret_key: __WORKBENCH_SECRET_KEY__
+      workbench_secret_key: "deprecated"
 
     Login:
       Test:
