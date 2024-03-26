@@ -14,22 +14,19 @@ import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
 import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
-import { MoreVerticalIcon, FreezeIcon } from 'components/icon/icon';
+import { FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
-import { IconButton } from '@material-ui/core';
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { CollectionResource } from 'models/collection';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
-import classNames from 'classnames';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
 
 type CssRules =
     | 'root'
-    | 'selected'
     | 'cardHeaderContainer'
     | 'cardHeader'
     | 'descriptionToggle'
@@ -41,7 +38,7 @@ type CssRules =
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
-    | 'contextMenuSection'
+    | 'accountStatusSection'
     | 'toolbarSection'
     | 'tag'
     | 'description';
@@ -52,10 +49,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '1rem',
         flex: '0 0 auto',
         padding: 0,
-        borderLeft: '2px solid transparent',
-    },
-    selected: {
-        border: '2pcx solid #ccc',
+        border: '2px solid transparent',
     },
     showMore: {
         cursor: 'pointer',
@@ -69,6 +63,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     userNameContainer: {
         display: 'flex',
+        alignItems: 'center',
     },
     cardHeaderContainer: {
         width: '100%',
@@ -116,11 +111,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '1rem',
         color: theme.palette.text.primary,
     },
-    contextMenuSection: {
+    accountStatusSection: {
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        paddingTop: '0.25rem',
+        paddingLeft: '1rem',
     },
     toolbarSection: {
         marginTop: '-1rem',
@@ -136,7 +131,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = ({auth, selectedResourceUuid, resources, properties}: RootState) => {
+const mapStateToProps = ({ auth, selectedResourceUuid, resources, properties }: RootState) => {
     const currentResource = getResource(properties.currentRouteUuid)(resources);
     const frozenByUser = currentResource && getResource((currentResource as ProjectResource).frozenByUuid as string)(resources);
     const frozenByFullName = frozenByUser && (frozenByUser as Resource & { fullName: string }).fullName;
@@ -253,44 +248,37 @@ const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCon
 
     return (
         <Card
-            className={classNames(classes.root, isSelected ? classes.selected : '')}
+            className={classes.root}
             onClick={() => handleCardClick(uuid)}
             data-cy='user-details-card'
         >
-            <CardHeader
-                className={classes.cardHeader}
-                title={
-                    <section className={classes.userNameContainer}>
-                        <Typography
-                            noWrap
-                            variant='h6'
-                        >
-                            {fullName}
-                        </Typography>
-                    </section>
-                }
-                action={
-                    <section className={classes.contextMenuSection}>
-                        {!currentResource.isActive && (
-                            <Typography>
-                                <UserResourceAccountStatus uuid={uuid} />
-                            </Typography>
-                        )}
-                        <Tooltip
-                            title='More options'
-                            disableFocusListener
-                        >
-                            <IconButton
-                                aria-label='More options'
-                                data-cy='kebab-icon'
-                                onClick={(ev) => handleContextMenu(ev, currentResource as any, isAdmin)}
+            <Grid
+                container
+                wrap='nowrap'
+                className={classes.cardHeaderContainer}
+            >
+                <CardHeader
+                    className={classes.cardHeader}
+                    title={
+                        <section className={classes.userNameContainer}>
+                            <Typography
+                                noWrap
+                                variant='h6'
                             >
-                                <MoreVerticalIcon />
-                            </IconButton>
-                        </Tooltip>
-                    </section>
-                }
-            />
+                                {fullName}
+                            </Typography>
+                            <section className={classes.accountStatusSection}>
+                                {!currentResource.isActive && (
+                                    <Typography>
+                                        <UserResourceAccountStatus uuid={uuid} />
+                                    </Typography>
+                            )}
+                            </section>
+                        </section>
+                    }
+                />
+                {isSelected && <MultiselectToolbar />}
+            </Grid>
         </Card>
     );
 };
@@ -310,11 +298,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
 
     return (
         <Card
-            className={classNames(classes.root, isSelected ? classes.selected : '')}
+            className={classes.root}
             onClick={() => handleCardClick(uuid)}
             data-cy='project-details-card'
         >
-            <Grid container wrap='nowrap' className={classes.cardHeaderContainer}>
+            <Grid
+                container
+                wrap='nowrap'
+                className={classes.cardHeaderContainer}
+            >
                 <CardHeader
                     className={classes.cardHeader}
                     title={

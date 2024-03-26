@@ -92,12 +92,24 @@ type IconProps = {
     publicFavorites: PublicFavoritesState;
 }
 
+const disallowedPaths = [
+    "/favorites",
+    "/public-favorites",
+    "/trash",
+    "/group",
+]
+
+const isPathDisallowed = (location: string): boolean => {
+    return disallowedPaths.some(path => location.includes(path))
+}
+
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, selectedResourceUuid, location, isSubPanel } = props;
+        const { classes, checkedList, iconProps, user, disabledButtons, location, isSubPanel } = props;
+        const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
         const singleResourceKind = selectedResourceUuid && !isSubPanel ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = location.includes("/trash");
@@ -126,6 +138,8 @@ export const MultiselectToolbar = connect(
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
 
+        const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
+
         return (
             <React.Fragment>
                 <Toolbar
@@ -149,7 +163,7 @@ export const MultiselectToolbar = connect(
                                         <IconButton
                                             data-cy='multiselect-button'
                                             disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                            onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
                                             className={classes.icon}
                                         >
                                             {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
@@ -168,7 +182,7 @@ export const MultiselectToolbar = connect(
                                         <IconButton
                                             data-cy='multiselect-button'
                                             onClick={() => {
-                                                props.executeMulti(action, checkedList, iconProps.resources)}}
+                                                props.executeMulti(action, targetResources, iconProps.resources)}}
                                             className={classes.icon}
                                         >
                                             {action.icon({})}
@@ -227,7 +241,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
     const { isAdmin } = user;
     const kind = extractUuidKind(uuid);
 
-    const isFrozen = resourceIsFrozen(resource, resources);
+    const isFrozen = resource?.kind && resource.kind === ResourceKind.PROJECT ? resourceIsFrozen(resource, resources) : false;
     const isEditable = (user.isAdmin || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
 
     switch (kind) {

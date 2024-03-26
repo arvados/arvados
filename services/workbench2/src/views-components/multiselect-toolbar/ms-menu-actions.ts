@@ -48,6 +48,7 @@ export enum MultiSelectMenuActionNames {
     DEACTIVATE_USER = 'Deactivate user', 
     SETUP_USER = 'Setup user',
     LOGIN_AS_USER = 'Login as user',
+    USER_ACCOUNT = 'User Account',
 };
 
 export type MultiSelectMenuAction = {

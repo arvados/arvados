@@ -15,6 +15,7 @@ import {
 } from 'views-components/multiselect-toolbar/ms-project-action-set';
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
+import { UserDetailsActionSet } from 'views-components/multiselect-toolbar/ms-user-details-action-set';
 import { ResourceKind } from 'models/resource';
 
 export enum msMenuResourceKind {
@@ -75,7 +76,9 @@ const {
     RUNNING_PROCESS_ADMIN,
     PROCESS_ADMIN,
     PROJECT,
+    ROOT_PROJECT,
     PROJECT_ADMIN,
+    ROOT_PROJECT_ADMIN,
     FROZEN_PROJECT,
     FROZEN_PROJECT_ADMIN,
     READONLY_PROJECT,
@@ -113,4 +116,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
+
+    [ROOT_PROJECT]: [UserDetailsActionSet as MultiSelectMenuActionSet, allActionNames(UserDetailsActionSet as MultiSelectMenuActionSet)],
+    [ROOT_PROJECT_ADMIN]: [UserDetailsActionSet as MultiSelectMenuActionSet, allActionNames(UserDetailsActionSet as MultiSelectMenuActionSet)],
 };
