@@ -83,7 +83,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexDirection: 'column',
         paddingTop: 0,
-        paddingLeft: '0.5rem',
+        paddingLeft: '0.1rem',
     },
     nameSection: {
         display: 'flex',
@@ -325,9 +325,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                 <Typography
                                     className={classes.description}
                                     data-cy='project-description'
-                                >
-                                    {description}
-                                </Typography>
+                                    //dangerouslySetInnerHTML is ok here only if description is sanitized,
+                                    //which it is before it is loaded into the redux store
+                                    dangerouslySetInnerHTML={{ __html: description }}
+                                />
                             </Collapse>
                         </section>
                     </section>
