@@ -117,6 +117,6 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
 
-    [ROOT_PROJECT]: [UserDetailsActionSet as MultiSelectMenuActionSet, allActionNames(UserDetailsActionSet as MultiSelectMenuActionSet)],
-    [ROOT_PROJECT_ADMIN]: [UserDetailsActionSet as MultiSelectMenuActionSet, allActionNames(UserDetailsActionSet as MultiSelectMenuActionSet)],
+    [ROOT_PROJECT]: [UserDetailsActionSet, allActionNames(UserDetailsActionSet)],
+    [ROOT_PROJECT_ADMIN]: [UserDetailsActionSet, allActionNames(UserDetailsActionSet)],
 };
