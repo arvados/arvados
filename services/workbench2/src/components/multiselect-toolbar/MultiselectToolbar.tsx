@@ -45,18 +45,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         flexDirection: "row",
         width: 0,
-        height: '2.7rem',
+        height: '2.5rem',
         padding: 0,
-        marginBottom: '-0.5rem',
         transition: `width ${WIDTH_TRANSITION}ms`,
         overflow: 'hidden',
     },
     transition: {
         display: "flex",
         flexDirection: "row",
-        height: '2.7rem',
+        height: '2.5rem',
         padding: 0,
-        marginBottom: '-0.5rem',
         overflow: 'hidden',
         transition: `width ${WIDTH_TRANSITION}ms`,
     },
@@ -144,7 +142,7 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={isTransitioning ? classes.transition: classes.root}
-                    style={{ width: `${(actions.length * 2.5) + 3}rem`}}
+                    style={{ width: `${(actions.length * 2.5) + 2}rem`}}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (

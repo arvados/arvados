@@ -24,6 +24,8 @@ import { Dispatch } from 'redux';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevron-right';
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
+import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
+import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
 
 type CssRules =
     | 'root'
@@ -39,7 +41,6 @@ type CssRules =
     | 'faveIcon'
     | 'frozenIcon'
     | 'accountStatusSection'
-    | 'toolbarSection'
     | 'tag'
     | 'description';
 
@@ -49,13 +50,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '1rem',
         flex: '0 0 auto',
         padding: 0,
-        border: '2px solid transparent',
+        minHeight: '3rem',
     },
     showMore: {
         cursor: 'pointer',
-        background: 'linear-gradient(to right, black, transparent)',
-        backgroundClip: 'text',
-        color: 'transparent',
     },
     noDescription: {
         color: theme.palette.grey['600'],
@@ -64,6 +62,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     userNameContainer: {
         display: 'flex',
         alignItems: 'center',
+        minHeight: '2.7rem',
     },
     cardHeaderContainer: {
         width: '100%',
@@ -72,8 +71,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: 'space-between',
     },
     cardHeader: {
-        minWidth: '40rem',
-        padding: '0.2rem 0.4rem 0.1rem 1rem',
+        minWidth: '30rem',
+        padding: '0.2rem 0.4rem 0.2rem 1rem',
     },
     descriptionToggle: {
         display: 'flex',
@@ -90,14 +89,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
     },
     namePlate: {
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
         margin: 0,
-        paddingBottom: '0.5rem',
     },
     faveIcon: {
         fontSize: '0.8rem',
@@ -116,10 +113,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingLeft: '1rem',
-    },
-    toolbarSection: {
-        marginTop: '-1rem',
-        paddingBottom: '-1rem',
     },
     tag: {
         marginRight: '1rem',
@@ -148,6 +141,8 @@ const mapStateToProps = ({ auth, selectedResourceUuid, resources, properties }: 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleCardClick: (uuid: string) => {
         dispatch<any>(loadDetailsPanel(uuid));
+        dispatch<any>(setSelectedResourceUuid(uuid));
+        dispatch<any>(deselectAllOthers(uuid));
     },
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, resource: any, isAdmin: boolean) => {
         event.stopPropagation();
@@ -243,7 +238,7 @@ export const ProjectDetailsCard = connect(
     })
 );
 
-const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleContextMenu, handleCardClick, isAdmin, isSelected }) => {
+const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCardClick, isSelected }) => {
     const { fullName, uuid } = currentResource as UserResource & { fullName: string };
 
     return (
