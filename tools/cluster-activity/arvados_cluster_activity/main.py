@@ -68,7 +68,7 @@ def parse_arguments(arguments):
     if args.prometheus_auth:
         with open(args.prometheus_auth, "rt") as f:
             for line in f:
-                sp = line.split("=")
+                sp = line.strip().split("=")
                 if sp[0].startswith("PROMETHEUS_"):
                     os.environ[sp[0]] = sp[1]
 
