@@ -222,6 +222,9 @@ def flush_containers(arv_client, csvwriter, pending):
         projects[pr["uuid"]] = pr["full_name"]
 
     for container_request in pending:
+        if not containers[container_request["container_uuid"]]["finished_at"]:
+            continue
+
         length = ciso8601.parse_datetime(containers[container_request["container_uuid"]]["finished_at"]) - ciso8601.parse_datetime(containers[container_request["container_uuid"]]["started_at"])
 
         hours = length.seconds // 3600
@@ -246,7 +249,6 @@ def report_from_api(since, to, out):
 
     pending = []
 
-    print(since.isoformat())
     for container_request in arvados.util.keyset_list_all(
             arv_client.container_requests().list,
             filters=[
