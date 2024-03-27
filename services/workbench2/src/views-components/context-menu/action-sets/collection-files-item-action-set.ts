@@ -35,12 +35,14 @@ export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
         },
         {
             component: CollectionFileViewerAction,
+            name: "Open in new tab",
             execute: () => {
                 return;
             },
         },
         {
             component: CollectionCopyToClipboardAction,
+            name: "Copy to clipboard",
             execute: () => {
                 return;
             },
@@ -52,6 +54,7 @@ export const readOnlyCollectionFileItemActionSet: ContextMenuActionSet = [
     [
         {
             component: DownloadCollectionFileAction,
+            name: "Download",
             execute: () => {
                 return;
             },
