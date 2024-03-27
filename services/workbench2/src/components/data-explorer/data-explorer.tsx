@@ -17,7 +17,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "titleWrapper" | "msToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -26,6 +26,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     msToolbarStyles: {
         paddingTop: "0.6rem",
+    },
+    subpanelToolbarStyles: {
+        paddingTop: "1.2rem",
     },
     searchBox: {
         paddingBottom: 0,
@@ -311,7 +314,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar isSubPanel={true}/>}
+                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar isSubPanel={true} injectedStyles={classes.subpanelToolbarStyles}/>}
                         <Grid
                             item
                             xs="auto"
