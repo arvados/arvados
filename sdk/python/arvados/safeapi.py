@@ -68,9 +68,9 @@ class ThreadSafeApiCache(object):
         self.keep = keep.KeepClient(api_client=self, **keep_params)
 
     def localapi(self) -> 'googleapiclient.discovery.Resource':
-        if 'api' in self.local.__dict__:
+        try:
             client = self.local.api
-        else:
+        except AttributeError:
             client = api.api_client(**self._api_kwargs)
             client._http._request_id = lambda: self.request_id or util.new_request_id()
             self.local.api = client
