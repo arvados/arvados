@@ -36,7 +36,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 const toggleFavoriteAction: ContextMenuAction = {
     component: ToggleFavoriteAction,
-    name: "ToggleFavoriteAction",
+    name: "Add to Favorites",
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
             dispatch<any>(toggleFavorite(resource)).then(() => {
@@ -124,7 +124,7 @@ export const collectionActionSet: ContextMenuActionSet = [
         },
         {
             component: ToggleTrashAction,
-            name: "ToggleTrashAction",
+            name: "Move to trash",
             execute: (dispatch, resources: ContextMenuResource[]) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
@@ -139,7 +139,7 @@ export const collectionAdminActionSet: ContextMenuActionSet = [
         ...collectionActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             component: TogglePublicFavoriteAction,
-            name: "TogglePublicFavoriteAction",
+            name: "Add to public favorites",
             execute: (dispatch, resources) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(togglePublicFavorite(resource)).then(() => {

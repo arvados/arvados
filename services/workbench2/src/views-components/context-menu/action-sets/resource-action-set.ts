@@ -10,6 +10,7 @@ export const resourceActionSet: ContextMenuActionSet = [
     [
         {
             component: ToggleFavoriteAction,
+            name: 'Add to Favorites',
             execute: (dispatch, resources) => {
                 resources.forEach((resource) => dispatch<any>(toggleFavorite(resource)));
             },

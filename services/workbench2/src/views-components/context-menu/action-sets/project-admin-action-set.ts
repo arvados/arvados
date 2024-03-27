@@ -24,7 +24,7 @@ import {
 
 export const togglePublicFavoriteAction = {
     component: TogglePublicFavoriteAction,
-    name: "TogglePublicFavoriteAction",
+    name: "Add to public favorites",
     execute: (dispatch, resources) => {
         dispatch(togglePublicFavorite(resources[0])).then(() => {
             dispatch(publicFavoritePanelActions.REQUEST_ITEMS());

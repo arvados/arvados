@@ -23,7 +23,7 @@ import { freezeProject, unfreezeProject } from "store/projects/project-lock-acti
 
 export const toggleFavoriteAction = {
     component: ToggleFavoriteAction,
-    name: "ToggleFavoriteAction",
+    name: "Add to Favorites",
     execute: (dispatch, resources) => {
         dispatch(toggleFavorite(resources[0])).then(() => {
             dispatch(favoritePanelActions.REQUEST_ITEMS());
@@ -97,7 +97,7 @@ export const moveToAction = {
 
 export const toggleTrashAction = {
     component: ToggleTrashAction,
-    name: "ToggleTrashAction",
+    name: "Move to trash",
     execute: (dispatch, resources) => {
         dispatch(toggleProjectTrashed(resources[0].uuid, resources[0].ownerUuid, resources[0].isTrashed!!, resources.length > 1));
     },
@@ -105,7 +105,7 @@ export const toggleTrashAction = {
 
 export const freezeProjectAction = {
     component: ToggleLockAction,
-    name: "ToggleLockAction",
+    name: "Freeze Project",
     execute: (dispatch, resources) => {
         if (resources[0].isFrozen) {
             dispatch(unfreezeProject(resources[0].uuid));

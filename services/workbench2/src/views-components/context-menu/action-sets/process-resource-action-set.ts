@@ -36,6 +36,7 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
     [
         {
             component: ToggleFavoriteAction,
+            name: "Add to Favorites",
             execute: (dispatch, resources) => {
                 dispatch<any>(toggleFavorite(resources[0])).then(() => {
                     dispatch<any>(favoritePanelActions.REQUEST_ITEMS());

@@ -10,6 +10,7 @@ export const trashActionSet: ContextMenuActionSet = [
     [
         {
             component: ToggleTrashAction,
+            name: 'Move to Trash',
             execute: (dispatch, resources) => {
                 resources.forEach((resource) => dispatch<any>(toggleTrashed(resource.kind, resource.uuid, resource.ownerUuid, resource.isTrashed!!)));
             },
