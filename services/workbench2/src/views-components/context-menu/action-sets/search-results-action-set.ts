@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from '../context-menu-action-set';
+import { ContextMenuActionSet, ContextMenuActionNames } from '../context-menu-action-set';
 import { DetailsIcon, AdvancedIcon, OpenIcon, Link } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
@@ -12,28 +12,28 @@ export const searchResultsActionSet: ContextMenuActionSet = [
     [
         {
             icon: OpenIcon,
-            name: 'Open in new tab',
+            name: ContextMenuActionNames.OPEN_IN_NEW_TAB,
             execute: (dispatch, resources) => {
                 resources.forEach((resource) => dispatch<any>(openInNewTabAction(resource)));
             },
         },
         {
             icon: Link,
-            name: 'Copy to clipboard',
+            name: ContextMenuActionNames.COPY_TO_CLIPBOARD,
             execute: (dispatch, resources) => {
                 dispatch<any>(copyToClipboardAction(resources));
             },
         },
         {
             icon: DetailsIcon,
-            name: 'View details',
+            name: ContextMenuActionNames.VIEW_DETAILS,
             execute: (dispatch) => {
                 dispatch<any>(toggleDetailsPanel());
             },
         },
         {
             icon: AdvancedIcon,
-            name: 'API Details',
+            name: ContextMenuActionNames.API_DETAILS,
             execute: (dispatch, resources) => {
                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },

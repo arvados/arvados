@@ -36,7 +36,7 @@ export enum MultiSelectMenuActionNames {
     MOVE_TO = 'Move to',
     NEW_PROJECT = 'New project',
     OPEN_IN_NEW_TAB = 'Open in new tab',
-    OPEN_W_3RD_PARTY_CLIENT = 'Open with 3rd party client',
+    OPEN_WITH_3RD_PARTY_CLIENT = 'Open with 3rd party client',
     OUTPUTS = 'Outputs',
     REMOVE = 'Remove',
     RUN_WORKFLOW = 'Run Workflow',

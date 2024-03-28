@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuAction, ContextMenuActionSet, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import {
     openCollectionPartialCopyMultipleToNewCollectionDialog,
@@ -14,14 +14,14 @@ import { FileCopyIcon, FileMoveIcon, RemoveIcon, SelectAllIcon, SelectNoneIcon }
 
 const copyActions: ContextMenuAction[] = [
     {
-        name: "Copy selected into new collection",
+        name: ContextMenuActionNames.COPY_SELECTED_INTO_NEW_COLLECTION,
         icon: FileCopyIcon,
         execute: dispatch => {
             dispatch<any>(openCollectionPartialCopyMultipleToNewCollectionDialog());
         }
     },
     {
-        name: "Copy selected into existing collection",
+        name: ContextMenuActionNames.COPY_SELECTED_INTO_EXISTING_COLLECTION,
         icon: FileCopyIcon,
         execute: dispatch => {
             dispatch<any>(openCollectionPartialCopyMultipleToExistingCollectionDialog());
@@ -32,7 +32,7 @@ const copyActions: ContextMenuAction[] = [
 const copyActionsMultiple: ContextMenuAction[] = [
     ...copyActions,
     {
-        name: "Copy selected into separate collections",
+        name: ContextMenuActionNames.COPY_SELECTED_INTO_SEPARATE_COLLECTIONS,
         icon: FileCopyIcon,
         execute: dispatch => {
             dispatch<any>(openCollectionPartialCopyToSeparateCollectionsDialog());
@@ -42,14 +42,14 @@ const copyActionsMultiple: ContextMenuAction[] = [
 
 const moveActions: ContextMenuAction[] = [
     {
-        name: "Move selected into new collection",
+        name: ContextMenuActionNames.MOVE_SELECTED_INTO_NEW_COLLECTION,
         icon: FileMoveIcon,
         execute: dispatch => {
             dispatch<any>(openCollectionPartialMoveMultipleToNewCollectionDialog());
         }
     },
     {
-        name: "Move selected into existing collection",
+        name: ContextMenuActionNames.MOVE_SELECTED_INTO_EXISTING_COLLECTION,
         icon: FileMoveIcon,
         execute: dispatch => {
             dispatch<any>(openCollectionPartialMoveMultipleToExistingCollectionDialog());
@@ -60,7 +60,7 @@ const moveActions: ContextMenuAction[] = [
 const moveActionsMultiple: ContextMenuAction[] = [
     ...moveActions,
     {
-        name: "Move selected into separate collections",
+        name: ContextMenuActionNames.MOVE_SELECTED_INTO_SEPARATE_COLLECTIONS,
         icon: FileMoveIcon,
         execute: dispatch => {
             dispatch<any>(openCollectionPartialMoveToSeparateCollectionsDialog());
@@ -70,14 +70,14 @@ const moveActionsMultiple: ContextMenuAction[] = [
 
 const selectActions: ContextMenuAction[] = [
     {
-        name: "Select all",
+        name: ContextMenuActionNames.SELECT_ALL,
         icon: SelectAllIcon,
         execute: dispatch => {
             dispatch(collectionPanelFilesAction.SELECT_ALL_COLLECTION_FILES());
         }
     },
     {
-        name: "Unselect all",
+        name: ContextMenuActionNames.UNSELECT_ALL,
         icon: SelectNoneIcon,
         execute: dispatch => {
             dispatch(collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES());
@@ -86,7 +86,7 @@ const selectActions: ContextMenuAction[] = [
 ];
 
 const removeAction: ContextMenuAction = {
-    name: "Remove selected",
+    name: ContextMenuActionNames.REMOVE_SELECTED,
     icon: RemoveIcon,
     execute: dispatch => {
         dispatch(openMultipleFilesRemoveDialog());

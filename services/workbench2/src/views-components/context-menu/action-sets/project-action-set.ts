@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
@@ -23,7 +23,7 @@ import { freezeProject, unfreezeProject } from "store/projects/project-lock-acti
 
 export const toggleFavoriteAction = {
     component: ToggleFavoriteAction,
-    name: "Add to Favorites",
+    name: ContextMenuActionNames.ADD_TO_FAVORITES,
     execute: (dispatch, resources) => {
         dispatch(toggleFavorite(resources[0])).then(() => {
             dispatch(favoritePanelActions.REQUEST_ITEMS());
@@ -33,7 +33,7 @@ export const toggleFavoriteAction = {
 
 export const openInNewTabMenuAction = {
     icon: OpenIcon,
-    name: "Open in new tab",
+    name: ContextMenuActionNames.OPEN_IN_NEW_TAB,
     execute: (dispatch, resources) => {
         dispatch(openInNewTabAction(resources[0]));
     },
@@ -41,7 +41,7 @@ export const openInNewTabMenuAction = {
 
 export const copyToClipboardMenuAction = {
     icon: Link,
-    name: "Copy to clipboard",
+    name: ContextMenuActionNames.COPY_TO_CLIPBOARD,
     execute: (dispatch, resources) => {
         dispatch(copyToClipboardAction(resources));
     },
@@ -49,7 +49,7 @@ export const copyToClipboardMenuAction = {
 
 export const viewDetailsAction = {
     icon: DetailsIcon,
-    name: "View details",
+    name: ContextMenuActionNames.VIEW_DETAILS,
     execute: dispatch => {
         dispatch(toggleDetailsPanel());
     },
@@ -57,7 +57,7 @@ export const viewDetailsAction = {
 
 export const advancedAction = {
     icon: AdvancedIcon,
-    name: "API Details",
+    name: ContextMenuActionNames.API_DETAILS,
     execute: (dispatch, resources) => {
         dispatch(openAdvancedTabDialog(resources[0].uuid));
     },
@@ -65,7 +65,7 @@ export const advancedAction = {
 
 export const openWith3rdPartyClientAction = {
     icon: FolderSharedIcon,
-    name: "Open with 3rd party client",
+    name: ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
     execute: (dispatch, resources) => {
         dispatch(openWebDavS3InfoDialog(resources[0].uuid));
     },
@@ -73,7 +73,7 @@ export const openWith3rdPartyClientAction = {
 
 export const editProjectAction = {
     icon: RenameIcon,
-    name: "Edit project",
+    name: ContextMenuActionNames.EDIT_PROJECT,
     execute: (dispatch, resources) => {
         dispatch(openProjectUpdateDialog(resources[0]));
     },
@@ -81,7 +81,7 @@ export const editProjectAction = {
 
 export const shareAction = {
     icon: ShareIcon,
-    name: "Share",
+    name: ContextMenuActionNames.SHARE,
     execute: (dispatch, resources) => {
         dispatch(openSharingDialog(resources[0].uuid));
     },
@@ -89,7 +89,7 @@ export const shareAction = {
 
 export const moveToAction = {
     icon: MoveToIcon,
-    name: "Move to",
+    name: ContextMenuActionNames.MOVE_TO,
     execute: (dispatch, resource) => {
         dispatch(openMoveProjectDialog(resource[0]));
     },
@@ -97,7 +97,7 @@ export const moveToAction = {
 
 export const toggleTrashAction = {
     component: ToggleTrashAction,
-    name: "Move to trash",
+    name: ContextMenuActionNames.MOVE_TO_TRASH,
     execute: (dispatch, resources) => {
         dispatch(toggleProjectTrashed(resources[0].uuid, resources[0].ownerUuid, resources[0].isTrashed!!, resources.length > 1));
     },
@@ -105,7 +105,7 @@ export const toggleTrashAction = {
 
 export const freezeProjectAction = {
     component: ToggleLockAction,
-    name: "Freeze Project",
+    name: ContextMenuActionNames.FREEZE_PROJECT,
     execute: (dispatch, resources) => {
         if (resources[0].isFrozen) {
             dispatch(unfreezeProject(resources[0].uuid));
@@ -117,7 +117,7 @@ export const freezeProjectAction = {
 
 export const newProjectAction: any = {
     icon: NewProjectIcon,
-    name: "New project",
+    name: ContextMenuActionNames.NEW_PROJECT,
     execute: (dispatch, resources): void => {
         dispatch(openProjectCreateDialog(resources[0].uuid));
     },

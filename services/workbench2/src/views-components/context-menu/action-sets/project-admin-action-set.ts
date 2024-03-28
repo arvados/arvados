@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { TogglePublicFavoriteAction } from "views-components/context-menu/actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
@@ -24,7 +24,7 @@ import {
 
 export const togglePublicFavoriteAction = {
     component: TogglePublicFavoriteAction,
-    name: "Add to public favorites",
+    name: ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
     execute: (dispatch, resources) => {
         dispatch(togglePublicFavorite(resources[0])).then(() => {
             dispatch(publicFavoritePanelActions.REQUEST_ITEMS());
