@@ -1,0 +1,89 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import { ContextMenuAction } from './context-menu-action-set';
+import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
+import { sortByProperty } from 'common/array-utils'; 
+
+export enum ContextMenuKind {
+    API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
+    ROOT_PROJECT = "RootProject",
+    PROJECT = "Project",
+    FILTER_GROUP = "FilterGroup",
+    READONLY_PROJECT = "ReadOnlyProject",
+    FROZEN_PROJECT = "FrozenProject",
+    FROZEN_PROJECT_ADMIN = "FrozenProjectAdmin",
+    PROJECT_ADMIN = "ProjectAdmin",
+    FILTER_GROUP_ADMIN = "FilterGroupAdmin",
+    RESOURCE = "Resource",
+    FAVORITE = "Favorite",
+    TRASH = "Trash",
+    COLLECTION_FILES = "CollectionFiles",
+    COLLECTION_FILES_MULTIPLE = "CollectionFilesMultiple",
+    READONLY_COLLECTION_FILES = "ReadOnlyCollectionFiles",
+    READONLY_COLLECTION_FILES_MULTIPLE = "ReadOnlyCollectionFilesMultiple",
+    COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
+    COLLECTION_FILE_ITEM = "CollectionFileItem",
+    COLLECTION_DIRECTORY_ITEM = "CollectionDirectoryItem",
+    READONLY_COLLECTION_FILE_ITEM = "ReadOnlyCollectionFileItem",
+    READONLY_COLLECTION_DIRECTORY_ITEM = "ReadOnlyCollectionDirectoryItem",
+    COLLECTION = "Collection",
+    COLLECTION_ADMIN = "CollectionAdmin",
+    READONLY_COLLECTION = "ReadOnlyCollection",
+    OLD_VERSION_COLLECTION = "OldVersionCollection",
+    TRASHED_COLLECTION = "TrashedCollection",
+    PROCESS = "Process",
+    RUNNING_PROCESS_ADMIN = "RunningProcessAdmin",
+    PROCESS_ADMIN = "ProcessAdmin",
+    RUNNING_PROCESS_RESOURCE = "RunningProcessResource",
+    PROCESS_RESOURCE = "ProcessResource",
+    READONLY_PROCESS_RESOURCE = "ReadOnlyProcessResource",
+    PROCESS_LOGS = "ProcessLogs",
+    REPOSITORY = "Repository",
+    SSH_KEY = "SshKey",
+    VIRTUAL_MACHINE = "VirtualMachine",
+    KEEP_SERVICE = "KeepService",
+    USER = "User",
+    GROUPS = "Group",
+    GROUP_MEMBER = "GroupMember",
+    PERMISSION_EDIT = "PermissionEdit",
+    LINK = "Link",
+    WORKFLOW = "Workflow",
+    READONLY_WORKFLOW = "ReadOnlyWorkflow",
+    SEARCH_RESULTS = "SearchResults",
+}
+
+const processOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.OPEN_IN_NEW_TAB,
+    ContextMenuActionNames.OUTPUTS,
+    ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.EDIT_PROCESS,
+    ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
+    ContextMenuActionNames.MOVE_TO,
+    ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.ADD_TO_FAVORITES,
+    ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+];
+
+const kindToOrder: Record<string, ContextMenuActionNames[]> = {
+    [ContextMenuKind.PROCESS_RESOURCE]: processOrder,
+};
+
+export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[]) => {
+    const order = kindToOrder[menuKind];
+    //if no specified order, sort by name
+    if (!order) return menuItems.sort(sortByProperty("name"));
+
+    const bucketMap = new Map();
+    const leftovers: ContextMenuAction[] = [];
+
+    order.forEach((name) => bucketMap.set(name, null));
+    menuItems.forEach((item) => {
+        if (bucketMap.has(item.name)) bucketMap.set(item.name, item);
+        else leftovers.push(item);
+    });
+    
+    return Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null);
+};

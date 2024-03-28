@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { resourceUuidToContextMenuKind } from './context-menu-actions';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';

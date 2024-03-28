@@ -5,7 +5,7 @@
 import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
 import { getNodeValue } from "models/tree";
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { CopyToClipboardAction } from "./copy-to-clipboard-action";
 
 const mapStateToProps = (state: RootState) => {

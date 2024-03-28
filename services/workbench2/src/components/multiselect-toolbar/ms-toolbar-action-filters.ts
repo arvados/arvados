@@ -16,7 +16,7 @@ import {
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 import { ResourceKind } from 'models/resource';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 
 const {
     COLLECTION,

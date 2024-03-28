@@ -34,7 +34,7 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
-import { ContextMenuKind } from "views-components/context-menu/context-menu";
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 
 const WIDTH_TRANSITION = 150
 
