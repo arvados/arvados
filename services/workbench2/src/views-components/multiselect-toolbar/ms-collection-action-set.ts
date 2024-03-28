@@ -8,13 +8,13 @@ import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/c
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuAction } from "./ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { TrashIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 
-const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
+const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
@@ -48,7 +48,7 @@ const msToggleTrashAction: MultiSelectMenuAction = {
 }
 
 const msEditCollection: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.EDIT_COLLECTION,
+    name: ContextMenuActionNames.EDIT_COLLECTION,
     icon: RenameIcon,
     hasAlts: false,
     isForMulti: false,

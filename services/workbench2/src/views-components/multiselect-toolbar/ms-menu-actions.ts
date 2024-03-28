@@ -18,31 +18,7 @@ import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
-
-export enum MultiSelectMenuActionNames {
-    ADD_TO_FAVORITES = 'Add to Favorites',
-    MOVE_TO_TRASH = 'Move to trash',
-    ADD_TO_PUBLIC_FAVORITES = 'Add to public favorites',
-    API_DETAILS = 'API Details',
-    CANCEL = 'CANCEL',
-    COPY_AND_RERUN_PROCESS = 'Copy and re-run process',
-    COPY_TO_CLIPBOARD = 'Copy to clipboard',
-    DELETE_WORKFLOW = 'Delete Workflow',
-    EDIT_COLLECTION = 'Edit collection',
-    EDIT_PROJECT = 'Edit project',
-    EDIT_PROCESS = 'Edit process',
-    FREEZE_PROJECT = 'Freeze Project',
-    MAKE_A_COPY = 'Make a copy',
-    MOVE_TO = 'Move to',
-    NEW_PROJECT = 'New project',
-    OPEN_IN_NEW_TAB = 'Open in new tab',
-    OPEN_WITH_3RD_PARTY_CLIENT = 'Open with 3rd party client',
-    OUTPUTS = 'Outputs',
-    REMOVE = 'Remove',
-    RUN_WORKFLOW = 'Run Workflow',
-    SHARE = 'Share',
-    VIEW_DETAILS = 'View details',
-};
+import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 
 export type MultiSelectMenuAction = {
     name: string;
@@ -58,7 +34,7 @@ export type MultiSelectMenuAction = {
 
 export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];
 
-const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE } = MultiSelectMenuActionNames;
+const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE } = ContextMenuActionNames;
 
 const msToggleFavoriteAction: MultiSelectMenuAction = {
     name: ADD_TO_FAVORITES,

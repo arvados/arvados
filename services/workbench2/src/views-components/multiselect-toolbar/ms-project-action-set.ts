@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from 'views-components/multiselect-toolbar/ms-menu-actions';
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { openMoveProjectDialog } from 'store/projects/project-move-actions';
 import { toggleProjectTrashed } from 'store/trash/trash-actions';
 import {
@@ -35,7 +35,7 @@ const {
     MOVE_TO_TRASH,
     FREEZE_PROJECT,
     NEW_PROJECT,
-} = MultiSelectMenuActionNames;
+} = ContextMenuActionNames;
 
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     name: COPY_TO_CLIPBOARD,

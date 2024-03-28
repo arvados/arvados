@@ -14,8 +14,7 @@ import { Resource, ResourceKind, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
-import { ContextMenuAction } from "views-components/context-menu/context-menu-action-set";
+import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters, msMenuResourceKind } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
@@ -338,13 +337,13 @@ function mapDispatchToProps(dispatch: Dispatch) {
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
             switch (selectedAction.name) {
-                case MultiSelectMenuActionNames.MOVE_TO:
-                case MultiSelectMenuActionNames.REMOVE:
+                case ContextMenuActionNames.MOVE_TO:
+                case ContextMenuActionNames.REMOVE:
                     const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as ContainerRequestResource | Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
-                case MultiSelectMenuActionNames.COPY_TO_CLIPBOARD:
+                case ContextMenuActionNames.COPY_TO_CLIPBOARD:
                     const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
                     dispatch<any>(copyToClipboardAction(selectedResources));
                     break;

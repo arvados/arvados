@@ -5,10 +5,10 @@
 import { openRunProcess, deleteWorkflow } from 'store/workflow-panel/workflow-panel-actions';
 import { StartIcon, TrashIcon, Link } from 'components/icon/icon';
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from './ms-menu-actions';
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
-const { OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW } = MultiSelectMenuActionNames;
+const { OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW } = ContextMenuActionNames;
 
 const msRunWorkflow: MultiSelectMenuAction = {
     name: RUN_WORKFLOW,
