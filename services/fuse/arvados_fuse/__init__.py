@@ -626,7 +626,7 @@ class Operations(llfuse.Operations):
         self.write_ops_counter = arvados.keep.Counter()
 
         self.events = None
-l
+
         # We rely on the cyclic garbage collector to deallocate
         # Collection objects from the Python SDK.  A lower GC
         # threshold encourages Python to be more aggressive in
