@@ -15,7 +15,7 @@ import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
 import { ContextMenuAction, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { multiselectActionsFilters, TMultiselectActionsFilters, msMenuResourceKind } from "./ms-toolbar-action-filters";
+import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
@@ -34,6 +34,7 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
+import { ContextMenuKind } from "views-components/context-menu/context-menu";
 
 const WIDTH_TRANSITION = 150
 
@@ -211,7 +212,7 @@ function filterActions(actionArray: MultiSelectMenuActionSet, filters: Set<strin
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
-const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, readonly = false): (msMenuResourceKind | ResourceKind) | undefined => {
+const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user: User | null, readonly = false): (ContextMenuKind | ResourceKind) | undefined => {
     if (!user) return;
     const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, user.uuid)(resources);
     const { isAdmin } = user;
@@ -223,18 +224,18 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
     switch (kind) {
         case ResourceKind.PROJECT:
             if (isFrozen) {
-                return isAdmin ? msMenuResourceKind.FROZEN_PROJECT_ADMIN : msMenuResourceKind.FROZEN_PROJECT;
+                return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
             }
 
             return isAdmin && !readonly
                 ? resource && resource.groupClass !== GroupClass.FILTER
-                    ? msMenuResourceKind.PROJECT_ADMIN
-                    : msMenuResourceKind.FILTER_GROUP_ADMIN
+                    ? ContextMenuKind.PROJECT_ADMIN
+                    : ContextMenuKind.FILTER_GROUP_ADMIN
                 : isEditable
                 ? resource && resource.groupClass !== GroupClass.FILTER
-                    ? msMenuResourceKind.PROJECT
-                    : msMenuResourceKind.FILTER_GROUP
-                : msMenuResourceKind.READONLY_PROJECT;
+                    ? ContextMenuKind.PROJECT
+                    : ContextMenuKind.FILTER_GROUP
+                : ContextMenuKind.READONLY_PROJECT;
         case ResourceKind.COLLECTION:
             const c = getResource<CollectionResource>(uuid)(resources);
             if (c === undefined) {
@@ -243,30 +244,30 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
             const isOldVersion = c.uuid !== c.currentVersionUuid;
             const isTrashed = c.isTrashed;
             return isOldVersion
-                ? msMenuResourceKind.OLD_VERSION_COLLECTION
+                ? ContextMenuKind.OLD_VERSION_COLLECTION
                 : isTrashed && isEditable
-                ? msMenuResourceKind.TRASHED_COLLECTION
+                ? ContextMenuKind.TRASHED_COLLECTION
                 : isAdmin && isEditable
-                ? msMenuResourceKind.COLLECTION_ADMIN
+                ? ContextMenuKind.COLLECTION_ADMIN
                 : isEditable
-                ? msMenuResourceKind.COLLECTION
-                : msMenuResourceKind.READONLY_COLLECTION;
+                ? ContextMenuKind.COLLECTION
+                : ContextMenuKind.READONLY_COLLECTION;
         case ResourceKind.PROCESS:
             return isAdmin && isEditable
                 ? resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
-                    ? msMenuResourceKind.RUNNING_PROCESS_ADMIN
-                    : msMenuResourceKind.PROCESS_ADMIN
+                    ? ContextMenuKind.RUNNING_PROCESS_ADMIN
+                    : ContextMenuKind.PROCESS_ADMIN
                 : readonly
-                ? msMenuResourceKind.READONLY_PROCESS_RESOURCE
+                ? ContextMenuKind.READONLY_PROCESS_RESOURCE
                 : resource && isProcessCancelable(getProcess(resource.uuid)(resources) as Process)
-                ? msMenuResourceKind.RUNNING_PROCESS_RESOURCE
-                : msMenuResourceKind.PROCESS_RESOURCE;
+                ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
+                : ContextMenuKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
-            return msMenuResourceKind.ROOT_PROJECT;
+            return ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:
-            return msMenuResourceKind.LINK;
+            return ContextMenuKind.LINK;
         case ResourceKind.WORKFLOW:
-            return isEditable ? msMenuResourceKind.WORKFLOW : msMenuResourceKind.READONLY_WORKFLOW;
+            return isEditable ? ContextMenuKind.WORKFLOW : ContextMenuKind.READONLY_WORKFLOW;
         default:
             return;
     }

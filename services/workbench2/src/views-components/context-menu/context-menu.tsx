@@ -11,6 +11,7 @@ import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-s
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
 import { sortByProperty } from "common/array-utils";
+import { sortMenuItems } from "common/menu-item-sort";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 
