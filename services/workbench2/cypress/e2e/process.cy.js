@@ -90,7 +90,7 @@ describe("Process tests", function () {
 
             const msButtonTooltips = [
                 'API Details',
-                'Add to Favorites',
+                'Add to favorites',
                 'CANCEL',
                 'Copy and re-run process',
                 'Edit process',

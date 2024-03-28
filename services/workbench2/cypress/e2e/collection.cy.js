@@ -31,7 +31,7 @@ describe("Collection panel tests", function () {
 
         const msButtonTooltips = [
             'API Details',
-            'Add to Favorites',
+            'Add to favorites',
             'Copy to clipboard',
             'Edit collection',
             'Make a copy',

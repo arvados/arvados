@@ -220,10 +220,10 @@ describe("Project tests", function () {
 
         const msButtonTooltips = [
             'API Details',
-            'Add to Favorites',
+            'Add to favorites',
             'Copy to clipboard',
             'Edit project',
-            'Freeze Project',
+            'Freeze project',
             'Move to',
             'Move to trash',
             'New project',
