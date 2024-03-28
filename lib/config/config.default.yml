@@ -804,7 +804,7 @@ Clusters:
       # Per-connection output buffer for WebDAV downloads. May improve
       # throughput for large files, particularly when storage volumes
       # have high latency.
-      WebDAVOutputBuffer: 1M
+      WebDAVOutputBuffer: 0
 
     Login:
       # One of the following mechanisms (Google, PAM, LDAP, or
