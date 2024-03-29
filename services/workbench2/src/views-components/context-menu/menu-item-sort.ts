@@ -67,23 +67,80 @@ const processOrder = [
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
 ];
 
+const projectOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.OPEN_IN_NEW_TAB,
+    ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
+    ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.NEW_PROJECT,
+    ContextMenuActionNames.EDIT_PROJECT,
+    ContextMenuActionNames.SHARE,
+    ContextMenuActionNames.MOVE_TO,
+    ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.FREEZE_PROJECT,
+    ContextMenuActionNames.ADD_TO_FAVORITES,
+    ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+];
+
+const collectionOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.OPEN_IN_NEW_TAB,
+    ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
+    ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.NEW_COLLECTION,
+    ContextMenuActionNames.EDIT_COLLECTION,
+    ContextMenuActionNames.SHARE,
+    ContextMenuActionNames.MOVE_TO,
+    ContextMenuActionNames.MAKE_A_COPY,
+    ContextMenuActionNames.MOVE_TO_TRASH,
+    ContextMenuActionNames.ADD_TO_FAVORITES,
+    ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+];
+
+const workflowOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.OPEN_IN_NEW_TAB,
+    ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.RUN_WORKFLOW,
+    ContextMenuActionNames.REMOVE,
+]
+
 const kindToOrder: Record<string, ContextMenuActionNames[]> = {
+    [ContextMenuKind.PROCESS]: processOrder,
+    [ContextMenuKind.PROCESS_ADMIN]: processOrder,
     [ContextMenuKind.PROCESS_RESOURCE]: processOrder,
+
+    [ContextMenuKind.PROJECT]: projectOrder,
+    [ContextMenuKind.PROJECT_ADMIN]: projectOrder,
+    [ContextMenuKind.FROZEN_PROJECT]: projectOrder,
+    [ContextMenuKind.FROZEN_PROJECT_ADMIN]: projectOrder,
+
+    [ContextMenuKind.COLLECTION]: collectionOrder,
+    [ContextMenuKind.COLLECTION_ADMIN]: collectionOrder,
+    [ContextMenuKind.READONLY_COLLECTION]: collectionOrder,
+    [ContextMenuKind.OLD_VERSION_COLLECTION]: collectionOrder,
+
+    [ContextMenuKind.WORKFLOW]: workflowOrder,
+    [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 };
 
 export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[]) => {
-    const order = kindToOrder[menuKind];
+
+    const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name
-    if (!order) return menuItems.sort(sortByProperty("name"));
+    if (!preferredOrder) return menuItems.sort(sortByProperty("name"));
 
     const bucketMap = new Map();
     const leftovers: ContextMenuAction[] = [];
 
-    order.forEach((name) => bucketMap.set(name, null));
+    preferredOrder.forEach((name) => bucketMap.set(name, null));
     menuItems.forEach((item) => {
         if (bucketMap.has(item.name)) bucketMap.set(item.name, item);
         else leftovers.push(item);
     });
-    
+
     return Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null);
 };
