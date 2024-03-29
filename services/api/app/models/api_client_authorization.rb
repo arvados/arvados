@@ -294,6 +294,10 @@ class ApiClientAuthorization < ArvadosModel
         raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
       end
     rescue HTTPClient::BadResponseError => e
+      if e.res.status_code >= 400 && e.res.status_code < 500
+        # Remote cluster does not accept this token.
+        return nil
+      end
       # CurrentApiToken#call and ApplicationController#render_error will
       # propagate the status code from the #http_status method, so define
       # that here.
