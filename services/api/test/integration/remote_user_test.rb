@@ -594,22 +594,34 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   [400, 401, 403, 422, 500, 502, 503].each do |status|
-    test "handle #{status} response from getting remote token" do
+    test "handle #{status} response when checking remote-provided v2 token" do
       @stub_token_status = status
       get "/arvados/v1/users/#{@stub_content[:uuid]}",
           params: {format: "json"},
           headers: auth(remote: "zbbbb")
       assert_response(status < 500 ? 401 : status)
+    end
+
+    test "handle #{status} response when checking remote-provided v2 token at anonymously accessible endpoint" do
+      @stub_token_status = status
       get "/arvados/v1/keep_services/accessible",
           params: {format: "json"},
           headers: auth(remote: "zbbbb")
       assert_response(status < 500 ? :success : status)
+    end
 
+    test "handle #{status} response when checking token issued by login cluster" do
+      @stub_token_status = status
       Rails.configuration.Login.LoginCluster = "zbbbb"
       get "/arvados/v1/users/current",
           params: {format: "json"},
           headers: {'HTTP_AUTHORIZATION' => "Bearer badtoken"}
       assert_response(status < 500 ? 401 : status)
+    end
+
+    test "handle #{status} response when checking token issued by login cluster at anonymously accessible endpoint" do
+      @stub_token_status = status
+      Rails.configuration.Login.LoginCluster = "zbbbb"
       get "/arvados/v1/keep_services/accessible",
           params: {format: "json"},
           headers: {'HTTP_AUTHORIZATION' => "Bearer badtoken"}
