@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MoveToIcon, CopyIcon, RenameIcon } from "components/icon/icon";
+import { MoveToIcon, CopyIcon, RenameIcon, ShareIcon } from "components/icon/icon";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
@@ -13,6 +13,8 @@ import { TrashIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
+import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
+
 
 const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
 
@@ -77,6 +79,16 @@ const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
     },
 };
 
+const msShareAction: MultiSelectMenuAction  = {
+    name: SHARE,
+    icon: ShareIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(openSharingDialog(resources[0].uuid));
+    },
+};
+
 export const msCollectionActionSet: MultiSelectMenuActionSet = [
     [
         ...msCommonActionSet,
@@ -85,7 +97,8 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
         msToggleTrashAction,
         msEditCollection,
         msCopyToClipboardMenuAction,
-        msOpenWith3rdPartyClientAction
+        msOpenWith3rdPartyClientAction,
+        msShareAction,
     ],
 ];
 

@@ -12,6 +12,7 @@ import {
     NewProjectIcon,
     RenameIcon,
     UnfreezeIcon,
+    ShareIcon,
 } from 'components/icon/icon';
 import { RestoreFromTrashIcon, TrashIcon, FolderSharedIcon, Link } from 'components/icon/icon';
 import { getResource } from 'store/resources/resources';
@@ -20,6 +21,7 @@ import { openProjectUpdateDialog } from 'store/projects/project-update-actions';
 import { freezeProject, unfreezeProject } from 'store/projects/project-lock-actions';
 import { openWebDavS3InfoDialog } from 'store/collections/collection-info-actions';
 import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
+import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 
 const {
     ADD_TO_FAVORITES,
@@ -123,6 +125,16 @@ const msNewProjectAction: MultiSelectMenuAction = {
     },
 };
 
+const msShareAction: MultiSelectMenuAction  = {
+    name: SHARE,
+    icon: ShareIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(openSharingDialog(resources[0].uuid));
+    },
+};
+
 export const msProjectActionSet: MultiSelectMenuActionSet = [
     [
         ...msCommonActionSet,
@@ -132,7 +144,8 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
         msNewProjectAction,
         msFreezeProjectAction,
         msOpenWith3rdPartyClientAction,
-        msCopyToClipboardMenuAction
+        msCopyToClipboardMenuAction,
+        msShareAction,
     ],
 ];
 

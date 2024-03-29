@@ -7,14 +7,13 @@ import { IconType } from 'components/icon/icon';
 import { ResourcesState } from 'store/resources/resources';
 import { FavoritesState } from 'store/favorites/favorites-reducer';
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { AddFavoriteIcon, AdvancedIcon, DetailsIcon, OpenIcon, PublicFavoriteIcon, RemoveFavoriteIcon, ShareIcon } from 'components/icon/icon';
+import { AddFavoriteIcon, AdvancedIcon, DetailsIcon, OpenIcon, PublicFavoriteIcon, RemoveFavoriteIcon } from 'components/icon/icon';
 import { checkFavorite } from 'store/favorites/favorites-reducer';
 import { toggleFavorite } from 'store/favorites/favorites-actions';
 import { favoritePanelActions } from 'store/favorite-panel/favorite-panel-action';
 import { openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
@@ -34,7 +33,7 @@ export type MultiSelectMenuAction = {
 
 export type MultiSelectMenuActionSet = MultiSelectMenuAction[][];
 
-const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE } = ContextMenuActionNames;
+const { ADD_TO_FAVORITES, ADD_TO_PUBLIC_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS } = ContextMenuActionNames;
 
 const msToggleFavoriteAction: MultiSelectMenuAction = {
     name: ADD_TO_FAVORITES,
@@ -83,16 +82,6 @@ const msAdvancedAction: MultiSelectMenuAction  = {
     },
 };
 
-const msShareAction: MultiSelectMenuAction  = {
-    name: SHARE,
-    icon: ShareIcon,
-    hasAlts: false,
-    isForMulti: false,
-    execute: (dispatch, resources) => {
-        dispatch<any>(openSharingDialog(resources[0].uuid));
-    },
-};
-
 const msTogglePublicFavoriteAction: MultiSelectMenuAction = {
     name: ADD_TO_PUBLIC_FAVORITES,
     icon: PublicFavoriteIcon,
@@ -115,6 +104,5 @@ export const msCommonActionSet = [
     msOpenInNewTabMenuAction,
     msViewDetailsAction,
     msAdvancedAction,
-    msShareAction,
     msTogglePublicFavoriteAction
 ];

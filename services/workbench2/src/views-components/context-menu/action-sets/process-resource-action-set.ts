@@ -94,13 +94,6 @@ export const processResourceActionSet: ContextMenuActionSet = [
             },
         },
         {
-            icon: ShareIcon,
-            name: ContextMenuActionNames.SHARE,
-            execute: (dispatch, resources) => {
-                dispatch<any>(openSharingDialog(resources[0].uuid));
-            },
-        },
-        {
             icon: MoveToIcon,
             name: ContextMenuActionNames.MOVE_TO,
             execute: (dispatch, resources) => {
