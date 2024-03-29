@@ -112,6 +112,8 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.PROCESS]: processOrder,
     [ContextMenuKind.PROCESS_ADMIN]: processOrder,
     [ContextMenuKind.PROCESS_RESOURCE]: processOrder,
+    [ContextMenuKind.RUNNING_PROCESS_ADMIN]: processOrder,
+    [ContextMenuKind.RUNNING_PROCESS_RESOURCE]: processOrder,
 
     [ContextMenuKind.PROJECT]: projectOrder,
     [ContextMenuKind.PROJECT_ADMIN]: projectOrder,
