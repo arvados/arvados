@@ -34,7 +34,8 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
-import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuKind, sortMenuItems } from 'views-components/context-menu/menu-item-sort';
+import { sortByProperty } from "common/array-utils";
 
 const WIDTH_TRANSITION = 150
 
@@ -96,6 +97,7 @@ export const MultiselectToolbar = connect(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, singleSelectedUuid, iconProps, user, disabledButtons } = props;
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
+        console.log(singleResourceKind)
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
         const [isTransitioning, setIsTransitioning] = useState(false);
@@ -111,12 +113,15 @@ export const MultiselectToolbar = connect(
                 handleTransition()
         }, [checkedList])
 
-        const actions =
+        const rawActions =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
                 : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
                         singleSelectedUuid === null ? action.isForMulti : true
                     );
+                    
+        const actions =
+            singleResourceKind && singleResourceKind.length ? sortMenuItems(singleResourceKind[0] as ContextMenuKind, rawActions) : rawActions.sort(sortByProperty('name'));
 
         return (
             <React.Fragment>
@@ -273,7 +278,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
     }
 }; 
 
-function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
+function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters): MultiSelectMenuAction[] {
     const rawResult: Set<MultiSelectMenuAction> = new Set();
     const resultNames = new Set();
     const allFiltersArray: MultiSelectMenuAction[][] = []
@@ -303,17 +308,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
         return true;
     });
 
-    return filteredResult.sort((a, b) => {
-        const nameA = a.name || "";
-        const nameB = b.name || "";
-        if (nameA < nameB) {
-            return -1;
-        }
-        if (nameA > nameB) {
-            return 1;
-        }
-        return 0;
-    });
+    return filteredResult;
 }
 
 
