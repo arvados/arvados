@@ -179,6 +179,13 @@ export const DoubleRightArrows: IconType = (props: any) => (
     </SvgIcon>
 )
 
+//https://pictogrammers.com/library/memory/icon/box-light-vertical/
+export const VerticalLineDivider: IconType = (props: any) => (
+    <SvgIcon {...props}>
+        <path d="M12 0V22H10V0H12Z" />
+    </SvgIcon>
+)
+
 export type IconType = React.SFC<{ className?: string; style?: object }>;
 
 export const AddIcon: IconType = props => <Add {...props} />;

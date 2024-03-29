@@ -10,7 +10,7 @@ import { createAnchorAt } from "components/popover/helpers";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
-import { sortMenuItems, ContextMenuKind } from "./menu-item-sort";
+import { sortMenuItems, ContextMenuKind, menuDirection } from "./menu-item-sort";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 
@@ -66,7 +66,7 @@ export const ContextMenu = connect(mapStateToProps, mapDispatchToProps, mergePro
 const menuActionSets = new Map<string, ContextMenuActionSet>();
 
 export const addMenuActionSet = (name: ContextMenuKind, itemSet: ContextMenuActionSet) => {
-    const sorted = itemSet.map(items => sortMenuItems(name, items));
+    const sorted = itemSet.map(items => sortMenuItems(name, items, menuDirection.VERTICAL));
     menuActionSets.set(name, sorted);
 };
 

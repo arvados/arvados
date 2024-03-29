@@ -5,7 +5,7 @@
 import { ContextMenuAction } from './context-menu-action-set';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { sortByProperty } from 'common/array-utils';
-import { menuDivider } from './actions/context-menu-divider';
+import { horizontalMenuDivider, verticalMenuDivider } from './actions/context-menu-divider';
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
@@ -67,6 +67,7 @@ const processOrder = [
     ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
 ];
@@ -138,7 +139,12 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 };
 
-export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[]) => {
+export const menuDirection = {
+    VERTICAL: 'vertical',
+    HORIZONTAL: 'horizontal'
+}
+
+export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string) => {
 
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name
@@ -153,7 +159,7 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
     preferredOrder.forEach((name) => {
         if (name === ContextMenuActionNames.DIVIDER) {
             count++;
-            bucketMap.set(`${name}-${count}`, menuDivider)
+            bucketMap.set(`${name}-${count}`, orthagonality === menuDirection.VERTICAL ? verticalMenuDivider : horizontalMenuDivider)
         } else {
             bucketMap.set(name, null)
         }

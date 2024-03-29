@@ -34,7 +34,7 @@ import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
-import { ContextMenuKind, sortMenuItems } from 'views-components/context-menu/menu-item-sort';
+import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 import { sortByProperty } from "common/array-utils";
 
 const WIDTH_TRANSITION = 150
@@ -119,8 +119,8 @@ export const MultiselectToolbar = connect(
                         singleSelectedUuid === null ? action.isForMulti : true
                     );
                     
-        const actions =
-            singleResourceKind && singleResourceKind.length ? sortMenuItems(singleResourceKind[0] as ContextMenuKind, rawActions) : rawActions.sort(sortByProperty('name'));
+        const actions: ContextMenuAction[] | MultiSelectMenuAction[] =
+            singleResourceKind && singleResourceKind.length ? sortMenuItems(singleResourceKind[0] as ContextMenuKind, rawActions, menuDirection.HORIZONTAL) : rawActions.sort(sortByProperty('name'));
 
         return (
             <React.Fragment>
