@@ -384,9 +384,9 @@ export const ProcessIOCard = withStyles(styles)(
                                     </Grid>
                                 )}
                                 {/* Once loaded, either raw or params may still be empty
-				  *   Raw when all params are empty
-				  *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
-				  */}
+                                  *   Raw when all params are empty
+                                  *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+                                  */}
                                 {!loading && (hasRaw || hasParams) && (
                                     <>
                                         <Tabs
@@ -532,7 +532,7 @@ export type ProcessIOValue = {
 export type ProcessIOParameter = {
     id: string;
     label: string;
-    value: ProcessIOValue[];
+    value: ProcessIOValue;
 };
 
 interface ProcessIOPreviewDataProps {
@@ -560,62 +560,6 @@ const ProcessIOPreview = memo(
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {data.map((param: ProcessIOParameter) => {
-                        const firstVal = param.value.length > 0 ? param.value[0] : undefined;
-                        const rest = param.value.slice(1);
-                        const mainRowClasses = {
-                            [classes.noBorderRow]: rest.length > 0,
-                            [classes.primaryRow]: true
-                        };
-
-                        return (
-                            <React.Fragment key={param.id}>
-                                <TableRow
-                                    className={classNames(mainRowClasses)}
-                                    data-cy="process-io-param"
-                                >
-                                    <TableCell>{param.id}</TableCell>
-                                    {showLabel && <TableCell>{param.label}</TableCell>}
-                                    <TableCell>
-                                        {firstVal && (
-                                            <ProcessValuePreview
-                                                value={firstVal}
-                                                showImagePreview={showImagePreview}
-                                            />
-                                        )}
-                                    </TableCell>
-                                    <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
-                                        <Typography className={classes.paramValue}>{firstVal?.collection}</Typography>
-                                    </TableCell>
-                                </TableRow>
-                                {rest.map((val, i) => {
-                                    const rowClasses = {
-                                        [classes.noBorderRow]: i < rest.length - 1,
-                                        [classes.secondaryRow]: val.secondary,
-                                        [classes.primaryRow]: !val.secondary,
-                                    };
-                                    return (
-                                        <TableRow
-                                            className={classNames(rowClasses)}
-                                            key={i}
-                                        >
-                                            <TableCell />
-                                            {showLabel && <TableCell />}
-                                            <TableCell>
-                                                <ProcessValuePreview
-                                                    value={val}
-                                                    showImagePreview={showImagePreview}
-                                                />
-                                            </TableCell>
-                                            <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
-                                                <Typography className={classes.paramValue}>{val.collection}</Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </React.Fragment>
-                        );
-                    })}
                 </TableBody>
             </Table>
         );

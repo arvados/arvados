@@ -189,12 +189,13 @@ export const initProcessPanelFilters = processPanelActions.SET_PROCESS_PANEL_FIL
 ]);
 
 export const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): ProcessIOParameter[] => {
-    return inputs.map(input => {
-        return {
-            id: getIOParamId(input),
-            label: input.label || "",
-            value: getIOParamDisplayValue(auth, input),
-        };
+    return inputs.flatMap((input): ProcessIOParameter[] => {
+        const processValues = getIOParamDisplayValue(auth, input);
+        return processValues.map((thisValue, i) => ({
+            id: i === 0 ? getIOParamId(input) : "",
+            label: i === 0 ? input.label || "" : "",
+            value: thisValue,
+        }));
     });
 };
 
@@ -204,11 +205,12 @@ export const formatOutputData = (
     pdh: string | undefined,
     auth: AuthState
 ): ProcessIOParameter[] => {
-    return definitions.map(output => {
-        return {
-            id: getIOParamId(output),
-            label: output.label || "",
-            value: getIOParamDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] || [] }), pdh),
-        };
+    return definitions.flatMap((output): ProcessIOParameter[] => {
+        const processValues = getIOParamDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] || [] }), pdh);
+        return processValues.map((thisValue, i) => ({
+            id: i === 0 ? getIOParamId(output) : "",
+            label: i === 0 ? output.label || "" : "",
+            value: thisValue,
+        }));
     });
 };
