@@ -20,7 +20,7 @@ export enum ContextMenuActionNames {
     COPY_SELECTED_INTO_EXISTING_COLLECTION = 'Copy selected into existing collection',
     COPY_SELECTED_INTO_SEPARATE_COLLECTIONS = 'Copy selected into separate collections',
     COPY_SELECTED_INTO_NEW_COLLECTION = 'Copy selected into new collection',
-    COPY_TO_CLIPBOARD = 'Copy to clipboard',
+    COPY_TO_CLIPBOARD = 'Copy link to clipboard',
     DEACTIVATE_USER = 'Deactivate user',
     DELETE_WORKFLOW = 'Delete Workflow',
     DOWNLOAD = 'Download',
