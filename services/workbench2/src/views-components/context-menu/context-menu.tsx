@@ -10,7 +10,6 @@ import { createAnchorAt } from "components/popover/helpers";
 import { ContextMenuActionSet, ContextMenuAction } from "./context-menu-action-set";
 import { Dispatch } from "redux";
 import { memoize } from "lodash";
-import { sortByProperty } from "common/array-utils";
 import { sortMenuItems, ContextMenuKind } from "./menu-item-sort";
 
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };

@@ -23,6 +23,7 @@ export enum ContextMenuActionNames {
     COPY_TO_CLIPBOARD = 'Copy link to clipboard',
     DEACTIVATE_USER = 'Deactivate user',
     DELETE_WORKFLOW = 'Delete Workflow',
+    DIVIDER = 'Divider',
     DOWNLOAD = 'Download',
     EDIT_COLLECTION = 'Edit collection',
     EDIT_PROCESS = 'Edit process',

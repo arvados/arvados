@@ -97,7 +97,6 @@ export const MultiselectToolbar = connect(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, singleSelectedUuid, iconProps, user, disabledButtons } = props;
         const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
-        console.log(singleResourceKind)
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
         const [isTransitioning, setIsTransitioning] = useState(false);

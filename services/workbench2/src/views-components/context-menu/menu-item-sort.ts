@@ -4,7 +4,8 @@
 
 import { ContextMenuAction } from './context-menu-action-set';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
-import { sortByProperty } from 'common/array-utils'; 
+import { sortByProperty } from 'common/array-utils';
+import { menuDivider } from './actions/context-menu-divider';
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
@@ -54,11 +55,14 @@ export enum ContextMenuKind {
     SEARCH_RESULTS = "SearchResults",
 }
 
+
+
 const processOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.OUTPUTS,
     ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.EDIT_PROCESS,
     ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
     ContextMenuActionNames.MOVE_TO,
@@ -73,11 +77,13 @@ const projectOrder = [
     ContextMenuActionNames.COPY_TO_CLIPBOARD,
     ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
     ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.NEW_PROJECT,
     ContextMenuActionNames.EDIT_PROJECT,
     ContextMenuActionNames.SHARE,
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.FREEZE_PROJECT,
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
@@ -89,12 +95,14 @@ const collectionOrder = [
     ContextMenuActionNames.COPY_TO_CLIPBOARD,
     ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
     ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.NEW_COLLECTION,
     ContextMenuActionNames.EDIT_COLLECTION,
     ContextMenuActionNames.SHARE,
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
     ContextMenuActionNames.MOVE_TO_TRASH,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
 ];
@@ -104,6 +112,7 @@ const workflowOrder = [
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.COPY_TO_CLIPBOARD,
     ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.RUN_WORKFLOW,
     ContextMenuActionNames.REMOVE,
 ]
@@ -138,8 +147,18 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
     const bucketMap = new Map();
     const leftovers: ContextMenuAction[] = [];
 
-    preferredOrder.forEach((name) => bucketMap.set(name, null));
-    menuItems.forEach((item) => {
+    // if we have multiple dividers, we need each of them to have a different key
+    let count = 0;
+
+    preferredOrder.forEach((name) => {
+        if (name === ContextMenuActionNames.DIVIDER) {
+            count++;
+            bucketMap.set(`${name}-${count}`, menuDivider)
+        } else {
+            bucketMap.set(name, null)
+        }
+    });
+    [...menuItems].forEach((item) => {
         if (bucketMap.has(item.name)) bucketMap.set(item.name, item);
         else leftovers.push(item);
     });
