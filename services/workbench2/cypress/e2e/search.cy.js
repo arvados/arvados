@@ -271,17 +271,17 @@ describe("Search tests", function () {
                 cy.stub(win, "open").as("Open");
             });
 
-            // Check copy to clipboard
+            // Check Copy link to clipboard
             cy.get("[data-cy=search-results]").contains(colName).rightclick();
             cy.get("[data-cy=context-menu]").within(ctx => {
                 // Check that there are 4 items in the menu
                 cy.get(ctx).children().should("have.length", 4);
                 cy.contains("API Details");
-                cy.contains("Copy to clipboard");
+                cy.contains("Copy link to clipboard");
                 cy.contains("Open in new tab");
                 cy.contains("View details");
 
-                cy.contains("Copy to clipboard").click();
+                cy.contains("Copy link to clipboard").click();
                 cy.waitForDom();
                 cy.window().then(win =>
                     win.navigator.clipboard.readText().then(text => {
@@ -298,10 +298,10 @@ describe("Search tests", function () {
                 cy.get("@Open").should("have.been.calledOnceWith", `${window.location.origin}/collections/${testCollection.uuid}`);
             });
 
-            // Check federated result copy to clipboard
+            // Check federated result Copy link to clipboard
             cy.get("[data-cy=search-results]").contains(federatedColName).rightclick();
             cy.get("[data-cy=context-menu]").within(() => {
-                cy.contains("Copy to clipboard").click();
+                cy.contains("Copy link to clipboard").click();
                 cy.waitForDom();
                 cy.window().then(win =>
                     win.navigator.clipboard.readText().then(text => {

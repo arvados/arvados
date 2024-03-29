@@ -32,7 +32,7 @@ describe("Collection panel tests", function () {
         const msButtonTooltips = [
             'API Details',
             'Add to favorites',
-            'Copy to clipboard',
+            'Copy link to clipboard',
             'Edit collection',
             'Make a copy',
             'Move to',
@@ -351,7 +351,7 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy to clipboard")
+                                .and("contain", "Copy link to clipboard")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
@@ -359,7 +359,7 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("not.contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy to clipboard")
+                                .and("contain", "Copy link to clipboard")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu

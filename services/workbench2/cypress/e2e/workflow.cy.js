@@ -270,7 +270,7 @@ describe('Registered workflow panel tests', function() {
 
         const msButtonTooltips = [
             'API Details',
-            'Copy to clipboard',
+            'Copy link to clipboard',
             'Delete Workflow',
             'Open in new tab',
             'Run Workflow',

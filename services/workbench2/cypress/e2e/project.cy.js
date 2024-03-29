@@ -221,7 +221,7 @@ describe("Project tests", function () {
         const msButtonTooltips = [
             'API Details',
             'Add to favorites',
-            'Copy to clipboard',
+            'Copy link to clipboard',
             'Edit project',
             'Freeze project',
             'Move to',
@@ -636,7 +636,7 @@ describe("Project tests", function () {
         cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
         cy.waitForDom();
         cy.get("[data-cy=project-panel]").contains(projectName).should("be.visible").rightclick();
-        cy.get("[data-cy=context-menu]").contains("Copy to clipboard").click();
+        cy.get("[data-cy=context-menu]").contains("Copy link to clipboard").click();
         cy.window().then(win =>
             win.navigator.clipboard.readText().then(text => {
                 expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);

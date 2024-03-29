@@ -140,7 +140,7 @@ unset ARVADOS_API_HOST_INSECURE`
                         variant="contained"
                         className={classes.actionButton}
                     >
-                        COPY TO CLIPBOARD
+                        Copy link to clipBOARD
                     </Button>
                 </CopyToClipboard>
                 <Typography>

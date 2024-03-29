@@ -100,7 +100,7 @@ export const ProcessCmdCard = withStyles(styles)(
           action={
             <Grid container direction="row" alignItems="center">
               <Grid item>
-                <Tooltip title="Copy to clipboard" disableFocusListener>
+                <Tooltip title="Copy link to clipboard" disableFocusListener>
                   <IconButton>
                     <CopyToClipboard
                       text={command.join(" ")}

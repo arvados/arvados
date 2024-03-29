@@ -88,7 +88,7 @@ describe('<CurrentTokenDialog />', () => {
     });
   });
 
-  describe('copy to clipboard button', () => {
+  describe('Copy link to clipboard button', () => {
     beforeEach(() => {
       wrapper = mount(
         <Provider store={store}>
