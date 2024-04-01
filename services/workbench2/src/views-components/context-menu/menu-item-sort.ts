@@ -66,7 +66,6 @@ const processOrder = [
     ContextMenuActionNames.EDIT_PROCESS,
     ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
     ContextMenuActionNames.CANCEL,
-    ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.REMOVE,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.ADD_TO_FAVORITES,
@@ -144,7 +143,7 @@ export const menuDirection = {
     HORIZONTAL: 'horizontal'
 }
 
-export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string) => {
+export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] => {
 
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name

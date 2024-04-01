@@ -79,7 +79,7 @@ describe('User profile tests', function() {
             cy.get('[role=button]').contains('API Details');
 
             cy.get('[role=button]').should(account ? 'contain' : 'not.contain', 'Account Settings');
-            cy.get('[role=button]').should(activate ? 'contain' : 'not.contain', 'Activate User');
+            cy.get('[role=button]').should(activate ? 'contain' : 'not.contain', 'Activate user');
             cy.get('[role=button]').should(deactivate ? 'contain' : 'not.contain', 'Deactivate user');
             cy.get('[role=button]').should(login ? 'contain' : 'not.contain', 'Login as user');
             cy.get('[role=button]').should(setup ? 'contain' : 'not.contain', 'Setup User');
@@ -400,7 +400,7 @@ describe('User profile tests', function() {
 
         // Activate user
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
-        cy.get('[data-cy=context-menu]').contains('Activate User').click();
+        cy.get('[data-cy=context-menu]').contains('Activate user').click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
         // Check that user is active
@@ -434,7 +434,7 @@ describe('User profile tests', function() {
         });
         // reactivate
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
-        cy.get('[data-cy=context-menu]').contains('Activate User').click();
+        cy.get('[data-cy=context-menu]').contains('Activate user').click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
         // Check that user is active

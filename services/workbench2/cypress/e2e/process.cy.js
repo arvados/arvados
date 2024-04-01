@@ -96,7 +96,6 @@ describe("Process tests", function () {
                 'Edit process',
                 'Copy and re-run process',
                 'CANCEL',
-                'Move to',
                 'Remove',
                 'Add to favorites',
             ];
