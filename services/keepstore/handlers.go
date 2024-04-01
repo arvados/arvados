@@ -679,7 +679,7 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 	log := ctxlog.FromContext(ctx)
 
 	// Attempt to read the requested hash from a keep volume.
-	errorToCaller := NotFoundError
+	var errorToCaller error = NotFoundError
 
 	for _, vol := range volmgr.AllReadable() {
 		size, err := vol.Get(ctx, hash, buf)
@@ -688,20 +688,19 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 			return 0, ErrClientDisconnect
 		default:
 		}
-		if err != nil {
+		if os.IsNotExist(err) {
 			// IsNotExist is an expected error and may be
 			// ignored. All other errors are logged. In
 			// any case we continue trying to read other
 			// volumes. If all volumes report IsNotExist,
 			// we return a NotFoundError.
-			if !os.IsNotExist(err) {
-				log.WithError(err).Errorf("Get(%s) failed on %s", hash, vol)
-			}
-			// If some volume returns a transient error, return it to the caller
-			// instead of "Not found" so it can retry.
-			if err == VolumeBusyError {
-				errorToCaller = err.(*KeepError)
-			}
+			continue
+		} else if err != nil {
+			// If some volume returns a transient error,
+			// return it to the caller instead of "Not
+			// found" so it can retry.
+			log.WithError(err).Errorf("Get(%s) failed on %s", hash, vol)
+			errorToCaller = err
 			continue
 		}
 		// Check the file checksum.

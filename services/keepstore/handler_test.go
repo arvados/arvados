@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -185,20 +186,24 @@ func (s *HandlerSuite) TestGetHandler(c *check.C) {
 
 	// Authenticated request, signed locator
 	// => 503 Server busy (transient error)
-
-	// Set up the block owning volume to respond with errors
-	vols[0].Volume.(*MockVolume).Bad = true
-	vols[0].Volume.(*MockVolume).BadVolumeError = VolumeBusyError
-	response = IssueRequest(s.handler, &RequestTester{
-		method:   "GET",
-		uri:      signedLocator,
-		apiToken: knownToken,
-	})
-	// A transient error from one volume while the other doesn't find the block
-	// should make the service return a 503 so that clients can retry.
-	ExpectStatusCode(c,
-		"Volume backend busy",
-		503, response)
+	for _, stubErr := range []error{VolumeBusyError, NotFoundError, errors.New("misc error")} {
+		c.Logf("stubErr %T %s", stubErr, stubErr)
+		// Set up the block owning volume to respond with error
+		vols[0].Volume.(*MockVolume).Bad = true
+		vols[0].Volume.(*MockVolume).BadVolumeError = stubErr
+		response = IssueRequest(s.handler, &RequestTester{
+			method:   "GET",
+			uri:      signedLocator,
+			apiToken: knownToken,
+		})
+		// A transient error from one volume while the other doesn't find the block
+		// should make the service return a 503 so that clients can retry.
+		if err, ok := stubErr.(*KeepError); ok {
+			ExpectStatusCode(c, "volume error status", err.HTTPCode, response)
+		} else {
+			ExpectStatusCode(c, "volume error status", 500, response)
+		}
+	}
 }
 
 // Test PutBlockHandler on the following situations:
