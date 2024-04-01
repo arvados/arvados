@@ -273,7 +273,7 @@ class KeepBlockCache(object):
 
         _evict_candidates = collections.deque(self._cache.values())
         sm = sum([slot.size() for slot in _evict_candidates])
-        while len(self._cache) > 0 and (sm > cache_max or len(self._cache) > max_slots):
+        while len(_evict_candidates) > 0 and (sm > cache_max or len(self._cache) > max_slots):
             slot = _evict_candidates.popleft()
             if not slot.ready.is_set():
                 continue
@@ -313,7 +313,10 @@ class KeepBlockCache(object):
         # Test if the locator is already in the cache
         if locator in self._cache:
             n = self._cache[locator]
-            self._cache.move_to_back(locator)
+            if n.ready.is_set() and n.content is None:
+                del self._cache[n.locator]
+                return None
+            self._cache.move_to_end(locator)
             return n
         if self._disk_cache:
             # see if it exists on disk

@@ -13,6 +13,7 @@ import time
 import errno
 import logging
 import weakref
+import collections
 
 _logger = logging.getLogger('arvados.keep')
 
