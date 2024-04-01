@@ -573,17 +573,6 @@ interface ProcessValuePreviewProps {
 
 const ProcessValuePreview = withStyles(styles)(({ value, showImagePreview, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
     <Typography className={classes.paramValue}>
-        {value.imageUrl && showImagePreview ? (
-            <img
-                className={classes.imagePreview}
-                src={value.imageUrl}
-                crossOrigin="anonymous"
-                alt="Inline Preview"
-            />
-        ) : (
-            ""
-        )}
-        {value.imageUrl && !showImagePreview ? <ImagePlaceholder /> : ""}
         <span className={classNames(classes.valArray, value.secondary && classes.secondaryVal)}>{value.display}</span>
     </Typography>
 ));
@@ -926,10 +915,4 @@ const UnsupportedValueChip = withStyles(styles)(({ classes }: WithStyles<CssRule
         icon={<InfoIcon />}
         label={"Cannot display value"}
     />
-));
-
-const ImagePlaceholder = withStyles(styles)(({ classes }: WithStyles<CssRules>) => (
-    <span className={classes.imagePlaceholder}>
-        <ImageIcon />
-    </span>
 ));
