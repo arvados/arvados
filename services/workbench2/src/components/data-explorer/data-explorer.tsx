@@ -169,6 +169,7 @@ export const DataExplorer = withStyles(styles)(
                 setCheckedListOnStore,
                 checkedList,
                 working,
+                page,
             } = this.props;
             return (
                 <Paper
@@ -319,7 +320,8 @@ export const DataExplorer = withStyles(styles)(
                                             onClick={this.loadMore}
                                             variant="contained"
                                             color="primary"  
-                                            style={{width: '100%', margin: '10px'}} 
+                                            style={{width: '100%', margin: '10px'}}
+                                            disabled={ working || (page + 1) * rowsPerPage >= itemsAvailable || (itemsAvailable === 0 && page === 0)}
                                         >
                                             Load more
                                         </Button>

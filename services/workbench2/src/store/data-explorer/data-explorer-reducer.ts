@@ -95,7 +95,7 @@ export const dataExplorerReducer = (
             update(state, id, (explorer) => ({
                 ...explorer,
                 items: state[id].items.concat(items),
-                itemsAvailable: state[id].itemsAvailable + itemsAvailable,
+                itemsAvailable: itemsAvailable,
                 page,
                 rowsPerPage,
             })),

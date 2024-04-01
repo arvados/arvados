@@ -23,7 +23,7 @@ interface Props {
 }
 
 const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {
-    const working = !!progressIndicator.some(p => p.id === id && p.working);
+    const working = !!progressIndicator.some(p => p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
     const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
