@@ -81,7 +81,7 @@ describe('User profile tests', function() {
             cy.get('[role=button]').should(account ? 'contain' : 'not.contain', 'Account Settings');
             cy.get('[role=button]').should(activate ? 'contain' : 'not.contain', 'Activate User');
             cy.get('[role=button]').should(deactivate ? 'contain' : 'not.contain', 'Deactivate user');
-            cy.get('[role=button]').should(login ? 'contain' : 'not.contain', 'Login As User');
+            cy.get('[role=button]').should(login ? 'contain' : 'not.contain', 'Login as user');
             cy.get('[role=button]').should(setup ? 'contain' : 'not.contain', 'Setup User');
         });
         cy.get('div[role=presentation]').click();

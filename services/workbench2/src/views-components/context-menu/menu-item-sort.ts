@@ -153,7 +153,7 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
     const bucketMap = new Map();
     const leftovers: ContextMenuAction[] = [];
 
-    // if we have multiple dividers, we need each of them to have a different key
+    // if we have multiple dividers, we need each of them to have a different "name" property
     let count = 0;
 
     preferredOrder.forEach((name) => {
