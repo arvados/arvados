@@ -403,8 +403,17 @@ class ApiClientAuthorization < ArvadosModel
         end
       rescue ActiveRecord::RecordNotUnique
         Rails.logger.debug("cached remote token #{token_uuid} already exists, retrying...")
-        # Some other request won the race: retry just once before erroring out
-        if (retries += 1) <= 1
+        # Another request won the race (trying to find_or_create the
+        # same token UUID) ...and/or... there is an expired entry with
+        # the same secret but a different UUID (e.g., the token is an
+        # OIDC access token and [a] our database has an expired cached
+        # row that was not used above, and [b] the remote cluster had
+        # deleted its expired cached row so it assigned a new UUID).
+        #
+        # Delete any conflicting row if any. Retry twice (in case we
+        # hit both of those situations at once), then give up.
+        if (retries += 1) <= 2
+          ApiClientAuthorization.where('api_token=? and uuid<>?', stored_secret, token_uuid).delete_all
           retry
         else
           Rails.logger.warn("cannot find or create cached remote token #{token_uuid}")
