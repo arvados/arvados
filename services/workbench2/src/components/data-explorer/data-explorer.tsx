@@ -315,9 +315,11 @@ export const DataExplorer = withStyles(styles)(
                                         />
                                     ) : (
                                         <Button
-                                            variant="text"
-                                            size="medium"
+                                            size="small"
                                             onClick={this.loadMore}
+                                            variant="contained"
+                                            color="primary"  
+                                            style={{width: '100%', margin: '10px'}} 
                                         >
                                             Load more
                                         </Button>
