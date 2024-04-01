@@ -271,8 +271,14 @@ class KeepBlockCache(object):
         # Try and make sure the contents of the cache do not exceed
         # the supplied maximums.
 
+        sm = 0
+        for slot in self._cache.values():
+            sm += slot.size()
+
+        if sm <= cache_max and len(self._cache) <= max_slots:
+            return
+
         _evict_candidates = collections.deque(self._cache.values())
-        sm = sum([slot.size() for slot in _evict_candidates])
         while len(_evict_candidates) > 0 and (sm > cache_max or len(self._cache) > max_slots):
             slot = _evict_candidates.popleft()
             if not slot.ready.is_set():
@@ -926,7 +932,10 @@ class KeepClient(object):
         self.misses_counter = Counter()
         self._storage_classes_unsupported_warning = False
         self._default_classes = []
-        self.num_prefetch_threads = num_prefetch_threads or 2
+        if num_prefetch_threads is not None:
+            self.num_prefetch_threads = num_prefetch_threads
+        else:
+            self.num_prefetch_threads = 2
         self._prefetch_queue = None
         self._prefetch_threads = None
 

@@ -487,7 +487,8 @@ class Mount(object):
             # layer actually ends up being slower.
             # Experimentally, capping 7 threads seems to
             # be a sweet spot.
-            prefetch_threads = min(max((block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
+            #prefetch_threads = min(max((block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
+            prefetch_threads = 0
 
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
