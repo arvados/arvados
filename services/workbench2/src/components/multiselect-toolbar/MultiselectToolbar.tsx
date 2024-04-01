@@ -339,7 +339,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
-                case ContextMenuActionNames.COPY_TO_CLIPBOARD:
+                case ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD:
                     const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
                     dispatch<any>(copyToClipboardAction(selectedResources));
                     break;

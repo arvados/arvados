@@ -65,6 +65,7 @@ const processOrder = [
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.EDIT_PROCESS,
     ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
+    ContextMenuActionNames.CANCEL,
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.REMOVE,
     ContextMenuActionNames.DIVIDER,
@@ -75,7 +76,7 @@ const processOrder = [
 const projectOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
     ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
@@ -83,7 +84,7 @@ const projectOrder = [
     ContextMenuActionNames.EDIT_PROJECT,
     ContextMenuActionNames.SHARE,
     ContextMenuActionNames.MOVE_TO,
-    ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.MOVE_TO_TRASH,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.FREEZE_PROJECT,
     ContextMenuActionNames.ADD_TO_FAVORITES,
@@ -93,11 +94,10 @@ const projectOrder = [
 const collectionOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
     ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
-    ContextMenuActionNames.NEW_COLLECTION,
     ContextMenuActionNames.EDIT_COLLECTION,
     ContextMenuActionNames.SHARE,
     ContextMenuActionNames.MOVE_TO,
@@ -111,11 +111,11 @@ const collectionOrder = [
 const workflowOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.RUN_WORKFLOW,
-    ContextMenuActionNames.REMOVE,
+    ContextMenuActionNames.DELETE_WORKFLOW,
 ]
 
 const kindToOrder: Record<string, ContextMenuActionNames[]> = {

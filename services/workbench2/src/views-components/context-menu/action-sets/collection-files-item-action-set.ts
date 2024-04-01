@@ -42,7 +42,7 @@ export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
         },
         {
             component: CollectionCopyToClipboardAction,
-            name: ContextMenuActionNames.COPY_TO_CLIPBOARD,
+            name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
             execute: () => {
                 return;
             },

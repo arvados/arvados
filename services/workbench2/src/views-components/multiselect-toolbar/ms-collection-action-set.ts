@@ -16,7 +16,7 @@ import { openWebDavS3InfoDialog } from "store/collections/collection-info-action
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 
 
-const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
+const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
@@ -60,7 +60,7 @@ const msEditCollection: MultiSelectMenuAction = {
 }
 
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
-    name: COPY_TO_CLIPBOARD,
+    name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
     hasAlts: false,
     isForMulti: false,
@@ -102,6 +102,6 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
     ],
 ];
 
-export const msReadOnlyCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, OPEN_WITH_3RD_PARTY_CLIENT]);
-export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_WITH_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
-export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_WITH_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
+export const msReadOnlyCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, OPEN_WITH_3RD_PARTY_CLIENT]);
+export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_WITH_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
+export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_WITH_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])

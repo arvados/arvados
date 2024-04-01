@@ -219,18 +219,18 @@ describe("Project tests", function () {
     it('shows the appropriate buttons in the multiselect toolbar', () => {
 
         const msButtonTooltips = [
-            'API Details',
-            'Add to favorites',
+            'View details',
+            'Open in new tab',
             'Copy link to clipboard',
+            'Open with 3rd party client',
+            'API Details',
+            'New project',
             'Edit project',
-            'Freeze project',
+            'Share',
             'Move to',
             'Move to trash',
-            'New project',
-            'Open in new tab',
-            'Open with 3rd party client',
-            'Share',
-            'View details',
+            'Freeze project',
+            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);

@@ -30,17 +30,17 @@ describe("Collection panel tests", function () {
     it('shows the appropriate buttons in the toolbar', () => {
 
         const msButtonTooltips = [
-            'API Details',
-            'Add to favorites',
-            'Copy link to clipboard',
-            'Edit collection',
-            'Make a copy',
-            'Move to',
-            'Move to trash',
-            'Open in new tab',
-            'Open with 3rd party client',
-            'Share',
             'View details',
+            'Open in new tab',
+            'Copy link to clipboard',
+            'Open with 3rd party client',
+            'API Details',
+            'Edit collection',
+            'Share',
+            'Move to',
+            'Make a copy',
+            'Move to trash',
+            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);

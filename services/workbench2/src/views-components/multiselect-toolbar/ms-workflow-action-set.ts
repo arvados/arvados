@@ -10,7 +10,7 @@ import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.act
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { ShareIcon } from 'components/icon/icon';
 
-const { OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW, SHARE } = ContextMenuActionNames;
+const { OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW, SHARE } = ContextMenuActionNames;
 
 const msRunWorkflow: MultiSelectMenuAction = {
     name: RUN_WORKFLOW,
@@ -33,7 +33,7 @@ const msDeleteWorkflow: MultiSelectMenuAction = {
 };
 
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
-    name: COPY_TO_CLIPBOARD,
+    name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
     hasAlts: false,
     isForMulti: false,
@@ -54,5 +54,5 @@ const msShareAction: MultiSelectMenuAction  = {
 
 export const msWorkflowActionSet: MultiSelectMenuActionSet = [[...msCommonActionSet, msRunWorkflow, msDeleteWorkflow, msCopyToClipboardMenuAction, msShareAction]];
 
-export const msReadOnlyWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW ]);
-export const msWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW]);
+export const msReadOnlyWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW ]);
+export const msWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW]);

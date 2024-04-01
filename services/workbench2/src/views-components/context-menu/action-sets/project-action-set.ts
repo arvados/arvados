@@ -41,7 +41,7 @@ export const openInNewTabMenuAction = {
 
 export const copyToClipboardMenuAction = {
     icon: Link,
-    name: ContextMenuActionNames.COPY_TO_CLIPBOARD,
+    name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     execute: (dispatch, resources) => {
         dispatch(copyToClipboardAction(resources));
     },
