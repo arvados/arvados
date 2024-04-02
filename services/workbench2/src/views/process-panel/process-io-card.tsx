@@ -79,8 +79,8 @@ type CssRules =
     | "iconHeader"
     | "tableWrapper"
     | "paramTableRoot"
+    | "paramTableCellText"
     | "mountsTableRoot"
-    | "value"
     | "keepLink"
     | "collectionLink"
     | "secondaryVal"
@@ -180,6 +180,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             },
         },
     },
+    // Param value cell typography styles
+    paramTableCellText: {
+        maxWidth: "100%",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+    },
     mountsTableRoot: {
         width: "100%",
         "& thead th": {
@@ -189,13 +196,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& td, & th": {
             paddingRight: "25px",
         },
-    },
-    // Cell typography styles
-    value: {
-        maxWidth: "100%",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -554,12 +554,12 @@ const ProcessIOPreview = memo(
 
             return <TableRow style={style} className={classNames(rowClasses)}>
                 <TableCell>
-                    <Typography className={classes.value}>
+                    <Typography className={classes.paramTableCellText}>
                         {param.id}
                     </Typography>
                 </TableCell>
                 {showLabel && <TableCell>
-                    <Typography className={classes.value}>
+                    <Typography className={classes.paramTableCellText}>
                         {param.label}
                     </Typography>
                 </TableCell>}
@@ -569,7 +569,7 @@ const ProcessIOPreview = memo(
                     />
                 </TableCell>
                 <TableCell>
-                    <Typography className={classes.value}>
+                    <Typography className={classes.paramTableCellText}>
                         {param.value.collection}
                     </Typography>
                 </TableCell>
@@ -613,7 +613,7 @@ interface ProcessValuePreviewProps {
 }
 
 const ProcessValuePreview = withStyles(styles)(({ value, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
-    <Typography className={classNames(classes.value, value.secondary && classes.secondaryVal)}>
+    <Typography className={classNames(classes.paramTableCellText, value.secondary && classes.secondaryVal)}>
         {value.display}
     </Typography>
 ));
