@@ -482,12 +482,11 @@ class Mount(object):
                                                       disk_cache=self.args.disk_cache,
                                                       disk_cache_dir=self.args.disk_cache_dir)
 
-            # If there's too many prefetch threads and you
-            # max out the CPU, delivering data to the FUSE
-            # layer actually ends up being slower.
-            # Experimentally, capping 7 threads seems to
-            # be a sweet spot.
-            #prefetch_threads = min(max((block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
+            # Profiling indicates that prefetching has more of a
+            # negative impact on the read() fast path (by requiring it
+            # to do more work and take additional locks) than benefit.
+            # Also, the kernel does some readahead itself, which has a
+            # similar effect.
             prefetch_threads = 0
 
             self.api = arvados.safeapi.ThreadSafeApiCache(
