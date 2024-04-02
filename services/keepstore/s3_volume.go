@@ -217,7 +217,23 @@ func (v *s3Volume) check(ec2metadataHostname string) error {
 	creds := aws.NewChainProvider(
 		[]aws.CredentialsProvider{
 			aws.NewStaticCredentialsProvider(v.AccessKeyID, v.SecretAccessKey, v.AuthToken),
-			ec2rolecreds.New(ec2metadata.New(cfg)),
+			ec2rolecreds.New(ec2metadata.New(cfg), func(opts *ec2rolecreds.ProviderOptions) {
+				// (from aws-sdk-go-v2 comments)
+				// "allow the credentials to trigger
+				// refreshing prior to the credentials
+				// actually expiring. This is
+				// beneficial so race conditions with
+				// expiring credentials do not cause
+				// request to fail unexpectedly due to
+				// ExpiredTokenException exceptions."
+				//
+				// (from
+				// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
+				// "We make new credentials available
+				// at least five minutes before the
+				// expiration of the old credentials."
+				opts.ExpiryWindow = 5 * time.Minute
+			}),
 		})
 
 	cfg.Credentials = creds

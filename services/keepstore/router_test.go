@@ -373,6 +373,13 @@ func (s *routerSuite) TestVolumeErrorStatusCode(c *C) {
 	c.Check(resp.Code, Equals, http.StatusBadGateway)
 	c.Check(resp.Body.String(), Equals, "test error\n")
 
+	router.keepstore.mountsW[0].volume.(*stubVolume).blockRead = func(_ context.Context, hash string, w io.WriterAt) error {
+		return errors.New("no http status provided")
+	}
+	resp = call(router, "GET", "http://example/"+locSigned, arvadostest.ActiveTokenV2, nil, nil)
+	c.Check(resp.Code, Equals, http.StatusInternalServerError)
+	c.Check(resp.Body.String(), Equals, "no http status provided\n")
+
 	c.Assert(router.keepstore.mountsW[1].volume.BlockWrite(context.Background(), barHash, []byte("bar")), IsNil)
 
 	// If the requested block is available on the second volume,
