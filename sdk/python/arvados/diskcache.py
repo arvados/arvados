@@ -32,7 +32,7 @@ class DiskCacheSlot(object):
 
     def get(self):
         self.ready.wait()
-        if self.content is not None and len(self.content) > 0:
+        if isinstance(self.content, mmap.mmap):
             self.content.madvise(mmap.MADV_WILLNEED)
         return self.content
 
