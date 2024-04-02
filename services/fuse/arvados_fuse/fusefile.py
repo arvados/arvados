@@ -80,9 +80,17 @@ class FuseArvadosFile(File):
             if self.writable():
                 self.arvfile.parent.root_collection().save()
 
+    def clear(self):
+        if self.parent_inode is None:
+            self.arvfile.fuse_entry = None
+            self.arvfile = None
+
 
 class StringFile(File):
     """Wrap a simple string as a file"""
+
+    __slots__ = ("contents",)
+
     def __init__(self, parent_inode, contents, _mtime):
         super(StringFile, self).__init__(parent_inode, _mtime)
         self.contents = contents
@@ -96,6 +104,8 @@ class StringFile(File):
 
 class ObjectFile(StringFile):
     """Wrap a dict as a serialized json object."""
+
+    __slots__ = ("object_uuid",)
 
     def __init__(self, parent_inode, obj):
         super(ObjectFile, self).__init__(parent_inode, "", 0)
@@ -125,6 +135,9 @@ class FuncToJSONFile(StringFile):
     The function is called at the time the file is read. The result is
     cached until invalidate() is called.
     """
+
+    __slots__ = ("func",)
+
     def __init__(self, parent_inode, func):
         super(FuncToJSONFile, self).__init__(parent_inode, "", 0)
         self.func = func

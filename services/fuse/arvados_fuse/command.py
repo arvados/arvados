@@ -349,7 +349,15 @@ Filesystem character encoding
             metavar='CLASSES',
             help="Comma-separated list of storage classes to request for new collections",
         )
-
+        # This is a hidden argument used by tests.  Normally this
+        # value will be extracted from the cluster config, but mocking
+        # the cluster config under the presence of multiple threads
+        # and processes turned out to be too complicated and brittle.
+        plumbing.add_argument(
+            '--fsns',
+            type=str,
+            default=None,
+            help=argparse.SUPPRESS)
 
 class Mount(object):
     def __init__(self, args, logger=logging.getLogger('arvados.arv-mount')):
@@ -514,7 +522,8 @@ class Mount(object):
             api_client=self.api,
             encoding=self.args.encoding,
             inode_cache=InodeCache(cap=self.args.directory_cache),
-            enable_write=self.args.enable_write)
+            enable_write=self.args.enable_write,
+            fsns=self.args.fsns)
 
         if self.args.crunchstat_interval:
             statsthread = threading.Thread(
@@ -603,7 +612,6 @@ class Mount(object):
         e = self.operations.inodes.add_entry(Directory(
             llfuse.ROOT_INODE,
             self.operations.inodes,
-            self.api.config,
             self.args.enable_write,
             self.args.filters,
         ))
@@ -688,8 +696,9 @@ From here, the following directories are available:
 
     def _llfuse_main(self):
         try:
-            llfuse.main()
+            llfuse.main(workers=10)
         except:
             llfuse.close(unmount=False)
             raise
+        self.operations.begin_shutdown()
         llfuse.close()

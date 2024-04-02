@@ -1127,7 +1127,7 @@ class MagicDirApiError(FuseMagicTest):
 class SanitizeFilenameTest(MountTestBase):
     def test_sanitize_filename(self):
         pdir = fuse.ProjectDirectory(
-            1, {}, self.api, 0, False, None,
+            1, fuse.Inodes(None), self.api, 0, False, None,
             project_object=self.api.users().current().execute(),
         )
         acceptable = [
@@ -1227,23 +1227,22 @@ class SlashSubstitutionTest(IntegrationTest):
     mnt_args = [
         '--read-write',
         '--mount-home', 'zzz',
+        '--fsns', '[SLASH]'
     ]
 
     def setUp(self):
         super(SlashSubstitutionTest, self).setUp()
+
         self.api = arvados.safeapi.ThreadSafeApiCache(
             arvados.config.settings(),
-            version='v1',
+            version='v1'
         )
-        self.api.config = lambda: {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.testcoll = self.api.collections().create(body={"name": "foo/bar/baz"}).execute()
         self.testcolleasy = self.api.collections().create(body={"name": "foo-bar-baz"}).execute()
         self.fusename = 'foo[SLASH]bar[SLASH]baz'
 
     @IntegrationTest.mount(argv=mnt_args)
-    @mock.patch('arvados.util.get_config_once')
-    def test_slash_substitution_before_listing(self, get_config_once):
-        get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
+    def test_slash_substitution_before_listing(self):
         self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
         self.checkContents()
     @staticmethod
