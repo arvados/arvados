@@ -133,7 +133,7 @@ export const MultiselectToolbar = connect(
                         <IntersectionObserverWrapper menuLength={actions.length}>
                             {actions.map((action, i) =>{
                                 const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
-                            return action.name === ContextMenuActionNames.DIVIDER ? (action.component && <action.component />)
+                            return action.name === ContextMenuActionNames.DIVIDER ? (action.component && <action.component data-targetid={name} key={i} />)
                             : hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
