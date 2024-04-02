@@ -80,8 +80,6 @@ type CssRules =
     | "tableWrapper"
     | "paramTableRoot"
     | "mountsTableRoot"
-    | "rowStyles"
-    | "valueWrapper"
     | "value"
     | "keepLink"
     | "collectionLink"
@@ -132,11 +130,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: "column",
         alignItems: "start", // Prevents scroll bars at different levels in json tab
     },
+
+    // Param table virtual list styles
     paramTableRoot: {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-
         // Flex header
         "& thead tr": {
             alignItems: "end",
@@ -162,14 +161,23 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 flexGrow: 2,
             },
         },
-        // Flex body cells
-        "& > tbody tr td": {
-            padding: "4px 25px 4px",
-            overflow: "auto hidden",
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            whiteSpace: "nowrap",
+        // Flex body rows
+        "& tbody tr": {
+            height: "40px",
+            // Flex body cells
+            "& td": {
+                padding: "2px 25px 2px",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+                '& pre': {
+                    margin: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                },
+            },
         },
     },
     mountsTableRoot: {
@@ -182,39 +190,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             paddingRight: "25px",
         },
     },
-    // Virtual list row styles
-    rowStyles: {
-        height: "40px",
-        "& td": {
-            paddingTop: "2px",
-            paddingBottom: "2px",
-        },
-    },
-    // Cell typography
-    valueWrapper: {
-        display: "flex",
-        alignItems: "center",
-        flexDirection: "row",
-        height: "100%",
-        overflow: "hidden",
-        '& pre': {
-            margin: 0,
-        },
-    },
+    // Cell typography styles
     value: {
-        display: "flex",
-        gap: "10px",
-        flexWrap: "wrap",
         maxWidth: "100%",
-        maxHeight: "100%",
         whiteSpace: "nowrap",
-        "& span": {
-            display: "inline",
-        },
-        "& a, & pre": {
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-        },
+        overflow: "hidden",
+        textOverflow: "ellipsis",
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -588,12 +569,19 @@ const ProcessIOPreview = memo(
 
             const rowClasses = {
                 [classes.noBorderRow]: hasMoreValues(index),
-                [classes.rowStyles]: true,
             };
 
             return <TableRow style={style} className={classNames(rowClasses)}>
-                <TableCell>{param.id}</TableCell>
-                {showLabel && <TableCell>{param.label}</TableCell>}
+                <TableCell>
+                    <Typography className={classes.value}>
+                        {param.id}
+                    </Typography>
+                </TableCell>
+                {showLabel && <TableCell>
+                    <Typography className={classes.value}>
+                        {param.label}
+                    </Typography>
+                </TableCell>}
                 <TableCell>
                     <ProcessValuePreview
                         value={param.value}
@@ -601,10 +589,8 @@ const ProcessIOPreview = memo(
                     />
                 </TableCell>
                 <TableCell>
-                    <Typography className={classes.valueWrapper}>
-                        <span className={classes.value}>
-                            {param.value.collection}
-                        </span>
+                    <Typography className={classes.value}>
+                        {param.value.collection}
                     </Typography>
                 </TableCell>
             </TableRow>;
@@ -648,8 +634,8 @@ interface ProcessValuePreviewProps {
 }
 
 const ProcessValuePreview = withStyles(styles)(({ value, showImagePreview, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
-    <Typography className={classes.valueWrapper}>
-        <span className={classNames(classes.value, value.secondary && classes.secondaryVal)}>{value.display}</span>
+    <Typography className={classNames(classes.value, value.secondary && classes.secondaryVal)}>
+        {value.display}
     </Typography>
 ));
 
@@ -808,6 +794,7 @@ const renderPrimitiveValue = (value: any, asChip: boolean) => {
             <Chip
                 key={value}
                 label={String(value)}
+                style={{marginRight: "10px"}}
             />
         ) : (
             <pre key={value}>{String(value)}</pre>
