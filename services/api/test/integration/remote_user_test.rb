@@ -75,7 +75,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         res.status = @stub_token_status
         if res.status == 200
           body = {
-            uuid: api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
+            uuid: @stub_token_uuid || api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
             owner_uuid: "#{clusterid}-tpzed-00000000000000z",
             scopes: @stub_token_scopes,
           }
@@ -108,6 +108,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     }
     @stub_token_status = 200
     @stub_token_scopes = ["all"]
+    @stub_token_uuid = nil
     ActionMailer::Base.deliveries = []
   end
 
@@ -239,6 +240,40 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'foo', json_response['username']
+  end
+
+  test 'authenticate with remote token with secret part identical to previously cached token' do
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    get '/arvados/v1/api_client_authorizations/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+
+    # Expire the cached token.
+    @cached_token_uuid = json_response['uuid']
+    act_as_system_user do
+      ApiClientAuthorization.where(uuid: @cached_token_uuid).update_all(expires_at: db_current_time() - 1.day)
+    end
+
+    # Now use the same bare token, but set up the remote cluster to
+    # return a different UUID this time.
+    @stub_token_uuid = 'zbbbb-gj3su-123451234512345'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+
+    # Confirm that we actually retrieved the new UUID from the stub
+    # cluster -- otherwise we didn't really test the conflicting-UUID
+    # case.
+    get '/arvados/v1/api_client_authorizations/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal @stub_token_uuid, json_response['uuid']
   end
 
   test 'authenticate with remote token from misbehaving remote cluster' do
