@@ -555,8 +555,10 @@ const ProcessIOPreview = memo(
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
 
         const hasMoreValues = (index: number) => (
-            data[index+1] && !(data[index+1].id || data[index+1].label)
+            data[index+1] && !isMainRow(data[index+1])
         );
+
+        const isMainRow = (param: ProcessIOParameter) => (param && (param.id || param.label && !param.value.secondary));
 
         const RenderRow = ({index, style}) => {
             const param = data[index];
@@ -565,7 +567,10 @@ const ProcessIOPreview = memo(
                 [classes.noBorderRow]: hasMoreValues(index),
             };
 
-            return <TableRow style={style} className={classNames(rowClasses)}>
+            return <TableRow
+                style={style}
+                className={classNames(rowClasses)}
+                data-cy={isMainRow(param) ? "process-io-param" : ""}>
                 <TableCell>
                     <Tooltip title={param.id}>
                         <Typography className={classes.paramTableCellText}>

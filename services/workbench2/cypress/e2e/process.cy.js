@@ -1279,6 +1279,7 @@ describe("Process tests", function () {
                 .contains(name)
                 .parents("tr")
                 .within($mainRow => {
+                    cy.get($mainRow).scrollIntoView();
                     label && cy.contains(label);
 
                     if (multipleRows) {
@@ -1444,11 +1445,11 @@ describe("Process tests", function () {
                     .parents("[data-cy=process-io-card]")
                     .within(ctx => {
                         cy.get(ctx).scrollIntoView();
-                        cy.get('[data-cy="io-preview-image-toggle"]').click({ waitForAnimations: false });
                         const outPdh = testOutputCollection.portable_data_hash;
 
                         verifyIOParameter("output_file", null, "Label Description", "cat.png", `${outPdh}`);
-                        verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
+                        // Disabled until image preview returns
+                        // verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "main.dat", `${outPdh}`);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary.dat", undefined, true);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary2.dat", undefined, true);
