@@ -106,6 +106,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignSelf: "flex-start",
         paddingTop: theme.spacing.unit * 0.5,
     },
+    // Card content
     content: {
         height: `calc(100% - ${theme.spacing.unit * 7}px - ${theme.spacing.unit * 1.5}px)`,
         padding: theme.spacing.unit * 1.0,
@@ -114,12 +115,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             paddingBottom: theme.spacing.unit * 1,
         },
     },
+    // Card title
     title: {
         overflow: "hidden",
         paddingTop: theme.spacing.unit * 0.5,
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
+    // Applies to each tab's content
     tableWrapper: {
         height: "auto",
         maxHeight: `calc(100% - ${theme.spacing.unit * 3}px)`,
@@ -134,6 +137,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: "column",
         overflow: "hidden",
 
+        // Flex header
         "& thead tr": {
             alignItems: "end",
             "& th": {
@@ -143,18 +147,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& tbody": {
             height: "100vh", // Must be constrained by panel maxHeight
         },
+        // Flex header/body rows
         "& thead tr, & > tbody tr": {
             display: "flex",
+            // Flex header/body cells
             "& th, & td": {
                 flexGrow: 1,
                 flexShrink: 1,
                 flexBasis: 0,
                 overflow: "hidden",
             },
+            // Column width overrides
             "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
                 flexGrow: 2,
             },
         },
+        // Flex body cells
         "& > tbody tr td": {
             padding: "4px 25px 4px",
             overflow: "auto hidden",
@@ -174,6 +182,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             paddingRight: "25px",
         },
     },
+    // Virtual list row styles
     rowStyles: {
         height: "40px",
         "& td": {
@@ -181,6 +190,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             paddingBottom: "2px",
         },
     },
+    // Cell typography
     valueWrapper: {
         display: "flex",
         alignItems: "center",
@@ -213,6 +223,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflowWrap: "break-word",
         cursor: "pointer",
     },
+    // Output collection tab link
     collectionLink: {
         margin: "10px",
         "& a": {
