@@ -134,7 +134,7 @@ export const DataExplorer = withStyles(styles)(
             showLoading: false,
             prevRefresh: "",
             prevRoute: "",
-            msToolbarInDetailsCard: false,
+            msToolbarInDetailsCard: true,
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -248,6 +248,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                             {!!progressBar && progressBar}
+                            {console.log('this.multiSelectToolbarInTitle', this.multiSelectToolbarInTitle, !this.state.msToolbarInDetailsCard)}
                             {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
