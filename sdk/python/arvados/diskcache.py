@@ -40,18 +40,18 @@ class DiskCacheSlot(object):
             if value is None:
                 self.content = None
                 self.ready.set()
-                return
+                return False
 
             if len(value) == 0:
                 # Can't mmap a 0 length file
                 self.content = b''
                 self.ready.set()
-                return
+                return True
 
             if self.content is not None:
                 # Has been set already
                 self.ready.set()
-                return
+                return False
 
             blockdir = os.path.join(self.cachedir, self.locator[0:3])
             os.makedirs(blockdir, mode=0o700, exist_ok=True)
@@ -74,6 +74,7 @@ class DiskCacheSlot(object):
             self.content = mmap.mmap(self.filehandle.fileno(), 0, access=mmap.ACCESS_READ)
             # only set the event when mmap is successful
             self.ready.set()
+            return True
         finally:
             if tmpfile is not None:
                 # If the tempfile hasn't been renamed on disk yet, try to delete it.
@@ -81,6 +82,7 @@ class DiskCacheSlot(object):
                     os.remove(tmpfile)
                 except:
                     pass
+        return False
 
     def size(self):
         if self.content is None:
@@ -96,65 +98,61 @@ class DiskCacheSlot(object):
             return len(self.content)
 
     def evict(self):
-        if self.content is not None and len(self.content) > 0:
-            # The mmap region might be in use when we decided to evict
-            # it.  This can happen if the cache is too small.
-            #
-            # If we call close() now, it'll throw an error if
-            # something tries to access it.
-            #
-            # However, we don't need to explicitly call mmap.close()
-            #
-            # I confirmed in mmapmodule.c that that both close
-            # and deallocate do the same thing:
-            #
-            # a) close the file descriptor
-            # b) unmap the memory range
-            #
-            # So we can forget it in the cache and delete the file on
-            # disk, and it will tear it down after any other
-            # lingering Python references to the mapped memory are
-            # gone.
+        if self.content is None or len(self.content) == 0:
+            return
 
-            blockdir = os.path.join(self.cachedir, self.locator[0:3])
-            final = os.path.join(blockdir, self.locator) + cacheblock_suffix
-            try:
-                fcntl.flock(self.filehandle, fcntl.LOCK_UN)
+        # The mmap region might be in use when we decided to evict
+        # it.  This can happen if the cache is too small.
+        #
+        # If we call close() now, it'll throw an error if
+        # something tries to access it.
+        #
+        # However, we don't need to explicitly call mmap.close()
+        #
+        # I confirmed in mmapmodule.c that that both close
+        # and deallocate do the same thing:
+        #
+        # a) close the file descriptor
+        # b) unmap the memory range
+        #
+        # So we can forget it in the cache and delete the file on
+        # disk, and it will tear it down after any other
+        # lingering Python references to the mapped memory are
+        # gone.
 
-                # try to get an exclusive lock, this ensures other
-                # processes are not using the block.  It is
-                # nonblocking and will throw an exception if we
-                # can't get it, which is fine because that means
-                # we just won't try to delete it.
-                #
-                # I should note here, the file locking is not
-                # strictly necessary, we could just remove it and
-                # the kernel would ensure that the underlying
-                # inode remains available as long as other
-                # processes still have the file open.  However, if
-                # you have multiple processes sharing the cache
-                # and deleting each other's files, you'll end up
-                # with a bunch of ghost files that don't show up
-                # in the file system but are still taking up
-                # space, which isn't particularly user friendly.
-                # The locking strategy ensures that cache blocks
-                # in use remain visible.
-                #
-                fcntl.flock(self.filehandle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        blockdir = os.path.join(self.cachedir, self.locator[0:3])
+        final = os.path.join(blockdir, self.locator) + cacheblock_suffix
+        try:
+            fcntl.flock(self.filehandle, fcntl.LOCK_UN)
 
-                os.remove(final)
-                return True
-            except OSError:
-                pass
-            finally:
-                self.filehandle = None
-                self.linger = weakref.ref(self.content)
-                self.content = None
-        return False
+            # try to get an exclusive lock, this ensures other
+            # processes are not using the block.  It is
+            # nonblocking and will throw an exception if we
+            # can't get it, which is fine because that means
+            # we just won't try to delete it.
+            #
+            # I should note here, the file locking is not
+            # strictly necessary, we could just remove it and
+            # the kernel would ensure that the underlying
+            # inode remains available as long as other
+            # processes still have the file open.  However, if
+            # you have multiple processes sharing the cache
+            # and deleting each other's files, you'll end up
+            # with a bunch of ghost files that don't show up
+            # in the file system but are still taking up
+            # space, which isn't particularly user friendly.
+            # The locking strategy ensures that cache blocks
+            # in use remain visible.
+            #
+            fcntl.flock(self.filehandle, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
-    def gone(self):
-        # Test if an evicted object is lingering
-        return self.content is None and (self.linger is None or self.linger() is None)
+            os.remove(final)
+            return True
+        except OSError:
+            pass
+        finally:
+            self.filehandle = None
+            self.content = None
 
     @staticmethod
     def get_from_disk(locator, cachedir):
