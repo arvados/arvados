@@ -77,7 +77,6 @@ from prometheus_client import Summary
 import queue
 from dataclasses import dataclass
 import typing
-import gc
 
 from .fusedir import Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from .fusefile import File, StringFile, FuseArvadosFile
@@ -154,6 +153,9 @@ class InodeCache(object):
     """
 
     def __init__(self, cap, min_entries=4):
+        # Standard dictionaries are ordered, but OrderedDict is still better here, see
+        # https://docs.python.org/3.11/library/collections.html#ordereddict-objects
+        # specifically we use move_to_end() which standard dicts don't have.
         self._cache_entries = collections.OrderedDict()
         self.cap = cap
         self._total = 0
@@ -188,7 +190,7 @@ class InodeCache(object):
         # "values"
         values = collections.deque(self._cache_entries.values())
 
-        while len(values) > 0:
+        while values:
             if self._total < self.cap or len(self._cache_entries) < self.min_entries:
                 break
             yield values.popleft()
@@ -410,7 +412,7 @@ class Inodes(object):
                 qentry = None
 
             with llfuse.lock:
-                while len(locked_ops) > 0:
+                while locked_ops:
                     if locked_ops.popleft().inode_op(self, None):
                         self._inode_remove_queue.task_done()
                 self.cap_cache_event.clear()
@@ -626,13 +628,6 @@ class Operations(llfuse.Operations):
         self.write_ops_counter = arvados.keep.Counter()
 
         self.events = None
-
-        # We rely on the cyclic garbage collector to deallocate
-        # Collection objects from the Python SDK.  A lower GC
-        # threshold encourages Python to be more aggressive in
-        # reclaiming these and seems to slow down the growth in memory
-        # usage over time.
-        gc.set_threshold(200)
 
     def init(self):
         # Allow threads that are waiting for the driver to be finished

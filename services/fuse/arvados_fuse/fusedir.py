@@ -218,7 +218,7 @@ class Directory(FreshBase):
 
     def clear(self):
         """Delete all entries"""
-        if len(self._entries) == 0:
+        if not self._entries:
             return
         oldentries = self._entries
         self._entries = {}
@@ -645,9 +645,10 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     def objsize(self):
         # This is a rough guess of the amount of overhead involved for
-        # a collection; the calculation is each file averages 128
-        # bytes in the manifest, but consume 1024 bytes when blown up
-        # into Python data structures.
+        # a collection; the assumptions are that that each file
+        # averages 128 bytes in the manifest, but consume 1024 bytes
+        # of Python data structures, so 1024/128=8 means we estimate
+        # the RAM footprint at 8 times the size of bare manifest text.
         return self._manifest_size * 8
 
     def finalize(self):
