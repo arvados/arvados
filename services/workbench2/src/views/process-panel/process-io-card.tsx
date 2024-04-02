@@ -69,6 +69,7 @@ import { DefaultCodeSnippet } from "components/default-code-snippet/default-code
 import { KEEP_URL_REGEX } from "models/resource";
 import { FixedSizeList } from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
+import { LinkProps } from "@material-ui/core/Link";
 
 type CssRules =
     | "card"
@@ -86,7 +87,8 @@ type CssRules =
     | "secondaryVal"
     | "emptyValue"
     | "noBorderRow"
-    | "symmetricTabs";
+    | "symmetricTabs"
+    | "wrapTooltip";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -236,6 +238,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& button": {
             flexBasis: "0",
         },
+    },
+    wrapTooltip: {
+        maxWidth: "600px",
+        wordWrap: "break-word",
     },
 });
 
@@ -842,7 +848,7 @@ const KeepUrlBase = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
     // Passing a pdh always returns a relative wb2 collection url
     const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ? (
-        <Tooltip title={"View collection in Workbench"}>
+        <Tooltip title={<>View collection in Workbench<br />{pdhUrl}</>}>
             <RouterLink
                 to={pdhWbPath}
                 className={classes.keepLink}
@@ -862,7 +868,7 @@ const KeepUrlPath = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
 
     const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
     return keepUrlPathNav ? (
-        <Tooltip title={"View in keep-web"}>
+        <Tooltip classes={{tooltip: classes.wrapTooltip}} title={<>View in keep-web<br />{keepUrlPath || "/"}</>}>
             <a
                 className={classes.keepLink}
                 href={keepUrlPathNav}
@@ -936,6 +942,16 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
     };
 };
 
+type MuiLinkWithTooltipProps = WithStyles<CssRules> & React.PropsWithChildren<LinkProps>;
+
+const MuiLinkWithTooltip = withStyles(styles)((props: MuiLinkWithTooltipProps) => (
+    <Tooltip title={props.title} classes={{tooltip: props.classes.wrapTooltip}}>
+        <MuiLink {...props}>
+            {props.children}
+        </MuiLink>
+    </Tooltip>
+));
+
 const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh: string | undefined, mainFilePdh: string): ProcessIOValue => {
     if (isExternalValue(file)) {
         return { display: <UnsupportedValue /> };
@@ -944,13 +960,14 @@ const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, p
     if (isFileUrl(file.location)) {
         return {
             display: (
-                <MuiLink
+                <MuiLinkWithTooltip
                     href={file.location}
                     target="_blank"
                     rel="noopener"
+                    title={file.location}
                 >
                     {file.location}
-                </MuiLink>
+                </MuiLinkWithTooltip>
             ),
             secondary,
         };
