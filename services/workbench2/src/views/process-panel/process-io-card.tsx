@@ -658,7 +658,7 @@ interface ProcessIORawDataProps {
 }
 
 const ProcessIORaw = withStyles(styles)(({ data }: ProcessIORawDataProps) => (
-    <Paper elevation={0}>
+    <Paper elevation={0} style={{width: "100%"}}>
         <DefaultCodeSnippet
             lines={[JSON.stringify(data, null, 2)]}
             linked
