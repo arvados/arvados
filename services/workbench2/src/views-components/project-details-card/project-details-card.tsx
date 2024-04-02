@@ -27,6 +27,7 @@ type CssRules =
     | 'root'
     | 'cardHeaderContainer'
     | 'cardHeader'
+    | 'projectToolbar'
     | 'descriptionToggle'
     | 'showMore'
     | 'noDescription'
@@ -72,6 +73,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     cardHeader: {
         minWidth: '30rem',
         padding: '0.2rem 0.4rem 0.2rem 1rem',
+    },
+    projectToolbar: {
+        //shows only the first 3 buttons
+        width: '12rem !important',
     },
     descriptionToggle: {
         display: 'flex',
@@ -306,7 +311,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         </section>
                     }
                 />
-                {isSelected && <MultiselectToolbar />}
+                {isSelected && <MultiselectToolbar injectedStyles={classes.projectToolbar} />}
             </Grid>
             <section onClick={(ev) => ev.stopPropagation()}>
                 {description ? (
