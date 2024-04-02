@@ -159,6 +159,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 overflow: "hidden",
             },
             // Column width overrides
+            "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                flexGrow: 0.7,
+            },
             "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
                 flexGrow: 2,
             },
