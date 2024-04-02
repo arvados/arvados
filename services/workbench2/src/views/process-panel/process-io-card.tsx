@@ -106,7 +106,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     // Card content
     content: {
-        height: `calc(100% - ${theme.spacing.unit * 7}px - ${theme.spacing.unit * 1.5}px)`,
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
         padding: theme.spacing.unit * 1.0,
         paddingTop: 0,
         "&:last-child": {
@@ -123,7 +123,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     // Applies to each tab's content
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 3}px)`,
+        maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
         overflow: "auto",
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
@@ -636,7 +636,7 @@ interface ProcessIORawDataProps {
 }
 
 const ProcessIORaw = withStyles(styles)(({ data }: ProcessIORawDataProps) => (
-    <Paper elevation={0} style={{width: "100%"}}>
+    <Paper elevation={0} style={{minWidth: "100%"}}>
         <DefaultCodeSnippet
             lines={[JSON.stringify(data, null, 2)]}
             linked
