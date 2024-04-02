@@ -295,7 +295,7 @@ export const DataExplorer = withStyles(styles)(
                             <Toolbar className={classes.footer}>
                                 {elementPath && (
                                     <Grid container>
-                                        <span data-cy="element-path">{elementPath}</span>
+                                        <span data-cy="element-path">{elementPath.length > 2 ? elementPath : ''}</span>
                                     </Grid>
                                 )}
                                 <Grid
@@ -321,7 +321,7 @@ export const DataExplorer = withStyles(styles)(
                                             variant="contained"
                                             color="primary"  
                                             style={{width: '100%', margin: '10px'}}
-                                            disabled={ working || (page + 1) * rowsPerPage >= itemsAvailable || (itemsAvailable === 0 && page === 0)}
+                                            disabled={ working || (page + 1) * rowsPerPage >= itemsAvailable}
                                         >
                                             Load more
                                         </Button>
