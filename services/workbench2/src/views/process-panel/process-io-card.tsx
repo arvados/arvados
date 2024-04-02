@@ -694,7 +694,7 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
             const boolValue = (input as BooleanCommandInputParameter).value;
             return boolValue !== undefined && !(Array.isArray(boolValue) && boolValue.length === 0)
-                ? [{ display: renderPrimitiveValue(boolValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={boolValue}>{renderPrimitiveValue(boolValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.INT):
@@ -703,20 +703,20 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
             return intValue !== undefined &&
                 // Missing values are empty array
                 !(Array.isArray(intValue) && intValue.length === 0)
-                ? [{ display: renderPrimitiveValue(intValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={intValue}>{renderPrimitiveValue(intValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.FLOAT):
         case isPrimitiveOfType(input, CWLType.DOUBLE):
             const floatValue = (input as FloatCommandInputParameter).value;
             return floatValue !== undefined && !(Array.isArray(floatValue) && floatValue.length === 0)
-                ? [{ display: renderPrimitiveValue(floatValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={floatValue}>{renderPrimitiveValue(floatValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.STRING):
             const stringValue = (input as StringCommandInputParameter).value || undefined;
             return stringValue !== undefined && !(Array.isArray(stringValue) && stringValue.length === 0)
-                ? [{ display: renderPrimitiveValue(stringValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={stringValue}>{renderPrimitiveValue(stringValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.FILE):
@@ -737,21 +737,21 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
         case getEnumType(input) !== null:
             const enumValue = (input as EnumCommandInputParameter).value;
-            return enumValue !== undefined && enumValue ? [{ display: <pre>{enumValue}</pre> }] : [{ display: <EmptyValue /> }];
+            return enumValue !== undefined && enumValue ? [{ display: <PrimitiveTooltip data={enumValue}>{enumValue}</PrimitiveTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.STRING):
             const strArray = (input as StringArrayCommandInputParameter).value || [];
-            return strArray.length ? [{ display: <span>{strArray.map(val => renderPrimitiveValue(val, true))}</span> }] : [{ display: <EmptyValue /> }];
+            return strArray.length ? [{ display: <PrimitiveArrayTooltip data={strArray}>{strArray.map(val => renderPrimitiveValue(val, true))}</PrimitiveArrayTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.INT):
         case isArrayOfType(input, CWLType.LONG):
             const intArray = (input as IntArrayCommandInputParameter).value || [];
-            return intArray.length ? [{ display: <span>{intArray.map(val => renderPrimitiveValue(val, true))}</span> }] : [{ display: <EmptyValue /> }];
+            return intArray.length ? [{ display: <PrimitiveArrayTooltip data={intArray}>{intArray.map(val => renderPrimitiveValue(val, true))}</PrimitiveArrayTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.FLOAT):
         case isArrayOfType(input, CWLType.DOUBLE):
             const floatArray = (input as FloatArrayCommandInputParameter).value || [];
-            return floatArray.length ? [{ display: <span>{floatArray.map(val => renderPrimitiveValue(val, true))}</span> }] : [{ display: <EmptyValue /> }];
+            return floatArray.length ? [{ display: <PrimitiveArrayTooltip data={floatArray}>{floatArray.map(val => renderPrimitiveValue(val, true))}</PrimitiveArrayTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFiles = (input as FileArrayCommandInputParameter).value || [];
@@ -779,6 +779,27 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
     }
 };
 
+interface PrimitiveTooltipProps {
+    data: boolean | number | string;
+}
+
+const PrimitiveTooltip = (props: React.PropsWithChildren<PrimitiveTooltipProps>) => (
+    <Tooltip title={typeof props.data !== 'object' ? String(props.data) : ""}>
+        <pre>{props.children}</pre>
+    </Tooltip>
+);
+
+interface PrimitiveArrayTooltipProps {
+    data: string[];
+}
+
+const PrimitiveArrayTooltip = (props: React.PropsWithChildren<PrimitiveArrayTooltipProps>) => (
+    <Tooltip title={props.data.join(', ')}>
+        <span>{props.children}</span>
+    </Tooltip>
+);
+
+
 const renderPrimitiveValue = (value: any, asChip: boolean) => {
     const isObject = typeof value === "object";
     if (!isObject) {
@@ -789,7 +810,7 @@ const renderPrimitiveValue = (value: any, asChip: boolean) => {
                 style={{marginRight: "10px"}}
             />
         ) : (
-            <pre key={value}>{String(value)}</pre>
+            <>{String(value)}</>
         );
     } else {
         return asChip ? <UnsupportedValueChip /> : <UnsupportedValue />;
