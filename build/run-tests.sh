@@ -636,13 +636,15 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
+    # wheel modernizes the venv (as of early 2024) and makes it more closely
+    # match our package build environment.
     # PyYAML is a test requirement used by run_test_server.py and needed for
     # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
     # We run `setup.py build` first to generate _version.py.
-    env -C "$WORKSPACE/sdk/python" python3 setup.py build \
-        && python3 -m pip install "$WORKSPACE/sdk/python" \
-        && python3 -m pip install PyYAML pdoc \
+    pip install PyYAML pdoc wheel \
+        && env -C "$WORKSPACE/sdk/python" python3 setup.py build \
+        && pip install "$WORKSPACE/sdk/python" \
         || fatal "installing Python SDK and related dependencies failed"
 }
 
@@ -689,6 +691,7 @@ do_test() {
             check_arvados_config "$1"
             ;;
         gofmt \
+            | arvados_version.py \
             | cmd/arvados-package \
             | doc \
             | lib/boot \
@@ -1006,6 +1009,23 @@ test_gofmt() {
     go vet -composites=false ./...
 }
 
+test_arvados_version.py() {
+    local orig_fn=""
+    local fail_count=0
+    while read -d "" fn; do
+        if [[ -z "$orig_fn" ]]; then
+            orig_fn="$fn"
+        elif ! cmp "$orig_fn" "$fn"; then
+            fail_count=$(( $fail_count + 1 ))
+            printf "FAIL: %s and %s are not identical\n" "$orig_fn" "$fn"
+        fi
+    done < <(git -C "$WORKSPACE" ls-files -z | grep -z '/arvados_version\.py$')
+    case "$orig_fn" in
+        "") return 66 ;;  # EX_NOINPUT
+        *) return "$fail_count" ;;
+    esac
+}
+
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
@@ -1056,7 +1076,6 @@ install_deps() {
     # Install parts needed by test suites
     do_install env
     do_install cmd/arvados-server go
-    do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install tools/crunchstat-summary pip "${VENV3DIR}/bin/"
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
@@ -1104,6 +1123,7 @@ test_all() {
     fi
 
     do_test gofmt
+    do_test arvados_version.py
     do_test doc
     do_test sdk/ruby-google-api-client
     do_test sdk/ruby

@@ -12,16 +12,10 @@ from pathlib import Path
 from setuptools import setup, find_packages
 from setuptools.command import build_py
 
-SETUP_DIR = os.path.dirname(__file__) or '.'
-README = os.path.join(SETUP_DIR, 'README.rst')
-
 import arvados_version
-version = arvados_version.get_version(SETUP_DIR, "arvados")
-
-short_tests_only = False
-if '--short-tests-only' in sys.argv:
-    short_tests_only = True
-    sys.argv.remove('--short-tests-only')
+version = arvados_version.get_version()
+short_tests_only = arvados_version.short_tests_only()
+README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 class BuildPython(build_py.build_py):
     """Extend setuptools `build_py` to generate API documentation
@@ -115,6 +109,7 @@ setup(name='arvados-python-client',
           ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
       ],
       install_requires=[
+          *arvados_version.iter_dependencies(version),
           'ciso8601 >=2.0.0',
           'future',
           'google-api-core <2.11.0', # 2.11.0rc1 is incompatible with google-auth<2
