@@ -289,8 +289,6 @@ export const ProcessIOCard = withStyles(styles)(
                 setSubProcTabState(value);
             };
 
-            const [showImagePreview, setShowImagePreview] = useState(false);
-
             const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
             const mainProcess = !(process && process!.containerRequest.requestingContainerUuid);
             const showParamTable = mainProcess || forceShowParams;
@@ -331,21 +329,6 @@ export const ProcessIOCard = withStyles(styles)(
                         }
                         action={
                             <div>
-                                {mainProcess && (
-                                    <Tooltip
-                                        title={"Toggle Image Preview"}
-                                        disableFocusListener
-                                    >
-                                        <IconButton
-                                            data-cy="io-preview-image-toggle"
-                                            onClick={() => {
-                                                setShowImagePreview(!showImagePreview);
-                                            }}
-                                        >
-                                            {showImagePreview ? <ImageIcon /> : <ImageOffIcon />}
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
                                 {doUnMaximizePanel && panelMaximized && (
                                     <Tooltip
                                         title={`Unmaximize ${panelName || "panel"}`}
@@ -417,7 +400,6 @@ export const ProcessIOCard = withStyles(styles)(
                                             <div className={classes.tableWrapper}>
                                                 <ProcessIOPreview
                                                     data={params}
-                                                    showImagePreview={showImagePreview}
                                                     valueLabel={forceShowParams ? "Default value" : "Value"}
                                                 />
                                             </div>
@@ -550,14 +532,13 @@ export type ProcessIOParameter = {
 
 interface ProcessIOPreviewDataProps {
     data: ProcessIOParameter[];
-    showImagePreview: boolean;
     valueLabel: string;
 }
 
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
 const ProcessIOPreview = memo(
-    withStyles(styles)(({ classes, data, showImagePreview, valueLabel }: ProcessIOPreviewProps) => {
+    withStyles(styles)(({ classes, data, valueLabel }: ProcessIOPreviewProps) => {
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
 
         const hasMoreValues = (index: number) => (
@@ -585,7 +566,6 @@ const ProcessIOPreview = memo(
                 <TableCell>
                     <ProcessValuePreview
                         value={param.value}
-                        showImagePreview={showImagePreview}
                     />
                 </TableCell>
                 <TableCell>
@@ -630,10 +610,9 @@ const ProcessIOPreview = memo(
 
 interface ProcessValuePreviewProps {
     value: ProcessIOValue;
-    showImagePreview: boolean;
 }
 
-const ProcessValuePreview = withStyles(styles)(({ value, showImagePreview, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
+const ProcessValuePreview = withStyles(styles)(({ value, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
     <Typography className={classNames(classes.value, value.secondary && classes.secondaryVal)}>
         {value.display}
     </Typography>
