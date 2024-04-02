@@ -691,6 +691,7 @@ do_test() {
             check_arvados_config "$1"
             ;;
         gofmt \
+            | arvados_version.py \
             | cmd/arvados-package \
             | doc \
             | lib/boot \
@@ -1008,6 +1009,23 @@ test_gofmt() {
     go vet -composites=false ./...
 }
 
+test_arvados_version.py() {
+    local orig_fn=""
+    local fail_count=0
+    while read -d "" fn; do
+        if [[ -z "$orig_fn" ]]; then
+            orig_fn="$fn"
+        elif ! cmp "$orig_fn" "$fn"; then
+            fail_count=$(( $fail_count + 1 ))
+            printf "FAIL: %s and %s are not identical\n" "$orig_fn" "$fn"
+        fi
+    done < <(git -C "$WORKSPACE" ls-files -z | grep -z '/arvados_version\.py$')
+    case "$orig_fn" in
+        "") return 66 ;;  # EX_NOINPUT
+        *) return "$fail_count" ;;
+    esac
+}
+
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
@@ -1105,6 +1123,7 @@ test_all() {
     fi
 
     do_test gofmt
+    do_test arvados_version.py
     do_test doc
     do_test sdk/ruby-google-api-client
     do_test sdk/ruby
