@@ -226,7 +226,13 @@ func (v *s3Volume) check(ec2metadataHostname string) error {
 				// expiring credentials do not cause
 				// request to fail unexpectedly due to
 				// ExpiredTokenException exceptions."
-				opts.ExpiryWindow = time.Minute
+				//
+				// (from
+				// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
+				// "We make new credentials available
+				// at least five minutes before the
+				// expiration of the old credentials."
+				opts.ExpiryWindow = 5 * time.Minute
 			}),
 		})
 
