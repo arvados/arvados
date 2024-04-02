@@ -229,10 +229,8 @@ func (s *IntegrationSuite) testFederationCollectionAccess(c *check.C, writeClust
 
 	connW := s.super.Conn(writeCluster)
 	userctxW, acW, kcW := s.super.ClientsWithToken(writeCluster, ac1.AuthToken)
-	kcW.DiskCacheSize = keepclient.DiskCacheDisabled
 	connR := s.super.Conn(readCluster)
 	userctxR, acR, kcR := s.super.ClientsWithToken(readCluster, ac1.AuthToken)
-	kcR.DiskCacheSize = keepclient.DiskCacheDisabled
 
 	filedata := fmt.Sprintf("%s: write to %s, read from %s", c.TestName(), writeCluster, readCluster)
 	mtxt := s.createTestCollectionManifest(c, acW, kcW, filedata)
