@@ -172,20 +172,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 flexDirection: "row",
                 alignItems: "center",
                 whiteSpace: "nowrap",
-                '& pre': {
-                    margin: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                },
             },
         },
     },
     // Param value cell typography styles
     paramTableCellText: {
-        maxWidth: "100%",
-        whiteSpace: "nowrap",
         overflow: "hidden",
-        textOverflow: "ellipsis",
+        display: "flex",
+        // Every cell contents requires a wrapper for the ellipsis
+        // since adding ellipses to an anchor element parent results in misaligned tooltip
+        "& a, & span": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+        },
+        '& pre': {
+            margin: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+        },
     },
     mountsTableRoot: {
         width: "100%",
@@ -554,14 +558,22 @@ const ProcessIOPreview = memo(
 
             return <TableRow style={style} className={classNames(rowClasses)}>
                 <TableCell>
-                    <Typography className={classes.paramTableCellText}>
-                        {param.id}
-                    </Typography>
+                    <Tooltip title={param.id}>
+                        <Typography className={classes.paramTableCellText}>
+                            <span>
+                                {param.id}
+                            </span>
+                        </Typography>
+                    </Tooltip>
                 </TableCell>
                 {showLabel && <TableCell>
-                    <Typography className={classes.paramTableCellText}>
-                        {param.label}
-                    </Typography>
+                    <Tooltip title={param.label}>
+                        <Typography className={classes.paramTableCellText}>
+                            <span>
+                                {param.label}
+                            </span>
+                        </Typography>
+                    </Tooltip>
                 </TableCell>}
                 <TableCell>
                     <ProcessValuePreview
@@ -570,6 +582,7 @@ const ProcessIOPreview = memo(
                 </TableCell>
                 <TableCell>
                     <Typography className={classes.paramTableCellText}>
+                        {/** Collection is an anchor so doesn't require wrapper element */}
                         {param.value.collection}
                     </Typography>
                 </TableCell>
@@ -728,17 +741,17 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
         case isArrayOfType(input, CWLType.STRING):
             const strArray = (input as StringArrayCommandInputParameter).value || [];
-            return strArray.length ? [{ display: <>{strArray.map(val => renderPrimitiveValue(val, true))}</> }] : [{ display: <EmptyValue /> }];
+            return strArray.length ? [{ display: <span>{strArray.map(val => renderPrimitiveValue(val, true))}</span> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.INT):
         case isArrayOfType(input, CWLType.LONG):
             const intArray = (input as IntArrayCommandInputParameter).value || [];
-            return intArray.length ? [{ display: <>{intArray.map(val => renderPrimitiveValue(val, true))}</> }] : [{ display: <EmptyValue /> }];
+            return intArray.length ? [{ display: <span>{intArray.map(val => renderPrimitiveValue(val, true))}</span> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.FLOAT):
         case isArrayOfType(input, CWLType.DOUBLE):
             const floatArray = (input as FloatArrayCommandInputParameter).value || [];
-            return floatArray.length ? [{ display: <>{floatArray.map(val => renderPrimitiveValue(val, true))}</> }] : [{ display: <EmptyValue /> }];
+            return floatArray.length ? [{ display: <span>{floatArray.map(val => renderPrimitiveValue(val, true))}</span> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFiles = (input as FileArrayCommandInputParameter).value || [];
