@@ -67,6 +67,8 @@ import { navigateTo } from "store/navigation/navigation-action";
 import classNames from "classnames";
 import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
 import { KEEP_URL_REGEX } from "models/resource";
+import { FixedSizeList } from 'react-window';
+import AutoSizer from "react-virtualized-auto-sizer";
 
 type CssRules =
     | "card"
@@ -76,22 +78,17 @@ type CssRules =
     | "avatar"
     | "iconHeader"
     | "tableWrapper"
-    | "paramValue"
     | "paramTableRoot"
     | "mountsTableRoot"
+    | "rowStyles"
+    | "valueWrapper"
+    | "value"
     | "keepLink"
     | "collectionLink"
-    | "imagePreview"
-    | "valArray"
     | "secondaryVal"
-    | "secondaryRow"
     | "emptyValue"
     | "noBorderRow"
-    | "symmetricTabs"
-    | "imagePlaceholder"
-    | "rowWithPreview"
-    | "labelColumn"
-    | "primaryRow";
+    | "symmetricTabs";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -127,15 +124,44 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "auto",
         maxHeight: `calc(100% - ${theme.spacing.unit * 3}px)`,
         overflow: "auto",
+        // Use flexbox to keep scrolling at the virtual list level
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "start", // Prevents scroll bars at different levels in json tab
     },
     paramTableRoot: {
-        width: "100%",
-        "& thead th": {
-            verticalAlign: "bottom",
-            paddingBottom: "10px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+
+        "& thead tr": {
+            alignItems: "end",
+            "& th": {
+                padding: "4px 25px 10px",
+            },
         },
-        "& td, & th": {
-            paddingRight: "25px",
+        "& tbody": {
+            height: "100vh", // Must be constrained by panel maxHeight
+        },
+        "& thead tr, & > tbody tr": {
+            display: "flex",
+            "& th, & td": {
+                flexGrow: 1,
+                flexShrink: 1,
+                flexBasis: 0,
+                overflow: "hidden",
+            },
+            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
+                flexGrow: 2,
+            },
+        },
+        "& > tbody tr td": {
+            padding: "4px 25px 4px",
+            overflow: "auto hidden",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            whiteSpace: "nowrap",
         },
     },
     mountsTableRoot: {
@@ -148,17 +174,42 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             paddingRight: "25px",
         },
     },
-    paramValue: {
+    rowStyles: {
+        height: "40px",
+        "& td": {
+            paddingTop: "2px",
+            paddingBottom: "2px",
+        },
+    },
+    valueWrapper: {
         display: "flex",
-        alignItems: "flex-start",
-        flexDirection: "column",
+        alignItems: "center",
+        flexDirection: "row",
+        height: "100%",
+        overflow: "hidden",
         '& pre': {
             margin: 0,
+        },
+    },
+    value: {
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        whiteSpace: "nowrap",
+        "& span": {
+            display: "inline",
+        },
+        "& a, & pre": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
         },
     },
     keepLink: {
         color: theme.palette.primary.main,
         textDecoration: "none",
+        // Overflow wrap for mounts table
         overflowWrap: "break-word",
         cursor: "pointer",
     },
@@ -171,27 +222,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             cursor: "pointer",
         },
     },
-    imagePreview: {
-        maxHeight: "15em",
-        maxWidth: "15em",
-        marginBottom: theme.spacing.unit,
-    },
-    valArray: {
-        display: "flex",
-        gap: "10px",
-        flexWrap: "wrap",
-        "& span": {
-            display: "inline",
-        },
-    },
     secondaryVal: {
         paddingLeft: "20px",
-    },
-    secondaryRow: {
-        height: "24px",
-        verticalAlign: "top",
-        position: "relative",
-        top: "-4px",
     },
     emptyValue: {
         color: theme.customs.colors.grey700,
@@ -207,28 +239,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     symmetricTabs: {
         "& button": {
             flexBasis: "0",
-        },
-    },
-    imagePlaceholder: {
-        width: "60px",
-        height: "60px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#cecece",
-        borderRadius: "10px",
-    },
-    rowWithPreview: {
-        verticalAlign: "bottom",
-    },
-    labelColumn: {
-        minWidth: "120px",
-    },
-    primaryRow: {
-        height: "26px",
-        "& td": {
-            paddingTop: "2px",
-            paddingBottom: "2px",
         },
     },
 });
@@ -557,6 +567,38 @@ type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 const ProcessIOPreview = memo(
     withStyles(styles)(({ classes, data, showImagePreview, valueLabel }: ProcessIOPreviewProps) => {
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
+
+        const hasMoreValues = (index: number) => (
+            data[index+1] && !(data[index+1].id || data[index+1].label)
+        );
+
+        const RenderRow = ({index, style}) => {
+            const param = data[index];
+
+            const rowClasses = {
+                [classes.noBorderRow]: hasMoreValues(index),
+                [classes.rowStyles]: true,
+            };
+
+            return <TableRow style={style} className={classNames(rowClasses)}>
+                <TableCell>{param.id}</TableCell>
+                {showLabel && <TableCell>{param.label}</TableCell>}
+                <TableCell>
+                    <ProcessValuePreview
+                        value={param.value}
+                        showImagePreview={showImagePreview}
+                    />
+                </TableCell>
+                <TableCell>
+                    <Typography className={classes.valueWrapper}>
+                        <span className={classes.value}>
+                            {param.value.collection}
+                        </span>
+                    </Typography>
+                </TableCell>
+            </TableRow>;
+        };
+
         return (
             <Table
                 className={classes.paramTableRoot}
@@ -565,12 +607,24 @@ const ProcessIOPreview = memo(
                 <TableHead>
                     <TableRow>
                         <TableCell>Name</TableCell>
-                        {showLabel && <TableCell className={classes.labelColumn}>Label</TableCell>}
+                        {showLabel && <TableCell>Label</TableCell>}
                         <TableCell>{valueLabel}</TableCell>
                         <TableCell>Collection</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
+                    <AutoSizer>
+                        {({ height, width }) =>
+                            <FixedSizeList
+                                height={height}
+                                itemCount={data.length}
+                                itemSize={40}
+                                width={width}
+                            >
+                                {RenderRow}
+                            </FixedSizeList>
+                        }
+                    </AutoSizer>
                 </TableBody>
             </Table>
         );
@@ -583,8 +637,8 @@ interface ProcessValuePreviewProps {
 }
 
 const ProcessValuePreview = withStyles(styles)(({ value, showImagePreview, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
-    <Typography className={classes.paramValue}>
-        <span className={classNames(classes.valArray, value.secondary && classes.secondaryVal)}>{value.display}</span>
+    <Typography className={classes.valueWrapper}>
+        <span className={classNames(classes.value, value.secondary && classes.secondaryVal)}>{value.display}</span>
     </Typography>
 ));
 
