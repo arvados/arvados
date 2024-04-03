@@ -120,20 +120,9 @@ const workflowOrder = [
 ]
 
 const defaultMultiOrder = [
-    ContextMenuActionNames.VIEW_DETAILS,
-    ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
-    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
-    ContextMenuActionNames.API_DETAILS,
-    ContextMenuActionNames.SHARE,
-    ContextMenuActionNames.NEW_PROJECT,
-    ContextMenuActionNames.EDIT_PROJECT,
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
     ContextMenuActionNames.MOVE_TO_TRASH,
-    ContextMenuActionNames.FREEZE_PROJECT,
-    ContextMenuActionNames.ADD_TO_FAVORITES,
-    ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
 ];
 
 const kindToOrder: Record<string, ContextMenuActionNames[]> = {
