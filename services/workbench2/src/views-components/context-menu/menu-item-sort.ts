@@ -6,6 +6,7 @@ import { ContextMenuAction } from './context-menu-action-set';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { sortByProperty } from 'common/array-utils';
 import { horizontalMenuDivider, verticalMenuDivider } from './actions/context-menu-divider';
+import { MultiSelectMenuAction } from 'views-components/multiselect-toolbar/ms-menu-actions';
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
@@ -53,6 +54,7 @@ export enum ContextMenuKind {
     WORKFLOW = "Workflow",
     READONLY_WORKFLOW = "ReadOnlyWorkflow",
     SEARCH_RESULTS = "SearchResults",
+    MULTI = "Multi",
 }
 
 
@@ -117,7 +119,26 @@ const workflowOrder = [
     ContextMenuActionNames.DELETE_WORKFLOW,
 ]
 
+const defaultMultiOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.OPEN_IN_NEW_TAB,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
+    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
+    ContextMenuActionNames.API_DETAILS,
+    ContextMenuActionNames.SHARE,
+    ContextMenuActionNames.NEW_PROJECT,
+    ContextMenuActionNames.EDIT_PROJECT,
+    ContextMenuActionNames.MOVE_TO,
+    ContextMenuActionNames.MAKE_A_COPY,
+    ContextMenuActionNames.MOVE_TO_TRASH,
+    ContextMenuActionNames.FREEZE_PROJECT,
+    ContextMenuActionNames.ADD_TO_FAVORITES,
+    ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+];
+
 const kindToOrder: Record<string, ContextMenuActionNames[]> = {
+    [ContextMenuKind.MULTI]: defaultMultiOrder,
+
     [ContextMenuKind.PROCESS]: processOrder,
     [ContextMenuKind.PROCESS_ADMIN]: processOrder,
     [ContextMenuKind.PROCESS_RESOURCE]: processOrder,
@@ -143,7 +164,7 @@ export const menuDirection = {
     HORIZONTAL: 'horizontal'
 }
 
-export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] => {
+export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] | MultiSelectMenuAction[] => {
 
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name

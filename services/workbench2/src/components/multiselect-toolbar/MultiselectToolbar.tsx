@@ -123,8 +123,11 @@ export const MultiselectToolbar = connect(
                         singleSelectedUuid === null ? action.isForMulti : true
                     );
                     
-        const actions: ContextMenuAction[] | MultiSelectMenuAction[] =
-            singleResourceKind && singleResourceKind.length ? sortMenuItems(singleResourceKind[0] as ContextMenuKind, rawActions, menuDirection.HORIZONTAL) : rawActions.sort(sortByProperty('name'));
+        const actions: ContextMenuAction[] | MultiSelectMenuAction[] = sortMenuItems(
+            singleResourceKind && singleResourceKind.length ? (singleResourceKind[0] as ContextMenuKind) : ContextMenuKind.MULTI,
+            rawActions,
+            menuDirection.HORIZONTAL
+        ); 
 
         return (
             <React.Fragment>
