@@ -11,6 +11,7 @@ from builtins import range
 from builtins import object
 import hashlib
 import mock
+from mock import patch
 import os
 import errno
 import pycurl
@@ -24,6 +25,7 @@ import tempfile
 import time
 import unittest
 import urllib.parse
+import mmap
 
 import parameterized
 
@@ -1757,21 +1759,31 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
                 keep_client.get(self.locator)
 
 
-    @mock.patch('mmap.mmap')
-    def test_disk_cache_retry_write_error(self, mockmmap):
+    def test_disk_cache_retry_write_error(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
                                                   disk_cache_dir=self.disk_cache_dir)
 
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
-        mockmmap.side_effect = (OSError(errno.ENOSPC, "no space"), self.data)
+        called = False
+        realmmap = mmap.mmap
+        def sideeffect_mmap(*args, **kwargs):
+            nonlocal called
+            if not called:
+                called = True
+                raise OSError(errno.ENOSPC, "no space")
+            else:
+                return realmmap(*args, **kwargs)
 
-        cache_max_before = block_cache.cache_max
+        with patch('mmap.mmap') as mockmmap:
+            mockmmap.side_effect = sideeffect_mmap
 
-        with tutil.mock_keep_responses(self.data, 200) as mock:
-            self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+            cache_max_before = block_cache.cache_max
 
-        self.assertIsNotNone(keep_client.get_from_cache(self.locator))
+            with tutil.mock_keep_responses(self.data, 200) as mock:
+                self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+
+            self.assertIsNotNone(keep_client.get_from_cache(self.locator))
 
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "rb") as f:
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
@@ -1780,21 +1792,31 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(cache_max_before > block_cache.cache_max)
 
 
-    @mock.patch('mmap.mmap')
-    def test_disk_cache_retry_write_error2(self, mockmmap):
+    def test_disk_cache_retry_write_error2(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
                                                   disk_cache_dir=self.disk_cache_dir)
 
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
-        mockmmap.side_effect = (OSError(errno.ENOMEM, "no memory"), self.data)
+        called = False
+        realmmap = mmap.mmap
+        def sideeffect_mmap(*args, **kwargs):
+            nonlocal called
+            if not called:
+                called = True
+                raise OSError(errno.ENOMEM, "no memory")
+            else:
+                return realmmap(*args, **kwargs)
 
-        slots_before = block_cache._max_slots
+        with patch('mmap.mmap') as mockmmap:
+            mockmmap.side_effect = sideeffect_mmap
 
-        with tutil.mock_keep_responses(self.data, 200) as mock:
-            self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+            slots_before = block_cache._max_slots
 
-        self.assertIsNotNone(keep_client.get_from_cache(self.locator))
+            with tutil.mock_keep_responses(self.data, 200) as mock:
+                self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+
+            self.assertIsNotNone(keep_client.get_from_cache(self.locator))
 
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "rb") as f:
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
