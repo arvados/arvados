@@ -83,7 +83,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                 className={classes.menu}
             >
                 {React.Children.map(children, (child: any) => {
-                    if (!visibilityMap[child.props['data-targetid']] && child.props['data-targetid'] !== 'Divider') {
+                    if (!visibilityMap[child.props['data-targetid']]) {
                         return <MenuItem
                                 key={child}
                                 onClick={handleClose}

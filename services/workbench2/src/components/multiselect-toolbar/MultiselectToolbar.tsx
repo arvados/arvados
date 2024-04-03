@@ -39,7 +39,7 @@ import { sortByProperty } from "common/array-utils";
 
 const WIDTH_TRANSITION = 150
 
-type CssRules = "root" | "transition" | "button" | "iconContainer" | "icon";
+type CssRules = "root" | "transition" | "button" | "iconContainer" | "icon" | "divider";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -72,7 +72,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     icon: {
         marginLeft: '-0.5rem',
-    }
+    },
+    divider: {
+        display: "flex",
+        alignItems: "center",
+    },
 });
 
 export type MultiselectToolbarProps = {
@@ -133,15 +137,24 @@ export const MultiselectToolbar = connect(
                         <IntersectionObserverWrapper menuLength={actions.length}>
                             {actions.map((action, i) =>{
                                 const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
-                            return action.name === ContextMenuActionNames.DIVIDER ? (action.component && <action.component data-targetid={name} key={i} />)
-                            : hasAlts ? (
+                            return action.name === ContextMenuActionNames.DIVIDER ? (
+                                action.component && (
+                                    <div
+                                        className={classes.divider}
+                                        data-targetid={`${name}${i}`}
+                                        key={i}
+                                    >
+                                        <action.component />
+                                    </div>
+                                )
+                            ) : hasAlts ? (
                                 <Tooltip
                                     className={classes.button}
                                     data-targetid={name}
                                     title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
                                     key={i}
                                     disableFocusListener
-                                    >
+                                >
                                     <span className={classes.iconContainer}>
                                         <IconButton
                                             data-cy='multiselect-button'
@@ -160,7 +173,7 @@ export const MultiselectToolbar = connect(
                                     title={action.name}
                                     key={i}
                                     disableFocusListener
-                                    >
+                                >
                                     <span className={classes.iconContainer}>
                                         <IconButton
                                             data-cy='multiselect-button'
