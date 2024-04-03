@@ -277,7 +277,7 @@ class KeepBlockCache(object):
             return
 
         _evict_candidates = collections.deque(self._cache.values())
-        while len(_evict_candidates) > 0 and (self.cache_total > cache_max or len(self._cache) > max_slots):
+        while _evict_candidates and (self.cache_total > cache_max or len(self._cache) > max_slots):
             slot = _evict_candidates.popleft()
             if not slot.ready.is_set():
                 continue
@@ -354,7 +354,7 @@ class KeepBlockCache(object):
             elif e.errno == errno.ENOSPC:
                 # Reduce disk max space to current - 256 MiB, cap cache and retry
                 with self._cache_lock:
-                    sm = sum([st.size() for st in self._cache.values()])
+                    sm = sum(st.size() for st in self._cache.values())
                     self.cache_max = max((256 * 1024 * 1024), sm - (256 * 1024 * 1024))
             elif e.errno == errno.ENODEV:
                 _logger.error("Unable to use disk cache: The underlying filesystem does not support memory mapping.")

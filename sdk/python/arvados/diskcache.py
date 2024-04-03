@@ -91,7 +91,6 @@ class DiskCacheSlot(object):
                     os.remove(tmpfile)
                 except:
                     pass
-        return False
 
     def size(self):
         if self.content is None:
