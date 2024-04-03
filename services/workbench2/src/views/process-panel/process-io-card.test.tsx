@@ -15,8 +15,11 @@ import { DefaultCodeSnippet } from "components/default-code-snippet/default-code
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
 
-
+// Mock collection files component since it just needs to exist
 jest.mock('views/process-panel/process-output-collection-files');
+// Mock autosizer for the io panel virtual list
+jest.mock('react-virtualized-auto-sizer', () => ({ children }: any) => children({ height: 600, width: 600 }));
+
 configure({ adapter: new Adapter() });
 
 describe('renderers', () => {
@@ -113,7 +116,7 @@ describe('renderers', () => {
 
         it('shows main process with params', () => {
             // when
-            const parameters = [{id: 'someId', label: 'someLabel', value: [{display: 'someValue'}]}];
+            const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
             let panel = mount(
                 <Provider store={store}>
                     <MuiThemeProvider theme={CustomTheme}>
