@@ -1408,7 +1408,8 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
                         verifyIOParameter("input_file", null, "Label Description", "input1.tar", "00000000000000000000000000000000+01");
                         verifyIOParameter("input_file", null, "Label Description", "input1-2.txt", undefined, true);
                         verifyIOParameter("input_file", null, "Label Description", "input1-3.txt", undefined, true);
@@ -1543,19 +1544,23 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
                         cy.wait(2000);
                         cy.waitForDom();
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+
+                        testInputs.map((input) => {
+                            verifyIOParameter(input.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
+
+                        testOutputs.map((output) => {
+                            verifyIOParameter(output.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
             });
