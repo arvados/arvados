@@ -106,7 +106,7 @@ class DiskCacheSlot(object):
             return len(self.content)
 
     def evict(self):
-        if self.content is None or len(self.content) == 0:
+        if not self.content:
             return
 
         # The mmap region might be in use when we decided to evict
