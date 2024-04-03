@@ -63,6 +63,8 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         api.dispatch(progressIndicatorActions.START_WORKING(this.id))
         api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
 
+        api.dispatch(resetItemsAvailable());
+
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
@@ -134,6 +136,9 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
+
+export const resetItemsAvailable = () =>
+    searchResultsPanelActions.RESET_ITEMS_AVAILABLE();
 
 export const appendItems = (listResults: ListResults<GroupContentsResource>) =>
     searchResultsPanelActions.APPEND_ITEMS({

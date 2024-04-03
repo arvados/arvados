@@ -91,11 +91,14 @@ export const dataExplorerReducer = (
             })
         ),
 
+        RESET_ITEMS_AVAILABLE: ({ id }) =>
+            update(state, id, (explorer) => ({ ...explorer, itemsAvailable: 0 })),
+
         APPEND_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
             update(state, id, (explorer) => ({
                 ...explorer,
                 items: state[id].items.concat(items),
-                itemsAvailable: itemsAvailable,
+                itemsAvailable: state[id].itemsAvailable + itemsAvailable,
                 page,
                 rowsPerPage,
             })),
