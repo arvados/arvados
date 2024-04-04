@@ -1279,6 +1279,7 @@ describe("Process tests", function () {
                 .contains(name)
                 .parents("tr")
                 .within($mainRow => {
+                    cy.get($mainRow).scrollIntoView();
                     label && cy.contains(label);
 
                     if (multipleRows) {
@@ -1407,7 +1408,8 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
                         verifyIOParameter("input_file", null, "Label Description", "input1.tar", "00000000000000000000000000000000+01");
                         verifyIOParameter("input_file", null, "Label Description", "input1-2.txt", undefined, true);
                         verifyIOParameter("input_file", null, "Label Description", "input1-3.txt", undefined, true);
@@ -1444,11 +1446,11 @@ describe("Process tests", function () {
                     .parents("[data-cy=process-io-card]")
                     .within(ctx => {
                         cy.get(ctx).scrollIntoView();
-                        cy.get('[data-cy="io-preview-image-toggle"]').click({ waitForAnimations: false });
                         const outPdh = testOutputCollection.portable_data_hash;
 
                         verifyIOParameter("output_file", null, "Label Description", "cat.png", `${outPdh}`);
-                        verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
+                        // Disabled until image preview returns
+                        // verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "main.dat", `${outPdh}`);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary.dat", undefined, true);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary2.dat", undefined, true);
@@ -1542,19 +1544,23 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
                         cy.wait(2000);
                         cy.waitForDom();
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+
+                        testInputs.map((input) => {
+                            verifyIOParameter(input.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
+
+                        testOutputs.map((output) => {
+                            verifyIOParameter(output.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
             });
