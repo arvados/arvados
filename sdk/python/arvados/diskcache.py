@@ -244,7 +244,7 @@ class DiskCacheSlot(object):
 
         # Map in all the files we found, up to maxslots, if we exceed
         # maxslots, start throwing things out.
-        cachelist = collections.OrderedDict()
+        cachelist: collections.OrderedDict = collections.OrderedDict()
         for b in blocks:
             got = DiskCacheSlot.get_from_disk(b[0], cachedir)
             if got is None:
