@@ -24,7 +24,7 @@ const msDeleteWorkflow: MultiSelectMenuAction = {
     name: DELETE_WORKFLOW,
     icon: TrashIcon,
     hasAlts: false,
-    isForMulti: false,
+    isForMulti: true,
     execute: (dispatch, resources) => {
         dispatch<any>(deleteWorkflow(resources[0].uuid, resources[0].ownerUuid));
     },

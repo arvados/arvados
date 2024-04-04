@@ -112,4 +112,5 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],
+    [ResourceKind.WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
 };
