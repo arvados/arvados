@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
-import { Grid, FormControl, InputLabel, Tooltip, IconButton, StyleRulesCallback } from '@material-ui/core';
+import { Grid, FormControl, InputLabel, Tooltip, IconButton, StyleRulesCallback, Typography } from '@material-ui/core';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { ParticipantSelect, Participant } from './participant-select';
 import { AddIcon } from 'components/icon/icon';
@@ -12,7 +12,7 @@ import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type SharingStyles = 'root' | 'addButtonRoot' | 'addButtonPrimary' | 'addButtonDisabled';
+type SharingStyles = 'root' | 'addButtonRoot' | 'addButtonPrimary' | 'addButtonDisabled' | 'shareWarning' ;
 
 const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     root: {
@@ -34,7 +34,12 @@ const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     },
     addButtonDisabled: {
         background: 'none',
-    }
+    },
+    shareWarning: {
+        color: theme.palette.error.main,
+        marginTop: '-1rem',
+        fontSize: '0.75rem',
+    },
 });
 
 const SharingInvitationFormComponent = (props: { onSave: () => void, saveEnabled: boolean }) => <StyledSharingInvitationFormComponent onSave={props.onSave} saveEnabled={props.saveEnabled} />
@@ -46,6 +51,13 @@ const StyledSharingInvitationFormComponent = withStyles(styles)(
         <Grid container spacing={8} wrap='nowrap' className={classes.root} >
             <Grid data-cy="invite-people-field" item xs={8}>
                 <InvitedPeopleField />
+                {saveEnabled && 
+                    <Typography 
+                        variant='caption' 
+                        className={classes.shareWarning}
+                        >
+                        You must click &#x1F7A4; to add a participant.
+                    </Typography>}
             </Grid>
             <Grid data-cy="permission-select-field" item xs={4} container wrap='nowrap'>
                 <PermissionSelectField />

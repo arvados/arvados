@@ -182,7 +182,9 @@ export default (props: SharingDialogComponentProps) => {
                     <Button onClick={() => {
                         onClose();
                         setWithExpiration(false);
-                    }}>
+                    }}
+                    disabled={saveEnabled}
+                    >
                         Close
                     </Button>
                 </Grid>
