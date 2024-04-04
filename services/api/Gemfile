@@ -58,6 +58,28 @@ gem 'webrick'
 
 gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
+# If we're running on Ruby 2.x, we'll go down the `else` branch below.
+plugin 'bundler-override' if RUBY_VERSION >= "3.0"
+if bundler_override_paths = Bundler::Plugin.index.load_paths("bundler-override")
+  require File.join(bundler_override_paths[0], "bundler-override")
+  # Ruby 3.4 drops base64 as a default gem. Because of this, various other gems
+  # are starting to declare base64 as a dependency. However, locking one
+  # specific version of base64 makes it more difficult to support older Rubies
+  # that still have it as a default. See <https://dev.arvados.org/issues/21583>.
+  # Because we are focused on supporting distros with those older Rubies, we
+  # drop base64 dependencies here. These overrides can go away once we shift to
+  # supporting Ruby 3.4+.
+  override 'faraday', drop: ['base64']
+else
+  # The plugin is not available, either because Ruby is too old or Bundler
+  # is installing it this run. That's fine as long as Bundler isn't updating
+  # Gemfile.lock. Unfortunately we can't know that for sure here, because
+  # bundler needs to read Gemfile in order to figure out whether it's going
+  # to update Gemfile.lock. Flagging the situation for the user is the best
+  # we can do.
+  Bundler.ui.warn("bundler-override plugin not available - do NOT commit any changes to Gemfile.lock")
+end
+
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
     eval(IO.read(f), binding)
