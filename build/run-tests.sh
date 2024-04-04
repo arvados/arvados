@@ -819,7 +819,7 @@ check_arvados_config() {
 }
 
 do_install() {
-    if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
+    if [[ -n ${skip["install_$1"]} || -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
         return 0
     fi
     check_arvados_config "$1"
