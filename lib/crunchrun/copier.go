@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,6 +18,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
+	"github.com/bmatcuk/doublestar"
 )
 
 type printfer interface {
@@ -54,6 +56,7 @@ type copier struct {
 	keepClient    IKeepClient
 	hostOutputDir string
 	ctrOutputDir  string
+	globs         []string
 	bindmounts    map[string]bindmount
 	mounts        map[string]arvados.Mount
 	secretMounts  map[string]arvados.Mount
@@ -72,12 +75,17 @@ func (cp *copier) Copy() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error scanning files to copy to output: %v", err)
 	}
-	fs, err := (&arvados.Collection{ManifestText: cp.manifest}).FileSystem(cp.client, cp.keepClient)
+	collfs, err := (&arvados.Collection{ManifestText: cp.manifest}).FileSystem(cp.client, cp.keepClient)
 	if err != nil {
 		return "", fmt.Errorf("error creating Collection.FileSystem: %v", err)
 	}
+	err = cp.applyGlobsToCollectionFS(collfs)
+	if err != nil {
+		return "", fmt.Errorf("error while removing non-matching files from output collection: %w", err)
+	}
+	cp.applyGlobsToFilesAndDirs()
 	for _, d := range cp.dirs {
-		err = fs.Mkdir(d, 0777)
+		err = collfs.Mkdir(d, 0777)
 		if err != nil && err != os.ErrExist {
 			return "", fmt.Errorf("error making directory %q in output collection: %v", d, err)
 		}
@@ -91,20 +99,118 @@ func (cp *copier) Copy() (string, error) {
 		// open so f's data can be packed with it).
 		dir, _ := filepath.Split(f.dst)
 		if dir != lastparentdir || unflushed > keepclient.BLOCKSIZE {
-			if err := fs.Flush("/"+lastparentdir, dir != lastparentdir); err != nil {
+			if err := collfs.Flush("/"+lastparentdir, dir != lastparentdir); err != nil {
 				return "", fmt.Errorf("error flushing output collection file data: %v", err)
 			}
 			unflushed = 0
 		}
 		lastparentdir = dir
 
-		n, err := cp.copyFile(fs, f)
+		n, err := cp.copyFile(collfs, f)
 		if err != nil {
 			return "", fmt.Errorf("error copying file %q into output collection: %v", f, err)
 		}
 		unflushed += n
 	}
-	return fs.MarshalManifest(".")
+	return collfs.MarshalManifest(".")
+}
+
+func (cp *copier) matchGlobs(path string) bool {
+	// An entry in the top level of the output directory looks
+	// like "/foo", but globs look like "foo", so we strip the
+	// leading "/" before matching.
+	path = strings.TrimLeft(path, "/")
+	for _, glob := range cp.globs {
+		if match, _ := doublestar.Match(glob, path); match {
+			return true
+		}
+	}
+	return false
+}
+
+// Delete entries from cp.files that do not match cp.globs.
+//
+// Delete entries from cp.dirs that do not match cp.globs.
+//
+// Ensure parent/ancestor directories of remaining cp.files and
+// cp.dirs entries are still present in cp.dirs, even if they do not
+// match cp.globs themselves.
+func (cp *copier) applyGlobsToFilesAndDirs() {
+	if len(cp.globs) == 0 {
+		return
+	}
+	keepdirs := make(map[string]bool)
+	for _, path := range cp.dirs {
+		if cp.matchGlobs(path) {
+			keepdirs[path] = true
+		}
+	}
+	for path := range keepdirs {
+		for i, c := range path {
+			if i > 0 && c == '/' {
+				keepdirs[path[:i]] = true
+			}
+		}
+	}
+	var keepfiles []filetodo
+	for _, file := range cp.files {
+		if cp.matchGlobs(file.dst) {
+			keepfiles = append(keepfiles, file)
+		}
+	}
+	for _, file := range keepfiles {
+		for i, c := range file.dst {
+			if i > 0 && c == '/' {
+				keepdirs[file.dst[:i]] = true
+			}
+		}
+	}
+	cp.dirs = nil
+	for path := range keepdirs {
+		cp.dirs = append(cp.dirs, path)
+	}
+	sort.Strings(cp.dirs)
+	cp.files = keepfiles
+}
+
+// Delete files in collfs that do not match cp.globs.  Also delete
+// directories that are empty (after deleting non-matching files) and
+// do not match cp.globs themselves.
+func (cp *copier) applyGlobsToCollectionFS(collfs arvados.CollectionFileSystem) error {
+	if len(cp.globs) == 0 {
+		return nil
+	}
+	include := make(map[string]bool)
+	err := fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
+		if cp.matchGlobs(path) {
+			for i, c := range path {
+				if i > 0 && c == '/' {
+					include[path[:i]] = true
+				}
+			}
+			include[path] = true
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	err = fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
+		if err != nil || path == "" {
+			return err
+		}
+		if !include[path] {
+			err := collfs.RemoveAll(path)
+			if err != nil {
+				return err
+			}
+			if ent.IsDir() {
+				return fs.SkipDir
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 func (cp *copier) copyFile(fs arvados.CollectionFileSystem, f filetodo) (int64, error) {

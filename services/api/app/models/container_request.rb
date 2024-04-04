@@ -34,6 +34,7 @@ class ContainerRequest < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
+  serialize :output_glob, Array
 
   after_find :fill_container_defaults_after_find
   after_initialize { @state_was_when_initialized = self.state_was } # see finalize_if_needed
@@ -73,6 +74,7 @@ class ContainerRequest < ArvadosModel
     t.add :name
     t.add :output_name
     t.add :output_path
+    t.add :output_glob
     t.add :output_uuid
     t.add :output_ttl
     t.add :priority
@@ -104,7 +106,7 @@ class ContainerRequest < ArvadosModel
   AttrsPermittedAlways = [:owner_uuid, :state, :name, :description, :properties]
   AttrsPermittedBeforeCommit = [:command, :container_count_max,
   :container_image, :cwd, :environment, :filters, :mounts,
-  :output_path, :priority, :runtime_token,
+  :output_path, :output_glob, :priority, :runtime_token,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl,
   :output_storage_classes, :output_properties]
@@ -307,7 +309,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes", "output_glob"]
   end
 
   def set_priority_zero
@@ -326,6 +328,7 @@ class ContainerRequest < ArvadosModel
     self.container_count_max ||= Rails.configuration.Containers.MaxRetryAttempts
     self.scheduling_parameters ||= {}
     self.output_ttl ||= 0
+    self.output_glob ||= []
     self.priority ||= 0
   end
 
@@ -440,6 +443,11 @@ class ContainerRequest < ArvadosModel
     environment.each do |k,v|
       if !k.is_a?(String) || !v.is_a?(String)
         errors.add(:environment, "must be an map of String to String but has entry #{k.class} to #{v.class}")
+      end
+    end
+    output_glob.each do |g|
+      if !g.is_a? String
+        errors.add(:output_glob, "must be an array of strings but has entry #{g.class}")
       end
     end
     [:mounts, :secret_mounts].each do |m|

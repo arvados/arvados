@@ -7,8 +7,10 @@ package crunchrun
 import (
 	"bytes"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	"sort"
 	"syscall"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -221,4 +223,174 @@ func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
 	_, err = io.WriteString(f, data)
 	c.Assert(err, check.IsNil)
 	c.Assert(f.Close(), check.IsNil)
+}
+
+func (s *copierSuite) TestApplyGlobsToFilesAndDirs(c *check.C) {
+	dirs := []string{"dir1", "dir1/dir11", "dir1/dir12", "dir2"}
+	files := []string{"dir1/file11", "dir1/dir11/file111", "dir2/file2"}
+	for _, trial := range []struct {
+		globs []string
+		dirs  []string
+		files []string
+	}{
+		{
+			globs: []string{},
+			dirs:  append([]string{}, dirs...),
+			files: append([]string{}, files...),
+		},
+		{
+			globs: []string{"**"},
+			dirs:  append([]string{}, dirs...),
+			files: append([]string{}, files...),
+		},
+		{
+			globs: []string{"**/file111"},
+			dirs:  []string{"dir1", "dir1/dir11"},
+			files: []string{"dir1/dir11/file111"},
+		},
+		{
+			globs: []string{"nothing"},
+			dirs:  nil,
+			files: nil,
+		},
+		{
+			globs: []string{"**/dir12"},
+			dirs:  []string{"dir1", "dir1/dir12"},
+			files: nil,
+		},
+		{
+			globs: []string{"**/file*"},
+			dirs:  []string{"dir1", "dir1/dir11", "dir2"},
+			files: append([]string{}, files...),
+		},
+		{
+			globs: []string{"**/dir1[12]"},
+			dirs:  []string{"dir1", "dir1/dir11", "dir1/dir12"},
+			files: nil,
+		},
+		{
+			globs: []string{"**/dir1[^2]"},
+			dirs:  []string{"dir1", "dir1/dir11"},
+			files: nil,
+		},
+	} {
+		c.Logf("=== globs: %q", trial.globs)
+		cp := copier{
+			globs: trial.globs,
+			dirs:  dirs,
+		}
+		for _, path := range files {
+			cp.files = append(cp.files, filetodo{dst: path})
+		}
+		cp.applyGlobsToFilesAndDirs()
+		var gotFiles []string
+		for _, file := range cp.files {
+			gotFiles = append(gotFiles, file.dst)
+		}
+		c.Check(cp.dirs, check.DeepEquals, trial.dirs)
+		c.Check(gotFiles, check.DeepEquals, trial.files)
+	}
+}
+
+func (s *copierSuite) TestApplyGlobsToCollectionFS(c *check.C) {
+	for _, trial := range []struct {
+		globs  []string
+		expect []string
+	}{
+		{
+			globs:  nil,
+			expect: []string{"foo", "bar", "baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"foo"},
+			expect: []string{"foo"},
+		},
+		{
+			globs:  []string{"baz/parent1/item1"},
+			expect: []string{"baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"**"},
+			expect: []string{"foo", "bar", "baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"**/*"},
+			expect: []string{"foo", "bar", "baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"*"},
+			expect: []string{"foo", "bar"},
+		},
+		{
+			globs:  []string{"baz"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"b*/**"},
+			expect: []string{"baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"baz"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"baz/**"},
+			expect: []string{"baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"baz/*"},
+			expect: []string{"baz/quux"},
+		},
+		{
+			globs:  []string{"baz/**/*uu?"},
+			expect: []string{"baz/quux"},
+		},
+		{
+			globs:  []string{"**/*m1"},
+			expect: []string{"baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"*/*/*/**/*1"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"f*", "**/q*"},
+			expect: []string{"foo", "baz/quux"},
+		},
+		{
+			globs:  []string{"\\"}, // invalid pattern matches nothing
+			expect: nil,
+		},
+		{
+			globs:  []string{"\\", "foo"},
+			expect: []string{"foo"},
+		},
+		{
+			globs:  []string{"foo/**"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"foo*/**"},
+			expect: nil,
+		},
+	} {
+		c.Logf("=== globs: %q", trial.globs)
+		collfs, err := (&arvados.Collection{ManifestText: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:bar 0:0:baz/quux 0:0:baz/parent1/item1\n"}).FileSystem(nil, nil)
+		c.Assert(err, check.IsNil)
+		cp := copier{globs: trial.globs}
+		err = cp.applyGlobsToCollectionFS(collfs)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		var got []string
+		fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
+			if !ent.IsDir() {
+				got = append(got, path)
+			}
+			return nil
+		})
+		sort.Strings(got)
+		sort.Strings(trial.expect)
+		c.Check(got, check.DeepEquals, trial.expect)
+	}
 }

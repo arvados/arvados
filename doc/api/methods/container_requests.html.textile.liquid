@@ -49,6 +49,9 @@ table(table table-bordered table-condensed).
 |cwd|string|Initial working directory, given as an absolute path (in the container) or a path relative to the WORKDIR given in the image's Dockerfile.|Required.|
 |command|array of strings|Command to execute in the container.|Required. e.g., @["echo","hello"]@|
 |output_path|string|Path to a directory or file inside the container that should be preserved as container's output when it finishes. This path must be one of the mount targets. For best performance, point output_path to a writable collection mount.  See "Pre-populate output using Mount points":#pre-populate-output for details regarding optional output pre-population using mount points and "Symlinks in output":#symlinks-in-output for additional details.|Required.|
+|output_glob|array of strings|Glob patterns determining which files (of those present in the output directory when the container finishes) will be included in the output collection. If multiple patterns are given, files that match any pattern are included. If null or empty, all files will be included.|"Doublestar" patterns are accepted:
+@foo/**@ matches the entire tree rooted at @foo@ in the top level of the output directory.
+@**/fo[og]@ matches all files named @foo@ or @fog@ anywhere in the tree.|
 |output_name|string|Desired name for the output collection. If null or empty, a name will be assigned automatically.||
 |output_ttl|integer|Desired lifetime for the output collection, in seconds. If zero, the output collection will not be deleted automatically.||
 |priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "below for more details":#priority .|
