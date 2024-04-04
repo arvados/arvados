@@ -37,7 +37,8 @@ const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     },
     shareWarning: {
         color: theme.palette.error.main,
-        marginTop: '-1rem',
+        marginTop: '-1.1rem',
+        marginBottom: 0,
         fontSize: '0.75rem',
     },
 });
