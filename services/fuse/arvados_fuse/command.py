@@ -490,13 +490,6 @@ class Mount(object):
                                                       disk_cache=self.args.disk_cache,
                                                       disk_cache_dir=self.args.disk_cache_dir)
 
-            # Profiling indicates that prefetching has more of a
-            # negative impact on the read() fast path (by requiring it
-            # to do more work and take additional locks) than benefit.
-            # Also, the kernel does some readahead itself, which has a
-            # similar effect.
-            prefetch_threads = 0
-
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
                 api_params={
@@ -504,7 +497,6 @@ class Mount(object):
                 },
                 keep_params={
                     'block_cache': block_cache,
-                    'num_prefetch_threads': prefetch_threads,
                     'num_retries': self.args.retries,
                 },
                 version='v1',
