@@ -321,7 +321,7 @@ export const DataExplorer = withStyles(styles)(
                                             variant="contained"
                                             color="primary"  
                                             style={{width: '100%', margin: '10px'}}
-                                            disabled={ working || (page + 1) * rowsPerPage >= itemsAvailable}
+                                            disabled={working || items.length >= itemsAvailable}
                                         >
                                             Load more
                                         </Button>
