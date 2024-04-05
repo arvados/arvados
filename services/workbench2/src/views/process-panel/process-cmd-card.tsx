@@ -21,7 +21,7 @@ import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { DefaultVirtualCodeSnippet } from 'components/default-code-snippet/default-virtual-code-snippet';
 import { Process } from 'store/processes/process';
 import shellescape from 'shell-escape';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyResultToClipboard from 'components/copy-to-clipboard/copy-result-to-clipboard';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader';
 
@@ -83,6 +83,12 @@ export const ProcessCmdCard = withStyles(styles)(
       return `${indent}${line}${lineBreak}`;
     };
 
+    const formatClipboardText = (command: string[]) => (): string => (
+      command.map((v) =>
+        shellescape([v]) // Escape each arg separately
+      ).join(' ')
+    );
+
     return (
       <Card className={classes.card}>
         <CardHeader
@@ -102,12 +108,12 @@ export const ProcessCmdCard = withStyles(styles)(
               <Grid item>
                 <Tooltip title="Copy link to clipboard" disableFocusListener>
                   <IconButton>
-                    <CopyToClipboard
-                      text={" "}
+                    <CopyResultToClipboard
+                      getText={formatClipboardText(process.containerRequest.command)}
                       onCopy={() => onCopy("Command copied to clipboard")}
                     >
                       <CopyIcon />
-                    </CopyToClipboard>
+                    </CopyResultToClipboard>
                   </IconButton>
                 </Tooltip>
               </Grid>
