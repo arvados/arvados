@@ -198,6 +198,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <MPVPanelContent
                     forwardProps
                     xs="auto"
+                    maxHeight={"50%"}
                     data-cy="process-cmd">
                     <ProcessCmdCard
                         onCopy={props.onCopyToClipboard}

@@ -18,7 +18,7 @@ import {
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, CommandIcon, CopyIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
+import { DefaultVirtualCodeSnippet } from 'components/default-code-snippet/default-virtual-code-snippet';
 import { Process } from 'store/processes/process';
 import shellescape from 'shell-escape';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -31,7 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     header: {
         paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingBottom: 0,
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -42,8 +42,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5
     },
     content: {
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
         padding: theme.spacing.unit * 1.0,
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: 0,
         '&:last-child': {
             paddingBottom: theme.spacing.unit * 1,
         }
@@ -52,7 +53,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'hidden',
         paddingTop: theme.spacing.unit * 0.5,
         color: theme.customs.colors.greyD,
-        fontSize: '1.875rem'  
+        fontSize: '1.875rem'
     },
 });
 
@@ -127,7 +128,7 @@ export const ProcessCmdCard = withStyles(styles)(
           }
         />
         <CardContent className={classes.content}>
-          <DefaultCodeSnippet lines={formattedCommand} linked />
+          <DefaultVirtualCodeSnippet lines={formattedCommand} linked />
         </CardContent>
       </Card>
     );
