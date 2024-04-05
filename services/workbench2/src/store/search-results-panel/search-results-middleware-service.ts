@@ -63,6 +63,10 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         api.dispatch(progressIndicatorActions.START_WORKING(this.id))
         api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
 
+        //In all other data tables, itemsAvailable will equal the number of returned items for a single session.
+        //In SearchResultsPanel, multiple sessions can be queried so items available needs to be
+        //reset in order to prevent adding the current value to the previous value every time 
+        //the 'load more' button is clicked.
         api.dispatch(resetItemsAvailable());
 
         sessions.forEach(session => {
