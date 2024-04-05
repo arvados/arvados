@@ -127,7 +127,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
                     visibilityMap={visibilityMap}
                     className={classes.overflowStyle}
                 >
-                    {children}
+                    {children.filter((child) => !child.props['data-targetid'].includes("Divider"))}
                 </OverflowMenu>
             )}
         </div>

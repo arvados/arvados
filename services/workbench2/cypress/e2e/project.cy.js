@@ -219,18 +219,18 @@ describe("Project tests", function () {
     it('shows the appropriate buttons in the multiselect toolbar', () => {
 
         const msButtonTooltips = [
+            'View details',
+            'Open in new tab',
+            'Copy link to clipboard',
+            'Open with 3rd party client',
             'API Details',
-            'Add to Favorites',
-            'Copy to clipboard',
+            'Share',
+            'New project',
             'Edit project',
-            'Freeze Project',
             'Move to',
             'Move to trash',
-            'New project',
-            'Open in new tab',
-            'Open with 3rd party client',
-            'Share',
-            'View details',
+            'Freeze project',
+            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);
@@ -636,7 +636,7 @@ describe("Project tests", function () {
         cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
         cy.waitForDom();
         cy.get("[data-cy=project-panel]").contains(projectName).should("be.visible").rightclick();
-        cy.get("[data-cy=context-menu]").contains("Copy to clipboard").click();
+        cy.get("[data-cy=context-menu]").contains("Copy link to clipboard").click();
         cy.window().then(win =>
             win.navigator.clipboard.readText().then(text => {
                 expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);

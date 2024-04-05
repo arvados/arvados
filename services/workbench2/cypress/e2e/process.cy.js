@@ -89,17 +89,15 @@ describe("Process tests", function () {
         it('shows the appropriate buttons in the toolbar', () => {
 
             const msButtonTooltips = [
-                'API Details',
-                'Add to Favorites',
-                'CANCEL',
-                'Copy and re-run process',
-                'Edit process',
-                'Move to',
+                'View details',
                 'Open in new tab',
                 'Outputs',
+                'API Details',
+                'Edit process',
+                'Copy and re-run process',
+                'CANCEL',
                 'Remove',
-                'Share',
-                'View details',
+                'Add to favorites',
             ];
 
             createContainerRequest(

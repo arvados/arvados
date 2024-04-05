@@ -30,17 +30,17 @@ describe("Collection panel tests", function () {
     it('shows the appropriate buttons in the toolbar', () => {
 
         const msButtonTooltips = [
-            'API Details',
-            'Add to Favorites',
-            'Copy to clipboard',
-            'Edit collection',
-            'Make a copy',
-            'Move to',
-            'Move to trash',
-            'Open in new tab',
-            'Open with 3rd party client',
-            'Share',
             'View details',
+            'Open in new tab',
+            'Copy link to clipboard',
+            'Open with 3rd party client',
+            'API Details',
+            'Share',
+            'Edit collection',
+            'Move to',
+            'Make a copy',
+            'Move to trash',
+            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);
@@ -351,7 +351,7 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy to clipboard")
+                                .and("contain", "Copy link to clipboard")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
@@ -359,7 +359,7 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("not.contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy to clipboard")
+                                .and("contain", "Copy link to clipboard")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu

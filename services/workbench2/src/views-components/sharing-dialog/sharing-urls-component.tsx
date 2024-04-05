@@ -78,7 +78,7 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
                     </Grid>
                     <Grid item xs />
                     <Grid item>
-                        <span className={props.classes.sharingUrlButton}><Tooltip title='Copy to clipboard'>
+                        <span className={props.classes.sharingUrlButton}><Tooltip title='Copy link to clipboard'>
                             <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
                                 <CopyIcon />
                             </CopyToClipboard>

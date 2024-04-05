@@ -35,7 +35,7 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set"; 
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 
@@ -82,7 +82,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             } finally {
                 if (!background) { 
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-                    api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
+                    api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
                 }
             }
         }

@@ -8,7 +8,7 @@ import Adapter from 'enzyme-adapter-react-16';
 import configureMockStore from 'redux-mock-store'
 import { Provider } from 'react-redux';
 import { CollectionFileViewerAction } from './collection-file-viewer-action';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
+import { ContextMenuKind } from '../menu-item-sort';
 import { createTree, initTreeNode, setNode, getNodeValue } from "models/tree";
 import { getInlineFileUrl, sanitizeToken } from "./helpers";
 

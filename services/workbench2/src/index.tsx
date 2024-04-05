@@ -20,7 +20,8 @@ import { MuiThemeProvider } from "@material-ui/core/styles";
 import { CustomTheme } from "common/custom-theme";
 import { fetchConfig } from "common/config";
 import servicesProvider from "common/service-provider";
-import { addMenuActionSet, ContextMenuKind } from "views-components/context-menu/context-menu";
+import { addMenuActionSet } from "views-components/context-menu/context-menu";
+import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
 import {
     filterGroupActionSet,

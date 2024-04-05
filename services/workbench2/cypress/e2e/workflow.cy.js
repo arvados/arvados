@@ -269,12 +269,12 @@ describe('Registered workflow panel tests', function() {
     it('shows the appropriate buttons in the multiselect toolbar', () => {
 
         const msButtonTooltips = [
-            'API Details',
-            'Copy to clipboard',
-            'Delete Workflow',
-            'Open in new tab',
-            'Run Workflow',
             'View details',
+            'Open in new tab',
+            'Copy link to clipboard',
+            'API Details',
+            'Run Workflow',
+            'Delete Workflow',
         ];
 
         cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf"}})

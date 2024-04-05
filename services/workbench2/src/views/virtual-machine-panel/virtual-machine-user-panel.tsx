@@ -238,7 +238,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             </TableCell>
                             <TableCell>
                                 {command}
-                                <Tooltip title="Copy to clipboard">
+                                <Tooltip title="Copy link to clipboard">
                                     <span className={props.classes.copyIcon}>
                                         <CopyToClipboard text={command || ""} onCopy={() => props.onCopy!("Copied")}>
                                             <CopyIcon />

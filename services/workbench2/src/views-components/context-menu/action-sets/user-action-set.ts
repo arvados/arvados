@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionSet, ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import {
     AdvancedIcon,
     ProjectIcon,
@@ -29,28 +29,28 @@ import {
 export const userActionSet: ContextMenuActionSet = [
     [
         {
-            name: 'Attributes',
+            name: ContextMenuActionNames.ATTRIBUTES,
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openUserAttributes(resources[0].uuid));
             },
         },
         {
-            name: 'Project',
+            name: ContextMenuActionNames.HOME_PROJECT,
             icon: ProjectIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openUserProjects(resources[0].uuid));
             },
         },
         {
-            name: 'API Details',
+            name: ContextMenuActionNames.API_DETAILS,
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
-            name: 'Account Settings',
+            name: ContextMenuActionNames.ACCOUNT_SETTINGS,
             icon: UserPanelIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(navigateToUserProfile(resources[0].uuid));
@@ -60,7 +60,7 @@ export const userActionSet: ContextMenuActionSet = [
     ],
     [
         {
-            name: 'Activate User',
+            name: ContextMenuActionNames.ACTIVATE_USER,
             icon: ActiveIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openActivateDialog(resources[0].uuid));
@@ -68,7 +68,7 @@ export const userActionSet: ContextMenuActionSet = [
             filters: [isAdmin, canActivateUser],
         },
         {
-            name: 'Setup User',
+            name: ContextMenuActionNames.SETUP_USER,
             icon: AdminMenuIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openSetupDialog(resources[0].uuid));
@@ -76,7 +76,7 @@ export const userActionSet: ContextMenuActionSet = [
             filters: [isAdmin, canSetupUser],
         },
         {
-            name: 'Deactivate User',
+            name: ContextMenuActionNames.DEACTIVATE_USER,
             icon: DeactivateUserIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openDeactivateDialog(resources[0].uuid));
@@ -84,7 +84,7 @@ export const userActionSet: ContextMenuActionSet = [
             filters: [isAdmin, canDeactivateUser],
         },
         {
-            name: 'Login As User',
+            name: ContextMenuActionNames.LOGIN_AS_USER,
             icon: LoginAsIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(loginAs(resources[0].uuid));

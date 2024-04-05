@@ -27,7 +27,7 @@ import { serializeResourceTypeFilters } from 'store//resource-type-filters/resou
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
 import { CollectionResource } from "models/collection";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -85,7 +85,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             }));
             api.dispatch(couldNotFetchTrashContents());
         }
-        api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
+        api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
     }
 }
 

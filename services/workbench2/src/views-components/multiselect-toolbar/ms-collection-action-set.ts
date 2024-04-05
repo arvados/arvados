@@ -2,19 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MoveToIcon, CopyIcon, RenameIcon } from "components/icon/icon";
+import { MoveToIcon, CopyIcon, RenameIcon, ShareIcon } from "components/icon/icon";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuAction } from "./ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { TrashIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
+import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 
-const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_W_3RD_PARTY_CLIENT, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = MultiSelectMenuActionNames;
+
+const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
@@ -48,7 +50,7 @@ const msToggleTrashAction: MultiSelectMenuAction = {
 }
 
 const msEditCollection: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.EDIT_COLLECTION,
+    name: ContextMenuActionNames.EDIT_COLLECTION,
     icon: RenameIcon,
     hasAlts: false,
     isForMulti: false,
@@ -58,7 +60,7 @@ const msEditCollection: MultiSelectMenuAction = {
 }
 
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
-    name: COPY_TO_CLIPBOARD,
+    name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
     hasAlts: false,
     isForMulti: false,
@@ -68,12 +70,22 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 };
 
 const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
-    name: OPEN_W_3RD_PARTY_CLIENT,
+    name: OPEN_WITH_3RD_PARTY_CLIENT,
     icon: FolderSharedIcon,
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
+    },
+};
+
+const msShareAction: MultiSelectMenuAction  = {
+    name: SHARE,
+    icon: ShareIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(openSharingDialog(resources[0].uuid));
     },
 };
 
@@ -85,10 +97,11 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
         msToggleTrashAction,
         msEditCollection,
         msCopyToClipboardMenuAction,
-        msOpenWith3rdPartyClientAction
+        msOpenWith3rdPartyClientAction,
+        msShareAction,
     ],
 ];
 
-export const msReadOnlyCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, OPEN_W_3RD_PARTY_CLIENT]);
-export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
-export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_W_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
+export const msReadOnlyCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, OPEN_WITH_3RD_PARTY_CLIENT]);
+export const msCommonCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_WITH_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
+export const msOldCollectionActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, MAKE_A_COPY, VIEW_DETAILS, API_DETAILS, OPEN_WITH_3RD_PARTY_CLIENT, EDIT_COLLECTION, SHARE, MOVE_TO, ADD_TO_FAVORITES, MOVE_TO_TRASH])
