@@ -1181,6 +1181,8 @@ class KeepClient(object):
                         # result, so if it is already in flight return
                         # immediately.  Clear 'slot' to prevent
                         # finally block from calling slot.set()
+                        if slot.ready.is_set():
+                            slot.get()
                         slot = None
                         return None
 
