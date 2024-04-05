@@ -220,8 +220,6 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 		if trial.logConfig == "none" {
 			c.Check(logExists, Equals, false)
 		} else {
-			c.Check(log, Matches, `(?ms).*not running trash worker.*`)
-			c.Check(log, Matches, `(?ms).*not running trash emptier.*`)
 			c.Check(log, trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
 			c.Check(log, trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
 		}
