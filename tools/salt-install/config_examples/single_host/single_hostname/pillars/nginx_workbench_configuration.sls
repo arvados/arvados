@@ -78,6 +78,7 @@ nginx:
             - root: /var/www/arvados-workbench/current/public
             - index:  index.html index.htm
             - passenger_enabled: 'on'
+            - passenger_preload_bundler: 'on'
             # yamllint disable-line rule:line-length
             - access_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__-upstream.access.log combined
             - error_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__-upstream.error.log
