@@ -631,6 +631,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
                 self.blocks = blocks
                 self.nocache = nocache
                 self._keep = ArvadosFileWriterTestCase.MockKeep({})
+                self.prefetch_lookahead = 0
 
             def block_prefetch(self, loc):
                 pass
