@@ -71,18 +71,17 @@ export const ProcessCmdCard = withStyles(styles)(
     classes,
     doHidePanel,
   }: ProcessCmdCardProps) => {
-    const command = process.containerRequest.command.map((v) =>
-      shellescape([v]) // Escape each arg separately
-    );
 
-    let formattedCommand = [...command];
-    formattedCommand.forEach((item, i, arr) => {
+    const formatLine = (lines: string[], index: number): string => {
+      // Escape each arg separately
+      let line = shellescape([lines[index]])
       // Indent lines after the first
-      const indent = i > 0 ? '  ' : '';
-      // Escape newlines on every non-last arg when there are multiple lines
-      const lineBreak = arr.length > 1 && i < arr.length - 1 ? ' \\' : '';
-      arr[i] = `${indent}${item}${lineBreak}`;
-    });
+      const indent = index > 0 ? '  ' : '';
+      // Add backslash "escaped linebreak"
+      const lineBreak = lines.length > 1 && index < lines.length - 1 ? ' \\' : '';
+
+      return `${indent}${line}${lineBreak}`;
+    };
 
     return (
       <Card className={classes.card}>
@@ -104,7 +103,7 @@ export const ProcessCmdCard = withStyles(styles)(
                 <Tooltip title="Copy link to clipboard" disableFocusListener>
                   <IconButton>
                     <CopyToClipboard
-                      text={command.join(" ")}
+                      text={" "}
                       onCopy={() => onCopy("Command copied to clipboard")}
                     >
                       <CopyIcon />
@@ -128,7 +127,11 @@ export const ProcessCmdCard = withStyles(styles)(
           }
         />
         <CardContent className={classes.content}>
-          <DefaultVirtualCodeSnippet lines={formattedCommand} linked />
+          <DefaultVirtualCodeSnippet
+            lines={process.containerRequest.command}
+            lineFormatter={formatLine}
+            linked
+          />
         </CardContent>
       </Card>
     );

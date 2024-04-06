@@ -32,7 +32,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export interface CodeSnippetDataProps {
     lines: string[];
-    lineTransformer?: (line: string) => string;
+    lineFormatter?: (lines: string[], index: number) => string;
     className?: string;
     apiResponse?: boolean;
     linked?: boolean;
@@ -49,10 +49,11 @@ const mapStateToProps = (state: RootState): CodeSnippetAuthProps => ({
 });
 
 export const VirtualCodeSnippet = withStyles(styles)(connect(mapStateToProps)(
-    ({ classes, lines, linked, className, apiResponse, dispatch, auth }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) => {
-        const RenderRow = ({index, style}) => (
-            <span style={style}>{linked ? renderLinks(auth, dispatch)(lines[index]) : lines[index]}</span>
-        );
+    ({ classes, lines, lineFormatter, linked, className, apiResponse, dispatch, auth }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) => {
+        const RenderRow = ({index, style}) => {
+            const lineContents = lineFormatter ? lineFormatter(lines, index) : lines[index];
+            return <span style={style}>{linked ? renderLinks(auth, dispatch)(lineContents) : lineContents}</span>
+        };
 
         return <Typography
             component="div"
