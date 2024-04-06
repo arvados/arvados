@@ -11,7 +11,7 @@ import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
 import { ProcessIOCard, ProcessIOCardType } from './process-io-card';
 import { DefaultView } from "components/default-view/default-view";
-import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
+import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -111,7 +111,7 @@ describe('renderers', () => {
             // then
             expect(panel.find(CircularProgress).exists()).toBeFalsy();
             expect(panel.find(Tab).length).toBe(1);
-            expect(panel.find(DefaultCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2));
+            expect(panel.find(DefaultVirtualCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2).replace(/\n/g, ''));
         });
 
         it('shows main process with params', () => {
