@@ -15,7 +15,6 @@ import {
     Typography,
     Grid,
     Link,
-    Button
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import {

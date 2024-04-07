@@ -27,7 +27,7 @@ import {
     CircularProgress,
 } from "@material-ui/core";
 import { ArvadosTheme } from "common/custom-theme";
-import { CloseIcon, ImageIcon, InputIcon, ImageOffIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
+import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import {
     BooleanCommandInputParameter,
@@ -890,7 +890,7 @@ const KeepUrlPath = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
                 className={classes.keepLink}
                 href={keepUrlPathNav}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
             >
                 {keepUrlPath || "/"}
             </a>
