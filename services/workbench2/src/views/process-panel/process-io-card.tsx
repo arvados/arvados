@@ -76,8 +76,9 @@ type CssRules =
     | "avatar"
     | "iconHeader"
     | "tableWrapper"
-    | "tableRoot"
     | "paramValue"
+    | "paramTableRoot"
+    | "mountsTableRoot"
     | "keepLink"
     | "collectionLink"
     | "imagePreview"
@@ -127,7 +128,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         maxHeight: `calc(100% - ${theme.spacing.unit * 3}px)`,
         overflow: "auto",
     },
-    tableRoot: {
+    paramTableRoot: {
+        width: "100%",
+        "& thead th": {
+            verticalAlign: "bottom",
+            paddingBottom: "10px",
+        },
+        "& td, & th": {
+            paddingRight: "25px",
+        },
+    },
+    mountsTableRoot: {
         width: "100%",
         "& thead th": {
             verticalAlign: "bottom",
@@ -548,7 +559,7 @@ const ProcessIOPreview = memo(
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
         return (
             <Table
-                className={classes.tableRoot}
+                className={classes.paramTableRoot}
                 aria-label="Process IO Preview"
             >
                 <TableHead>
@@ -601,7 +612,7 @@ const ProcessInputMounts = withStyles(styles)(
         auth: state.auth,
     }))(({ mounts, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
         <Table
-            className={classes.tableRoot}
+            className={classes.mountsTableRoot}
             aria-label="Process Input Mounts"
         >
             <TableHead>
