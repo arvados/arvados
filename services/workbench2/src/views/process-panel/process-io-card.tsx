@@ -563,7 +563,11 @@ const ProcessIOPreview = memo(
             data[index+1] && !isMainRow(data[index+1])
         );
 
-        const isMainRow = (param: ProcessIOParameter) => (param && (param.id || param.label && !param.value.secondary));
+        const isMainRow = (param: ProcessIOParameter) => (
+            param &&
+            ((param.id || param.label) &&
+            !param.value.secondary)
+        );
 
         const RenderRow = ({index, style}) => {
             const param = data[index];
