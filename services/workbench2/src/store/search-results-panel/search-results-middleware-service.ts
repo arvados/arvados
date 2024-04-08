@@ -30,7 +30,7 @@ import { progressIndicatorActions } from 'store/progress-indicator/progress-indi
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
-    constructor(private services: ServiceRepository, id: string) {
+    constructor(private services: ServiceRepository, id: string, private responseMap: Record<string, number> = {}) {
         super(id);
     }
 
@@ -40,6 +40,8 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const searchValue = state.searchBar.searchValue;
         const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
         const sessions = getSearchSessions(clusterId, state.auth.sessions);
+        const recentQueries = this.services.searchService.getRecentQueries();
+        const lastQuery = recentQueries[recentQueries.length - 2];
 
         if (searchValue.trim() === '') {
             return;
@@ -63,16 +65,19 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         api.dispatch(progressIndicatorActions.START_WORKING(this.id))
         api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
 
-        //In all other data tables, itemsAvailable will equal the number of returned items for a single session.
-        //In SearchResultsPanel, multiple sessions can be queried so items available needs to be
-        //reset in order to prevent adding the current value to the previous value every time 
-        //the 'load more' button is clicked.
+        //In SearchResultsPanel, if we don't reset the items available, the items available will
+        //will be added to the previous value every time the 'load more' button is clicked.
         api.dispatch(resetItemsAvailable());
 
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
+                    //if items were added or deleted, we ignore them for "load more" button purposes
+                    if (lastQuery === searchValue && this.responseMap[session.clusterId] && this.responseMap[session.clusterId] !== response.itemsAvailable) {
+                        response.itemsAvailable = this.responseMap[session.clusterId];
+                    }
+                    this.responseMap[session.clusterId] = response.itemsAvailable;
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
                     numberOfResolvedResponses++;
