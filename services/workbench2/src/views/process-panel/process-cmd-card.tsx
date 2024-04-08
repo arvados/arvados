@@ -18,10 +18,10 @@ import {
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, CommandIcon, CopyIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
+import { DefaultVirtualCodeSnippet } from 'components/default-code-snippet/default-virtual-code-snippet';
 import { Process } from 'store/processes/process';
 import shellescape from 'shell-escape';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CopyResultToClipboard from 'components/copy-to-clipboard/copy-result-to-clipboard';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader';
 
@@ -31,7 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     header: {
         paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingBottom: 0,
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -42,8 +42,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5
     },
     content: {
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
         padding: theme.spacing.unit * 1.0,
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: 0,
         '&:last-child': {
             paddingBottom: theme.spacing.unit * 1,
         }
@@ -52,7 +53,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'hidden',
         paddingTop: theme.spacing.unit * 0.5,
         color: theme.customs.colors.greyD,
-        fontSize: '1.875rem'  
+        fontSize: '1.875rem'
     },
 });
 
@@ -70,18 +71,23 @@ export const ProcessCmdCard = withStyles(styles)(
     classes,
     doHidePanel,
   }: ProcessCmdCardProps) => {
-    const command = process.containerRequest.command.map((v) =>
-      shellescape([v]) // Escape each arg separately
-    );
 
-    let formattedCommand = [...command];
-    formattedCommand.forEach((item, i, arr) => {
+    const formatLine = (lines: string[], index: number): string => {
+      // Escape each arg separately
+      let line = shellescape([lines[index]])
       // Indent lines after the first
-      const indent = i > 0 ? '  ' : '';
-      // Escape newlines on every non-last arg when there are multiple lines
-      const lineBreak = arr.length > 1 && i < arr.length - 1 ? ' \\' : '';
-      arr[i] = `${indent}${item}${lineBreak}`;
-    });
+      const indent = index > 0 ? '  ' : '';
+      // Add backslash "escaped linebreak"
+      const lineBreak = lines.length > 1 && index < lines.length - 1 ? ' \\' : '';
+
+      return `${indent}${line}${lineBreak}`;
+    };
+
+    const formatClipboardText = (command: string[]) => (): string => (
+      command.map((v) =>
+        shellescape([v]) // Escape each arg separately
+      ).join(' ')
+    );
 
     return (
       <Card className={classes.card}>
@@ -102,12 +108,12 @@ export const ProcessCmdCard = withStyles(styles)(
               <Grid item>
                 <Tooltip title="Copy link to clipboard" disableFocusListener>
                   <IconButton>
-                    <CopyToClipboard
-                      text={command.join(" ")}
+                    <CopyResultToClipboard
+                      getText={formatClipboardText(process.containerRequest.command)}
                       onCopy={() => onCopy("Command copied to clipboard")}
                     >
                       <CopyIcon />
-                    </CopyToClipboard>
+                    </CopyResultToClipboard>
                   </IconButton>
                 </Tooltip>
               </Grid>
@@ -127,7 +133,11 @@ export const ProcessCmdCard = withStyles(styles)(
           }
         />
         <CardContent className={classes.content}>
-          <DefaultCodeSnippet lines={formattedCommand} linked />
+          <DefaultVirtualCodeSnippet
+            lines={process.containerRequest.command}
+            lineFormatter={formatLine}
+            linked
+          />
         </CardContent>
       </Card>
     );

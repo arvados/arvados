@@ -66,7 +66,7 @@ export const CodeSnippet = withStyles(styles)(connect(mapStateToProps)(
         </Typography>
 ));
 
-const renderLinks = (auth: FederationConfig, dispatch: Dispatch) => (text: string): JSX.Element => {
+export const renderLinks = (auth: FederationConfig, dispatch: Dispatch) => (text: string): JSX.Element => {
     // Matches UUIDs & PDHs
     const REGEX = /[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}|[0-9a-f]{32}\+\d+/g;
     const links = text.match(REGEX);

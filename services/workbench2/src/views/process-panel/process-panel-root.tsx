@@ -24,7 +24,6 @@ import { ProcessCmdCard } from "./process-cmd-card";
 import { ContainerRequestResource } from "models/container-request";
 import { OutputDetails, NodeInstanceType } from "store/process-panel/process-panel";
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
-import { CollectionFile } from 'models/collection-file';
 
 type CssRules = "root";
 
@@ -198,6 +197,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <MPVPanelContent
                     forwardProps
                     xs="auto"
+                    maxHeight={"50%"}
                     data-cy="process-cmd">
                     <ProcessCmdCard
                         onCopy={props.onCopyToClipboard}

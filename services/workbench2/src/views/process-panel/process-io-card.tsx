@@ -27,7 +27,7 @@ import {
     CircularProgress,
 } from "@material-ui/core";
 import { ArvadosTheme } from "common/custom-theme";
-import { CloseIcon, ImageIcon, InputIcon, ImageOffIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
+import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import {
     BooleanCommandInputParameter,
@@ -65,7 +65,7 @@ import { ProcessOutputCollectionFiles } from "./process-output-collection-files"
 import { Process } from "store/processes/process";
 import { navigateTo } from "store/navigation/navigation-action";
 import classNames from "classnames";
-import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
+import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { KEEP_URL_REGEX } from "models/resource";
 import { FixedSizeList } from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -82,6 +82,7 @@ type CssRules =
     | "paramTableRoot"
     | "paramTableCellText"
     | "mountsTableRoot"
+    | "jsonWrapper"
     | "keepLink"
     | "collectionLink"
     | "secondaryVal"
@@ -122,7 +123,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
-    // Applies to each tab's content
+    // Applies to table tab's content
     tableWrapper: {
         height: "auto",
         maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
@@ -205,6 +206,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "& td, & th": {
             paddingRight: "25px",
         },
+    },
+    // JSON tab wrapper
+    jsonWrapper: {
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -418,7 +423,7 @@ export const ProcessIOCard = withStyles(styles)(
                                             </div>
                                         )}
                                         {(mainProcTabState === 1 || !hasParams) && (
-                                            <div className={classes.tableWrapper}>
+                                            <div className={classes.jsonWrapper}>
                                                 <ProcessIORaw data={raw} />
                                             </div>
                                         )}
@@ -505,7 +510,7 @@ export const ProcessIOCard = withStyles(styles)(
                                                 </>
                                             )}
                                             {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
-                                                <div className={classes.tableWrapper}>
+                                                <div className={classes.jsonWrapper}>
                                                     <ProcessIORaw data={raw} />
                                                 </div>
                                             )}
@@ -558,7 +563,11 @@ const ProcessIOPreview = memo(
             data[index+1] && !isMainRow(data[index+1])
         );
 
-        const isMainRow = (param: ProcessIOParameter) => (param && (param.id || param.label && !param.value.secondary));
+        const isMainRow = (param: ProcessIOParameter) => (
+            param &&
+            ((param.id || param.label) &&
+            !param.value.secondary)
+        );
 
         const RenderRow = ({index, style}) => {
             const param = data[index];
@@ -650,9 +659,9 @@ interface ProcessIORawDataProps {
 }
 
 const ProcessIORaw = withStyles(styles)(({ data }: ProcessIORawDataProps) => (
-    <Paper elevation={0} style={{minWidth: "100%"}}>
-        <DefaultCodeSnippet
-            lines={[JSON.stringify(data, null, 2)]}
+    <Paper elevation={0} style={{minWidth: "100%", height: "100%"}}>
+        <DefaultVirtualCodeSnippet
+            lines={JSON.stringify(data, null, 2).split('\n')}
             linked
         />
     </Paper>
@@ -881,7 +890,7 @@ const KeepUrlPath = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
                 className={classes.keepLink}
                 href={keepUrlPathNav}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
             >
                 {keepUrlPath || "/"}
             </a>
