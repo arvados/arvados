@@ -182,6 +182,7 @@ export default (props: SharingDialogComponentProps) => {
                     <Button onClick={() => {
                             onSave();
                         }}
+                        data-cy="add-invited-people"
                         disabled={!saveEnabled}
                         color='primary'
                         variant='contained'
