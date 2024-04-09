@@ -138,7 +138,7 @@ public class FileDownloaderTest {
         //then
         assertNotNull(downloadedFile);
         assertTrue(downloadedFile.exists());
-        String actualDataString = Files.readString(downloadedFile.toPath());
+        String actualDataString = new String(Files.readAllBytes(downloadedFile.toPath()));
         assertEquals("The content of the file does not match the expected data.", expectedDataString, actualDataString);
     }
 
