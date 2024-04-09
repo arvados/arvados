@@ -4,7 +4,7 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 7.0.0'
+gem 'rails', '~> 7.0.8'
 gem 'responders'
 gem 'i18n'
 gem 'sprockets-rails'
