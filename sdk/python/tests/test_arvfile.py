@@ -631,6 +631,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
                 self.blocks = blocks
                 self.nocache = nocache
                 self._keep = ArvadosFileWriterTestCase.MockKeep({})
+                self.prefetch_lookahead = 0
 
             def block_prefetch(self, loc):
                 pass
@@ -692,8 +693,60 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         with Collection(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep_client=keep) as c:
             r = c.open("count.txt", "rb")
             self.assertEqual(b"0123", r.read(4))
-        self.assertIn("2e9ec317e197819358fbc43afca7d837+8", keep.requests)
-        self.assertIn("e8dc4081b13434b45189a720b77b6818+8", keep.requests)
+        self.assertEqual(["2e9ec317e197819358fbc43afca7d837+8",
+                          "e8dc4081b13434b45189a720b77b6818+8"], keep.requests)
+
+    def test_prefetch_disabled(self):
+        keep = ArvadosFileWriterTestCase.MockKeep({
+            "2e9ec317e197819358fbc43afca7d837+8": b"01234567",
+            "e8dc4081b13434b45189a720b77b6818+8": b"abcdefgh",
+        })
+        keep.num_prefetch_threads = 0
+        with Collection(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep_client=keep) as c:
+            r = c.open("count.txt", "rb")
+            self.assertEqual(b"0123", r.read(4))
+
+        self.assertEqual(["2e9ec317e197819358fbc43afca7d837+8"], keep.requests)
+
+    def test_prefetch_first_read_only(self):
+        # test behavior that prefetch only happens every 128 reads
+        # check that it doesn't make a prefetch request on the second read
+        keep = ArvadosFileWriterTestCase.MockKeep({
+            "2e9ec317e197819358fbc43afca7d837+8": b"01234567",
+            "e8dc4081b13434b45189a720b77b6818+8": b"abcdefgh",
+        })
+        with Collection(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep_client=keep) as c:
+            r = c.open("count.txt", "rb")
+            self.assertEqual(b"0123", r.read(4))
+            self.assertEqual(b"45", r.read(2))
+        self.assertEqual(["2e9ec317e197819358fbc43afca7d837+8",
+                          "e8dc4081b13434b45189a720b77b6818+8",
+                          "2e9ec317e197819358fbc43afca7d837+8"], keep.requests)
+        self.assertEqual(3, len(keep.requests))
+
+    def test_prefetch_again(self):
+        # test behavior that prefetch only happens every 128 reads
+        # check that it does make another prefetch request after 128 reads
+        keep = ArvadosFileWriterTestCase.MockKeep({
+            "2e9ec317e197819358fbc43afca7d837+8": b"01234567",
+            "e8dc4081b13434b45189a720b77b6818+8": b"abcdefgh",
+        })
+        with Collection(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep_client=keep) as c:
+            r = c.open("count.txt", "rb")
+            for i in range(0, 129):
+                r.seek(0)
+                self.assertEqual(b"0123", r.read(4))
+        self.assertEqual(["2e9ec317e197819358fbc43afca7d837+8",
+                          "e8dc4081b13434b45189a720b77b6818+8",
+                          "2e9ec317e197819358fbc43afca7d837+8",
+                          "2e9ec317e197819358fbc43afca7d837+8"], keep.requests[0:4])
+        self.assertEqual(["2e9ec317e197819358fbc43afca7d837+8",
+                          "2e9ec317e197819358fbc43afca7d837+8",
+                          "2e9ec317e197819358fbc43afca7d837+8",
+                          "e8dc4081b13434b45189a720b77b6818+8"], keep.requests[127:131])
+        # gets the 1st block 129 times from keep (cache),
+        # and the 2nd block twice to get 131 requests
+        self.assertEqual(131, len(keep.requests))
 
     def test__eq__from_manifest(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:

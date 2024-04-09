@@ -491,7 +491,7 @@ class _BlockManager(object):
         self._put_queue = None
         self._put_threads = None
         self.lock = threading.Lock()
-        self.prefetch_enabled = True
+        self.prefetch_lookahead = self._keep.num_prefetch_threads
         self.num_put_threads = put_threads or _BlockManager.DEFAULT_PUT_THREADS
         self.copies = copies
         self.storage_classes = storage_classes_func or (lambda: [])
@@ -803,7 +803,7 @@ class _BlockManager(object):
         """Initiate a background download of a block.
         """
 
-        if not self.prefetch_enabled:
+        if not self.prefetch_lookahead:
             return
 
         with self.lock:
@@ -825,7 +825,7 @@ class ArvadosFile(object):
     """
 
     __slots__ = ('parent', 'name', '_writers', '_committed',
-                 '_segments', 'lock', '_current_bblock', 'fuse_entry')
+                 '_segments', 'lock', '_current_bblock', 'fuse_entry', '_read_counter')
 
     def __init__(self, parent, name, stream=[], segments=[]):
         """
@@ -846,6 +846,7 @@ class ArvadosFile(object):
         for s in segments:
             self._add_segment(stream, s.locator, s.range_size)
         self._current_bblock = None
+        self._read_counter = 0
 
     def writable(self):
         return self.parent.writable()
@@ -1060,8 +1061,25 @@ class ArvadosFile(object):
             if size == 0 or offset >= self.size():
                 return b''
             readsegs = locators_and_ranges(self._segments, offset, size)
-            if self.parent._my_block_manager()._keep.num_prefetch_threads > 0:
-                prefetch = locators_and_ranges(self._segments, offset + size, config.KEEP_BLOCK_SIZE * self.parent._my_block_manager()._keep.num_prefetch_threads, limit=32)
+
+            prefetch = None
+            prefetch_lookahead = self.parent._my_block_manager().prefetch_lookahead
+            if prefetch_lookahead:
+                # Doing prefetch on every read() call is surprisingly expensive
+                # when we're trying to deliver data at 600+ MiBps and want
+                # the read() fast path to be as lightweight as possible.
+                #
+                # Only prefetching every 128 read operations
+                # dramatically reduces the overhead while still
+                # getting the benefit of prefetching (e.g. when
+                # reading 128 KiB at a time, it checks for prefetch
+                # every 16 MiB).
+                self._read_counter = (self._read_counter+1) % 128
+                if self._read_counter == 1:
+                    prefetch = locators_and_ranges(self._segments,
+                                                   offset + size,
+                                                   config.KEEP_BLOCK_SIZE * prefetch_lookahead,
+                                                   limit=(1+prefetch_lookahead))
 
         locs = set()
         data = []
@@ -1074,7 +1092,7 @@ class ArvadosFile(object):
             else:
                 break
 
-        if self.parent._my_block_manager()._keep.num_prefetch_threads > 0:
+        if prefetch:
             for lr in prefetch:
                 if lr.locator not in locs:
                     self.parent._my_block_manager().block_prefetch(lr.locator)
