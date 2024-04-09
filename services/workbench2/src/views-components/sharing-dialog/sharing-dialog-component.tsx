@@ -89,6 +89,7 @@ export default (props: SharingDialogComponentProps) => {
         className="sharing-dialog"
         fullWidth
         maxWidth='sm'
+        disableBackdropClick={saveEnabled}
         >
         <DialogTitle>
             Sharing settings
@@ -179,12 +180,27 @@ export default (props: SharingDialogComponentProps) => {
                 }
                 <Grid item>
                     <Button onClick={() => {
+                            onSave();
+                        }}
+                        disabled={!saveEnabled}
+                        color='primary'
+                        variant='contained'
+                        size='small'
+                        style={{ marginLeft: '10px' }}
+                        >
+                            Save
+                    </Button>
+                    <Button onClick={() => {
                         onClose();
                         setWithExpiration(false);
-                    }}
-                    disabled={saveEnabled}
-                    >
-                        Close
+                        }}
+                        disabled={saveEnabled}
+                        color='primary'
+                        variant='contained'
+                        size='small'
+                        style={{ marginLeft: '10px' }}
+                        >
+                            Close
                     </Button>
                 </Grid>
             </Grid>

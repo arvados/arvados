@@ -48,30 +48,13 @@ const SharingInvitationFormComponent = (props: { onSave: () => void, saveEnabled
 export default SharingInvitationFormComponent;
 
 const StyledSharingInvitationFormComponent = withStyles(styles)(
-    ({ onSave, saveEnabled, classes }: { onSave: () => void, saveEnabled: boolean } & WithStyles<SharingStyles>) =>
+    ({ classes }: { onSave: () => void, saveEnabled: boolean } & WithStyles<SharingStyles>) =>
         <Grid container spacing={8} wrap='nowrap' className={classes.root} >
             <Grid data-cy="invite-people-field" item xs={8}>
                 <InvitedPeopleField />
-                {saveEnabled && 
-                    <Typography 
-                        variant='caption' 
-                        className={classes.shareWarning}
-                        >
-                        You must click &#x1F7A4; to add a participant.
-                    </Typography>}
             </Grid>
             <Grid data-cy="permission-select-field" item xs={4} container wrap='nowrap'>
                 <PermissionSelectField />
-                <IconButton onClick={onSave} disabled={!saveEnabled} color="primary" classes={{
-                    root: classes.addButtonRoot,
-                    colorPrimary: classes.addButtonPrimary,
-                    disabled: classes.addButtonDisabled
-                }}
-                    data-cy='add-invited-people'>
-                    <Tooltip title="Add authorization">
-                        <AddIcon />
-                    </Tooltip>
-                </IconButton>
             </Grid>
         </Grid >);
 
