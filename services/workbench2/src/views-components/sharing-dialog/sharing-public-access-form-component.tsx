@@ -29,13 +29,13 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
     ({ classes, visibility, includePublic, onSave }: WithStyles<'root' | 'heading'> & AccessProps) =>
         <>
             <Typography className={classes.heading}>General access</Typography>
-            <Grid container alignItems='center' spacing={8} className={classes.root}>
+            <Grid container alignItems='center' className={classes.root}>
                 <Grid item xs={8}>
                     <Typography variant='subtitle1'>
                         {renderVisibilityInfo(visibility)}
                     </Typography>
                 </Grid>
-                <Grid item xs={4} container wrap='nowrap'>
+                <Grid item xs={4} wrap='nowrap'>
                     <Field<{ includePublic: boolean }> name='visibility' component={VisibilityLevelSelectComponent} includePublic={includePublic} onChange={onSave} />
                 </Grid>
             </Grid>

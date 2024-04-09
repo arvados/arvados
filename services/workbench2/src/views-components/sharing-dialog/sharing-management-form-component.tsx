@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, StyleRulesCallback, Divider, IconButton, Typography } from '@material-ui/core';
+import { Grid, StyleRulesCallback, Divider, IconButton, Typography, Tooltip } from '@material-ui/core';
 import {
     Field,
     WrappedFieldProps,
@@ -52,8 +52,15 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
     ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }>, onSave: () => void; } & WithStyles<'root'>) =>
         <>
             <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
-                <Grid item xs={8}>
+                <Grid item xs={7}>
                     <Typography noWrap variant='subtitle1'>{fields.get(index).email}</Typography>
+                </Grid>
+                <Grid item xs={1} container wrap='nowrap'>
+                    <Tooltip title='Remove access'>
+                        <IconButton onClick={() => { fields.remove(index); onSave(); }}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Tooltip>
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
                     <Field
@@ -63,9 +70,7 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
                         parse={parsePermissionLevel}
                         onChange={onSave}
                     />
-                    <IconButton onClick={() => { fields.remove(index); onSave(); }}>
-                        <CloseIcon />
-                    </IconButton>
+                    
                 </Grid>
             </Grid>
             <Divider />
