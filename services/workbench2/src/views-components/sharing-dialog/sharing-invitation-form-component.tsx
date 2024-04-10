@@ -19,12 +19,12 @@ const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     },
 });
 
-const SharingInvitationFormComponent = (props: { onSave: () => void, saveEnabled: boolean }) => <StyledSharingInvitationFormComponent onSave={props.onSave} saveEnabled={props.saveEnabled} />
+const SharingInvitationFormComponent = (props: { onSave: () => void }) => <StyledSharingInvitationFormComponent onSave={props.onSave} />
 
 export default SharingInvitationFormComponent;
 
 const StyledSharingInvitationFormComponent = withStyles(styles)(
-    ({ classes }: { onSave: () => void, saveEnabled: boolean } & WithStyles<SharingStyles>) =>
+    ({ classes }: { onSave: () => void } & WithStyles<SharingStyles>) =>
         <Grid container spacing={8} wrap='nowrap' className={classes.root} >
             <Grid data-cy="invite-people-field" item xs={8}>
                 <InvitedPeopleField />

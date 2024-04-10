@@ -111,7 +111,7 @@ export default (props: SharingDialogComponentProps) => {
             {tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid container direction='column' spacing={24}>
                     <Grid item>
-                        <SharingInvitationForm onSave={onSave} saveEnabled={saveEnabled} />
+                        <SharingInvitationForm onSave={onSave} />
                     </Grid>
                     <Grid item>
                         <SharingManagementForm onSave={onSave} />
