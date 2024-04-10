@@ -180,6 +180,17 @@ export default (props: SharingDialogComponentProps) => {
                 }
                 <Grid item>
                     <Button onClick={() => {
+                        onClose();
+                        setWithExpiration(false);
+                        }}
+                        disabled={saveEnabled}
+                        color='primary'
+                        size='small'
+                        style={{ marginLeft: '10px' }}
+                        >
+                            Close
+                    </Button>
+                    <Button onClick={() => {
                             onSave();
                         }}
                         data-cy="add-invited-people"
@@ -190,18 +201,6 @@ export default (props: SharingDialogComponentProps) => {
                         style={{ marginLeft: '10px' }}
                         >
                             Save
-                    </Button>
-                    <Button onClick={() => {
-                        onClose();
-                        setWithExpiration(false);
-                        }}
-                        disabled={saveEnabled}
-                        color='primary'
-                        variant='contained'
-                        size='small'
-                        style={{ marginLeft: '10px' }}
-                        >
-                            Close
                     </Button>
                 </Grid>
             </Grid>
