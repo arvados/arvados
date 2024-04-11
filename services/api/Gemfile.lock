@@ -177,7 +177,7 @@ GEM
       ruby2_keywords (>= 0.0.5)
     multi_json (1.15.0)
     multipart-post (2.4.0)
-    net-imap (0.4.10)
+    net-imap (0.3.7)
       date
       net-protocol
     net-pop (0.1.2)
