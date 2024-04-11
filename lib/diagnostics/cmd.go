@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/sha256"
 	_ "embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -457,6 +459,7 @@ func (diag *diagnoser) runtests() {
 	}
 	defer os.RemoveAll(tempdir)
 
+	var imageSHA2 string
 	var dockerImageData []byte
 	if diag.dockerImage != "" || diag.priority < 1 {
 		// We won't be using the self-built docker image, so
@@ -465,6 +468,14 @@ func (diag *diagnoser) runtests() {
 		// upload/download, whether or not we're using it as a
 		// docker image.
 		dockerImageData = HelloWorldDockerImage
+
+		if diag.priority > 0 {
+			imageSHA2, err = getSHA2FromImageData(dockerImageData)
+			if err != nil {
+				diag.errorf("internal error/bug: %s", err)
+				return
+			}
+		}
 	} else if selfbin, err := os.Readlink("/proc/self/exe"); err != nil {
 		diag.errorf("readlink /proc/self/exe: %s", err)
 		return
@@ -499,7 +510,18 @@ func (diag *diagnoser) runtests() {
 		}
 		diag.infof("arvados-client version: %s", checkversion)
 
-		buf, err := exec.Command("docker", "save", tag).Output()
+		buf, err := exec.Command("docker", "inspect", "--format={{.Id}}", tag).Output()
+		if err != nil {
+			diag.errorf("docker inspect --format={{.Id}} %s: %s", tag, err)
+			return
+		}
+		imageSHA2 = min64HexDigits.FindString(string(buf))
+		if len(imageSHA2) != 64 {
+			diag.errorf("docker inspect --format={{.Id}} output %q does not seem to contain sha256 digest", buf)
+			return
+		}
+
+		buf, err = exec.Command("docker", "save", tag).Output()
 		if err != nil {
 			diag.errorf("docker save %s: %s", tag, err)
 			return
@@ -508,29 +530,6 @@ func (diag *diagnoser) runtests() {
 		dockerImageData = buf
 	}
 
-	// Read image tarball to find image ID, so we can upload it as
-	// "sha256:{...}.tar"
-	var imageSHA2 string
-	{
-		tr := tar.NewReader(bytes.NewReader(dockerImageData))
-		for {
-			hdr, err := tr.Next()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				diag.errorf("internal error/bug: cannot read docker image tar file: %s", err)
-				return
-			}
-			if s := strings.TrimSuffix(hdr.Name, ".json"); len(s) == 64 && s != hdr.Name {
-				imageSHA2 = s
-			}
-		}
-		if imageSHA2 == "" {
-			diag.errorf("internal error/bug: cannot find {sha256}.json file in docker image tar file")
-			return
-		}
-	}
 	tarfilename := "sha256:" + imageSHA2 + ".tar"
 
 	diag.dotest(100, "uploading file via webdav", func() error {
@@ -810,3 +809,36 @@ func (diag *diagnoser) runtests() {
 		return nil
 	})
 }
+
+func getSHA2FromImageData(dockerImageData []byte) (string, error) {
+	tr := tar.NewReader(bytes.NewReader(dockerImageData))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			return "", fmt.Errorf("cannot find manifest.json in docker image tar file")
+		}
+		if err != nil {
+			return "", fmt.Errorf("cannot read docker image tar file: %s", err)
+		}
+		if hdr.Name != "manifest.json" {
+			continue
+		}
+		var manifest []struct {
+			Config string
+		}
+		err = json.NewDecoder(tr).Decode(&manifest)
+		if err != nil {
+			return "", fmt.Errorf("cannot read manifest.json from docker image tar file: %s", err)
+		}
+		if len(manifest) == 0 {
+			return "", fmt.Errorf("manifest.json is empty")
+		}
+		s := min64HexDigits.FindString(manifest[0].Config)
+		if len(s) != 64 {
+			return "", fmt.Errorf("found manifest.json but .[0].Config %q does not seem to contain sha256 digest", manifest[0].Config)
+		}
+		return s, nil
+	}
+}
+
+var min64HexDigits = regexp.MustCompile(`[0-9a-f]{64,}`)
