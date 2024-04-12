@@ -143,7 +143,7 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=name-field]").within(() => {
                     cy.get("input").type(" renamed");
                 });
-                cy.get("[data-cy=form-submit-btn]").click();
+                cy.get("[data-cy=form-submit-btn]").click({timeout: 10000});
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
         // Attempt to rename the collection with the duplicate name
