@@ -31,7 +31,7 @@ describe('Sharing tests', function () {
 
             cy.get('main').contains(sharedCollection.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
-                cy.contains('Share').click();
+                cy.contains('Share').click({ waitForAnimations: false });
             });
             cy.get('.sharing-dialog').within(() => {
                 cy.contains('Sharing URLs').click();
@@ -63,7 +63,7 @@ describe('Sharing tests', function () {
             cy.contains('Refresh').click();
             cy.get('main').contains(mySharedWritableProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
-                cy.contains('Share').click();
+                cy.contains('Share').click({ waitForAnimations: false });
             });
             cy.get('[id="select-permissions"]').as('selectPermissions');
             cy.get('@selectPermissions').click();
@@ -73,7 +73,7 @@ describe('Sharing tests', function () {
             cy.get('[role=tooltip]').click();
             cy.get('@sharingDialog').within(() => {
                 cy.get('[data-cy=add-invited-people]').click();
-                cy.contains('Close').click();
+                cy.contains('Close').click({ waitForAnimations: false });
             });
         });
 
@@ -84,14 +84,14 @@ describe('Sharing tests', function () {
             cy.contains('Refresh').click();
             cy.get('main').contains(mySharedReadonlyProject.name).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
-                cy.contains('Share').click();
+                cy.contains('Share').click({ waitForAnimations: false });
             });
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
             cy.get('@sharingDialog').within(() => {
                 cy.get('[data-cy=add-invited-people]').click();
-                cy.contains('Close').click();
+                cy.contains('Close').click({ waitForAnimations: false });
             });
         });
 
@@ -117,7 +117,7 @@ describe('Sharing tests', function () {
                 // Test move to trash
                 cy.get('main').contains(mySharedWritableProject.name).rightclick();
                 cy.get('[data-cy=context-menu]').should('contain', 'Move to trash');
-                cy.get('[data-cy=context-menu]').contains('Move to trash').click();
+                cy.get('[data-cy=context-menu]').contains('Move to trash').click({ waitForAnimations: false });
 
                 // GUARD: Let's wait for the above removed project to disappear
                 // before continuing, to avoid intermittent failures.
@@ -161,7 +161,7 @@ describe('Sharing tests', function () {
             .then(function ([]) {
                 cy.loginAs(adminUser);
                 cy.get('[data-cy=project-panel]').contains(collName).rightclick();
-                cy.get('[data-cy=context-menu]').contains('Share').click();
+                cy.get('[data-cy=context-menu]').contains('Share').click({ waitForAnimations: false });
                 cy.get('button').get('[data-cy=add-invited-people]').should('be.disabled');
                 cy.get('[data-cy=invite-people-field] input').type('Anonymous');
                 cy.get('div[role=tooltip]').contains('anonymous').click();
