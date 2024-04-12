@@ -62,7 +62,7 @@ enum SharingDialogTab {
 }
 export type SharingDialogComponentProps = SharingDialogDataProps & SharingDialogActionProps;
 
-export default (props: SharingDialogComponentProps) => {
+export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
         sharingURLsNr, privateAccess, sharingURLsDisabled,
         onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
