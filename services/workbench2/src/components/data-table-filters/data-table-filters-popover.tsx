@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
     WithStyles,
     withStyles,
@@ -141,7 +141,6 @@ export const DataTableFiltersPopover = withStyles(styles)(
                             </>
                         </Card>
                     </Popover>
-                    {/* <this.MountHandler /> */}
                 </>
             );
         }
@@ -175,15 +174,6 @@ export const DataTableFiltersPopover = withStyles(styles)(
                 onChange(this.state.filters);
             }
         }, 1000);
-
-        // MountHandler = () => {
-        //     useEffect(() => {
-        //         return () => {
-        //             this.submit.cancel();
-        //         };
-        //     }, []);
-        //     return null;
-        // };
 
         close = () => {
             this.setState((prev) => ({

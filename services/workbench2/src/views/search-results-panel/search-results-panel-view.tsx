@@ -149,14 +149,13 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                     setItemPath(tmpPath);
                 }
             })();
-
-            
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
         const onItemClick = useCallback((uuid) => {
             setSelectedItem(uuid);
             props.onItemClick(uuid);
-            
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [props.onItemClick]);
 
         return <span data-cy='search-results' className={props.classes.searchResults}>
