@@ -123,7 +123,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
-    // Applies to table tab's content
+    // Applies to table tab and collection table content
     tableWrapper: {
         height: "auto",
         maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
@@ -131,7 +131,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
         flexDirection: "column",
-        alignItems: "start", // Prevents scroll bars at different levels in json tab
+        alignItems: "stretch", // Stretches output collection to full width
+
     },
 
     // Param table virtual list styles
@@ -486,9 +487,9 @@ export const ProcessIOCard = withStyles(styles)(
                                             {hasOutputCollecton && <Tab label="Collection" />}
                                             {isRawLoaded && <Tab label="JSON" />}
                                         </Tabs>
-                                        <div className={classes.tableWrapper}>
-                                            {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
-                                            {subProcTabState === 0 && hasOutputCollecton && (
+                                        {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
+                                        {subProcTabState === 0 && hasOutputCollecton && (
+                                            <div className={classes.tableWrapper}>
                                                 <>
                                                     {outputUuid && (
                                                         <Typography className={classes.collectionLink}>
@@ -508,13 +509,13 @@ export const ProcessIOCard = withStyles(styles)(
                                                         currentItemUuid={outputUuid}
                                                     />
                                                 </>
-                                            )}
-                                            {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
-                                                <div className={classes.jsonWrapper}>
-                                                    <ProcessIORaw data={raw} />
-                                                </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
+                                        {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
+                                            <div className={classes.jsonWrapper}>
+                                                <ProcessIORaw data={raw} />
+                                            </div>
+                                        )}
                                     </>
                                 ) : (
                                     <Grid
