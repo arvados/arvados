@@ -17,6 +17,9 @@ if ! curl -s -o /dev/null https://${ARVADOS_API_HOST}/users/welcome?return_to=%2
   exit 1
 fi
 
+# Then, run a basic diagnostics test.
+arvados-client diagnostics -internal-client
+
 # https://doc.arvados.org/v2.0/install/install-jobs-image.html
 echo "Creating Arvados Standard Docker Images project"
 uuid_prefix=$(arv --format=uuid user current | cut -d- -f1)
