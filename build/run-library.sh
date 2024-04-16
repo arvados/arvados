@@ -262,6 +262,13 @@ package_go_binary_worker() {
       binpath="$GOPATH/bin/linux_${target_arch}/${basename}"
     fi
 
+    case "$package_format" in
+        # As of April 2024 we package identical Go binaries under different
+        # packages and names. This upsets the build id database, so don't
+        # register ourselves there.
+        rpm) switches+=(--rpm-rpmbuild-define="_build_id_links none") ;;
+    esac
+
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
         switches+=(
