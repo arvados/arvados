@@ -1458,7 +1458,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 				segIdx, pos = 0, 0
 			}
 			for ; segIdx < len(segments); segIdx++ {
-				seg := segments[segIdx]
+				seg := &segments[segIdx]
 				next := pos + int64(seg.Len())
 				if next <= offset || seg.Len() == 0 {
 					pos = next
