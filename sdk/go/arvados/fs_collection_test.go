@@ -1667,7 +1667,7 @@ func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPer
 			}
 		}
 		for j := 0; j < filesPerDir; j++ {
-			fmt.Fprintf(mb, " %d:%d:dir%d/file%d", j*blocksPerFile*blksize, blocksPerFile*blksize, j, j)
+			fmt.Fprintf(mb, " %d:%d:dir%d/file%d", (filesPerDir-j-1)*blocksPerFile*blksize, blocksPerFile*blksize, j, j)
 		}
 		mb.Write([]byte{'\n'})
 	}
