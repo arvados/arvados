@@ -23,8 +23,6 @@ const mock = {
     generateAsync: jest.fn().mockImplementation(() => Promise.resolve('test')),
 };
 
-jest.mock('jszip', () => jest.fn().mockImplementation(() => mock));
-
 describe('<DownloadAction />', () => {
     let props;
     let zip;
