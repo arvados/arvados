@@ -30,7 +30,7 @@
     "@types/shell-escape": "^0.2.0",
     "axios": "^0.28.1",
     "bootstrap": "^5.3.2",
-    "caniuse-lite": "1.0.30001606",
+    "caniuse-lite": "1.0.30001610",
     "classnames": "2.2.6",
     "cwlts": "1.15.29",
     "date-fns": "^2.28.0",
