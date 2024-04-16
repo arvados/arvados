@@ -18,7 +18,11 @@ if ! curl -s -o /dev/null https://${ARVADOS_API_HOST}/users/welcome?return_to=%2
 fi
 
 # Then, run a basic diagnostics test.
-arvados-client diagnostics -internal-client
+echo "Running arvados-client diagnostics..."
+if ! arvados-client diagnostics -internal-client; then
+  echo "Diagnostics run FAILED, exiting"
+  exit 1
+fi
 
 # https://doc.arvados.org/v2.0/install/install-jobs-image.html
 echo "Creating Arvados Standard Docker Images project"
