@@ -11,6 +11,7 @@ configure({ adapter: new Adapter() });
 
 describe("<SearchInput />", () => {
 
+    // jest.useFakeTimers() applies to all setTimeout functions
     jest.useFakeTimers();
 
     let onSearch: () => void;
@@ -57,39 +58,45 @@ describe("<SearchInput />", () => {
             const searchInput = mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} />);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
             expect(onSearch).not.toBeCalled();
-            jest.runTimersToTime(DEFAULT_SEARCH_DEBOUNCE);
-            expect(onSearch).toBeCalledWith("current value");
+            setTimeout(() => {
+                expect(onSearch).toBeCalledWith("current value");
+            }, DEFAULT_SEARCH_DEBOUNCE);
         });
 
         it("calls onSearch after the time specified in props has passed", () => {
             const searchInput = mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={2000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
-            jest.runTimersToTime(1000);
             expect(onSearch).not.toBeCalled();
-            jest.runTimersToTime(1000);
-            expect(onSearch).toBeCalledWith("current value");
+            setTimeout(() => {
+                expect(onSearch).toBeCalledWith("current value");
+            }, 1000);
         });
 
         it("calls onSearch only once after no change happened during the specified time", () => {
             const searchInput = mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={1000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
-            jest.runTimersToTime(500);
-            searchInput.find("input").simulate("change", { target: { value: "changed value" } });
-            jest.runTimersToTime(1000);
-            expect(onSearch).toHaveBeenCalledTimes(1);
+            setTimeout(() => {
+                searchInput.find("input").simulate("change", { target: { value: "changed value" } });
+            }, 500);
+            setTimeout(() => {
+                expect(onSearch).toHaveBeenCalledTimes(1);
+            }, 1000);
         });
 
         it("calls onSearch again after the specified time has passed since previous call", () => {
             const searchInput = mount(<SearchInput selfClearProp="" value="" onSearch={onSearch} debounce={1000}/>);
             searchInput.find("input").simulate("change", { target: { value: "current value" } });
-            jest.runTimersToTime(500);
-            searchInput.find("input").simulate("change", { target: { value: "intermediate value" } });
-            jest.runTimersToTime(1000);
-            expect(onSearch).toBeCalledWith("intermediate value");
+            setTimeout(() => {
+                searchInput.find("input").simulate("change", { target: { value: "intermediate value" } });
+            }, 500);
+            setTimeout(() => {
+                expect(onSearch).toBeCalledWith("intermediate value");
+            }, 1000);
             searchInput.find("input").simulate("change", { target: { value: "latest value" } });
-            jest.runTimersToTime(1000);
-            expect(onSearch).toBeCalledWith("latest value");
-            expect(onSearch).toHaveBeenCalledTimes(2);
+            setTimeout(() => {
+                expect(onSearch).toBeCalledWith("latest value");
+                expect(onSearch).toHaveBeenCalledTimes(2);
+            }, 1000);
 
         });
 
@@ -100,20 +107,23 @@ describe("<SearchInput />", () => {
             const searchInput = mount(<SearchInput selfClearProp="abc" value="123" onSearch={onSearch} debounce={1000}/>);
 
             // component should clear value upon creation
-            jest.runTimersToTime(1000);
-            expect(onSearch).toBeCalledWith("");
-            expect(onSearch).toHaveBeenCalledTimes(1);
+            setTimeout(() => {
+                expect(onSearch).toBeCalledWith("");
+                expect(onSearch).toHaveBeenCalledTimes(1);
+            }, 1000);
 
             // component should not clear on same selfClearProp
             searchInput.setProps({ selfClearProp: 'abc' });
-            jest.runTimersToTime(1000);
-            expect(onSearch).toHaveBeenCalledTimes(1);
+            setTimeout(() => {
+                expect(onSearch).toHaveBeenCalledTimes(1);
+            }, 1000);
 
             // component should clear on selfClearProp change
             searchInput.setProps({ selfClearProp: '111' });
-            jest.runTimersToTime(1000);
-            expect(onSearch).toBeCalledWith("");
-            expect(onSearch).toHaveBeenCalledTimes(2);
+            setTimeout(() => {
+                expect(onSearch).toBeCalledWith("");
+                expect(onSearch).toHaveBeenCalledTimes(2);
+            }, 1000);
         });
     });
 });
