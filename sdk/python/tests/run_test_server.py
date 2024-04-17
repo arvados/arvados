@@ -328,13 +328,6 @@ def run(leave_running_atexit=False):
     if not os.path.exists('tmp/logs'):
         os.makedirs('tmp/logs')
 
-    # Install the git repository fixtures.
-    gitdir = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git')
-    gittarball = os.path.join(SERVICES_SRC_DIR, 'api', 'test', 'test.git.tar')
-    if not os.path.isdir(gitdir):
-        os.makedirs(gitdir)
-    subprocess.check_output(['tar', '-xC', gitdir, '-f', gittarball])
-
     # Customizing the passenger config template is the only documented
     # way to override the default passenger_stat_throttle_rate (10 s).
     # In the testing environment, we want restart.txt to take effect
@@ -524,8 +517,6 @@ def run_keep(num_servers=2, **kwargs):
 
     for d in api.keep_services().list(filters=[['service_type','=','disk']]).execute()['items']:
         api.keep_services().delete(uuid=d['uuid']).execute()
-    for d in api.keep_disks().list().execute()['items']:
-        api.keep_disks().delete(uuid=d['uuid']).execute()
 
     for d in range(0, num_servers):
         port = _start_keep(d, **kwargs)
@@ -536,9 +527,6 @@ def run_keep(num_servers=2, **kwargs):
             'service_type': 'disk',
             'service_ssl_flag': False,
         }}).execute()
-        api.keep_disks().create(body={
-            'keep_disk': {'keep_service_uuid': svc['uuid'] }
-        }).execute()
 
     # If keepproxy and/or keep-web is running, send SIGHUP to make
     # them discover the new keepstore services.

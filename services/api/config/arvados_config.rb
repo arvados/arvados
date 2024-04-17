@@ -142,15 +142,6 @@ arvcfg.declare_config "Containers.Logging.LogPartialLineThrottlePeriod", ActiveS
 arvcfg.declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
 arvcfg.declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
 arvcfg.declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfDir", Pathname, :dns_server_conf_dir
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", Pathname, :dns_server_conf_template
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerReloadCommand", String, :dns_server_reload_command
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_server_update_command
-arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
-arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Hash, :compute_node_nameservers, ->(cfg, k, v) { arrayToHash cfg, "Containers.SLURM.Managed.ComputeNodeNameservers", v }
-arvcfg.declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
-arvcfg.declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Containers.JobsAPI.Enable", v.to_s }
-arvcfg.declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
 arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
 arvcfg.declare_config "Services.Controller.ExternalURL", URI

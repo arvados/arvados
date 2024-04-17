@@ -140,7 +140,7 @@ class GroupsTest < ActionDispatch::IntegrationTest
 
   test 'count none works with offset' do
     first_results = nil
-    (0..10).each do |offset|
+    (0..5).each do |offset|
       get "/arvados/v1/groups/contents", params: {
         id: groups(:aproject).uuid,
         offset: offset,

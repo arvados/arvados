@@ -604,8 +604,6 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 
 	coll, err := conn1.CollectionCreate(userctx1, arvados.CreateOptions{})
 	c.Check(err, check.IsNil)
-	specimen, err := conn1.SpecimenCreate(userctx1, arvados.CreateOptions{})
-	c.Check(err, check.IsNil)
 
 	tests := []struct {
 		path            string
@@ -618,8 +616,6 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/nonexistant", true, true},
 		{"/arvados/v1/collections/" + coll.UUID, false, false},
 		{"/arvados/v1/collections/" + coll.UUID, true, false},
-		{"/arvados/v1/specimens/" + specimen.UUID, false, false},
-		{"/arvados/v1/specimens/" + specimen.UUID, true, false},
 		// new code path (lib/controller/router etc) - single-cluster request
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", true, true},
@@ -627,8 +623,8 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", true, true},
 		// old code path (proxyRailsAPI) - single-cluster request
-		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", false, true},
-		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", true, true},
+		{"/arvados/v1/containers/z1111-dz642-0123456789abcde", false, true},
+		{"/arvados/v1/containers/z1111-dz642-0123456789abcde", true, true},
 		// old code path (setupProxyRemoteCluster) - federated request
 		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", false, true},
 		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", true, true},

@@ -535,15 +535,6 @@ type ContainersConfig struct {
 		PrioritySpread             int64
 		SbatchArgumentsList        []string
 		SbatchEnvironmentVariables map[string]string
-		Managed                    struct {
-			DNSServerConfDir       string
-			DNSServerConfTemplate  string
-			DNSServerReloadCommand string
-			DNSServerUpdateCommand string
-			ComputeNodeDomain      string
-			ComputeNodeNameservers StringSet
-			AssignNodeHostname     string
-		}
 	}
 	LSF struct {
 		BsubSudoUser       string

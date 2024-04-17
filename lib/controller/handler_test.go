@@ -647,7 +647,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"groups/" + arvadostest.AProjectUUID:                           nil,
 		"keep_services/" + ksUUID:                                      nil,
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
-		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
+		"logs/" + arvadostest.CrunchstatForRunningContainerLogUUID:     nil,
 		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
 		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
 		"users/" + arvadostest.ActiveUserUUID:                          {"href": true},

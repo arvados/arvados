@@ -222,7 +222,7 @@ class PermissionTest < ActiveSupport::TestCase
     Rails.configuration.Users.ActivatedUsersAreVisibleToOthers = false
     manager = create :active_user, first_name: "Manage", last_name: "Er"
     minion = create :active_user, first_name: "Min", last_name: "Ion"
-    minions_specimen = act_as_user minion do
+    minions_collection = act_as_user minion do
       g = Group.create! name: "minon project", group_class: "project"
       Collection.create! owner_uuid: g.uuid
     end
@@ -289,11 +289,11 @@ class PermissionTest < ActiveSupport::TestCase
       end
       assert_empty(Collection
                      .readable_by(manager)
-                     .where(uuid: minions_specimen.uuid),
+                     .where(uuid: minions_collection.uuid),
                    "manager saw the minion's private stuff")
       assert_raises(ArvadosModel::PermissionDeniedError,
                    "manager could update minion's private stuff") do
-        minions_specimen.update(properties: {'x' => 'y'})
+        minions_collection.update(properties: {'x' => 'y'})
       end
     end
 
@@ -307,11 +307,11 @@ class PermissionTest < ActiveSupport::TestCase
       # Now, manager can read and write Minion's stuff.
       assert_not_empty(Collection
                          .readable_by(manager)
-                         .where(uuid: minions_specimen.uuid),
-                       "manager could not find minion's specimen by uuid")
+                         .where(uuid: minions_collection.uuid),
+                       "manager could not find minion's collection by uuid")
       assert_equal(true,
-                   minions_specimen.update(properties: {'x' => 'y'}),
-                   "manager could not update minion's specimen object")
+                   minions_collection.update(properties: {'x' => 'y'}),
+                   "manager could not update minion's collection object")
     end
   end
 
@@ -341,12 +341,12 @@ class PermissionTest < ActiveSupport::TestCase
     assert_not_empty(User.readable_by(a).where(uuid: b.uuid),
                      "#{a.first_name} should be able to see 'b' in the user list")
 
-    a_specimen = act_as_user a do
+    a_collection = act_as_user a do
       Collection.create!
     end
-    assert_not_empty(Collection.readable_by(a).where(uuid: a_specimen.uuid),
+    assert_not_empty(Collection.readable_by(a).where(uuid: a_collection.uuid),
                      "A cannot read own Collection, following test probably useless.")
-    assert_empty(Collection.readable_by(b).where(uuid: a_specimen.uuid),
+    assert_empty(Collection.readable_by(b).where(uuid: a_collection.uuid),
                  "B can read A's Collection")
     [a,b].each do |u|
       assert_empty(User.readable_by(u).where(uuid: other.uuid),

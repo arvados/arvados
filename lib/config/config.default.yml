@@ -1335,47 +1335,6 @@ Clusters:
         SbatchArgumentsList: []
         SbatchEnvironmentVariables:
           SAMPLE: ""
-        Managed:
-          # Path to dns server configuration directory
-          # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
-          # files or touch restart.txt (see below).
-          DNSServerConfDir: ""
-
-          # Template file for the dns server host snippets. See
-          # unbound.template in this directory for an example. If false, do
-          # not write any config files.
-          DNSServerConfTemplate: ""
-
-          # String to write to {dns_server_conf_dir}/restart.txt (with a
-          # trailing newline) after updating local data. If false, do not
-          # open or write the restart.txt file.
-          DNSServerReloadCommand: ""
-
-          # Command to run after each DNS update. Template variables will be
-          # substituted; see the "unbound" example below. If false, do not run
-          # a command.
-          DNSServerUpdateCommand: ""
-
-          ComputeNodeDomain: ""
-          ComputeNodeNameservers:
-            "192.168.1.1": {}
-            SAMPLE: {}
-
-          # Hostname to assign to a compute node when it sends a "ping" and the
-          # hostname in its Node record is nil.
-          # During bootstrapping, the "ping" script is expected to notice the
-          # hostname given in the ping response, and update its unix hostname
-          # accordingly.
-          # If false, leave the hostname alone (this is appropriate if your compute
-          # nodes' hostnames are already assigned by some other mechanism).
-          #
-          # One way or another, the hostnames of your node records should agree
-          # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
-          #
-          # Example for compute0000, compute0001, ....:
-          # assign_node_hostname: compute%<slot_number>04d
-          # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
-          AssignNodeHostname: "compute%<slot_number>d"
 
       LSF:
         # Arguments to bsub when submitting Arvados containers as LSF jobs.

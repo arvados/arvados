@@ -11,7 +11,7 @@ require 'test_helper'
 # "i" is an item.
 
 class OwnerTest < ActiveSupport::TestCase
-  fixtures :users, :groups, :specimens
+  fixtures :users, :groups
 
   setup do
     set_user_from_auth :admin_trustedclient
@@ -26,22 +26,22 @@ class OwnerTest < ActiveSupport::TestCase
       else
         o = o_class.create!
       end
-      i = Specimen.create(owner_uuid: o.uuid)
+      i = Collection.create(owner_uuid: o.uuid)
       assert i.valid?, "new item should pass validation"
       assert i.uuid, "new item should have an ID"
-      assert Specimen.where(uuid: i.uuid).any?, "new item should really be in DB"
+      assert Collection.where(uuid: i.uuid).any?, "new item should really be in DB"
     end
 
     test "create object with non-existent #{o_class} owner" do
       assert_raises(ActiveRecord::RecordInvalid,
                     "create should fail with random owner_uuid") do
-        Specimen.create!(owner_uuid: o_class.generate_uuid)
+        Collection.create!(owner_uuid: o_class.generate_uuid)
       end
 
-      i = Specimen.create(owner_uuid: o_class.generate_uuid)
+      i = Collection.create(owner_uuid: o_class.generate_uuid)
       assert !i.valid?, "object with random owner_uuid should not be valid?"
 
-      i = Specimen.new(owner_uuid: o_class.generate_uuid)
+      i = Collection.new(owner_uuid: o_class.generate_uuid)
       assert !i.valid?, "new item should not pass validation"
       assert !i.uuid, "new item should not have an ID"
     end
@@ -53,7 +53,7 @@ class OwnerTest < ActiveSupport::TestCase
             else
               o_class.create!
             end
-        i = Specimen.create!(owner_uuid: o.uuid)
+        i = Collection.create!(owner_uuid: o.uuid)
 
         new_o = if new_o_class == Group
               new_o_class.create! group_class: "project"
@@ -61,7 +61,7 @@ class OwnerTest < ActiveSupport::TestCase
               new_o_class.create!
             end
 
-        assert(Specimen.where(uuid: i.uuid).any?,
+        assert(Collection.where(uuid: i.uuid).any?,
                "new item should really be in DB")
         assert(i.update(owner_uuid: new_o.uuid),
                "should change owner_uuid from #{o.uuid} to #{new_o.uuid}")
@@ -102,7 +102,7 @@ class OwnerTest < ActiveSupport::TestCase
   ['users(:active)', 'groups(:aproject)'].each do |ofixt|
     test "delete #{ofixt} that owns other objects" do
       o = eval ofixt
-      assert_equal(true, Specimen.where(owner_uuid: o.uuid).any?,
+      assert_equal(true, Collection.where(owner_uuid: o.uuid).any?,
                    "need something to be owned by #{o.uuid} for this test")
 
       skip_check_permissions_against_full_refresh do
@@ -115,7 +115,7 @@ class OwnerTest < ActiveSupport::TestCase
 
     test "change uuid of #{ofixt} that owns other objects" do
       o = eval ofixt
-      assert_equal(true, Specimen.where(owner_uuid: o.uuid).any?,
+      assert_equal(true, Collection.where(owner_uuid: o.uuid).any?,
                    "need something to be owned by #{o.uuid} for this test")
       new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
       assert(!o.update(uuid: new_uuid),

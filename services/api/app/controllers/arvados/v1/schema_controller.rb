@@ -484,6 +484,7 @@ class Arvados::V1::SchemaController < ApplicationController
 
     Rails.configuration.API.DisabledAPIs.each do |method, _|
       ctrl, action = method.to_s.split('.', 2)
+      next if ctrl.in?(['job_tasks', 'jobs', 'keep_disks', 'nodes', 'pipeline_instances', 'pipeline_templates', 'repositories'])
       discovery[:resources][ctrl][:methods].delete(action.to_sym)
     end
     discovery

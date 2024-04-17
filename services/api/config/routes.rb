@@ -34,8 +34,6 @@ Rails.application.routes.draw do
         post 'trash', on: :member
         post 'untrash', on: :member
       end
-      resources :humans
-      resources :job_tasks
       resources :containers do
         get 'auth', on: :member
         post 'lock', on: :member
@@ -47,33 +45,12 @@ Rails.application.routes.draw do
       resources :container_requests do
         get 'container_status', on: :member
       end
-      resources :jobs do
-        get 'queue', on: :collection
-        get 'queue_size', on: :collection
-        post 'cancel', on: :member
-        post 'lock', on: :member
-      end
-      resources :keep_disks do
-        post 'ping', on: :collection
-      end
       resources :keep_services do
         get 'accessible', on: :collection
       end
       resources :links
       resources :logs
-      resources :nodes do
-        post 'ping', on: :member
-      end
-      resources :pipeline_instances do
-        post 'cancel', on: :member
-      end
-      resources :pipeline_templates
       resources :workflows
-      resources :repositories do
-        get 'get_all_permissions', on: :collection
-      end
-      resources :specimens
-      resources :traits
       resources :user_agreements do
         get 'signatures', on: :collection
         post 'sign', on: :collection

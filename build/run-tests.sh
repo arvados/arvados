@@ -887,15 +887,6 @@ install_services/api() {
         ) || return 1
     fi
 
-    cd "$WORKSPACE/services/api" \
-        && rm -rf tmp/git \
-        && mkdir -p tmp/git \
-        && cd tmp/git \
-        && tar xf ../../test/test.git.tar \
-        && mkdir -p internal.git \
-        && git --git-dir internal.git init \
-            || return 1
-
     (
         set -ex
         cd "$WORKSPACE/services/api"

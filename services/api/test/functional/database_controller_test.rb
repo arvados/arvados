@@ -40,12 +40,12 @@ class DatabaseControllerTest < ActionController::TestCase
   test "reset succeeds with admin token" do
     new_uuid = nil
     act_as_system_user do
-      new_uuid = Specimen.create.uuid
+      new_uuid = Collection.create.uuid
     end
-    assert_not_empty Specimen.where(uuid: new_uuid)
+    assert_not_empty Collection.where(uuid: new_uuid)
     authorize_with :admin
     post :reset
     assert_response 200
-    assert_empty Specimen.where(uuid: new_uuid)
+    assert_empty Collection.where(uuid: new_uuid)
   end
 end

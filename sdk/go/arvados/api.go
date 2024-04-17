@@ -42,11 +42,6 @@ var (
 	EndpointCollectionDelete                = APIEndpoint{"DELETE", "arvados/v1/collections/{uuid}", ""}
 	EndpointCollectionTrash                 = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/trash", ""}
 	EndpointCollectionUntrash               = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/untrash", ""}
-	EndpointSpecimenCreate                  = APIEndpoint{"POST", "arvados/v1/specimens", "specimen"}
-	EndpointSpecimenUpdate                  = APIEndpoint{"PATCH", "arvados/v1/specimens/{uuid}", "specimen"}
-	EndpointSpecimenGet                     = APIEndpoint{"GET", "arvados/v1/specimens/{uuid}", ""}
-	EndpointSpecimenList                    = APIEndpoint{"GET", "arvados/v1/specimens", ""}
-	EndpointSpecimenDelete                  = APIEndpoint{"DELETE", "arvados/v1/specimens/{uuid}", ""}
 	EndpointContainerCreate                 = APIEndpoint{"POST", "arvados/v1/containers", "container"}
 	EndpointContainerUpdate                 = APIEndpoint{"PATCH", "arvados/v1/containers/{uuid}", "container"}
 	EndpointContainerPriorityUpdate         = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/update_priority", "container"}
@@ -332,11 +327,6 @@ type API interface {
 	LogGet(ctx context.Context, options GetOptions) (Log, error)
 	LogList(ctx context.Context, options ListOptions) (LogList, error)
 	LogDelete(ctx context.Context, options DeleteOptions) (Log, error)
-	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
-	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
-	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)
-	SpecimenList(ctx context.Context, options ListOptions) (SpecimenList, error)
-	SpecimenDelete(ctx context.Context, options DeleteOptions) (Specimen, error)
 	SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error)
 	UserCreate(ctx context.Context, options CreateOptions) (User, error)
 	UserUpdate(ctx context.Context, options UpdateOptions) (User, error)

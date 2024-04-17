@@ -81,11 +81,11 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_timestamp_inequality_filter(self):
         api = arvados.api('v1')
-        new_item = api.specimens().create(body={}).execute()
+        new_item = api.collections().create(body={}).execute()
         for operator, should_include in [
                 ['<', False], ['>', False],
                 ['<=', True], ['>=', True], ['=', True]]:
-            response = api.specimens().list(filters=[
+            response = api.collections().list(filters=[
                 ['created_at', operator, new_item['created_at']],
                 # Also filter by uuid to ensure (if it matches) it's on page 0
                 ['uuid', '=', new_item['uuid']]]).execute()

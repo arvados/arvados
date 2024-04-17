@@ -852,51 +852,36 @@ func (runner *ContainerRunner) LogHostInfo() (err error) {
 
 // LogContainerRecord gets and saves the raw JSON container record from the API server
 func (runner *ContainerRunner) LogContainerRecord() error {
-	logged, err := runner.logAPIResponse("container", "containers", map[string]interface{}{"filters": [][]string{{"uuid", "=", runner.Container.UUID}}}, nil)
+	logged, err := runner.logAPIResponse("container", "containers", map[string]interface{}{"filters": [][]string{{"uuid", "=", runner.Container.UUID}}})
 	if !logged && err == nil {
 		err = fmt.Errorf("error: no container record found for %s", runner.Container.UUID)
 	}
 	return err
 }
 
-// LogNodeRecord logs the current host's InstanceType config entry (or
-// the arvados#node record, if running via crunch-dispatch-slurm).
+// LogNodeRecord logs the current host's InstanceType config entry, if
+// running via arvados-dispatch-cloud.
 func (runner *ContainerRunner) LogNodeRecord() error {
-	if it := os.Getenv("InstanceType"); it != "" {
-		// Dispatched via arvados-dispatch-cloud. Save
-		// InstanceType config fragment received from
-		// dispatcher on stdin.
-		w, err := runner.LogCollection.OpenFile("node.json", os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			return err
-		}
-		defer w.Close()
-		_, err = io.WriteString(w, it)
-		if err != nil {
-			return err
-		}
-		return w.Close()
+	it := os.Getenv("InstanceType")
+	if it == "" {
+		// Not dispatched by arvados-dispatch-cloud.
+		return nil
 	}
-	// Dispatched via crunch-dispatch-slurm. Look up
-	// apiserver's node record corresponding to
-	// $SLURMD_NODENAME.
-	hostname := os.Getenv("SLURMD_NODENAME")
-	if hostname == "" {
-		hostname, _ = os.Hostname()
+	// Save InstanceType config fragment received from dispatcher
+	// on stdin.
+	w, err := runner.LogCollection.OpenFile("node.json", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
 	}
-	_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
-		// The "info" field has admin-only info when
-		// obtained with a privileged token, and
-		// should not be logged.
-		node, ok := resp.(map[string]interface{})
-		if ok {
-			delete(node, "info")
-		}
-	})
-	return err
+	defer w.Close()
+	_, err = io.WriteString(w, it)
+	if err != nil {
+		return err
+	}
+	return w.Close()
 }
 
-func (runner *ContainerRunner) logAPIResponse(label, path string, params map[string]interface{}, munge func(interface{})) (logged bool, err error) {
+func (runner *ContainerRunner) logAPIResponse(label, path string, params map[string]interface{}) (logged bool, err error) {
 	writer, err := runner.LogCollection.OpenFile(label+".json", os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return false, err
@@ -925,9 +910,6 @@ func (runner *ContainerRunner) logAPIResponse(label, path string, params map[str
 		return false, fmt.Errorf("error decoding %s list response: no \"items\" key in API list response", label)
 	} else if len(items) < 1 {
 		return false, nil
-	}
-	if munge != nil {
-		munge(items[0])
 	}
 	// Re-encode it using indentation to improve readability
 	enc := json.NewEncoder(w)

@@ -516,14 +516,10 @@ EOS
 
   test "get full provenance for baz file" do
     authorize_with :active
-    get :provenance, params: {id: 'ea10d51bcf88862dbcc36eb292017dfd+45'}
+    get :provenance, params: {id: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'}
     assert_response :success
     resp = JSON.parse(@response.body)
-    assert_not_nil resp['ea10d51bcf88862dbcc36eb292017dfd+45'] # baz
-    assert_not_nil resp['fa7aeb5140e2848d39b416daeef4ffc5+45'] # bar
-    assert_not_nil resp['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'] # foo
-    assert_not_nil resp['zzzzz-8i9sb-cjs4pklxxjykyuq'] # bar->baz
-    assert_not_nil resp['zzzzz-8i9sb-aceg2bnq7jt7kon'] # foo->bar
+    assert_not_nil resp['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'] # baz collection
   end
 
   test "get no provenance for foo file" do
@@ -540,10 +536,7 @@ EOS
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_not_nil resp['ea10d51bcf88862dbcc36eb292017dfd+45'] # baz
-    assert_not_nil resp['fa7aeb5140e2848d39b416daeef4ffc5+45'] # bar
-    assert_not_nil resp['zzzzz-8i9sb-cjs4pklxxjykyuq']     # bar->baz
-    assert_nil resp['zzzzz-8i9sb-aceg2bnq7jt7kon']         # foo->bar
-    assert_nil resp['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'] # foo
+    assert_nil resp['fa7aeb5140e2848d39b416daeef4ffc5+45'] # foo->bar
   end
 
   test "search collections with 'any' operator" do

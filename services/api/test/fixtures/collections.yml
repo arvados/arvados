@@ -451,22 +451,6 @@ unique_expired_collection2:
   manifest_text: ". 29d7797f1888013986899bc9083783fa+3 0:3:expired2\n"
   name: unique_expired_collection2
 
-# a collection with a log file that can be parsed by the log viewer
-# This collection hash matches the following log text:
-#    2014-01-01_12:00:01 zzzzz-8i9sb-abcdefghijklmno 0  log message 1
-#    2014-01-01_12:00:02 zzzzz-8i9sb-abcdefghijklmno 0  log message 2
-#    2014-01-01_12:00:03 zzzzz-8i9sb-abcdefghijklmno 0  log message 3
-#
-real_log_collection:
-  uuid: zzzzz-4zz18-op4e2lbej01tcvu
-  current_version_uuid: zzzzz-4zz18-op4e2lbej01tcvu
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: 2014-09-01 12:00:00
-  modified_at: 2014-09-01 12:00:00
-  portable_data_hash: 0b9a7787660e1fce4a93f33e01376ba6+81
-  manifest_text: ". cdd549ae79fe6640fa3d5c6261d8303c+195 0:195:zzzzz-8i9sb-0vsrcqi7whchuil.log.txt\n"
-  name: real_log_collection
-
 collection_in_home_project_with_same_name_as_in_aproject:
   uuid: zzzzz-4zz18-12342x4u7ftabcd
   current_version_uuid: zzzzz-4zz18-12342x4u7ftabcd
@@ -1076,6 +1060,18 @@ collection_with_uri_prop:
   properties:
     "http://schema.org/example": "value1"
 
+container_log_collection:
+  uuid: zzzzz-4zz18-logcollection00
+  current_version_uuid: zzzzz-4zz18-logcollection00
+  portable_data_hash: b1e66f713c04d28ddbaced89096f4838+210
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2020-10-29T00:51:44.075594000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-10-29T00:51:44.072109000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: a real log collection for a completed container
+
 log_collection:
   uuid: zzzzz-4zz18-logcollection01
   current_version_uuid: zzzzz-4zz18-logcollection01
@@ -1086,7 +1082,7 @@ log_collection:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-10-29T00:51:44.072109000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
-  name: a real log collection for a completed container
+  name: a real log collection for a completed container request
 
 log_collection2:
   uuid: zzzzz-4zz18-logcollection02

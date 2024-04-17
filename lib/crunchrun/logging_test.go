@@ -67,7 +67,7 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 
 	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
 	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext)
-	c.Check(string(kc.Content), Equals, logtext)
+	s.checkWroteBlock(c, kc, "74561df9ae65ee9f35d5661d42454264+83", logtext)
 }
 
 func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
@@ -224,7 +224,14 @@ func (s *LoggingTestSuite) testWriteLogsWithRateLimit(c *C, throttleParam string
 	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
 	stderrLog := api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]
 	c.Check(true, Equals, strings.Contains(stderrLog, expected))
-	c.Check(string(kc.Content), Equals, logtext)
+	s.checkWroteBlock(c, kc, "74561df9ae65ee9f35d5661d42454264+83", logtext)
+}
+
+func (s *LoggingTestSuite) checkWroteBlock(c *C, kc *KeepTestClient, locator, expect string) {
+	buf := make([]byte, len([]byte(expect))+1)
+	n, err := kc.ReadAt(locator, buf, 0)
+	c.Check(err, IsNil)
+	c.Check(string(buf[:n]), Equals, expect)
 }
 
 type filterSuite struct{}

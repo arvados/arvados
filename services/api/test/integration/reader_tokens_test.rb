@@ -7,20 +7,20 @@ require 'test_helper'
 class ReaderTokensTest < ActionDispatch::IntegrationTest
   fixtures :all
 
-  def spectator_specimen
-    specimens(:owned_by_spectator).uuid
+  def owned_by_foo
+    collections(:collection_owned_by_foo).uuid
   end
 
-  def get_specimens(main_auth, read_auth, formatter=:to_a)
+  def get_collections(main_auth, read_auth, formatter=:to_a)
     params = {}
     params[:reader_tokens] = [api_token(read_auth)].send(formatter) if read_auth
     headers = {}
     headers.merge!(auth(main_auth)) if main_auth
-    get('/arvados/v1/specimens', params: params, headers: headers)
+    get('/arvados/v1/collections', params: params, headers: headers)
   end
 
-  def get_specimen_uuids(main_auth, read_auth, formatter=:to_a)
-    get_specimens(main_auth, read_auth, formatter)
+  def get_collection_uuids(main_auth, read_auth, formatter=:to_a)
+    get_collections(main_auth, read_auth, formatter)
     assert_response :success
     json_response['items'].map { |spec| spec['uuid'] }
   end
@@ -33,26 +33,26 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
       headers = {}
       expected = 401
     end
-    post('/arvados/v1/specimens.json',
-      params: {specimen: {}, reader_tokens: [api_token(read_auth)].send(formatter)},
+    post('/arvados/v1/collections.json',
+      params: {collection: {}, reader_tokens: [api_token(read_auth)].send(formatter)},
       headers: headers)
     assert_response expected
   end
 
-  test "active user can't see spectator specimen" do
+  test "active user can't see foo-owned collection" do
     # Other tests in this suite assume that the active user doesn't
-    # have read permission to the owned_by_spectator specimen.
+    # have read permission to the owned_by_foo collection.
     # This test checks that this assumption still holds.
-    refute_includes(get_specimen_uuids(:active, nil), spectator_specimen,
-                    ["active user can read the owned_by_spectator specimen",
+    refute_includes(get_collection_uuids(:active, nil), owned_by_foo,
+                    ["active user can read the owned_by_foo collection",
                      "other tests will return false positives"].join(" - "))
   end
 
   [nil, :active_noscope].each do |main_auth|
-    [:spectator, :spectator_specimens].each do |read_auth|
+    [:foo, :foo_collections].each do |read_auth|
       [:to_a, :to_json].each do |formatter|
         test "#{main_auth.inspect} auth with #{formatter} reader token #{read_auth} can#{"'t" if main_auth} read" do
-          get_specimens(main_auth, read_auth)
+          get_collections(main_auth, read_auth)
           assert_response(if main_auth then 403 else 200 end)
         end
 
@@ -65,18 +65,18 @@ class ReaderTokensTest < ActionDispatch::IntegrationTest
 
   test "scopes are still limited with reader tokens" do
     get('/arvados/v1/collections',
-      params: {reader_tokens: [api_token(:spectator_specimens)]},
+      params: {reader_tokens: [api_token(:foo_collections)]},
       headers: auth(:active_noscope))
     assert_response 403
   end
 
   test "reader tokens grant no permissions when expired" do
-    get_specimens(:active_noscope, :expired)
+    get_collections(:active_noscope, :expired)
     assert_response 403
   end
 
   test "reader tokens grant no permissions outside their scope" do
-    refute_includes(get_specimen_uuids(:active, :admin_vm), spectator_specimen,
+    refute_includes(get_collection_uuids(:active, :admin_vm), owned_by_foo,
                     "scoped reader token granted permissions out of scope")
   end
 end

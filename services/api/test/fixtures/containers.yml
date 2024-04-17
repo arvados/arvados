@@ -485,3 +485,36 @@ cuda_container:
       device_count: 1
   secret_mounts: {}
   secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
+
+read_foo_write_bar:
+  uuid: zzzzz-dz642-readfoowritebar
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Complete
+  exit_code: 0
+  priority: 1
+  created_at: 2024-01-11 11:11:11.111111111 Z
+  updated_at: 2024-01-11 11:11:11.111111111 Z
+  started_at: 2024-01-11 11:11:11.111111111 Z
+  finished_at: 2024-01-12 11:12:13.111111111 Z
+  container_image: test
+  cwd: /
+  mounts:
+    stdin:
+      kind: collection
+      portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+      path: /foo
+    stdout:
+      kind: file
+      path: /mnt/out/bar
+    /mnt/out:
+      kind: tmp
+      capacity: 1000
+  log: ea10d51bcf88862dbcc36eb292017dfd+45
+  output: fa7aeb5140e2848d39b416daeef4ffc5+45
+  output_path: test
+  command: ["echo", "-n", "bar"]
+  runtime_constraints:
+    ram: 10000000
+    vcpus: 1
+  secret_mounts: {}
+  secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
