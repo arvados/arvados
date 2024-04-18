@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement, memo, useState } from "react";
+import React, { ReactElement, memo } from "react";
 import { Dispatch } from "redux";
 import {
     StyleRulesCallback,
@@ -14,8 +14,6 @@ import {
     CardContent,
     Tooltip,
     Typography,
-    Tabs,
-    Tab,
     Table,
     TableHead,
     TableBody,
@@ -70,6 +68,7 @@ import { KEEP_URL_REGEX } from "models/resource";
 import { FixedSizeList } from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
 import { LinkProps } from "@material-ui/core/Link";
+import { ConditionalTabs } from "components/conditional-tabs/conditional-tabs";
 
 type CssRules =
     | "card"
@@ -299,15 +298,6 @@ export const ProcessIOCard = withStyles(styles)(
             navigateTo,
             forceShowParams,
         }: ProcessIOCardProps) => {
-            const [mainProcTabState, setMainProcTabState] = useState(0);
-            const [subProcTabState, setSubProcTabState] = useState(0);
-            const handleMainProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
-                setMainProcTabState(value);
-            };
-            const handleSubProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
-                setSubProcTabState(value);
-            };
-
             const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
             const mainProcess = !(process && process!.containerRequest.requestingContainerUuid);
             const showParamTable = mainProcess || forceShowParams;
@@ -403,54 +393,35 @@ export const ProcessIOCard = withStyles(styles)(
                                   *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
                                   */}
                                 {!loading && (hasRaw || hasParams) && (
-                                    <>
-                                        <Tabs
-                                            value={mainProcTabState}
-                                            onChange={handleMainProcTabChange}
-                                            variant="fullWidth"
-                                            className={classes.symmetricTabs}
-                                        >
-                                            {/* params will be empty on processes without workflow definitions in mounts, so we only show raw */}
-                                            {hasParams && <Tab label="Parameters" />}
-                                            {!forceShowParams && <Tab label="JSON" />}
-                                            {hasOutputCollecton && <Tab label="Collection" />}
-                                        </Tabs>
-                                        {mainProcTabState === 0 && params && hasParams && (
-                                            <div className={classes.tableWrapper}>
-                                                <ProcessIOPreview
-                                                    data={params}
-                                                    valueLabel={forceShowParams ? "Default value" : "Value"}
-                                                />
-                                            </div>
-                                        )}
-                                        {(mainProcTabState === 1 || !hasParams) && (
-                                            <div className={classes.jsonWrapper}>
-                                                <ProcessIORaw data={raw} />
-                                            </div>
-                                        )}
-                                        {mainProcTabState === 2 && hasOutputCollecton && (
-                                            <>
-                                                {outputUuid && (
-                                                    <Typography className={classes.collectionLink}>
-                                                        Output Collection:{" "}
-                                                        <MuiLink
-                                                            className={classes.keepLink}
-                                                            onClick={() => {
-                                                                navigateTo(outputUuid || "");
-                                                            }}
-                                                        >
-                                                            {outputUuid}
-                                                        </MuiLink>
-                                                    </Typography>
-                                                )}
-                                                <ProcessOutputCollectionFiles
-                                                    isWritable={false}
-                                                    currentItemUuid={outputUuid}
-                                                />
-                                            </>
-                                        )}
-
-                                    </>
+                                    <ConditionalTabs
+                                        variant="fullWidth"
+                                        className={classes.symmetricTabs}
+                                        tabs={[
+                                            {
+                                                // params will be empty on processes without workflow definitions in mounts, so we only show raw
+                                                show: hasParams,
+                                                label: "Parameters",
+                                                content: <div className={classes.tableWrapper}>
+                                                    <ProcessIOPreview
+                                                        data={params || []}
+                                                        valueLabel={forceShowParams ? "Default value" : "Value"}
+                                                    />
+                                                </div>,
+                                            },
+                                            {
+                                                show: !forceShowParams,
+                                                label: "JSON",
+                                                content: <div className={classes.jsonWrapper}>
+                                                    <ProcessIORaw data={raw} />
+                                                </div>,
+                                            },
+                                            {
+                                                show: hasOutputCollecton,
+                                                label: "Collection",
+                                                content: <ProcessOutputCollection outputUuid={outputUuid} />,
+                                            },
+                                        ]}
+                                    />
                                 )}
                                 {!loading && !hasRaw && !hasParams && (
                                     <Grid
@@ -476,47 +447,29 @@ export const ProcessIOCard = withStyles(styles)(
                                         <CircularProgress />
                                     </Grid>
                                 ) : !subProcessLoading && (hasInputMounts || hasOutputCollecton || isRawLoaded) ? (
-                                    <>
-                                        <Tabs
-                                            value={subProcTabState}
-                                            onChange={handleSubProcTabChange}
-                                            variant="fullWidth"
-                                            className={classes.symmetricTabs}
-                                        >
-                                            {hasInputMounts && <Tab label="Collections" />}
-                                            {hasOutputCollecton && <Tab label="Collection" />}
-                                            {isRawLoaded && <Tab label="JSON" />}
-                                        </Tabs>
-                                        {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
-                                        {subProcTabState === 0 && hasOutputCollecton && (
-                                            <div className={classes.tableWrapper}>
-                                                <>
-                                                    {outputUuid && (
-                                                        <Typography className={classes.collectionLink}>
-                                                            Output Collection:{" "}
-                                                            <MuiLink
-                                                                className={classes.keepLink}
-                                                                onClick={() => {
-                                                                    navigateTo(outputUuid || "");
-                                                                }}
-                                                            >
-                                                                {outputUuid}
-                                                            </MuiLink>
-                                                        </Typography>
-                                                    )}
-                                                    <ProcessOutputCollectionFiles
-                                                        isWritable={false}
-                                                        currentItemUuid={outputUuid}
-                                                    />
-                                                </>
-                                            </div>
-                                        )}
-                                        {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
-                                            <div className={classes.jsonWrapper}>
-                                                <ProcessIORaw data={raw} />
-                                            </div>
-                                        )}
-                                    </>
+                                    <ConditionalTabs
+                                        variant="fullWidth"
+                                        className={classes.symmetricTabs}
+                                        tabs={[
+                                            {
+                                                show: hasInputMounts,
+                                                label: "Collections",
+                                                content: <ProcessInputMounts mounts={mounts || []} />,
+                                            },
+                                            {
+                                                show: hasOutputCollecton,
+                                                label: "Collection",
+                                                content: <ProcessOutputCollection outputUuid={outputUuid} />,
+                                            },
+                                            {
+                                                show: isRawLoaded,
+                                                label: "JSON",
+                                                content: <div className={classes.jsonWrapper}>
+                                                    <ProcessIORaw data={raw} />
+                                                </div>,
+                                            },
+                                        ]}
+                                    />
                                 ) : (
                                     <Grid
                                         container
@@ -708,6 +661,32 @@ const ProcessInputMounts = withStyles(styles)(
         </Table>
     ))
 );
+
+type ProcessOutputCollectionProps = {outputUuid: string | undefined} &  WithStyles<CssRules>;
+
+const ProcessOutputCollection = withStyles(styles)(({ outputUuid, classes }: ProcessOutputCollectionProps) => (
+    <div className={classes.tableWrapper}>
+        <>
+            {outputUuid && (
+                <Typography className={classes.collectionLink}>
+                    Output Collection:{" "}
+                    <MuiLink
+                        className={classes.keepLink}
+                        onClick={() => {
+                            navigateTo(outputUuid || "");
+                        }}
+                    >
+                        {outputUuid}
+                    </MuiLink>
+                </Typography>
+            )}
+            <ProcessOutputCollectionFiles
+                isWritable={false}
+                currentItemUuid={outputUuid}
+            />
+        </>
+    </div>
+));
 
 type FileWithSecondaryFiles = {
     secondaryFiles: File[];
