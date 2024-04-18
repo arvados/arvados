@@ -208,6 +208,18 @@ configure_version() {
   run_and_report "Running bundle install" \
       $COMMAND_PREFIX bin/bundle install --local --quiet
 
+  # As of April 2024/Bundler 2.4, for some reason `bundle install` skips
+  # zlib if it's already installed as a system-wide gem, which it often will
+  # be because arvados gems pull it in. If this happened, install it in the
+  # bundle manually as a workaround.
+  if ! $COMMAND_PREFIX bin/bundle info zlib >/dev/null 2>&1; then
+      local RUBY_VERSION="$($COMMAND_PREFIX ruby -e 'puts RUBY_VERSION')"
+      run_and_report "Adding zlib to bundle" \
+                     $COMMAND_PREFIX gem install \
+                     --install-dir="$SHARED_PATH/vendor_bundle/ruby/$RUBY_VERSION" \
+                     vendor/cache/zlib-*.gem
+  fi
+
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
   chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
