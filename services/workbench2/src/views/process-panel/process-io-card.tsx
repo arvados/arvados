@@ -401,19 +401,15 @@ export const ProcessIOCard = withStyles(styles)(
                                                 // params will be empty on processes without workflow definitions in mounts, so we only show raw
                                                 show: hasParams,
                                                 label: "Parameters",
-                                                content: <div className={classes.tableWrapper}>
-                                                    <ProcessIOPreview
+                                                content: <ProcessIOPreview
                                                         data={params || []}
                                                         valueLabel={forceShowParams ? "Default value" : "Value"}
-                                                    />
-                                                </div>,
+                                                />,
                                             },
                                             {
                                                 show: !forceShowParams,
                                                 label: "JSON",
-                                                content: <div className={classes.jsonWrapper}>
-                                                    <ProcessIORaw data={raw} />
-                                                </div>,
+                                                content: <ProcessIORaw data={raw} />,
                                             },
                                             {
                                                 show: hasOutputCollecton,
@@ -464,9 +460,7 @@ export const ProcessIOCard = withStyles(styles)(
                                             {
                                                 show: isRawLoaded,
                                                 label: "JSON",
-                                                content: <div className={classes.jsonWrapper}>
-                                                    <ProcessIORaw data={raw} />
-                                                </div>,
+                                                content: <ProcessIORaw data={raw} />,
                                             },
                                         ]}
                                     />
@@ -510,7 +504,7 @@ interface ProcessIOPreviewDataProps {
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
 const ProcessIOPreview = memo(
-    withStyles(styles)(({ classes, data, valueLabel }: ProcessIOPreviewProps) => {
+    withStyles(styles)(({ data, valueLabel, classes }: ProcessIOPreviewProps) => {
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
 
         const hasMoreValues = (index: number) => (
@@ -566,7 +560,7 @@ const ProcessIOPreview = memo(
             </TableRow>;
         };
 
-        return (
+        return <div className={classes.tableWrapper}>
             <Table
                 className={classes.paramTableRoot}
                 aria-label="Process IO Preview"
@@ -594,7 +588,7 @@ const ProcessIOPreview = memo(
                     </AutoSizer>
                 </TableBody>
             </Table>
-        );
+        </div>;
     })
 );
 
@@ -612,13 +606,15 @@ interface ProcessIORawDataProps {
     data: ProcessIOParameter[];
 }
 
-const ProcessIORaw = withStyles(styles)(({ data }: ProcessIORawDataProps) => (
-    <Paper elevation={0} style={{minWidth: "100%", height: "100%"}}>
-        <DefaultVirtualCodeSnippet
-            lines={JSON.stringify(data, null, 2).split('\n')}
-            linked
-        />
-    </Paper>
+const ProcessIORaw = withStyles(styles)(({ data, classes }: ProcessIORawDataProps & WithStyles<CssRules>) => (
+    <div className={classes.jsonWrapper}>
+        <Paper elevation={0} style={{minWidth: "100%", height: "100%"}}>
+            <DefaultVirtualCodeSnippet
+                lines={JSON.stringify(data, null, 2).split('\n')}
+                linked
+            />
+        </Paper>
+    </div>
 ));
 
 interface ProcessInputMountsDataProps {
