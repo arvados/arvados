@@ -66,7 +66,7 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y \
     unzip
 
 RUN echo "gem: --no-document" >> ~/.gemrc && \
-    gem install bundler --version 2.2.19 && \
+    gem install --conservative --version '>= 2.4.0' bundler && \
     gem install fpm --version 1.15.1 && \
     bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 

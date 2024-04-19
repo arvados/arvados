@@ -74,7 +74,7 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y \
 # fpm depends on dotenv, but version 3.0 of that gem dropped support for
 # Ruby 2.7, so we need to specifically install an older version.
 RUN echo "gem: --no-document" >> ~/.gemrc && \
-    gem install bundler --version 2.2.19 && \
+    gem install --conservative --version '~> 2.4.0' bundler && \
     gem install dotenv --version '~> 2.8' && \
     gem install fpm --version 1.15.1 && \
     bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)

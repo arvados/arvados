@@ -40,6 +40,6 @@ RUN microdnf --assumeyes module enable ruby:3.1 \
 
 RUN touch /var/lib/rpm/* && \
     echo "gem: --no-document" >> ~/.gemrc && \
-    gem install bundler --version 2.2.19
+    gem install --conservative --version '>= 2.4.0' bundler
 
 COPY localrepo.repo /etc/yum.repos.d/localrepo.repo

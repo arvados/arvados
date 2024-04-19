@@ -192,9 +192,7 @@ configure_version() {
   cd "$RELEASE_PATH"
   export RAILS_ENV=production
 
-  if ! bundle --version >/dev/null 2>&1; then
-      run_and_report "Installing bundler" gem install bundler --version 2.2.19 --no-document
-  fi
+  run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
 
   run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
                  bundle config set --local path "$SHARED_PATH/vendor_bundle"

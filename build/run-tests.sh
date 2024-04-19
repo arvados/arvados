@@ -490,17 +490,8 @@ setup_ruby_environment() {
     echo "Will install dependencies to $(gem env gemdir)"
     echo "Will install bundler and arvados gems to $tmpdir_gem_home"
     echo "Gem search path is GEM_PATH=$GEM_PATH"
-    (
-        export HOME=$GEMHOME
-        versions=(2.2.19)
-        for v in ${versions[@]}; do
-            if ! gem list --installed --version "${v}" bundler >/dev/null; then
-                gem install --no-document --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
-                break
-            fi
-        done
-        "$bundle" version | tee /dev/stderr | grep -q 'version 2'
-    ) || fatal 'install bundler'
+    gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
+        || fatal 'install bundler'
 	if test -d /var/lib/arvados-arvbox/ ; then
 	    # Inside arvbox, use bundler-installed binstubs.  The
 	    # system bundler and rail's own bin/bundle refuse to work.
