@@ -82,15 +82,10 @@ RUN echo "gem: --no-document" >> ~/.gemrc && \
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 
-# Preseed the go module cache and the ruby gems, using the currently checked
-# out branch of the source tree. This avoids potential compatibility issues
-# between the version of Ruby and certain gems.
+# Preseed the go module cache.
 RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
-    cd /tmp/arvados/services/api && \
-    bundle install && \
-    cd /tmp/arvados && \
     go mod download
 
 ENV WORKSPACE /arvados
