@@ -6,7 +6,7 @@ FROM rockylinux:8.8-minimal
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
-RUN microdnf --assumeyes module enable ruby:3.1 \
+RUN microdnf --assumeyes module enable httpd:2.4 postgresql:10 python39:3.9 ruby:3.1 \
  && microdnf --assumeyes --enablerepo=devel install \
     autoconf \
     automake \
@@ -26,7 +26,7 @@ RUN microdnf --assumeyes module enable ruby:3.1 \
     patch \
     pkgconf \
     procps-ng \
-    python3 \
+    python39 \
     readline-devel \
     redhat-rpm-config \
     ruby \
