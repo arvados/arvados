@@ -27,16 +27,10 @@ ubuntu2204/generated: common-generated-all
 	test -d ubuntu2204/generated || mkdir ubuntu2204/generated
 	cp -f -rlt ubuntu2204/generated common-generated/*
 
-RVMKEY1=mpapis.asc
-RVMKEY2=pkuczynski.asc
+common-generated-all: common-generated/empty
 
-common-generated-all: common-generated/$(RVMKEY1) common-generated/$(RVMKEY2)
-
-common-generated/$(RVMKEY1): common-generated
-	wget -cqO common-generated/$(RVMKEY1) https://rvm.io/mpapis.asc
-
-common-generated/$(RVMKEY2): common-generated
-	wget -cqO common-generated/$(RVMKEY2) https://rvm.io/pkuczynski.asc
+common-generated/empty: common-generated
+	touch common-generated/empty
 
 common-generated:
 	mkdir common-generated

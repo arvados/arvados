@@ -102,7 +102,7 @@ elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
 fi
 
 if [[ "$COMMAND" != "" ]]; then
-  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
+  COMMAND="bash /jenkins/$COMMAND --target $TARGET"
 fi
 
 STDOUT_IF_DEBUG=/dev/null
@@ -181,13 +181,6 @@ fi
 debug_echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
 debug_echo "Workspace is $WORKSPACE"
 
-if [[ -f /etc/profile.d/rvm.sh ]]; then
-    source /etc/profile.d/rvm.sh
-    GEM="rvm-exec default gem"
-else
-    GEM=gem
-fi
-
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
 # out our git tree here
 chmod o+r "$WORKSPACE" -R
@@ -213,7 +206,7 @@ git config --global --add safe.directory /arvados
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
 
-FPM_GEM_PREFIX=$($GEM environment gemdir)
+FPM_GEM_PREFIX=$(gem environment gemdir)
 
 cd "$WORKSPACE/sdk/ruby" || exit 1
 handle_ruby_gem arvados

@@ -198,7 +198,7 @@ if [[ -n "$test_packages" ]]; then
 else
   IMAGE="arvados/build:$TARGET"
   if [[ "$COMMAND" != "" ]]; then
-    COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET$DEBUG"
+    COMMAND="bash /jenkins/$COMMAND --target $TARGET$DEBUG"
   fi
 fi
 

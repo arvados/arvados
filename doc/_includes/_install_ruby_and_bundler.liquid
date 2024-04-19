@@ -6,14 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Ruby 2.7 or newer is required.
 
-* "Option 1: Install from packages":#packages
-* "Option 2: Install with RVM":#rvm
-
-h2(#packages). Option 1: Install from packages
-
-h3. Alma/CentOS/Red Hat/Rocky
-
-Version 7 of these distributions does not provide a new enough Ruby version.  Use "RVM":#rvm to install Ruby 2.7 or newer.
+h2. Alma/CentOS/Red Hat/Rocky
 
 Version 8 of these distributions provides Ruby 2.7. You can install it by running:
 
@@ -22,63 +15,10 @@ Version 8 of these distributions provides Ruby 2.7. You can install it by runnin
 # <span class="userinput">dnf install --enablerepo=devel ruby ruby-devel</span></code></pre>
 </notextile>
 
-h3. Debian and Ubuntu
-
-Debian 10 (buster) and Ubuntu 18.04 (bionic) ship with Ruby 2.5, which is too old for Arvados. Use "RVM":#rvm to install Ruby 2.7 or newer.
+h2. Debian and Ubuntu
 
 Debian 11 (bullseye) and Ubuntu 20.04 (focal) and later ship with Ruby 2.7 or newer, which is sufficient for Arvados.
 
 <notextile>
 <pre><code># <span class="userinput">apt-get --no-install-recommends install ruby ruby-dev</span></code></pre>
 </notextile>
-
-h2(#rvm). Option 2: Install with RVM
-
-{% include 'notebox_begin_warning' %}
-We do not recommend using RVM unless the Ruby version provided by your OS distribution is older than 2.7.
-{% include 'notebox_end' %}
-
-h3. Install gpg and curl
-
-h4. CentOS/Red Hat 7
-
-<pre>
-yum install gpg curl which findutils procps
-</pre>
-
-{% comment %}
-To build ruby 3.2.2 on CentOS 7, add: "yum --enablerepo=powertools install libyaml-devel"
-{% endcomment %}
-
-h4. Alma/CentOS/Red Hat/Rocky 8+
-
-<pre>
-dnf install gpg curl which findutils procps
-</pre>
-
-h4. Debian and Ubuntu
-
-<pre>
-apt-get --no-install-recommends install gpg curl ca-certificates dirmngr procps
-</pre>
-
-h3. Install RVM, Ruby and Bundler
-
-<notextile>
-<pre><code><span class="userinput">gpg --keyserver pgp.mit.edu --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
-\curl -sSL https://get.rvm.io | bash -s stable --ruby=2.7.7
-</span></code></pre></notextile>
-
-This command installs the Ruby 2.7.7 release, as well as the @gem@ and @bundle@ commands.
-
-To use Ruby installed from RVM, load it in an open shell like this:
-
-<notextile>
-<pre><code><span class="userinput">source /usr/local/rvm/scripts/rvm
-</span></code></pre></notextile>
-
-Alternately you can use @rvm-exec@ (the first parameter is the ruby version to use, or "default"), for example:
-
-<notextile>
-<pre><code><span class="userinput">rvm-exec default ruby -v
-</span></code></pre></notextile>

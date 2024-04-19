@@ -165,13 +165,6 @@ if [ $RUBY -eq 0 ] && [ $PYTHON -eq 0 ]; then
   exit 0
 fi
 
-if [[ -f /etc/profile.d/rvm.sh ]]; then
-    source /etc/profile.d/rvm.sh
-    GEM="rvm-exec default gem"
-else
-    GEM=gem
-fi
-
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
 # out our git tree here
 chmod o+r "$WORKSPACE" -R

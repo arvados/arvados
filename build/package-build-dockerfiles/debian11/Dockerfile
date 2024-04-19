@@ -6,7 +6,6 @@ ARG HOSTTYPE
 ARG BRANCH
 ARG GOVERSION
 
-## dont use debian:11 here since the word 'bullseye' is used for rvm precompiled binaries
 FROM debian:bullseye as build_x86_64
 # Install go
 ONBUILD ARG BRANCH
@@ -46,23 +45,34 @@ ENV DEBIAN_FRONTEND noninteractive
 
 SHELL ["/bin/bash", "-c"]
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev unzip python3-venv python3-dev libpam-dev equivs
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y \
+    build-essential \
+    curl \
+    equivs \
+    git \
+    libattr1-dev \
+    libcurl4-gnutls-dev \
+    libfuse-dev \
+    libgnutls28-dev \
+    libpam-dev \
+    libpq-dev \
+    pkgconf \
+    procps \
+    python3 \
+    python3-dev \
+    python3-venv \
+    ruby \
+    ruby-dev \
+    unzip
 
-ADD generated/mpapis.asc /tmp/
-ADD generated/pkuczynski.asc /tmp/
 # fpm depends on dotenv, but version 3.0 of that gem dropped support for
 # Ruby 2.7, so we need to specifically install an older version.
-RUN gpg --import --no-tty /tmp/mpapis.asc && \
-    gpg --import --no-tty /tmp/pkuczynski.asc && \
-    curl -L https://get.rvm.io | bash -s stable && \
-    /usr/local/rvm/bin/rvm install 2.7 -j $(grep -c processor /proc/cpuinfo) --disable-binary && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
-    echo "gem: --no-document" >> ~/.gemrc && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
-    /usr/local/rvm/bin/rvm-exec default gem install dotenv --version '~> 2.8' && \
-    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.15.1
+RUN echo "gem: --no-document" >> ~/.gemrc && \
+    gem install bundler --version 2.2.19 && \
+    gem install dotenv --version '~> 2.8' && \
+    gem install fpm --version 1.15.1 && \
+    bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 
-RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 
@@ -73,9 +83,9 @@ RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
-    /usr/local/rvm/bin/rvm-exec default bundle install && \
+    bundle install && \
     cd /tmp/arvados && \
     go mod download
 
 ENV WORKSPACE /arvados
-CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "debian11"]
+CMD ["bash", "/jenkins/run-build-packages.sh", "--target", "debian11"]

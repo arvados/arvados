@@ -35,7 +35,8 @@ FROM build_${HOSTTYPE}
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
-RUN microdnf --assumeyes --enablerepo=devel install \
+RUN microdnf --assumeyes module enable ruby:3.1 \
+ && microdnf --assumeyes --enablerepo=devel install \
     automake \
     bison \
     bzip2 \
@@ -53,6 +54,7 @@ RUN microdnf --assumeyes --enablerepo=devel install \
     openssl-devel \
     pam-devel \
     patch \
+    pkgconf \
     postgresql-devel \
     procps-ng \
     python39 \
@@ -60,6 +62,7 @@ RUN microdnf --assumeyes --enablerepo=devel install \
     readline-devel \
     rpm-build \
     ruby \
+    ruby-devel \
     sqlite-devel \
     tar \
     unzip \
@@ -68,21 +71,14 @@ RUN microdnf --assumeyes --enablerepo=devel install \
     xz-libs \
     zlib-devel
 
-ADD generated/mpapis.asc /tmp/
-ADD generated/pkuczynski.asc /tmp/
 # fpm depends on dotenv, but version 3.0 of that gem dropped support for
 # Ruby 2.7, so we need to specifically install an older version.
-RUN gpg --import --no-tty /tmp/mpapis.asc && \
-    gpg --import --no-tty /tmp/pkuczynski.asc && \
-    curl -L https://get.rvm.io | bash -s stable && \
-    /usr/local/rvm/bin/rvm install --disable-binary 2.7 -j $(grep -c processor /proc/cpuinfo) && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
-    echo "gem: --no-document" >> ~/.gemrc && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
-    /usr/local/rvm/bin/rvm-exec default gem install dotenv --version '~> 2.8' && \
-    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.15.1
+RUN echo "gem: --no-document" >> ~/.gemrc && \
+    gem install bundler --version 2.2.19 && \
+    gem install dotenv --version '~> 2.8' && \
+    gem install fpm --version 1.15.1 && \
+    bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 
-RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 
@@ -93,9 +89,9 @@ RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
-    /usr/local/rvm/bin/rvm-exec default bundle install && \
+    bundle install && \
     cd /tmp/arvados && \
     go mod download
 
 ENV WORKSPACE /arvados
-CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "rocky8"]
+CMD ["bash", "/jenkins/run-build-packages.sh", "--target", "rocky8"]

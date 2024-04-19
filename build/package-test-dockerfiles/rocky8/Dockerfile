@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM rockylinux:8.6-minimal
+FROM rockylinux:8.8-minimal
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
-RUN microdnf --assumeyes --enablerepo=devel install \
+RUN microdnf --assumeyes module enable ruby:3.1 \
+ && microdnf --assumeyes --enablerepo=devel install \
     autoconf \
     automake \
     bison \
@@ -23,10 +24,13 @@ RUN microdnf --assumeyes --enablerepo=devel install \
     make \
     openssl-devel \
     patch \
+    pkgconf \
     procps-ng \
     python3 \
     readline-devel \
+    redhat-rpm-config \
     ruby \
+    ruby-devel \
     shadow-utils \
     sqlite-devel \
     tar \
@@ -34,15 +38,8 @@ RUN microdnf --assumeyes --enablerepo=devel install \
     which \
     zlib-devel
 
-# Install RVM
-ADD generated/mpapis.asc /tmp/
-ADD generated/pkuczynski.asc /tmp/
 RUN touch /var/lib/rpm/* && \
-    gpg --import --no-tty /tmp/mpapis.asc && \
-    gpg --import --no-tty /tmp/pkuczynski.asc && \
-    curl -L https://get.rvm.io | bash -s stable && \
-    /usr/local/rvm/bin/rvm install --disable-binary 2.7 -j $(grep -c processor /proc/cpuinfo) && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19
+    echo "gem: --no-document" >> ~/.gemrc && \
+    gem install bundler --version 2.2.19
 
 COPY localrepo.repo /etc/yum.repos.d/localrepo.repo

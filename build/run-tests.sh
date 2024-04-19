@@ -192,7 +192,7 @@ sanity_checks() {
         || fatal "Locale '${LANG}' is broken/missing. Try: echo ${LANG} | sudo tee -a /etc/locale.gen && sudo locale-gen"
     echo -n 'ruby: '
     ruby -v \
-        || fatal "No ruby. Install >=2.1.9 (using rbenv, rvm, or source)"
+        || fatal "No ruby. Install >=2.7 from package or source"
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
@@ -466,98 +466,51 @@ interrupt() {
 trap interrupt INT
 
 setup_ruby_environment() {
-    if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
-        source "$HOME/.rvm/scripts/rvm"
-        using_rvm=true
-    elif [[ -s "/usr/local/rvm/scripts/rvm" ]] ; then
-        source "/usr/local/rvm/scripts/rvm"
-        using_rvm=true
-    else
-        using_rvm=false
+    # When our "bundle install"s need to install new gems to
+    # satisfy dependencies, we want them to go where "gem install
+    # --user-install" would put them. (However, if the caller has
+    # already set GEM_HOME, we assume that's where dependencies
+    # should be installed, and we should leave it alone.)
+
+    if [ -z "$GEM_HOME" ]; then
+        user_gempath="$(gem env gempath)"
+        export GEM_HOME="${user_gempath%%:*}"
     fi
+    PATH="$(gem env gemdir)/bin:$PATH"
 
-    if [[ "$using_rvm" == true ]]; then
-        # If rvm is in use, we can't just put separate "dependencies"
-        # and "gems-under-test" paths to GEM_PATH: passenger resets
-        # the environment to the "current gemset", which would lose
-        # our GEM_PATH and prevent our test suites from running ruby
-        # programs (for example, the Workbench test suite could not
-        # boot an API server or run arv). Instead, we have to make an
-        # rvm gemset and use it for everything.
+    # When we build and install our own gems, we install them in our
+    # $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
+    # PATH so integration tests prefer them over other versions that
+    # happen to be installed in $user_gempath, system dirs, etc.
 
-        [[ `type rvm | head -n1` == "rvm is a function" ]] \
-            || fatal 'rvm check'
+    tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
+    PATH="$tmpdir_gem_home/bin:$PATH"
+    export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
 
-        # Put rvm's favorite path back in first place (overriding
-        # virtualenv, which just put itself there). Ignore rvm's
-        # complaint about not being in first place already.
-        rvm use @default 2>/dev/null
-
-        # Create (if needed) and switch to an @arvados-tests-* gemset,
-        # salting the gemset name so it doesn't interfere with
-        # concurrent builds in other workspaces. Leave the choice of
-        # ruby to the caller.
-        gemset="arvados-tests-$(echo -n "${WORKSPACE}" | md5sum | head -c16)"
-        rvm use "@${gemset}" --create \
-            || fatal 'rvm gemset setup'
-
-        rvm env
-        (bundle version | grep -q 2.2.19) || gem install --no-document bundler -v 2.2.19
-        bundle="$(which bundle)"
-        echo "$bundle"
-        "$bundle" version | grep 2.2.19 || fatal 'install bundler'
-    else
-        # When our "bundle install"s need to install new gems to
-        # satisfy dependencies, we want them to go where "gem install
-        # --user-install" would put them. (However, if the caller has
-        # already set GEM_HOME, we assume that's where dependencies
-        # should be installed, and we should leave it alone.)
-
-        if [ -z "$GEM_HOME" ]; then
-            user_gempath="$(gem env gempath)"
-            export GEM_HOME="${user_gempath%%:*}"
-        fi
-        PATH="$(gem env gemdir)/bin:$PATH"
-
-        # When we build and install our own gems, we install them in our
-        # $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
-        # PATH so integration tests prefer them over other versions that
-        # happen to be installed in $user_gempath, system dirs, etc.
-
-        tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
-        PATH="$tmpdir_gem_home/bin:$PATH"
-        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
-
-        echo "Will install dependencies to $(gem env gemdir)"
-        echo "Will install bundler and arvados gems to $tmpdir_gem_home"
-        echo "Gem search path is GEM_PATH=$GEM_PATH"
-        bundle="bundle"
-        (
-            export HOME=$GEMHOME
-            versions=(2.2.19)
-            for v in ${versions[@]}; do
-                if ! gem list --installed --version "${v}" bundler >/dev/null; then
-                    gem install --no-document --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
-                    break
-                fi
-            done
-            "$bundle" version | tee /dev/stderr | grep -q 'version 2'
-        ) || fatal 'install bundler'
+    echo "Will install dependencies to $(gem env gemdir)"
+    echo "Will install bundler and arvados gems to $tmpdir_gem_home"
+    echo "Gem search path is GEM_PATH=$GEM_PATH"
+    (
+        export HOME=$GEMHOME
+        versions=(2.2.19)
+        for v in ${versions[@]}; do
+            if ! gem list --installed --version "${v}" bundler >/dev/null; then
+                gem install --no-document --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
+                break
+            fi
+        done
+        "$bundle" version | tee /dev/stderr | grep -q 'version 2'
+    ) || fatal 'install bundler'
 	if test -d /var/lib/arvados-arvbox/ ; then
 	    # Inside arvbox, use bundler-installed binstubs.  The
 	    # system bundler and rail's own bin/bundle refuse to work.
 	    # I don't know why.
 	    bundle=binstubs/bundle
 	fi
-    fi
 }
 
 with_test_gemset() {
-    if [[ "$using_rvm" == true ]]; then
-        "$@"
-    else
-        GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
-    fi
+    GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
 }
 
 gem_uninstall_if_exists() {
@@ -622,8 +575,6 @@ initialize() {
 
     unset http_proxy https_proxy no_proxy
 
-    # Note: this must be the last time we change PATH, otherwise rvm will
-    # whine a lot.
     setup_ruby_environment
 
     echo "PATH is $PATH"
@@ -873,11 +824,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! "$bundle" install --local --no-deployment; then
+        if ! bundle install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            "$bundle" install --no-deployment
+            bundle install --no-deployment
         fi
-        "$bundle" package
+        bundle package
     )
 }
 
@@ -995,7 +946,7 @@ install_services/workbench2() {
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
-        "$bundle" exec rake linkchecker \
+        bundle exec rake linkchecker \
         arvados_api_host="$arvados_api_host" \
         arvados_workbench_host="https://workbench.$arvados_api_host" \
         baseurl="file://$WORKSPACE/doc/.site/" \
@@ -1029,12 +980,12 @@ test_arvados_version.py() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/ruby-google-api-client() {
@@ -1052,7 +1003,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -1061,7 +1012,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/workbench2_units() {

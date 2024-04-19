@@ -111,7 +111,7 @@ handle_ruby_gem() {
         find -maxdepth 1 -name "${gem_name}-*.gem" -delete
 
         # -q appears to be broken in gem version 2.2.2
-        $GEM build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
+        gem build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
     fi
 }
 
