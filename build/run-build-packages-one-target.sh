@@ -206,11 +206,10 @@ JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
 if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
     if [[ -n "$test_packages" ]]; then
-	pushd "$JENKINS_DIR/package-test-dockerfiles"
-	make "$TARGET/generated"
+	    pushd "$JENKINS_DIR/package-test-dockerfiles"
     else
-	pushd "$JENKINS_DIR/package-build-dockerfiles"
-	make "$TARGET/generated"
+	    pushd "$JENKINS_DIR/package-build-dockerfiles"
+	    make "$TARGET/generated"
     fi
 
     GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
