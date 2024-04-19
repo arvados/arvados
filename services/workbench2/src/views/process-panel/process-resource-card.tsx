@@ -14,6 +14,7 @@ import {
     Tooltip,
     Typography,
     Grid,
+    Link,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
@@ -21,6 +22,7 @@ import {
     MaximizeIcon,
     ResourceIcon,
     UnMaximizeIcon,
+    ShowChartIcon,
 } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { connect } from 'react-redux';
@@ -33,9 +35,10 @@ import { MountKind } from 'models/mount-types';
 interface ProcessResourceCardDataProps {
     process: Process;
     nodeInfo: NodeInstanceType | null;
+    usageReport: string | null;
 }
 
-type CssRules = "card" | "header" | "title" | "avatar" | "iconHeader" | "content" | "sectionH3";
+type CssRules = "card" | "header" | "title" | "avatar" | "iconHeader" | "content" | "sectionH3" | "reportButton";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -64,13 +67,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "0.8125rem",
         textTransform: "uppercase",
+    },
+    reportButton: {
     }
 });
 
 type ProcessResourceCardProps = ProcessResourceCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessResourceCard = withStyles(styles)(connect()(
-    ({ classes, nodeInfo, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName, process, }: ProcessResourceCardProps) => {
+    ({ classes, nodeInfo, usageReport, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName, process, }: ProcessResourceCardProps) => {
         let diskRequest = 0;
         if (process.container?.mounts) {
             for (const mnt in process.container.mounts) {
@@ -96,6 +101,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                 }
                 action={
                     <div>
+                        {usageReport && <Link href={usageReport} className={classes.reportButton} target="_blank"><ShowChartIcon /> Resource usage report</Link>}
                         {doUnMaximizePanel && panelMaximized &&
                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                 <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>

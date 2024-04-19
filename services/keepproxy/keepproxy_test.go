@@ -32,8 +32,8 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-// Gocheck boilerplate
 func Test(t *testing.T) {
+	keepclient.DefaultRetryDelay = time.Millisecond
 	TestingT(t)
 }
 
@@ -346,7 +346,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	}
 
 	{
-		reader, _, _, err := kc.Get(hash)
+		reader, _, _, err := kc.Get(hash + "+3")
 		c.Check(reader, Equals, nil)
 		c.Check(err, Equals, keepclient.BlockNotFound)
 		c.Log("Finished Get (expected BlockNotFound)")

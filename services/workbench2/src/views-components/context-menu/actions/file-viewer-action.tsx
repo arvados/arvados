@@ -20,7 +20,7 @@ export const FileViewerAction = (props: any) => {
                 </ListItemIcon>
                 <ListItemText>
                     Open in new tab
-                    </ListItemText>
+                </ListItemText>
             </ListItem>
         </a>
         : null;

@@ -27,7 +27,7 @@ import {
     CircularProgress,
 } from "@material-ui/core";
 import { ArvadosTheme } from "common/custom-theme";
-import { CloseIcon, ImageIcon, InputIcon, ImageOffIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
+import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import {
     BooleanCommandInputParameter,
@@ -65,8 +65,11 @@ import { ProcessOutputCollectionFiles } from "./process-output-collection-files"
 import { Process } from "store/processes/process";
 import { navigateTo } from "store/navigation/navigation-action";
 import classNames from "classnames";
-import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
+import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { KEEP_URL_REGEX } from "models/resource";
+import { FixedSizeList } from 'react-window';
+import AutoSizer from "react-virtualized-auto-sizer";
+import { LinkProps } from "@material-ui/core/Link";
 
 type CssRules =
     | "card"
@@ -76,21 +79,17 @@ type CssRules =
     | "avatar"
     | "iconHeader"
     | "tableWrapper"
-    | "tableRoot"
-    | "paramValue"
+    | "paramTableRoot"
+    | "paramTableCellText"
+    | "mountsTableRoot"
+    | "jsonWrapper"
     | "keepLink"
     | "collectionLink"
-    | "imagePreview"
-    | "valArray"
     | "secondaryVal"
-    | "secondaryRow"
     | "emptyValue"
     | "noBorderRow"
     | "symmetricTabs"
-    | "imagePlaceholder"
-    | "rowWithPreview"
-    | "labelColumn"
-    | "primaryRow";
+    | "wrapTooltip";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -108,26 +107,98 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignSelf: "flex-start",
         paddingTop: theme.spacing.unit * 0.5,
     },
+    // Card content
     content: {
-        height: `calc(100% - ${theme.spacing.unit * 7}px - ${theme.spacing.unit * 1.5}px)`,
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
         padding: theme.spacing.unit * 1.0,
         paddingTop: 0,
         "&:last-child": {
             paddingBottom: theme.spacing.unit * 1,
         },
     },
+    // Card title
     title: {
         overflow: "hidden",
         paddingTop: theme.spacing.unit * 0.5,
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
+    // Applies to table tab and collection table content
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 3}px)`,
+        maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
         overflow: "auto",
+        // Use flexbox to keep scrolling at the virtual list level
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch", // Stretches output collection to full width
+
     },
-    tableRoot: {
+
+    // Param table virtual list styles
+    paramTableRoot: {
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        // Flex header
+        "& thead tr": {
+            alignItems: "end",
+            "& th": {
+                padding: "4px 25px 10px",
+            },
+        },
+        "& tbody": {
+            height: "100vh", // Must be constrained by panel maxHeight
+        },
+        // Flex header/body rows
+        "& thead tr, & > tbody tr": {
+            display: "flex",
+            // Flex header/body cells
+            "& th, & td": {
+                flexGrow: 1,
+                flexShrink: 1,
+                flexBasis: 0,
+                overflow: "hidden",
+            },
+            // Column width overrides
+            "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                flexGrow: 0.7,
+            },
+            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
+                flexGrow: 2,
+            },
+        },
+        // Flex body rows
+        "& tbody tr": {
+            height: "40px",
+            // Flex body cells
+            "& td": {
+                padding: "2px 25px 2px",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+            },
+        },
+    },
+    // Param value cell typography styles
+    paramTableCellText: {
+        overflow: "hidden",
+        display: "flex",
+        // Every cell contents requires a wrapper for the ellipsis
+        // since adding ellipses to an anchor element parent results in misaligned tooltip
+        "& a, & span": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+        },
+        '& pre': {
+            margin: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+        },
+    },
+    mountsTableRoot: {
         width: "100%",
         "& thead th": {
             verticalAlign: "bottom",
@@ -137,17 +208,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             paddingRight: "25px",
         },
     },
-    paramValue: {
-        display: "flex",
-        alignItems: "flex-start",
-        flexDirection: "column",
+    // JSON tab wrapper
+    jsonWrapper: {
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
     },
     keepLink: {
         color: theme.palette.primary.main,
         textDecoration: "none",
+        // Overflow wrap for mounts table
         overflowWrap: "break-word",
         cursor: "pointer",
     },
+    // Output collection tab link
     collectionLink: {
         margin: "10px",
         "& a": {
@@ -157,27 +229,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             cursor: "pointer",
         },
     },
-    imagePreview: {
-        maxHeight: "15em",
-        maxWidth: "15em",
-        marginBottom: theme.spacing.unit,
-    },
-    valArray: {
-        display: "flex",
-        gap: "10px",
-        flexWrap: "wrap",
-        "& span": {
-            display: "inline",
-        },
-    },
     secondaryVal: {
         paddingLeft: "20px",
-    },
-    secondaryRow: {
-        height: "24px",
-        verticalAlign: "top",
-        position: "relative",
-        top: "-4px",
     },
     emptyValue: {
         color: theme.customs.colors.grey700,
@@ -195,33 +248,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             flexBasis: "0",
         },
     },
-    imagePlaceholder: {
-        width: "60px",
-        height: "60px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#cecece",
-        borderRadius: "10px",
-    },
-    rowWithPreview: {
-        verticalAlign: "bottom",
-    },
-    labelColumn: {
-        minWidth: "120px",
-    },
-    primaryRow: {
-        height: "24px",
-        "& td": {
-            paddingTop: "2px",
-            paddingBottom: "2px",
-        },
+    wrapTooltip: {
+        maxWidth: "600px",
+        wordWrap: "break-word",
     },
 });
 
 export enum ProcessIOCardType {
-    INPUT = "Inputs",
-    OUTPUT = "Outputs",
+    INPUT = "Input Parameters",
+    OUTPUT = "Output Parameters",
 }
 export interface ProcessIOCardDataProps {
     process?: Process;
@@ -273,8 +308,6 @@ export const ProcessIOCard = withStyles(styles)(
                 setSubProcTabState(value);
             };
 
-            const [showImagePreview, setShowImagePreview] = useState(false);
-
             const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
             const mainProcess = !(process && process!.containerRequest.requestingContainerUuid);
             const showParamTable = mainProcess || forceShowParams;
@@ -315,21 +348,6 @@ export const ProcessIOCard = withStyles(styles)(
                         }
                         action={
                             <div>
-                                {mainProcess && (
-                                    <Tooltip
-                                        title={"Toggle Image Preview"}
-                                        disableFocusListener
-                                    >
-                                        <IconButton
-                                            data-cy="io-preview-image-toggle"
-                                            onClick={() => {
-                                                setShowImagePreview(!showImagePreview);
-                                            }}
-                                        >
-                                            {showImagePreview ? <ImageIcon /> : <ImageOffIcon />}
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
                                 {doUnMaximizePanel && panelMaximized && (
                                     <Tooltip
                                         title={`Unmaximize ${panelName || "panel"}`}
@@ -381,9 +399,9 @@ export const ProcessIOCard = withStyles(styles)(
                                     </Grid>
                                 )}
                                 {/* Once loaded, either raw or params may still be empty
-				  *   Raw when all params are empty
-				  *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
-				  */}
+                                  *   Raw when all params are empty
+                                  *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+                                  */}
                                 {!loading && (hasRaw || hasParams) && (
                                     <>
                                         <Tabs
@@ -401,13 +419,12 @@ export const ProcessIOCard = withStyles(styles)(
                                             <div className={classes.tableWrapper}>
                                                 <ProcessIOPreview
                                                     data={params}
-                                                    showImagePreview={showImagePreview}
                                                     valueLabel={forceShowParams ? "Default value" : "Value"}
                                                 />
                                             </div>
                                         )}
                                         {(mainProcTabState === 1 || !hasParams) && (
-                                            <div className={classes.tableWrapper}>
+                                            <div className={classes.jsonWrapper}>
                                                 <ProcessIORaw data={raw} />
                                             </div>
                                         )}
@@ -470,9 +487,9 @@ export const ProcessIOCard = withStyles(styles)(
                                             {hasOutputCollecton && <Tab label="Collection" />}
                                             {isRawLoaded && <Tab label="JSON" />}
                                         </Tabs>
-                                        <div className={classes.tableWrapper}>
-                                            {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
-                                            {subProcTabState === 0 && hasOutputCollecton && (
+                                        {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
+                                        {subProcTabState === 0 && hasOutputCollecton && (
+                                            <div className={classes.tableWrapper}>
                                                 <>
                                                     {outputUuid && (
                                                         <Typography className={classes.collectionLink}>
@@ -492,13 +509,13 @@ export const ProcessIOCard = withStyles(styles)(
                                                         currentItemUuid={outputUuid}
                                                     />
                                                 </>
-                                            )}
-                                            {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
-                                                <div className={classes.tableWrapper}>
-                                                    <ProcessIORaw data={raw} />
-                                                </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
+                                        {isRawLoaded && (subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && (
+                                            <div className={classes.jsonWrapper}>
+                                                <ProcessIORaw data={raw} />
+                                            </div>
+                                        )}
                                     </>
                                 ) : (
                                     <Grid
@@ -529,90 +546,99 @@ export type ProcessIOValue = {
 export type ProcessIOParameter = {
     id: string;
     label: string;
-    value: ProcessIOValue[];
+    value: ProcessIOValue;
 };
 
 interface ProcessIOPreviewDataProps {
     data: ProcessIOParameter[];
-    showImagePreview: boolean;
     valueLabel: string;
 }
 
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
 const ProcessIOPreview = memo(
-    withStyles(styles)(({ classes, data, showImagePreview, valueLabel }: ProcessIOPreviewProps) => {
+    withStyles(styles)(({ classes, data, valueLabel }: ProcessIOPreviewProps) => {
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
+
+        const hasMoreValues = (index: number) => (
+            data[index+1] && !isMainRow(data[index+1])
+        );
+
+        const isMainRow = (param: ProcessIOParameter) => (
+            param &&
+            ((param.id || param.label) &&
+            !param.value.secondary)
+        );
+
+        const RenderRow = ({index, style}) => {
+            const param = data[index];
+
+            const rowClasses = {
+                [classes.noBorderRow]: hasMoreValues(index),
+            };
+
+            return <TableRow
+                style={style}
+                className={classNames(rowClasses)}
+                data-cy={isMainRow(param) ? "process-io-param" : ""}>
+                <TableCell>
+                    <Tooltip title={param.id}>
+                        <Typography className={classes.paramTableCellText}>
+                            <span>
+                                {param.id}
+                            </span>
+                        </Typography>
+                    </Tooltip>
+                </TableCell>
+                {showLabel && <TableCell>
+                    <Tooltip title={param.label}>
+                        <Typography className={classes.paramTableCellText}>
+                            <span>
+                                {param.label}
+                            </span>
+                        </Typography>
+                    </Tooltip>
+                </TableCell>}
+                <TableCell>
+                    <ProcessValuePreview
+                        value={param.value}
+                    />
+                </TableCell>
+                <TableCell>
+                    <Typography className={classes.paramTableCellText}>
+                        {/** Collection is an anchor so doesn't require wrapper element */}
+                        {param.value.collection}
+                    </Typography>
+                </TableCell>
+            </TableRow>;
+        };
+
         return (
             <Table
-                className={classes.tableRoot}
+                className={classes.paramTableRoot}
                 aria-label="Process IO Preview"
             >
                 <TableHead>
                     <TableRow>
                         <TableCell>Name</TableCell>
-                        {showLabel && <TableCell className={classes.labelColumn}>Label</TableCell>}
+                        {showLabel && <TableCell>Label</TableCell>}
                         <TableCell>{valueLabel}</TableCell>
                         <TableCell>Collection</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {data.map((param: ProcessIOParameter) => {
-                        const firstVal = param.value.length > 0 ? param.value[0] : undefined;
-                        const rest = param.value.slice(1);
-                        const mainRowClasses = {
-                            [classes.noBorderRow]: rest.length > 0,
-                            [classes.primaryRow]: true
-                        };
-
-                        return (
-                            <React.Fragment key={param.id}>
-                                <TableRow
-                                    className={classNames(mainRowClasses)}
-                                    data-cy="process-io-param"
-                                >
-                                    <TableCell>{param.id}</TableCell>
-                                    {showLabel && <TableCell>{param.label}</TableCell>}
-                                    <TableCell>
-                                        {firstVal && (
-                                            <ProcessValuePreview
-                                                value={firstVal}
-                                                showImagePreview={showImagePreview}
-                                            />
-                                        )}
-                                    </TableCell>
-                                    <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
-                                        <Typography className={classes.paramValue}>{firstVal?.collection}</Typography>
-                                    </TableCell>
-                                </TableRow>
-                                {rest.map((val, i) => {
-                                    const rowClasses = {
-                                        [classes.noBorderRow]: i < rest.length - 1,
-                                        [classes.secondaryRow]: val.secondary,
-                                        [classes.primaryRow]: !val.secondary,
-                                    };
-                                    return (
-                                        <TableRow
-                                            className={classNames(rowClasses)}
-                                            key={i}
-                                        >
-                                            <TableCell />
-                                            {showLabel && <TableCell />}
-                                            <TableCell>
-                                                <ProcessValuePreview
-                                                    value={val}
-                                                    showImagePreview={showImagePreview}
-                                                />
-                                            </TableCell>
-                                            <TableCell className={firstVal?.imageUrl ? classes.rowWithPreview : undefined}>
-                                                <Typography className={classes.paramValue}>{val.collection}</Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </React.Fragment>
-                        );
-                    })}
+                    <AutoSizer>
+                        {({ height, width }) =>
+                            <FixedSizeList
+                                height={height}
+                                itemCount={data.length}
+                                itemSize={40}
+                                width={width}
+                            >
+                                {RenderRow}
+                            </FixedSizeList>
+                        }
+                    </AutoSizer>
                 </TableBody>
             </Table>
         );
@@ -621,22 +647,11 @@ const ProcessIOPreview = memo(
 
 interface ProcessValuePreviewProps {
     value: ProcessIOValue;
-    showImagePreview: boolean;
 }
 
-const ProcessValuePreview = withStyles(styles)(({ value, showImagePreview, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
-    <Typography className={classes.paramValue}>
-        {value.imageUrl && showImagePreview ? (
-            <img
-                className={classes.imagePreview}
-                src={value.imageUrl}
-                alt="Inline Preview"
-            />
-        ) : (
-            ""
-        )}
-        {value.imageUrl && !showImagePreview ? <ImagePlaceholder /> : ""}
-        <span className={classNames(classes.valArray, value.secondary && classes.secondaryVal)}>{value.display}</span>
+const ProcessValuePreview = withStyles(styles)(({ value, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
+    <Typography className={classNames(classes.paramTableCellText, value.secondary && classes.secondaryVal)}>
+        {value.display}
     </Typography>
 ));
 
@@ -645,9 +660,9 @@ interface ProcessIORawDataProps {
 }
 
 const ProcessIORaw = withStyles(styles)(({ data }: ProcessIORawDataProps) => (
-    <Paper elevation={0}>
-        <DefaultCodeSnippet
-            lines={[JSON.stringify(data, null, 2)]}
+    <Paper elevation={0} style={{minWidth: "100%", height: "100%"}}>
+        <DefaultVirtualCodeSnippet
+            lines={JSON.stringify(data, null, 2).split('\n')}
             linked
         />
     </Paper>
@@ -664,7 +679,7 @@ const ProcessInputMounts = withStyles(styles)(
         auth: state.auth,
     }))(({ mounts, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
         <Table
-            className={classes.tableRoot}
+            className={classes.mountsTableRoot}
             aria-label="Process Input Mounts"
         >
             <TableHead>
@@ -703,7 +718,7 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
             const boolValue = (input as BooleanCommandInputParameter).value;
             return boolValue !== undefined && !(Array.isArray(boolValue) && boolValue.length === 0)
-                ? [{ display: renderPrimitiveValue(boolValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={boolValue}>{renderPrimitiveValue(boolValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.INT):
@@ -712,20 +727,20 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
             return intValue !== undefined &&
                 // Missing values are empty array
                 !(Array.isArray(intValue) && intValue.length === 0)
-                ? [{ display: renderPrimitiveValue(intValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={intValue}>{renderPrimitiveValue(intValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.FLOAT):
         case isPrimitiveOfType(input, CWLType.DOUBLE):
             const floatValue = (input as FloatCommandInputParameter).value;
             return floatValue !== undefined && !(Array.isArray(floatValue) && floatValue.length === 0)
-                ? [{ display: renderPrimitiveValue(floatValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={floatValue}>{renderPrimitiveValue(floatValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.STRING):
             const stringValue = (input as StringCommandInputParameter).value || undefined;
             return stringValue !== undefined && !(Array.isArray(stringValue) && stringValue.length === 0)
-                ? [{ display: renderPrimitiveValue(stringValue, false) }]
+                ? [{ display: <PrimitiveTooltip data={stringValue}>{renderPrimitiveValue(stringValue, false)}</PrimitiveTooltip> }]
                 : [{ display: <EmptyValue /> }];
 
         case isPrimitiveOfType(input, CWLType.FILE):
@@ -746,21 +761,21 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
         case getEnumType(input) !== null:
             const enumValue = (input as EnumCommandInputParameter).value;
-            return enumValue !== undefined && enumValue ? [{ display: <pre>{enumValue}</pre> }] : [{ display: <EmptyValue /> }];
+            return enumValue !== undefined && enumValue ? [{ display: <PrimitiveTooltip data={enumValue}>{enumValue}</PrimitiveTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.STRING):
             const strArray = (input as StringArrayCommandInputParameter).value || [];
-            return strArray.length ? [{ display: <>{strArray.map(val => renderPrimitiveValue(val, true))}</> }] : [{ display: <EmptyValue /> }];
+            return strArray.length ? [{ display: <PrimitiveArrayTooltip data={strArray}>{strArray.map(val => renderPrimitiveValue(val, true))}</PrimitiveArrayTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.INT):
         case isArrayOfType(input, CWLType.LONG):
             const intArray = (input as IntArrayCommandInputParameter).value || [];
-            return intArray.length ? [{ display: <>{intArray.map(val => renderPrimitiveValue(val, true))}</> }] : [{ display: <EmptyValue /> }];
+            return intArray.length ? [{ display: <PrimitiveArrayTooltip data={intArray}>{intArray.map(val => renderPrimitiveValue(val, true))}</PrimitiveArrayTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.FLOAT):
         case isArrayOfType(input, CWLType.DOUBLE):
             const floatArray = (input as FloatArrayCommandInputParameter).value || [];
-            return floatArray.length ? [{ display: <>{floatArray.map(val => renderPrimitiveValue(val, true))}</> }] : [{ display: <EmptyValue /> }];
+            return floatArray.length ? [{ display: <PrimitiveArrayTooltip data={floatArray}>{floatArray.map(val => renderPrimitiveValue(val, true))}</PrimitiveArrayTooltip> }] : [{ display: <EmptyValue /> }];
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFiles = (input as FileArrayCommandInputParameter).value || [];
@@ -788,6 +803,27 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
     }
 };
 
+interface PrimitiveTooltipProps {
+    data: boolean | number | string;
+}
+
+const PrimitiveTooltip = (props: React.PropsWithChildren<PrimitiveTooltipProps>) => (
+    <Tooltip title={typeof props.data !== 'object' ? String(props.data) : ""}>
+        <pre>{props.children}</pre>
+    </Tooltip>
+);
+
+interface PrimitiveArrayTooltipProps {
+    data: string[];
+}
+
+const PrimitiveArrayTooltip = (props: React.PropsWithChildren<PrimitiveArrayTooltipProps>) => (
+    <Tooltip title={props.data.join(', ')}>
+        <span>{props.children}</span>
+    </Tooltip>
+);
+
+
 const renderPrimitiveValue = (value: any, asChip: boolean) => {
     const isObject = typeof value === "object";
     if (!isObject) {
@@ -795,9 +831,10 @@ const renderPrimitiveValue = (value: any, asChip: boolean) => {
             <Chip
                 key={value}
                 label={String(value)}
+                style={{marginRight: "10px"}}
             />
         ) : (
-            <pre key={value}>{String(value)}</pre>
+            <>{String(value)}</>
         );
     } else {
         return asChip ? <UnsupportedValueChip /> : <UnsupportedValue />;
@@ -829,7 +866,7 @@ const KeepUrlBase = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
     // Passing a pdh always returns a relative wb2 collection url
     const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ? (
-        <Tooltip title={"View collection in Workbench"}>
+        <Tooltip title={<>View collection in Workbench<br />{pdhUrl}</>}>
             <RouterLink
                 to={pdhWbPath}
                 className={classes.keepLink}
@@ -849,7 +886,7 @@ const KeepUrlPath = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
 
     const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
     return keepUrlPathNav ? (
-        <Tooltip title={"View in keep-web"}>
+        <Tooltip classes={{tooltip: classes.wrapTooltip}} title={<>View in keep-web<br />{keepUrlPath || "/"}</>}>
             <a
                 className={classes.keepLink}
                 href={keepUrlPathNav}
@@ -923,6 +960,16 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
     };
 };
 
+type MuiLinkWithTooltipProps = WithStyles<CssRules> & React.PropsWithChildren<LinkProps>;
+
+const MuiLinkWithTooltip = withStyles(styles)((props: MuiLinkWithTooltipProps) => (
+    <Tooltip title={props.title} classes={{tooltip: props.classes.wrapTooltip}}>
+        <MuiLink {...props}>
+            {props.children}
+        </MuiLink>
+    </Tooltip>
+));
+
 const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh: string | undefined, mainFilePdh: string): ProcessIOValue => {
     if (isExternalValue(file)) {
         return { display: <UnsupportedValue /> };
@@ -931,12 +978,14 @@ const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, p
     if (isFileUrl(file.location)) {
         return {
             display: (
-                <MuiLink
+                <MuiLinkWithTooltip
                     href={file.location}
                     target="_blank"
+                    rel="noopener"
+                    title={file.location}
                 >
                     {file.location}
-                </MuiLink>
+                </MuiLinkWithTooltip>
             ),
             secondary,
         };
@@ -977,10 +1026,4 @@ const UnsupportedValueChip = withStyles(styles)(({ classes }: WithStyles<CssRule
         icon={<InfoIcon />}
         label={"Cannot display value"}
     />
-));
-
-const ImagePlaceholder = withStyles(styles)(({ classes }: WithStyles<CssRules>) => (
-    <span className={classes.imagePlaceholder}>
-        <ImageIcon />
-    </span>
 ));

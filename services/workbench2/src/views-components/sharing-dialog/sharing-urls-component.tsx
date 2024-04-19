@@ -72,13 +72,13 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
 
                 return <Grid container alignItems='center' key={token.uuid} className={props.classes.sharingUrlRow}>
                     <Grid item>
-                        <Link className={props.classes.sharingUrlText} href={url} target='_blank'>
+                        <Link className={props.classes.sharingUrlText} href={url} target='_blank' rel="noopener">
                             {urlLabel}
                         </Link>
                     </Grid>
                     <Grid item xs />
                     <Grid item>
-                        <span className={props.classes.sharingUrlButton}><Tooltip title='Copy to clipboard'>
+                        <span className={props.classes.sharingUrlButton}><Tooltip title='Copy link to clipboard'>
                             <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
                                 <CopyIcon />
                             </CopyToClipboard>

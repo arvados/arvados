@@ -124,7 +124,7 @@ export const DetailsAttributeComponent = withStyles(styles)(
                 className={classnames([props.classes.value, props.classValue, { [props.classes.lowercaseValue]: props.lowercaseValue }])}>
                 {props.value}
                 {props.children}
-                {(props.linkToUuid || props.copyValue) && props.onCopy && <Tooltip title="Copy to clipboard">
+                {(props.linkToUuid || props.copyValue) && props.onCopy && <Tooltip title="Copy link to clipboard">
                     <span className={props.classes.copyIcon}>
                         <CopyToClipboard text={props.linkToUuid || props.copyValue || ""} onCopy={() => props.onCopy!("Copied")}>
                             <CopyIcon />

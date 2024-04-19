@@ -110,7 +110,7 @@ unset ARVADOS_API_HOST_INSECURE`
                     The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions.
                     <Typography component='span'>
                         For more information see
-                        <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>
+                        <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' rel="noopener" className={classes.link}>
                             Getting an API token.
                         </a>
                     </Typography>
@@ -119,7 +119,7 @@ unset ARVADOS_API_HOST_INSECURE`
                 <DetailsAttributeComponent label='API Host' value={data.apiHost} copyValue={data.apiHost} onCopy={this.onCopy} />
                 <DetailsAttributeComponent label='API Token' value={data.token} copyValue={data.token} onCopy={this.onCopy} />
                 <DetailsAttributeComponent label='Token expiration' value={tokenExpiration} />
-                { this.props.canCreateNewTokens && <Button
+                {this.props.canCreateNewTokens && <Button
                     onClick={() => this.onGetNewToken()}
                     color="primary"
                     size="small"
@@ -127,7 +127,7 @@ unset ARVADOS_API_HOST_INSECURE`
                     className={classes.actionButton}
                 >
                     GET NEW TOKEN
-                </Button> }
+                </Button>}
 
                 <Typography paragraph={true}>
                     Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
@@ -140,12 +140,12 @@ unset ARVADOS_API_HOST_INSECURE`
                         variant="contained"
                         className={classes.actionButton}
                     >
-                        COPY TO CLIPBOARD
+                        Copy link to clipBOARD
                     </Button>
                 </CopyToClipboard>
                 <Typography>
                     Arvados
-                            <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>
+                    <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' rel="noopener" className={classes.link}>virtual machines</a>
                     do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).
                 </Typography>
             </DialogContent>
@@ -160,4 +160,3 @@ export const TokenDialog =
     withStyles(styles)(
         connect(getTokenDialogData)(
             withDialog(TOKEN_DIALOG_NAME)(TokenDialogComponent)));
-

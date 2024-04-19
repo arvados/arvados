@@ -20,7 +20,7 @@ import classNames from 'classnames';
 import { FederationConfig, getNavUrl } from 'routes/routes';
 import { RootState } from 'store/store';
 
-type CssRules = 'root' | 'wordWrap' | 'logText';
+type CssRules = 'root' | 'wordWrapOn' | 'wordWrapOff' | 'logText';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -33,10 +33,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
     },
     logText: {
-        padding: `0 ${theme.spacing.unit*0.5}px`,
+        padding: `0 ${theme.spacing.unit * 0.5}px`,
     },
-    wordWrap: {
-        whiteSpace: 'pre-wrap',
+    wordWrapOn: {
+        overflowWrap: 'anywhere',
+    },
+    wordWrapOff: {
+        whiteSpace: 'nowrap',
     },
 });
 
@@ -73,21 +76,21 @@ const renderLinks = (fontSize: number, auth: FederationConfig, dispatch: Dispatc
     }
     return <Typography style={{ fontSize: fontSize }}>
         {text.split(REGEX).map((part, index) =>
-        <React.Fragment key={index}>
-            {part}
-            {links[index] &&
-            <Link onClick={() => {
-                const url = getNavUrl(links[index], auth)
-                if (url) {
-                    window.open(`${window.location.origin}${url}`, '_blank');
-                } else {
-                    dispatch(navigationNotAvailable(links[index]));
-                }
-            }}
-                style={ {cursor: 'pointer'} }>
-                {links[index]}
-            </Link>}
-        </React.Fragment>
+            <React.Fragment key={index}>
+                {part}
+                {links[index] &&
+                    <Link onClick={() => {
+                        const url = getNavUrl(links[index], auth)
+                        if (url) {
+                            window.open(`${window.location.origin}${url}`, '_blank', "noopener");
+                        } else {
+                            dispatch(navigationNotAvailable(links[index]));
+                        }
+                    }}
+                        style={{ cursor: 'pointer' }}>
+                        {links[index]}
+                    </Link>}
+            </React.Fragment>
         )}
     </Typography>;
 };
@@ -97,7 +100,7 @@ const mapStateToProps = (state: RootState): ProcessLogCodeSnippetAuthProps => ({
 });
 
 export const ProcessLogCodeSnippet = withStyles(styles)(connect(mapStateToProps)(
-    ({classes, lines, fontSize, auth, dispatch, wordWrap}: ProcessLogCodeSnippetProps & WithStyles<CssRules> & ProcessLogCodeSnippetAuthProps & DispatchProp) => {
+    ({ classes, lines, fontSize, auth, dispatch, wordWrap }: ProcessLogCodeSnippetProps & WithStyles<CssRules> & ProcessLogCodeSnippetAuthProps & DispatchProp) => {
         const [followMode, setFollowMode] = useState<boolean>(true);
         const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -112,18 +115,18 @@ export const ProcessLogCodeSnippet = withStyles(styles)(connect(mapStateToProps)
             <div ref={scrollRef} className={classes.root}
                 onScroll={(e) => {
                     const elem = e.target as HTMLDivElement;
-                    if (elem.scrollTop + (elem.clientHeight*1.1) >= elem.scrollHeight) {
+                    if (elem.scrollTop + (elem.clientHeight * 1.1) >= elem.scrollHeight) {
                         setFollowMode(true);
                     } else {
                         setFollowMode(false);
                     }
                 }}>
-                { lines.map((line: string, index: number) =>
-                <Typography key={index} component="pre"
-                    className={classNames(classes.logText, wordWrap ? classes.wordWrap : undefined)}>
-                    {renderLinks(fontSize, auth, dispatch)(line)}
-                </Typography>
-                ) }
+                {lines.map((line: string, index: number) =>
+                    <Typography key={index} component="span"
+                        className={classNames(classes.logText, wordWrap ? classes.wordWrapOn : classes.wordWrapOff)}>
+                        {renderLinks(fontSize, auth, dispatch)(line)}
+                    </Typography>
+                )}
             </div>
         </MuiThemeProvider>
     }));

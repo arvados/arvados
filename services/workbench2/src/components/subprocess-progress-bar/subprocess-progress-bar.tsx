@@ -12,7 +12,7 @@ import { Dispatch } from "redux";
 import { fetchSubprocessProgress } from "store/subprocess-panel/subprocess-panel-actions";
 import { ProcessStatusFilter } from "store/resource-type-filters/resource-type-filters";
 
-type CssRules = 'progressWrapper' | 'progressStacked' ;
+type CssRules = 'progressWrapper' | 'progressStacked';
 
 const styles: StyleRulesCallback<CssRules> = (theme) => ({
     progressWrapper: {
@@ -55,9 +55,9 @@ const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
 });
 
 export const SubprocessProgressBar = connect(null, mapDispatchToProps)(withStyles(styles)(
-    ({process, classes, fetchSubprocessProgress}: ProgressBarProps) => {
+    ({ process, classes, fetchSubprocessProgress }: ProgressBarProps) => {
 
-        const [progressData, setProgressData] = useState<ProgressBarData|undefined>(undefined);
+        const [progressData, setProgressData] = useState<ProgressBarData | undefined>(undefined);
         const requestingContainerUuid = process.containerRequest.containerUuid;
         const isRunning = isProcessRunning(process);
 
@@ -72,25 +72,38 @@ export const SubprocessProgressBar = connect(null, mapDispatchToProps)(withStyle
             }
         }, [fetchSubprocessProgress, isRunning, requestingContainerUuid]);
 
+        let tooltip = "";
+        if (progressData) {
+            let total = 0;
+            [ProcessStatusFilter.COMPLETED,
+            ProcessStatusFilter.RUNNING,
+            ProcessStatusFilter.FAILED,
+            ProcessStatusFilter.QUEUED].forEach(psf => {
+                if (progressData[psf] > 0) {
+                    if (tooltip.length > 0) { tooltip += ", "; }
+                    tooltip += `${progressData[psf]} ${psf}`;
+                    total += progressData[psf];
+                }
+            });
+            if (total > 0) {
+                if (tooltip.length > 0) { tooltip += ", "; }
+                tooltip += `${total} Total`;
+            }
+        }
+
         return progressData !== undefined && getStatusTotal(progressData) > 0 ? <div className={classes.progressWrapper}>
-            <CProgressStacked className={classes.progressStacked}>
-                <Tooltip title={`${progressData[ProcessStatusFilter.COMPLETED]} Completed`}>
+            <Tooltip title={tooltip}>
+                <CProgressStacked className={classes.progressStacked}>
                     <CProgress height={10} color="success"
                         value={getStatusPercent(progressData, ProcessStatusFilter.COMPLETED)} />
-                </Tooltip>
-                <Tooltip title={`${progressData[ProcessStatusFilter.RUNNING]} Running`}>
                     <CProgress height={10} color="success" variant="striped"
                         value={getStatusPercent(progressData, ProcessStatusFilter.RUNNING)} />
-                </Tooltip>
-                <Tooltip title={`${progressData[ProcessStatusFilter.FAILED]} Failed`}>
                     <CProgress height={10} color="danger"
                         value={getStatusPercent(progressData, ProcessStatusFilter.FAILED)} />
-                </Tooltip>
-                <Tooltip title={`${progressData[ProcessStatusFilter.QUEUED]} Queued`}>
                     <CProgress height={10} color="secondary" variant="striped"
                         value={getStatusPercent(progressData, ProcessStatusFilter.QUEUED)} />
-                </Tooltip>
-            </CProgressStacked>
+                </CProgressStacked>
+            </Tooltip>
         </div> : <></>;
     }
 ));

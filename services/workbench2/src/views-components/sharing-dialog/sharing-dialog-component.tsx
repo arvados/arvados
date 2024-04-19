@@ -90,7 +90,7 @@ export default (props: SharingDialogComponentProps) => {
         fullWidth
         maxWidth='sm'
         disableBackdropClick={saveEnabled}
-        disableEscapeKeyDown={saveEnabled}>
+        >
         <DialogTitle>
             Sharing settings
         </DialogTitle>
@@ -111,7 +111,7 @@ export default (props: SharingDialogComponentProps) => {
             {tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid container direction='column' spacing={24}>
                     <Grid item>
-                        <SharingInvitationForm onSave={onSave} saveEnabled={saveEnabled} />
+                        <SharingInvitationForm onSave={onSave} />
                     </Grid>
                     <Grid item>
                         <SharingManagementForm onSave={onSave} />
@@ -182,8 +182,25 @@ export default (props: SharingDialogComponentProps) => {
                     <Button onClick={() => {
                         onClose();
                         setWithExpiration(false);
-                    }}>
-                        Close
+                        }}
+                        disabled={saveEnabled}
+                        color='primary'
+                        size='small'
+                        style={{ marginLeft: '10px' }}
+                        >
+                            Close
+                    </Button>
+                    <Button onClick={() => {
+                            onSave();
+                        }}
+                        data-cy="add-invited-people"
+                        disabled={!saveEnabled}
+                        color='primary'
+                        variant='contained'
+                        size='small'
+                        style={{ marginLeft: '10px' }}
+                        >
+                            Save
                     </Button>
                 </Grid>
             </Grid>

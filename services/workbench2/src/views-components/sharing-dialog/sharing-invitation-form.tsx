@@ -14,7 +14,6 @@ interface InvitationFormData {
 
 interface SaveProps {
     onSave: () => void;
-    saveEnabled: boolean;
 }
 
 export const SharingInvitationForm =

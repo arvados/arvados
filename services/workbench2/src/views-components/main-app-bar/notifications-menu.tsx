@@ -40,7 +40,7 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
 
     if (!isOpen && bannerResult) {
         menuItems.push(
-            <MenuItem onClick={openBanner}>
+            <MenuItem onClick={openBanner} data-cy="restore-banner-li">
                 <span>Restore Banner</span>
             </MenuItem>
         );
@@ -57,13 +57,13 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
 
     if (tooltipResult) {
         menuItems.push(
-            <MenuItem onClick={toggleTooltips}>
+            <MenuItem onClick={toggleTooltips} data-cy="enable-tooltip-toggle">
                 <span>Enable tooltips</span>
             </MenuItem>
         );
     } else {
         menuItems.push(
-            <MenuItem onClick={toggleTooltips}>
+            <MenuItem onClick={toggleTooltips} data-cy="disable-tooltip-toggle">
                 <span>Disable tooltips</span>
             </MenuItem>
         );

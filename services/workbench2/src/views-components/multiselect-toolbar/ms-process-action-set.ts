@@ -2,18 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MoveToIcon, RemoveIcon, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon } from "components/icon/icon";
-import { openMoveProcessDialog } from "store/processes/process-move-actions";
+import { RemoveIcon, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon } from "components/icon/icon";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from "./ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
 import { msNavigateToOutput } from "store/multiselect/multiselect-actions";
 import { cancelRunningWorkflow } from "store/processes/processes-actions";
 
 const msCopyAndRerunProcess: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.COPY_AND_RERUN_PROCESS,
+    name: ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
     icon: ReRunProcessIcon,
     hasAlts: false,
     isForMulti: false,
@@ -25,7 +24,7 @@ const msCopyAndRerunProcess: MultiSelectMenuAction = {
 }
 
 const msRemoveProcess: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.REMOVE,
+    name: ContextMenuActionNames.REMOVE,
     icon: RemoveIcon,
     hasAlts: false,
     isForMulti: true,
@@ -34,18 +33,19 @@ const msRemoveProcess: MultiSelectMenuAction = {
     },
 }
 
-const msMoveTo: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.MOVE_TO,
-    icon: MoveToIcon,
-    hasAlts: false,
-    isForMulti: true,
-    execute: (dispatch, resources) => {
-        dispatch<any>(openMoveProcessDialog(resources[0]));
-    },
-}
+// removed until auto-move children is implemented
+// const msMoveTo: MultiSelectMenuAction = {
+//     name: ContextMenuActionNames.MOVE_TO,
+//     icon: MoveToIcon,
+//     hasAlts: false,
+//     isForMulti: true,
+//     execute: (dispatch, resources) => {
+//         dispatch<any>(openMoveProcessDialog(resources[0]));
+//     },
+// }
 
 const msViewOutputs: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.OUTPUTS,
+    name: ContextMenuActionNames.OUTPUTS,
     icon: OutputIcon,
     hasAlts: false,
     isForMulti: false,
@@ -57,7 +57,7 @@ const msViewOutputs: MultiSelectMenuAction = {
 }
 
 const msEditProcess: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.EDIT_PROCESS,
+    name: ContextMenuActionNames.EDIT_PROCESS,
     icon: RenameIcon,
     hasAlts: false,
     isForMulti: false,
@@ -67,7 +67,7 @@ const msEditProcess: MultiSelectMenuAction = {
 }
 
 const msCancelProcess: MultiSelectMenuAction = {
-    name: MultiSelectMenuActionNames.CANCEL,
+    name: ContextMenuActionNames.CANCEL,
     icon: StopIcon,
     hasAlts: false,
     isForMulti: false,
@@ -81,18 +81,18 @@ export const msProcessActionSet: MultiSelectMenuActionSet = [
         ...msCommonActionSet,
         msCopyAndRerunProcess,
         msRemoveProcess,
-        msMoveTo,
+        // msMoveTo,
         msViewOutputs,
         msEditProcess,
         msCancelProcess
     ]
 ];
 
-const { MOVE_TO, REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, ADD_TO_PUBLIC_FAVORITES, OUTPUTS, EDIT_PROCESS, CANCEL } = MultiSelectMenuActionNames
+const {REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, ADD_TO_PUBLIC_FAVORITES, OUTPUTS, EDIT_PROCESS, CANCEL } = ContextMenuActionNames
 
-export const msCommonProcessActionFilter = new Set([MOVE_TO, REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, OUTPUTS, EDIT_PROCESS ]);
-export const msRunningProcessActionFilter = new Set([MOVE_TO, REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, OUTPUTS, EDIT_PROCESS, CANCEL ]);
+export const msCommonProcessActionFilter = new Set([REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, OUTPUTS, EDIT_PROCESS ]);
+export const msRunningProcessActionFilter = new Set([REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, OUTPUTS, EDIT_PROCESS, CANCEL ]);
 
 export const msReadOnlyProcessActionFilter = new Set([COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, OUTPUTS ]);
-export const msAdminProcessActionFilter = new Set([MOVE_TO, REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, ADD_TO_PUBLIC_FAVORITES, OUTPUTS, EDIT_PROCESS ]);
+export const msAdminProcessActionFilter = new Set([REMOVE, COPY_AND_RERUN_PROCESS, ADD_TO_FAVORITES, OPEN_IN_NEW_TAB, VIEW_DETAILS, API_DETAILS, SHARE, ADD_TO_PUBLIC_FAVORITES, OUTPUTS, EDIT_PROCESS ]);
 

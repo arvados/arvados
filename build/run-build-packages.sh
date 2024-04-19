@@ -278,26 +278,16 @@ package_go_so lib/pam pam_arvados.so libpam-arvados-go "$FORMAT" "$ARCH" \
 # Python packages
 debug_echo -e "\nPython packages\n"
 
-# The Python SDK - Python3 package
+# Before a Python package can be built, its dependencies must already be built.
+# This list is ordered accordingly.
+setup_build_virtualenv
+fpm_build_virtualenv cwltest "==2.3.20230108193615" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-python-client" "sdk/python" "$FORMAT" "$ARCH"
-
-# Arvados cwl runner - Python3 package
-fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"
-
-# The FUSE driver - Python3 package
-fpm_build_virtualenv "arvados-fuse" "services/fuse" "$FORMAT" "$ARCH"
-
-# The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "$FORMAT" "$ARCH"
-
-# The Docker image cleaner
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "$FORMAT" "$ARCH"
-
-# The Arvados user activity tool
+fpm_build_virtualenv "arvados-fuse" "services/fuse" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "$FORMAT" "$ARCH"
-
-# The cwltest package, which lives out of tree
-handle_cwltest "$FORMAT" "$ARCH"
 
 # Workbench2
 package_workbench2

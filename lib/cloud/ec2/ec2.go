@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -251,6 +252,12 @@ func (instanceSet *ec2InstanceSet) Create(
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
+		MetadataOptions: &ec2.InstanceMetadataOptionsRequest{
+			// Require IMDSv2, as described at
+			// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-IMDS-new-instances.html
+			HttpEndpoint: aws.String(ec2.InstanceMetadataEndpointStateEnabled),
+			HttpTokens:   aws.String(ec2.HttpTokensStateRequired),
+		},
 		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
 	}
 
@@ -707,6 +714,8 @@ func isErrorQuota(err error) bool {
 	return false
 }
 
+var reSubnetSpecificInvalidParameterMessage = regexp.MustCompile(`(?ms).*( subnet |sufficient free [Ii]pv[46] addresses).*`)
+
 // isErrorSubnetSpecific returns true if the problem encountered by
 // RunInstances might be avoided by trying a different subnet.
 func isErrorSubnetSpecific(err error) bool {
@@ -718,7 +727,12 @@ func isErrorSubnetSpecific(err error) bool {
 	return strings.Contains(code, "Subnet") ||
 		code == "InsufficientInstanceCapacity" ||
 		code == "InsufficientVolumeCapacity" ||
-		code == "Unsupported"
+		code == "Unsupported" ||
+		// See TestIsErrorSubnetSpecific for examples of why
+		// we look for substrings in code/message instead of
+		// only using specific codes here.
+		(strings.Contains(code, "InvalidParameter") &&
+			reSubnetSpecificInvalidParameterMessage.MatchString(aerr.Message()))
 }
 
 // isErrorCapacity returns true if the error indicates lack of

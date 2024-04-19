@@ -11,6 +11,7 @@ from builtins import range
 from builtins import object
 import hashlib
 import mock
+from mock import patch
 import os
 import errno
 import pycurl
@@ -24,6 +25,7 @@ import tempfile
 import time
 import unittest
 import urllib.parse
+import mmap
 
 import parameterized
 
@@ -167,30 +169,30 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers, DiskCacheBase)
                          b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-        # GET with an unsigned locator => NotFound
+        # GET with an unsigned locator => bad request
         bar_locator = keep_client.put('bar')
         unsigned_bar_locator = "37b51d194a7513e45b56f6524f2d51f2+3"
         self.assertRegex(
             bar_locator,
             r'^37b51d194a7513e45b56f6524f2d51f2\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("bar"): ' + bar_locator)
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           keep_client.get,
                           unsigned_bar_locator)
 
-        # GET from a different user => NotFound
+        # GET from a different user => bad request
         run_test_server.authorize_with('spectator')
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           arvados.Keep.get,
                           bar_locator)
 
-        # Unauthenticated GET for a signed locator => NotFound
-        # Unauthenticated GET for an unsigned locator => NotFound
+        # Unauthenticated GET for a signed locator => bad request
+        # Unauthenticated GET for an unsigned locator => bad request
         keep_client.api_token = ''
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           keep_client.get,
                           bar_locator)
-        self.assertRaises(arvados.errors.NotFoundError,
+        self.assertRaises(arvados.errors.KeepReadError,
                           keep_client.get,
                           unsigned_bar_locator)
 
@@ -625,122 +627,6 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
 
 
 
-@tutil.skip_sleep
-@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
-class KeepStorageClassesTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheBase):
-    disk_cache = False
-
-    def setUp(self):
-        self.api_client = self.mock_keep_services(count=2)
-        self.keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=self.make_block_cache(self.disk_cache))
-        self.data = b'xyzzy'
-        self.locator = '1271ed5ef305aadabc605b1609e24c52'
-
-    def tearDown(self):
-        DiskCacheBase.tearDown(self)
-
-    def test_multiple_default_storage_classes_req_header(self):
-        api_mock = self.api_client_mock()
-        api_mock.config.return_value = {
-            'StorageClasses': {
-                'foo': { 'Default': True },
-                'bar': { 'Default': True },
-                'baz': { 'Default': False }
-            }
-        }
-        api_client = self.mock_keep_services(api_mock=api_mock, count=2)
-        keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
-        resp_hdr = {
-            'x-keep-storage-classes-confirmed': 'foo=1, bar=1',
-            'x-keep-replicas-stored': 1
-        }
-        with tutil.mock_keep_responses(self.locator, 200, **resp_hdr) as mock:
-            keep_client.put(self.data, copies=1)
-            req_hdr = mock.responses[0]
-            self.assertIn(
-                'X-Keep-Storage-Classes: bar, foo', req_hdr.getopt(pycurl.HTTPHEADER))
-
-    def test_storage_classes_req_header(self):
-        self.assertEqual(
-            self.api_client.config()['StorageClasses'],
-            {'default': {'Default': True}})
-        cases = [
-            # requested, expected
-            [['foo'], 'X-Keep-Storage-Classes: foo'],
-            [['bar', 'foo'], 'X-Keep-Storage-Classes: bar, foo'],
-            [[], 'X-Keep-Storage-Classes: default'],
-            [None, 'X-Keep-Storage-Classes: default'],
-        ]
-        for req_classes, expected_header in cases:
-            headers = {'x-keep-replicas-stored': 1}
-            if req_classes is None or len(req_classes) == 0:
-                confirmed_hdr = 'default=1'
-            elif len(req_classes) > 0:
-                confirmed_hdr = ', '.join(["{}=1".format(cls) for cls in req_classes])
-            headers.update({'x-keep-storage-classes-confirmed': confirmed_hdr})
-            with tutil.mock_keep_responses(self.locator, 200, **headers) as mock:
-                self.keep_client.put(self.data, copies=1, classes=req_classes)
-                req_hdr = mock.responses[0]
-                self.assertIn(expected_header, req_hdr.getopt(pycurl.HTTPHEADER))
-
-    def test_partial_storage_classes_put(self):
-        headers = {
-            'x-keep-replicas-stored': 1,
-            'x-keep-storage-classes-confirmed': 'foo=1'}
-        with tutil.mock_keep_responses(self.locator, 200, 503, **headers) as mock:
-            with self.assertRaises(arvados.errors.KeepWriteError):
-                self.keep_client.put(self.data, copies=1, classes=['foo', 'bar'], num_retries=0)
-            # 1st request, both classes pending
-            req1_headers = mock.responses[0].getopt(pycurl.HTTPHEADER)
-            self.assertIn('X-Keep-Storage-Classes: bar, foo', req1_headers)
-            # 2nd try, 'foo' class already satisfied
-            req2_headers = mock.responses[1].getopt(pycurl.HTTPHEADER)
-            self.assertIn('X-Keep-Storage-Classes: bar', req2_headers)
-
-    def test_successful_storage_classes_put_requests(self):
-        cases = [
-            # wanted_copies, wanted_classes, confirmed_copies, confirmed_classes, expected_requests
-            [ 1, ['foo'], 1, 'foo=1', 1],
-            [ 1, ['foo'], 2, 'foo=2', 1],
-            [ 2, ['foo'], 2, 'foo=2', 1],
-            [ 2, ['foo'], 1, 'foo=1', 2],
-            [ 1, ['foo', 'bar'], 1, 'foo=1, bar=1', 1],
-            [ 1, ['foo', 'bar'], 2, 'foo=2, bar=2', 1],
-            [ 2, ['foo', 'bar'], 2, 'foo=2, bar=2', 1],
-            [ 2, ['foo', 'bar'], 1, 'foo=1, bar=1', 2],
-            [ 1, ['foo', 'bar'], 1, None, 1],
-            [ 1, ['foo'], 1, None, 1],
-            [ 2, ['foo'], 2, None, 1],
-            [ 2, ['foo'], 1, None, 2],
-        ]
-        for w_copies, w_classes, c_copies, c_classes, e_reqs in cases:
-            headers = {'x-keep-replicas-stored': c_copies}
-            if c_classes is not None:
-                headers.update({'x-keep-storage-classes-confirmed': c_classes})
-            with tutil.mock_keep_responses(self.locator, 200, 200, **headers) as mock:
-                case_desc = 'wanted_copies={}, wanted_classes="{}", confirmed_copies={}, confirmed_classes="{}", expected_requests={}'.format(w_copies, ', '.join(w_classes), c_copies, c_classes, e_reqs)
-                self.assertEqual(self.locator,
-                    self.keep_client.put(self.data, copies=w_copies, classes=w_classes),
-                    case_desc)
-                self.assertEqual(e_reqs, mock.call_count, case_desc)
-
-    def test_failed_storage_classes_put_requests(self):
-        cases = [
-            # wanted_copies, wanted_classes, confirmed_copies, confirmed_classes, return_code
-            [ 1, ['foo'], 1, 'bar=1', 200],
-            [ 1, ['foo'], 1, None, 503],
-            [ 2, ['foo'], 1, 'bar=1, foo=0', 200],
-            [ 3, ['foo'], 1, 'bar=1, foo=1', 200],
-            [ 3, ['foo', 'bar'], 1, 'bar=2, foo=1', 200],
-        ]
-        for w_copies, w_classes, c_copies, c_classes, return_code in cases:
-            headers = {'x-keep-replicas-stored': c_copies}
-            if c_classes is not None:
-                headers.update({'x-keep-storage-classes-confirmed': c_classes})
-            with tutil.mock_keep_responses(self.locator, return_code, return_code, **headers):
-                case_desc = 'wanted_copies={}, wanted_classes="{}", confirmed_copies={}, confirmed_classes="{}"'.format(w_copies, ', '.join(w_classes), c_copies, c_classes)
-                with self.assertRaises(arvados.errors.KeepWriteError, msg=case_desc):
-                    self.keep_client.put(self.data, copies=w_copies, classes=w_classes, num_retries=0)
 
 @tutil.skip_sleep
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
@@ -1757,21 +1643,31 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
                 keep_client.get(self.locator)
 
 
-    @mock.patch('mmap.mmap')
-    def test_disk_cache_retry_write_error(self, mockmmap):
+    def test_disk_cache_retry_write_error(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
                                                   disk_cache_dir=self.disk_cache_dir)
 
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
-        mockmmap.side_effect = (OSError(errno.ENOSPC, "no space"), self.data)
+        called = False
+        realmmap = mmap.mmap
+        def sideeffect_mmap(*args, **kwargs):
+            nonlocal called
+            if not called:
+                called = True
+                raise OSError(errno.ENOSPC, "no space")
+            else:
+                return realmmap(*args, **kwargs)
 
-        cache_max_before = block_cache.cache_max
+        with patch('mmap.mmap') as mockmmap:
+            mockmmap.side_effect = sideeffect_mmap
 
-        with tutil.mock_keep_responses(self.data, 200) as mock:
-            self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+            cache_max_before = block_cache.cache_max
 
-        self.assertIsNotNone(keep_client.get_from_cache(self.locator))
+            with tutil.mock_keep_responses(self.data, 200) as mock:
+                self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+
+            self.assertIsNotNone(keep_client.get_from_cache(self.locator))
 
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "rb") as f:
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
@@ -1780,21 +1676,31 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(cache_max_before > block_cache.cache_max)
 
 
-    @mock.patch('mmap.mmap')
-    def test_disk_cache_retry_write_error2(self, mockmmap):
+    def test_disk_cache_retry_write_error2(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
                                                   disk_cache_dir=self.disk_cache_dir)
 
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
-        mockmmap.side_effect = (OSError(errno.ENOMEM, "no memory"), self.data)
+        called = False
+        realmmap = mmap.mmap
+        def sideeffect_mmap(*args, **kwargs):
+            nonlocal called
+            if not called:
+                called = True
+                raise OSError(errno.ENOMEM, "no memory")
+            else:
+                return realmmap(*args, **kwargs)
 
-        slots_before = block_cache._max_slots
+        with patch('mmap.mmap') as mockmmap:
+            mockmmap.side_effect = sideeffect_mmap
 
-        with tutil.mock_keep_responses(self.data, 200) as mock:
-            self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+            slots_before = block_cache._max_slots
 
-        self.assertIsNotNone(keep_client.get_from_cache(self.locator))
+            with tutil.mock_keep_responses(self.data, 200) as mock:
+                self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
+
+            self.assertIsNotNone(keep_client.get_from_cache(self.locator))
 
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "rb") as f:
             self.assertTrue(tutil.binary_compare(f.read(), self.data))

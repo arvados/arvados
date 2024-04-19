@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Chip } from "@material-ui/core";
+import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Chip, withTheme } from "@material-ui/core";
 import { FavoriteStar, PublicFavoriteStar } from "../favorite-star/favorite-star";
 import { Resource, ResourceKind, TrashableResource } from "models/resource";
 import {
@@ -21,6 +21,7 @@ import {
     ActiveIcon,
     SetupIcon,
     InactiveIcon,
+    ErrorIcon,
 } from "components/icon/icon";
 import { formatDate, formatFileSize, formatTime } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -64,6 +65,7 @@ export const toggleIsAdmin = (uuid: string) =>
         dispatch<any>(loadUsersPanel());
         return newActivity;
     };
+import { InlinePulser } from "components/loading/inline-pulser";
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
@@ -537,9 +539,9 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource ) => {
             onClick={() => {
                 item.kind === ResourceKind.GROUP && (item as GroupResource).groupClass === "role"
                     ? dispatch<any>(navigateToGroupDetails(item.uuid))
-                    : item.kind === ResourceKind.USER 
+                    : item.kind === ResourceKind.USER
                     ? dispatch<any>(navigateToUserProfile(item.uuid))
-                    : dispatch<any>(navigateTo(item.uuid)); 
+                    : dispatch<any>(navigateTo(item.uuid));
             }}
         >
             {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || "" : "")}:{" "}
@@ -912,7 +914,6 @@ const _resourceWithName = withStyles(
             <Typography
                 style={{ color: theme.palette.primary.main }}
                 inline
-                noWrap
             >
                 {uuid}
             </Typography>
@@ -923,7 +924,6 @@ const _resourceWithName = withStyles(
         <Typography
             style={{ color: theme.palette.primary.main }}
             inline
-            noWrap
         >
             {userFullname} ({uuid})
         </Typography>
@@ -1146,3 +1146,30 @@ export const ContainerRunTime = connect((state: RootState, props: { uuid: string
         }
     }
 );
+
+export const GroupMembersCount = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const group = getResource<GroupResource>(props.uuid)(state.resources);
+
+        return {
+            value: group?.memberCount,
+        };
+
+    }
+)(withTheme()((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
+    if (props.value === undefined) {
+        // Loading
+        return <Typography component={"div"}>
+            <InlinePulser />
+        </Typography>;
+    } else if (props.value === null) {
+        // Error
+        return <Typography>
+            <Tooltip title="Failed to load member count">
+                <ErrorIcon style={{color: props.theme.customs.colors.greyL}}/>
+            </Tooltip>
+        </Typography>;
+    } else {
+        return <Typography children={props.value} />;
+    }
+}));

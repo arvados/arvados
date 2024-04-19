@@ -44,7 +44,8 @@ export function setAuthorizationHeader(services: ServiceRepository, token: strin
 }
 
 export function removeAuthorizationHeader(services: ServiceRepository) {
-    delete services.apiClient.defaults.headers.common;
+    services.apiClient.defaults.headers.common = {};
+
     services.keepWebdavClient.setAuthorization(undefined);
     services.apiWebdavClient.setAuthorization(undefined);
 }
@@ -131,6 +132,8 @@ export const getResourceService = (kind?: ResourceKind) => (serviceRepository: S
             return serviceRepository.groupsService;
         case ResourceKind.COLLECTION:
             return serviceRepository.collectionService;
+        case ResourceKind.LINK:
+            return serviceRepository.linkService;
         default:
             return undefined;
     }

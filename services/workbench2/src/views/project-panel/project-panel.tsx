@@ -51,11 +51,10 @@ import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
-import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
 import { ProjectDetailsCard } from 'views-components/project-details-card/project-details-card';
 
-type CssRules = 'root' | 'button';
+type CssRules = 'root' | 'button' ;
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -247,6 +246,7 @@ interface ProjectPanelDataProps {
     isAdmin: boolean;
     userUuid: string;
     dataExplorerItems: any;
+    working: boolean;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
@@ -265,27 +265,22 @@ const mapStateToProps = (state: RootState) => {
 export const ProjectPanel = withStyles(styles)(
     connect(mapStateToProps)(
         class extends React.Component<ProjectPanelProps> {
+
             render() {
                 const { classes } = this.props;
-
-                return this.props.project ?
-                    <div data-cy='project-panel' className={classes.root}>
-                        <ProjectDetailsCard />
-                        <DataExplorer
-                            id={PROJECT_PANEL_ID}
-                            onRowClick={this.handleRowClick}
-                            onRowDoubleClick={this.handleRowDoubleClick}
-                            onContextMenu={this.handleContextMenu}
-                            contextMenuColumn={true}
-                            defaultViewIcon={ProjectIcon}
-                            defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                        />
-                    </div>
-                    :
-                    <NotFoundView
-                        icon={ProjectIcon}
-                        messages={["Project not found"]}
+                return <div data-cy='project-panel' className={classes.root}>
+                    <ProjectDetailsCard />
+                    <DataExplorer
+                        id={PROJECT_PANEL_ID}
+                        onRowClick={this.handleRowClick}
+                        onRowDoubleClick={this.handleRowDoubleClick}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={true}
+                        defaultViewIcon={ProjectIcon}
+                        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
+                        selectedResourceUuid={this.props.currentItemId}
                     />
+                </div>
             }
 
             isCurrentItemChild = (resource: Resource) => {

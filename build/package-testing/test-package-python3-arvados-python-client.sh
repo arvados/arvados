@@ -7,9 +7,7 @@ set -e
 
 arv-put --version >/dev/null
 
-PYTHON=`ls /usr/share/python3*/dist/python3-arvados-python-client/bin/python3 |head -n1`
-
-$PYTHON << EOF
+/usr/lib/python3-arvados-python-client/bin/python <<EOF
 import arvados
 print("Successfully imported arvados")
 EOF

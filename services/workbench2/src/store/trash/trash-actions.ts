@@ -13,7 +13,7 @@ import { sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with
 import { ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
 import { matchCollectionRoute, matchSharedWithMeRoute } from "routes/routes";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { addDisabledButton } from "store/multiselect/multiselect-actions";
 
 export const toggleProjectTrashed =
@@ -22,7 +22,7 @@ export const toggleProjectTrashed =
             let errorMessage = "";
             let successMessage = "";
             let untrashedResource;
-            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
+            dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
             try {
                 if (isTrashed) {
                     errorMessage = "Could not restore project from trash";
@@ -77,7 +77,7 @@ export const toggleCollectionTrashed =
         async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
             let errorMessage = "";
             let successMessage = "";
-            dispatch<any>(addDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
+            dispatch<any>(addDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
             try {
                 if (isTrashed) {
                     const { location } = getState().router;

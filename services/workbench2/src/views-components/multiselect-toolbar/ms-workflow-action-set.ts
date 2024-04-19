@@ -5,10 +5,12 @@
 import { openRunProcess, deleteWorkflow } from 'store/workflow-panel/workflow-panel-actions';
 import { StartIcon, TrashIcon, Link } from 'components/icon/icon';
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from './ms-menu-actions';
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
+import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
+import { ShareIcon } from 'components/icon/icon';
 
-const { OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW } = MultiSelectMenuActionNames;
+const { OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW, SHARE } = ContextMenuActionNames;
 
 const msRunWorkflow: MultiSelectMenuAction = {
     name: RUN_WORKFLOW,
@@ -31,7 +33,7 @@ const msDeleteWorkflow: MultiSelectMenuAction = {
 };
 
 const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
-    name: COPY_TO_CLIPBOARD,
+    name: COPY_LINK_TO_CLIPBOARD,
     icon: Link,
     hasAlts: false,
     isForMulti: false,
@@ -40,7 +42,17 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     },
 };
 
-export const msWorkflowActionSet: MultiSelectMenuActionSet = [[...msCommonActionSet, msRunWorkflow, msDeleteWorkflow, msCopyToClipboardMenuAction]];
+const msShareAction: MultiSelectMenuAction  = {
+    name: SHARE,
+    icon: ShareIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(openSharingDialog(resources[0].uuid));
+    },
+};
 
-export const msReadOnlyWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW ]);
-export const msWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW]);
+export const msWorkflowActionSet: MultiSelectMenuActionSet = [[...msCommonActionSet, msRunWorkflow, msDeleteWorkflow, msCopyToClipboardMenuAction, msShareAction]];
+
+export const msReadOnlyWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW ]);
+export const msWorkflowActionFilter = new Set([OPEN_IN_NEW_TAB, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, RUN_WORKFLOW, DELETE_WORKFLOW]);

@@ -28,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -167,6 +168,20 @@ func (s *IntegrationSuite) TestDefaultStorageClassesOnCollections(c *check.C) {
 	c.Assert(coll.StorageClassesDesired, check.DeepEquals, kc.DefaultStorageClasses)
 }
 
+func (s *IntegrationSuite) createTestCollectionManifest(c *check.C, ac *arvados.Client, kc *keepclient.KeepClient, content string) string {
+	fs, err := (&arvados.Collection{}).FileSystem(ac, kc)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
+	c.Assert(err, check.IsNil)
+	_, err = io.WriteString(f, content)
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	return mtxt
+}
+
 func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	conn1 := s.super.Conn("z1111")
 	rootctx1, _, _ := s.super.RootClients("z1111")
@@ -175,34 +190,70 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 
 	// Create the collection to find its PDH (but don't save it
 	// anywhere yet)
-	var coll1 arvados.Collection
-	fs1, err := coll1.FileSystem(ac1, kc1)
-	c.Assert(err, check.IsNil)
-	f, err := fs1.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
-	c.Assert(err, check.IsNil)
-	_, err = io.WriteString(f, "IntegrationSuite.TestGetCollectionByPDH")
-	c.Assert(err, check.IsNil)
-	err = f.Close()
-	c.Assert(err, check.IsNil)
-	mtxt, err := fs1.MarshalManifest(".")
-	c.Assert(err, check.IsNil)
+	mtxt := s.createTestCollectionManifest(c, ac1, kc1, c.TestName())
 	pdh := arvados.PortableDataHash(mtxt)
 
 	// Looking up the PDH before saving returns 404 if cycle
 	// detection is working.
-	_, err = conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
+	_, err := conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Assert(err, check.ErrorMatches, `.*404 Not Found.*`)
 
 	// Save the collection on cluster z1111.
-	coll1, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
+	_, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"manifest_text": mtxt,
 	}})
 	c.Assert(err, check.IsNil)
 
 	// Retrieve the collection from cluster z3333.
-	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
+	coll2, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
-	c.Check(coll.PortableDataHash, check.Equals, pdh)
+	c.Check(coll2.PortableDataHash, check.Equals, pdh)
+}
+
+func (s *IntegrationSuite) TestFederation_Write1Read2(c *check.C) {
+	s.testFederationCollectionAccess(c, "z1111", "z2222")
+}
+
+func (s *IntegrationSuite) TestFederation_Write2Read1(c *check.C) {
+	s.testFederationCollectionAccess(c, "z2222", "z1111")
+}
+
+func (s *IntegrationSuite) TestFederation_Write2Read3(c *check.C) {
+	s.testFederationCollectionAccess(c, "z2222", "z3333")
+}
+
+func (s *IntegrationSuite) testFederationCollectionAccess(c *check.C, writeCluster, readCluster string) {
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	_, ac1, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+
+	connW := s.super.Conn(writeCluster)
+	userctxW, acW, kcW := s.super.ClientsWithToken(writeCluster, ac1.AuthToken)
+	kcW.DiskCacheSize = keepclient.DiskCacheDisabled
+	connR := s.super.Conn(readCluster)
+	userctxR, acR, kcR := s.super.ClientsWithToken(readCluster, ac1.AuthToken)
+	kcR.DiskCacheSize = keepclient.DiskCacheDisabled
+
+	filedata := fmt.Sprintf("%s: write to %s, read from %s", c.TestName(), writeCluster, readCluster)
+	mtxt := s.createTestCollectionManifest(c, acW, kcW, filedata)
+	collW, err := connW.CollectionCreate(userctxW, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"manifest_text": mtxt,
+	}})
+	c.Assert(err, check.IsNil)
+
+	collR, err := connR.CollectionGet(userctxR, arvados.GetOptions{UUID: collW.UUID})
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	fsR, err := collR.FileSystem(acR, kcR)
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	buf, err := fs.ReadFile(arvados.FS(fsR), "test.txt")
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	c.Check(string(buf), check.Equals, filedata)
 }
 
 // Tests bug #18004
@@ -1244,10 +1295,22 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 
 	var ctr arvados.Container
 	var lastState arvados.ContainerState
+	var status, lastStatus arvados.ContainerStatus
+	var allStatus string
+	checkstatus := func() {
+		err := ac.RequestAndDecode(&status, "GET", "/arvados/v1/container_requests/"+cr.UUID+"/container_status", nil, nil)
+		c.Assert(err, check.IsNil)
+		if status != lastStatus {
+			c.Logf("container status: %s, %s", status.State, status.SchedulingStatus)
+			allStatus += fmt.Sprintf("%s, %s\n", status.State, status.SchedulingStatus)
+			lastStatus = status
+		}
+	}
 	deadline := time.Now().Add(time.Minute)
-	for cr.State != arvados.ContainerRequestStateFinal {
+	for cr.State != arvados.ContainerRequestStateFinal || (lastStatus.State != arvados.ContainerStateComplete && lastStatus.State != arvados.ContainerStateCancelled) {
 		err = ac.RequestAndDecode(&cr, "GET", "/arvados/v1/container_requests/"+cr.UUID, nil, nil)
 		c.Assert(err, check.IsNil)
+		checkstatus()
 		err = ac.RequestAndDecode(&ctr, "GET", "/arvados/v1/containers/"+cr.ContainerUUID, nil, nil)
 		if err != nil {
 			c.Logf("error getting container state: %s", err)
@@ -1267,6 +1330,7 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 			time.Sleep(time.Second / 2)
 		}
 	}
+	checkstatus()
 	c.Logf("cr.CumulativeCost == %f", cr.CumulativeCost)
 	c.Check(cr.CumulativeCost, check.Not(check.Equals), 0.0)
 	if expectExitCode >= 0 {
@@ -1274,6 +1338,13 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		c.Check(ctr.ExitCode, check.Equals, expectExitCode)
 		err = ac.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
 		c.Assert(err, check.IsNil)
+		c.Check(allStatus, check.Matches, `Queued, waiting for dispatch\n`+
+			`(Queued, waiting.*\n)*`+
+			`(Locked, waiting for dispatch\n)?`+
+			`(Locked, waiting for new instance to be ready\n)?`+
+			`(Locked, preparing runtime environment\n)?`+
+			`(Running, \n)?`+
+			`Complete, \n`)
 	}
 	logcfs = showlogs(cr.LogUUID)
 	checkwebdavlogs(cr)

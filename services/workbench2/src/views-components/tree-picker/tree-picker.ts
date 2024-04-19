@@ -70,7 +70,7 @@ const treePickerToTreeItems = (tree: Ttree<any>, resources: ResourcesState) =>
         const resource = resources[node.id];
         return {
             active: node.active,
-            data: resource ? { ...resource, name: node.value.name || node.value } : undefined || node.value,
+            data: resource ? { ...resource, name: node.value.name || node.value } : node.value,
             id: node.id,
             items: items.length > 0 ? items : undefined,
             open: node.expanded,

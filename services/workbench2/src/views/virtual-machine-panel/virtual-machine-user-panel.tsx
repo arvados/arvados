@@ -219,7 +219,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                         const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
                         let tokenParam = "";
                         if (props.tokenLocation === SESSION_STORAGE || props.tokenLocation === EXTRA_TOKEN) {
-                          tokenParam = `&token=${encodeURIComponent(props.token)}`;
+                            tokenParam = `&token=${encodeURIComponent(props.token)}`;
                         }
                         const loginHref = `/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`;
                         return <TableRow key={lk.uuid}>
@@ -228,17 +228,17 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             <TableCell>
                                 <Grid container spacing={8} className={props.classes.chipsRoot}>
                                     {
-                                    (lk.properties.groups || []).map((group, i) => (
-                                        <Grid item key={i}>
-                                            <Chip label={group} />
-                                        </Grid>
-                                    ))
+                                        (lk.properties.groups || []).map((group, i) => (
+                                            <Grid item key={i}>
+                                                <Chip label={group} />
+                                            </Grid>
+                                        ))
                                     }
                                 </Grid>
                             </TableCell>
                             <TableCell>
                                 {command}
-                                <Tooltip title="Copy to clipboard">
+                                <Tooltip title="Copy link to clipboard">
                                     <span className={props.classes.copyIcon}>
                                         <CopyToClipboard text={command || ""} onCopy={() => props.onCopy!("Copied")}>
                                             <CopyIcon />
@@ -253,8 +253,8 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                                     size="small"
                                     href={loginHref}
                                     target="_blank"
-                                    rel="noopener noreferrer">
-                                        Log in as {username}
+                                    rel="noopener">
+                                    Log in as {username}
                                 </Button>
                             </TableCell>
                         </TableRow>;

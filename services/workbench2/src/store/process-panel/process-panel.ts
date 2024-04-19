@@ -7,6 +7,7 @@ import { RouterState } from "react-router-redux";
 import { matchProcessRoute } from "routes/routes";
 import { ProcessIOParameter } from "views/process-panel/process-io-card";
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
+import { CollectionFile } from 'models/collection-file';
 
 export type OutputDetails = {
     raw?: any;
@@ -36,6 +37,10 @@ export interface NodeInfo {
     nodeInfo: NodeInstanceType | null;
 };
 
+export interface UsageReport {
+    usageReport: CollectionFile | null;
+};
+
 export interface ProcessPanel {
     containerRequestUuid: string;
     filters: { [status: string]: boolean };
@@ -45,6 +50,7 @@ export interface ProcessPanel {
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
+    usageReport: CollectionFile | null;
 }
 
 export const getProcessPanelCurrentUuid = (router: RouterState) => {

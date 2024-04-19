@@ -70,7 +70,7 @@ class RuntimeStatusLoggingHandler(logging.Handler):
             kind = 'error'
         elif record.levelno >= logging.WARNING:
             kind = 'warning'
-        if kind == 'warning' and record.name == "salad":
+        if kind == 'warning' and record.name in ("salad", "crunchstat_summary"):
             # Don't send validation warnings to runtime status,
             # they're noisy and unhelpful.
             return
@@ -146,6 +146,7 @@ class ArvCwlExecutor(object):
         self.stdout = stdout
         self.fast_submit = False
         self.git_info = arvargs.git_info
+        self.debug = False
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -369,7 +370,8 @@ The 'jobs' API is no longer supported.
                     page = keys[:pageSize]
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]], select=["uuid", "container_uuid", "state", "log_uuid",
-                                                                                         "output_uuid", "modified_at", "properties"]).execute(num_retries=self.num_retries)
+                                                                                         "output_uuid", "modified_at", "properties",
+                                                                                         "runtime_constraints"]).execute(num_retries=self.num_retries)
                     except Exception as e:
                         logger.warning("Temporary error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
@@ -926,6 +928,11 @@ The 'jobs' API is no longer supported.
 
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
+
+        if runtimeContext.usage_report_notes:
+            logger.info("Steps with low resource utilization (possible optimization opportunities):")
+            for x in runtimeContext.usage_report_notes:
+                logger.info("  %s", x)
 
         if runtimeContext.submit and isinstance(tool, Runner):
             logger.info("Final output collection %s", tool.final_output)

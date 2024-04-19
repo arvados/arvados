@@ -40,7 +40,6 @@ export const navigateTo = (uuid: string) => async (dispatch: Dispatch, getState:
             return;
         case ResourceKind.WORKFLOW:
             dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
-            // dispatch<any>(openDetailsPanel(uuid));
             return;
     }
 

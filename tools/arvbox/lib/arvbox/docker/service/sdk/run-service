@@ -14,4 +14,4 @@ run_bundler --binstubs=binstubs
 cd /usr/src/arvados/sdk/cli
 run_bundler --binstubs=binstubs
 
-pip_install_sdist sdk/python services/fuse sdk/cwl
+pip_install_sdist sdk/python services/fuse tools/crunchstat-summary sdk/cwl

@@ -45,6 +45,7 @@ export interface ProcessPanelRootDataProps {
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
+    usageReport: string | null;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -87,6 +88,7 @@ export const ProcessPanelRoot = withStyles(styles)(
         outputDefinitions,
         outputParams,
         nodeInfo,
+        usageReport,
         loadInputs,
         loadOutputs,
         loadNodeJson,
@@ -195,6 +197,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <MPVPanelContent
                     forwardProps
                     xs="auto"
+                    maxHeight={"50%"}
                     data-cy="process-cmd">
                     <ProcessCmdCard
                         onCopy={props.onCopyToClipboard}
@@ -208,6 +211,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     <ProcessResourceCard
                         process={process}
                         nodeInfo={nodeInfo}
+                        usageReport={usageReport}
                     />
                 </MPVPanelContent>
             </MPVContainer>

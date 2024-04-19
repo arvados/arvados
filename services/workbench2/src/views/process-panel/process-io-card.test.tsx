@@ -11,12 +11,15 @@ import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
 import { ProcessIOCard, ProcessIOCardType } from './process-io-card';
 import { DefaultView } from "components/default-view/default-view";
-import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
+import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
 
-
+// Mock collection files component since it just needs to exist
 jest.mock('views/process-panel/process-output-collection-files');
+// Mock autosizer for the io panel virtual list
+jest.mock('react-virtualized-auto-sizer', () => ({ children }: any) => children({ height: 600, width: 600 }));
+
 configure({ adapter: new Adapter() });
 
 describe('renderers', () => {
@@ -108,12 +111,12 @@ describe('renderers', () => {
             // then
             expect(panel.find(CircularProgress).exists()).toBeFalsy();
             expect(panel.find(Tab).length).toBe(1);
-            expect(panel.find(DefaultCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2));
+            expect(panel.find(DefaultVirtualCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2).replace(/\n/g, ''));
         });
 
         it('shows main process with params', () => {
             // when
-            const parameters = [{id: 'someId', label: 'someLabel', value: [{display: 'someValue'}]}];
+            const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
             let panel = mount(
                 <Provider store={store}>
                     <MuiThemeProvider theme={CustomTheme}>

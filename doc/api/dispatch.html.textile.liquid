@@ -32,6 +32,7 @@ Return a list of containers that are either ready to dispatch, or being started/
 Each entry in the returned list of @items@ includes:
 * an @instance_type@ entry with the name and attributes of the instance type that will be used to schedule the container (chosen from the @InstanceTypes@ section of your cluster config file); and
 * a @container@ entry with selected attributes of the container itself, including @uuid@, @priority@, @runtime_constraints@, and @state@. Other fields of the container records are not loaded by the dispatcher, and will have empty/zero values here (e.g., @{...,"created_at":"0001-01-01T00:00:00Z","command":[],...}@).
+* a @scheduling_status@ field with a brief explanation of the container's status in the dispatch queue, or an empty string if scheduling is not applicable, e.g., the container has already started running.
 
 Example response:
 
@@ -56,10 +57,29 @@ Example response:
         "AddedScratch": 0,
         "Price": 0.146,
         "Preemptible": false
-      }
+      },
+      "scheduling_status": "waiting for new instance to be ready"
     },
     ...
   ]
+}</pre></notextile>
+
+h3. Get specified container
+
+@GET /arvados/v1/dispatch/container?container_uuid={uuid}@
+
+Return the same information as "list containers" above, but for a single specified container.
+
+Example response:
+
+<notextile><pre>{
+  "container": {
+    ...
+  },
+  "instance_type": {
+    ...
+  },
+  "scheduling_status": "waiting for new instance to be ready"
 }</pre></notextile>
 
 h3. Terminate a container

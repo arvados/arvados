@@ -24,12 +24,13 @@ import { DataTableFilters } from "../data-table-filters/data-table-filters-tree"
 import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty } from "models/tree";
-import { IconType, PendingIcon } from "components/icon/icon";
+import { IconType } from "components/icon/icon";
 import { SvgIconProps } from "@material-ui/core/SvgIcon";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { PendingIcon } from "components/icon/icon";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -57,6 +58,7 @@ export interface DataTableDataProps<I> {
     checkedList: TCheckedList;
     selectedResourceUuid: string;
     setSelectedUuid: (uuid: string | null) => void;
+    isNotFound?: boolean;
 }
 
 type CssRules =
@@ -72,8 +74,7 @@ type CssRules =
     | "tableCell"
     | "arrow"
     | "arrowButton"
-    | "tableCellWorkflows"
-    | "loader";
+    | "tableCellWorkflows";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -85,11 +86,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper,
-    },
-    loader: {
-        left: "50%",
-        marginLeft: "-84px",
-        position: "absolute",
     },
     noItemsInfo: {
         textAlign: "center",
@@ -149,6 +145,7 @@ export type TCheckedList = Record<string, boolean>;
 
 type DataTableState = {
     isSelected: boolean;
+    isLoaded: boolean;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -157,6 +154,7 @@ export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
+            isLoaded: false,
         };
 
         componentDidMount(): void {
@@ -183,6 +181,12 @@ export const DataTable = withStyles(styles)(
             }
             if (!singleSelected && this.isAnySelected()) {
                 this.props.setSelectedUuid(null);
+            }
+            if(prevProps.working === true && this.props.working === false) {
+                this.setState({ isLoaded: true });
+            }
+            if((this.props.items.length > 0) && !this.state.isLoaded) {
+                this.setState({ isLoaded: true });
             }
         }
 
@@ -305,7 +309,8 @@ export const DataTable = withStyles(styles)(
         };
 
         render() {
-            const { items, classes, working, columns } = this.props;
+            const { items, classes, columns, isNotFound } = this.props;
+            const { isLoaded } = this.state;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
@@ -315,31 +320,43 @@ export const DataTable = withStyles(styles)(
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
-                            <TableBody className={classes.tableBody}>{!working && items.map(this.renderBodyRow)}</TableBody>
+                            <TableBody className={classes.tableBody}>{(isLoaded && !isNotFound) && items.map(this.renderBodyRow)}</TableBody>
                         </Table>
-                        {!!working && (
-                            <div className={classes.loader}>
-                                <DataTableDefaultView
-                                    icon={PendingIcon}
-                                    messages={["Loading data, please wait."]}
-                                />
-                            </div>
-                        )}
-                        {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
+                        {(!isLoaded || isNotFound || items.length === 0) && this.renderNoItemsPlaceholder(this.props.columns)}
                     </div>
                 </div>
             );
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
+            const { isLoaded } = this.state;
+            const { working, isNotFound } = this.props;
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
-            return (
-                <DataTableDefaultView
-                    icon={this.props.defaultViewIcon}
-                    messages={this.props.defaultViewMessages}
-                    filtersApplied={dirty}
-                />
-            );
+            if (isNotFound && isLoaded) {
+                return (
+                    <DataTableDefaultView 
+                        icon={this.props.defaultViewIcon} 
+                        messages={["No items found"]} 
+                    />
+                );
+            } else 
+            if (isLoaded === false || working === true) {
+                return (
+                    <DataTableDefaultView 
+                        icon={PendingIcon} 
+                        messages={["Loading data, please wait"]} 
+                    />
+                );
+            } else {
+                // isLoaded && !working && !isNotFound
+                return (
+                    <DataTableDefaultView
+                        icon={this.props.defaultViewIcon}
+                        messages={this.props.defaultViewMessages}
+                        filtersApplied={dirty}
+                    />
+                );
+            }
         };
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {

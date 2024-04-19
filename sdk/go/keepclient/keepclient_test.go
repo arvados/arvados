@@ -17,6 +17,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -26,8 +27,8 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-// Gocheck boilerplate
 func Test(t *testing.T) {
+	DefaultRetryDelay = 50 * time.Millisecond
 	TestingT(t)
 }
 
@@ -39,7 +40,10 @@ var _ = Suite(&StandaloneSuite{})
 type ServerRequiredSuite struct{}
 
 // Standalone tests
-type StandaloneSuite struct{}
+type StandaloneSuite struct {
+	origDefaultRetryDelay time.Duration
+	origMinimumRetryDelay time.Duration
+}
 
 var origHOME = os.Getenv("HOME")
 
@@ -47,10 +51,14 @@ func (s *StandaloneSuite) SetUpTest(c *C) {
 	RefreshServiceDiscovery()
 	// Prevent cache state from leaking between test cases
 	os.Setenv("HOME", c.MkDir())
+	s.origDefaultRetryDelay = DefaultRetryDelay
+	s.origMinimumRetryDelay = MinimumRetryDelay
 }
 
 func (s *StandaloneSuite) TearDownTest(c *C) {
 	os.Setenv("HOME", origHOME)
+	DefaultRetryDelay = s.origDefaultRetryDelay
+	MinimumRetryDelay = s.origMinimumRetryDelay
 }
 
 func pythonDir() string {
@@ -421,17 +429,17 @@ func (fh FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 type FailThenSucceedHandler struct {
+	morefails      int // fail 1 + this many times before succeeding
 	handled        chan string
-	count          int
+	count          atomic.Int64
 	successhandler http.Handler
 	reqIDs         []string
 }
 
 func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	fh.reqIDs = append(fh.reqIDs, req.Header.Get("X-Request-Id"))
-	if fh.count == 0 {
+	if int(fh.count.Add(1)) <= fh.morefails+1 {
 		resp.WriteHeader(500)
-		fh.count++
 		fh.handled <- fmt.Sprintf("http://%s", req.Host)
 	} else {
 		fh.successhandler.ServeHTTP(resp, req)
@@ -560,14 +568,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
-	reader, writer := io.Pipe()
-
-	go func() {
-		writer.Write([]byte("foo"))
-		writer.Close()
-	}()
-
-	kc.PutHR(hash, reader, 3)
+	kc.PutHR(hash, bytes.NewBuffer([]byte("foo")), 3)
 
 	shuff := NewRootSorter(kc.LocalRoots(), hash).GetSortedRoots()
 
@@ -804,40 +805,68 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 }
 
 func (s *StandaloneSuite) TestGetFailRetry(c *C) {
+	defer func(origDefault, origMinimum time.Duration) {
+		DefaultRetryDelay = origDefault
+		MinimumRetryDelay = origMinimum
+	}(DefaultRetryDelay, MinimumRetryDelay)
+	DefaultRetryDelay = time.Second / 8
+	MinimumRetryDelay = time.Millisecond
+
 	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("foo")))
 
-	st := &FailThenSucceedHandler{
-		handled: make(chan string, 1),
-		successhandler: StubGetHandler{
-			c,
-			hash,
-			"abc123",
-			http.StatusOK,
-			[]byte("foo")}}
+	for _, delay := range []time.Duration{0, time.Nanosecond, time.Second / 8, time.Second / 16} {
+		c.Logf("=== initial delay %v", delay)
 
-	ks := RunFakeKeepServer(st)
-	defer ks.listener.Close()
+		st := &FailThenSucceedHandler{
+			morefails: 2,
+			handled:   make(chan string, 4),
+			successhandler: StubGetHandler{
+				c,
+				hash,
+				"abc123",
+				http.StatusOK,
+				[]byte("foo")}}
 
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Check(err, IsNil)
-	kc, _ := MakeKeepClient(arv)
-	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+		ks := RunFakeKeepServer(st)
+		defer ks.listener.Close()
 
-	r, n, _, err := kc.Get(hash)
-	c.Assert(err, IsNil)
-	c.Check(n, Equals, int64(3))
+		arv, err := arvadosclient.MakeArvadosClient()
+		c.Check(err, IsNil)
+		kc, _ := MakeKeepClient(arv)
+		arv.ApiToken = "abc123"
+		kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+		kc.Retries = 3
+		kc.RetryDelay = delay
+		kc.DiskCacheSize = DiskCacheDisabled
 
-	content, err := ioutil.ReadAll(r)
-	c.Check(err, IsNil)
-	c.Check(content, DeepEquals, []byte("foo"))
-	c.Check(r.Close(), IsNil)
+		t0 := time.Now()
+		r, n, _, err := kc.Get(hash)
+		c.Assert(err, IsNil)
+		c.Check(n, Equals, int64(3))
+		elapsed := time.Since(t0)
 
-	c.Logf("%q", st.reqIDs)
-	c.Assert(len(st.reqIDs) > 1, Equals, true)
-	for _, reqid := range st.reqIDs {
-		c.Check(reqid, Not(Equals), "")
-		c.Check(reqid, Equals, st.reqIDs[0])
+		nonsleeptime := time.Second / 10
+		expect := kc.RetryDelay
+		if expect == 0 {
+			expect = DefaultRetryDelay
+		}
+		min := MinimumRetryDelay * 3
+		max := expect + expect*2 + expect*2*2 + nonsleeptime
+		c.Check(elapsed >= min, Equals, true, Commentf("elapsed %v / expect min %v", elapsed, min))
+		c.Check(elapsed <= max, Equals, true, Commentf("elapsed %v / expect max %v", elapsed, max))
+
+		content, err := ioutil.ReadAll(r)
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte("foo"))
+		c.Check(r.Close(), IsNil)
+
+		c.Logf("%q", st.reqIDs)
+		if c.Check(st.reqIDs, Not(HasLen), 0) {
+			for _, reqid := range st.reqIDs {
+				c.Check(reqid, Not(Equals), "")
+				c.Check(reqid, Equals, st.reqIDs[0])
+			}
+		}
 	}
 }
 
@@ -1484,42 +1513,65 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 }
 
 func (s *StandaloneSuite) TestPutBRetry(c *C) {
-	st := &FailThenSucceedHandler{
-		handled: make(chan string, 1),
-		successhandler: &StubPutHandler{
-			c:                    c,
-			expectPath:           Md5String("foo"),
-			expectAPIToken:       "abc123",
-			expectBody:           "foo",
-			expectStorageClass:   "default",
-			returnStorageClasses: "",
-			handled:              make(chan string, 5),
-		},
+	DefaultRetryDelay = time.Second / 8
+	MinimumRetryDelay = time.Millisecond
+
+	for _, delay := range []time.Duration{0, time.Nanosecond, time.Second / 8, time.Second / 16} {
+		c.Logf("=== initial delay %v", delay)
+
+		st := &FailThenSucceedHandler{
+			morefails: 5, // handler will fail 6x in total, 3 for each server
+			handled:   make(chan string, 10),
+			successhandler: &StubPutHandler{
+				c:                    c,
+				expectPath:           Md5String("foo"),
+				expectAPIToken:       "abc123",
+				expectBody:           "foo",
+				expectStorageClass:   "default",
+				returnStorageClasses: "",
+				handled:              make(chan string, 5),
+			},
+		}
+
+		arv, _ := arvadosclient.MakeArvadosClient()
+		kc, _ := MakeKeepClient(arv)
+		kc.Retries = 3
+		kc.RetryDelay = delay
+		kc.DiskCacheSize = DiskCacheDisabled
+		kc.Want_replicas = 2
+
+		arv.ApiToken = "abc123"
+		localRoots := make(map[string]string)
+		writableLocalRoots := make(map[string]string)
+
+		ks := RunSomeFakeKeepServers(st, 2)
+
+		for i, k := range ks {
+			localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			defer k.listener.Close()
+		}
+
+		kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+		t0 := time.Now()
+		hash, replicas, err := kc.PutB([]byte("foo"))
+
+		c.Check(err, IsNil)
+		c.Check(hash, Equals, "")
+		c.Check(replicas, Equals, 2)
+		elapsed := time.Since(t0)
+
+		nonsleeptime := time.Second / 10
+		expect := kc.RetryDelay
+		if expect == 0 {
+			expect = DefaultRetryDelay
+		}
+		min := MinimumRetryDelay * 3
+		max := expect + expect*2 + expect*2*2
+		max += nonsleeptime
+		checkInterval(c, elapsed, min, max)
 	}
-
-	arv, _ := arvadosclient.MakeArvadosClient()
-	kc, _ := MakeKeepClient(arv)
-
-	kc.Want_replicas = 2
-	arv.ApiToken = "abc123"
-	localRoots := make(map[string]string)
-	writableLocalRoots := make(map[string]string)
-
-	ks := RunSomeFakeKeepServers(st, 2)
-
-	for i, k := range ks {
-		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
-		defer k.listener.Close()
-	}
-
-	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
-
-	hash, replicas, err := kc.PutB([]byte("foo"))
-
-	c.Check(err, IsNil)
-	c.Check(hash, Equals, "")
-	c.Check(replicas, Equals, 2)
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
@@ -1566,4 +1618,61 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 	c.Assert(kc.replicasPerService, Equals, 0)
 	c.Assert(kc.foundNonDiskSvc, Equals, true)
 	c.Assert(kc.httpClient().(*http.Client).Timeout, Equals, 300*time.Second)
+}
+
+func (s *StandaloneSuite) TestDelayCalculator_Default(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	DefaultRetryDelay = time.Second
+
+	dc := delayCalculator{InitialMaxDelay: 0}
+	checkInterval(c, dc.Next(), time.Second/2, time.Second)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*2)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*4)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*8)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*10)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*10)
+}
+
+func (s *StandaloneSuite) TestDelayCalculator_SetInitial(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	DefaultRetryDelay = time.Second
+
+	dc := delayCalculator{InitialMaxDelay: time.Second * 2}
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*2)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*4)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*8)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*16)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+	checkInterval(c, dc.Next(), time.Second/2, time.Second*20)
+}
+
+func (s *StandaloneSuite) TestDelayCalculator_EnsureSomeLongDelays(c *C) {
+	dc := delayCalculator{InitialMaxDelay: time.Second * 5}
+	var d time.Duration
+	n := 4000
+	for i := 0; i < n; i++ {
+		if i < 20 || i%10 == 0 {
+			c.Logf("i=%d, delay=%v", i, d)
+		}
+		if d = dc.Next(); d > dc.InitialMaxDelay*9 {
+			return
+		}
+	}
+	c.Errorf("after %d trials, never got a delay more than 90%% of expected max %d; last was %v", n, dc.InitialMaxDelay*10, d)
+}
+
+// If InitialMaxDelay is less than MinimumRetryDelay/10, then delay is
+// always MinimumRetryDelay.
+func (s *StandaloneSuite) TestDelayCalculator_InitialLessThanMinimum(c *C) {
+	MinimumRetryDelay = time.Second / 2
+	dc := delayCalculator{InitialMaxDelay: time.Millisecond}
+	for i := 0; i < 20; i++ {
+		c.Check(dc.Next(), Equals, time.Second/2)
+	}
+}
+
+func checkInterval(c *C, t, min, max time.Duration) {
+	c.Check(t >= min, Equals, true, Commentf("got %v which is below expected min %v", t, min))
+	c.Check(t <= max, Equals, true, Commentf("got %v which is above expected max %v", t, max))
 }

@@ -27,6 +27,7 @@ import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-me
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io-card';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
+import { WorkflowProcessesPanel } from './workflow-processes-panel';
 
 type CssRules = 'root'
     | 'button'
@@ -135,9 +136,10 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                 const { classes, item, inputParams, outputParams, workflowCollection } = this.props;
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
-                    { name: "Inputs" },
+                    { name: "Runs" },
                     { name: "Outputs" },
-                    { name: "Files" },
+                    { name: "Inputs" },
+                    { name: "Definition" },
                 ];
                 return item
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
@@ -179,15 +181,10 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 </CardContent>
                             </Card>
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-inputs">
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                params={inputParams}
-                                raw={{}}
-                                forceShowParams={true}
-                            />
+                        <MPVPanelContent forwardProps xs maxHeight="100%">
+                            <WorkflowProcessesPanel />
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-outputs">
+                        <MPVPanelContent forwardProps xs data-cy="process-outputs" maxHeight="100%">
                             <ProcessIOCard
                                 label={ProcessIOCardType.OUTPUT}
                                 params={outputParams}
@@ -195,8 +192,17 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 forceShowParams={true}
                             />
                         </MPVPanelContent>
-                        <MPVPanelContent xs>
+                        <MPVPanelContent forwardProps xs data-cy="process-inputs" maxHeight="100%">
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                params={inputParams}
+                                raw={{}}
+                                forceShowParams={true}
+                            />
+                        </MPVPanelContent>
+                        <MPVPanelContent xs maxHeight="100%">
                             <Card className={classes.filesCard}>
+                                <CardHeader title="Workflow Definition" />
                                 <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={workflowCollection} />
                             </Card>
                         </MPVPanelContent>

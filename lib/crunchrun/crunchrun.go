@@ -2256,9 +2256,14 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 	}
 
 	// Rather than have an alternate way to tell keepstore how
-	// many buffers to use when starting it this way, we just
-	// modify the cluster configuration that we feed it on stdin.
-	configData.Cluster.API.MaxKeepBlobBuffers = configData.KeepBuffers
+	// many buffers to use, etc., when starting it this way, we
+	// just modify the cluster configuration that we feed it on
+	// stdin.
+	ccfg := *configData.Cluster
+	ccfg.API.MaxKeepBlobBuffers = configData.KeepBuffers
+	ccfg.Collections.BlobTrash = false
+	ccfg.Collections.BlobTrashConcurrency = 0
+	ccfg.Collections.BlobDeleteConcurrency = 0
 
 	localaddr := localKeepstoreAddr()
 	ln, err := net.Listen("tcp", net.JoinHostPort(localaddr, "0"))
@@ -2278,7 +2283,7 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 	var confJSON bytes.Buffer
 	err = json.NewEncoder(&confJSON).Encode(arvados.Config{
 		Clusters: map[string]arvados.Cluster{
-			configData.Cluster.ClusterID: *configData.Cluster,
+			ccfg.ClusterID: ccfg,
 		},
 	})
 	if err != nil {

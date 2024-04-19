@@ -4,23 +4,21 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Typography, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
+import { Grid, Button, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
-import { ResourceUuid } from 'views-components/data-explorer/renderers';
+import { GroupMembersCount, ResourceUuid } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
-import { getResource, ResourcesState, filterResources } from 'store/resources/resources';
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
+import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
-import { ResourceKind } from 'models/resource';
-import { LinkClass, LinkResource } from 'models/link';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = "root";
@@ -122,20 +120,3 @@ export const GroupsPanel = withStyles(styles)(connect(
             }
         }
     }));
-
-
-const GroupMembersCount = connect(
-    (state: RootState, props: { uuid: string }) => {
-
-        const permissions = filterResources((resource: LinkResource) =>
-            resource.kind === ResourceKind.LINK &&
-            resource.linkClass === LinkClass.PERMISSION &&
-            resource.headUuid === props.uuid
-        )(state.resources);
-
-        return {
-            children: permissions.length,
-        };
-
-    }
-)((props: {children: number}) => (<Typography children={props.children} />));

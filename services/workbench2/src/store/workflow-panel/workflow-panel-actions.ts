@@ -30,6 +30,9 @@ const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
 const WORKFLOW_PANEL_DETAILS_UUID = 'workflowPanelDetailsUuid';
 export const workflowPanelActions = bindDataExplorerActions(WORKFLOW_PANEL_ID);
 
+export const WORKFLOW_PROCESSES_PANEL_ID = "workflowProcessesPanel";
+export const workflowProcessesPanelActions = bindDataExplorerActions(WORKFLOW_PROCESSES_PANEL_ID);
+
 export const loadWorkflowPanel = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(workflowPanelActions.REQUEST_ITEMS());
@@ -48,9 +51,10 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const response = await services.workflowService.list();
         dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
-
+        
         const workflows = getState().runProcessPanel.searchWorkflows;
-        const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
+        const listedWorkflow = workflows.find(workflow => workflow.uuid === workflowUuid);
+        const workflow = listedWorkflow || await services.workflowService.get(workflowUuid);
         if (workflow) {
             dispatch<any>(navigateToRunProcess);
             dispatch<any>(goToStep(1));

@@ -92,7 +92,6 @@ interface DataExplorerDataProps<T> {
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
     working?: boolean;
-    currentRefresh?: string;
     currentRoute?: string;
     hideColumnSelector?: boolean;
     paperProps?: PaperProps;
@@ -106,6 +105,7 @@ interface DataExplorerDataProps<T> {
     elementPath?: string;
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
+    isNotFound: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -130,58 +130,13 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
-        state = {
-            showLoading: false,
-            prevRefresh: "",
-            prevRoute: "",
-            msToolbarInDetailsCard: true,
-        };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
-        
-        componentDidUpdate(prevProps: DataExplorerProps<T>) {
-            const currentRefresh = this.props.currentRefresh || "";
-            const currentRoute = this.props.currentRoute || "";
-
-            if (currentRoute !== this.state.prevRoute) {
-                // Component already mounted, but the user comes from a route change,
-                // like browsing through a project hierarchy.
-                this.setState({
-                    showLoading: this.props.working,
-                    prevRoute: currentRoute,
-                });
-            }
-
-            if (currentRefresh !== this.state.prevRefresh) {
-                // Component already mounted, but the user just clicked the
-                // refresh button.
-                this.setState({
-                    showLoading: this.props.working,
-                    prevRefresh: currentRefresh,
-                });
-            }
-            if (this.state.showLoading && !this.props.working) {
-                this.setState({
-                    showLoading: false,
-                });
-            }
-            if (this.props.selectedResourceUuid !== prevProps.selectedResourceUuid || this.props.currentRouteUuid !== prevProps.currentRouteUuid) {
-                this.setState({
-                    msToolbarInDetailsCard: this.props.selectedResourceUuid === this.props.currentRouteUuid,
-                });
-            }
-        }
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
-            // Component just mounted, so we need to show the loading indicator.
-            this.setState({
-                showLoading: this.props.working,
-                prevRefresh: this.props.currentRefresh || "",
-                prevRoute: this.props.currentRoute || "",
-            });
         }
 
         render() {
@@ -223,6 +178,7 @@ export const DataExplorer = withStyles(styles)(
                 toggleMSToolbar,
                 setCheckedListOnStore,
                 checkedList,
+                working,
             } = this.props;
             return (
                 <Paper
@@ -248,7 +204,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                             {!!progressBar && progressBar}
-                            {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
+                            {this.multiSelectToolbarInTitle && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -330,7 +286,6 @@ export const DataExplorer = withStyles(styles)(
                                 onFiltersChange={onFiltersChange}
                                 onSortToggle={onSortToggle}
                                 extractKey={extractKey}
-                                working={this.state.showLoading}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
                                 currentRoute={paperKey}
@@ -340,6 +295,8 @@ export const DataExplorer = withStyles(styles)(
                                 selectedResourceUuid={selectedResourceUuid}
                                 setSelectedUuid={this.props.setSelectedUuid}
                                 currentRouteUuid={this.props.currentRouteUuid}
+                                working={working}
+                                isNotFound={this.props.isNotFound}
                             />
                         </Grid>
                         <Grid

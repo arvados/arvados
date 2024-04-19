@@ -16,7 +16,8 @@ import { OrderBuilder } from 'services/api/order-builder';
 import { ResourceKind } from 'models/resource';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
-import { LinkClass } from 'models/link';
+import { LinkClass, LinkResource } from 'models/link';
+import { verifyAndUpdateLinks } from 'common/link-update-name';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
@@ -100,9 +101,12 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         const treePicker = getTreePicker(SIDE_PANEL_TREE)(getState().treePicker);
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (projectUuid === SidePanelTreeCategory.PUBLIC_FAVORITES) {
-            await dispatch<any>(loadPublicFavoritesTree());
+            const unverifiedPubFaves = await dispatch<any>(loadPublicFavoritesTree());
+            verifyAndUpdateLinkNames(unverifiedPubFaves, dispatch, getState, services);
         } else if (projectUuid === SidePanelTreeCategory.FAVORITES) {
-            await dispatch<any>(loadFavoritesTree());
+            const unverifiedFaves = await dispatch<any>(loadFavoritesTree());
+            await setFaves(unverifiedFaves, dispatch, getState, services);
+            verifyAndUpdateLinkNames(unverifiedFaves, dispatch, getState, services);
         } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
         }
@@ -150,11 +154,50 @@ export const loadFavoritesTree = () => async (dispatch: Dispatch, getState: () =
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: SidePanelTreeCategory.FAVORITES,
             pickerId: SIDE_PANEL_TREE,
-            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item })),
+            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item.name })),
         })
     );
 
-    dispatch(resourcesActions.SET_RESOURCES(items));
+    return items;
+};
+
+const setFaves = async(links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+
+    const uuids = links.map(it => it.headUuid);
+    const groupItems: Promise<any> = services.groupsService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .getFilters()
+    });
+    const collectionItems: Promise<any> = services.collectionService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .getFilters()
+    });
+    const processItems: Promise<any> = services.containerRequestService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .getFilters()
+    });
+
+    const resolvedItems = await Promise.all([groupItems, collectionItems, processItems]);
+
+    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), []);
+
+    //setting resources here so they won't be re-fetched in validation step
+    dispatch(resourcesActions.SET_RESOURCES(responseItems));
+};
+
+const verifyAndUpdateLinkNames = async (links: LinkResource[], dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const verfifiedLinks = await verifyAndUpdateLinks(links, dispatch, getState, services);
+
+    dispatch(
+        treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+            id: SidePanelTreeCategory.FAVORITES,
+            pickerId: SIDE_PANEL_TREE,
+            nodes: verfifiedLinks.map(item => initTreeNode({ id: item.headUuid, value: item })),
+        })
+    );
 };
 
 export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -176,15 +219,44 @@ export const loadPublicFavoritesTree = () => async (dispatch: Dispatch, getState
 
     const { items } = await services.linkService.list(params);
 
+    const uuids = items.map(it => it.headUuid);
+    const groupItems: Promise<any> = services.groupsService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addIsA("uuid", typeFilters)
+            .getFilters()
+    });
+    const collectionItems: Promise<any> = services.collectionService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addIsA("uuid", typeFilters)
+            .getFilters()
+    });
+    const processItems: Promise<any> = services.containerRequestService.list({
+        filters: new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addIsA("uuid", typeFilters)
+            .getFilters()
+    });
+
+    const resolvedItems = await Promise.all([groupItems, collectionItems, processItems]);
+
+    const responseItems = resolvedItems.reduce((acc, response) => acc.concat(response.items), []);
+
+    const filteredItems = items.filter(item => responseItems.some(responseItem => responseItem.uuid === item.headUuid));
+
     dispatch(
         treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: SidePanelTreeCategory.PUBLIC_FAVORITES,
             pickerId: SIDE_PANEL_TREE,
-            nodes: items.map(item => initTreeNode({ id: item.headUuid, value: item })),
+            nodes: filteredItems.map(item => initTreeNode({ id: item.headUuid, value: item })),
         })
     );
 
-    dispatch(resourcesActions.SET_RESOURCES(items));
+    //setting resources here so they won't be re-fetched in validation step
+    dispatch(resourcesActions.SET_RESOURCES(responseItems));
+
+    return filteredItems;
 };
 
 export const activateSidePanelTreeItem = (id: string) =>

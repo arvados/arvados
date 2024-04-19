@@ -15,7 +15,7 @@ import {
     initSidePanelTree,
     loadSidePanelTreeProjects,
     SidePanelTreeCategory,
-    SIDE_PANEL_TREE, 
+    SIDE_PANEL_TREE,
 } from "store/side-panel-tree/side-panel-tree-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { projectPanelColumns } from "views/project-panel/project-panel";
@@ -103,6 +103,8 @@ import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
+import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
+import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -190,6 +192,7 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
             })
         );
         dispatch(subprocessPanelActions.SET_COLUMNS({ columns: subprocessPanelColumns }));
+        dispatch(workflowProcessesPanelActions.SET_COLUMNS({ columns: workflowProcessesPanelColumns }));
 
         if (services.linkAccountService.getAccountToLink()) {
             dispatch(linkAccountPanelActions.HAS_SESSION_DATA());
@@ -244,6 +247,7 @@ export const loadProject = (uuid: string) =>
             if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
                 // Load another users home projects
                 dispatch(finishLoadingProject(uuid));
+                dispatch<any>(setSidePanelBreadcrumbs(uuid));
             } else if (userUuid !== uuid) {
                 await dispatch(finishLoadingProject(uuid));
                 const match = await loadGroupContentsResource({
@@ -590,6 +594,7 @@ export const loadRegisteredWorkflow = (uuid: string) =>
                 await dispatch<any>(finishLoadingProject(workflow.ownerUuid));
                 await dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
                 dispatch<any>(breadcrumbfunc(workflow.ownerUuid));
+                dispatch(workflowProcessesPanelActions.REQUEST_ITEMS());
             }
         }
     });
@@ -753,7 +758,7 @@ export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
     dispatch(setVirtualMachinesAdminBreadcrumbs());
-    dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({pickerId: SIDE_PANEL_TREE} ))
+    dispatch(treePickerActions.DEACTIVATE_TREE_PICKER_NODE({ pickerId: SIDE_PANEL_TREE }))
 });
 
 export const loadRepositories = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {

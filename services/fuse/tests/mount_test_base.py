@@ -72,15 +72,22 @@ class MountTestBase(unittest.TestCase):
         llfuse.close()
 
     def make_mount(self, root_class, **root_kwargs):
-        enable_write = True
-        if 'enable_write' in root_kwargs:
-            enable_write = root_kwargs.pop('enable_write')
+        enable_write = root_kwargs.pop('enable_write', True)
         self.operations = fuse.Operations(
-            os.getuid(), os.getgid(),
+            os.getuid(),
+            os.getgid(),
             api_client=self.api,
-            enable_write=enable_write)
+            enable_write=enable_write,
+        )
         self.operations.inodes.add_entry(root_class(
-            llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, enable_write, **root_kwargs))
+            llfuse.ROOT_INODE,
+            self.operations.inodes,
+            self.api,
+            0,
+            enable_write,
+            root_kwargs.pop('filters', None),
+            **root_kwargs,
+        ))
         llfuse.init(self.operations, self.mounttmp, [])
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
         self.llfuse_thread.daemon = True
@@ -95,10 +102,10 @@ class MountTestBase(unittest.TestCase):
                 self.operations.events.close(timeout=10)
             subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
             t0 = time.time()
-            self.llfuse_thread.join(timeout=10)
+            self.llfuse_thread.join(timeout=60)
             if self.llfuse_thread.is_alive():
                 logger.warning("MountTestBase.tearDown():"
-                               " llfuse thread still alive 10s after umount"
+                               " llfuse thread still alive 60s after umount"
                                " -- exiting with SIGKILL")
                 os.kill(os.getpid(), signal.SIGKILL)
             waited = time.time() - t0

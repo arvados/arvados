@@ -510,6 +510,10 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
 }
 
+func (conn *Conn) ContainerRequestContainerStatus(ctx context.Context, options arvados.GetOptions) (arvados.ContainerStatus, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestContainerStatus(ctx, options)
+}
+
 func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
 	return conn.chooseBackend(options.UUID).ContainerRequestLog(ctx, options)
 }

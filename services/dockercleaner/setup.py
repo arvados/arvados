@@ -10,16 +10,10 @@ import re
 
 from setuptools import setup, find_packages
 
-SETUP_DIR = os.path.dirname(__file__) or '.'
-README = os.path.join(SETUP_DIR, 'README.rst')
-
 import arvados_version
-version = arvados_version.get_version(SETUP_DIR, "arvados_docker")
-
-short_tests_only = False
-if '--short-tests-only' in sys.argv:
-    short_tests_only = True
-    sys.argv.remove('--short-tests-only')
+version = arvados_version.get_version()
+short_tests_only = arvados_version.short_tests_only()
+README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 setup(name="arvados-docker-cleaner",
       version=version,
@@ -37,6 +31,7 @@ setup(name="arvados-docker-cleaner",
           ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt', 'arvados-docker-cleaner.service']),
       ],
       install_requires=[
+          *arvados_version.iter_dependencies(version),
           'docker>=6.1.0',
           'setuptools',
       ],

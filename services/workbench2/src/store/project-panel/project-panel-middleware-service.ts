@@ -35,8 +35,9 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set"; 
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -54,6 +55,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
+                api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
                 if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 const resourceUuids = [...response.items.map(item => item.uuid), projectUuid];
@@ -72,7 +74,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     })
                 );
                 if (e.status === 404) {
-                    // It'll just show up as not found
+                    api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true}));
                 }
                 else {
                     api.dispatch(couldNotFetchProjectContents());
@@ -80,7 +82,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             } finally {
                 if (!background) { 
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-                    api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
+                    api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
                 }
             }
         }

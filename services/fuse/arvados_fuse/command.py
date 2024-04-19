@@ -28,100 +28,336 @@ class ArgumentParser(argparse.ArgumentParser):
     def __init__(self):
         super(ArgumentParser, self).__init__(
             parents=[arv_cmd.retry_opt],
-            description='''Mount Keep data under the local filesystem.  Default mode is --home''',
-            epilog="""
-    Note: When using the --exec feature, you must either specify the
-    mountpoint before --exec, or mark the end of your --exec arguments
-    with "--".
-            """)
-        self.add_argument('--version', action='version',
-                          version=u"%s %s" % (sys.argv[0], __version__),
-                          help='Print version and exit.')
-        self.add_argument('mountpoint', type=str, help="""Mount point.""")
-        self.add_argument('--allow-other', action='store_true',
-                            help="""Let other users read the mount""")
-        self.add_argument('--subtype', type=str, metavar='STRING',
-                            help="""Report mounted filesystem type as "fuse.STRING", instead of just "fuse".""")
+            description="Interact with Arvados data through a local filesystem",
+        )
+        self.add_argument(
+            '--version',
+            action='version',
+            version=u"%s %s" % (sys.argv[0], __version__),
+            help="Print version and exit",
+        )
+        self.add_argument(
+            'mountpoint',
+            metavar='MOUNT_DIR',
+            help="Directory path to mount data",
+        )
 
-        mode = self.add_mutually_exclusive_group()
+        mode_group = self.add_argument_group("Mount contents")
+        mode = mode_group.add_mutually_exclusive_group()
+        mode.add_argument(
+            '--all',
+            action='store_const',
+            const='all',
+            dest='mode',
+            help="""
+Mount a subdirectory for each mode: `home`, `shared`, `by_id`, and `by_tag`
+(default if no `--mount-*` options are given)
+""",
+        )
+        mode.add_argument(
+            '--custom',
+            action='store_const',
+            const=None,
+            dest='mode',
+            help="""
+Mount a subdirectory for each mode specified by a `--mount-*` option
+(default if any `--mount-*` options are given;
+see "Mount custom layout and filtering" section)
+""",
+        )
+        mode.add_argument(
+            '--collection',
+            metavar='UUID_OR_PDH',
+            help="Mount the specified collection",
+        )
+        mode.add_argument(
+            '--home',
+            action='store_const',
+            const='home',
+            dest='mode',
+            help="Mount your home project",
+        )
+        mode.add_argument(
+            '--project',
+            metavar='UUID',
+            help="Mount the specified project",
+        )
+        mode.add_argument(
+            '--shared',
+            action='store_const',
+            const='shared',
+            dest='mode',
+            help="Mount a subdirectory for each project shared with you",
+        )
+        mode.add_argument(
+            '--by-id',
+            action='store_const',
+            const='by_id',
+            dest='mode',
+            help="""
+Mount a magic directory where collections and projects are accessible through
+subdirectories named after their UUID or portable data hash
+""",
+        )
+        mode.add_argument(
+            '--by-pdh',
+            action='store_const',
+            const='by_pdh',
+            dest='mode',
+            help="""
+Mount a magic directory where collections are accessible through
+subdirectories named after their portable data hash
+""",
+        )
+        mode.add_argument(
+            '--by-tag',
+            action='store_const',
+            const='by_tag',
+            dest='mode',
+            help="Mount a subdirectory for each tag attached to a collection or project",
+        )
 
-        mode.add_argument('--all', action='store_const', const='all', dest='mode',
-                                help="""Mount a subdirectory for each mode: home, shared, by_tag, by_id (default if no --mount-* arguments are given).""")
-        mode.add_argument('--custom', action='store_const', const=None, dest='mode',
-                                help="""Mount a top level meta-directory with subdirectories as specified by additional --mount-* arguments (default if any --mount-* arguments are given).""")
-        mode.add_argument('--home', action='store_const', const='home', dest='mode',
-                                help="""Mount only the user's home project.""")
-        mode.add_argument('--shared', action='store_const', const='shared', dest='mode',
-                                help="""Mount only list of projects shared with the user.""")
-        mode.add_argument('--by-tag', action='store_const', const='by_tag', dest='mode',
-                                help="""Mount subdirectories listed by tag.""")
-        mode.add_argument('--by-id', action='store_const', const='by_id', dest='mode',
-                                help="""Mount subdirectories listed by portable data hash or uuid.""")
-        mode.add_argument('--by-pdh', action='store_const', const='by_pdh', dest='mode',
-                                help="""Mount subdirectories listed by portable data hash.""")
-        mode.add_argument('--project', type=str, metavar='UUID',
-                                help="""Mount the specified project.""")
-        mode.add_argument('--collection', type=str, metavar='UUID_or_PDH',
-                                help="""Mount only the specified collection.""")
+        mounts = self.add_argument_group("Mount custom layout and filtering")
+        mounts.add_argument(
+            '--filters',
+            type=arv_cmd.JSONArgument(arv_cmd.validate_filters),
+            help="""
+Filters to apply to all project, shared, and tag directory contents.
+Pass filters as either a JSON string or a path to a JSON file.
+The JSON object should be a list of filters in Arvados API list filter syntax.
+""",
+        )
+        mounts.add_argument(
+            '--mount-home',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="Make your home project available under the mount at `PATH`",
+        )
+        mounts.add_argument(
+            '--mount-shared',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="Make projects shared with you available under the mount at `PATH`",
+        )
+        mounts.add_argument(
+            '--mount-tmp',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="""
+Make a new temporary writable collection available under the mount at `PATH`.
+This collection is deleted when the mount is unmounted.
+""",
+        )
+        mounts.add_argument(
+            '--mount-by-id',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="""
+Make a magic directory available under the mount at `PATH` where collections and
+projects are accessible through subdirectories named after their UUID or
+portable data hash
+""",
+        )
+        mounts.add_argument(
+            '--mount-by-pdh',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="""
+Make a magic directory available under the mount at `PATH` where collections
+are accessible through subdirectories named after portable data hash
+""",
+        )
+        mounts.add_argument(
+            '--mount-by-tag',
+            metavar='PATH',
+            action='append',
+            default=[],
+            help="""
+Make a subdirectory for each tag attached to a collection or project available
+under the mount at `PATH`
+""" ,
+        )
 
-        mounts = self.add_argument_group('Custom mount options')
-        mounts.add_argument('--mount-by-pdh',
-                            type=str, metavar='PATH', action='append', default=[],
-                            help="Mount each readable collection at mountpoint/PATH/P where P is the collection's portable data hash.")
-        mounts.add_argument('--mount-by-id',
-                            type=str, metavar='PATH', action='append', default=[],
-                            help="Mount each readable collection at mountpoint/PATH/UUID and mountpoint/PATH/PDH where PDH is the collection's portable data hash and UUID is its UUID.")
-        mounts.add_argument('--mount-by-tag',
-                            type=str, metavar='PATH', action='append', default=[],
-                            help="Mount all collections with tag TAG at mountpoint/PATH/TAG/UUID.")
-        mounts.add_argument('--mount-home',
-                            type=str, metavar='PATH', action='append', default=[],
-                            help="Mount the current user's home project at mountpoint/PATH.")
-        mounts.add_argument('--mount-shared',
-                            type=str, metavar='PATH', action='append', default=[],
-                            help="Mount projects shared with the current user at mountpoint/PATH.")
-        mounts.add_argument('--mount-tmp',
-                            type=str, metavar='PATH', action='append', default=[],
-                            help="Create a new collection, mount it in read/write mode at mountpoint/PATH, and delete it when unmounting.")
+        perms = self.add_argument_group("Mount access and permissions")
+        perms.add_argument(
+            '--allow-other',
+            action='store_true',
+            help="Let other users on this system read mounted data (default false)",
+        )
+        perms.add_argument(
+            '--read-only',
+            action='store_false',
+            default=False,
+            dest='enable_write',
+            help="Mounted data cannot be modified from the mount (default)",
+        )
+        perms.add_argument(
+            '--read-write',
+            action='store_true',
+            default=False,
+            dest='enable_write',
+            help="Mounted data can be modified from the mount",
+        )
 
+        lifecycle = self.add_argument_group("Mount lifecycle management")
+        lifecycle.add_argument(
+            '--exec',
+            nargs=argparse.REMAINDER,
+            dest="exec_args",
+            help="""
+Mount data, run the specified command, then unmount and exit.
+`--exec` reads all remaining options as the command to run,
+so it must be the last option you specify.
+Either end your command arguments (and other options) with a `--` argument,
+or specify `--exec` after your mount point.
+""",
+        )
+        lifecycle.add_argument(
+            '--foreground',
+            action='store_true',
+            default=False,
+            help="Run mount process in the foreground instead of daemonizing (default false)",
+        )
+        lifecycle.add_argument(
+            '--subtype',
+            help="Set mounted filesystem type to `fuse.SUBTYPE` (default is just `fuse`)",
+        )
+        unmount = lifecycle.add_mutually_exclusive_group()
+        unmount.add_argument(
+            '--replace',
+            action='store_true',
+            default=False,
+            help="""
+If a FUSE mount is already mounted at the given directory,
+unmount it before mounting the requested data.
+If `--subtype` is specified, unmount only if the mount has that subtype.
+WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
+""",
+        )
+        unmount.add_argument(
+            '--unmount',
+            action='store_true',
+            default=False,
+            help="""
+If a FUSE mount is already mounted at the given directory, unmount it and exit.
+If `--subtype` is specified, unmount only if the mount has that subtype.
+WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
+""",
+        )
+        unmount.add_argument(
+            '--unmount-all',
+            action='store_true',
+            default=False,
+            help="""
+Unmount all FUSE mounts at or below the given directory, then exit.
+If `--subtype` is specified, unmount only if the mount has that subtype.
+WARNING: This command can affect any kind of FUSE mount, not just arv-mount.
+""",
+        )
+        lifecycle.add_argument(
+            '--unmount-timeout',
+            type=float,
+            default=2.0,
+            metavar='SECONDS',
+            help="""
+The number of seconds to wait for a clean unmount after an `--exec` command has
+exited (default %(default).01f).
+After this time, the mount will be forcefully unmounted.
+""",
+        )
 
-        self.add_argument('--debug', action='store_true', help="""Debug mode""")
-        self.add_argument('--logfile', help="""Write debug logs and errors to the specified file (default stderr).""")
-        self.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
-        self.add_argument('--encoding', type=str, help="Character encoding to use for filesystem, default is utf-8 (see Python codec registry for list of available encodings)", default="utf-8")
+        reporting = self.add_argument_group("Mount logging and statistics")
+        reporting.add_argument(
+            '--crunchstat-interval',
+            type=float,
+            default=0.0,
+            metavar='SECONDS',
+            help="Write stats to stderr every N seconds (default disabled)",
+        )
+        reporting.add_argument(
+            '--debug',
+            action='store_true',
+            help="Log debug information",
+        )
+        reporting.add_argument(
+            '--logfile',
+            help="Write debug logs and errors to the specified file (default stderr)",
+        )
 
-        self.add_argument('--file-cache', type=int, help="File data cache size, in bytes (default 8 GiB for disk-based cache or 256 MiB with RAM-only cache)", default=0)
-        self.add_argument('--directory-cache', type=int, help="Directory data cache size, in bytes (default 128 MiB)", default=128*1024*1024)
+        cache = self.add_argument_group("Mount local cache setup")
+        cachetype = cache.add_mutually_exclusive_group()
+        cachetype.add_argument(
+            '--disk-cache',
+            action='store_true',
+            default=True,
+            dest='disk_cache',
+            help="Cache data on the local filesystem (default)",
+        )
+        cachetype.add_argument(
+            '--ram-cache',
+            action='store_false',
+            default=True,
+            dest='disk_cache',
+            help="Cache data in memory",
+        )
+        cache.add_argument(
+            '--disk-cache-dir',
+            metavar="DIRECTORY",
+            help="Filesystem cache location (default `~/.cache/arvados/keep`)",
+        )
+        cache.add_argument(
+            '--directory-cache',
+            type=int,
+            default=128*1024*1024,
+            metavar='BYTES',
+            help="Size of directory data cache in bytes (default 128 MiB)",
+        )
+        cache.add_argument(
+            '--file-cache',
+            type=int,
+            default=0,
+            metavar='BYTES',
+            help="""
+Size of file data cache in bytes
+(default 8 GiB for filesystem cache, 256 MiB for memory cache)
+""",
+        )
 
-        cachetype = self.add_mutually_exclusive_group()
-        cachetype.add_argument('--ram-cache', action='store_false', dest='disk_cache', help="Use in-memory caching only", default=True)
-        cachetype.add_argument('--disk-cache', action='store_true', dest='disk_cache', help="Use disk based caching (default)", default=True)
-
-        self.add_argument('--disk-cache-dir', type=str, help="Disk cache location (default ~/.cache/arvados/keep)", default=None)
-
-        self.add_argument('--disable-event-listening', action='store_true', help="Don't subscribe to events on the API server", dest="disable_event_listening", default=False)
-
-        self.add_argument('--read-only', action='store_false', help="Mount will be read only (default)", dest="enable_write", default=False)
-        self.add_argument('--read-write', action='store_true', help="Mount will be read-write", dest="enable_write", default=False)
-        self.add_argument('--storage-classes', type=str, metavar='CLASSES', help="Specify comma separated list of storage classes to be used when saving data of new collections", default=None)
-
-        self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
-
-        unmount = self.add_mutually_exclusive_group()
-        unmount.add_argument('--unmount', action='store_true', default=False,
-                             help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit. If --subtype is given, unmount only if the mount has the specified subtype. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
-        unmount.add_argument('--unmount-all', action='store_true', default=False,
-                             help="Forcefully unmount every fuse mount at or below the specified path and exit. If --subtype is given, unmount only mounts that have the specified subtype. Exit non-zero if any other types of mounts are found at or below the given path. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
-        unmount.add_argument('--replace', action='store_true', default=False,
-                             help="If a fuse mount is already present at mountpoint, forcefully unmount it before mounting")
-        self.add_argument('--unmount-timeout',
-                          type=float, default=2.0,
-                          help="Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted")
-
-        self.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
-                            dest="exec_args", metavar=('command', 'args', '...', '--'),
-                            help="""Mount, run a command, then unmount and exit""")
-
+        plumbing = self.add_argument_group("Mount interactions with Arvados and Linux")
+        plumbing.add_argument(
+            '--disable-event-listening',
+            action='store_true',
+            dest='disable_event_listening',
+            default=False,
+            help="Don't subscribe to events on the API server to update mount contents",
+        )
+        plumbing.add_argument(
+            '--encoding',
+            default="utf-8",
+            help="""
+Filesystem character encoding
+(default %(default)r; specify a name from the Python codec registry)
+""",
+        )
+        plumbing.add_argument(
+            '--storage-classes',
+            metavar='CLASSES',
+            help="Comma-separated list of storage classes to request for new collections",
+        )
+        # This is a hidden argument used by tests.  Normally this
+        # value will be extracted from the cluster config, but mocking
+        # the cluster config under the presence of multiple threads
+        # and processes turned out to be too complicated and brittle.
+        plumbing.add_argument(
+            '--fsns',
+            type=str,
+            default=None,
+            help=argparse.SUPPRESS)
 
 class Mount(object):
     def __init__(self, args, logger=logging.getLogger('arvados.arv-mount')):
@@ -254,13 +490,6 @@ class Mount(object):
                                                       disk_cache=self.args.disk_cache,
                                                       disk_cache_dir=self.args.disk_cache_dir)
 
-            # If there's too many prefetch threads and you
-            # max out the CPU, delivering data to the FUSE
-            # layer actually ends up being slower.
-            # Experimentally, capping 7 threads seems to
-            # be a sweet spot.
-            prefetch_threads = min(max((block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
-
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
                 api_params={
@@ -268,7 +497,6 @@ class Mount(object):
                 },
                 keep_params={
                     'block_cache': block_cache,
-                    'num_prefetch_threads': prefetch_threads,
                     'num_retries': self.args.retries,
                 },
                 version='v1',
@@ -286,7 +514,8 @@ class Mount(object):
             api_client=self.api,
             encoding=self.args.encoding,
             inode_cache=InodeCache(cap=self.args.directory_cache),
-            enable_write=self.args.enable_write)
+            enable_write=self.args.enable_write,
+            fsns=self.args.fsns)
 
         if self.args.crunchstat_interval:
             statsthread = threading.Thread(
@@ -300,7 +529,14 @@ class Mount(object):
         usr = self.api.users().current().execute(num_retries=self.args.retries)
         now = time.time()
         dir_class = None
-        dir_args = [llfuse.ROOT_INODE, self.operations.inodes, self.api, self.args.retries, self.args.enable_write]
+        dir_args = [
+            llfuse.ROOT_INODE,
+            self.operations.inodes,
+            self.api,
+            self.args.retries,
+            self.args.enable_write,
+            self.args.filters,
+        ]
         mount_readme = False
 
         storage_classes = None
@@ -366,7 +602,11 @@ class Mount(object):
             return
 
         e = self.operations.inodes.add_entry(Directory(
-            llfuse.ROOT_INODE, self.operations.inodes, self.api.config, self.args.enable_write))
+            llfuse.ROOT_INODE,
+            self.operations.inodes,
+            self.args.enable_write,
+            self.args.filters,
+        ))
         dir_args[0] = e.inode
 
         for name in self.args.mount_by_id:
@@ -448,8 +688,9 @@ From here, the following directories are available:
 
     def _llfuse_main(self):
         try:
-            llfuse.main()
+            llfuse.main(workers=10)
         except:
             llfuse.close(unmount=False)
             raise
+        self.operations.begin_shutdown()
         llfuse.close()

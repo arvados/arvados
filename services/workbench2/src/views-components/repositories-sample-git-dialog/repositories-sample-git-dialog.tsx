@@ -64,7 +64,7 @@ export const RepositoriesSampleGitDialog = compose(
                         color='primary'
                         onClick={props.closeDialog}>
                         Close
-                </Button>
+                    </Button>
                 </DialogActions>
             </Dialog>
     );

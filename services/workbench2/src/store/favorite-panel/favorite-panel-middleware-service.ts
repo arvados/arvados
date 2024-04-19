@@ -77,7 +77,6 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     response.items.push(it);
                 });
 
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
@@ -87,8 +86,8 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     rowsPerPage: response.limit
                 }));
                 api.dispatch<any>(updateFavorites(response.items.map((item: any) => item.uuid)));
-            } catch (e) {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+            } catch (e) {
                 api.dispatch(favoritePanelActions.SET_ITEMS({
                     items: [],
                     itemsAvailable: 0,
@@ -96,6 +95,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     rowsPerPage: dataExplorer.rowsPerPage
                 }));
                 api.dispatch(couldNotFetchFavoritesContents());
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             }
         }
     }

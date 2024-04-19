@@ -20,4 +20,4 @@ RUN /usr/sbin/adduser --disabled-password \
     /usr/bin/install --directory --owner=crunch --group=crunch --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job
 
 USER crunch
-ENV PATH=/usr/share/python3.9/dist/python3-arvados-cwl-runner/bin:/usr/local/bin:/usr/bin:/bin
+ENV PATH=/usr/lib/python3-arvados-cwl-runner/bin:/usr/local/bin:/usr/bin:/bin
