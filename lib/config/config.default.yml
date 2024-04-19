@@ -804,6 +804,9 @@ Clusters:
       # Per-connection output buffer for WebDAV downloads. May improve
       # throughput for large files, particularly when storage volumes
       # have high latency.
+      #
+      # Size be specified as a number of bytes ("0") or with units
+      # ("128KiB", "1 MB").
       WebDAVOutputBuffer: 0
 
     Login:
