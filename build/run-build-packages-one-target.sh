@@ -267,7 +267,8 @@ mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
 docker_volume_args=(
     -v "$JENKINS_DIR:/jenkins"
     -v "$WORKSPACE:/arvados"
-    -v /arvados/services/api/vendor/bundle
+    --tmpfs /arvados/services/api/.bundle:rw,noexec,nosuid,size=1m
+    --tmpfs /arvados/services/api/vendor:rw,exec,nosuid,size=1g
     -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
 )
 
