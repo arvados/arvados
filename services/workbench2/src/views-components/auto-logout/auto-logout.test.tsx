@@ -14,7 +14,6 @@ describe('<AutoLogoutComponent />', () => {
     const sessionIdleTimeout = 300;
     const lastWarningDuration = 60;
     const eventListeners = {};
-    jest.useFakeTimers();
 
     beforeAll(() => {
         window.addEventListener = jest.fn((event, cb) => {
@@ -23,6 +22,7 @@ describe('<AutoLogoutComponent />', () => {
     });
 
     beforeEach(() => {
+        jest.useFakeTimers();
         props = {
             sessionIdleTimeout: sessionIdleTimeout,
             lastWarningDuration: lastWarningDuration,
