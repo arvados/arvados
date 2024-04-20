@@ -516,8 +516,34 @@ handle_rails_package() {
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
+        # Please make sure you read `bundle help config` carefully before you
+        # modify any of these settings. Some of their names are not intuitive.
+        #
+        # `bundle cache` caches from Git and paths, not just rubygems.org.
         bundle config set cache_all true
-        bundle package
+        # Disallow changes to Gemfile.
+        bundle config set deployment true
+        # Avoid loading system-wide gems (although this seems to not work 100%).
+        bundle config set disable_shared_gems true
+        # `bundle cache` only downloads gems, doesn't install them.
+        # Our Rails postinst script does the install step.
+        bundle config set no_install true
+        # As of April 2024/Bundler 2.4, `bundle cache` seems to skip downloading
+        # gems that are already available system-wide... and then it complains
+        # that your bundle is incomplete. Work around this by fetching gems
+        # manually.
+        mkdir -p vendor/cache
+        awk -- '
+BEGIN { OFS=":"; ORS="\0"; }
+(/^[[:space:]]*$/) { level=0; }
+($0 == "GEM" || $0 == "  specs:") { level+=1; }
+(level == 2 && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /^\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
+    print $1, substr($2, 2, length($2) - 2);
+}
+' Gemfile.lock | env -C vendor/cache xargs -0r gem fetch
+        # Despite the bug, we still run `bundle cache` to make sure Bundler is
+        # happy for later steps.
+        bundle cache
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2

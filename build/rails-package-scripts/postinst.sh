@@ -197,20 +197,15 @@ configure_version() {
   run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
                  bundle config set --local path "$SHARED_PATH/vendor_bundle"
 
-  run_and_report "Running bundle install" \
-                 bundle install --prefer-local --quiet
-
-  # As of April 2024/Bundler 2.4, for some reason `bundle install` skips
-  # zlib if it's already installed as a system-wide gem, which it often will
-  # be because arvados gems pull it in. If this happened, install it in the
-  # bundle manually as a workaround.
-  if ! bin/bundle info zlib >/dev/null 2>&1; then
-      local RUBY_VERSION="$(ruby -e 'puts RUBY_VERSION')"
-      run_and_report "Adding zlib to bundle" \
-                     gem install \
-                     --install-dir="$SHARED_PATH/vendor_bundle/ruby/$RUBY_VERSION" \
-                     vendor/cache/zlib-*.gem
-  fi
+  # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
+  # which are already installed system-wide, which causes bundle activation to
+  # fail later. Work around this by installing all gems manually.
+  local gem_dir="$SHARED_PATH/vendor_bundle/ruby/$(ruby -e 'puts RUBY_VERSION')"
+  find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
+      | run_and_report "Installing bundle gems" \
+                       xargs -0r gem install --quiet --install-dir="$gem_dir"
+  run_and_report "Running bundle install" bundle install --prefer-local --quiet
+  run_and_report "Verifying bundle is complete" bundle exec true
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
