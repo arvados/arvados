@@ -1643,17 +1643,33 @@ func (s *CollectionFSUnitSuite) TestLargeManifest_ManyFiles(c *check.C) {
 	if testing.Short() {
 		c.Skip("slow")
 	}
-	s.testLargeManifest(c, 512, 512, 1)
+	s.testLargeManifest(c, 512, 512, 1, 0)
 }
 
 func (s *CollectionFSUnitSuite) TestLargeManifest_LargeFiles(c *check.C) {
 	if testing.Short() {
 		c.Skip("slow")
 	}
-	s.testLargeManifest(c, 1, 800, 1000)
+	s.testLargeManifest(c, 1, 800, 1000, 0)
 }
 
-func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPerDir, blocksPerFile int) {
+func (s *CollectionFSUnitSuite) TestLargeManifest_InterleavedFiles(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+	// Timing figures here are from a dev host, before->after
+	// commit 353246cb47b60d485aa32469edba2b7aa0b7049f
+	s.testLargeManifest(c, 1, 800, 100, 4<<20) // 127s -> 12s
+	// s.testLargeManifest(c, 1, 50, 1000, 4<<20) // 44s -> 10s
+	// s.testLargeManifest(c, 1, 200, 100, 4<<20) // 13s -> 4s
+	// s.testLargeManifest(c, 1, 200, 150, 4<<20) // 26s -> 4s
+	// s.testLargeManifest(c, 1, 200, 200, 4<<20) // 38s -> 6s
+	// s.testLargeManifest(c, 1, 200, 225, 4<<20) // 46s -> 7s
+	// s.testLargeManifest(c, 1, 400, 400, 4<<20) // 477s -> 24s
+	// s.testLargeManifest(c, 1, 800, 1000, 4<<20) // timeout -> 186s
+}
+
+func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPerDir, blocksPerFile, interleaveChunk int) {
 	const blksize = 1 << 26
 	c.Logf("%s building manifest with dirCount=%d filesPerDir=%d blocksPerFile=%d", time.Now(), dirCount, filesPerDir, blocksPerFile)
 	mb := bytes.NewBuffer(make([]byte, 0, 40000000))
@@ -1667,7 +1683,18 @@ func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPer
 			}
 		}
 		for j := 0; j < filesPerDir; j++ {
-			fmt.Fprintf(mb, " %d:%d:dir%d/file%d", (filesPerDir-j-1)*blocksPerFile*blksize, blocksPerFile*blksize, j, j)
+			if interleaveChunk == 0 {
+				fmt.Fprintf(mb, " %d:%d:dir%d/file%d", (filesPerDir-j-1)*blocksPerFile*blksize, blocksPerFile*blksize, j, j)
+				continue
+			}
+			for todo := int64(blocksPerFile) * int64(blksize); todo > 0; todo -= int64(interleaveChunk) {
+				size := int64(interleaveChunk)
+				if size > todo {
+					size = todo
+				}
+				offset := rand.Int63n(int64(blocksPerFile)*int64(blksize)*int64(filesPerDir) - size)
+				fmt.Fprintf(mb, " %d:%d:dir%d/file%d", offset, size, j, j)
+			}
 		}
 		mb.Write([]byte{'\n'})
 	}
