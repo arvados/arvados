@@ -121,6 +121,9 @@ package_workbench2() {
     local src=services/workbench2
     local dst=/var/www/arvados-workbench2/workbench2
     local description="Arvados Workbench 2"
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
+        return 0
+    fi
     cd "$WORKSPACE/$src"
     local version="$(version_from_git)"
     rm -rf ./build
