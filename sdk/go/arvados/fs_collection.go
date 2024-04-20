@@ -1358,6 +1358,10 @@ func (dn *dirnode) loadManifest(txt string) error {
 	}
 	streams = streams[:len(streams)-1]
 	segments := []storedSegment{}
+	// streamoffset[n] is the position in the stream of the nth
+	// block, i.e., ∑ segments[j].size ∀ 0≤j<n. We ensure
+	// len(streamoffset) == len(segments) + 1.
+	streamoffset := []int64{0}
 	// To reduce allocs, we reuse a single "pathparts" slice
 	// (pre-split on "/" separators) for the duration of this
 	// func.
@@ -1386,9 +1390,9 @@ func (dn *dirnode) loadManifest(txt string) error {
 	for i, stream := range streams {
 		lineno := i + 1
 		var anyFileTokens bool
-		var pos int64
 		var segIdx int
 		segments = segments[:0]
+		streamoffset = streamoffset[:1]
 		pathparts = nil
 		streamparts := 0
 		for i, token := range bytes.Split(stream, []byte{' '}) {
@@ -1408,6 +1412,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 				if err != nil || length < 0 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
+				streamoffset = append(streamoffset, streamoffset[len(segments)]+int64(length))
 				segments = append(segments, storedSegment{
 					locator: string(token),
 					size:    int(length),
@@ -1450,30 +1455,37 @@ func (dn *dirnode) loadManifest(txt string) error {
 			// Map the stream offset/range coordinates to
 			// block/offset/range coordinates and add
 			// corresponding storedSegments to the filenode
-			if pos > offset {
-				// Can't continue where we left off.
-				// TODO: binary search instead of
-				// rewinding all the way (but this
-				// situation might be rare anyway)
-				segIdx, pos = 0, 0
+			if segIdx < len(segments) && streamoffset[segIdx] <= offset && streamoffset[segIdx+1] > offset {
+				// common case with an easy
+				// optimization: start where the
+				// previous segment ended
+			} else if guess := int(offset >> 26); guess >= 0 && guess < len(segments) && streamoffset[guess] <= offset && streamoffset[guess+1] > offset {
+				// another common case with an easy
+				// optimization: all blocks are 64 MiB
+				// (or close enough)
+				segIdx = guess
+			} else {
+				// general case
+				segIdx = sort.Search(len(segments), func(i int) bool {
+					return streamoffset[i+1] > offset
+				})
 			}
 			for ; segIdx < len(segments); segIdx++ {
-				seg := &segments[segIdx]
-				next := pos + int64(seg.Len())
-				if next <= offset || seg.Len() == 0 {
-					pos = next
-					continue
-				}
-				if pos >= offset+length {
+				blkStart := streamoffset[segIdx]
+				if blkStart >= offset+length {
 					break
 				}
-				var blkOff int
-				if pos < offset {
-					blkOff = int(offset - pos)
+				seg := &segments[segIdx]
+				if seg.size == 0 {
+					continue
 				}
-				blkLen := seg.Len() - blkOff
-				if pos+int64(blkOff+blkLen) > offset+length {
-					blkLen = int(offset + length - pos - int64(blkOff))
+				var blkOff int
+				if blkStart < offset {
+					blkOff = int(offset - blkStart)
+				}
+				blkLen := seg.size - blkOff
+				if blkStart+int64(seg.size) > offset+length {
+					blkLen = int(offset + length - blkStart - int64(blkOff))
 				}
 				fnode.appendSegment(storedSegment{
 					kc:      dn.fs,
@@ -1482,14 +1494,9 @@ func (dn *dirnode) loadManifest(txt string) error {
 					offset:  blkOff,
 					length:  blkLen,
 				})
-				if next > offset+length {
-					break
-				} else {
-					pos = next
-				}
 			}
-			if segIdx == len(segments) && pos < offset+length {
-				return fmt.Errorf("line %d: invalid segment in %d-byte stream: %q", lineno, pos, token)
+			if segIdx == len(segments) && streamoffset[segIdx] < offset+length {
+				return fmt.Errorf("line %d: invalid segment in %d-byte stream: %q", lineno, streamoffset[segIdx], token)
 			}
 		}
 		if !anyFileTokens {
