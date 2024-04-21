@@ -104,28 +104,35 @@ type CollectionList struct {
 	Limit          int          `json:"limit"`
 }
 
-var (
-	blkRe = regexp.MustCompile(`^ [0-9a-f]{32}\+\d+`)
-	tokRe = regexp.MustCompile(` ?[^ ]*`)
-)
-
 // PortableDataHash computes the portable data hash of the given
 // manifest.
 func PortableDataHash(mt string) string {
 	h := md5.New()
 	size := 0
-	_ = tokRe.ReplaceAllFunc([]byte(mt), func(tok []byte) []byte {
-		if m := blkRe.Find(tok); m != nil {
-			// write hash+size, ignore remaining block hints
-			tok = m
+	todo := []byte(mt)
+	for len(todo) > 0 {
+		sp := bytes.IndexByte(todo, ' ')
+		if sp < 0 {
+			n, _ := h.Write(todo)
+			size += n
+			break
 		}
-		n, err := h.Write(tok)
-		if err != nil {
-			panic(err)
+		if sp >= 34 && todo[32] == '+' && bytes.IndexByte(todo[:32], ':') == -1 {
+			sizeend := bytes.IndexByte(todo[33:sp], '+')
+			if sizeend < 0 {
+				sizeend = sp
+			} else {
+				sizeend += 33
+			}
+			n, _ := h.Write(todo[:sizeend])
+			h.Write([]byte{' '})
+			size += n + 1
+		} else {
+			n, _ := h.Write(todo[:sp+1])
+			size += n
 		}
-		size += n
-		return nil
-	})
+		todo = todo[sp+1:]
+	}
 	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
 }
 
