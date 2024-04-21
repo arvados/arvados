@@ -1389,6 +1389,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 	}
 	for i, stream := range streams {
 		lineno := i + 1
+		fnodeCache := make(map[string]*filenode)
 		var anyFileTokens bool
 		var segIdx int
 		segments = segments[:0]
@@ -1436,21 +1437,29 @@ func (dn *dirnode) loadManifest(txt string) error {
 			if err != nil || length < 0 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
-			if !bytes.ContainsAny(toks[2], `\/`) {
-				// optimization for a common case
-				pathparts = append(pathparts[:streamparts], string(toks[2]))
-			} else {
-				pathparts = append(pathparts[:streamparts], strings.Split(manifestUnescape(string(toks[2])), "/")...)
+			fnode, cached := fnodeCache[string(toks[2])]
+			if !cached {
+				if !bytes.ContainsAny(toks[2], `\/`) {
+					// optimization for a common case
+					pathparts = append(pathparts[:streamparts], string(toks[2]))
+				} else {
+					pathparts = append(pathparts[:streamparts], strings.Split(manifestUnescape(string(toks[2])), "/")...)
+				}
+				fnode, err = dn.createFileAndParents(pathparts)
+				if err != nil {
+					return fmt.Errorf("line %d: cannot use name %q with length %d: %s", lineno, toks[2], length, err)
+				}
+				fnodeCache[string(toks[2])] = fnode
 			}
-			fnode, err := dn.createFileAndParents(pathparts)
-			if fnode == nil && err == nil && length == 0 {
+			if fnode == nil {
+				// name matches an existing directory
+				if length != 0 {
+					return fmt.Errorf("line %d: cannot use name %q with length %d: is a directory", lineno, toks[2], length)
+				}
 				// Special case: an empty file used as
 				// a marker to preserve an otherwise
 				// empty directory in a manifest.
 				continue
-			}
-			if err != nil || (fnode == nil && length != 0) {
-				return fmt.Errorf("line %d: cannot use name %q with length %d: %s", lineno, toks[2], length, err)
 			}
 			// Map the stream offset/range coordinates to
 			// block/offset/range coordinates and add
