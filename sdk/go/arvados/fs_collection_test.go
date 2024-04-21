@@ -1657,19 +1657,23 @@ func (s *CollectionFSUnitSuite) TestLargeManifest_InterleavedFiles(c *check.C) {
 	if testing.Short() {
 		c.Skip("slow")
 	}
-	// Timing figures here are from a dev host, before->after
-	// commit 353246cb47b60d485aa32469edba2b7aa0b7049f
-	s.testLargeManifest(c, 1, 800, 100, 4<<20) // 127s -> 12s
-	// s.testLargeManifest(c, 1, 50, 1000, 4<<20) // 44s -> 10s
-	// s.testLargeManifest(c, 1, 200, 100, 4<<20) // 13s -> 4s
-	// s.testLargeManifest(c, 1, 200, 150, 4<<20) // 26s -> 4s
-	// s.testLargeManifest(c, 1, 200, 200, 4<<20) // 38s -> 6s
-	// s.testLargeManifest(c, 1, 200, 225, 4<<20) // 46s -> 7s
-	// s.testLargeManifest(c, 1, 400, 400, 4<<20) // 477s -> 24s
-	// s.testLargeManifest(c, 1, 800, 1000, 4<<20) // timeout -> 186s
+	// Timing figures here are from a dev host, (0)->(1)->(2)->(3)
+	// (0) no optimizations (main branch commit ea697fb1e8)
+	// (1) resolve streampos->blkidx with binary search
+	// (2) ...and rewrite PortableDataHash() without regexp
+	// (3) ...and use fnodeCache in loadManifest
+	s.testLargeManifest(c, 1, 800, 100, 4<<20) // 127s    -> 12s  -> 2.5s -> 1.5s
+	s.testLargeManifest(c, 1, 50, 1000, 4<<20) // 44s     -> 10s  -> 1.5s -> 0.8s
+	s.testLargeManifest(c, 1, 200, 100, 4<<20) // 13s     -> 4s   -> 0.6s -> 0.3s
+	s.testLargeManifest(c, 1, 200, 150, 4<<20) // 26s     -> 4s   -> 1s   -> 0.5s
+	s.testLargeManifest(c, 1, 200, 200, 4<<20) // 38s     -> 6s   -> 1.3s -> 0.7s
+	s.testLargeManifest(c, 1, 200, 225, 4<<20) // 46s     -> 7s   -> 1.5s -> 1s
+	s.testLargeManifest(c, 1, 400, 400, 4<<20) // 477s    -> 24s  -> 5s   -> 3s
+	// s.testLargeManifest(c, 1, 800, 1000, 4<<20) // timeout -> 186s -> 28s  -> 17s
 }
 
 func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPerDir, blocksPerFile, interleaveChunk int) {
+	t0 := time.Now()
 	const blksize = 1 << 26
 	c.Logf("%s building manifest with dirCount=%d filesPerDir=%d blocksPerFile=%d", time.Now(), dirCount, filesPerDir, blocksPerFile)
 	mb := bytes.NewBuffer(make([]byte, 0, 40000000))
@@ -1729,6 +1733,7 @@ func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPer
 	runtime.ReadMemStats(&memstats)
 	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
 	c.Logf("%s MemorySize=%d", time.Now(), f.MemorySize())
+	c.Logf("%s ... test duration %s", time.Now(), time.Now().Sub(t0))
 }
 
 // Gocheck boilerplate
