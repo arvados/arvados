@@ -192,20 +192,30 @@ configure_version() {
   cd "$RELEASE_PATH"
   export RAILS_ENV=production
 
+  # We install Bundler itself in the same place where Bundler will install
+  # bundled gems, for a few reasons:
+  # 1. Bundler will probably want to do this anyway to run itself with the
+  #    specific version named in Gemfile.lock.
+  # 2. This is nicer to the sysadmin since we avoid messing with global state.
+  # 3. We can know exactly where the `bundle` command got installed.
+  local bundle_path="$SHARED_PATH/vendor_bundle"
+  export GEM_HOME="$bundle_path/ruby/$(ruby -e 'puts RUBY_VERSION')"
   run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
+  local bundle="$GEM_HOME/bin/bundle"
 
   run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-                 bundle config set --local path "$SHARED_PATH/vendor_bundle"
+                 "$bundle" config set --local path "$bundle_path"
 
   # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
   # which are already installed system-wide, which causes bundle activation to
   # fail later. Work around this by installing all gems manually.
-  local gem_dir="$SHARED_PATH/vendor_bundle/ruby/$(ruby -e 'puts RUBY_VERSION')"
   find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
-      | run_and_report "Installing bundle gems" \
-                       xargs -0r gem install --quiet --install-dir="$gem_dir"
-  run_and_report "Running bundle install" bundle install --prefer-local --quiet
-  run_and_report "Verifying bundle is complete" bundle exec true
+      | run_and_report "Installing bundle gems" xargs -0r gem install --quiet
+  # The earlier `bundle config` should have it looking for installed gems in
+  # the right place. Unset GEM_HOME now to be sure.
+  unset GEM_HOME
+  run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
+  run_and_report "Verifying bundle is complete" "$bundle" exec true
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
