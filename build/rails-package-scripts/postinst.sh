@@ -210,7 +210,8 @@ configure_version() {
   # which are already installed system-wide, which causes bundle activation to
   # fail later. Work around this by installing all gems manually.
   find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
-      | run_and_report "Installing bundle gems" xargs -0r gem install --quiet
+      | run_and_report "Installing bundle gems" xargs -0r \
+                       gem install --conservative --ignore-dependencies --local --quiet
   # The earlier `bundle config` should have it looking for installed gems in
   # the right place. Unset GEM_HOME now to be sure.
   unset GEM_HOME
