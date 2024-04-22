@@ -685,7 +685,7 @@ def run_nginx():
 
     nginx = subprocess.Popen(
         ['nginx',
-         '-g', 'error_log stderr info; pid '+_pidfile('nginx')+';',
+         '-g', 'error_log stderr notice; pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
     _detachedSubprocesses.append(nginx)
