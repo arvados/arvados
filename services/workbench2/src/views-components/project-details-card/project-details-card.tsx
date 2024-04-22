@@ -56,8 +56,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     noDescription: {
         color: theme.palette.grey['600'],
         fontStyle: 'italic',
-        padding: '0  0 0.5rem 1rem',
-        marginTop: '-0.5rem',
+        marginLeft: '2rem',
     },
     userNameContainer: {
         display: 'flex',
@@ -68,6 +67,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         display: 'flex',
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
     },
     cardHeader: {
@@ -308,6 +308,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                     </Tooltip>
                                 )}
                             </section>
+                            {!description && <Typography className={classes.noDescription}>no description available</Typography>}
                         </section>
                     }
                 />
@@ -337,12 +338,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         </section>
                     </section>
                 ) : (
-                    <Typography
-                        className={classes.noDescription}
-                        data-cy='no-description'
-                    >
-                        no description available
-                    </Typography>
+                    <></>
                 )}
                 {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 ? (
                     <section
