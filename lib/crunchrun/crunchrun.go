@@ -626,17 +626,6 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 				// OutputPath is a staging directory.
 				bindmounts[bind] = bindmount{HostPath: tmpfn, ReadOnly: true}
 			}
-
-		case mnt.Kind == "git_tree":
-			tmpdir, err := runner.MkTempDir(runner.parentTemp, "git_tree")
-			if err != nil {
-				return nil, fmt.Errorf("creating temp dir: %v", err)
-			}
-			err = gitMount(mnt).extractTree(runner.containerClient, tmpdir, token)
-			if err != nil {
-				return nil, err
-			}
-			bindmounts[bind] = bindmount{HostPath: tmpdir, ReadOnly: true}
 		}
 	}
 

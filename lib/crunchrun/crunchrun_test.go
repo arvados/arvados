@@ -40,8 +40,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/manifest"
 
 	. "gopkg.in/check.v1"
-	git_client "gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-	git_http "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 // Gocheck boilerplate
@@ -1749,54 +1747,6 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `unsupported mount kind 'tmp' for stdin.*`)
 		os.RemoveAll(cr.ArvMountPoint)
-		cr.CleanupDirs()
-		checkEmpty()
-	}
-
-	// git_tree mounts
-	{
-		i = 0
-		cr.ArvMountPoint = ""
-		git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
-		cr.token = arvadostest.ActiveToken
-		cr.Container.Mounts = make(map[string]arvados.Mount)
-		cr.Container.Mounts = map[string]arvados.Mount{
-			"/tip": {
-				Kind:   "git_tree",
-				UUID:   arvadostest.Repository2UUID,
-				Commit: "fd3531f42995344f36c30b79f55f27b502f3d344",
-				Path:   "/",
-			},
-			"/non-tip": {
-				Kind:   "git_tree",
-				UUID:   arvadostest.Repository2UUID,
-				Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
-				Path:   "/",
-			},
-		}
-		cr.Container.OutputPath = "/tmp"
-
-		bindmounts, err := cr.SetupMounts()
-		c.Check(err, IsNil)
-
-		for path, mount := range bindmounts {
-			c.Check(mount.ReadOnly, Equals, !cr.Container.Mounts[path].Writable, Commentf("%s %#v", path, mount))
-		}
-
-		data, err := ioutil.ReadFile(bindmounts["/tip"].HostPath + "/dir1/dir2/file with mode 0644")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "\000\001\002\003")
-		_, err = ioutil.ReadFile(bindmounts["/tip"].HostPath + "/file only on testbranch")
-		c.Check(err, FitsTypeOf, &os.PathError{})
-		c.Check(os.IsNotExist(err), Equals, true)
-
-		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/dir1/dir2/file with mode 0644")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "\000\001\002\003")
-		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/file only on testbranch")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "testfile\n")
-
 		cr.CleanupDirs()
 		checkEmpty()
 	}

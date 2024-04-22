@@ -38,8 +38,6 @@ $RAILS_ENV:
   blob_signing_key: $blob_signing_key
   workbench_address: "https://$localip/"
   websocket_address: "wss://$localip:${services[websockets-ssl]}/websocket"
-  git_repo_ssh_base: "git@$localip:"
-  git_repo_https_base: "http://$localip:${services[arv-git-httpd]}/"
   new_users_are_active: true
   auto_admin_first_user: true
   auto_setup_new_users: true

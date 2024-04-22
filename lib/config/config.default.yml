@@ -74,12 +74,6 @@ Clusters:
       Keepbalance:
         InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
-      GitHTTP:
-        InternalURLs: {SAMPLE: {ListenURL: ""}}
-        ExternalURL: ""
-      GitSSH:
-        InternalURLs: {SAMPLE: {ListenURL: ""}}
-        ExternalURL: ""
       DispatchCloud:
         InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
@@ -340,7 +334,6 @@ Clusters:
       # AutoSetupUsernameBlacklist is a list of usernames to be blacklisted for auto setup.
       AutoSetupNewUsers: false
       AutoSetupNewUsersWithVmUUID: ""
-      AutoSetupNewUsersWithRepository: false
       AutoSetupUsernameBlacklist:
         arvados: {}
         git: {}
@@ -1058,24 +1051,6 @@ Clusters:
       # production use.
       TrustPrivateNetworks: false
 
-    Git:
-      # Path to git or gitolite-shell executable. Each authenticated
-      # request will execute this program with the single argument "http-backend"
-      GitCommand: /usr/bin/git
-
-      # Path to Gitolite's home directory. If a non-empty path is given,
-      # the CGI environment will be set up to support the use of
-      # gitolite-shell as a GitCommand: for example, if GitoliteHome is
-      # "/gh", then the CGI environment will have GITOLITE_HTTP_HOME=/gh,
-      # PATH=$PATH:/gh/bin, and GL_BYPASS_ACCESS_CHECKS=1.
-      GitoliteHome: ""
-
-      # Git repositories must be readable by api server, or you won't be
-      # able to submit crunch jobs. To pass the test suites, put a clone
-      # of the arvados tree in {git_repositories_dir}/arvados.git or
-      # {git_repositories_dir}/arvados/.git
-      Repositories: /var/lib/arvados/git/repositories
-
     TLS:
       # Use "file:///var/lib/acme/live/example.com/cert" and
       # ".../privkey" to load externally managed certificates.
@@ -1401,12 +1376,6 @@ Clusters:
         # 'true' -- enable the Jobs API despite lack of existing records.
         # 'false' -- disable the Jobs API despite presence of existing records.
         Enable: 'auto'
-
-        # Git repositories must be readable by api server, or you won't be
-        # able to submit crunch jobs. To pass the test suites, put a clone
-        # of the arvados tree in {git_repositories_dir}/arvados.git or
-        # {git_repositories_dir}/arvados/.git
-        GitInternalDir: /var/lib/arvados/internal.git
 
       CloudVMs:
         # Enable the cloud scheduler.

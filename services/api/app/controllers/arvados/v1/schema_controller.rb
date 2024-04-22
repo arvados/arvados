@@ -72,7 +72,6 @@ class Arvados::V1::SchemaController < ApplicationController
       workbenchUrl: Rails.configuration.Services.Workbench1.ExternalURL.to_s,
       workbench2Url: Rails.configuration.Services.Workbench2.ExternalURL.to_s,
       keepWebServiceUrl: Rails.configuration.Services.WebDAV.ExternalURL.to_s,
-      gitUrl: Rails.configuration.Services.GitHTTP.ExternalURL.to_s,
       parameters: {
         alt: {
           type: "string",

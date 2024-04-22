@@ -215,8 +215,6 @@ describe("Search tests", function () {
                         DispatchCloud: { ExternalURL: "" },
                         DispatchLSF: { ExternalURL: "" },
                         DispatchSLURM: { ExternalURL: "" },
-                        GitHTTP: { ExternalURL: "https://xxxxx.fakecluster.tld:39105/" },
-                        GitSSH: { ExternalURL: "" },
                         Health: { ExternalURL: "https://xxxxx.fakecluster.tld:42915/" },
                         Keepbalance: { ExternalURL: "" },
                         Keepproxy: { ExternalURL: "https://xxxxx.fakecluster.tld:46773/" },

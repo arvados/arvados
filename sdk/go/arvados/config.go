@@ -161,11 +161,6 @@ type Cluster struct {
 		WebDAVLogEvents     bool
 		WebDAVOutputBuffer  ByteSize
 	}
-	Git struct {
-		GitCommand   string
-		GitoliteHome string
-		Repositories string
-	}
 	Login struct {
 		LDAP struct {
 			Enable             bool
@@ -248,7 +243,6 @@ type Cluster struct {
 		AutoAdminFirstUser                    bool
 		AutoAdminUserWithEmail                string
 		AutoSetupNewUsers                     bool
-		AutoSetupNewUsersWithRepository       bool
 		AutoSetupNewUsersWithVmUUID           string
 		AutoSetupUsernameBlacklist            StringSet
 		EmailSubjectPrefix                    string
@@ -356,8 +350,6 @@ type Services struct {
 	DispatchCloud  Service
 	DispatchLSF    Service
 	DispatchSLURM  Service
-	GitHTTP        Service
-	GitSSH         Service
 	Health         Service
 	Keepbalance    Service
 	Keepproxy      Service
@@ -511,8 +503,7 @@ type ContainersConfig struct {
 	LocalKeepLogsToContainerLog   string
 
 	JobsAPI struct {
-		Enable         string
-		GitInternalDir string
+		Enable string
 	}
 	Logging struct {
 		MaxAge                       Duration
@@ -661,7 +652,6 @@ const (
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
 	ServiceNameDispatchLSF   ServiceName = "arvados-dispatch-lsf"
 	ServiceNameDispatchSLURM ServiceName = "crunch-dispatch-slurm"
-	ServiceNameGitHTTP       ServiceName = "arvados-git-httpd"
 	ServiceNameHealth        ServiceName = "arvados-health"
 	ServiceNameKeepbalance   ServiceName = "keep-balance"
 	ServiceNameKeepproxy     ServiceName = "keepproxy"
@@ -681,7 +671,6 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
 		ServiceNameDispatchLSF:   svcs.DispatchLSF,
 		ServiceNameDispatchSLURM: svcs.DispatchSLURM,
-		ServiceNameGitHTTP:       svcs.GitHTTP,
 		ServiceNameHealth:        svcs.Health,
 		ServiceNameKeepbalance:   svcs.Keepbalance,
 		ServiceNameKeepproxy:     svcs.Keepproxy,

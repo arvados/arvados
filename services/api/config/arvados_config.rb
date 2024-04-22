@@ -84,7 +84,6 @@ arvcfg = ConfigLoader.new
 arvcfg.declare_config "ClusterID", NonemptyString, :uuid_prefix
 arvcfg.declare_config "ManagementToken", String, :ManagementToken
 arvcfg.declare_config "SystemRootToken", String
-arvcfg.declare_config "Git.Repositories", String, :git_repositories_dir
 arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, ->(cfg, k, v) { arrayToHash cfg, "API.DisabledAPIs", v }
 arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
@@ -94,7 +93,6 @@ arvcfg.declare_config "API.RequestTimeout", ActiveSupport::Duration
 arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
-arvcfg.declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
 arvcfg.declare_config "Users.AutoSetupUsernameBlacklist", Hash, :auto_setup_name_blacklist, ->(cfg, k, v) { arrayToHash cfg, "Users.AutoSetupUsernameBlacklist", v }
 arvcfg.declare_config "Users.NewUsersAreActive", Boolean, :new_users_are_active
 arvcfg.declare_config "Users.AutoAdminUserWithEmail", String, :auto_admin_user
@@ -148,8 +146,6 @@ arvcfg.declare_config "Services.Controller.ExternalURL", URI
 arvcfg.declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
 arvcfg.declare_config "Services.Websocket.ExternalURL", URI, :websocket_address
 arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
-arvcfg.declare_config "Services.GitHTTP.ExternalURL", URI, :git_repo_https_base
-arvcfg.declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Services.GitSSH.ExternalURL", "ssh://#{v}" }
 arvcfg.declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
   h = if cfg["RemoteClusters"] then
         cfg["RemoteClusters"].deep_dup

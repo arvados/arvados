@@ -366,7 +366,6 @@ func (super *Supervisor) runCluster() error {
 		runNginx{},
 		railsDatabase{},
 		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{railsDatabase{}}},
-		runServiceCommand{name: "git-httpd", svc: super.cluster.Services.GitHTTP},
 		runServiceCommand{name: "health", svc: super.cluster.Services.Health},
 		runServiceCommand{name: "keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runServiceCommand{name: "keepstore", svc: super.cluster.Services.Keepstore},
@@ -821,7 +820,6 @@ func (super *Supervisor) autofillConfig() error {
 	for _, svc := range []*arvados.Service{
 		&super.cluster.Services.Controller,
 		&super.cluster.Services.DispatchCloud,
-		&super.cluster.Services.GitHTTP,
 		&super.cluster.Services.Health,
 		&super.cluster.Services.Keepproxy,
 		&super.cluster.Services.Keepstore,
@@ -839,7 +837,6 @@ func (super *Supervisor) autofillConfig() error {
 			}
 			host := net.JoinHostPort(defaultExtHost, port)
 			if svc == &super.cluster.Services.Controller ||
-				svc == &super.cluster.Services.GitHTTP ||
 				svc == &super.cluster.Services.Health ||
 				svc == &super.cluster.Services.Keepproxy ||
 				svc == &super.cluster.Services.WebDAV ||

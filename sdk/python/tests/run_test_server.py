@@ -587,27 +587,6 @@ def stop_keep_proxy():
         return
     kill_server_pid(_pidfile('keepproxy'))
 
-def run_arv_git_httpd():
-    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
-        return
-    stop_arv_git_httpd()
-
-    gitport = internal_port_from_config("GitHTTP")
-    env = os.environ.copy()
-    env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('githttpd'), WRITE_MODE)
-    agh = subprocess.Popen(['arvados-server', 'git-httpd'],
-        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
-    _detachedSubprocesses.append(agh)
-    with open(_pidfile('githttpd'), 'w') as f:
-        f.write(str(agh.pid))
-    _wait_until_port_listens(gitport)
-
-def stop_arv_git_httpd():
-    if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
-        return
-    kill_server_pid(_pidfile('githttpd'))
-
 def run_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
@@ -644,8 +623,6 @@ def run_nginx():
     nginxconf['KEEPWEBSSLPORT'] = external_port_from_config("WebDAV")
     nginxconf['KEEPPROXYPORT'] = internal_port_from_config("Keepproxy")
     nginxconf['KEEPPROXYSSLPORT'] = external_port_from_config("Keepproxy")
-    nginxconf['GITPORT'] = internal_port_from_config("GitHTTP")
-    nginxconf['GITSSLPORT'] = external_port_from_config("GitHTTP")
     nginxconf['HEALTHPORT'] = internal_port_from_config("Health")
     nginxconf['HEALTHSSLPORT'] = external_port_from_config("Health")
     nginxconf['WSPORT'] = internal_port_from_config("Websocket")
@@ -688,8 +665,6 @@ def setup_config():
     workbench1_external_port = find_available_port()
     workbench2_port = find_available_port()
     workbench2_external_port = find_available_port()
-    git_httpd_port = find_available_port()
-    git_httpd_external_port = find_available_port()
     health_httpd_port = find_available_port()
     health_httpd_external_port = find_available_port()
     keepproxy_port = find_available_port()
@@ -741,12 +716,6 @@ def setup_config():
             "ExternalURL": "https://%s:%s/" % (localhost, workbench2_external_port),
             "InternalURLs": {
                 "http://%s:%s"%(localhost, workbench2_port): {},
-            },
-        },
-        "GitHTTP": {
-            "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
-            "InternalURLs": {
-                "http://%s:%s"%(localhost, git_httpd_port): {}
             },
         },
         "Health": {
@@ -821,13 +790,7 @@ def setup_config():
                     "ForwardSlashNameSubstitution": "/",
                     "TrashSweepInterval": "-1s",
                 },
-                "Git": {
-                    "Repositories": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git', 'test'),
-                },
                 "Containers": {
-                    "JobsAPI": {
-                        "GitInternalDir": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'internal.git'),
-                    },
                     "LocalKeepBlobBuffersPerVCPU": 0,
                     "Logging": {
                         "SweepInterval": 0, # disable, otherwise test cases can't acquire dblock
@@ -959,7 +922,6 @@ if __name__ == "__main__":
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
-        'start_githttpd', 'stop_githttpd',
         'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
@@ -1007,10 +969,6 @@ if __name__ == "__main__":
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
         stop_keep_proxy()
-    elif args.action == 'start_githttpd':
-        run_arv_git_httpd()
-    elif args.action == 'stop_githttpd':
-        stop_arv_git_httpd()
     elif args.action == 'start_keep-web':
         run_keep_web()
     elif args.action == 'stop_keep-web':

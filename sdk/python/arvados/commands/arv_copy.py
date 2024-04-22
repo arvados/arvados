@@ -735,58 +735,6 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest.getvalue()
     return create_collection_from(c, src, dst, args)
 
-def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_http_opt):
-    r = api.repositories().list(
-        filters=[['name', '=', repo_name]]).execute(num_retries=retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify repo {}; {} repos found'
-                        .format(repo_name, r['items_available']))
-
-    https_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https:")]
-    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("http:")]
-    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("http")]
-
-    priority = https_url + other_url + http_url
-
-    for url in priority:
-        if url.startswith("http"):
-            u = urllib.parse.urlsplit(url)
-            baseurl = urllib.parse.urlunsplit((u.scheme, u.netloc, "", "", ""))
-            git_config = ["-c", "credential.%s/.username=none" % baseurl,
-                          "-c", "credential.%s/.helper=!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred" % baseurl]
-        else:
-            git_config = []
-
-        try:
-            logger.debug("trying %s", url)
-            subprocess.run(
-                ['git', *git_config, 'ls-remote', url],
-                check=True,
-                env={
-                    'ARVADOS_API_TOKEN': api.api_token,
-                    'GIT_ASKPASS': '/bin/false',
-                    'HOME': os.environ['HOME'],
-                },
-                stdout=subprocess.DEVNULL,
-            )
-        except subprocess.CalledProcessError:
-            pass
-        else:
-            git_url = url
-            break
-    else:
-        raise Exception('Cannot access git repository, tried {}'
-                        .format(priority))
-
-    if git_url.startswith("http:"):
-        if allow_insecure_http:
-            logger.warning("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
-        else:
-            raise Exception("Refusing to use insecure git url %s, use %s if you really want this." % (git_url, allow_insecure_http_opt))
-
-    return (git_url, git_config)
-
-
 def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     """Copy the docker image identified by docker_image and
     docker_image_tag from src to dst. Create appropriate

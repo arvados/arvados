@@ -48,7 +48,6 @@ type Loader struct {
 	CrunchDispatchSlurmPath string
 	WebsocketPath           string
 	KeepproxyPath           string
-	GitHttpdPath            string
 	KeepBalancePath         string
 
 	configdata []byte
@@ -88,7 +87,6 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 		flagset.StringVar(&ldr.CrunchDispatchSlurmPath, "legacy-crunch-dispatch-slurm-config", defaultCrunchDispatchSlurmConfigPath, "Legacy crunch-dispatch-slurm configuration `file`")
 		flagset.StringVar(&ldr.WebsocketPath, "legacy-ws-config", defaultWebsocketConfigPath, "Legacy arvados-ws configuration `file`")
 		flagset.StringVar(&ldr.KeepproxyPath, "legacy-keepproxy-config", defaultKeepproxyConfigPath, "Legacy keepproxy configuration `file`")
-		flagset.StringVar(&ldr.GitHttpdPath, "legacy-git-httpd-config", defaultGitHttpdConfigPath, "Legacy arvados-git-httpd configuration `file`")
 		flagset.StringVar(&ldr.KeepBalancePath, "legacy-keepbalance-config", defaultKeepBalanceConfigPath, "Legacy keep-balance configuration `file`")
 		flagset.BoolVar(&ldr.SkipLegacy, "skip-legacy", false, "Don't load legacy config files")
 	}
@@ -167,9 +165,6 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 	}
 	if legacyConfigArg != "-legacy-keepproxy-config" {
 		ldr.KeepproxyPath = ""
-	}
-	if legacyConfigArg != "-legacy-git-httpd-config" {
-		ldr.GitHttpdPath = ""
 	}
 	if legacyConfigArg != "-legacy-keepbalance-config" {
 		ldr.KeepBalancePath = ""
@@ -296,7 +291,6 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.loadOldCrunchDispatchSlurmConfig,
 			ldr.loadOldWebsocketConfig,
 			ldr.loadOldKeepproxyConfig,
-			ldr.loadOldGitHttpdConfig,
 			ldr.loadOldKeepBalanceConfig,
 		)
 	}

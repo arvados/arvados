@@ -38,7 +38,7 @@ services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.r
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
                Restrict Python SDK tests to the given class
-services/githttpd_test="-check.vv"
+lib/dispatchcloud_test="-check.vv"
                Show all log messages, even when tests pass (also works
                with services/keepstore_test etc.)
 ARVADOS_DEBUG=1
@@ -85,7 +85,6 @@ lib/mount
 lib/pam
 lib/service
 services/api
-services/githttpd
 services/dockercleaner
 services/fuse
 services/fuse:py3
@@ -219,9 +218,6 @@ sanity_checks() {
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
-    echo -n 'gitolite: '
-    which gitolite \
-        || fatal "No gitolite. Try: apt-get install gitolite3"
     echo -n 'npm: '
     npm --version \
         || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v12.22.12-linux-x64/bin/{node,npm} /usr/local/bin/"
@@ -393,7 +389,7 @@ start_services() {
         return 0
     fi
     . "$VENV3DIR/bin/activate"
-    echo 'Starting API, controller, keepproxy, keep-web, githttpd, ws, and nginx ssl proxy...'
+    echo 'Starting API, controller, keepproxy, keep-web, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
         mkdir -p "$WORKSPACE/services/api/log"
     fi
@@ -421,9 +417,6 @@ start_services() {
         && python3 sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
         && checkhealth WebDAV \
-        && python3 sdk/python/tests/run_test_server.py start_githttpd \
-        && checkpidfile githttpd \
-        && checkhealth GitHTTP \
         && python3 sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
@@ -444,7 +437,6 @@ stop_services() {
     . "$VENV3DIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python3 sdk/python/tests/run_test_server.py stop_nginx \
-        && python3 sdk/python/tests/run_test_server.py stop_githttpd \
         && python3 sdk/python/tests/run_test_server.py stop_ws \
         && python3 sdk/python/tests/run_test_server.py stop_keep-web \
         && python3 sdk/python/tests/run_test_server.py stop_keep_proxy \

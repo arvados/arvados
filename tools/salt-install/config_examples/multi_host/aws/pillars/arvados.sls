@@ -166,7 +166,6 @@ arvados:
       NewUsersAreActive: true
       AutoAdminFirstUser: true
       AutoSetupNewUsers: true
-      AutoSetupNewUsersWithRepository: true
 
     Services:
       Controller:

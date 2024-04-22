@@ -233,74 +233,50 @@ http {
     }
   }
 
-  upstream arvados-git-httpd {
-    server localhost:${services[arv-git-httpd]};
+  upstream arvados-webshell {
+    server                localhost:${services[webshell]};
   }
   server {
-    listen *:${services[arv-git-httpd-ssl]} ssl default_server;
-    server_name arvados-git-httpd;
-    proxy_connect_timeout 90s;
-    proxy_read_timeout 300s;
+    listen                ${services[webshell-ssl]} ssl;
+    server_name           arvados-webshell;
 
-    ssl on;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    ssl                   on;
     ssl_certificate "${server_cert}";
     ssl_certificate_key "${server_cert_key}";
-    client_max_body_size 50m;
 
-    location  / {
-      proxy_pass http://arvados-git-httpd;
-      proxy_set_header Host \$http_host;
-      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto https;
-      proxy_redirect off;
+    location / {
+      if (\$request_method = 'OPTIONS') {
+         add_header 'Access-Control-Allow-Origin' '*';
+         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+         add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+         add_header 'Access-Control-Max-Age' 1728000;
+         add_header 'Content-Type' 'text/plain charset=UTF-8';
+         add_header 'Content-Length' 0;
+         return 204;
+      }
+      if (\$request_method = 'POST') {
+         add_header 'Access-Control-Allow-Origin' '*';
+         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+         add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+      }
+      if (\$request_method = 'GET') {
+         add_header 'Access-Control-Allow-Origin' '*';
+         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+         add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+      }
+
+      proxy_ssl_session_reuse off;
+      proxy_read_timeout  90;
+      proxy_set_header    X-Forwarded-Proto https;
+      proxy_set_header    Host \$http_host;
+      proxy_set_header    X-Real-IP \$remote_addr;
+      proxy_set_header    X-Forwarded-For \$proxy_add_x_forwarded_for;
+      proxy_pass          http://arvados-webshell;
     }
   }
-
-
-upstream arvados-webshell {
-  server                localhost:${services[webshell]};
-}
-server {
-  listen                ${services[webshell-ssl]} ssl;
-  server_name           arvados-webshell;
-
-  proxy_connect_timeout 90s;
-  proxy_read_timeout    300s;
-
-  ssl                   on;
-  ssl_certificate "${server_cert}";
-  ssl_certificate_key "${server_cert_key}";
-
-  location / {
-    if (\$request_method = 'OPTIONS') {
-       add_header 'Access-Control-Allow-Origin' '*';
-       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-       add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
-       add_header 'Access-Control-Max-Age' 1728000;
-       add_header 'Content-Type' 'text/plain charset=UTF-8';
-       add_header 'Content-Length' 0;
-       return 204;
-    }
-    if (\$request_method = 'POST') {
-       add_header 'Access-Control-Allow-Origin' '*';
-       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-       add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
-    }
-    if (\$request_method = 'GET') {
-       add_header 'Access-Control-Allow-Origin' '*';
-       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-       add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
-    }
-
-    proxy_ssl_session_reuse off;
-    proxy_read_timeout  90;
-    proxy_set_header    X-Forwarded-Proto https;
-    proxy_set_header    Host \$http_host;
-    proxy_set_header    X-Real-IP \$remote_addr;
-    proxy_set_header    X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_pass          http://arvados-webshell;
-  }
-}
 }
 
 EOF
