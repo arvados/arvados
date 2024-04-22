@@ -6,7 +6,7 @@ import React from 'react';
 import { memoize } from 'lodash/fp';
 import { isRequiredInput, StringCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
-import { require } from 'validators/require';
+import { fieldRequire } from 'validators/require';
 import { GenericInputProps, GenericInput } from 'views/run-process-panel/inputs/generic-input';
 import { Input as MaterialInput } from '@material-ui/core';
 
@@ -23,7 +23,7 @@ export const StringInput = ({ input }: StringInputProps) =>
 const getValidation = memoize(
     (input: StringCommandInputParameter) => ([
         isRequiredInput(input)
-            ? require
+            ? fieldRequire
             : () => undefined,
     ]));
 

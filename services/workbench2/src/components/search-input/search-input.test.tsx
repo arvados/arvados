@@ -11,11 +11,10 @@ configure({ adapter: new Adapter() });
 
 describe("<SearchInput />", () => {
 
-    jest.useFakeTimers();
-
     let onSearch: () => void;
 
     beforeEach(() => {
+        jest.useFakeTimers();
         onSearch = jest.fn();
     });
 

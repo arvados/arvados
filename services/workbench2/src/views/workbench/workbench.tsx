@@ -322,7 +322,7 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
 
     useEffect(()=>{
         if (isTransitioning) applyCollapsedState(savedWidth);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isTransitioning, savedWidth])
 
     applyCollapsedState(savedWidth);
