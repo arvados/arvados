@@ -38,6 +38,7 @@ type CssRules =
     | 'faveIcon'
     | 'frozenIcon'
     | 'accountStatusSection'
+    | 'chipToggle'
     | 'chipSection'
     | 'tag'
     | 'description';
@@ -118,6 +119,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingLeft: '1rem',
+    },
+    chipToggle: {
+        display: 'flex',
+        alignItems: 'center',
+        height: '2rem',
     },
     chipSection: {
         marginBottom: '-2rem',
@@ -345,7 +351,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         onClick={toggleProperties}
                         className={classes.descriptionToggle}
                     >
-                        <ExpandChevronRight expanded={showProperties} />
+                        <div className={classes.chipToggle}>
+                            <ExpandChevronRight expanded={showProperties} />
+                        </div>
                         <section className={classes.showMore}>
                             <Collapse
                                 in={showProperties}
