@@ -278,7 +278,6 @@ export const ProjectPanel = withStyles(styles)(
                         contextMenuColumn={true}
                         defaultViewIcon={ProjectIcon}
                         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                        selectedResourceUuid={this.props.currentItemId}
                     />
                 </div>
             }

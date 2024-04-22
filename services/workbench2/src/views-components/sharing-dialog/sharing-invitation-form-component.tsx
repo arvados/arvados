@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
-import { Grid, FormControl, InputLabel, StyleRulesCallback, Divider } from '@material-ui/core';
+import { Grid, FormControl, InputLabel, StyleRulesCallback } from '@material-ui/core';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { ParticipantSelect, Participant } from './participant-select';
 import { WithStyles } from '@material-ui/core/styles';

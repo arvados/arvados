@@ -23,7 +23,7 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties}: RootState, { id }: Props) => {
     const working = !!progressIndicator.some(p => p.id === id && p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
@@ -34,6 +34,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
         paperKey: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
+        selectedResourceUuid,
         checkedList: multiselect.checkedList,
         working,
     };

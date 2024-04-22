@@ -11,6 +11,7 @@ import { MultiSelectMenuAction } from 'views-components/multiselect-toolbar/ms-m
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
     ROOT_PROJECT = "RootProject",
+    ROOT_PROJECT_ADMIN = "RootProjectAdmin",
     PROJECT = "Project",
     FILTER_GROUP = "FilterGroup",
     READONLY_PROJECT = "ReadOnlyProject",
@@ -47,6 +48,7 @@ export enum ContextMenuKind {
     VIRTUAL_MACHINE = "VirtualMachine",
     KEEP_SERVICE = "KeepService",
     USER = "User",
+    USER_DETAILS = "UserDetails",
     GROUPS = "Group",
     GROUP_MEMBER = "GroupMember",
     PERMISSION_EDIT = "PermissionEdit",

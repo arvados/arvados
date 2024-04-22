@@ -6,12 +6,13 @@ import { AdvancedIcon, AttributesIcon, UserPanelIcon } from 'components/icon/ico
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openUserAttributes } from 'store/users/users-actions';
 import { navigateToUserProfile } from 'store/navigation/navigation-action';
-import { MultiSelectMenuActionSet, MultiSelectMenuActionNames } from './ms-menu-actions';
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
+import { MultiSelectMenuActionSet } from './ms-menu-actions';
 
 export const UserDetailsActionSet: MultiSelectMenuActionSet= [
     [
         {
-            name: MultiSelectMenuActionNames.ATTRIBUTES,
+            name: ContextMenuActionNames.ATTRIBUTES,
             icon: AttributesIcon,
             hasAlts: false,
             isForMulti: false,
@@ -20,7 +21,7 @@ export const UserDetailsActionSet: MultiSelectMenuActionSet= [
             },
         },
         {
-            name: MultiSelectMenuActionNames.API_DETAILS,
+            name: ContextMenuActionNames.API_DETAILS,
             icon: AdvancedIcon,
             hasAlts: false,
             isForMulti: false,
@@ -29,7 +30,7 @@ export const UserDetailsActionSet: MultiSelectMenuActionSet= [
             },
         },
         {
-            name: MultiSelectMenuActionNames.USER_ACCOUNT,
+            name: ContextMenuActionNames.USER_ACCOUNT,
             icon: UserPanelIcon,
             hasAlts: false,
             isForMulti: false,

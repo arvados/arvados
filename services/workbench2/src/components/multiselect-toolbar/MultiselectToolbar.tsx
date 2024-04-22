@@ -126,7 +126,7 @@ export const MultiselectToolbar = connect(
         return (
             <React.Fragment>
                 <Toolbar
-                    className={classes.root}
+                    className={classNames(classes.root, injectedStyles)}
                     style={{ width: `${(actions.length * 2.5) + 6}rem`}}
                     data-cy='multiselect-toolbar'
                     >
@@ -349,12 +349,12 @@ function mapDispatchToProps(dispatch: Dispatch) {
             switch (selectedAction.name) {
                 case ContextMenuActionNames.MOVE_TO:
                 case ContextMenuActionNames.REMOVE:
-                    const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as ContainerRequestResource | Resource;
+                    const firstResource = getResource(currentList[0])(resources) as ContainerRequestResource | Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
                 case ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD:
-                    const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
+                    const selectedResources = currentList.map(uuid => getResource(uuid)(resources));
                     dispatch<any>(copyToClipboardAction(selectedResources));
                     break;
                 default:

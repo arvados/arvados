@@ -55,6 +55,7 @@ import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
 import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
+import { InlinePulser } from "components/loading/inline-pulser";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -65,7 +66,6 @@ export const toggleIsAdmin = (uuid: string) =>
         dispatch<any>(loadUsersPanel());
         return newActivity;
     };
-import { InlinePulser } from "components/loading/inline-pulser";
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;

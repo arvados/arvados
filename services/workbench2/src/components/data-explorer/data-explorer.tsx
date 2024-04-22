@@ -130,12 +130,24 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+        state = {
+            msToolbarInDetailsCard: true,
+        };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
+            }
+        }
+
+        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
+            const { selectedResourceUuid, currentRouteUuid } = this.props;
+            if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
+                this.setState({
+                    multiSelectToolbarInTitle: selectedResourceUuid === this.props.currentRouteUuid,
+                })
             }
         }
 
@@ -204,7 +216,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                             {!!progressBar && progressBar}
-                            {this.multiSelectToolbarInTitle && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
+                            {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
