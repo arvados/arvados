@@ -532,15 +532,18 @@ handle_rails_package() {
         # gems that are already available system-wide... and then it complains
         # that your bundle is incomplete. Work around this by fetching gems
         # manually.
+        # TODO: Once all our supported distros have Ruby 3+, we can modify
+        # the awk script to print "NAME:VERSION" output, and pipe that directly
+        # to `xargs -0r gem fetch` for reduced overhead.
         mkdir -p vendor/cache
         awk -- '
-BEGIN { OFS=":"; ORS="\0"; }
+BEGIN { OFS="\0"; ORS="\0"; }
 (/^[[:space:]]*$/) { level=0; }
 ($0 == "GEM" || $0 == "  specs:") { level+=1; }
 (level == 2 && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /^\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
-    print $1, substr($2, 2, length($2) - 2);
+    print "--version", substr($2, 2, length($2) - 2), $1;
 }
-' Gemfile.lock | env -C vendor/cache xargs -0r gem fetch
+' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 gem fetch
         # Despite the bug, we still run `bundle cache` to make sure Bundler is
         # happy for later steps.
         bundle cache
