@@ -46,7 +46,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: 0,
         height: '2.5rem',
         padding: 0,
-        margin: "1rem auto auto 0.3rem",
+        margin: 0,
         overflow: 'hidden',
     },
     button: {
