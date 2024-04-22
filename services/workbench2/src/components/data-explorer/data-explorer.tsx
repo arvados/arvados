@@ -146,7 +146,7 @@ export const DataExplorer = withStyles(styles)(
             const { selectedResourceUuid, currentRouteUuid } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 this.setState({
-                    multiSelectToolbarInTitle: selectedResourceUuid === this.props.currentRouteUuid,
+                    msToolbarInDetailsCard: selectedResourceUuid === this.props.currentRouteUuid,
                 })
             }
         }

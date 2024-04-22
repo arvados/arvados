@@ -127,7 +127,7 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
-                    style={{ width: `${(actions.length * 2.5) + 6}rem`}}
+                    style={{ width: `${(actions.length * 2.5) + 2}rem`}}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
