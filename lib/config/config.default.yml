@@ -1979,6 +1979,9 @@ Clusters:
       # HTML-formatted text) when users first log in to Workbench.
       BannerUUID: ""
 
+      # Google Tag ID for Google Analytics.
+      GoogleTagID: ""
+
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.
       WelcomePageHTML: |

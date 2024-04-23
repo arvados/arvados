@@ -296,6 +296,7 @@ type Cluster struct {
 		SSHHelpHostSuffix      string
 		IdleTimeout            Duration
 		BannerUUID             string
+		GoogleTagID            string
 	}
 }
 

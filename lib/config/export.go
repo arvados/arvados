@@ -288,6 +288,7 @@ var whitelist = map[string]bool{
 	"Workbench.EnableGettingStartedPopup":                 true,
 	"Workbench.EnablePublicProjectsPage":                  true,
 	"Workbench.FileViewersConfigURL":                      true,
+	"Workbench.GoogleTagID":                               true,
 	"Workbench.IdleTimeout":                               true,
 	"Workbench.InactivePageHTML":                          true,
 	"Workbench.LogViewerMaxBytes":                         true,
