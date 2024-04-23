@@ -611,7 +611,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// When writing, we need to block session renewal
 		// until we're finished, in order to guarantee the
 		// effect of the write is visible in future responses.
-		// But if we're not writing, we can release the lcok
+		// But if we're not writing, we can release the lock
 		// early.  This enables us to keep renewing sessions
 		// and processing more requests even if a slow client
 		// takes a long time to download a large file.
