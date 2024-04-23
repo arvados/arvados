@@ -200,6 +200,7 @@ configure_version() {
   # 3. We can know exactly where the `bundle` command got installed.
   local bundle_path="$SHARED_PATH/vendor_bundle"
   export GEM_HOME="$bundle_path/ruby/$(ruby -e 'puts RUBY_VERSION')"
+  export GEM_PATH="$GEM_HOME"
   run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
   local bundle="$GEM_HOME/bin/bundle"
 
@@ -213,8 +214,8 @@ configure_version() {
       | run_and_report "Installing bundle gems" xargs -0r \
                        gem install --conservative --ignore-dependencies --local --quiet
   # The earlier `bundle config` should have it looking for installed gems in
-  # the right place. Unset GEM_HOME now to be sure.
-  unset GEM_HOME
+  # the right place. Unset GEM_* now to be sure.
+  unset GEM_HOME GEM_PATH
   run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
   run_and_report "Verifying bundle is complete" "$bundle" exec true
 
