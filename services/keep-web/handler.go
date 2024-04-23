@@ -435,6 +435,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		break
 	}
 
+	// releaseSession() is equivalent to session.Release() except
+	// that it's a no-op if (1) session is nil, or (2) it has
+	// already been called.
+	//
+	// This way, we can do a defer call here to ensure it gets
+	// called in all code paths, and also call it inline (see
+	// below) in the cases where we want to release the lock
+	// before returning.
 	releaseSession := func() {}
 	if session != nil {
 		var releaseSessionOnce sync.Once
