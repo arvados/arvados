@@ -138,6 +138,36 @@ describe('renderers', () => {
             expect(panel.find(TableBody).text()).toContain('someValue');
         });
 
+        it('shows main process with output collection', () => {
+            // when
+            const outputCollection = '987654321';
+            const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
+            let panel = mount(
+                <Provider store={store}>
+                    <MuiThemeProvider theme={CustomTheme}>
+                        <ProcessIOCard
+                            label={ProcessIOCardType.OUTPUT}
+                            process={false} // Treat as a main process, no requestingContainerUuid
+                            outputUuid={outputCollection}
+                            params={parameters}
+                            raw={{}}
+                        />
+                    </MuiThemeProvider>
+                </Provider>
+                );
+
+            // then
+            expect(panel.find(CircularProgress).exists()).toBeFalsy();
+            expect(panel.find(Tab).length).toBe(3); // Empty raw is shown if parameters are present
+            expect(panel.find(TableBody).text()).toContain('someId');
+            expect(panel.find(TableBody).text()).toContain('someLabel');
+            expect(panel.find(TableBody).text()).toContain('someValue');
+
+            // Visit output tab
+            panel.find(Tab).at(2).simulate('click');
+            expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
+        });
+
         // Subprocess
 
         it('shows subprocess loading', () => {

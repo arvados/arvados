@@ -6,7 +6,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import { Tabs, Tab } from "@material-ui/core";
 import { TabsProps } from "@material-ui/core/Tabs";
 
-type TabData = {
+export type TabData = {
     show: boolean;
     label: string;
     content: ReactNode;
@@ -37,7 +37,7 @@ export const ConditionalTabs = (props: Omit<TabsProps, 'value' | 'onChange'> & C
             {...props}
             value={tabState}
             onChange={handleTabChange} >
-            {visibleTabs.map(tab => <Tab label={tab.label} />)}
+            {visibleTabs.map(tab => <Tab key={tab.label} label={tab.label} />)}
         </Tabs>
         {activeTab && activeTab.content}
     </>;
