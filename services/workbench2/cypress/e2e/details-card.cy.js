@@ -39,23 +39,18 @@ describe('User Details Card tests', function () {
     });
 
     it('shows the appropriate buttons in the multiselect toolbar', () => {
-
-        const msButtonTooltips = [
-            'API Details',
-            'Attributes',
-            'User account',
-        ];
+        const msButtonTooltips = ['API Details', 'Attributes', 'User account'];
 
         cy.loginAs(activeUser);
 
-        cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
+        cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length);
 
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.get('body').contains(msButtonTooltips[i]).should('exist')
+            cy.get('body').contains(msButtonTooltips[i]).should('exist');
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
-    })
+    });
 });
 
 describe('Project Details Card tests', function () {
@@ -109,12 +104,7 @@ describe('Project Details Card tests', function () {
     });
 
     it('shows the appropriate buttons in the multiselect toolbar', () => {
-
-        const msButtonTooltips = [
-            'View details',
-            'Open in new tab',
-            'Copy link to clipboard',
-        ];
+        const msButtonTooltips = ['View details', 'Open in new tab', 'Copy link to clipboard'];
 
         const msOverflowMenuButtonTooltips = [
             'Open with 3rd party client',
@@ -146,26 +136,31 @@ describe('Project Details Card tests', function () {
 
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.get('body').contains(msButtonTooltips[i]).should('exist')
+            cy.get('body').contains(msButtonTooltips[i]).should('exist');
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
 
         cy.get('[data-cy=overflow-menu-button]').click();
-        cy.get('[data-cy=overflow-menu]').should('be.visible').within(() => {
-            cy.get('[data-cy=multiselect-button]').should('exist');
+        cy.get('[data-cy=overflow-menu]')
+            .should('be.visible')
+            .within(() => {
+                cy.get('[data-cy=multiselect-button]').should('exist');
 
-            
-            for (let i = 0; i < msOverflowMenuButtonTooltips.length; i++) {
-                cy.get('li').eq(i).within(() => {
-                    cy.get(`span`).should('have.prop', 'title', msOverflowMenuButtonTooltips[i]);
-                });
-            }
-        })
+                for (let i = 0; i < msOverflowMenuButtonTooltips.length; i++) {
+                    cy.get('li')
+                        .eq(i)
+                        .within(() => {
+                            cy.get(`span`).should('have.prop', 'title', msOverflowMenuButtonTooltips[i]);
+                        });
+                }
+            });
     });
 
     it('should toggle description display', () => {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        const projDescription = 'Lorem ipsum dolor sit amet, consectetur adipiscing vultures, whose wings are dull realities.';
+        //must be long enough to require a 2nd line
+        const projDescription =
+            'Science! true daughter of Old Time thou art! Who alterest all things with thy peering eyes. Why preyest thou thus upon the poet’s heart, Vulture, whose wings are dull realities? '
         cy.loginAs(adminUser);
 
         // Create project
@@ -195,13 +190,14 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
         //toggle description
-        cy.get('[data-cy=toggle-description').click();
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+        cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-description]').should('be.visible');
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 91);
         cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
         cy.get('[data-cy=toggle-description').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-description]').should('be.hidden');
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
     });
 
     it('should display key/value pairs', () => {

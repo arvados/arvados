@@ -314,7 +314,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                     </Tooltip>
                                 )}
                             </section>
-                            {!description && <Typography className={classes.noDescription}>no description available</Typography>}
+                            {!description && <Typography data-cy="no-description" className={classes.noDescription}>no description available</Typography>}
                         </section>
                     }
                 />
@@ -325,6 +325,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                     <section
                         onClick={toggleDescription}
                         className={classes.descriptionToggle}
+                        data-cy="toggle-description"
                     >
                         <ExpandChevronRight expanded={showDescription} />
                         <section className={classes.showMore}>
@@ -352,7 +353,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         className={classes.descriptionToggle}
                     >
                         <div className={classes.chipToggle}>
-                            <ExpandChevronRight expanded={showProperties} />
+                            <ExpandChevronRight data-cy="toggle-chips" expanded={showProperties} />
                         </div>
                         <section className={classes.showMore}>
                             <Collapse
