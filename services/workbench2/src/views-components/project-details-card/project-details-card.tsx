@@ -352,8 +352,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                         onClick={toggleProperties}
                         className={classes.descriptionToggle}
                     >
-                        <div className={classes.chipToggle}>
-                            <ExpandChevronRight data-cy="toggle-chips" expanded={showProperties} />
+                        <div className={classes.chipToggle} data-cy="toggle-chips">
+                            <ExpandChevronRight expanded={showProperties} />
                         </div>
                         <section className={classes.showMore}>
                             <Collapse

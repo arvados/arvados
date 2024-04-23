@@ -135,7 +135,7 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=form-dialog]').should('not.exist');
 
         for (let i = 0; i < msButtonTooltips.length; i++) {
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover', { force: true });
             cy.get('body').contains(msButtonTooltips[i]).should('exist');
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
@@ -190,12 +190,13 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
         //toggle description
+        //description is always visible, even when collapsed
+        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 91);
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
-        cy.get('[data-cy=toggle-description').click();
+        cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
     });
@@ -225,14 +226,26 @@ describe('Project Details Card tests', function () {
 
         cy.get('[data-cy=form-submit-btn]').click();
 
+        //toggle chips
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 100);
+        cy.get('[data-cy=toggle-chips]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 101);
+        cy.get('[data-cy=toggle-chips').click();
+        cy.waitForDom();
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 100);
+
         //check for key/value pairs in project details card
         cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
         cy.get('[data-cy=project-details-card]').contains('Importance').should('be.visible').click();
         cy.waitForDom();
-        cy.window().then((win) =>
+        cy.window().then((win) => {
             win.navigator.clipboard.readText().then((text) => {
+                //wait is necessary due to known issue with cypress@13.7.1
+                cy.wait(1000)
                 expect(text).to.match(new RegExp(`Importance: Critical`));
-            })
+                })
+            }
         );
     });
 });
