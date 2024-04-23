@@ -430,11 +430,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer f.Close()
-		defer sess.Release()
 
 		collectionDir, sessionFS, session, tokenUser = f, fs, sess, user
 		break
 	}
+
+	releaseSession := func() {}
+	if session != nil {
+		var releaseSessionOnce sync.Once
+		releaseSession = func() { releaseSessionOnce.Do(func() { session.Release() }) }
+	}
+	defer releaseSession()
+
 	if forceReload && collectionDir != nil {
 		err := collectionDir.Sync()
 		if err != nil {
@@ -522,6 +529,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		targetfnm := fsprefix + strings.Join(pathParts[stripParts:], "/")
 		if fi, err := sessionFS.Stat(targetfnm); err == nil && fi.IsDir() {
+			releaseSession() // because we won't be writing anything
 			if !strings.HasSuffix(r.URL.Path, "/") {
 				h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
 			} else {
@@ -591,6 +599,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				collectionDir.Splice(snap)
 				return nil
 			}}
+	} else {
+		// When writing, we need to block session renewal
+		// until we're finished, in order to guarantee the
+		// effect of the write is visible in future responses.
+		// But if we're not writing, we can release the lcok
+		// early.  This enables us to keep renewing sessions
+		// and processing more requests even if a slow client
+		// takes a long time to download a large file.
+		releaseSession()
 	}
 	if r.Method == http.MethodGet {
 		applyContentDispositionHdr(w, r, basename, attachment)
