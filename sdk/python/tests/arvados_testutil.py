@@ -4,9 +4,6 @@
 
 from future import standard_library
 standard_library.install_aliases()
-from builtins import str
-from builtins import range
-from builtins import object
 import arvados
 import contextlib
 import errno
@@ -23,11 +20,7 @@ import sys
 import tempfile
 import unittest
 
-if sys.version_info >= (3, 0):
-    from io import StringIO, BytesIO
-else:
-    from cStringIO import StringIO
-    BytesIO = StringIO
+from io import StringIO, BytesIO
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.

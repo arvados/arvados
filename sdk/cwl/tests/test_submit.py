@@ -4,9 +4,6 @@
 
 from future import standard_library
 standard_library.install_aliases()
-from builtins import object
-from builtins import str
-from future.utils import viewvalues
 
 import copy
 import io
@@ -22,16 +19,7 @@ import cwltool.process
 import re
 import os
 
-from io import BytesIO
-
-# StringIO.StringIO and io.StringIO have different behavior write() is
-# called with both python2 (byte) strings and unicode strings
-# (specifically there's some logging in cwltool that causes trouble).
-# This isn't a problem on python3 because all string are unicode.
-if sys.version_info[0] < 3:
-    from StringIO import StringIO
-else:
-    from io import StringIO
+from io import BytesIO, StringIO
 
 import arvados
 import arvados.collection
@@ -142,7 +130,7 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                 return CollectionExecute(created_collections[uuid])
 
             def collection_getstub(created_collections, uuid):
-                for v in viewvalues(created_collections):
+                for v in created_collections.values():
                     if uuid in (v["uuid"], v["portable_data_hash"]):
                         return CollectionExecute(v)
 
