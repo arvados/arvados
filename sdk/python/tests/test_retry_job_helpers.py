@@ -4,7 +4,6 @@
 
 from __future__ import absolute_import
 from builtins import object
-import mock
 import os
 import unittest
 import hashlib
@@ -14,6 +13,7 @@ import arvados
 from . import arvados_testutil as tutil
 from apiclient import http as apiclient_http
 
+from unittest import mock
 
 @tutil.skip_sleep
 class ApiClientRetryTestMixin(object):

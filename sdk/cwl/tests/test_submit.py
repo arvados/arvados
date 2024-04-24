@@ -12,7 +12,6 @@ import functools
 import hashlib
 import json
 import logging
-import mock
 import sys
 import unittest
 import cwltool.process
@@ -20,6 +19,7 @@ import re
 import os
 
 from io import BytesIO, StringIO
+from unittest import mock
 
 import arvados
 import arvados.collection

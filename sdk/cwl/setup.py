@@ -46,8 +46,5 @@ setup(name='arvados-cwl-runner',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=[
-          'mock>=1.0,<4',
-      ],
       zip_safe=True,
 )

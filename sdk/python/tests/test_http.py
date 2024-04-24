@@ -11,10 +11,11 @@ import functools
 import hashlib
 import json
 import logging
-import mock
 import sys
 import unittest
 import datetime
+
+from unittest import mock
 
 import arvados
 import arvados.collection

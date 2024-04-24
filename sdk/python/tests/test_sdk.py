@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import mock
 import os
 import unittest
+
+from unittest import mock
 
 import arvados
 import arvados.collection

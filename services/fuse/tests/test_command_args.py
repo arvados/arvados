@@ -14,13 +14,14 @@ import io
 import json
 import llfuse
 import logging
-import mock
 import os
 from . import run_test_server
 import sys
 import tempfile
 import unittest
 import resource
+
+from unittest import mock
 
 def noexit(func):
     """If argparse or arvados_fuse tries to exit, fail the test instead"""

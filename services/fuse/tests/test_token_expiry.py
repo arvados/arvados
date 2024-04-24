@@ -7,13 +7,14 @@ import apiclient
 import arvados
 import arvados_fuse
 import logging
-import mock
 import multiprocessing
 import os
 import re
 import sys
 import time
 import unittest
+
+from unittest import mock
 
 from .integration_test import IntegrationTest
 

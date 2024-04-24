@@ -12,13 +12,14 @@ import errno
 import json
 import llfuse
 import logging
-import mock
 import os
 import subprocess
 import time
 import unittest
 import tempfile
 import parameterized
+
+from unittest import mock
 
 import arvados
 import arvados_fuse as fuse

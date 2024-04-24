@@ -4,12 +4,13 @@
 
 import json
 import logging
-import mock
 import queue
 import sys
 import threading
 import time
 import unittest
+
+from unittest import mock
 
 import websockets.exceptions as ws_exc
 

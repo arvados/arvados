@@ -128,6 +128,6 @@ setup(name='arvados-python-client',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=['mock>=1.0,<4', 'PyYAML', 'parameterized'],
+      tests_require=['PyYAML', 'parameterized'],
       zip_safe=False
       )

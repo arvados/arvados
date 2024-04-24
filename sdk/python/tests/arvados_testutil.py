@@ -11,7 +11,6 @@ import hashlib
 import http.client
 import httplib2
 import io
-import mock
 import os
 import pycurl
 import queue
@@ -21,6 +20,7 @@ import tempfile
 import unittest
 
 from io import StringIO, BytesIO
+from unittest import mock
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.

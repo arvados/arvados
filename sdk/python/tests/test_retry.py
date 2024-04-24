@@ -8,9 +8,10 @@ from builtins import object
 import itertools
 import unittest
 
+from unittest import mock
+
 import arvados.errors as arv_error
 import arvados.retry as arv_retry
-import mock
 
 class RetryLoopTestMixin(object):
     @staticmethod
