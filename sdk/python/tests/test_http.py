@@ -24,8 +24,6 @@ import pycurl
 
 from arvados.http_to_keep import http_to_keep
 
-import ruamel.yaml as yaml
-
 # Turns out there was already "FakeCurl" that serves the same purpose, but
 # I wrote this before I knew that.  Whoops.
 class CurlMock:
