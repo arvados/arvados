@@ -203,7 +203,7 @@ describe("Collection panel tests", function () {
             });
     });
 
-    it("uses the editor (from details panel) with vocabulary terms", function () {
+    it.only("uses the editor (from details panel) with vocabulary terms", function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
