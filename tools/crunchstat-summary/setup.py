@@ -36,6 +36,6 @@ setup(name='crunchstat_summary',
       ],
       python_requires="~=3.8",
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0'],
+      tests_require=['mock>=1.0'],
       zip_safe=False,
 )
