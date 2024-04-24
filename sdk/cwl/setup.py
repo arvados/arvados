@@ -33,8 +33,6 @@ setup(name='arvados-cwl-runner',
           'cwltool==3.1.20230601100705',
           'schema-salad==8.4.20230601112322',
           'ciso8601 >= 2.0.0',
-          'networkx < 2.6',
-          'importlib-metadata<5',
           'setuptools>=40.3.0',
       ],
       data_files=[
