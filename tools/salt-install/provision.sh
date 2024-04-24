@@ -284,17 +284,15 @@ VERSION="latest"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
-SALT_VERSION="3004"
+SALT_VERSION="3006"
 
 # Other formula versions we depend on
-#POSTGRES_TAG="v0.44.0"
-#POSTGRES_URL="https://github.com/saltstack-formulas/postgres-formula.git"
-POSTGRES_TAG="0.45.0-bugfix327"
-POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
+POSTGRES_TAG="7529300c287b1c288af0f494ca668c2217bd1c5d"
+POSTGRES_URL="https://github.com/saltstack-formulas/postgres-formula.git"
 NGINX_TAG="v2.8.1"
 DOCKER_TAG="v2.4.2"
-LOCALE_TAG="v0.3.4"
-LETSENCRYPT_TAG="v2.1.0"
+LOCALE_TAG="v0.3.5"
+LETSENCRYPT_TAG="v3.2.0"
 LOGROTATE_TAG="v0.14.0"
 PROMETHEUS_TAG="v5.6.5"
 GRAFANA_TAG="v3.1.3"
@@ -362,23 +360,24 @@ fi
 if [ "${DUMP_CONFIG}" = "yes" ]; then
   echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  # Install a few dependency packages
-  # First, let's figure out the OS we're working on
   OS_IDS="$(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}")"
   echo "Detected distro families: $OS_IDS"
 
+  # Several of our formulas use the cron module, which requires the crontab
+  # command. We install systemd-cron to ensure we have that.
+  # The rest of these packages are required by the rest of the script.
   for OS_ID in $OS_IDS; do
     case "$OS_ID" in
       rhel)
         echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
         sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
         setenforce permissive
-        yum install -y  curl git jq
+        yum install -y curl git jq systemd-cron
         break
         ;;
       debian)
         DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
-        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
+        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq systemd-cron
         break
         ;;
     esac
@@ -388,7 +387,7 @@ else
     echo "Salt already installed"
   else
     curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-    sh /tmp/bootstrap_salt.sh -XdfP -x python3 old-stable ${SALT_VERSION}
+    sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
     /bin/systemctl stop salt-minion.service
     /bin/systemctl disable salt-minion.service
   fi
@@ -431,7 +430,7 @@ test -d nginx && ( cd nginx && git fetch ) \
 echo "...postgres"
 test -d postgres && ( cd postgres && git fetch ) \
   || git clone --quiet ${POSTGRES_URL} ${F_DIR}/postgres
-( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" )
+( cd postgres && git checkout --quiet "${POSTGRES_TAG}" )
 
 echo "...prometheus"
 test -d prometheus && ( cd prometheus && git fetch ) \
@@ -620,6 +619,7 @@ if [ -z "${ROLES:-}" ]; then
   # Pillars
   echo "    - docker" >> ${PILLARS_TOP}
   echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
+  echo "    - logrotate" >> ${PILLARS_TOP}
   echo "    - logrotate_api" >> ${PILLARS_TOP}
   echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
   echo "    - nginx_keepproxy_configuration" >> ${PILLARS_TOP}
@@ -855,6 +855,7 @@ else
         grep -q "arvados.controller" ${STATES_TOP} || echo "    - arvados.controller" >> ${STATES_TOP}
 
         ### Pillars ###
+        grep -q "logrotate" ${PILLARS_TOP}                || echo "    - logrotate" >> ${PILLARS_TOP}
         grep -q "logrotate_api" ${PILLARS_TOP}            || echo "    - logrotate_api" >> ${PILLARS_TOP}
         grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
         grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}

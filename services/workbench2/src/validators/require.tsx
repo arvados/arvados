@@ -4,6 +4,6 @@
 
 export const ERROR_MESSAGE = 'This field is required.';
 
-export const require: any = (value: string) => {
+export const fieldRequire: any = (value: string) => {
     return value && value.length > 0 ? undefined : ERROR_MESSAGE;
 };

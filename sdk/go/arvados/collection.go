@@ -104,28 +104,57 @@ type CollectionList struct {
 	Limit          int          `json:"limit"`
 }
 
-var (
-	blkRe = regexp.MustCompile(`^ [0-9a-f]{32}\+\d+`)
-	tokRe = regexp.MustCompile(` ?[^ ]*`)
-)
-
 // PortableDataHash computes the portable data hash of the given
 // manifest.
 func PortableDataHash(mt string) string {
+	// To calculate the PDH, we write the manifest to an md5 hash
+	// func, except we skip the "extra" part of block tokens that
+	// look like "abcdef0123456789abcdef0123456789+12345+extra".
+	//
+	// This code is simplified by the facts that (A) all block
+	// tokens -- even the first and last in a stream -- are
+	// preceded and followed by a space character; and (B) all
+	// non-block tokens either start with '.'  or contain ':'.
+	//
+	// A regexp-based approach (like the one this replaced) would
+	// be more readable, but very slow.
 	h := md5.New()
 	size := 0
-	_ = tokRe.ReplaceAllFunc([]byte(mt), func(tok []byte) []byte {
-		if m := blkRe.Find(tok); m != nil {
-			// write hash+size, ignore remaining block hints
-			tok = m
+	todo := []byte(mt)
+	for len(todo) > 0 {
+		// sp is the end of the current token (note that if
+		// the current token is the last file token in a
+		// stream, we'll also include the \n and the dirname
+		// token on the next line, which is perfectly fine for
+		// our purposes).
+		sp := bytes.IndexByte(todo, ' ')
+		if sp < 0 {
+			// Last token of the manifest, which is never
+			// a block token.
+			n, _ := h.Write(todo)
+			size += n
+			break
 		}
-		n, err := h.Write(tok)
-		if err != nil {
-			panic(err)
+		if sp >= 34 && todo[32] == '+' && bytes.IndexByte(todo[:32], ':') == -1 && todo[0] != '.' {
+			// todo[:sp] is a block token.
+			sizeend := bytes.IndexByte(todo[33:sp], '+')
+			if sizeend < 0 {
+				// "hash+size"
+				sizeend = sp
+			} else {
+				// "hash+size+extra"
+				sizeend += 33
+			}
+			n, _ := h.Write(todo[:sizeend])
+			h.Write([]byte{' '})
+			size += n + 1
+		} else {
+			// todo[:sp] is not a block token.
+			n, _ := h.Write(todo[:sp+1])
+			size += n
 		}
-		size += n
-		return nil
-	})
+		todo = todo[sp+1:]
+	}
 	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
 }
 

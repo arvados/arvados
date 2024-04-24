@@ -1639,29 +1639,71 @@ type CollectionFSUnitSuite struct{}
 var _ = check.Suite(&CollectionFSUnitSuite{})
 
 // expect ~2 seconds to load a manifest with 256K files
-func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
+func (s *CollectionFSUnitSuite) TestLargeManifest_ManyFiles(c *check.C) {
 	if testing.Short() {
 		c.Skip("slow")
 	}
+	s.testLargeManifest(c, 512, 512, 1, 0)
+}
 
-	const (
-		dirCount  = 512
-		fileCount = 512
-	)
+func (s *CollectionFSUnitSuite) TestLargeManifest_LargeFiles(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+	s.testLargeManifest(c, 1, 800, 1000, 0)
+}
 
+func (s *CollectionFSUnitSuite) TestLargeManifest_InterleavedFiles(c *check.C) {
+	if testing.Short() {
+		c.Skip("slow")
+	}
+	// Timing figures here are from a dev host, (0)->(1)->(2)->(3)
+	// (0) no optimizations (main branch commit ea697fb1e8)
+	// (1) resolve streampos->blkidx with binary search
+	// (2) ...and rewrite PortableDataHash() without regexp
+	// (3) ...and use fnodeCache in loadManifest
+	s.testLargeManifest(c, 1, 800, 100, 4<<20) // 127s    -> 12s  -> 2.5s -> 1.5s
+	s.testLargeManifest(c, 1, 50, 1000, 4<<20) // 44s     -> 10s  -> 1.5s -> 0.8s
+	s.testLargeManifest(c, 1, 200, 100, 4<<20) // 13s     -> 4s   -> 0.6s -> 0.3s
+	s.testLargeManifest(c, 1, 200, 150, 4<<20) // 26s     -> 4s   -> 1s   -> 0.5s
+	s.testLargeManifest(c, 1, 200, 200, 4<<20) // 38s     -> 6s   -> 1.3s -> 0.7s
+	s.testLargeManifest(c, 1, 200, 225, 4<<20) // 46s     -> 7s   -> 1.5s -> 1s
+	s.testLargeManifest(c, 1, 400, 400, 4<<20) // 477s    -> 24s  -> 5s   -> 3s
+	// s.testLargeManifest(c, 1, 800, 1000, 4<<20) // timeout -> 186s -> 28s  -> 17s
+}
+
+func (s *CollectionFSUnitSuite) testLargeManifest(c *check.C, dirCount, filesPerDir, blocksPerFile, interleaveChunk int) {
+	t0 := time.Now()
+	const blksize = 1 << 26
+	c.Logf("%s building manifest with dirCount=%d filesPerDir=%d blocksPerFile=%d", time.Now(), dirCount, filesPerDir, blocksPerFile)
 	mb := bytes.NewBuffer(make([]byte, 0, 40000000))
+	blkid := 0
 	for i := 0; i < dirCount; i++ {
 		fmt.Fprintf(mb, "./dir%d", i)
-		for j := 0; j <= fileCount; j++ {
-			fmt.Fprintf(mb, " %032x+42+A%040x@%08x", j, j, j)
+		for j := 0; j < filesPerDir; j++ {
+			for k := 0; k < blocksPerFile; k++ {
+				blkid++
+				fmt.Fprintf(mb, " %032x+%d+A%040x@%08x", blkid, blksize, blkid, blkid)
+			}
 		}
-		for j := 0; j < fileCount; j++ {
-			fmt.Fprintf(mb, " %d:%d:dir%d/file%d", j*42+21, 42, j, j)
+		for j := 0; j < filesPerDir; j++ {
+			if interleaveChunk == 0 {
+				fmt.Fprintf(mb, " %d:%d:dir%d/file%d", (filesPerDir-j-1)*blocksPerFile*blksize, blocksPerFile*blksize, j, j)
+				continue
+			}
+			for todo := int64(blocksPerFile) * int64(blksize); todo > 0; todo -= int64(interleaveChunk) {
+				size := int64(interleaveChunk)
+				if size > todo {
+					size = todo
+				}
+				offset := rand.Int63n(int64(blocksPerFile)*int64(blksize)*int64(filesPerDir) - size)
+				fmt.Fprintf(mb, " %d:%d:dir%d/file%d", offset, size, j, j)
+			}
 		}
 		mb.Write([]byte{'\n'})
 	}
 	coll := Collection{ManifestText: mb.String()}
-	c.Logf("%s built", time.Now())
+	c.Logf("%s built manifest size=%d", time.Now(), mb.Len())
 
 	var memstats runtime.MemStats
 	runtime.ReadMemStats(&memstats)
@@ -1670,17 +1712,28 @@ func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
 	f, err := coll.FileSystem(NewClientFromEnv(), &keepClientStub{})
 	c.Check(err, check.IsNil)
 	c.Logf("%s loaded", time.Now())
-	c.Check(f.Size(), check.Equals, int64(42*dirCount*fileCount))
+	c.Check(f.Size(), check.Equals, int64(dirCount*filesPerDir*blocksPerFile*blksize))
 
+	// Stat() and OpenFile() each file. This mimics the behavior
+	// of webdav propfind, which opens each file even when just
+	// listing directory entries.
 	for i := 0; i < dirCount; i++ {
-		for j := 0; j < fileCount; j++ {
-			f.Stat(fmt.Sprintf("./dir%d/dir%d/file%d", i, j, j))
+		for j := 0; j < filesPerDir; j++ {
+			fnm := fmt.Sprintf("./dir%d/dir%d/file%d", i, j, j)
+			fi, err := f.Stat(fnm)
+			c.Assert(err, check.IsNil)
+			c.Check(fi.IsDir(), check.Equals, false)
+			f, err := f.OpenFile(fnm, os.O_RDONLY, 0)
+			c.Assert(err, check.IsNil)
+			f.Close()
 		}
 	}
-	c.Logf("%s Stat() x %d", time.Now(), dirCount*fileCount)
+	c.Logf("%s OpenFile() x %d", time.Now(), dirCount*filesPerDir)
 
 	runtime.ReadMemStats(&memstats)
 	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
+	c.Logf("%s MemorySize=%d", time.Now(), f.MemorySize())
+	c.Logf("%s ... test duration %s", time.Now(), time.Now().Sub(t0))
 }
 
 // Gocheck boilerplate

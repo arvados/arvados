@@ -33,6 +33,7 @@ yarn-error.log*
 
 .idea
 .vscode
+.eslintcache
 /public/config.json
 /public/_health/
 
