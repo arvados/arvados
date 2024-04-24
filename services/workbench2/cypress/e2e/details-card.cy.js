@@ -135,8 +135,12 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=form-dialog]').should('not.exist');
 
         for (let i = 0; i < msButtonTooltips.length; i++) {
-            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover', { force: true });
-            cy.get('body').contains(msButtonTooltips[i]).should('exist');
+            cy.get('[data-cy=multiselect-button]').eq(i).should('exist');
+            cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+            cy.waitForDom()
+            cy.get('body').within(() => {
+                cy.contains(msButtonTooltips[i]).should('exist');
+            });
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
 
