@@ -4653,11 +4653,11 @@ __metadata:
     parse-duration: 0.4.4
     prop-types: 15.7.2
     query-string: 6.9.0
-    react: 16.14.0
+    react: 17.0.0
     react-copy-to-clipboard: 5.0.3
     react-dnd: 5.0.0
     react-dnd-html5-backend: 5.0.1
-    react-dom: 16.14.0
+    react-dom: 17.0.0
     react-dropzone: 5.1.1
     react-highlight-words: 0.14.0
     react-idle-timer: 4.3.6
@@ -16448,17 +16448,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:16.14.0":
-  version: 16.14.0
-  resolution: "react-dom@npm:16.14.0"
+"react-dom@npm:17.0.0":
+  version: 17.0.0
+  resolution: "react-dom@npm:17.0.0"
   dependencies:
     loose-envify: ^1.1.0
     object-assign: ^4.1.1
-    prop-types: ^15.6.2
-    scheduler: ^0.19.1
+    scheduler: ^0.20.0
   peerDependencies:
-    react: ^16.14.0
-  checksum: 5a5c49da0f106b2655a69f96c622c347febcd10532db391c262b26aec225b235357d9da1834103457683482ab1b229af7a50f6927a6b70e53150275e31785544
+    react: 17.0.0
+  checksum: c3ed1256861d6c7329f3a56e9a3985c58d54c76f31b8025535d610d1289fda910ff0f7aa7c626c3ce2276e58f4795bc663008a7177fa16146abfbb28dd56ae1b
   languageName: node
   linkType: hard
 
@@ -16815,14 +16814,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:16.14.0":
-  version: 16.14.0
-  resolution: "react@npm:16.14.0"
+"react@npm:17.0.0":
+  version: 17.0.0
+  resolution: "react@npm:17.0.0"
   dependencies:
     loose-envify: ^1.1.0
     object-assign: ^4.1.1
-    prop-types: ^15.6.2
-  checksum: 8484f3ecb13414526f2a7412190575fc134da785c02695eb92bb6028c930bfe1c238d7be2a125088fec663cc7cda0a3623373c46807cf2c281f49c34b79881ac
+  checksum: ae732f4568b05df138b75c6d67100deff231fc571bea67c73eae7ddf4e9812a372c808d6eaeda5edf8cb1a9d85eea059356e5681cfd9563b018199140b5ad4ab
   languageName: node
   linkType: hard
 
@@ -17878,6 +17876,16 @@ __metadata:
     loose-envify: ^1.1.0
     object-assign: ^4.1.1
   checksum: 73e185a59e2ff5aa3609f5b9cb97ddd376f89e1610579d29939d952411ca6eb7a24907a4ea4556569dacb931467a1a4a56d94fe809ef713aa76748642cd96a6c
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.20.0":
+  version: 0.20.2
+  resolution: "scheduler@npm:0.20.2"
+  dependencies:
+    loose-envify: ^1.1.0
+    object-assign: ^4.1.1
+  checksum: c4b35cf967c8f0d3e65753252d0f260271f81a81e427241295c5a7b783abf4ea9e905f22f815ab66676f5313be0a25f47be582254db8f9241b259213e999b8fc
   languageName: node
   linkType: hard
 
