@@ -100,6 +100,8 @@ const (
 	XKeepReplicasStored          = "X-Keep-Replicas-Stored"
 	XKeepStorageClasses          = "X-Keep-Storage-Classes"
 	XKeepStorageClassesConfirmed = "X-Keep-Storage-Classes-Confirmed"
+	XKeepSignature               = "X-Keep-Signature"
+	XKeepLocator                 = "X-Keep-Locator"
 )
 
 type HTTPClient interface {

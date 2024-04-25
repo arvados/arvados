@@ -558,14 +558,14 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 		body, err := ioutil.ReadAll(resp.Body)
 		c.Check(err, IsNil)
 		c.Check(string(body), Equals, "")
-		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, POST, PUT, OPTIONS")
+		c.Check(resp.Header.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, PUT, OPTIONS, POST")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
 	}
 
 	{
 		resp, err := http.Get(fmt.Sprintf("http://%s/%x+3", srv.Addr, md5.Sum([]byte("foo"))))
 		c.Check(err, Equals, nil)
-		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
+		c.Check(resp.Header.Get("Access-Control-Allow-Headers"), Equals, "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas, X-Keep-Signature, X-Keep-Storage-Classes")
 		c.Check(resp.Header.Get("Access-Control-Allow-Origin"), Equals, "*")
 	}
 }

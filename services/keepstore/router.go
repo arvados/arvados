@@ -19,6 +19,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/gorilla/mux"
 )
 
@@ -57,9 +58,11 @@ func newRouter(keepstore *keepstore, puller *puller, trasher *trasher) service.H
 	touch.HandleFunc(locatorPath, adminonly(rtr.handleBlockTouch))
 	delete := r.Methods(http.MethodDelete).Subrouter()
 	delete.HandleFunc(locatorPath, adminonly(rtr.handleBlockTrash))
+	options := r.Methods(http.MethodOptions).Subrouter()
+	options.NewRoute().PathPrefix(`/`).HandlerFunc(rtr.handleOptions)
 	r.NotFoundHandler = http.HandlerFunc(rtr.handleBadRequest)
 	r.MethodNotAllowedHandler = http.HandlerFunc(rtr.handleBadRequest)
-	rtr.Handler = auth.LoadToken(r)
+	rtr.Handler = corsHandler(auth.LoadToken(r))
 	return rtr
 }
 
@@ -75,11 +78,11 @@ func (rtr *router) handleBlockRead(w http.ResponseWriter, req *http.Request) {
 	// Intervening proxies must not return a cached GET response
 	// to a prior request if a X-Keep-Signature request header has
 	// been added or changed.
-	w.Header().Add("Vary", "X-Keep-Signature")
+	w.Header().Add("Vary", keepclient.XKeepSignature)
 	var localLocator func(string)
-	if strings.SplitN(req.Header.Get("X-Keep-Signature"), ",", 2)[0] == "local" {
+	if strings.SplitN(req.Header.Get(keepclient.XKeepSignature), ",", 2)[0] == "local" {
 		localLocator = func(locator string) {
-			w.Header().Set("X-Keep-Locator", locator)
+			w.Header().Set(keepclient.XKeepLocator, locator)
 		}
 	}
 	out := w
@@ -107,20 +110,20 @@ func (rtr *router) handleBlockRead(w http.ResponseWriter, req *http.Request) {
 
 func (rtr *router) handleBlockWrite(w http.ResponseWriter, req *http.Request) {
 	dataSize, _ := strconv.Atoi(req.Header.Get("Content-Length"))
-	replicas, _ := strconv.Atoi(req.Header.Get("X-Arvados-Replicas-Desired"))
+	replicas, _ := strconv.Atoi(req.Header.Get("X-Arvados-Desired-Replicas"))
 	resp, err := rtr.keepstore.BlockWrite(req.Context(), arvados.BlockWriteOptions{
 		Hash:           mux.Vars(req)["locator"],
 		Reader:         req.Body,
 		DataSize:       dataSize,
 		RequestID:      req.Header.Get("X-Request-Id"),
-		StorageClasses: trimSplit(req.Header.Get("X-Keep-Storage-Classes"), ","),
+		StorageClasses: trimSplit(req.Header.Get(keepclient.XKeepStorageClasses), ","),
 		Replicas:       replicas,
 	})
 	if err != nil {
 		rtr.handleError(w, req, err)
 		return
 	}
-	w.Header().Set("X-Keep-Replicas-Stored", fmt.Sprintf("%d", resp.Replicas))
+	w.Header().Set(keepclient.XKeepReplicasStored, fmt.Sprintf("%d", resp.Replicas))
 	scc := ""
 	for k, n := range resp.StorageClasses {
 		if n > 0 {
@@ -130,7 +133,7 @@ func (rtr *router) handleBlockWrite(w http.ResponseWriter, req *http.Request) {
 			scc += fmt.Sprintf("%s=%d", k, n)
 		}
 	}
-	w.Header().Set("X-Keep-Storage-Classes-Confirmed", scc)
+	w.Header().Set(keepclient.XKeepStorageClassesConfirmed, scc)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, resp.Locator)
 }
@@ -210,6 +213,9 @@ func (rtr *router) handleBadRequest(w http.ResponseWriter, req *http.Request) {
 	http.Error(w, "Bad Request", http.StatusBadRequest)
 }
 
+func (rtr *router) handleOptions(w http.ResponseWriter, req *http.Request) {
+}
+
 func (rtr *router) handleError(w http.ResponseWriter, req *http.Request, err error) {
 	if req.Context().Err() != nil {
 		w.WriteHeader(499)
@@ -273,4 +279,25 @@ type discardWrite struct {
 
 func (discardWrite) Write(p []byte) (int, error) {
 	return len(p), nil
+}
+
+func corsHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		SetCORSHeaders(w)
+		h.ServeHTTP(w, r)
+	})
+}
+
+var corsHeaders = map[string]string{
+	"Access-Control-Allow-Methods":  "GET, HEAD, PUT, OPTIONS",
+	"Access-Control-Allow-Origin":   "*",
+	"Access-Control-Allow-Headers":  "Authorization, Content-Length, Content-Type, " + keepclient.XKeepDesiredReplicas + ", " + keepclient.XKeepSignature + ", " + keepclient.XKeepStorageClasses,
+	"Access-Control-Expose-Headers": keepclient.XKeepLocator + ", " + keepclient.XKeepReplicasStored + ", " + keepclient.XKeepStorageClassesConfirmed,
+	"Access-Control-Max-Age":        "86486400",
+}
+
+func SetCORSHeaders(w http.ResponseWriter) {
+	for k, v := range corsHeaders {
+		w.Header().Set(k, v)
+	}
 }
