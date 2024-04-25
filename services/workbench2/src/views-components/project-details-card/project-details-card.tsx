@@ -274,6 +274,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
         setShowProperties(!showProperties);
     };
 
+    const parser = new DOMParser();
+
     return (
         <Card
             className={classes.root}
@@ -339,7 +341,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, fro
                                     data-cy='project-description'
                                     //dangerouslySetInnerHTML is ok here only if description is sanitized,
                                     //which it is before it is loaded into the redux store
-                                    dangerouslySetInnerHTML={{ __html: description }}
+                                    dangerouslySetInnerHTML={{ __html: parser.parseFromString(description, 'text/html').body.textContent || ''}}
                                 />
                             </Collapse>
                         </section>
