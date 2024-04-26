@@ -25,7 +25,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         zIndex: 10
     },
     title: {
-        marginBottom: theme.spacing.unit * 6,
+        marginBottom: theme.spacing(6),
         color: theme.palette.grey["800"]
     }
 });

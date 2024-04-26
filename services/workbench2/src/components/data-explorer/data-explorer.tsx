@@ -29,7 +29,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbar: {
         paddingTop: 0,
-        paddingRight: theme.spacing.unit,
+        paddingRight: theme.spacing,
         paddingLeft: "10px",
     },
     footer: {
@@ -43,15 +43,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         display: "inline-block",
-        paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 2,
+        paddingLeft: theme.spacing(2),
+        paddingTop: theme.spacing(2),
         fontSize: "18px",
         paddingRight: "10px",
     },
     subProcessTitle: {
         display: "inline-block",
-        paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 2,
+        paddingLeft: theme.spacing(2),
+        paddingTop: theme.spacing(2),
         fontSize: "18px",
         flexGrow: 0,
         paddingRight: "10px",

@@ -207,9 +207,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         float: "right",
     },
     moreOptionsButton: {
-        width: theme.spacing.unit * 3,
-        height: theme.spacing.unit * 3,
-        marginRight: theme.spacing.unit,
+        width: theme.spacing(3),
+        height: theme.spacing(3),
+        marginRight: theme.spacing,
         marginTop: "auto",
         marginBottom: "auto",
         justifyContent: "center",

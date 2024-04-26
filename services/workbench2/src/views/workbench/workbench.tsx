@@ -112,7 +112,7 @@ type CssRules = "root" | "container" | "splitter" | "asidePanel" | "contentWrapp
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        paddingTop: theme.spacing.unit * 7,
+        paddingTop: theme.spacing(7),
         background: theme.palette.background.default,
     },
     container: {
@@ -128,19 +128,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
     },
     asidePanel: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing,
         height: "100%",
     },
     contentWrapper: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing,
         minWidth: 0,
     },
     content: {
         minWidth: 0,
-        paddingLeft: theme.spacing.unit * 3,
-        paddingRight: theme.spacing.unit * 3,
+        paddingLeft: theme.spacing(3),
+        paddingRight: theme.spacing(3),
         // Reserve vertical space for app bar + MainContentBar
-        minHeight: `calc(100vh - ${theme.spacing.unit * 16}px)`,
+        minHeight: `calc(100vh - ${theme.spacing(16)}px)`,
         display: "flex",
     },
 });

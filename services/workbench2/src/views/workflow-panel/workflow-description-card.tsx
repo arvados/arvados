@@ -34,20 +34,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inputTab: {
         overflow: 'auto',
         maxHeight: '300px',
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing
     },
     graphTab: {
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing,
     },
     graphTabWithChosenWorkflow: {
         overflow: 'auto',
         height: '450px',
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing,
     },
     descriptionTab: {
         overflow: 'auto',
         maxHeight: '300px',
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing,
     },
     inputsTable: {
         tableLayout: 'fixed',

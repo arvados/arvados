@@ -26,7 +26,7 @@ type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
-        padding: theme.spacing.unit * 2,
+        padding: theme.spacing(2),
         borderBottom: `1px solid ${theme.palette.grey["200"]}`,
         position: 'relative',
     },
@@ -58,10 +58,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     searchView: {
         color: theme.palette.common.black,
-        borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+        borderRadius: `0 0 ${theme.spacing / 2}px ${theme.spacing / 2}px`
     },
     selectGrid: {
-        marginBottom: theme.spacing.unit * 2
+        marginBottom: theme.spacing(2)
     }
 });
 

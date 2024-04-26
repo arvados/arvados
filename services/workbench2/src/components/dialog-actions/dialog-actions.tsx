@@ -6,7 +6,7 @@ import { DialogActions as MuiDialogActions } from '@material-ui/core/';
 import { StyleRulesCallback, withStyles } from '@material-ui/core';
 
 const styles: StyleRulesCallback<'root'> = theme => {
-    const margin = theme.spacing.unit * 3;
+    const margin = theme.spacing(3);
     return {
         root: {
             marginRight: margin,

@@ -38,7 +38,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         textAlign: 'center',
     },
     editIcon: {
-        paddingRight: theme.spacing.unit/2,
+        paddingRight: theme.spacing/2,
         fontSize: '1.125rem',
     },
     editButton: {
@@ -47,8 +47,8 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         fontSize: '0.75rem'
     },
     tag: {
-        marginRight: theme.spacing.unit / 2,
-        marginBottom: theme.spacing.unit / 2
+        marginRight: theme.spacing / 2,
+        marginBottom: theme.spacing / 2
     },
 });
 

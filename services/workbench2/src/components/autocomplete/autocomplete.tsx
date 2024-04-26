@@ -233,8 +233,8 @@ type ChipClasses = 'root';
 
 const chipStyles: StyleRulesCallback<ChipClasses> = theme => ({
     root: {
-        marginRight: theme.spacing.unit / 4,
-        height: theme.spacing.unit * 3,
+        marginRight: theme.spacing(1) / 4,
+        height: theme.spacing(3),
     }
 });
 

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { createMuiTheme } from '@material-ui/core/styles';
-import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
+import { ThemeOptions, Theme } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
@@ -55,9 +55,6 @@ const grey800 = grey["800"];
 const grey900 = grey["900"];
 
 export const themeOptions: ArvadosThemeOptions = {
-    typography: {
-        useNextVariants: true,
-    },
     customs: {
         colors: {
             green700: green["700"],

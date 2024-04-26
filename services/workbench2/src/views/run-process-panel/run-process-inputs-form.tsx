@@ -62,7 +62,7 @@ type CssRules = 'inputItem';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     inputItem: {
-        marginBottom: theme.spacing.unit * 2,
+        marginBottom: theme.spacing(2),
     }
 });
 

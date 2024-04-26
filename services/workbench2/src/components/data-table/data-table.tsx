@@ -86,7 +86,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     noItemsInfo: {
         textAlign: "center",
-        padding: theme.spacing.unit,
+        padding: theme.spacing,
     },
     checkBoxHead: {
         padding: "0",

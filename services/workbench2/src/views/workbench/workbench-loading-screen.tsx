@@ -11,7 +11,7 @@ type CssRules = 'root' | 'img';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     img: {
-        marginBottom: theme.spacing.unit * 4
+        marginBottom: theme.spacing(4)
     },
     root: {
         background: theme.palette.background.default,

@@ -24,7 +24,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'right'
     },
     table: {
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing
     },
     tableRow: {
         '& td, th': {

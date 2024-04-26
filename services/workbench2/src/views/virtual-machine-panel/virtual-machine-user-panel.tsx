@@ -26,11 +26,11 @@ const EXTRA_TOKEN = "exraToken";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
-        marginTop: theme.spacing.unit,
-        marginBottom: theme.spacing.unit
+        marginTop: theme.spacing,
+        marginBottom: theme.spacing
     },
     codeSnippet: {
-        borderRadius: theme.spacing.unit * 0.5,
+        borderRadius: theme.spacing(0.5),
         border: '1px solid',
         borderColor: theme.palette.grey["400"],
     },
@@ -59,13 +59,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     icon: {
         textAlign: "right",
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing
     },
     chipsRoot: {
-        margin: `0px -${theme.spacing.unit / 2}px`,
+        margin: `0px -${theme.spacing / 2}px`,
     },
     copyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing,
         color: theme.palette.grey["500"],
         cursor: 'pointer',
         display: 'inline',

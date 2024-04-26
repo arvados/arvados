@@ -9,7 +9,7 @@ type CssRules = 'cell';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     cell: {
-        paddingRight: theme.spacing.unit * 2
+        paddingRight: theme.spacing(2)
     }
 });
 

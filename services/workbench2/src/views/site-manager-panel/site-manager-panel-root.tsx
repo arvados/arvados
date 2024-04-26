@@ -49,7 +49,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'right'
     },
     table: {
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing
     },
     tableRow: {
         '& td, th': {
@@ -64,10 +64,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     buttonAdd: {
         marginLeft: 10,
-        marginTop: theme.spacing.unit * 3
+        marginTop: theme.spacing(3)
     },
     buttonLoggedIn: {
-        minHeight: theme.spacing.unit,
+        minHeight: theme.spacing,
         padding: 5,
         color: '#fff',
         backgroundColor: '#009966',
@@ -76,7 +76,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     buttonLoggedOut: {
-        minHeight: theme.spacing.unit,
+        minHeight: theme.spacing,
         padding: 5,
         color: '#000',
         backgroundColor: '#FFC414',

@@ -22,8 +22,8 @@ type CssRules = 'propertiesForm';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     propertiesForm: {
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
     },
 });
 

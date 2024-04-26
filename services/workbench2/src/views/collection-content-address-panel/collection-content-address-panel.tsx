@@ -44,19 +44,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
-        padding: theme.spacing.unit,
-        marginBottom: theme.spacing.unit,
+        padding: theme.spacing,
+        marginBottom: theme.spacing,
         color: theme.palette.grey["500"],
     },
     backIcon: {
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing
     },
     root: {
         width: '100%',
     },
     content: {
         // reserve space for the content address bar
-        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
+        height: `calc(100% - ${theme.spacing(7)}px)`,
     },
 });
 

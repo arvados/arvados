@@ -60,7 +60,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
     },
     button: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing,
     },
 });
 

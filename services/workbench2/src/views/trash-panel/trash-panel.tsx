@@ -41,11 +41,11 @@ type CssRules = "toolbar" | "button" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
-        paddingBottom: theme.spacing.unit * 3,
+        paddingBottom: theme.spacing(3),
         textAlign: "right"
     },
     button: {
-        marginLeft: theme.spacing.unit
+        marginLeft: theme.spacing
     },
     root: {
         width: '100%',

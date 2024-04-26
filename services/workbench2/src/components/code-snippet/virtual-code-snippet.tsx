@@ -19,7 +19,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         height: '100%',
-        padding: theme.spacing.unit,
+        padding: theme.spacing,
     },
     space: {
         marginLeft: '15px',

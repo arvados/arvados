@@ -29,7 +29,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
+        height: `calc(100% - ${theme.spacing(7)}px)`,
     }
 });
 

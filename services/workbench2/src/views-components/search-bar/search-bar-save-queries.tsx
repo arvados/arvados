@@ -17,8 +17,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: '0px'
     },
     listItem: {
-        paddingLeft: theme.spacing.unit,
-        paddingRight: theme.spacing.unit * 2
+        paddingLeft: theme.spacing,
+        paddingRight: theme.spacing(2)
     },
     listItemText: {
         fontSize: '0.8125rem',
@@ -26,7 +26,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         padding: '6px',
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing
     }
 });
 

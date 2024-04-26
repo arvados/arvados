@@ -18,7 +18,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',
-        padding: theme.spacing.unit,
+        padding: theme.spacing,
     },
     inlineRoot: {
         padding: "3px",

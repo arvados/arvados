@@ -50,7 +50,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerContainer: {
         color: theme.palette.grey["600"],
-        margin: `${theme.spacing.unit}px 0`,
+        margin: `${theme.spacing(1)}px 0`,
         textAlign: 'center',
     },
     headerIcon: {
@@ -58,7 +58,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     tabContainer: {
         overflow: 'auto',
-        padding: theme.spacing.unit * 1,
+        padding: theme.spacing(1),
     },
 });
 

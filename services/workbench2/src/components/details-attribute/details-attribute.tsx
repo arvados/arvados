@@ -42,7 +42,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         cursor: 'pointer'
     },
     copyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing,
         color: theme.palette.grey["600"],
         cursor: 'pointer',
         display: 'inline',

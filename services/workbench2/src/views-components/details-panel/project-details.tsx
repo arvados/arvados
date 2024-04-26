@@ -40,11 +40,11 @@ type CssRules = 'tag' | 'editIcon' | 'editButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
-        marginRight: theme.spacing.unit / 2,
-        marginBottom: theme.spacing.unit / 2,
+        marginRight: theme.spacing / 2,
+        marginBottom: theme.spacing / 2,
     },
     editIcon: {
-        paddingRight: theme.spacing.unit / 2,
+        paddingRight: theme.spacing / 2,
         fontSize: '1.125rem',
     },
     editButton: {
