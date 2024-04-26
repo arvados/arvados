@@ -225,6 +225,12 @@ func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
 	c.Assert(f.Close(), check.IsNil)
 }
 
+// applyGlobsToFilesAndDirs uses the same glob-matching code as
+// applyGlobsToCollectionFS, so we don't need to test all of the same
+// glob-matching behavior covered in TestApplyGlobsToCollectionFS.  We
+// do need to check that (a) the glob is actually being used to filter
+// out files, and (b) non-matching dirs still included if and only if
+// they are ancestors of matching files.
 func (s *copierSuite) TestApplyGlobsToFilesAndDirs(c *check.C) {
 	dirs := []string{"dir1", "dir1/dir11", "dir1/dir12", "dir2"}
 	files := []string{"dir1/file11", "dir1/dir11/file111", "dir2/file2"}
@@ -272,6 +278,11 @@ func (s *copierSuite) TestApplyGlobsToFilesAndDirs(c *check.C) {
 			globs: []string{"**/dir1[^2]"},
 			dirs:  []string{"dir1", "dir1/dir11"},
 			files: nil,
+		},
+		{
+			globs: []string{"dir1/**"},
+			dirs:  []string{"dir1", "dir1/dir11", "dir1/dir12"},
+			files: []string{"dir1/file11", "dir1/dir11/file111"},
 		},
 	} {
 		c.Logf("=== globs: %q", trial.globs)
