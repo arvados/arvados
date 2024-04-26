@@ -538,9 +538,10 @@ handle_rails_package() {
         mkdir -p vendor/cache
         awk -- '
 BEGIN { OFS="\0"; ORS="\0"; }
-(/^[[:space:]]*$/) { level=0; }
-($0 == "GEM" || $0 == "  specs:") { level+=1; }
-(level == 2 && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /^\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
+(/^[A-Z ]*$/) { level1=$0; }
+(/^  [[:alpha:]]+:$/) { level2=substr($0, 3, length($0) - 3); next; }
+(/^ {0,3}[[:alpha:]]/) { level2=""; next; }
+(level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
     print "--version", substr($2, 2, length($2) - 2), $1;
 }
 ' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 gem fetch
