@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"sort"
 	"syscall"
@@ -117,9 +116,7 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 	}
 
 	// simulate mounted writable collection
-	bindtmp, err := ioutil.TempDir("", "crunch-run.test.")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(bindtmp)
+	bindtmp := c.MkDir()
 	f, err := os.OpenFile(bindtmp+"/.arvados#collection", os.O_CREATE|os.O_WRONLY, 0644)
 	c.Assert(err, check.IsNil)
 	_, err = io.WriteString(f, `{"manifest_text":". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"}`)
@@ -215,6 +212,66 @@ func (s *copierSuite) TestWritableMountBelow(c *check.C) {
 		{src: s.cp.hostOutputDir + "/file", dst: "/file", size: 4},
 		{src: s.cp.hostOutputDir + "/mount/foo", dst: "/mount/foo", size: 3},
 	})
+}
+
+func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
+	bindtmp := c.MkDir()
+	s.cp.mounts["/ctr/outdir/include/includer"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+	}
+	s.cp.mounts["/ctr/outdir/include/includew"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+		Writable:         true,
+	}
+	s.cp.mounts["/ctr/outdir/exclude/excluder"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+	}
+	s.cp.mounts["/ctr/outdir/exclude/excludew"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+		Writable:         true,
+	}
+	s.cp.mounts["/ctr/outdir/nonexistent-collection"] = arvados.Mount{
+		// As extra assurance, plant a collection that will
+		// fail if copier attempts to load its manifest.  (For
+		// performance reasons it's important that copier
+		// doesn't try to load the manifest before deciding
+		// not to copy the contents.)
+		Kind:             "collection",
+		PortableDataHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1234",
+	}
+	s.cp.globs = []string{
+		"?ncl*/*r",
+		"*/?ncl*",
+	}
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/include/includer", 0755), check.IsNil)
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/include/includew", 0755), check.IsNil)
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/exclude/excluder", 0755), check.IsNil)
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/exclude/excludew", 0755), check.IsNil)
+	s.writeFileInOutputDir(c, "include/includew/foo", "foo")
+	s.writeFileInOutputDir(c, "exclude/excludew/foo", "foo")
+	s.cp.bindmounts = map[string]bindmount{
+		"/ctr/outdir/include/includew": bindmount{HostPath: bindtmp, ReadOnly: false},
+	}
+	s.cp.bindmounts = map[string]bindmount{
+		"/ctr/outdir/include/excludew": bindmount{HostPath: bindtmp, ReadOnly: false},
+	}
+
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Check(err, check.IsNil)
+	c.Log(s.log.String())
+
+	c.Check(s.cp.dirs, check.DeepEquals, []string{"/include", "/include/includew"})
+	c.Check(s.cp.files, check.DeepEquals, []filetodo{
+		{src: s.cp.hostOutputDir + "/include/includew/foo", dst: "/include/includew/foo", size: 3},
+	})
+	c.Check(s.cp.manifest, check.Matches, `(?ms).*\./include/includer .*`)
+	c.Check(s.cp.manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
+	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excluder\\".*`)
+	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excludew\\".*`)
 }
 
 func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
