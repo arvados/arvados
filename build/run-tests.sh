@@ -492,12 +492,6 @@ setup_ruby_environment() {
     echo "Gem search path is GEM_PATH=$GEM_PATH"
     gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
         || fatal 'install bundler'
-	if test -d /var/lib/arvados-arvbox/ ; then
-	    # Inside arvbox, use bundler-installed binstubs.  The
-	    # system bundler and rail's own bin/bundle refuse to work.
-	    # I don't know why.
-	    bundle=binstubs/bundle
-	fi
 }
 
 with_test_gemset() {
