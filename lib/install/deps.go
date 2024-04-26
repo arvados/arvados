@@ -35,7 +35,7 @@ const goversion = "1.20.6"
 
 const (
 	defaultRubyVersion        = "3.2.2"
-	defaultBundlerVersion     = "2.2.19"
+	defaultBundlerVersion     = "~> 2.4.0"
 	defaultSingularityVersion = "3.10.4"
 	pjsversion                = "1.9.8"
 	geckoversion              = "0.24.0"
@@ -123,7 +123,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		fmt.Fprintf(stderr, "invalid argument %q for -ruby-version\n", inst.RubyVersion)
 		return 2
 	}
-	if ok, _ := regexp.MatchString(`^\d`, inst.BundlerVersion); !ok {
+	if ok, _ := regexp.MatchString(`^ *(|~>|[<>!=]=) *\d`, inst.BundlerVersion); !ok {
 		fmt.Fprintf(stderr, "invalid argument %q for -bundler-version\n", inst.BundlerVersion)
 		return 2
 	}
@@ -351,7 +351,7 @@ make install
 if [[ "$rubyversion" > "3" ]]; then
   /var/lib/arvados/bin/gem update --no-document --system 3.4.21
 fi
-/var/lib/arvados/bin/gem install bundler:`+inst.BundlerVersion+` --no-document
+/var/lib/arvados/bin/gem install --conservative --no-document --version '`+inst.BundlerVersion+`' bundler
 `, stdout, stderr)
 		if err != nil {
 			return 1

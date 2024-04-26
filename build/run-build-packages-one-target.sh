@@ -198,7 +198,7 @@ if [[ -n "$test_packages" ]]; then
 else
   IMAGE="arvados/build:$TARGET"
   if [[ "$COMMAND" != "" ]]; then
-    COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET$DEBUG"
+    COMMAND="bash /jenkins/$COMMAND --target $TARGET$DEBUG"
   fi
 fi
 
@@ -206,11 +206,10 @@ JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
 if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
     if [[ -n "$test_packages" ]]; then
-	pushd "$JENKINS_DIR/package-test-dockerfiles"
-	make "$TARGET/generated"
+	    pushd "$JENKINS_DIR/package-test-dockerfiles"
     else
-	pushd "$JENKINS_DIR/package-build-dockerfiles"
-	make "$TARGET/generated"
+	    pushd "$JENKINS_DIR/package-build-dockerfiles"
+	    make "$TARGET/generated"
     fi
 
     GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
@@ -267,7 +266,8 @@ mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
 docker_volume_args=(
     -v "$JENKINS_DIR:/jenkins"
     -v "$WORKSPACE:/arvados"
-    -v /arvados/services/api/vendor/bundle
+    --tmpfs /arvados/services/api/.bundle:rw,noexec,nosuid,size=1m
+    --tmpfs /arvados/services/api/vendor:rw,exec,nosuid,size=1g
     -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
 )
 

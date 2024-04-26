@@ -84,14 +84,9 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	if err != nil {
 		return err
 	}
-	for _, version := range []string{"2.2.19"} {
-		if !strings.Contains(buf.String(), "("+version+")") {
-			err = super.RunProgram(ctx, appdir, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "bundler:2.2.19")
-			if err != nil {
-				return err
-			}
-			break
-		}
+	err = super.RunProgram(ctx, appdir, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "--version", "~> 2.4.0", "bundler")
+	if err != nil {
+		return err
 	}
 	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "config", "--set", "local", "path", filepath.Join(os.Getenv("HOME"), ".gem"))
 	if err != nil {
