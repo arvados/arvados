@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-export RUBY_VERSION=3.2.2
-export BUNDLER_VERSION=2.4.22
-
 export DEBIAN_FRONTEND=noninteractive
 export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/opt/arvados-py/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
@@ -66,7 +63,7 @@ else
 fi
 
 run_bundler() {
-    flock $GEMLOCK /var/lib/arvados/bin/gem install --no-document --user bundler:$BUNDLER_VERSION
+    flock $GEMLOCK /var/lib/arvados/bin/gem install --conservative --no-document --user --version '~> 2.4.0' bundler
 
     BUNDLER=bundle
     if test -x $PWD/bin/bundle ; then
