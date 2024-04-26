@@ -70,6 +70,7 @@ resource "aws_instance" "arvados_service" {
   metadata_options {
     # Sets IMDSv2 to required. Default is "optional".
     http_tokens = "required"
+    http_endpoint = "enabled"
   }
   lifecycle {
     ignore_changes = [
