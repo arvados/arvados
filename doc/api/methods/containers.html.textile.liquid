@@ -33,7 +33,7 @@ table(table table-bordered table-condensed).
 |cwd|string|Initial working directory.|Must be equal to a ContainerRequest's cwd in order to satisfy the ContainerRequest.|
 |command|array of strings|Command to execute.| Must be equal to a ContainerRequest's command in order to satisfy the ContainerRequest.|
 |output_path|string|Path to a directory or file inside the container that should be preserved as this container's output when it finishes.|Must be equal to a ContainerRequest's output_path in order to satisfy the ContainerRequest.|
-|output_glob|array of strings|Glob patterns determining which files will be included in the output collection. See corresponding attribute in the "container_requests resource":container_requests.html.|Must be equal to a ContainerRequest's output_glob in order to satisfy the ContainerRequest.|
+|output_glob|array of strings|Glob patterns determining which files will be included in the output collection. See corresponding attribute in the "container_requests resource":container_requests.html.|Must be equal to a ContainerRequest's output_glob in order to satisfy the ContainerRequest. See "Glob patterns":#glob_patterns for more details.|
 |mounts|hash|Must contain the same keys as the ContainerRequest being satisfied. Each value must be within the range of values described in the ContainerRequest at the time the Container is assigned to the ContainerRequest.|See "Mount types":#mount_types for more details.|
 |secret_mounts|hash|Must contain the same keys as the ContainerRequest being satisfied. Each value must be within the range of values described in the ContainerRequest at the time the Container is assigned to the ContainerRequest.|Not returned in API responses. Reset to empty when state is "Complete" or "Cancelled".|
 |runtime_constraints|hash|Compute resources, and access to the outside world, that are / were available to the container.
@@ -97,6 +97,8 @@ table(table table-bordered table-condensed).
 |preemptionNotice|string|Details about any cloud provider scheduled interruption to the instance running this container.|Existence of this key indicates the container likely was (or will soon be) @Cancelled@ due to an instance interruption.|
 
 h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
+
+h2(#glob_patterns). {% include 'container_glob_patterns' %}
 
 h2. Methods
 
