@@ -8,8 +8,9 @@ from builtins import range
 import os
 import random
 import sys
-import mock
 import tempfile
+
+from unittest import mock
 
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls

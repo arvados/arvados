@@ -8,7 +8,6 @@ standard_library.install_aliases()
 import arvados
 import arvados_fuse.command
 import json
-import mock
 import os
 import pycurl
 import queue
@@ -16,8 +15,9 @@ from . import run_test_server
 import tempfile
 import unittest
 
-from .integration_test import IntegrationTest
+from unittest import mock
 
+from .integration_test import IntegrationTest
 
 class KeepClientRetry(unittest.TestCase):
     origKeepClient = arvados.keep.KeepClient

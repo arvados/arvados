@@ -6,11 +6,12 @@ from __future__ import absolute_import
 from future.utils import listitems
 import io
 import logging
-import mock
 import os
 import re
 import shutil
 import tempfile
+
+from unittest import mock
 
 import arvados
 import arvados.collection as collection

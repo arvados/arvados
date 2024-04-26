@@ -16,7 +16,6 @@ import ciso8601
 import datetime
 import json
 import logging
-import mock
 import multiprocessing
 import os
 import pwd
@@ -31,6 +30,8 @@ import tempfile
 import time
 import unittest
 import uuid
+
+from unittest import mock
 
 import arvados
 import arvados.commands.put as arv_put

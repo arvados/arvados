@@ -47,7 +47,6 @@ import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 import arvados.http_to_keep
-import ruamel.yaml as yaml
 
 from arvados._version import __version__
 

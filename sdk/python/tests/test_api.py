@@ -20,7 +20,7 @@ import sys
 import unittest
 import urllib.parse as urlparse
 
-import mock
+from unittest import mock
 from . import run_test_server
 
 from apiclient import errors as apiclient_errors

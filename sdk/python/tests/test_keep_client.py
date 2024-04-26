@@ -10,8 +10,6 @@ from builtins import str
 from builtins import range
 from builtins import object
 import hashlib
-import mock
-from mock import patch
 import os
 import errno
 import pycurl
@@ -26,6 +24,9 @@ import time
 import unittest
 import urllib.parse
 import mmap
+
+from unittest import mock
+from unittest.mock import patch
 
 import parameterized
 
