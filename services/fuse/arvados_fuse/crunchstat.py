@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from builtins import str
-from builtins import object
 import sys
 import time
+
 from collections import namedtuple
 
 Stat = namedtuple("Stat", ['name', 'get'])

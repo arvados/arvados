@@ -12,11 +12,6 @@ cookbook for [an introduction to using the Collection class][cookbook].
 [cookbook]: https://doc.arvados.org/sdk/python/cookbook.html#working-with-collections
 """
 
-from __future__ import absolute_import
-from future.utils import listitems, listvalues, viewkeys
-from builtins import str
-from past.builtins import basestring
-from builtins import object
 import ciso8601
 import datetime
 import errno
@@ -419,7 +414,7 @@ class RichCollectionBase(CollectionBase):
         if value == self._committed:
             return
         if value:
-            for k,v in listitems(self._items):
+            for k,v in self._items.items():
                 v.set_committed(True)
             self._committed = True
         else:
@@ -434,7 +429,7 @@ class RichCollectionBase(CollectionBase):
         This method does not recurse. It only iterates the contents of this
         collection's corresponding stream.
         """
-        return iter(viewkeys(self._items))
+        return iter(self._items)
 
     @synchronized
     def __getitem__(self, k: str) -> CollectionItem:
@@ -492,7 +487,7 @@ class RichCollectionBase(CollectionBase):
         `arvados.arvfile.ArvadosFile` for every file, directly within this
         collection's stream.  This method does not recurse.
         """
-        return listvalues(self._items)
+        return list(self._items.values())
 
     @synchronized
     def items(self) -> List[Tuple[str, CollectionItem]]:
@@ -502,7 +497,7 @@ class RichCollectionBase(CollectionBase):
         `arvados.arvfile.ArvadosFile` for every file, directly within this
         collection's stream.  This method does not recurse.
         """
-        return listitems(self._items)
+        return list(self._items.items())
 
     def exists(self, path: str) -> bool:
         """Indicate whether this collection includes an item at `path`
@@ -548,7 +543,7 @@ class RichCollectionBase(CollectionBase):
             item.remove(pathcomponents[1], recursive=recursive)
 
     def _clonefrom(self, source):
-        for k,v in listitems(source):
+        for k,v in source.items():
             self._items[k] = v.clone(self, k)
 
     def clone(self):
@@ -612,7 +607,7 @@ class RichCollectionBase(CollectionBase):
             source_collection = self
 
         # Find the object
-        if isinstance(source, basestring):
+        if isinstance(source, str):
             source_obj = source_collection.find(source)
             if source_obj is None:
                 raise IOError(errno.ENOENT, "File not found", source)
@@ -1024,7 +1019,7 @@ class RichCollectionBase(CollectionBase):
     @synchronized
     def flush(self) -> None:
         """Upload any pending data to Keep"""
-        for e in listvalues(self):
+        for e in self.values():
             e.flush()
 
 
@@ -2258,7 +2253,7 @@ class ResumableCollectionWriter(CollectionWriter):
         return writer
 
     def check_dependencies(self):
-        for path, orig_stat in listitems(self._dependencies):
+        for path, orig_stat in self._dependencies.items():
             if not S_ISREG(orig_stat[ST_MODE]):
                 raise errors.StaleWriterStateError(u"{} not file".format(path))
             try:

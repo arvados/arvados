@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
 import os
 import sys
 import re
@@ -111,7 +110,6 @@ setup(name='arvados-python-client',
       install_requires=[
           *arvados_version.iter_dependencies(version),
           'ciso8601 >=2.0.0',
-          'future',
           'google-api-python-client >=2.1.0',
           'google-auth',
           'httplib2 >=0.9.2',

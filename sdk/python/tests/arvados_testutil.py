@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future import standard_library
-standard_library.install_aliases()
 import arvados
 import contextlib
 import errno

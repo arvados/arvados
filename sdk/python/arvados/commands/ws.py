@@ -2,16 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
-import sys
-import logging
 import argparse
-import arvados
 import json
+import logging
+import signal
+import sys
+
+import arvados
 from arvados.events import subscribe
 from arvados._version import __version__
 from . import _util as arv_cmd
-import signal
 
 def main(arguments=None):
     logger = logging.getLogger('arvados.arv-ws')

@@ -2,18 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import object
+import hashlib
+import json
 import os
 import unittest
-import hashlib
-from . import run_test_server
-import json
-import arvados
-from . import arvados_testutil as tutil
-from apiclient import http as apiclient_http
 
+from apiclient import http as apiclient_http
 from unittest import mock
+
+import arvados
+from . import run_test_server
+from . import arvados_testutil as tutil
 
 @tutil.skip_sleep
 class ApiClientRetryTestMixin(object):

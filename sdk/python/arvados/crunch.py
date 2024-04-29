@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import object
 import json
 import os
+
 from . import util
 
 class TaskOutputDir(object):

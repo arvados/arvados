@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future.utils import viewvalues
-
 import re
-from cwltool.errors import WorkflowException
+
 from collections import deque
+from cwltool.errors import WorkflowException
 
 def done(self, record, tmpdir, outdir, keepdir):
     cols = [

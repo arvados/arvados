@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
-from future.utils import viewitems
-from builtins import str
-from builtins import range
 import arvados
 import arvados_fuse as fuse
 import llfuse
@@ -13,6 +9,7 @@ import logging
 import os
 import sys
 import unittest
+
 from .. import run_test_server
 from ..mount_test_base import MountTestBase
 from ..slow_test import slow_test
@@ -334,7 +331,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
         for j in range(0, files_per_stream):
             files[os.path.join(self.mounttmp, collection, 'file'+str(j)+'.txt')] = data
 
-        for k, v in viewItems(files):
+        for k, v in files.items():
             with open(os.path.join(self.mounttmp, collection, k)) as f:
                 self.assertEqual(v, f.read())
 

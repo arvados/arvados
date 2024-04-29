@@ -2,14 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
-from multiprocessing import Process
 import os
 import subprocess
 import sys
+
+from multiprocessing import Process
 from . import prof
 
 def fn(n):

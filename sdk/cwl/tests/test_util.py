@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import bytes
-
-import unittest
 import datetime
 import httplib2
+import unittest
 
 from unittest import mock
 

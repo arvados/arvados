@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import division
-from builtins import next
-from builtins import object
-from builtins import str
-from future.utils import viewvalues, viewitems
-
 import argparse
 import logging
 import os
@@ -421,7 +415,7 @@ The 'jobs' API is no longer supported.
             if obj.get("class") == "InplaceUpdateRequirement":
                 if obj["inplaceUpdate"] and parentfield == "requirements":
                     raise SourceLine(obj, "class", UnsupportedRequirement).makeError("InplaceUpdateRequirement not supported for keep collections.")
-            for k,v in viewitems(obj):
+            for k,v in obj.items():
                 self.check_features(v, parentfield=k)
         elif isinstance(obj, list):
             for i,v in enumerate(obj):

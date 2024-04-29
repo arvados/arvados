@@ -18,12 +18,6 @@
 # instances src and dst.  If either of these files is not found,
 # arv-copy will issue an error.
 
-from __future__ import division
-from future import standard_library
-from future.utils import listvalues
-standard_library.install_aliases()
-from past.builtins import basestring
-from builtins import object
 import argparse
 import contextlib
 import getpass
@@ -167,7 +161,7 @@ def main():
         exit(1)
 
     # Clean up any outstanding temp git repositories.
-    for d in listvalues(local_repo_dir):
+    for d in local_repo_dir.values():
         shutil.rmtree(d, ignore_errors=True)
 
     if not result:
@@ -257,10 +251,10 @@ def filter_iter(arg):
     Pass in a filter field that can either be a string or list.
     This will iterate elements as if the field had been written as a list.
     """
-    if isinstance(arg, basestring):
-        return iter((arg,))
+    if isinstance(arg, str):
+        yield arg
     else:
-        return iter(arg)
+        yield from arg
 
 def migrate_repository_filter(repo_filter, src_repository, dst_repository):
     """Update a single repository filter in-place for the destination.
@@ -408,7 +402,7 @@ def copy_collections(obj, src, dst, args):
                 collections_copied[src_id] = dst_col['uuid']
         return collections_copied[src_id]
 
-    if isinstance(obj, basestring):
+    if isinstance(obj, str):
         # Copy any collections identified in this string to dst, replacing
         # them with the dst uuids as necessary.
         obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)

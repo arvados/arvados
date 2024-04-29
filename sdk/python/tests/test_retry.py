@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import zip
-from builtins import range
-from builtins import object
 import itertools
 import unittest
 
