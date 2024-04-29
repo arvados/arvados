@@ -2,14 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { CSSProperties, ReactElement, useEffect, useState } from "react";
 import { Tabs, Tab } from "@material-ui/core";
 import { TabsProps } from "@material-ui/core/Tabs";
+
+interface ComponentWithHidden {
+    styles: CSSProperties;
+    hidden: boolean;
+};
 
 export type TabData = {
     show: boolean;
     label: string;
-    content: ReactNode;
+    content: ReactElement<ComponentWithHidden>;
 };
 
 type ConditionalTabsProps = {
@@ -19,7 +24,6 @@ type ConditionalTabsProps = {
 export const ConditionalTabs = (props: Omit<TabsProps, 'value' | 'onChange'> & ConditionalTabsProps) => {
     const [tabState, setTabState] = useState(0);
     const visibleTabs = props.tabs.filter(tab => tab.show);
-    const activeTab = visibleTabs[tabState];
     const visibleTabNames = visibleTabs.map(tab => tab.label).join();
 
     const handleTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
@@ -39,6 +43,9 @@ export const ConditionalTabs = (props: Omit<TabsProps, 'value' | 'onChange'> & C
             onChange={handleTabChange} >
             {visibleTabs.map(tab => <Tab key={tab.label} label={tab.label} />)}
         </Tabs>
-        {activeTab && activeTab.content}
+
+        {visibleTabs.map((tab, i) => (
+            React.cloneElement(tab.content, {hidden: i !== tabState})
+        ))}
     </>;
 };

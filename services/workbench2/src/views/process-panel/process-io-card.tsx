@@ -485,12 +485,13 @@ export type ProcessIOParameter = {
 interface ProcessIOPreviewDataProps {
     data: ProcessIOParameter[];
     valueLabel: string;
+    hidden?: boolean;
 }
 
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
 const ProcessIOPreview = memo(
-    withStyles(styles)(({ data, valueLabel, classes }: ProcessIOPreviewProps) => {
+    withStyles(styles)(({ data, valueLabel, hidden, classes }: ProcessIOPreviewProps) => {
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
 
         const hasMoreValues = (index: number) => (
@@ -546,7 +547,7 @@ const ProcessIOPreview = memo(
             </TableRow>;
         };
 
-        return <div className={classes.tableWrapper}>
+        return <div className={classes.tableWrapper} hidden={hidden}>
             <Table
                 className={classes.paramTableRoot}
                 aria-label="Process IO Preview"
@@ -590,10 +591,11 @@ const ProcessValuePreview = withStyles(styles)(({ value, classes }: ProcessValue
 
 interface ProcessIORawDataProps {
     data: ProcessIOParameter[];
+    hidden?: boolean;
 }
 
-const ProcessIORaw = withStyles(styles)(({ data, classes }: ProcessIORawDataProps & WithStyles<CssRules>) => (
-    <div className={classes.jsonWrapper}>
+const ProcessIORaw = withStyles(styles)(({ data, hidden, classes }: ProcessIORawDataProps & WithStyles<CssRules>) => (
+    <div className={classes.jsonWrapper} hidden={hidden}>
         <Paper elevation={0} style={{minWidth: "100%", height: "100%"}}>
             <DefaultVirtualCodeSnippet
                 lines={JSON.stringify(data, null, 2).split('\n')}
@@ -605,6 +607,7 @@ const ProcessIORaw = withStyles(styles)(({ data, classes }: ProcessIORawDataProp
 
 interface ProcessInputMountsDataProps {
     mounts: InputCollectionMount[];
+    hidden?: boolean;
 }
 
 type ProcessInputMountsProps = ProcessInputMountsDataProps & WithStyles<CssRules>;
@@ -612,10 +615,11 @@ type ProcessInputMountsProps = ProcessInputMountsDataProps & WithStyles<CssRules
 const ProcessInputMounts = withStyles(styles)(
     connect((state: RootState) => ({
         auth: state.auth,
-    }))(({ mounts, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
+    }))(({ mounts, hidden, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
         <Table
             className={classes.mountsTableRoot}
             aria-label="Process Input Mounts"
+            hidden={hidden}
         >
             <TableHead>
                 <TableRow>
@@ -652,10 +656,10 @@ const mapNavigateToProps = (dispatch: Dispatch): ProcessOutputCollectionActionPr
     navigateTo: uuid => dispatch<any>(navigateTo(uuid)),
 });
 
-type ProcessOutputCollectionProps = {outputUuid: string | undefined} & ProcessOutputCollectionActionProps &  WithStyles<CssRules>;
+type ProcessOutputCollectionProps = {outputUuid: string | undefined, hidden?: boolean} & ProcessOutputCollectionActionProps &  WithStyles<CssRules>;
 
-const ProcessOutputCollection = withStyles(styles)(connect(null, mapNavigateToProps)(({ outputUuid, navigateTo, classes }: ProcessOutputCollectionProps) => (
-    <div className={classes.tableWrapper}>
+const ProcessOutputCollection = withStyles(styles)(connect(null, mapNavigateToProps)(({ outputUuid, hidden, navigateTo, classes }: ProcessOutputCollectionProps) => (
+    <div className={classes.tableWrapper} hidden={hidden}>
         <>
             {outputUuid && (
                 <Typography className={classes.collectionLink}>
