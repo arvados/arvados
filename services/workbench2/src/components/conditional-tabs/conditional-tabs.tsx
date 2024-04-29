@@ -2,12 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { CSSProperties, ReactElement, useEffect, useState } from "react";
+import React, { ReactElement, useEffect, useState } from "react";
 import { Tabs, Tab } from "@material-ui/core";
 import { TabsProps } from "@material-ui/core/Tabs";
 
 interface ComponentWithHidden {
-    styles: CSSProperties;
     hidden: boolean;
 };
 
@@ -45,7 +44,7 @@ export const ConditionalTabs = (props: Omit<TabsProps, 'value' | 'onChange'> & C
         </Tabs>
 
         {visibleTabs.map((tab, i) => (
-            React.cloneElement(tab.content, {hidden: i !== tabState})
+            React.cloneElement(tab.content, {key: i, hidden: i !== tabState})
         ))}
     </>;
 };
