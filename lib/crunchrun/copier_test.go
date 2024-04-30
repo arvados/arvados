@@ -223,6 +223,10 @@ func (s *copierSuite) TestMatchGlobs(c *check.C) {
 	c.Check(s.cp.matchGlobs("food", true), check.Equals, true)
 	c.Check(s.cp.matchGlobs("foo", false), check.Equals, false)
 	c.Check(s.cp.matchGlobs("food", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("foo/bar", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("food/bar", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo/bar", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("food/bar", true), check.Equals, true)
 
 	s.cp.globs = []string{"ba[!/]/foo*/**"}
 	c.Check(s.cp.matchGlobs("bar/foo", true), check.Equals, true)
@@ -243,6 +247,12 @@ func (s *copierSuite) TestMatchGlobs(c *check.C) {
 	c.Check(s.cp.matchGlobs("waz/quux/food/foo", true), check.Equals, true)
 	c.Check(s.cp.matchGlobs("waz/quux/foo/foo", false), check.Equals, true)
 	c.Check(s.cp.matchGlobs("waz/quux/food/foo", false), check.Equals, true)
+
+	s.cp.globs = []string{"foo/**/*"}
+	c.Check(s.cp.matchGlobs("foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("foo/bar", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo/bar/baz", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo/bar/baz/waz", false), check.Equals, true)
 }
 
 func (s *copierSuite) TestSubtreeCouldMatch(c *check.C) {
