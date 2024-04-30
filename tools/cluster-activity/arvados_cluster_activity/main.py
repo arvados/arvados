@@ -18,6 +18,7 @@ import re
 from datetime import timedelta, timezone
 import base64
 
+prometheus_support = True
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
@@ -25,8 +26,9 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
     arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
     arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
-    arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
-    arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
+    if prometheus_support:
+        arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
+        arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
 
     args = arg_parser.parse_args(arguments)
 
@@ -316,13 +318,14 @@ def main(arguments=None):
 
     args, since, to = parse_arguments(arguments)
 
-    if "PROMETHEUS_HOST" in os.environ:
-        if args.cluster:
-            report_from_prometheus(args.cluster, since, to)
+    if prometheus_support:
+        if "PROMETHEUS_HOST" in os.environ:
+            if args.cluster:
+                report_from_prometheus(args.cluster, since, to)
+            else:
+                logging.warn("--cluster not provided, not collecting activity from Prometheus")
         else:
-            logging.warn("--cluster not provided, not collecting activity from Prometheus")
-    else:
-        logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
+            logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
 
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
