@@ -26,8 +26,7 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
     arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
     arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
-    arg_parser.add_argument('--include-workflow-steps', type=bool,
-                            default=False,
+    arg_parser.add_argument('--include-workflow-steps', default=False,
                             action="store_true", help='Include individual workflow steps')
     if prometheus_support:
         arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
