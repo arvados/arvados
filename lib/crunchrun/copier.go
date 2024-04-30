@@ -79,10 +79,17 @@ func (cp *copier) Copy() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating Collection.FileSystem: %v", err)
 	}
+
+	// Remove files/dirs that don't match globs (the ones that
+	// were added during cp.walkMount() by copying subtree
+	// manifests into cp.manifest).
 	err = cp.applyGlobsToCollectionFS(collfs)
 	if err != nil {
 		return "", fmt.Errorf("error while removing non-matching files from output collection: %w", err)
 	}
+	// Remove files/dirs that don't match globs (the ones that are
+	// stored on the local filesystem and would need to be copied
+	// in copyFile() below).
 	cp.applyGlobsToFilesAndDirs()
 	for _, d := range cp.dirs {
 		err = collfs.Mkdir(d, 0777)
@@ -90,6 +97,7 @@ func (cp *copier) Copy() (string, error) {
 			return "", fmt.Errorf("error making directory %q in output collection: %v", d, err)
 		}
 	}
+
 	var unflushed int64
 	var lastparentdir string
 	for _, f := range cp.files {
