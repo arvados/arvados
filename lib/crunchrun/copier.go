@@ -18,7 +18,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 type printfer interface {
@@ -115,14 +115,44 @@ func (cp *copier) Copy() (string, error) {
 	return collfs.MarshalManifest(".")
 }
 
-func (cp *copier) matchGlobs(path string) bool {
+func (cp *copier) matchGlobs(path string, isDir bool) bool {
 	// An entry in the top level of the output directory looks
 	// like "/foo", but globs look like "foo", so we strip the
 	// leading "/" before matching.
 	path = strings.TrimLeft(path, "/")
 	for _, glob := range cp.globs {
-		if match, _ := doublestar.Match(glob, path); match {
+		if !isDir && strings.HasSuffix(glob, "/**") {
+			// doublestar.Match("f*/**", "ff") and
+			// doublestar.Match("f*/**", "ff/gg") both
+			// return true, but (to be compatible with
+			// bash shopt) "ff" should match only if it is
+			// a directory.
+			//
+			// To avoid errant matches, we add the file's
+			// basename to the end of the pattern:
+			//
+			// Match("f*/**/ff", "ff") => false
+			// Match("f*/**/gg", "ff/gg") => true
+			//
+			// Of course, we need to escape basename in
+			// case it contains *, ?, \, etc.
+			_, name := filepath.Split(path)
+			escapedName := strings.TrimSuffix(strings.Replace(name, "", "\\", -1), "\\")
+			if match, _ := doublestar.Match(glob+"/"+escapedName, path); match {
+				return true
+			}
+		} else if match, _ := doublestar.Match(glob, path); match {
 			return true
+		} else if isDir {
+			// Workaround doublestar bug (v4.6.1).
+			// "foo*/**" should match "foo", but does not,
+			// because isZeroLengthPattern does not accept
+			// "*/**" as a zero length pattern.
+			if trunc := strings.TrimSuffix(glob, "*/**"); trunc != glob {
+				if match, _ := doublestar.Match(trunc, path); match {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -141,7 +171,7 @@ func (cp *copier) applyGlobsToFilesAndDirs() {
 	}
 	keepdirs := make(map[string]bool)
 	for _, path := range cp.dirs {
-		if cp.matchGlobs(path) {
+		if cp.matchGlobs(path, true) {
 			keepdirs[path] = true
 		}
 	}
@@ -154,7 +184,7 @@ func (cp *copier) applyGlobsToFilesAndDirs() {
 	}
 	var keepfiles []filetodo
 	for _, file := range cp.files {
-		if cp.matchGlobs(file.dst) {
+		if cp.matchGlobs(file.dst, false) {
 			keepfiles = append(keepfiles, file)
 		}
 	}
@@ -182,7 +212,7 @@ func (cp *copier) applyGlobsToCollectionFS(collfs arvados.CollectionFileSystem) 
 	}
 	include := make(map[string]bool)
 	err := fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
-		if cp.matchGlobs(path) {
+		if cp.matchGlobs(path, ent.IsDir()) {
 			for i, c := range path {
 				if i > 0 && c == '/' {
 					include[path[:i]] = true
@@ -211,6 +241,42 @@ func (cp *copier) applyGlobsToCollectionFS(collfs arvados.CollectionFileSystem) 
 		return nil
 	})
 	return err
+}
+
+// Return true if it's possible for any descendant of the given path
+// to match anything in cp.globs.  Used by walkMount to avoid loading
+// collections that are mounted underneath ctrOutputPath but excluded
+// by globs.
+func (cp *copier) subtreeCouldMatch(path string) bool {
+	if len(cp.globs) == 0 {
+		return true
+	}
+	pathdepth := 1 + strings.Count(path, "/")
+	for _, glob := range cp.globs {
+		globdepth := 0
+		lastsep := 0
+		for i, c := range glob {
+			if c != '/' || !doublestar.ValidatePattern(glob[:i]) {
+				// Escaped "/", or "/" in a character
+				// class, is not a path separator.
+				continue
+			}
+			if glob[lastsep:i] == "**" {
+				return true
+			}
+			lastsep = i + 1
+			if globdepth++; globdepth == pathdepth {
+				if match, _ := doublestar.Match(glob[:i]+"/*", path+"/z"); match {
+					return true
+				}
+				break
+			}
+		}
+		if globdepth < pathdepth && glob[lastsep:] == "**" {
+			return true
+		}
+	}
+	return false
 }
 
 func (cp *copier) copyFile(fs arvados.CollectionFileSystem, f filetodo) (int64, error) {
@@ -267,9 +333,8 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	// copy, relative to its mount point -- ".", "./foo.txt", ...
 	srcRelPath := filepath.Join(".", srcMount.Path, src[len(srcRoot):])
 
-	// outputRelPath is the path relative in the output directory
-	// that corresponds to the path in the output collection where
-	// the file will go, for logging
+	// outputRelPath is the destination path relative to the
+	// output directory. Used for logging and glob matching.
 	var outputRelPath = ""
 	if strings.HasPrefix(src, cp.ctrOutputDir) {
 		outputRelPath = strings.TrimPrefix(src[len(cp.ctrOutputDir):], "/")
@@ -283,6 +348,9 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 
 	switch {
 	case srcMount.ExcludeFromOutput:
+	case outputRelPath != "*" && !cp.subtreeCouldMatch(outputRelPath):
+		cp.logger.Printf("not copying %q because contents cannot match output globs", outputRelPath)
+		return nil
 	case srcMount.Kind == "tmp":
 		// Handle by walking the host filesystem.
 		return cp.walkHostFS(dest, src, maxSymlinks, walkMountsBelow)
@@ -433,6 +501,8 @@ func (cp *copier) walkHostFS(dest, src string, maxSymlinks int, includeMounts bo
 				//
 				// (...except mount types that are
 				// handled as regular files.)
+				continue
+			} else if isMount && !cp.subtreeCouldMatch(src[len(cp.ctrOutputDir)+1:]) {
 				continue
 			}
 			err = cp.walkHostFS(dest, src, maxSymlinks, false)

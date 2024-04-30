@@ -11,6 +11,7 @@ require (
 	github.com/arvados/cgofuse v1.2.0-arvados1
 	github.com/aws/aws-sdk-go v1.44.174
 	github.com/aws/aws-sdk-go-v2 v0.23.0
+	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
@@ -65,7 +66,6 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
-	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect

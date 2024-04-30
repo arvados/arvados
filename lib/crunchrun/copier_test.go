@@ -214,6 +214,68 @@ func (s *copierSuite) TestWritableMountBelow(c *check.C) {
 	})
 }
 
+// Check some glob-matching edge cases. In particular, check that
+// patterns like "foo/**" do not match regular files named "foo"
+// (unless of course they are inside a directory named "foo").
+func (s *copierSuite) TestMatchGlobs(c *check.C) {
+	s.cp.globs = []string{"foo*/**"}
+	c.Check(s.cp.matchGlobs("foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("food", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("food", false), check.Equals, false)
+
+	s.cp.globs = []string{"ba[!/]/foo*/**"}
+	c.Check(s.cp.matchGlobs("bar/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/food", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("bar/food", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("bar/foo/z\\[", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/food/z\\[", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/foo/z\\[", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/food/z\\[", false), check.Equals, true)
+
+	s.cp.globs = []string{"waz/**/foo*/**"}
+	c.Check(s.cp.matchGlobs("waz/quux/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/food", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("waz/quux/food", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("waz/quux/foo/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/food/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/foo/foo", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/food/foo", false), check.Equals, true)
+}
+
+func (s *copierSuite) TestSubtreeCouldMatch(c *check.C) {
+	for _, trial := range []struct {
+		mount string // relative to output dir
+		glob  string
+		could bool
+	}{
+		{mount: "abc", glob: "*"},
+		{mount: "abc", glob: "abc/*", could: true},
+		{mount: "abc", glob: "a*/**", could: true},
+		{mount: "abc", glob: "**", could: true},
+		{mount: "abc", glob: "*/*", could: true},
+		{mount: "abc", glob: "**/*.txt", could: true},
+		{mount: "abc/def", glob: "*"},
+		{mount: "abc/def", glob: "*/*"},
+		{mount: "abc/def", glob: "*/*.txt"},
+		{mount: "abc/def", glob: "*/*/*", could: true},
+		{mount: "abc/def", glob: "**", could: true},
+		{mount: "abc/def", glob: "**/bar", could: true},
+		{mount: "abc/def", glob: "abc/**", could: true},
+		{mount: "abc/def/ghi", glob: "*c/**/bar", could: true},
+		{mount: "abc/def/ghi", glob: "*c/*f/bar"},
+		{mount: "abc/def/ghi", glob: "abc/d[^/]f/ghi/*", could: true},
+	} {
+		c.Logf("=== %+v", trial)
+		got := (&copier{
+			globs: []string{trial.glob},
+		}).subtreeCouldMatch(trial.mount)
+		c.Check(got, check.Equals, trial.could)
+	}
+}
+
 func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 	bindtmp := c.MkDir()
 	s.cp.mounts["/ctr/outdir/include/includer"] = arvados.Mount{
@@ -234,7 +296,7 @@ func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 		PortableDataHash: arvadostest.FooCollectionPDH,
 		Writable:         true,
 	}
-	s.cp.mounts["/ctr/outdir/nonexistent-collection"] = arvados.Mount{
+	s.cp.mounts["/ctr/outdir/nonexistent/collection"] = arvados.Mount{
 		// As extra assurance, plant a collection that will
 		// fail if copier attempts to load its manifest.  (For
 		// performance reasons it's important that copier
@@ -244,8 +306,8 @@ func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 		PortableDataHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1234",
 	}
 	s.cp.globs = []string{
-		"?ncl*/*r",
-		"*/?ncl*",
+		"?ncl*/*r/*",
+		"*/?ncl*/**",
 	}
 	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/include/includer", 0755), check.IsNil)
 	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/include/includew", 0755), check.IsNil)
@@ -264,14 +326,18 @@ func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Log(s.log.String())
 
-	c.Check(s.cp.dirs, check.DeepEquals, []string{"/include", "/include/includew"})
+	// Note it's OK that "/exclude" is not excluded by walkMount:
+	// it is just a local filesystem directory, not a mount point
+	// that's expensive to walk.  In real-life usage, it will be
+	// removed from cp.dirs before any copying happens.
+	c.Check(s.cp.dirs, check.DeepEquals, []string{"/exclude", "/include", "/include/includew"})
 	c.Check(s.cp.files, check.DeepEquals, []filetodo{
 		{src: s.cp.hostOutputDir + "/include/includew/foo", dst: "/include/includew/foo", size: 3},
 	})
 	c.Check(s.cp.manifest, check.Matches, `(?ms).*\./include/includer .*`)
 	c.Check(s.cp.manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
 	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excluder\\".*`)
-	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excludew\\".*`)
+	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"nonexistent/collection\\".*`)
 }
 
 func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
