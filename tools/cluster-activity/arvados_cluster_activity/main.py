@@ -274,6 +274,7 @@ def flush_containers(arv_client, csvwriter, pending):
             container_request["created_at"],
             #"%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
             round(containers[container_request["container_uuid"]]["cost"], 3),
+            container_request["uuid"]
             ))
 
         for child_cr in child_crs.get(container_request["container_uuid"], []):
@@ -285,6 +286,7 @@ def flush_containers(arv_client, csvwriter, pending):
                 projects.get(container_request["modified_by_user_uuid"], "unknown user"),
                 child_cr["created_at"],
                 round(child_cr["cumulative_cost"], 3),
+                child_cr["uuid"]
                 ))
 
 
@@ -292,10 +294,11 @@ def report_from_api(since, to, out):
     arv_client = arvados.api()
 
     csvwriter = csv.writer(out)
-    csvwriter.writerow(("Project", "Workflow", "Step", "Sample", "User", "Submitted", "Cost"))
+    csvwriter.writerow(("Project", "Workflow", "Step", "Sample", "User", "Submitted", "Cost", "UUID"))
 
     pending = []
 
+    count = 0
     for container_request in arvados.util.keyset_list_all(
             arv_client.container_requests().list,
             filters=[
@@ -307,6 +310,8 @@ def report_from_api(since, to, out):
         if len(pending) < 1000:
             pending.append(container_request)
         else:
+            count += len(pending)
+            logging.info("Exporting rows, %s", count)
             flush_containers(arv_client, csvwriter, pending)
             pending.clear()
 
