@@ -200,7 +200,7 @@ func (s *routerSuite) TestBlockWrite_Headers(c *C) {
 	router, cancel := testRouter(c, s.cluster, nil)
 	defer cancel()
 
-	resp := call(router, "PUT", "http://example/"+fooHash, arvadostest.ActiveTokenV2, []byte("foo"), http.Header{"X-Arvados-Desired-Replicas": []string{"2"}})
+	resp := call(router, "PUT", "http://example/"+fooHash, arvadostest.ActiveTokenV2, []byte("foo"), http.Header{"X-Keep-Desired-Replicas": []string{"2"}})
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(resp.Header().Get("X-Keep-Replicas-Stored"), Equals, "1")
 	c.Check(sortCommaSeparated(resp.Header().Get("X-Keep-Storage-Classes-Confirmed")), Equals, "testclass1=1")

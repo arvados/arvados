@@ -110,7 +110,7 @@ func (rtr *router) handleBlockRead(w http.ResponseWriter, req *http.Request) {
 
 func (rtr *router) handleBlockWrite(w http.ResponseWriter, req *http.Request) {
 	dataSize, _ := strconv.Atoi(req.Header.Get("Content-Length"))
-	replicas, _ := strconv.Atoi(req.Header.Get("X-Arvados-Desired-Replicas"))
+	replicas, _ := strconv.Atoi(req.Header.Get(keepclient.XKeepDesiredReplicas))
 	resp, err := rtr.keepstore.BlockWrite(req.Context(), arvados.BlockWriteOptions{
 		Hash:           mux.Vars(req)["locator"],
 		Reader:         req.Body,
