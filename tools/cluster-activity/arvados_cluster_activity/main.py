@@ -252,6 +252,9 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
             ],
             select=["uuid", "name", "cumulative_cost", "requesting_container_uuid", "container_uuid"]):
 
+            if cr["cumulative_cost"] == 0:
+                continue
+
             g = name_regex.fullmatch(cr["name"])
             if g:
                 cr["name"] = g[1]
@@ -310,6 +313,9 @@ def report_from_api(since, to, out, include_steps):
                 ["created_at", ">=", since.strftime("%Y%m%dT%H%M%SZ")],
             ],
             select=["uuid", "owner_uuid", "container_uuid", "name", "cumulative_cost", "properties", "modified_by_user_uuid", "created_at"]):
+
+        if container_request["cumulative_cost"] == 0:
+            continue
 
         if len(pending) < 1000:
             pending.append(container_request)
