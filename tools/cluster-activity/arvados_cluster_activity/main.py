@@ -13,6 +13,7 @@ import ciso8601
 import csv
 import os
 import logging
+import re
 
 from datetime import timedelta, timezone
 import base64
@@ -202,7 +203,7 @@ def flush_containers(arv_client, csvwriter, pending):
         filters=[
             ["uuid", "in", [c["container_uuid"] for c in pending if c["container_uuid"]]],
         ],
-        select=["uuid", "started_at", "finished_at"]):
+        select=["uuid", "started_at", "finished_at", "cost"]):
 
         containers[container["uuid"]] = container
 
@@ -212,7 +213,9 @@ def flush_containers(arv_client, csvwriter, pending):
     for wf in arvados.util.keyset_list_all(
             arv_client.workflows().list,
             filters=[
-                ["uuid", "in", list(set(c["properties"]["template_uuid"] for c in pending if "template_uuid" in c["properties"]))],
+                ["uuid", "in", list(set(c["properties"]["template_uuid"]
+                                        for c in pending
+                                        if "template_uuid" in c["properties"] and c["properties"]["template_uuid"].startswith(arv_client.config()["ClusterID"])))],
             ],
             select=["uuid", "name"]):
         workflows[wf["uuid"]] = wf["name"]
@@ -235,6 +238,21 @@ def flush_containers(arv_client, csvwriter, pending):
             select=["uuid", "full_name", "first_name", "last_name"]):
         projects[pr["uuid"]] = pr["full_name"]
 
+    name_regex = re.compile(r"(.+)_[0-9]+")
+    child_crs = {}
+    for cr in arvados.util.keyset_list_all(
+        arv_client.container_requests().list,
+        filters=[
+            ["requesting_container_uuid", "in", list(containers.keys())],
+        ],
+        select=["uuid", "name", "cumulative_cost", "requesting_container_uuid", "container_uuid"]):
+
+        g = name_regex.fullmatch(cr["name"])
+        if g:
+            cr["name"] = g[1]
+
+        child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
+
     for container_request in pending:
         if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
             continue
@@ -248,19 +266,31 @@ def flush_containers(arv_client, csvwriter, pending):
         csvwriter.writerow((
             projects.get(container_request["owner_uuid"], "unknown owner"),
             workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+            "workflow runner",
             container_request["name"],
             projects.get(container_request["modified_by_user_uuid"], "unknown user"),
-            containers[container_request["container_uuid"]]["started_at"],
-            "%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
-            round(container_request["cumulative_cost"], 3),
+            container_request["created_at"],
+            #"%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
+            round(containers[container_request["container_uuid"]]["cost"], 3),
             ))
+
+        for child_cr in child_crs.get(container_request["container_uuid"], []):
+            csvwriter.writerow((
+                projects.get(container_request["owner_uuid"], "unknown owner"),
+                workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+                child_cr["name"],
+                container_request["name"],
+                projects.get(container_request["modified_by_user_uuid"], "unknown user"),
+                child_cr["created_at"],
+                round(child_cr["cumulative_cost"], 3),
+                ))
 
 
 def report_from_api(since, to, out):
     arv_client = arvados.api()
 
     csvwriter = csv.writer(out)
-    csvwriter.writerow(("Project", "Workflow", "Sample", "User", "Started", "Runtime", "Cost"))
+    csvwriter.writerow(("Project", "Workflow", "Step", "Sample", "User", "Submitted", "Cost"))
 
     pending = []
 
@@ -270,7 +300,7 @@ def report_from_api(since, to, out):
                 ["command", "like", "[\"arvados-cwl-runner%"],
                 ["created_at", ">=", since.strftime("%Y%m%dT%H%M%SZ")],
             ],
-            select=["uuid", "owner_uuid", "container_uuid", "name", "cumulative_cost", "properties", "modified_by_user_uuid"]):
+            select=["uuid", "owner_uuid", "container_uuid", "name", "cumulative_cost", "properties", "modified_by_user_uuid", "created_at"]):
 
         if len(pending) < 1000:
             pending.append(container_request)
