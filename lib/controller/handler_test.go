@@ -568,8 +568,10 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Assert(resp.Code, check.Equals, http.StatusOK,
-		check.Commentf("Wasn't able to get data from the controller at %q: %q", url, resp.Body.String()))
+	if !c.Check(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the controller at %q: %q", url, resp.Body.String())) {
+		return
+	}
 	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
 	c.Check(err, check.Equals, nil)
 
@@ -581,9 +583,11 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	}
 	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + url + "/?api_token=" + token)
 	c.Check(err, check.Equals, nil)
-	c.Assert(resp2.StatusCode, check.Equals, http.StatusOK,
-		check.Commentf("Wasn't able to get data from the RailsAPI at %q", url))
 	defer resp2.Body.Close()
+	if !c.Check(resp2.StatusCode, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the RailsAPI at %q", url)) {
+		return
+	}
 	db, err := ioutil.ReadAll(resp2.Body)
 	c.Check(err, check.Equals, nil)
 	err = json.Unmarshal(db, &direct)
@@ -648,8 +652,6 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"keep_services/" + ksUUID:                                      nil,
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
 		"logs/" + arvadostest.CrunchstatForRunningContainerLogUUID:     nil,
-		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
-		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
 		"users/" + arvadostest.ActiveUserUUID:                          {"href": true},
 		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
 		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
