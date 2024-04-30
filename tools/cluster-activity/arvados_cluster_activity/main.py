@@ -69,7 +69,7 @@ def parse_arguments(arguments):
             exit(1)
 
 
-    if args.prometheus_auth:
+    if prometheus_support and args.prometheus_auth:
         with open(args.prometheus_auth, "rt") as f:
             for line in f:
                 sp = line.strip().split("=")
