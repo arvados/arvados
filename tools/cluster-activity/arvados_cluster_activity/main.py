@@ -26,6 +26,9 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
     arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
     arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
+    arg_parser.add_argument('--include-workflow-steps', type=bool,
+                            default=False,
+                            action="store_True", help='Include individual workflow steps')
     if prometheus_support:
         arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
         arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
@@ -197,7 +200,7 @@ def report_from_prometheus(cluster, since, to):
     container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
     print()
 
-def flush_containers(arv_client, csvwriter, pending):
+def flush_containers(arv_client, csvwriter, pending, include_steps):
     containers = {}
 
     for container in arvados.util.keyset_list_all(
@@ -240,20 +243,21 @@ def flush_containers(arv_client, csvwriter, pending):
             select=["uuid", "full_name", "first_name", "last_name"]):
         projects[pr["uuid"]] = pr["full_name"]
 
-    name_regex = re.compile(r"(.+)_[0-9]+")
-    child_crs = {}
-    for cr in arvados.util.keyset_list_all(
-        arv_client.container_requests().list,
-        filters=[
-            ["requesting_container_uuid", "in", list(containers.keys())],
-        ],
-        select=["uuid", "name", "cumulative_cost", "requesting_container_uuid", "container_uuid"]):
+    if include_steps:
+        name_regex = re.compile(r"(.+)_[0-9]+")
+        child_crs = {}
+        for cr in arvados.util.keyset_list_all(
+            arv_client.container_requests().list,
+            filters=[
+                ["requesting_container_uuid", "in", list(containers.keys())],
+            ],
+            select=["uuid", "name", "cumulative_cost", "requesting_container_uuid", "container_uuid"]):
 
-        g = name_regex.fullmatch(cr["name"])
-        if g:
-            cr["name"] = g[1]
+            g = name_regex.fullmatch(cr["name"])
+            if g:
+                cr["name"] = g[1]
 
-        child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
+            child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
 
     for container_request in pending:
         if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
@@ -273,24 +277,25 @@ def flush_containers(arv_client, csvwriter, pending):
             projects.get(container_request["modified_by_user_uuid"], "unknown user"),
             container_request["created_at"],
             #"%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
-            round(containers[container_request["container_uuid"]]["cost"], 3),
+            round(containers[container_request["container_uuid"]]["cost"] if include_steps else container_request["cumulative_cost"], 3),
             container_request["uuid"]
             ))
 
-        for child_cr in child_crs.get(container_request["container_uuid"], []):
-            csvwriter.writerow((
-                projects.get(container_request["owner_uuid"], "unknown owner"),
-                workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
-                child_cr["name"],
-                container_request["name"],
-                projects.get(container_request["modified_by_user_uuid"], "unknown user"),
-                child_cr["created_at"],
-                round(child_cr["cumulative_cost"], 3),
-                child_cr["uuid"]
-                ))
+        if include_steps:
+            for child_cr in child_crs.get(container_request["container_uuid"], []):
+                csvwriter.writerow((
+                    projects.get(container_request["owner_uuid"], "unknown owner"),
+                    workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+                    child_cr["name"],
+                    container_request["name"],
+                    projects.get(container_request["modified_by_user_uuid"], "unknown user"),
+                    child_cr["created_at"],
+                    round(child_cr["cumulative_cost"], 3),
+                    child_cr["uuid"]
+                    ))
 
 
-def report_from_api(since, to, out):
+def report_from_api(since, to, out, include_steps):
     arv_client = arvados.api()
 
     csvwriter = csv.writer(out)
@@ -312,10 +317,10 @@ def report_from_api(since, to, out):
         else:
             count += len(pending)
             logging.info("Exporting rows, %s", count)
-            flush_containers(arv_client, csvwriter, pending)
+            flush_containers(arv_client, csvwriter, pending, include_steps)
             pending.clear()
 
-    flush_containers(arv_client, csvwriter, pending)
+    flush_containers(arv_client, csvwriter, pending, include_steps)
 
 def main(arguments=None):
     if arguments is None:
@@ -334,7 +339,7 @@ def main(arguments=None):
 
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
-            report_from_api(since, to, f)
+            report_from_api(since, to, f, args.include_workflow_steps)
     else:
         logging.warn("--cost-report-file not provided, not writing cost report")
 
