@@ -315,10 +315,12 @@ def report_from_api(since, to, out, include_steps):
             pending.append(container_request)
         else:
             count += len(pending)
-            logging.info("Exporting rows, %s", count)
+            logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
             flush_containers(arv_client, csvwriter, pending, include_steps)
             pending.clear()
 
+    count += len(pending)
+    logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
     flush_containers(arv_client, csvwriter, pending, include_steps)
 
 def main(arguments=None):
@@ -326,6 +328,8 @@ def main(arguments=None):
         arguments = sys.argv[1:]
 
     args, since, to = parse_arguments(arguments)
+
+    logging.getLogger().setLevel(logging.INFO)
 
     if prometheus_support:
         if "PROMETHEUS_HOST" in os.environ:
