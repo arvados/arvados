@@ -457,6 +457,7 @@ test_package_presence() {
           debian12) codename=bookworm ;;
           ubuntu2004) codename=focal ;;
           ubuntu2204) codename=jammy ;;
+          ubuntu2404) codename=noble ;;
           *)
               echo "FIXME: Don't know deb URL path for $TARGET, building"
               return 0
