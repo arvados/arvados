@@ -80,9 +80,6 @@ In order to build packages on a new distribution, you MUST:
 * Add the new `TARGET/generated` rule to the `all` target in
   `package-build-dockerfiles/Makefile`.
 * Write `package-build-dockerfiles/TARGET/Dockerfile`.
-* Add a rule for `TARGET/generated` to `package-test-dockerfiles/Makefile`.
-* Add the new `TARGET/generated` rule to the `all` target in
-  `package-test-dockerfiles/Makefile`.
 * Write `package-test-dockerfiles/TARGET/Dockerfile`.
 * Create `package-testing/test-packages-TARGET.sh`, ideally by making it a
   symlink to `FORMAT-common-test-packages.sh`.
