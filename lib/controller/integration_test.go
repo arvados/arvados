@@ -1311,10 +1311,12 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		err = ac.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
 		c.Assert(err, check.IsNil)
 		c.Check(allStatus, check.Matches, `Queued, waiting for dispatch\n`+
-			`(Queued, waiting.*\n)*`+
-			`(Locked, waiting for dispatch\n)?`+
-			`(Locked, waiting for new instance to be ready\n)?`+
-			`(Locked, preparing runtime environment\n)?`+
+			// Occasionally the dispatcher will
+			// unlock/retry, and we get state/status from
+			// database/dispatcher via separate API calls,
+			// so we can also see "Queued, preparing
+			// runtime environment".
+			`((Queued|Locked), (waiting .*|preparing runtime environment)\n)*`+
 			`(Running, \n)?`+
 			`Complete, \n`)
 	}
