@@ -148,6 +148,7 @@ func (s *integrationSuite) setup(c *C) {
 		"state":               s.cr.State,
 		"command":             s.cr.Command,
 		"output_path":         s.cr.OutputPath,
+		"output_glob":         s.cr.OutputGlob,
 		"container_image":     s.cr.ContainerImage,
 		"mounts":              s.cr.Mounts,
 		"runtime_constraints": s.cr.RuntimeConstraints,
@@ -274,6 +275,19 @@ func (s *integrationSuite) TestRunTrivialContainerWithNoLocalKeepstore(c *C) {
 	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*loaded config file \Q`+os.Getenv("ARVADOS_CONFIG")+`\E\n.*`)
 }
 
+func (s *integrationSuite) TestRunTrivialContainerWithOutputGlob(c *C) {
+	s.cr.OutputGlob = []string{"js?n"}
+	s.testRunTrivialContainer(c)
+	fs, err := s.outputCollection.FileSystem(s.client, s.kc)
+	c.Assert(err, IsNil)
+	_, err = fs.Stat("json")
+	c.Check(err, IsNil)
+	_, err = fs.Stat("inputfile")
+	c.Check(err, Equals, os.ErrNotExist)
+	_, err = fs.Stat("emptydir")
+	c.Check(err, Equals, os.ErrNotExist)
+}
+
 func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	if err := exec.Command("which", s.engine).Run(); err != nil {
 		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
@@ -323,34 +337,37 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	var output arvados.Collection
 	err = s.client.RequestAndDecode(&output, "GET", "arvados/v1/collections/"+s.cr.OutputUUID, nil, nil)
 	c.Assert(err, IsNil)
-	fs, err = output.FileSystem(s.client, s.kc)
-	c.Assert(err, IsNil)
-	if f, err := fs.Open("inputfile"); c.Check(err, IsNil) {
-		defer f.Close()
-		buf, err := ioutil.ReadAll(f)
-		c.Check(err, IsNil)
-		c.Check(string(buf), Equals, "inputdata")
-	}
-	if f, err := fs.Open("json"); c.Check(err, IsNil) {
-		defer f.Close()
-		buf, err := ioutil.ReadAll(f)
-		c.Check(err, IsNil)
-		c.Check(string(buf), Equals, `["foo",{"foo":"bar"},null]`)
-	}
-	if fi, err := fs.Stat("emptydir"); c.Check(err, IsNil) {
-		c.Check(fi.IsDir(), Equals, true)
-	}
-	if d, err := fs.Open("emptydir"); c.Check(err, IsNil) {
-		defer d.Close()
-		fis, err := d.Readdir(-1)
+	s.outputCollection = output
+
+	if len(s.cr.OutputGlob) == 0 {
+		fs, err = output.FileSystem(s.client, s.kc)
 		c.Assert(err, IsNil)
-		// crunch-run still saves a ".keep" file to preserve
-		// empty dirs even though that shouldn't be
-		// necessary. Ideally we would do:
-		// c.Check(fis, HasLen, 0)
-		for _, fi := range fis {
-			c.Check(fi.Name(), Equals, ".keep")
+		if f, err := fs.Open("inputfile"); c.Check(err, IsNil) {
+			defer f.Close()
+			buf, err := ioutil.ReadAll(f)
+			c.Check(err, IsNil)
+			c.Check(string(buf), Equals, "inputdata")
+		}
+		if f, err := fs.Open("json"); c.Check(err, IsNil) {
+			defer f.Close()
+			buf, err := ioutil.ReadAll(f)
+			c.Check(err, IsNil)
+			c.Check(string(buf), Equals, `["foo",{"foo":"bar"},null]`)
+		}
+		if fi, err := fs.Stat("emptydir"); c.Check(err, IsNil) {
+			c.Check(fi.IsDir(), Equals, true)
+		}
+		if d, err := fs.Open("emptydir"); c.Check(err, IsNil) {
+			defer d.Close()
+			fis, err := d.Readdir(-1)
+			c.Assert(err, IsNil)
+			// crunch-run still saves a ".keep" file to preserve
+			// empty dirs even though that shouldn't be
+			// necessary. Ideally we would do:
+			// c.Check(fis, HasLen, 0)
+			for _, fi := range fis {
+				c.Check(fi.Name(), Equals, ".keep")
+			}
 		}
 	}
-	s.outputCollection = output
 }

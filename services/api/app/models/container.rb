@@ -30,6 +30,7 @@ class Container < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
   serialize :scheduling_parameters, Hash
+  serialize :output_glob, Array
 
   after_find :fill_container_defaults_after_find
   before_validation :fill_field_defaults, :if => :new_record?
@@ -73,6 +74,7 @@ class Container < ArvadosModel
     t.add :mounts
     t.add :output
     t.add :output_path
+    t.add :output_glob
     t.add :priority
     t.add :progress
     t.add :runtime_constraints
@@ -164,6 +166,7 @@ class Container < ArvadosModel
         cwd: req.cwd,
         environment: req.environment,
         output_path: req.output_path,
+        output_glob: req.output_glob,
         container_image: resolve_container_image(req.container_image),
         mounts: resolve_mounts(req.mounts),
         runtime_constraints: resolve_runtime_constraints(req.runtime_constraints),
@@ -262,6 +265,9 @@ class Container < ArvadosModel
 
     candidates = candidates.where('output_path = ?', attrs[:output_path])
     log_reuse_info(candidates) { "after filtering on output_path #{attrs[:output_path].inspect}" }
+
+    candidates = candidates.where_serialized(:output_glob, attrs[:output_glob], md5: true)
+    log_reuse_info(candidates) { "after filtering on output_glob #{attrs[:output_glob].inspect}" }
 
     image = resolve_container_image(attrs[:container_image])
     candidates = candidates.where('container_image = ?', image)
@@ -482,6 +488,7 @@ class Container < ArvadosModel
     self.environment ||= {}
     self.runtime_constraints ||= {}
     self.mounts ||= {}
+    self.output_glob ||= []
     self.cwd ||= "."
     self.priority ||= 0
     self.scheduling_parameters ||= {}
@@ -531,11 +538,11 @@ class Container < ArvadosModel
 
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
-                     :environment, :mounts, :output_path, :priority,
-                     :runtime_constraints, :scheduling_parameters,
-                     :secret_mounts, :runtime_token,
-                     :runtime_user_uuid, :runtime_auth_scopes,
-                     :output_storage_classes)
+                     :environment, :mounts, :output_path, :output_glob,
+                     :priority, :runtime_constraints,
+                     :scheduling_parameters, :secret_mounts,
+                     :runtime_token, :runtime_user_uuid,
+                     :runtime_auth_scopes, :output_storage_classes)
     end
 
     case self.state
@@ -798,6 +805,7 @@ class Container < ArvadosModel
               cwd: self.cwd,
               environment: self.environment,
               output_path: self.output_path,
+              output_glob: self.output_glob,
               container_image: self.container_image,
               mounts: self.mounts,
               runtime_constraints: self.runtime_constraints,

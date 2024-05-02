@@ -23,6 +23,7 @@ type Container struct {
 	Mounts                    map[string]Mount       `json:"mounts"`
 	Output                    string                 `json:"output"`
 	OutputPath                string                 `json:"output_path"`
+	OutputGlob                []string               `json:"output_glob"`
 	Priority                  int64                  `json:"priority"`
 	RuntimeConstraints        RuntimeConstraints     `json:"runtime_constraints"`
 	State                     ContainerState         `json:"state"`
@@ -68,6 +69,7 @@ type ContainerRequest struct {
 	Cwd                     string                 `json:"cwd"`
 	Command                 []string               `json:"command"`
 	OutputPath              string                 `json:"output_path"`
+	OutputGlob              []string               `json:"output_glob"`
 	OutputName              string                 `json:"output_name"`
 	OutputTTL               int                    `json:"output_ttl"`
 	Priority                int                    `json:"priority"`
