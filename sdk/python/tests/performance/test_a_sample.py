@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import range
 import unittest
 
 from .performance_profiler import profiled

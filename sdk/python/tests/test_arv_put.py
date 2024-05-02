@@ -4,13 +4,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
-from functools import partial
 import apiclient
 import ciso8601
 import datetime
@@ -31,6 +24,7 @@ import time
 import unittest
 import uuid
 
+from functools import partial
 from unittest import mock
 
 import arvados

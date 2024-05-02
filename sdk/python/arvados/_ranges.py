@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import division
-from builtins import object
 import logging
 
 _logger = logging.getLogger('arvados.ranges')

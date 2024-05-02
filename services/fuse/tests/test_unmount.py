@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
-from builtins import bytes
 import arvados_fuse.unmount
 import os
 import subprocess

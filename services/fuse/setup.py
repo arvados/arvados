@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
 import os
 import sys
 import re
@@ -34,7 +33,6 @@ setup(name='arvados_fuse',
       install_requires=[
         *arvados_version.iter_dependencies(version),
         'arvados-llfuse >= 1.5.1',
-        'future',
         'python-daemon',
         'ciso8601 >= 2.0.0',
         'setuptools',

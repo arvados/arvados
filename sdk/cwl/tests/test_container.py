@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import str
-from builtins import object
-
 import arvados_cwl
 import arvados_cwl.context
 import arvados_cwl.util
