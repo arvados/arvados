@@ -78,22 +78,26 @@ func (s *routerSuite) TestBlockRead_Token(c *C) {
 	resp := call(router, "GET", "http://example/"+locSigned, "", nil, nil)
 	c.Check(resp.Code, Equals, http.StatusUnauthorized)
 	c.Check(resp.Body.String(), Matches, "no token provided in Authorization header\n")
+	checkCORSHeaders(c, resp.Header())
 
 	// Different token => invalid signature
 	resp = call(router, "GET", "http://example/"+locSigned, "badtoken", nil, nil)
 	c.Check(resp.Code, Equals, http.StatusBadRequest)
 	c.Check(resp.Body.String(), Equals, "invalid signature\n")
+	checkCORSHeaders(c, resp.Header())
 
 	// Correct token
 	resp = call(router, "GET", "http://example/"+locSigned, arvadostest.ActiveTokenV2, nil, nil)
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(resp.Body.String(), Equals, "foo")
+	checkCORSHeaders(c, resp.Header())
 
 	// HEAD
 	resp = call(router, "HEAD", "http://example/"+locSigned, arvadostest.ActiveTokenV2, nil, nil)
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(resp.Result().ContentLength, Equals, int64(3))
 	c.Check(resp.Body.String(), Equals, "")
+	checkCORSHeaders(c, resp.Header())
 }
 
 // As a special case we allow HEAD requests that only provide a hash
@@ -165,13 +169,16 @@ func (s *routerSuite) TestBlockRead_ChecksumMismatch(c *C) {
 		}
 		c.Check(resp.Body.Len(), Not(Equals), len(gooddata))
 		c.Check(resp.Result().ContentLength, Equals, int64(len(gooddata)))
+		checkCORSHeaders(c, resp.Header())
 
 		resp = call(router, "HEAD", "http://example/"+locSigned, arvadostest.ActiveTokenV2, nil, nil)
 		c.Check(resp.Code, Equals, http.StatusBadGateway)
+		checkCORSHeaders(c, resp.Header())
 
 		hashSigned := router.keepstore.signLocator(arvadostest.ActiveTokenV2, hash)
 		resp = call(router, "HEAD", "http://example/"+hashSigned, arvadostest.ActiveTokenV2, nil, nil)
 		c.Check(resp.Code, Equals, http.StatusBadGateway)
+		checkCORSHeaders(c, resp.Header())
 	}
 }
 
@@ -181,6 +188,7 @@ func (s *routerSuite) TestBlockWrite(c *C) {
 
 	resp := call(router, "PUT", "http://example/"+fooHash, arvadostest.ActiveTokenV2, []byte("foo"), nil)
 	c.Check(resp.Code, Equals, http.StatusOK)
+	checkCORSHeaders(c, resp.Header())
 	locator := strings.TrimSpace(resp.Body.String())
 
 	resp = call(router, "GET", "http://example/"+locator, arvadostest.ActiveTokenV2, nil, nil)
@@ -192,7 +200,7 @@ func (s *routerSuite) TestBlockWrite_Headers(c *C) {
 	router, cancel := testRouter(c, s.cluster, nil)
 	defer cancel()
 
-	resp := call(router, "PUT", "http://example/"+fooHash, arvadostest.ActiveTokenV2, []byte("foo"), http.Header{"X-Arvados-Replicas-Desired": []string{"2"}})
+	resp := call(router, "PUT", "http://example/"+fooHash, arvadostest.ActiveTokenV2, []byte("foo"), http.Header{"X-Keep-Desired-Replicas": []string{"2"}})
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(resp.Header().Get("X-Keep-Replicas-Stored"), Equals, "1")
 	c.Check(sortCommaSeparated(resp.Header().Get("X-Keep-Storage-Classes-Confirmed")), Equals, "testclass1=1")
@@ -469,7 +477,6 @@ func (s *routerSuite) TestIndex(c *C) {
 		c.Check(resp.Code, Equals, http.StatusOK)
 		c.Check(strings.Split(resp.Body.String(), "\n"), HasLen, 5)
 	}
-
 }
 
 // Check that the context passed to a volume method gets cancelled
@@ -500,6 +507,19 @@ func (s *routerSuite) TestCancelOnDisconnect(c *C) {
 	c.Check(resp.Code, Equals, 499)
 }
 
+func (s *routerSuite) TestCORSPreflight(c *C) {
+	router, cancel := testRouter(c, s.cluster, nil)
+	defer cancel()
+
+	for _, path := range []string{"/", "/whatever", "/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+123"} {
+		c.Logf("=== %s", path)
+		resp := call(router, http.MethodOptions, "http://example"+path, arvadostest.ActiveTokenV2, nil, nil)
+		c.Check(resp.Code, Equals, http.StatusOK)
+		c.Check(resp.Body.String(), Equals, "")
+		checkCORSHeaders(c, resp.Header())
+	}
+}
+
 func call(handler http.Handler, method, path, tok string, body []byte, hdr http.Header) *httptest.ResponseRecorder {
 	resp := httptest.NewRecorder()
 	req, err := http.NewRequest(method, path, bytes.NewReader(body))
@@ -514,4 +534,11 @@ func call(handler http.Handler, method, path, tok string, body []byte, hdr http.
 	}
 	handler.ServeHTTP(resp, req)
 	return resp
+}
+
+func checkCORSHeaders(c *C, h http.Header) {
+	c.Check(h.Get("Access-Control-Allow-Methods"), Equals, "GET, HEAD, PUT, OPTIONS")
+	c.Check(h.Get("Access-Control-Allow-Origin"), Equals, "*")
+	c.Check(h.Get("Access-Control-Allow-Headers"), Equals, "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas, X-Keep-Signature, X-Keep-Storage-Classes")
+	c.Check(h.Get("Access-Control-Expose-Headers"), Equals, "X-Keep-Locator, X-Keep-Replicas-Stored, X-Keep-Storage-Classes-Confirmed")
 }
