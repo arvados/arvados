@@ -1245,35 +1245,6 @@ Clusters:
         # containers (see MaxAge).
         SweepInterval: 12h
 
-        # These two settings control how frequently log events are flushed to the
-        # database.  Log lines are buffered until either crunch_log_bytes_per_event
-        # has been reached or crunch_log_seconds_between_events has elapsed since
-        # the last flush.
-        LogBytesPerEvent: 4096
-        LogSecondsBetweenEvents: 5s
-
-        # The sample period for throttling logs.
-        LogThrottlePeriod: 60s
-
-        # Maximum number of bytes that job can log over crunch_log_throttle_period
-        # before being silenced until the end of the period.
-        LogThrottleBytes: 65536
-
-        # Maximum number of lines that job can log over crunch_log_throttle_period
-        # before being silenced until the end of the period.
-        LogThrottleLines: 1024
-
-        # Maximum bytes that may be logged as legacy log events
-        # (records posted to the "logs" table). Starting with Arvados
-        # 2.7, container live logging has migrated to a new system
-        # (polling the container request live log endpoint) and this
-        # value should be 0.  As of this writing, the container will
-        # still create a single log on the API server, noting for that
-        # log events are throttled.
-        LimitLogBytesPerJob: 0
-
-        LogPartialLineThrottlePeriod: 5s
-
         # Container logs are written to Keep and saved in a
         # collection, which is updated periodically while the
         # container runs.  This value sets the interval between

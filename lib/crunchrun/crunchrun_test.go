@@ -308,14 +308,8 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 }
 
 var discoveryMap = map[string]interface{}{
-	"defaultTrashLifetime":               float64(1209600),
-	"crunchLimitLogBytesPerJob":          float64(67108864),
-	"crunchLogThrottleBytes":             float64(65536),
-	"crunchLogThrottlePeriod":            float64(60),
-	"crunchLogThrottleLines":             float64(1024),
-	"crunchLogPartialLineThrottlePeriod": float64(5),
-	"crunchLogBytesPerEvent":             float64(4096),
-	"crunchLogSecondsBetweenEvents":      float64(1),
+	"crunchLogUpdateSize":   float64(crunchLogUpdateSize),
+	"crunchLogUpdatePeriod": float64(crunchLogUpdatePeriod.Seconds()),
 }
 
 func (client *ArvTestClient) Discovery(key string) (interface{}, error) {

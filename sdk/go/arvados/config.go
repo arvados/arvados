@@ -506,17 +506,10 @@ type ContainersConfig struct {
 		Enable string
 	}
 	Logging struct {
-		MaxAge                       Duration
-		SweepInterval                Duration
-		LogBytesPerEvent             int
-		LogSecondsBetweenEvents      Duration
-		LogThrottlePeriod            Duration
-		LogThrottleBytes             int
-		LogThrottleLines             int
-		LimitLogBytesPerJob          int
-		LogPartialLineThrottlePeriod Duration
-		LogUpdatePeriod              Duration
-		LogUpdateSize                ByteSize
+		MaxAge          Duration
+		SweepInterval   Duration
+		LogUpdatePeriod Duration
+		LogUpdateSize   ByteSize
 	}
 	ShellAccess struct {
 		Admin bool
