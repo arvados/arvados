@@ -566,13 +566,14 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
-    # wheel modernizes the venv (as of early 2024) and makes it more closely
-    # match our package build environment.
+    # parameterized and pytest are direct dependencies of Python tests.
     # PyYAML is a test requirement used by run_test_server.py and needed for
     # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
+    # wheel modernizes the venv (as of early 2024) and makes it more closely
+    # match our package build environment.
     # We run `setup.py build` first to generate _version.py.
-    pip install PyYAML pdoc wheel \
+    pip install parameterized pytest PyYAML pdoc wheel \
         && env -C "$WORKSPACE/sdk/python" python3 setup.py build \
         && pip install "$WORKSPACE/sdk/python" \
         || fatal "installing Python SDK and related dependencies failed"
@@ -701,7 +702,7 @@ do_test_once() {
     elif [[ "$2" == "pip" ]]
     then
         tries=0
-        cd "$WORKSPACE/$1" && while :
+        cd "$WORKSPACE/$1" && pip install . && while :
         do
             tries=$((${tries}+1))
             # $3 can name a path directory for us to use, including trailing
@@ -709,7 +710,7 @@ do_test_once() {
             if [[ -e "${3}activate" ]]; then
                 . "${3}activate"
             fi
-            python setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            python3 -m pytest ${testargs[$1]}
             result=$?
             if [[ ${tries} < 3 && ${result} == 137 ]]
             then
