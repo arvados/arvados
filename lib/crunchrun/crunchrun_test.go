@@ -302,7 +302,7 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 	} else if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
 		output.(*arvados.Collection).UUID = uuid
-		output.(*arvados.Collection).PortableDataHash = fmt.Sprintf("%x", md5.Sum([]byte(mt)))
+		output.(*arvados.Collection).PortableDataHash = arvados.PortableDataHash(mt)
 	}
 	return nil
 }
@@ -882,6 +882,48 @@ func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
 	spotInterruptionCheckInterval = time.Second / 8
 	ec2MetadataBaseURL = stub.URL
 
+	checkedLogs := false
+	checkLogs := func() {
+		checkedLogs = true
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Checking for spot interruptions every 125ms using instance metadata at http://.*`)
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
+		if failureRate == 1 {
+			c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Giving up on checking spot interruptions after too many consecutive failures.*`)
+			return
+		}
+		text := `Cloud provider scheduled instance stop at ` + stoptime.Load().(time.Time).Format(time.RFC3339)
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*`+text+`.*`)
+		c.Check(s.api.CalledWith("container.runtime_status.warning", "preemption notice"), NotNil)
+		c.Check(s.api.CalledWith("container.runtime_status.warningDetail", text), NotNil)
+		c.Check(s.api.CalledWith("container.runtime_status.preemptionNotice", text), NotNil)
+
+		// Check that the log collection was saved, and the
+		// container record updated with the new PDH,
+		// immediately after the preemption notice was
+		// received -- i.e., while the container is still
+		// running.
+		lastpdh := ""
+		saved := make(map[string]string) // pdh => manifest_text
+		for _, call := range s.api.Content {
+			if ctr, ok := call["container"].(arvadosclient.Dict); ok {
+				if pdh, ok := ctr["log"].(string); ok {
+					lastpdh = pdh
+				}
+			}
+			if coll, ok := call["collection"].(arvadosclient.Dict); ok {
+				mt, _ := coll["manifest_text"].(string)
+				if strings.Contains(mt, ":crunch-run.txt") {
+					saved[arvados.PortableDataHash(mt)] = mt
+				}
+			}
+		}
+		logfs, err := (&arvados.Collection{ManifestText: saved[lastpdh]}).FileSystem(s.runner.dispatcherClient, s.runner.DispatcherKeepClient)
+		c.Assert(err, IsNil)
+		log, err := fs.ReadFile(arvados.FS(logfs), "crunch-run.txt")
+		c.Check(err, IsNil)
+		c.Check(string(log), Matches, `(?ms).*\Q`+text+`\E.*`)
+	}
+
 	go s.runner.checkSpotInterruptionNotices()
 	s.fullRunHelper(c, `{
     "command": ["sleep", "3"],
@@ -898,19 +940,10 @@ func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
 		stoptime.Store(time.Now().Add(time.Minute).UTC())
 		token = "different-fake-ec2-metadata-token"
 		time.Sleep(time.Second)
+		checkLogs()
 		return 0
 	})
-	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Checking for spot interruptions every 125ms using instance metadata at http://.*`)
-	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
-	if failureRate == 1 {
-		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Giving up on checking spot interruptions after too many consecutive failures.*`)
-	} else {
-		text := `Cloud provider scheduled instance stop at ` + stoptime.Load().(time.Time).Format(time.RFC3339)
-		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*`+text+`.*`)
-		c.Check(s.api.CalledWith("container.runtime_status.warning", "preemption notice"), NotNil)
-		c.Check(s.api.CalledWith("container.runtime_status.warningDetail", text), NotNil)
-		c.Check(s.api.CalledWith("container.runtime_status.preemptionNotice", text), NotNil)
-	}
+	c.Check(checkedLogs, Equals, true)
 }
 
 func (s *TestSuite) TestRunTimeExceeded(c *C) {
