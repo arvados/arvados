@@ -901,7 +901,6 @@ func prodpkgs(osv osversion) []string {
 		"curl",
 		"fuse",
 		"git",
-		"gitolite3",
 		"graphviz",
 		"haveged",
 		"libcurl3-gnutls",

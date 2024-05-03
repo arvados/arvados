@@ -137,8 +137,7 @@ RUN echo arvados_version is git commit $arvados_version
 
 COPY $workdir/fuse.conf /etc/
 
-COPY $workdir/gitolite.rc \
-    $workdir/keep-setup.sh $workdir/common.sh $workdir/createusers.sh \
+COPY $workdir/keep-setup.sh $workdir/common.sh $workdir/createusers.sh \
     $workdir/logger $workdir/runsu.sh $workdir/waitforpostgres.sh \
     $workdir/yml_override.py $workdir/api-setup.sh \
     $workdir/go-setup.sh $workdir/devenv.sh $workdir/cluster-config.sh $workdir/edit_users.py \

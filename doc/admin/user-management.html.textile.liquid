@@ -60,7 +60,6 @@ notextile. <div class="spaced-out">
 # A new user record is not set up, and not active.  An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read (such as publicly available items readable by the "anonymous" user).
 # Using Workbench or the "command line":{{site.baseurl}}/admin/user-management-cli.html , the admin invokes @setup@ on the user.  The setup method adds the user to the "All users" group.
 - If "Users.AutoSetupNewUsers":config.html is true, this happens automatically during user creation, so in that case new users start at step (3).
-- If "Users.AutoSetupNewUsersWithRepository":config.html is true, a new git repo is created for the user.
 - If "Users.AutoSetupNewUsersWithVmUUID":config.html is set, the user is given login permission to the specified shell node
 # User is set up, but still not yet active.  The browser presents "user agreements":#user_agreements (if any) and then invokes the user @activate@ method on the user's behalf.
 # The user @activate@ method checks that all "user agreements":#user_agreements are signed.  If so, or there are no user agreements, the user is activated.

@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -39,8 +40,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/manifest"
 
 	. "gopkg.in/check.v1"
-	git_client "gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-	git_http "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 // Gocheck boilerplate
@@ -113,6 +112,7 @@ func (s *TestSuite) SetUpTest(c *C) {
 	err = ioutil.WriteFile(s.keepmount+"/by_id/"+fakeInputCollectionPDH+"/input.json", []byte(`{"input":true}`), 0644)
 	c.Assert(err, IsNil)
 	s.runner.ArvMountPoint = s.keepmount
+	os.Setenv("InstanceType", `{"ProviderType":"a1.2xlarge","Price":1.2}`)
 }
 
 type ArvTestClient struct {
@@ -129,8 +129,8 @@ type ArvTestClient struct {
 
 type KeepTestClient struct {
 	Called         bool
-	Content        []byte
 	StorageClasses []string
+	blocks         sync.Map
 }
 
 type stubExecutor struct {
@@ -358,18 +358,30 @@ func (client *KeepTestClient) LocalLocator(locator string) (string, error) {
 }
 
 func (client *KeepTestClient) BlockWrite(_ context.Context, opts arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
-	client.Content = opts.Data
+	locator := fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data))
+	client.blocks.Store(locator, append([]byte(nil), opts.Data...))
 	return arvados.BlockWriteResponse{
-		Locator: fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)),
+		Locator: locator,
 	}, nil
 }
 
-func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
-	return 0, errors.New("not implemented")
+func (client *KeepTestClient) ReadAt(locator string, dst []byte, offset int) (int, error) {
+	loaded, ok := client.blocks.Load(locator)
+	if !ok {
+		return 0, os.ErrNotExist
+	}
+	data := loaded.([]byte)
+	if offset >= len(data) {
+		return 0, io.EOF
+	}
+	return copy(dst, data[offset:]), nil
 }
 
 func (client *KeepTestClient) Close() {
-	client.Content = nil
+	client.blocks.Range(func(locator, value interface{}) bool {
+		client.blocks.Delete(locator)
+		return true
+	})
 }
 
 func (client *KeepTestClient) SetStorageClasses(sc []string) {
@@ -591,7 +603,7 @@ func (ErrorReader) Seek(int64, int) (int64, error) {
 	return 0, errors.New("ErrorReader")
 }
 
-func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
+func (*KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	return ErrorReader{}, nil
 }
 
@@ -1003,9 +1015,8 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
-	os.Setenv("SLURMD_NODENAME", "compute2")
 	s.fullRunHelper(c, `{
-		"command": ["sleep", "1"],
+		"command": ["true"],
 		"container_image": "`+arvadostest.DockerImage112PDH+`",
 		"cwd": ".",
 		"environment": {},
@@ -1015,18 +1026,17 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked"
 	}`, nil, func() int {
-		time.Sleep(time.Second)
 		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	c.Assert(s.api.Logs["node"], NotNil)
-	json := s.api.Logs["node"].String()
-	c.Check(json, Matches, `(?ms).*"uuid": *"zzzzz-7ekkf-2z3mc76g2q73aio".*`)
-	c.Check(json, Matches, `(?ms).*"total_cpu_cores": *16.*`)
-	c.Check(json, Not(Matches), `(?ms).*"info":.*`)
+	buf, err := fs.ReadFile(arvados.FS(s.runner.LogCollection), "/node.json")
+	c.Assert(err, IsNil)
+	json := string(buf)
+	c.Check(json, Matches, `(?ms).*"ProviderType": *"a1\.2xlarge".*`)
+	c.Check(json, Matches, `(?ms).*"Price": *1\.2.*`)
 
 	c.Assert(s.api.Logs["node-info"], NotNil)
 	json = s.api.Logs["node-info"].String()
@@ -1740,54 +1750,6 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.CleanupDirs()
 		checkEmpty()
 	}
-
-	// git_tree mounts
-	{
-		i = 0
-		cr.ArvMountPoint = ""
-		git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
-		cr.token = arvadostest.ActiveToken
-		cr.Container.Mounts = make(map[string]arvados.Mount)
-		cr.Container.Mounts = map[string]arvados.Mount{
-			"/tip": {
-				Kind:   "git_tree",
-				UUID:   arvadostest.Repository2UUID,
-				Commit: "fd3531f42995344f36c30b79f55f27b502f3d344",
-				Path:   "/",
-			},
-			"/non-tip": {
-				Kind:   "git_tree",
-				UUID:   arvadostest.Repository2UUID,
-				Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
-				Path:   "/",
-			},
-		}
-		cr.Container.OutputPath = "/tmp"
-
-		bindmounts, err := cr.SetupMounts()
-		c.Check(err, IsNil)
-
-		for path, mount := range bindmounts {
-			c.Check(mount.ReadOnly, Equals, !cr.Container.Mounts[path].Writable, Commentf("%s %#v", path, mount))
-		}
-
-		data, err := ioutil.ReadFile(bindmounts["/tip"].HostPath + "/dir1/dir2/file with mode 0644")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "\000\001\002\003")
-		_, err = ioutil.ReadFile(bindmounts["/tip"].HostPath + "/file only on testbranch")
-		c.Check(err, FitsTypeOf, &os.PathError{})
-		c.Check(os.IsNotExist(err), Equals, true)
-
-		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/dir1/dir2/file with mode 0644")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "\000\001\002\003")
-		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/file only on testbranch")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "testfile\n")
-
-		cr.CleanupDirs()
-		checkEmpty()
-	}
 }
 
 func (s *TestSuite) TestStdout(c *C) {
@@ -2386,7 +2348,6 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	// hasn't found any data), cost is calculated based on
 	// InstanceType env var
 	os.Setenv("InstanceType", `{"Price":1.2}`)
-	defer os.Unsetenv("InstanceType")
 	cost = cr.calculateCost(now)
 	c.Check(cost, Equals, 1.2)
 
@@ -2432,7 +2393,6 @@ func (s *TestSuite) TestSIGUSR2CostUpdate(c *C) {
 	c.Assert(err, IsNil)
 
 	os.Setenv("InstanceType", `{"Price":2.2}`)
-	defer os.Unsetenv("InstanceType")
 	defer func(s string) { lockdir = s }(lockdir)
 	lockdir = c.MkDir()
 

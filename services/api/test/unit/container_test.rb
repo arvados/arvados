@@ -335,7 +335,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
 
     out1 = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
-    log1 = collections(:real_log_collection).portable_data_hash
+    log1 = collections(:log_collection).portable_data_hash
     c_output1.update!({state: Container::Locked})
     c_output1.update!({state: Container::Running})
     c_output1.update!(completed_attrs.merge({log: log1, output: out1}))
@@ -847,7 +847,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert c.lock, show_errors(c)
     assert c.update(
              state: Container::Cancelled,
-             log: collections(:real_log_collection).portable_data_hash,
+             log: collections(:log_collection).portable_data_hash,
            ), show_errors(c)
     check_no_change_from_cancelled c
   end
@@ -935,7 +935,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "locked_by_uuid can update log when locked/running, and output when running" do
     set_user_from_auth :active
-    logcoll = collections(:real_log_collection)
+    logcoll = collections(:container_log_collection)
     c, cr1 = minimal_new
     cr2 = ContainerRequest.new(DEFAULT_ATTRS)
     cr2.state = ContainerRequest::Committed
@@ -977,8 +977,8 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal cr1log_uuid, cr1.log_uuid
     assert_equal cr2log_uuid, cr2.log_uuid
     assert_equal 1, Collection.where(uuid: [cr1log_uuid, cr2log_uuid]).to_a.collect(&:portable_data_hash).uniq.length
-    assert_equal ". acbd18db4cc2f85cedef654fccc4a4d8+3 cdd549ae79fe6640fa3d5c6261d8303c+195 0:3:foo.txt 3:195:zzzzz-8i9sb-0vsrcqi7whchuil.log.txt
-./log\\040for\\040container\\040#{cr1.container_uuid} acbd18db4cc2f85cedef654fccc4a4d8+3 cdd549ae79fe6640fa3d5c6261d8303c+195 0:3:foo.txt 3:195:zzzzz-8i9sb-0vsrcqi7whchuil.log.txt
+    assert_equal ". 8c12f5f5297b7337598170c6f531fcee+7882 acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 7882:3:foo.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt
+./log\\040for\\040container\\040#{cr1.container_uuid} 8c12f5f5297b7337598170c6f531fcee+7882 acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 7882:3:foo.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt
 ", Collection.find_by_uuid(cr1log_uuid).manifest_text
   end
 
@@ -1015,7 +1015,7 @@ class ContainerTest < ActiveSupport::TestCase
       assert c.update(runtime_status: {'warning' => 'something happened'})
       assert c.update(progress: 0.5)
       assert c.update(exit_code: 0)
-      refute c.update(log: collections(:real_log_collection).portable_data_hash)
+      refute c.update(log: collections(:log_collection).portable_data_hash)
       c.reload
       assert c.update(state: Container::Complete, exit_code: 0)
     end

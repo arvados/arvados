@@ -123,8 +123,7 @@ class Arvados::V1::UsersController < ApplicationController
       full_repo_name = "#{@object.username}/#{params[:repo_name]}"
     end
 
-    @response = @object.setup(repo_name: full_repo_name,
-                              vm_uuid: params[:vm_uuid],
+    @response = @object.setup(vm_uuid: params[:vm_uuid],
                               send_notification_email: params[:send_notification_email])
 
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)

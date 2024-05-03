@@ -8,20 +8,20 @@ class ArvadosModelTest < ActiveSupport::TestCase
   fixtures :all
 
   def create_with_attrs attrs
-    a = Specimen.create({material: 'caloric'}.merge(attrs))
+    a = Collection.create({properties: {'foo' => 'bar'}}.merge(attrs))
     a if a.valid?
   end
 
   test 'non-admin cannot assign uuid' do
     set_user_from_auth :active_trustedclient
-    want_uuid = Specimen.generate_uuid
+    want_uuid = Collection.generate_uuid
     a = create_with_attrs(uuid: want_uuid)
     assert_nil a, "Non-admin should not assign uuid."
   end
 
   test 'admin can assign valid uuid' do
     set_user_from_auth :admin_trustedclient
-    want_uuid = Specimen.generate_uuid
+    want_uuid = Collection.generate_uuid
     a = create_with_attrs(uuid: want_uuid)
     assert_equal want_uuid, a.uuid, "Admin should assign valid uuid."
     assert a.uuid.length==27, "Auto assigned uuid length is wrong."
@@ -29,7 +29,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
   test 'admin cannot assign uuid with wrong object type' do
     set_user_from_auth :admin_trustedclient
-    want_uuid = Human.generate_uuid
+    want_uuid = Group.generate_uuid
     a = create_with_attrs(uuid: want_uuid)
     assert_nil a, "Admin should not be able to assign invalid uuid."
   end
@@ -126,10 +126,23 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   test "search index exists on models that go into projects" do
-    all_tables =  ActiveRecord::Base.connection.tables
-    all_tables.delete 'schema_migrations'
-    all_tables.delete 'permission_refresh_lock'
-    all_tables.delete 'ar_internal_metadata'
+    all_tables =  ActiveRecord::Base.connection.tables - [
+      'ar_internal_metadata',
+      'permission_refresh_lock',
+      'schema_migrations',
+      # tables that may still exist in the database even though model
+      # classes have been deleted:
+      'humans',
+      'jobs',
+      'job_tasks',
+      'keep_disks',
+      'nodes',
+      'pipeline_instances',
+      'pipeline_templates',
+      'repositories',
+      'specimens',
+      'traits',
+    ]
 
     all_tables.each do |table|
       table_class = table.classify.constantize
@@ -159,9 +172,6 @@ class ArvadosModelTest < ActiveSupport::TestCase
     %w[collections collections_trgm_text_search_idx],
     %w[container_requests container_requests_trgm_text_search_idx],
     %w[groups groups_trgm_text_search_idx],
-    %w[jobs jobs_trgm_text_search_idx],
-    %w[pipeline_instances pipeline_instances_trgm_text_search_idx],
-    %w[pipeline_templates pipeline_templates_trgm_text_search_idx],
     %w[workflows workflows_trgm_text_search_idx]
   ].each do |model|
     table = model[0]
@@ -180,25 +190,25 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   test "selectable_attributes includes database attributes" do
-    assert_includes(Job.selectable_attributes, "success")
+    assert_includes(Collection.selectable_attributes, "name")
   end
 
   test "selectable_attributes includes non-database attributes" do
-    assert_includes(Job.selectable_attributes, "node_uuids")
+    assert_includes(Collection.selectable_attributes, "unsigned_manifest_text")
   end
 
   test "selectable_attributes includes common attributes in extensions" do
-    assert_includes(Job.selectable_attributes, "uuid")
+    assert_includes(Collection.selectable_attributes, "uuid")
   end
 
   test "selectable_attributes does not include unexposed attributes" do
-    refute_includes(Job.selectable_attributes, "nodes")
+    refute_includes(Collection.selectable_attributes, "id")
   end
 
   test "selectable_attributes on a non-default template" do
-    attr_a = Job.selectable_attributes(:common)
+    attr_a = Collection.selectable_attributes(:common)
     assert_includes(attr_a, "uuid")
-    refute_includes(attr_a, "success")
+    refute_includes(attr_a, "name")
   end
 
   test 'create and retrieve using created_at time' do
@@ -260,19 +270,21 @@ class ArvadosModelTest < ActiveSupport::TestCase
       else
         Rails.configuration.AuditLogs.MaxAge = 0
       end
+      tested_serialized = false
       [
         User.find_by_uuid(users(:active).uuid),
         ContainerRequest.find_by_uuid(container_requests(:queued).uuid),
         Container.find_by_uuid(containers(:queued).uuid),
-        PipelineInstance.find_by_uuid(pipeline_instances(:has_component_with_completed_jobs).uuid),
-        PipelineTemplate.find_by_uuid(pipeline_templates(:two_part).uuid),
-        Job.find_by_uuid(jobs(:running).uuid)
+        Group.find_by_uuid(groups(:afiltergroup).uuid),
+        Collection.find_by_uuid(collections(:collection_with_one_property).uuid),
       ].each do |obj|
-        assert_not(obj.class.serialized_attributes.empty?,
-          "#{obj.class} model doesn't have serialized attributes")
+        if !obj.class.serialized_attributes.empty?
+          tested_serialized = true
+        end
         # obj shouldn't have changed since it's just retrieved from the database
         assert_not(obj.changed?, "#{obj.class} model's attribute(s) appear as changed: '#{obj.changes.keys.join(',')}' with audit logs #{auditlogs_enabled ? '': 'not '}enabled.")
       end
+      assert(tested_serialized, "did not test any models with serialized attributes")
     end
   end
 end

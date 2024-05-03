@@ -25,9 +25,6 @@ class User < ArvadosModel
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_update :prevent_nonadmin_system_root
-  before_update :verify_repositories_empty, :if => Proc.new {
-    username.nil? and username_changed?
-  }
   after_update :setup_on_activate
 
   before_create :check_auto_admin
@@ -49,16 +46,10 @@ class User < ArvadosModel
   before_update :before_ownership_change
   after_update :after_ownership_change
   after_update :send_profile_created_notification
-  after_update :sync_repository_names, :if => Proc.new {
-    (uuid != system_user_uuid) and
-    saved_change_to_username? and
-    (not username_before_last_save.nil?)
-  }
   before_destroy :clear_permissions
   after_destroy :remove_self_from_permissions
 
   has_many :authorized_keys, foreign_key: 'authorized_user_uuid', primary_key: 'uuid'
-  has_many :repositories, foreign_key: 'owner_uuid', primary_key: 'uuid'
 
   default_scope { where('redirect_to_user_uuid is null') }
 
@@ -261,7 +252,7 @@ SELECT target_uuid, perm_level
   end
 
   # create links
-  def setup(repo_name: nil, vm_uuid: nil, send_notification_email: nil)
+  def setup(vm_uuid: nil, send_notification_email: nil)
     newly_invited = Link.where(tail_uuid: self.uuid,
                               head_uuid: all_users_group_uuid,
                               link_class: 'permission').empty?
@@ -270,12 +261,6 @@ SELECT target_uuid, perm_level
     # user "invited", and (depending on config) a link in the opposite
     # direction which makes this user visible to other users.
     group_perms = add_to_all_users_group
-
-    # Add git repo
-    repo_perm = if (!repo_name.nil? || Rails.configuration.Users.AutoSetupNewUsersWithRepository) and !username.nil?
-                  repo_name ||= "#{username}/#{username}"
-                  create_user_repo_link repo_name
-                end
 
     # Add virtual machine
     if vm_uuid.nil? and !Rails.configuration.Users.AutoSetupNewUsersWithVmUUID.empty?
@@ -301,10 +286,10 @@ SELECT target_uuid, perm_level
 
     forget_cached_group_perms
 
-    return [repo_perm, vm_login_perm, *group_perms, self].compact
+    return [vm_login_perm, *group_perms, self].compact
   end
 
-  # delete user signatures, login, repo, and vm perms, and mark as inactive
+  # delete user signatures, login, and vm perms, and mark as inactive
   def unsetup
     if self.uuid == system_user_uuid
       raise "System root user cannot be deactivated"
@@ -483,30 +468,13 @@ SELECT target_uuid, perm_level
         klass.where(column => uuid).update_all(column => new_user.uuid)
       end
 
-      # Need to update repository names to new username
-      if username
-        old_repo_name_re = /^#{Regexp.escape(username)}\//
-        Repository.where(:owner_uuid => uuid).each do |repo|
-          repo.owner_uuid = new_user.uuid
-          repo_name_sub = "#{new_user.username}/"
-          name = repo.name.sub(old_repo_name_re, repo_name_sub)
-          while (conflict = Repository.where(:name => name).first) != nil
-            repo_name_sub += "migrated"
-            name = repo.name.sub(old_repo_name_re, repo_name_sub)
-          end
-          repo.name = name
-          repo.save!
-        end
-      end
-
       # References to the merged user's "home project" are updated to
       # point to new_owner_uuid.
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
         next if [ApiClientAuthorization,
                  AuthorizedKey,
                  Link,
-                 Log,
-                 Repository].include?(klass)
+                 Log].include?(klass)
         next if !klass.columns.collect(&:name).include?('owner_uuid')
         klass.where(owner_uuid: uuid).update_all(owner_uuid: new_owner_uuid)
       end
@@ -889,24 +857,8 @@ SELECT target_uuid, perm_level
     merged
   end
 
-  def create_user_repo_link(repo_name)
-    # repo_name is optional
-    if not repo_name
-      logger.warn ("Repository name not given for #{self.uuid}.")
-      return
-    end
-
-    repo = Repository.where(owner_uuid: uuid, name: repo_name).first_or_create!
-    logger.info { "repo uuid: " + repo[:uuid] }
-    repo_perm = Link.where(tail_uuid: uuid, head_uuid: repo.uuid,
-                           link_class: "permission",
-                           name: "can_manage").first_or_create!
-    logger.info { "repo permission: " + repo_perm[:uuid] }
-    return repo_perm
-  end
-
   # create login permission for the given vm_uuid, if it does not already exist
-  def create_vm_login_permission_link(vm_uuid, repo_name)
+  def create_vm_login_permission_link(vm_uuid, username)
     # vm uuid is optional
     return if vm_uuid == ""
 
@@ -924,11 +876,11 @@ SELECT target_uuid, perm_level
 
     login_perm = Link.
       where(login_attrs).
-      select { |link| link.properties["username"] == repo_name }.
+      select { |link| link.properties["username"] == username }.
       first
 
     login_perm ||= Link.
-      create(login_attrs.merge(properties: {"username" => repo_name}))
+      create(login_attrs.merge(properties: {"username" => username}))
 
     logger.info { "login permission: " + login_perm[:uuid] }
     login_perm
@@ -998,22 +950,6 @@ SELECT target_uuid, perm_level
         profile_notification_address = Rails.configuration.Users.UserProfileNotificationAddress
         ProfileNotifier.profile_created(self, profile_notification_address).deliver_now if profile_notification_address and !profile_notification_address.empty?
       end
-    end
-  end
-
-  def verify_repositories_empty
-    unless repositories.first.nil?
-      errors.add(:username, "can't be unset when the user owns repositories")
-      throw(:abort)
-    end
-  end
-
-  def sync_repository_names
-    old_name_re = /^#{Regexp.escape(username_before_last_save)}\//
-    name_sub = "#{username}/"
-    repositories.find_each do |repo|
-      repo.name = repo.name.sub(old_name_re, name_sub)
-      repo.save!
     end
   end
 

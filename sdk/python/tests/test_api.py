@@ -67,8 +67,8 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         self.assertIsNot(*clients)
 
     def test_empty_list(self):
-        answer = arvados.api('v1').humans().list(
-            filters=[['uuid', '=', None]]).execute()
+        answer = arvados.api('v1').collections().list(
+            filters=[['uuid', '=', 'abcdef']]).execute()
         self.assertEqual(answer['items_available'], len(answer['items']))
 
     def test_nonempty_list(self):
@@ -78,11 +78,11 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_timestamp_inequality_filter(self):
         api = arvados.api('v1')
-        new_item = api.specimens().create(body={}).execute()
+        new_item = api.collections().create(body={}).execute()
         for operator, should_include in [
                 ['<', False], ['>', False],
                 ['<=', True], ['>=', True], ['=', True]]:
-            response = api.specimens().list(filters=[
+            response = api.collections().list(filters=[
                 ['created_at', operator, new_item['created_at']],
                 # Also filter by uuid to ensure (if it matches) it's on page 0
                 ['uuid', '=', new_item['uuid']]]).execute()
@@ -97,13 +97,13 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_exceptions_include_errors(self):
         mock_responses = {
-            'arvados.humans.get': self.api_error_response(
+            'arvados.collections.get': self.api_error_response(
                 422, "Bad UUID format", "Bad output format"),
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1', requestBuilder=req_builder)
         with self.assertRaises(apiclient_errors.HttpError) as err_ctx:
-            api.humans().get(uuid='xyz-xyz-abcdef').execute()
+            api.collections().get(uuid='xyz-xyz-abcdef').execute()
         err_s = str(err_ctx.exception)
         for msg in ["Bad UUID format", "Bad output format"]:
             self.assertIn(msg, err_s)
@@ -123,14 +123,14 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_exceptions_without_errors_have_basic_info(self):
         mock_responses = {
-            'arvados.humans.delete': (
+            'arvados.collections.delete': (
                 fake_httplib2_response(500, **self.ERROR_HEADERS),
                 b"")
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1', requestBuilder=req_builder)
         with self.assertRaises(apiclient_errors.HttpError) as err_ctx:
-            api.humans().delete(uuid='xyz-xyz-abcdef').execute()
+            api.collections().delete(uuid='xyz-xyz-abcdef').execute()
         self.assertIn("500", str(err_ctx.exception))
 
     def test_request_too_large(self):
@@ -203,7 +203,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_ordered_json_model(self):
         mock_responses = {
-            'arvados.humans.get': (
+            'arvados.collections.get': (
                 None,
                 json.dumps(collections.OrderedDict(
                     (c, int(c, 16)) for c in string.hexdigits
@@ -213,7 +213,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1',
                           requestBuilder=req_builder, model=OrderedJsonModel())
-        result = api.humans().get(uuid='test').execute()
+        result = api.collections().get(uuid='test').execute()
         self.assertEqual(string.hexdigits, ''.join(list(result.keys())))
 
     def test_api_is_threadsafe(self):

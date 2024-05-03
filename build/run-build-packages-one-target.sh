@@ -230,7 +230,6 @@ if test -z "$packages" ; then
         arvados-dispatch-cloud
         arvados-dispatch-lsf
         arvados-docker-cleaner
-        arvados-git-httpd
         arvados-health
         arvados-server
         arvados-src

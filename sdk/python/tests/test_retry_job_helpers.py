@@ -56,22 +56,3 @@ class ApiClientRetryTestMixin(object):
     def test_no_retry_after_immediate_success(self):
         with tutil.mock_api_responses(self.api_client, '{}', [200, 400]):
             self.run_method()
-
-
-class CurrentJobTestCase(ApiClientRetryTestMixin, unittest.TestCase):
-
-    DEFAULT_EXCEPTION = arvados.errors.ApiError
-
-    def setUp(self):
-        super(CurrentJobTestCase, self).setUp()
-        os.environ['JOB_UUID'] = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
-        os.environ['JOB_WORK'] = '.'
-
-    def tearDown(self):
-        del os.environ['JOB_UUID']
-        del os.environ['JOB_WORK']
-        arvados._current_job = None
-        super(CurrentJobTestCase, self).tearDown()
-
-    def run_method(self):
-        arvados.current_job()

@@ -72,7 +72,6 @@ class Arvados::V1::SchemaController < ApplicationController
       workbenchUrl: Rails.configuration.Services.Workbench1.ExternalURL.to_s,
       workbench2Url: Rails.configuration.Services.Workbench2.ExternalURL.to_s,
       keepWebServiceUrl: Rails.configuration.Services.WebDAV.ExternalURL.to_s,
-      gitUrl: Rails.configuration.Services.GitHTTP.ExternalURL.to_s,
       parameters: {
         alt: {
           type: "string",
@@ -484,6 +483,7 @@ class Arvados::V1::SchemaController < ApplicationController
 
     Rails.configuration.API.DisabledAPIs.each do |method, _|
       ctrl, action = method.to_s.split('.', 2)
+      next if ctrl.in?(['job_tasks', 'jobs', 'keep_disks', 'nodes', 'pipeline_instances', 'pipeline_templates', 'repositories'])
       discovery[:resources][ctrl][:methods].delete(action.to_sym)
     end
     discovery

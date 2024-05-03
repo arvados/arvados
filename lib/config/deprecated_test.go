@@ -283,52 +283,6 @@ func fmtKeepproxyConfig(param string, debugLog bool) string {
 `, debugLog, param)
 }
 
-func (s *LoadSuite) TestLegacyArvGitHttpdConfig(c *check.C) {
-	content := []byte(`
-{
-	"Client": {
-		"Scheme": "",
-		"APIHost": "example.com",
-		"AuthToken": "abcdefg",
-	},
-	"Listen": ":9000",
-	"GitCommand": "/test/git",
-	"GitoliteHome": "/test/gitolite",
-	"RepoRoot": "/test/reporoot",
-	"ManagementToken": "xyzzy"
-}
-`)
-	f := "-legacy-git-httpd-config"
-	cluster, err := testLoadLegacyConfig(content, f, c)
-
-	c.Assert(err, check.IsNil)
-	c.Assert(cluster, check.NotNil)
-	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
-	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
-	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
-	c.Check(cluster.Git.GitCommand, check.Equals, "/test/git")
-	c.Check(cluster.Git.GitoliteHome, check.Equals, "/test/gitolite")
-	c.Check(cluster.Git.Repositories, check.Equals, "/test/reporoot")
-	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":9000"}], check.Equals, arvados.ServiceInstance{})
-}
-
-// Tests fix for https://dev.arvados.org/issues/15642
-func (s *LoadSuite) TestLegacyArvGitHttpdConfigDoesntDisableMissingItems(c *check.C) {
-	content := []byte(`
-{
-	"Client": {
-		"Scheme": "",
-		"APIHost": "example.com",
-		"AuthToken": "abcdefg",
-	}
-}
-`)
-	cluster, err := testLoadLegacyConfig(content, "-legacy-git-httpd-config", c)
-	c.Assert(err, check.IsNil)
-	// The resulting ManagementToken should be the one set up on the test server.
-	c.Check(cluster.ManagementToken, check.Equals, TestServerManagementToken)
-}
-
 func (s *LoadSuite) TestLegacyKeepBalanceConfig(c *check.C) {
 	f := "-legacy-keepbalance-config"
 	content := []byte(fmtKeepBalanceConfig(""))

@@ -473,41 +473,6 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
-			arvados.EndpointSpecimenCreate,
-			func() interface{} { return &arvados.CreateOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.SpecimenCreate(ctx, *opts.(*arvados.CreateOptions))
-			},
-		},
-		{
-			arvados.EndpointSpecimenUpdate,
-			func() interface{} { return &arvados.UpdateOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.SpecimenUpdate(ctx, *opts.(*arvados.UpdateOptions))
-			},
-		},
-		{
-			arvados.EndpointSpecimenGet,
-			func() interface{} { return &arvados.GetOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.SpecimenGet(ctx, *opts.(*arvados.GetOptions))
-			},
-		},
-		{
-			arvados.EndpointSpecimenList,
-			func() interface{} { return &arvados.ListOptions{Limit: -1} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.SpecimenList(ctx, *opts.(*arvados.ListOptions))
-			},
-		},
-		{
-			arvados.EndpointSpecimenDelete,
-			func() interface{} { return &arvados.DeleteOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.SpecimenDelete(ctx, *opts.(*arvados.DeleteOptions))
-			},
-		},
-		{
 			arvados.EndpointAPIClientAuthorizationCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

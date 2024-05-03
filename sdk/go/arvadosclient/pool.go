@@ -13,8 +13,8 @@ import (
 // A ClientPool is a pool of ArvadosClients. This is useful for
 // applications that make API calls using a dynamic set of tokens,
 // like web services that pass through their own clients'
-// credentials. See arvados-git-httpd for an example, and sync.Pool
-// for more information about garbage collection.
+// credentials. See sync.Pool for more information about garbage
+// collection.
 type ClientPool struct {
 	// Initialize new clients by copying this one.
 	Prototype *ArvadosClient

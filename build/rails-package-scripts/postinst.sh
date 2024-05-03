@@ -248,8 +248,6 @@ configure_version() {
 
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
 
-  setup_before_nginx_restart
-
   if [ -n "$SERVICE_MANAGER" ]; then
       service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"
   fi

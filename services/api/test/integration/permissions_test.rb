@@ -302,26 +302,29 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response 404
   end
 
-  test "RO group-admin finds user's specimens, RW group-admin can update" do
+  test "RO group-admin finds user's collections, RW group-admin can update" do
+    other_user_collection = act_as_user(users(:user_foo_in_sharing_group)) do
+      Collection.create()
+    end
     [[:rominiadmin, false],
      [:miniadmin, true]].each do |which_user, update_should_succeed|
-      get "/arvados/v1/specimens",
+      get "/arvados/v1/collections",
         params: {:format => :json},
         headers: auth(which_user)
       assert_response :success
       resp_uuids = json_response['items'].collect { |i| i['uuid'] }
-      [[true, specimens(:owned_by_active_user).uuid],
-       [true, specimens(:owned_by_private_group).uuid],
-       [false, specimens(:owned_by_spectator).uuid],
+      [[true, collections(:collection_owned_by_active).uuid],
+       [true, collections(:foo_collection_in_aproject).uuid],
+       [false, other_user_collection.uuid],
       ].each do |should_find, uuid|
         assert_equal(should_find, !resp_uuids.index(uuid).nil?,
-                     "%s should%s see %s in specimen list" %
+                     "%s should%s see %s in collection list" %
                      [which_user.to_s,
-                      should_find ? '' : 'not ',
+                      should_find ? '' : ' not',
                       uuid])
-        put "/arvados/v1/specimens/#{uuid}",
+        put "/arvados/v1/collections/#{uuid}",
           params: {
-            :specimen => {
+            :collection => {
               properties: {
                 miniadmin_was_here: true
               }
