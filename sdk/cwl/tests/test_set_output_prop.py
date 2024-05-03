@@ -7,7 +7,7 @@ import subprocess
 
 api = arvados.api()
 
-def test_execute():
+def check_execute():
     group = api.groups().create(body={"group": {"name": "test-17004-project", "group_class": "project"}}, ensure_unique_name=True).execute()
     try:
         contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -34,4 +34,4 @@ def test_execute():
         api.groups().delete(uuid=group["uuid"]).execute()
 
 if __name__ == '__main__':
-    test_execute()
+    check_execute()
