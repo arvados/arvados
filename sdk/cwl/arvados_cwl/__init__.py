@@ -6,9 +6,6 @@
 # Implement cwl-runner interface for submitting and running work on Arvados, using
 # the Crunch containers API.
 
-from future.utils import viewitems
-from builtins import str
-
 import argparse
 import importlib.metadata
 import importlib.resources
@@ -333,7 +330,7 @@ def main(args=sys.argv[1:],
 
     add_arv_hints()
 
-    for key, val in viewitems(cwltool.argparser.get_default_args()):
+    for key, val in cwltool.argparser.get_default_args().items():
         if not hasattr(arvargs, key):
             setattr(arvargs, key, val)
 

@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from __future__ import division
-from future import standard_library
-from future.utils import listitems, listvalues
-standard_library.install_aliases()
-from builtins import range
-from builtins import object
 import bz2
 import collections
 import copy
@@ -620,7 +613,7 @@ class _BlockManager(object):
         # A WRITABLE block with its owner.closed() implies that its
         # size is <= KEEP_BLOCK_SIZE/2.
         try:
-            small_blocks = [b for b in listvalues(self._bufferblocks)
+            small_blocks = [b for b in self._bufferblocks.values()
                             if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
         except AttributeError:
             # Writable blocks without owner shouldn't exist.
@@ -763,7 +756,7 @@ class _BlockManager(object):
         self.repack_small_blocks(force=True, sync=True)
 
         with self.lock:
-            items = listitems(self._bufferblocks)
+            items = list(self._bufferblocks.items())
 
         for k,v in items:
             if v.state() != _BufferBlock.COMMITTED and v.owner:

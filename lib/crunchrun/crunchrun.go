@@ -1336,6 +1336,7 @@ func (runner *ContainerRunner) CaptureOutput(bindmounts map[string]bindmount) er
 		keepClient:    runner.ContainerKeepClient,
 		hostOutputDir: runner.HostOutputDir,
 		ctrOutputDir:  runner.Container.OutputPath,
+		globs:         runner.Container.OutputGlob,
 		bindmounts:    bindmounts,
 		mounts:        runner.Container.Mounts,
 		secretMounts:  runner.SecretMounts,

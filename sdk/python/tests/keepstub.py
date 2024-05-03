@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
 import http.server
 import hashlib
 import os
@@ -20,9 +16,7 @@ from . import arvados_testutil as tutil
 
 _debug = os.environ.get('ARVADOS_DEBUG', None)
 
-
 class StubKeepServers(tutil.ApiClientMock):
-
     def setUp(self):
         super(StubKeepServers, self).setUp()
         sock = socket.socket()

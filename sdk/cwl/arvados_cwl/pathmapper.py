@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from past.builtins import basestring
-from future.utils import viewitems
-
 import re
 import logging
 import uuid
@@ -72,7 +66,7 @@ class ArvPathMapper(PathMapper):
 
         debug = logger.isEnabledFor(logging.DEBUG)
 
-        if isinstance(src, basestring) and src.startswith("keep:"):
+        if isinstance(src, str) and src.startswith("keep:"):
             if collection_pdh_pattern.match(src):
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.parse.unquote(src[5:]), srcobj["class"], True)
 
@@ -346,7 +340,7 @@ class StagingPathMapper(PathMapper):
         # Overridden to maintain the use case of mapping by source (identifier) to
         # target regardless of how the map is structured interally.
         def getMapperEnt(src):
-            for k,v in viewitems(self._pathmap):
+            for k,v in self._pathmap.items():
                 if (v.type != "CreateFile" and v.resolved == src) or (v.type == "CreateFile" and k == src):
                     return v
 
@@ -365,7 +359,7 @@ class VwdPathMapper(StagingPathMapper):
         # with any secondary files.
         self.visitlisting(referenced_files, self.stagedir, basedir)
 
-        for path, (ab, tgt, type, staged) in viewitems(self._pathmap):
+        for path, (ab, tgt, type, staged) in self._pathmap.items():
             if type in ("File", "Directory") and ab.startswith("keep:"):
                 self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type, staged)
 

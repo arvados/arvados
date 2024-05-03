@@ -568,7 +568,8 @@ CREATE TABLE public.container_requests (
     runtime_token text,
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
     output_properties jsonb DEFAULT '{}'::jsonb,
-    cumulative_cost double precision DEFAULT 0.0 NOT NULL
+    cumulative_cost double precision DEFAULT 0.0 NOT NULL,
+    output_glob text DEFAULT '[]'::text
 );
 
 
@@ -634,7 +635,8 @@ CREATE TABLE public.containers (
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
     output_properties jsonb DEFAULT '{}'::jsonb,
     cost double precision DEFAULT 0.0 NOT NULL,
-    subrequests_cost double precision DEFAULT 0.0 NOT NULL
+    subrequests_cost double precision DEFAULT 0.0 NOT NULL,
+    output_glob text DEFAULT '[]'::text
 );
 
 
@@ -1856,6 +1858,13 @@ CREATE INDEX collections_trgm_text_search_idx ON public.collections USING gin ((
 
 
 --
+-- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX container_requests_full_text_search_idx ON public.container_requests USING gin (to_tsvector('english'::regconfig, substr((((((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text) || ' '::text) || COALESCE((output_properties)::text, ''::text)) || ' '::text) || COALESCE(output_glob, ''::text)), 0, 8000)));
+
+
+--
 -- Name: container_requests_index_on_properties; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2167,7 +2176,7 @@ CREATE INDEX index_containers_on_queued_state ON public.containers USING btree (
 -- Name: index_containers_on_reuse_columns; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_containers_on_reuse_columns ON public.containers USING btree (md5(command), cwd, md5(environment), output_path, container_image, md5(mounts), secret_mounts_md5, md5(runtime_constraints));
+CREATE INDEX index_containers_on_reuse_columns ON public.containers USING btree (md5(command), cwd, md5(environment), output_path, md5(output_glob), container_image, md5(mounts), secret_mounts_md5, md5(runtime_constraints));
 
 
 --
@@ -3316,4 +3325,6 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20230815160000'),
 ('20230821000000'),
 ('20230922000000'),
-('20231013000000');
+('20231013000000'),
+('20240329173437'),
+('20240402162733');

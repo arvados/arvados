@@ -1,0 +1,27 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2. Glob patterns
+
+Each pattern in the @output_glob@ array can include the following special terms:
+
+table(table table-bordered table-condensed).
+|@*@|matches any sequence of non-@/@ characters|
+|@?@|matches any single non-@/@ character|
+|@[abcde]@ or @[a-e]@|matches any non-@/@ character in @abcde@|
+|@[^abcde]@ or @[^a-e]@ or
+@[!abcde]@ or @[!a-e]@|matches any non-@/@ character other than @abcde@|
+|@/**/@|matches zero or more levels of subdirectories|
+|@**/@|at the beginning of a pattern, matches zero or more directories|
+|@/**@|at the end of a pattern, matches any file in any subdirectory|
+
+Example patterns:
+
+table(table table-bordered table-condensed).
+|@*.txt@|matches files with extension @.txt@ at the top level|
+|@foo/**@|matches the entire tree rooted at @foo@ in the top level|
+|@**/fo[og]@|matches all files named @foo@ or @fog@ anywhere in the tree|
+|@foo/**/*.txt@|matches all files with extension @.txt@ anywhere in the tree rooted at @foo@ in the top level|

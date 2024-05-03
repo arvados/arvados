@@ -11,6 +11,7 @@ require (
 	github.com/arvados/cgofuse v1.2.0-arvados1
 	github.com/aws/aws-sdk-go v1.44.174
 	github.com/aws/aws-sdk-go-v2 v0.23.0
+	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e

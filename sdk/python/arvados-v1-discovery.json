@@ -6065,6 +6065,9 @@
         },
         "subrequests_cost": {
           "type": "float"
+        },
+        "output_glob": {
+          "type": "Array"
         }
       }
     },
@@ -6211,6 +6214,9 @@
         },
         "cumulative_cost": {
           "type": "float"
+        },
+        "output_glob": {
+          "type": "Array"
         }
       }
     },

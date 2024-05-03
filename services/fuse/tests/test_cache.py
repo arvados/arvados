@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from builtins import range
 import arvados
 import arvados.collection
 import arvados_fuse

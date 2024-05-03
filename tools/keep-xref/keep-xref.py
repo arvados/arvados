@@ -5,7 +5,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 #
 
-from __future__ import print_function, absolute_import
 import argparse
 import arvados
 import arvados.util

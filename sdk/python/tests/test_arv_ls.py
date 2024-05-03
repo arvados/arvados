@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import os
 import random
 import sys

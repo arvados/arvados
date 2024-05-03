@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import print_function
-
 import crunchstat_summary.command
 import crunchstat_summary.summarizer
 import logging

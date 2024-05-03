@@ -2,16 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from __future__ import division
 import copy
-from future import standard_library
-from future.utils import native_str
-standard_library.install_aliases()
-from builtins import next
-from builtins import str
-from builtins import range
-from builtins import object
 import collections
 import datetime
 import hashlib
@@ -28,15 +19,11 @@ import ssl
 import sys
 import threading
 import resource
-from . import timer
 import urllib.parse
 import traceback
 import weakref
 
-if sys.version_info >= (3, 0):
-    from io import BytesIO
-else:
-    from cStringIO import StringIO as BytesIO
+from io import BytesIO
 
 import arvados
 import arvados.config as config
@@ -45,10 +32,10 @@ import arvados.retry as retry
 import arvados.util
 import arvados.diskcache
 from arvados._pycurlhelper import PyCurlHelper
+from . import timer
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
-
 
 # Monkey patch TCP constants when not available (apple). Values sourced from:
 # http://www.opensource.apple.com/source/xnu/xnu-2422.115.4/bsd/netinet/tcp.h
@@ -59,7 +46,6 @@ if sys.platform == 'darwin':
         socket.TCP_KEEPINTVL = 0x101
     if not hasattr(socket, 'TCP_KEEPCNT'):
         socket.TCP_KEEPCNT = 0x102
-
 
 class KeepLocator(object):
     EPOCH_DATETIME = datetime.datetime.utcfromtimestamp(0)
@@ -85,7 +71,7 @@ class KeepLocator(object):
 
     def __str__(self):
         return '+'.join(
-            native_str(s)
+            str(s)
             for s in [self.md5sum, self.size,
                       self.permission_hint()] + self.hints
             if s is not None)

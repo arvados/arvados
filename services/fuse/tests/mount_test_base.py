@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
 import arvados
 import arvados.keep
 import arvados_fuse as fuse
@@ -11,7 +10,6 @@ import llfuse
 import logging
 import multiprocessing
 import os
-from . import run_test_server
 import shutil
 import signal
 import subprocess
@@ -21,9 +19,10 @@ import threading
 import time
 import unittest
 
-logger = logging.getLogger('arvados.arv-mount')
-
+from . import run_test_server
 from .integration_test import workerPool
+
+logger = logging.getLogger('arvados.arv-mount')
 
 def make_block_cache(disk_cache):
     if disk_cache:

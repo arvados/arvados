@@ -22,6 +22,7 @@ class ContainerTest < ActiveSupport::TestCase
     cwd: "test",
     command: ["echo", "hello"],
     output_path: "test",
+    output_glob: [],
     runtime_constraints: {
       "API" => false,
       "keep_cache_disk" => 0,
@@ -48,6 +49,7 @@ class ContainerTest < ActiveSupport::TestCase
     environment: {},
     mounts: {},
     output_path: "test",
+    output_glob: [],
     runtime_auth_scopes: ["all"],
     runtime_constraints: {
       "API" => false,

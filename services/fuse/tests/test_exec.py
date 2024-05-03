@@ -2,17 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
-from six import assertRegex
 import arvados_fuse.command
 import json
 import multiprocessing
 import os
-from . import run_test_server
 import shlex
 import tempfile
 import unittest
 
+from . import run_test_server
 from .integration_test import workerPool
 
 def try_exec(mnt, cmd):
@@ -58,7 +56,4 @@ class ExecMode(unittest.TestCase):
                 shlex.quote(os.path.join(self.okfile)),
             )]))
         with open(self.okfile) as f:
-            assertRegex(
-                self,
-                json.load(f)['manifest_text'],
-                r' 0:3:foo.txt\n')
+            self.assertRegex(json.load(f)['manifest_text'], r' 0:3:foo.txt\n')

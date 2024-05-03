@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-from builtins import str
-from future.utils import viewvalues
-
 import fnmatch
 import os
 import errno
@@ -314,7 +308,7 @@ def collectionResolver(api_client, document_loader, uri, num_retries=4):
 
     if pipeline_template_uuid_pattern.match(uri):
         pt = api_client.pipeline_templates().get(uuid=uri).execute(num_retries=num_retries)
-        return u"keep:" + viewvalues(pt["components"])[0]["script_parameters"]["cwl:tool"]
+        return u"keep:" + next(pt["components"].values())["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")
     if arvados.util.keep_locator_pattern.match(p[0]):

@@ -21,7 +21,8 @@ Options:
 --skip install Do not run any install steps. Just run tests.
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
---only FOO     Do not test anything except the FOO component.
+--only FOO     Do not test anything except the FOO component. If given
+               more than once, all specified test suites are run.
 --temp DIR     Install components and dependencies under DIR instead of
                making a new temporary directory. Implies --leave-temp.
 --leave-temp   Do not remove GOPATH, virtualenv, and other temp dirs at exit.
@@ -29,7 +30,8 @@ Options:
                subsequent invocations.
 --repeat N     Repeat each install/test step until it succeeds N times.
 --retry        Prompt to retry if an install or test suite fails.
---only-install Run specific install step
+--only-install Run specific install step. If given more than once,
+               all but the last are ignored.
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
@@ -748,7 +750,7 @@ check_arvados_config() {
 }
 
 do_install() {
-    if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
+    if [[ -n ${skip["install_$1"]} || -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
         return 0
     fi
     check_arvados_config "$1"
@@ -1033,14 +1035,6 @@ install_all() {
 test_all() {
     stop_services
     do_test services/api
-
-    # Shortcut for when we're only running apiserver tests. This saves a bit of time,
-    # because we don't need to start up the api server for subsequent tests.
-    if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
-        rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-        exit_cleanly
-    fi
-
     do_test gofmt
     do_test arvados_version.py
     do_test doc
@@ -1111,7 +1105,7 @@ if [[ -z ${interactive} ]]; then
 else
     skip=()
     only=()
-    only_install=()
+    only_install=""
     if [[ -e "$VENV3DIR/bin/activate" ]]; then stop_services; fi
     setnextcmd() {
         if [[ "$TERM" = dumb ]]; then

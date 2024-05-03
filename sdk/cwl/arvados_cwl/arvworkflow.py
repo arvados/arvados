@@ -2,18 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from past.builtins import basestring
-from future.utils import viewitems
-
 import os
 import json
 import copy
 import logging
 import urllib
-from io import StringIO
 import sys
 import re
 
+from io import StringIO
 from typing import (MutableSequence, MutableMapping)
 
 from ruamel.yaml import YAML
@@ -588,7 +585,7 @@ class ArvadosWorkflowStep(WorkflowStep):
         runtimeContext = runtimeContext.copy()
         runtimeContext.toplevel = True  # Preserve behavior for #13365
 
-        builder = make_builder({shortname(k): v for k,v in viewitems(joborder)}, self.hints, self.requirements,
+        builder = make_builder({shortname(k): v for k, v in joborder.items()}, self.hints, self.requirements,
                                runtimeContext, self.metadata)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
@@ -655,7 +652,7 @@ class ArvadosWorkflow(Workflow):
                                 dyn = False
                                 for k in max_res_pars + sum_res_pars:
                                     if k in req:
-                                        if isinstance(req[k], basestring):
+                                        if isinstance(req[k], str):
                                             if item["id"] == "#main":
                                                 # only the top-level requirements/hints may contain expressions
                                                 self.dynamic_resource_req.append(req)

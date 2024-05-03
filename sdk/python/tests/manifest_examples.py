@@ -2,10 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import range
-from builtins import object
 import arvados
+
 from . import arvados_testutil as tutil
 
 class ManifestExamples(object):
