@@ -46,7 +46,19 @@ func (h *Handler) trashSweepWorker() {
 }
 
 func (h *Handler) containerLogSweepWorker() {
-	h.periodicWorker("container log sweep", h.Cluster.Containers.Logging.SweepInterval.Duration(), dblock.ContainerLogSweep, func(ctx context.Context) error {
+	// Since #21611 we don't expect any new log entries, so the
+	// periodic worker only runs once, then becomes a no-op.
+	//
+	// The old Containers.Logging.SweepInterval config is removed.
+	// We use TrashSweepInterval here instead, for testing
+	// reasons: it prevents the default integration-testing
+	// controller service (whose TrashSweepInterval is 0) from
+	// acquiring the dblock.
+	done := false
+	h.periodicWorker("container log sweep", h.Cluster.Collections.TrashSweepInterval.Duration(), dblock.ContainerLogSweep, func(ctx context.Context) error {
+		if done {
+			return nil
+		}
 		db, err := h.dbConnector.GetDB(ctx)
 		if err != nil {
 			return err
@@ -56,9 +68,7 @@ DELETE FROM logs
  USING containers
  WHERE logs.object_uuid=containers.uuid
  AND logs.event_type in ('stdout', 'stderr', 'arv-mount', 'crunch-run', 'crunchstat', 'hoststat', 'node', 'container', 'keepstore')
- AND containers.log IS NOT NULL
- AND now() - containers.finished_at > $1::interval`,
-			h.Cluster.Containers.Logging.MaxAge.String())
+ AND containers.log IS NOT NULL`)
 		if err != nil {
 			return err
 		}
@@ -68,6 +78,9 @@ DELETE FROM logs
 			logger.WithError(err).Warn("unexpected error from RowsAffected()")
 		} else {
 			logger.WithField("rows", rows).Info("deleted rows from logs table")
+			if rows == 0 {
+				done = true
+			}
 		}
 		return nil
 	})

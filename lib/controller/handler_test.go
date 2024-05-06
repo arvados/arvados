@@ -707,14 +707,14 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 
 func (s *HandlerSuite) TestContainerLogSweep(c *check.C) {
 	s.cluster.SystemRootToken = arvadostest.SystemRootToken
-	s.cluster.Containers.Logging.SweepInterval = arvados.Duration(time.Second / 10)
+	s.cluster.Collections.TrashSweepInterval = arvados.Duration(2 * time.Second)
 	s.handler.CheckHealth()
 	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 	logentry, err := s.handler.federation.LogCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"object_uuid": arvadostest.CompletedContainerUUID,
 		"event_type":  "stderr",
 		"properties": map[string]interface{}{
-			"text": "test trash sweep\n",
+			"text": "test container log sweep\n",
 		},
 	}})
 	c.Assert(err, check.IsNil)

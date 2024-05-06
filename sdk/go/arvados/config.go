@@ -506,8 +506,6 @@ type ContainersConfig struct {
 		Enable string
 	}
 	Logging struct {
-		MaxAge          Duration
-		SweepInterval   Duration
 		LogUpdatePeriod Duration
 		LogUpdateSize   ByteSize
 	}

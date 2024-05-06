@@ -132,7 +132,6 @@ arvcfg.declare_config "Containers.MaxRetryAttempts", Integer, :container_count_m
 arvcfg.declare_config "Containers.AlwaysUsePreemptibleInstances", Boolean, :preemptible_instances
 arvcfg.declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
 arvcfg.declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
-arvcfg.declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
 arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
 arvcfg.declare_config "Services.Controller.ExternalURL", URI

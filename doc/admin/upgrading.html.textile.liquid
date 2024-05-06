@@ -32,9 +32,9 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.1":#v2_7_1
 
-h3. Obsolete container logging configuration entries have been removed
+h3. Legacy container logging system has been removed
 
-The following configuration keys are no longer used. Remove them from your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
+The following configuration keys are no longer supported. Remove them from your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
 * Containers.Logging.LimitLogBytesPerJob
 * Containers.Logging.LogBytesPerEvent
 * Containers.Logging.LogPartialLineThrottlePeriod
@@ -42,6 +42,10 @@ The following configuration keys are no longer used. Remove them from your @/etc
 * Containers.Logging.LogThrottleBytes
 * Containers.Logging.LogThrottleLines
 * Containers.Logging.LogThrottlePeriod
+* Containers.Logging.MaxAge
+* Containers.Logging.SweepInterval
+
+Any container logging content remaining in the database from the legacy system will be deleted.
 
 h3. Virtual environments inside distribution Python packages have moved
 

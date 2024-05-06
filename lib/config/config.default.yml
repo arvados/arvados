@@ -1235,16 +1235,6 @@ Clusters:
       LocalKeepLogsToContainerLog: none
 
       Logging:
-        # Periodically (see SweepInterval) Arvados will check for
-        # containers that have been finished for at least this long,
-        # and delete their stdout, stderr, arv-mount, crunch-run, and
-        # crunchstat logs from the logs table.
-        MaxAge: 720h
-
-        # How often to delete cached log entries for finished
-        # containers (see MaxAge).
-        SweepInterval: 12h
-
         # Container logs are written to Keep and saved in a
         # collection, which is updated periodically while the
         # container runs.  This value sets the interval between
