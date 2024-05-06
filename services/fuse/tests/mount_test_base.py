@@ -19,6 +19,8 @@ import threading
 import time
 import unittest
 
+import pytest
+
 from . import run_test_server
 from .integration_test import workerPool
 
@@ -105,8 +107,8 @@ class MountTestBase(unittest.TestCase):
             if self.llfuse_thread.is_alive():
                 logger.warning("MountTestBase.tearDown():"
                                " llfuse thread still alive 60s after umount"
-                               " -- exiting with SIGKILL")
-                os.kill(os.getpid(), signal.SIGKILL)
+                               " -- ending test suite to avoid deadlock")
+                pytest.exit("llfuse thread outlived test", os.EX_TEMPFAIL)
             waited = time.time() - t0
             if waited > 0.1:
                 logger.warning("MountTestBase.tearDown(): waited %f s for llfuse thread to end", waited)

@@ -16,6 +16,8 @@ import sys
 import tempfile
 import unittest
 
+import pytest
+
 from . import run_test_server
 
 @atexit.register
@@ -93,7 +95,7 @@ class IntegrationTest(unittest.TestCase):
                     if self.mount and self.mount.llfuse_thread.is_alive():
                         logging.warning("IntegrationTest.mount:"
                                             " llfuse thread still alive after umount"
-                                            " -- killing test suite to avoid deadlock")
-                        os.kill(os.getpid(), signal.SIGKILL)
+                                            " -- ending test suite to avoid deadlock")
+                        pytest.exit("llfuse thread outlived test", os.EX_TEMPFAIL)
             return wrapper
         return decorator

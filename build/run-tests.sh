@@ -712,9 +712,9 @@ do_test_once() {
             fi
             python3 -m pytest ${testargs[$1]}
             result=$?
-            if [[ ${tries} < 3 && ${result} == 137 ]]
+            if [[ ${tries} < 3 && ${result} == 75 ]]
             then
-                printf '\n*****\n%s tests killed -- retrying\n*****\n\n' "$1"
+                printf '\n*****\n%s tests exited TEMPFAIL -- retrying\n*****\n\n' "$1"
                 continue
             else
                 break
