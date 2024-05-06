@@ -41,6 +41,9 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
         const sessions = getSearchSessions(clusterId, state.auth.sessions);
         const recentQueries = this.services.searchService.getRecentQueries();
+        //the last query is compared to the current query to check if the value has changed
+        //once the search button is clicked, the value is pushed to the recentQueries array
+        //therefore, the last query is the second to last element in the array 
         const lastQuery = recentQueries[recentQueries.length - 2];
 
         if (searchValue.trim() === '') {
