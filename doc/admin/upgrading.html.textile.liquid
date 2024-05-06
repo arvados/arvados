@@ -32,6 +32,17 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.1":#v2_7_1
 
+h3. Obsolete container logging configuration entries have been removed
+
+The following configuration keys are no longer used. Remove them from your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
+* Containers.Logging.LimitLogBytesPerJob
+* Containers.Logging.LogBytesPerEvent
+* Containers.Logging.LogPartialLineThrottlePeriod
+* Containers.Logging.LogSecondsBetweenEvents
+* Containers.Logging.LogThrottleBytes
+* Containers.Logging.LogThrottleLines
+* Containers.Logging.LogThrottlePeriod
+
 h3. Virtual environments inside distribution Python packages have moved
 
 The distribution packages that we publish for Python packages include an entire virtualenv with all required libraries. In Arvados 3.0 these virtualenvs have moved from @/usr/share/python3/dist/PACKAGE_NAME@ to @/usr/lib/PACKAGE_NAME@ to prevent conflicts with distribution packages and better conform to filesystem standards.
