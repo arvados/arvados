@@ -25,7 +25,7 @@ func (h *Handler) periodicWorker(workerName string, interval time.Duration, lock
 		return
 	}
 	defer locker.Unlock()
-	for time.Sleep(interval); ctx.Err() == nil; time.Sleep(interval) {
+	for ctxSleep(ctx, interval); ctx.Err() == nil; ctxSleep(ctx, interval) {
 		if !locker.Check() {
 			// context canceled
 			return
@@ -84,4 +84,13 @@ DELETE FROM logs
 		}
 		return nil
 	})
+}
+
+// Sleep for the given duration, but return early if ctx cancels
+// before that.
+func ctxSleep(ctx context.Context, d time.Duration) {
+	select {
+	case <-ctx.Done():
+	case <-time.After(d):
+	}
 }
