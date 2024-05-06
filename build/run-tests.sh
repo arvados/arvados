@@ -38,7 +38,7 @@ WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests.
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
-sdk/python_test="--test-suite tests.test_keep_locator"
+sdk/python_test="tests/test_api.py::ArvadosApiTest"
                Restrict Python SDK tests to the given class
 lib/dispatchcloud_test="-check.vv"
                Show all log messages, even when tests pass (also works
