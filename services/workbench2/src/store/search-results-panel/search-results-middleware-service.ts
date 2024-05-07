@@ -30,7 +30,7 @@ import { progressIndicatorActions } from 'store/progress-indicator/progress-indi
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
-    constructor(private services: ServiceRepository, id: string, private responseMap: Record<string, number> = {}) {
+    constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
@@ -40,11 +40,6 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         const searchValue = state.searchBar.searchValue;
         const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
         const sessions = getSearchSessions(clusterId, state.auth.sessions);
-        const recentQueries = this.services.searchService.getRecentQueries();
-        //the last query is compared to the current query to check if the value has changed
-        //once the search button is clicked, the value is pushed to the recentQueries array
-        //therefore, the last query is the second to last element in the array 
-        const lastQuery = recentQueries[recentQueries.length - 2];
 
         if (searchValue.trim() === '') {
             return;
@@ -76,11 +71,6 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
-                    //if items were added or deleted, we ignore them for "load more" button purposes
-                    if (lastQuery === searchValue && this.responseMap[session.clusterId] && this.responseMap[session.clusterId] !== response.itemsAvailable) {
-                        response.itemsAvailable = this.responseMap[session.clusterId];
-                    }
-                    this.responseMap[session.clusterId] = response.itemsAvailable;
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
                     numberOfResolvedResponses++;
@@ -149,8 +139,12 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-export const resetItemsAvailable = () =>
+const resetItemsAvailable = () =>
     searchResultsPanelActions.RESET_ITEMS_AVAILABLE();
+
+const setItemsAvailable = (id: string, itemsAvailable: number) => {
+
+}
 
 export const appendItems = (listResults: ListResults<GroupContentsResource>) =>
     searchResultsPanelActions.APPEND_ITEMS({
