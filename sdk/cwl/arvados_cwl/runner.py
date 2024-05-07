@@ -31,11 +31,6 @@ from typing import (
     Union,
     cast,
 )
-from cwltool.utils import (
-    CWLObjectType,
-    CWLOutputAtomType,
-    CWLOutputType,
-)
 
 import subprocess
 
