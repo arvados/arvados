@@ -712,9 +712,11 @@ do_test_once() {
             fi
             python3 -m pytest ${testargs[$1]}
             result=$?
-            if [[ ${tries} < 3 && ${result} == 75 ]]
+            # pytest uses exit code 2 to mean "test collection failed."
+            # See discussion in FUSE's IntegrationTest and MountTestBase.
+            if [[ ${tries} < 3 && ${result} == 2 ]]
             then
-                printf '\n*****\n%s tests exited TEMPFAIL -- retrying\n*****\n\n' "$1"
+                printf '\n*****\n%s tests exited with code 2 -- retrying\n*****\n\n' "$1"
                 continue
             else
                 break

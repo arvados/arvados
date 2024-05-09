@@ -108,7 +108,16 @@ class MountTestBase(unittest.TestCase):
                 logger.warning("MountTestBase.tearDown():"
                                " llfuse thread still alive 60s after umount"
                                " -- ending test suite to avoid deadlock")
-                pytest.exit("llfuse thread outlived test", os.EX_TEMPFAIL)
+                # pytest uses exit status 2 when test collection failed.
+                # A UnitTest failing in setup/teardown counts as a
+                # collection failure, so pytest will exit with status 2
+                # no matter what status you specify here. run-tests.sh
+                # looks for this status, so specify 2 just to keep
+                # everything as consistent as possible.
+                # TODO: If we refactor these tests so they're not built
+                # on unittest, consider using a dedicated, non-pytest
+                # exit code like TEMPFAIL.
+                pytest.exit("llfuse thread outlived test", 2)
             waited = time.time() - t0
             if waited > 0.1:
                 logger.warning("MountTestBase.tearDown(): waited %f s for llfuse thread to end", waited)
