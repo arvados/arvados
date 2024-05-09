@@ -93,9 +93,6 @@ class IntegrationTest(unittest.TestCase):
                         return func(self, *args, **kwargs)
                 finally:
                     if self.mount and self.mount.llfuse_thread.is_alive():
-                        logging.warning("IntegrationTest.mount:"
-                                            " llfuse thread still alive after umount"
-                                            " -- ending test suite to avoid deadlock")
                         # pytest uses exit status 2 when test collection failed.
                         # A UnitTest failing in setup/teardown counts as a
                         # collection failure, so pytest will exit with status 2
@@ -105,6 +102,6 @@ class IntegrationTest(unittest.TestCase):
                         # TODO: If we refactor these tests so they're not built
                         # on unittest, consider using a dedicated, non-pytest
                         # exit code like TEMPFAIL.
-                        pytest.exit("llfuse thread outlived test", 2)
+                        pytest.exit("llfuse thread outlived test - aborting test suite to avoid deadlock", 2)
             return wrapper
         return decorator
