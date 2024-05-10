@@ -35,7 +35,7 @@ jobs:
           image: arvados-test:latest
           options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados
           run: |
-            build/run-tests.sh \
+            WORKSPACE=/usr/src/arvados build/run-tests.sh \
               --only doc \
               --only sdk/python \
               --only services/api \
