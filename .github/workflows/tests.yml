@@ -38,6 +38,7 @@ jobs:
           image: arvados-test:latest
           options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados
           run: |
+            apt-get -yq install fuse && \
             pg_isready || pg_ctlcluster 13 main start && \
             WORKSPACE=$(pwd) build/run-tests.sh \
               --only doc \
