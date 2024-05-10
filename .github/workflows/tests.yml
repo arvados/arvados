@@ -33,9 +33,9 @@ jobs:
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: arvados-test:latest
-          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados -e WORKSPACE='/usr/src/arvados'
+          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados
           run: |
-            build/run-tests.sh \
+            WORKSPACE=$(pwd) build/run-tests.sh \
               --only doc \
               --only sdk/python \
               --only services/api \
