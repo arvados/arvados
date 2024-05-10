@@ -188,11 +188,13 @@ func (c *cache) checkout(token string) (*cachedSession, error) {
 		if err != nil {
 			return nil, err
 		}
+		kc := keepclient.New(arvadosclient)
+		kc.DiskCacheSize = c.cluster.Collections.WebDAVCache.DiskCacheSize
 		sess = &cachedSession{
 			cache:         c,
 			client:        client,
 			arvadosclient: arvadosclient,
-			keepclient:    keepclient.New(arvadosclient),
+			keepclient:    kc,
 		}
 		c.sessions[token] = sess
 	}
