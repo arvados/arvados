@@ -169,7 +169,6 @@ export const DataExplorer = withStyles(styles)(
                 setCheckedListOnStore,
                 checkedList,
                 working,
-                page,
             } = this.props;
             return (
                 <Paper
