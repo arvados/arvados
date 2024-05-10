@@ -248,8 +248,6 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 
 var nopCancelFunc context.CancelFunc = func() {}
 
-var reqErrorRe = regexp.MustCompile(`net/http: invalid header `)
-
 // Do augments (*http.Client)Do(): adds Authorization and X-Request-Id
 // headers, delays in order to comply with rate-limiting restrictions,
 // and retries failed requests when appropriate.
@@ -305,14 +303,6 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 			c.last503.Store(time.Now())
 		}
 		if c.Timeout == 0 {
-			return false, nil
-		}
-		// This check can be removed when
-		// https://github.com/hashicorp/go-retryablehttp/pull/210
-		// (or equivalent) is merged and we update go.mod.
-		// Until then, it is needed to pass
-		// TestNonRetryableStdlibError.
-		if respErr != nil && reqErrorRe.MatchString(respErr.Error()) {
 			return false, nil
 		}
 		retrying, err := retryablehttp.DefaultRetryPolicy(ctx, resp, respErr)
