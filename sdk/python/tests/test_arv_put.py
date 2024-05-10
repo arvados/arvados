@@ -6,6 +6,7 @@
 
 import apiclient
 import ciso8601
+import copy
 import datetime
 import json
 import logging
@@ -568,7 +569,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 class CachedManifestValidationTest(ArvadosBaseTestCase):
     class MockedPut(arv_put.ArvPutUploadJob):
         def __init__(self, cached_manifest=None):
-            self._state = arv_put.ArvPutUploadJob.EMPTY_STATE
+            self._state = copy.deepcopy(arv_put.ArvPutUploadJob.EMPTY_STATE)
             self._state['manifest'] = cached_manifest
             self._api_client = mock.MagicMock()
             self.logger = mock.MagicMock()
