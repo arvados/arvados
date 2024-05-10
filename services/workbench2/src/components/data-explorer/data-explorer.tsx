@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from "@material-ui/core";
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
@@ -17,7 +17,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -35,11 +35,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     footer: {
         overflow: "auto",
     },
+    loadMoreContainer: {
+        display: "flex",
+    },
     root: {
         height: "100%",
     },
     moreOptionsButton: {
         padding: 0,
+    },
+    numResults: {
+        marginTop: "10px",
+        fontSize: "12px",
+        minWidth: "5rem",
     },
     title: {
         display: "inline-block",
@@ -314,16 +322,21 @@ export const DataExplorer = withStyles(styles)(
                                             component="div"
                                         />
                                     ) : (
-                                        <Button
-                                            size="small"
-                                            onClick={this.loadMore}
-                                            variant="contained"
-                                            color="primary"  
-                                            style={{width: '100%', margin: '10px'}}
-                                            disabled={working || items.length >= itemsAvailable}
-                                        >
-                                            Load more
-                                        </Button>
+                                        <Grid className={classes.loadMoreContainer}>
+                                            <Typography className={classes.numResults}>
+                                                Showing {items.length} of {itemsAvailable} results
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                onClick={this.loadMore}
+                                                variant="contained"
+                                                color="primary"  
+                                                style={{width: '100%', margin: '10px'}}
+                                                disabled={working || items.length >= itemsAvailable}
+                                            >
+                                                Load more
+                                            </Button>
+                                        </Grid>
                                     )}
                                 </Grid>
                             </Toolbar>
