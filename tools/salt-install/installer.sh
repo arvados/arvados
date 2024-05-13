@@ -465,19 +465,13 @@ diagnostics-internal)
   declare TESTNODE=$(echo ${ROLE2NODES['shell']} | cut -d\, -f1)
   declare SSH=$(ssh_cmd "$TESTNODE")
 
-  # Set up credentials
-  declare CONFFILE=$(mktemp)
-  trap 'rm "$CONFFILE"' EXIT INT TERM QUIT
-  {
-    echo "ARVADOS_API_HOST=$ARVADOS_API_HOST"
-    echo "ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN"
-  } > $CONFFILE
-  $SSH $DEPLOY_USER@$TESTNODE "sudo bash -c 'mkdir -m 0700 -p ~/.config/arvados'"
-  cat $CONFFILE | $SSH $DEPLOY_USER@$TESTNODE "sudo bash -c 'cat > ~/.config/arvados/settings.conf'"
-
   # Run diagnostics
   echo "Running diagnostics in $TESTNODE..."
-  $SSH $DEPLOY_USER@$TESTNODE "sudo arvados-client diagnostics -internal-client"
+  $SSH $DEPLOY_USER@$TESTNODE bash <<EOF
+  export ARVADOS_API_HOST="${DOMAIN}:${CONTROLLER_EXT_SSL_PORT}" 
+  export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN" 
+  sudo --preserve-env=ARVADOS_API_HOST,ARVADOS_API_TOKEN arvados-client diagnostics -internal-client
+EOF
 
   ;;
 
