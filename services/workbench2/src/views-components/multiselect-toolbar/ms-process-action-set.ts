@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MoveToIcon, RemoveIcon, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon } from "components/icon/icon";
+import { MoveToIcon, DeleteForever, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon } from "components/icon/icon";
 import { openMoveProcessDialog } from "store/processes/process-move-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
@@ -26,7 +26,7 @@ const msCopyAndRerunProcess: MultiSelectMenuAction = {
 
 const msRemoveProcess: MultiSelectMenuAction = {
     name: MultiSelectMenuActionNames.REMOVE,
-    icon: RemoveIcon,
+    icon: DeleteForever,
     hasAlts: false,
     isForMulti: true,
     execute: (dispatch, resources) => {
