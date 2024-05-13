@@ -120,9 +120,9 @@ export const getWorkflowDetails = (state: RootState) => {
     return workflow || undefined;
 };
 
-export const deleteWorkflow = (workflowUuid: string, ownerUuid: string) =>
+export const deleteWorkflow = (workflowUuid: string, ownerUuid?: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch<any>(navigateTo(ownerUuid));
+        if(ownerUuid) dispatch<any>(navigateTo(ownerUuid));
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
         await services.workflowService.delete(workflowUuid);
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
