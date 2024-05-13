@@ -36,7 +36,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: "auto",
     },
     loadMoreContainer: {
-        display: "flex",
+        minWidth: '8rem',
     },
     root: {
         height: "100%",
@@ -45,9 +45,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: 0,
     },
     numResults: {
-        marginTop: "10px",
-        fontSize: "12px",
-        minWidth: "5rem",
+        marginTop: 0,
+        fontSize: "10px",
+        marginLeft: "10px",
+        marginBottom: '-0.5rem',
+        minWidth: '8.5rem',
     },
     title: {
         display: "inline-block",
@@ -323,8 +325,8 @@ export const DataExplorer = withStyles(styles)(
                                         />
                                     ) : (
                                         <Grid className={classes.loadMoreContainer}>
-                                            <Typography className={classes.numResults}>
-                                                Showing {items.length} of {itemsAvailable} results
+                                            <Typography  className={classes.numResults}>
+                                                Showing {items.length} / {itemsAvailable} results
                                             </Typography>
                                             <Button
                                                 size="small"
