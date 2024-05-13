@@ -24,6 +24,8 @@ import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions'; 
+import { dialogActions } from 'store/dialog/dialog-actions';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -127,3 +129,27 @@ export const deleteWorkflow = (workflowUuid: string, ownerUuid?: string) =>
         await services.workflowService.delete(workflowUuid);
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
+
+export const openRemoveWorkflowDialog =
+(resource: ContextMenuResource, numOfWorkflows: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const confirmationText =
+        numOfWorkflows === 1
+            ? "Are you sure you want to remove this workflow?"
+            : `Are you sure you want to remove these ${numOfWorkflows} workflows?`;
+    const titleText = numOfWorkflows === 1 ? "Remove workflow permanently" : "Remove workflows permanently";
+
+    dispatch(
+        dialogActions.OPEN_DIALOG({
+            id: REMOVE_WORKFLOW_DIALOG,
+            data: {
+                title: titleText,
+                text: confirmationText,
+                confirmButtonLabel: "Remove",
+                uuid: resource.uuid,
+                resource,
+            },
+        })
+    );
+};
+
+export const REMOVE_WORKFLOW_DIALOG = "removeWorkflowDialog";
