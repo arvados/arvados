@@ -29,8 +29,8 @@ setup(name='arvados-cwl-runner',
       # build.
       install_requires=[
           *arvados_version.iter_dependencies(version),
-          'cwltool==3.1.20230601100705',
-          'schema-salad==8.4.20230601112322',
+          'cwltool==3.1.20240508115724',
+          'schema-salad==8.5.20240503091721',
           'ciso8601 >= 2.0.0',
           'setuptools>=40.3.0',
       ],
