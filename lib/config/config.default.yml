@@ -751,8 +751,8 @@ Clusters:
         TTL: 300s
 
         # Maximum amount of data cached in /var/cache/arvados/keep.
-        # Can be given as a percentage ("10%") or a number of bytes
-        # ("10 GiB")
+        # Can be given as a percentage of filesystem size ("10%") or a
+        # number of bytes ("10 GiB")
         DiskCacheSize: 10%
 
         # Approximate memory limit (in bytes) for session cache.
