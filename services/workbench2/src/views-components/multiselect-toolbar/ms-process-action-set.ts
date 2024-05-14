@@ -7,7 +7,7 @@ import { openMoveProcessDialog } from "store/processes/process-move-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from "./ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
 import { msNavigateToOutput } from "store/multiselect/multiselect-actions";
 import { cancelRunningWorkflow } from "store/processes/processes-actions";

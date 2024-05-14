@@ -8,7 +8,7 @@ import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/c
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuAction } from "./ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { TrashIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";

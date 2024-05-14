@@ -14,7 +14,7 @@ import { Resource, ResourceKind, extractUuidKind } from "models/resource";
 import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet } from "views-components/multiselect-toolbar/ms-menu-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "./ms-menu-actions"; 
 import { ContextMenuAction } from "views-components/context-menu/context-menu-action-set";
 import { multiselectActionsFilters, TMultiselectActionsFilters, msMenuResourceKind } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";

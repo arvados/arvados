@@ -7,7 +7,7 @@ import { ServiceRepository } from "services/services";
 import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 import { loadResource } from "store/resources/resources-actions";
 import { RootState } from "store/store";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 
 export const freezeProject = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

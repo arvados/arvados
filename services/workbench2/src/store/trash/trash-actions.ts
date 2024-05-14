@@ -13,7 +13,7 @@ import { sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with
 import { ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
 import { matchCollectionRoute, matchSharedWithMeRoute } from "routes/routes";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { addDisabledButton } from "store/multiselect/multiselect-actions";
 
 export const toggleProjectTrashed =

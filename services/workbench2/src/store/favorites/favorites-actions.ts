@@ -10,7 +10,7 @@ import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { loadFavoritesTree} from "store/side-panel-tree/side-panel-tree-actions";
 

@@ -35,7 +35,7 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 

@@ -10,7 +10,7 @@ import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { ServiceRepository } from "services/services";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { loadPublicFavoritesTree } from "store/side-panel-tree/side-panel-tree-actions";
 
 export const publicFavoritesActions = unionize({

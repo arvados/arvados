@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from 'views-components/multiselect-toolbar/ms-menu-actions';
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { MultiSelectMenuActionNames } from "components/multiselect-toolbar/ms-menu-actions"; 
 import { openMoveProjectDialog } from 'store/projects/project-move-actions';
 import { toggleProjectTrashed } from 'store/trash/trash-actions';
 import {
