@@ -84,7 +84,8 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                 <>
                     <Tooltip
                         disableFocusListener
-                        title="Select Options"
+                        title="Select options"
+                        data-cy="data-table-multiselect-popover"
                     >
                         <ButtonBase
                             className={classnames(classes.root)}
@@ -118,6 +119,7 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                                 {options.length &&
                                     options.map((option, i) => (
                                         <div
+                                            data-cy={`multiselect-popover-${option.name}`}
                                             key={i}
                                             className={classes.option}
                                             onClick={() => {

@@ -246,6 +246,24 @@ describe('Registered workflow panel tests', function() {
             });
     });
 
+    it('can delete multiple workflows', function() {
+        cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf1"}})
+        cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf2"}})
+        cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf3"}})
+        
+        cy.loginAs(activeUser);
+        cy.get('[data-cy=data-table-multiselect-popover]').click();
+        cy.get('[data-cy=multiselect-popover-All]').click();
+
+        cy.get('[data-cy=multiselect-button]').should('have.length', '1').trigger('mouseover');
+        cy.get('body').contains('Delete Workflow').should('exist')
+        cy.get('[data-cy=multiselect-button]').eq(0).click();
+        
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click();
+
+        cy.get('[data-cy=data-table-row]').should('not.exist');
+    });
+
     it('cannot delete readonly workflow', function() {
         cy.createProject({
             owningUser: adminUser,
