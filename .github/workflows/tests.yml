@@ -36,7 +36,7 @@ jobs:
         uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
         with:
           image: arvados-test:latest
-          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados
+          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados --privileged
           run: |
             apt-get -yq install fuse && modprobe fuse && \
             pg_isready || pg_ctlcluster 13 main start && \
