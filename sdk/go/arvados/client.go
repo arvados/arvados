@@ -158,13 +158,14 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		}
 	}
 	return &Client{
-		Client:         hc,
-		Scheme:         ctrlURL.Scheme,
-		APIHost:        ctrlURL.Host,
-		Insecure:       cluster.TLS.Insecure,
-		Timeout:        5 * time.Minute,
-		DiskCacheSize:  cluster.Collections.WebDAVCache.DiskCacheSize,
-		requestLimiter: &requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
+		Client:          hc,
+		Scheme:          ctrlURL.Scheme,
+		APIHost:         ctrlURL.Host,
+		Insecure:        cluster.TLS.Insecure,
+		KeepServiceURIs: parseKeepServiceURIs(os.Getenv("ARVADOS_KEEP_SERVICES")),
+		Timeout:         5 * time.Minute,
+		DiskCacheSize:   cluster.Collections.WebDAVCache.DiskCacheSize,
+		requestLimiter:  &requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
 	}, nil
 }
 
@@ -221,8 +222,24 @@ func NewClientFromEnv() *Client {
 			vars[kv[0]] = kv[1]
 		}
 	}
+	var insecure bool
+	if s := strings.ToLower(vars["ARVADOS_API_HOST_INSECURE"]); s == "1" || s == "yes" || s == "true" {
+		insecure = true
+	}
+	return &Client{
+		Scheme:          "https",
+		APIHost:         vars["ARVADOS_API_HOST"],
+		AuthToken:       vars["ARVADOS_API_TOKEN"],
+		Insecure:        insecure,
+		KeepServiceURIs: parseKeepServiceURIs(vars["ARVADOS_KEEP_SERVICES"]),
+		Timeout:         5 * time.Minute,
+		loadedFromEnv:   true,
+	}
+}
+
+func parseKeepServiceURIs(svclist string) []string {
 	var svcs []string
-	for _, s := range strings.Split(vars["ARVADOS_KEEP_SERVICES"], " ") {
+	for _, s := range strings.Split(svclist, " ") {
 		if s == "" {
 			continue
 		} else if u, err := url.Parse(s); err != nil {
@@ -233,19 +250,7 @@ func NewClientFromEnv() *Client {
 			svcs = append(svcs, s)
 		}
 	}
-	var insecure bool
-	if s := strings.ToLower(vars["ARVADOS_API_HOST_INSECURE"]); s == "1" || s == "yes" || s == "true" {
-		insecure = true
-	}
-	return &Client{
-		Scheme:          "https",
-		APIHost:         vars["ARVADOS_API_HOST"],
-		AuthToken:       vars["ARVADOS_API_TOKEN"],
-		Insecure:        insecure,
-		KeepServiceURIs: svcs,
-		Timeout:         5 * time.Minute,
-		loadedFromEnv:   true,
-	}
+	return svcs
 }
 
 var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
