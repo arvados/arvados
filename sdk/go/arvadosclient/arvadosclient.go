@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/sirupsen/logrus"
 )
 
 type StringMatcher func(string) bool
@@ -110,6 +111,9 @@ type ArvadosClient struct {
 	// filesystem size.
 	DiskCacheSize arvados.ByteSizeOrPercent
 
+	// Where to write debug logs. May be nil.
+	Logger logrus.FieldLogger
+
 	// Discovery document
 	DiscoveryDoc Dict
 
@@ -150,6 +154,7 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 		Retries:           2,
 		KeepServiceURIs:   c.KeepServiceURIs,
 		DiskCacheSize:     c.DiskCacheSize,
+		Logger:            c.Logger,
 		lastClosedIdlesAt: time.Now(),
 	}
 

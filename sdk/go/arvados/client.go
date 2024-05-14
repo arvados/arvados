@@ -32,6 +32,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/sirupsen/logrus"
 )
 
 // A Client is an HTTP client with an API endpoint and a set of
@@ -81,6 +82,9 @@ type Client struct {
 	// filesystem size. If zero, use default, currently 10% of
 	// filesystem size.
 	DiskCacheSize ByteSizeOrPercent
+
+	// Where to write debug logs. May be nil.
+	Logger logrus.FieldLogger
 
 	dd *DiscoveryDocument
 

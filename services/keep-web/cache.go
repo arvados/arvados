@@ -179,6 +179,7 @@ func (c *cache) checkout(token string) (*cachedSession, error) {
 		}
 		client.AuthToken = token
 		client.Timeout = time.Minute
+		client.Logger = c.logger
 		// A non-empty origin header tells controller to
 		// prioritize our traffic as interactive, which is
 		// true most of the time.
