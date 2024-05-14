@@ -38,9 +38,10 @@ jobs:
           image: arvados-test:latest
           options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados --privileged
           run: |
-            apt-get -yq install fuse && modprobe fuse && \
+            apt-get -yq install fuse && \
             pg_isready || pg_ctlcluster 13 main start && \
-            su ubuntu -c 'WORKSPACE=$(pwd) build/run-tests.sh \
+            useradd nonroot
+            su nonroot -c 'WORKSPACE=$(pwd) build/run-tests.sh \
               --only doc \
               --only sdk/python \
               --only services/api \
