@@ -126,14 +126,6 @@ export const getWorkflowDetails = (state: RootState) => {
     return workflow || undefined;
 };
 
-export const deleteWorkflow = (workflowUuid: string, ownerUuid?: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        if(ownerUuid) dispatch<any>(navigateTo(ownerUuid));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
-        await services.workflowService.delete(workflowUuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-    };
-
 export const openRemoveWorkflowDialog =
 (resource: ContextMenuResource, numOfWorkflows: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const confirmationText =
@@ -158,7 +150,7 @@ export const openRemoveWorkflowDialog =
 
 export const REMOVE_WORKFLOW_DIALOG = "removeWorkflowDialog";
 
-export const removeWorkflowPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const removeWorkflowPermanently = (uuid: string, ownerUuid?: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const resource = getState().dialog.removeWorkflowDialog.data.resource;
     const checkedList = getState().multiselect.checkedList;
 
@@ -166,6 +158,7 @@ export const removeWorkflowPermanently = (uuid: string) => async (dispatch: Disp
 
     //if no items in checkedlist, default to normal context menu behavior
     if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
+    if(ownerUuid) dispatch<any>(navigateTo(ownerUuid));
 
     const workflowsToRemove = uuidsToRemove
         .map(uuid => getResource(uuid)(getState().resources) as Resource)
