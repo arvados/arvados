@@ -13,7 +13,6 @@ from setuptools.command import build_py
 
 import arvados_version
 version = arvados_version.get_version()
-short_tests_only = arvados_version.short_tests_only()
 README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 class BuildPython(build_py.build_py):

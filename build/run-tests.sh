@@ -38,7 +38,7 @@ WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests.
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
-sdk/python_test="--test-suite tests.test_keep_locator"
+sdk/python_test="tests/test_api.py::ArvadosApiTest"
                Restrict Python SDK tests to the given class
 lib/dispatchcloud_test="-check.vv"
                Show all log messages, even when tests pass (also works
@@ -566,13 +566,14 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
-    # wheel modernizes the venv (as of early 2024) and makes it more closely
-    # match our package build environment.
+    # parameterized and pytest are direct dependencies of Python tests.
     # PyYAML is a test requirement used by run_test_server.py and needed for
     # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
+    # wheel modernizes the venv (as of early 2024) and makes it more closely
+    # match our package build environment.
     # We run `setup.py build` first to generate _version.py.
-    pip install PyYAML pdoc wheel \
+    pip install parameterized pytest PyYAML pdoc wheel \
         && env -C "$WORKSPACE/sdk/python" python3 setup.py build \
         && pip install "$WORKSPACE/sdk/python" \
         || fatal "installing Python SDK and related dependencies failed"
@@ -701,7 +702,7 @@ do_test_once() {
     elif [[ "$2" == "pip" ]]
     then
         tries=0
-        cd "$WORKSPACE/$1" && while :
+        cd "$WORKSPACE/$1" && pip install . && while :
         do
             tries=$((${tries}+1))
             # $3 can name a path directory for us to use, including trailing
@@ -709,11 +710,13 @@ do_test_once() {
             if [[ -e "${3}activate" ]]; then
                 . "${3}activate"
             fi
-            python setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            python3 -m pytest ${testargs[$1]}
             result=$?
-            if [[ ${tries} < 3 && ${result} == 137 ]]
+            # pytest uses exit code 2 to mean "test collection failed."
+            # See discussion in FUSE's IntegrationTest and MountTestBase.
+            if [[ ${tries} < 3 && ${result} == 2 ]]
             then
-                printf '\n*****\n%s tests killed -- retrying\n*****\n\n' "$1"
+                printf '\n*****\n%s tests exited with code 2 -- retrying\n*****\n\n' "$1"
                 continue
             else
                 break

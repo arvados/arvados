@@ -80,21 +80,24 @@ describe('Banner / tooltip tests', function () {
         cy.loginAs(adminUser);
         cy.waitForDom();
 
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=confirmation-dialog]').should('not.exist');
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
 
         cy.get('[title=Notifications]').click();
         cy.get('li').contains('Restore Banner').click();
 
-        cy.get('[data-cy=confirmation-dialog-ok-btn]').should('be.visible');
+        cy.waitForDom().get('[data-cy=confirmation-dialog-ok-btn]', {timeout: 10000}).should('be.visible');
     });
 
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
+        cy.waitForDom();
 
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
 
         cy.contains('This allows you to navigate through the app').should('not.exist'); // This content comes from tooltips.txt
         cy.get('[data-cy=side-panel-tree]').trigger('mouseover');
