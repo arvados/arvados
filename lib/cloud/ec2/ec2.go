@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,7 +26,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	config "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go"
@@ -120,27 +120,35 @@ type ec2InstanceSet struct {
 	mInstanceStarts *prometheus.CounterVec
 }
 
-func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (prv cloud.InstanceSet, err error) {
+func newEC2InstanceSet(confRaw json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (prv cloud.InstanceSet, err error) {
 	instanceSet := &ec2InstanceSet{
 		instanceSetID: instanceSetID,
 		logger:        logger,
 	}
-	err = json.Unmarshal(config, &instanceSet.ec2config)
+	err = json.Unmarshal(confRaw, &instanceSet.ec2config)
 	if err != nil {
 		return nil, err
 	}
-
-	if len(instanceSet.ec2config.AccessKeyID)+len(instanceSet.ec2config.SecretAccessKey) > 0 {
-		// AWS SDK will use credentials in environment vars if
-		// present.
-		os.Setenv("AWS_ACCESS_KEY_ID", instanceSet.ec2config.AccessKeyID)
-		os.Setenv("AWS_SECRET_ACCESS_KEY", instanceSet.ec2config.SecretAccessKey)
-	} else {
-		os.Unsetenv("AWS_ACCESS_KEY_ID")
-		os.Unsetenv("AWS_SECRET_ACCESS_KEY")
-	}
-	awsConfig, err := awsconfig.LoadDefaultConfig(context.TODO(),
-		awsconfig.WithRegion(instanceSet.ec2config.Region))
+	awsConfig, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(instanceSet.ec2config.Region),
+		config.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
+			o.ExpiryWindow = 5 * time.Minute
+		}),
+		func(o *config.LoadOptions) error {
+			if instanceSet.ec2config.AccessKeyID == "" && instanceSet.ec2config.SecretAccessKey == "" {
+				// Use default SDK behavior (IAM role
+				// via IMDSv2)
+				return nil
+			}
+			o.Credentials = credentials.StaticCredentialsProvider{
+				Value: aws.Credentials{
+					AccessKeyID:     instanceSet.ec2config.AccessKeyID,
+					SecretAccessKey: instanceSet.ec2config.SecretAccessKey,
+					Source:          "Arvados configuration",
+				},
+			}
+			return nil
+		})
 	if err != nil {
 		return nil, err
 	}
