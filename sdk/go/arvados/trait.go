@@ -17,7 +17,6 @@ type Trait struct {
 	ModifiedAt           time.Time              `json:"modified_at"`
 	Name                 string                 `json:"name"`
 	Properties           map[string]interface{} `json:"properties"`
-	UpdatedAt            time.Time              `json:"updated_at"`
 	WritableBy           []string               `json:"writable_by,omitempty"`
 }
 

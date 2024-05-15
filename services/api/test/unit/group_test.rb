@@ -257,10 +257,10 @@ class GroupTest < ActiveSupport::TestCase
 
   def insert_group uuid, owner_uuid, name, group_class
     q = ActiveRecord::Base.connection.exec_query %{
-insert into groups (uuid, owner_uuid, name, group_class, created_at, updated_at)
+insert into groups (uuid, owner_uuid, name, group_class, created_at, updated_at, modified_at)
        values ('#{uuid}', '#{owner_uuid}',
                '#{name}', #{if group_class then "'"+group_class+"'" else 'NULL' end},
-               statement_timestamp(), statement_timestamp())
+               statement_timestamp(), statement_timestamp(), statement_timestamp())
 }
     uuid
   end

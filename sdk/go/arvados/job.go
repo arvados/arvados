@@ -25,7 +25,6 @@ type Job struct {
 	Success                bool                   `json:"success"`
 	Output                 string                 `json:"output"`
 	CreatedAt              time.Time              `json:"created_at"`
-	UpdatedAt              time.Time              `json:"updated_at"`
 	IsLockedByUUID         string                 `json:"is_locked_by_uuid"`
 	Log                    string                 `json:"log"`
 	TasksSummary           map[string]interface{} `json:"tasks_summary"`

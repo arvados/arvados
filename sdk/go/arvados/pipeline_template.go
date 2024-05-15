@@ -17,7 +17,6 @@ type PipelineTemplate struct {
 	ModifiedAt           time.Time              `json:"modified_at"`
 	Name                 string                 `json:"name"`
 	Components           map[string]interface{} `json:"components"`
-	UpdatedAt            time.Time              `json:"updated_at"`
 	Description          string                 `json:"description"`
 	WritableBy           []string               `json:"writable_by,omitempty"`
 }

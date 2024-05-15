@@ -18,7 +18,6 @@ type PipelineInstance struct {
 	PipelineTemplateUUID string                 `json:"pipeline_template_uuid"`
 	Name                 string                 `json:"name"`
 	Components           map[string]interface{} `json:"components"`
-	UpdatedAt            time.Time              `json:"updated_at"`
 	Properties           map[string]interface{} `json:"properties"`
 	State                string                 `json:"state"`
 	ComponentsSummary    map[string]interface{} `json:"components_summary"`
