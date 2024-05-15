@@ -1757,17 +1757,9 @@ Clusters:
       # earlier in Users.UserSetupMailText
       SendUserSetupNotificationEmail: true
 
-      # Bug/issue report notification to and from addresses
-      IssueReporterEmailFrom: "arvados@example.com"
-      IssueReporterEmailTo: "arvados@example.com"
+      # Support email address to display in Workbench.
       SupportEmailAddress: "arvados@example.com"
 
-      # Generic issue email from
-      EmailFrom: "arvados@example.com"
-
-      # No longer supported, to be removed.
-      MailchimpAPIKey: ""
-      MailchimpListID: ""
     RemoteClusters:
       "*":
         Host: ""

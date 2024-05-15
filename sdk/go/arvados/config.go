@@ -214,13 +214,8 @@ type Cluster struct {
 		IssueTrustedTokens   bool
 	}
 	Mail struct {
-		MailchimpAPIKey                string
-		MailchimpListID                string
 		SendUserSetupNotificationEmail bool
-		IssueReporterEmailFrom         string
-		IssueReporterEmailTo           string
 		SupportEmailAddress            string
-		EmailFrom                      string
 	}
 	SystemLogs struct {
 		LogLevel                  string
