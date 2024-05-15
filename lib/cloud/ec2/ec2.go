@@ -129,7 +129,7 @@ func newEC2InstanceSet(confRaw json.RawMessage, instanceSetID cloud.InstanceSetI
 	if err != nil {
 		return nil, err
 	}
-	awsConfig, err := config.LoadDefaultConfig(context.TODO(),
+	awsConfig, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(instanceSet.ec2config.Region),
 		config.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
 			o.ExpiryWindow = 5 * time.Minute
@@ -318,7 +318,7 @@ func (instanceSet *ec2InstanceSet) Create(
 			rii.NetworkInterfaces[0].SubnetId = aws.String(trySubnet)
 		}
 		var err error
-		rsv, err = instanceSet.client.RunInstances(context.TODO(), &rii)
+		rsv, err = instanceSet.client.RunInstances(context.Background(), &rii)
 		instanceSet.mInstanceStarts.WithLabelValues(trySubnet, boolLabelValue[err == nil]).Add(1)
 		if !isErrorCapacity(errToReturn) || isErrorCapacity(err) {
 			// We want to return the last capacity error,
@@ -364,7 +364,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 	if keyname, ok := instanceSet.keys[md5keyFingerprint]; ok {
 		return keyname, nil
 	}
-	keyout, err := instanceSet.client.DescribeKeyPairs(context.TODO(), &ec2.DescribeKeyPairsInput{
+	keyout, err := instanceSet.client.DescribeKeyPairs(context.Background(), &ec2.DescribeKeyPairsInput{
 		Filters: []types.Filter{{
 			Name:   aws.String("fingerprint"),
 			Values: []string{md5keyFingerprint, sha1keyFingerprint},
@@ -377,7 +377,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 		return *(keyout.KeyPairs[0].KeyName), nil
 	}
 	keyname := "arvados-dispatch-keypair-" + md5keyFingerprint
-	_, err = instanceSet.client.ImportKeyPair(context.TODO(), &ec2.ImportKeyPairInput{
+	_, err = instanceSet.client.ImportKeyPair(context.Background(), &ec2.ImportKeyPairInput{
 		KeyName:           &keyname,
 		PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
 	})
@@ -399,7 +399,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 	needAZs := false
 	dii := &ec2.DescribeInstancesInput{Filters: filters}
 	for {
-		dio, err := instanceSet.client.DescribeInstances(context.TODO(), dii)
+		dio, err := instanceSet.client.DescribeInstances(context.Background(), dii)
 		err = wrapError(err, &instanceSet.throttleDelayInstances)
 		if err != nil {
 			return nil, err
@@ -430,7 +430,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 		az := map[string]string{}
 		disi := &ec2.DescribeInstanceStatusInput{IncludeAllInstances: aws.Bool(true)}
 		for {
-			page, err := instanceSet.client.DescribeInstanceStatus(context.TODO(), disi)
+			page, err := instanceSet.client.DescribeInstanceStatus(context.Background(), disi)
 			if err != nil {
 				instanceSet.logger.WithError(err).Warn("error getting instance statuses")
 				break
@@ -531,7 +531,7 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 		},
 	}
 	for {
-		page, err := instanceSet.client.DescribeSpotPriceHistory(context.TODO(), dsphi)
+		page, err := instanceSet.client.DescribeSpotPriceHistory(context.Background(), dsphi)
 		if err != nil {
 			instanceSet.logger.WithError(err).Warn("error retrieving spot instance prices")
 			break
@@ -605,7 +605,7 @@ func (inst *ec2Instance) SetTags(newTags cloud.InstanceTags) error {
 		})
 	}
 
-	_, err := inst.provider.client.CreateTags(context.TODO(), &ec2.CreateTagsInput{
+	_, err := inst.provider.client.CreateTags(context.Background(), &ec2.CreateTagsInput{
 		Resources: []string{*inst.instance.InstanceId},
 		Tags:      ec2tags,
 	})
@@ -624,7 +624,7 @@ func (inst *ec2Instance) Tags() cloud.InstanceTags {
 }
 
 func (inst *ec2Instance) Destroy() error {
-	_, err := inst.provider.client.TerminateInstances(context.TODO(), &ec2.TerminateInstancesInput{
+	_, err := inst.provider.client.TerminateInstances(context.Background(), &ec2.TerminateInstancesInput{
 		InstanceIds: []string{*inst.instance.InstanceId},
 	})
 	return err
