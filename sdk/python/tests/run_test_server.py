@@ -788,13 +788,10 @@ def setup_config():
                     "BlobSigningKey": "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc",
                     "TrustAllContent": False,
                     "ForwardSlashNameSubstitution": "/",
-                    "TrashSweepInterval": "-1s",
+                    "TrashSweepInterval": "-1s", # disable, otherwise test cases can't acquire dblock
                 },
                 "Containers": {
                     "LocalKeepBlobBuffersPerVCPU": 0,
-                    "Logging": {
-                        "SweepInterval": 0, # disable, otherwise test cases can't acquire dblock
-                    },
                     "SupportedDockerImageFormats": {"v1": {}},
                     "ShellAccess": {
                         "Admin": True,

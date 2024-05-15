@@ -130,16 +130,8 @@ arvcfg.declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_defa
 arvcfg.declare_config "Containers.MaxDispatchAttempts", Integer, :max_container_dispatch_attempts
 arvcfg.declare_config "Containers.MaxRetryAttempts", Integer, :container_count_max
 arvcfg.declare_config "Containers.AlwaysUsePreemptibleInstances", Boolean, :preemptible_instances
-arvcfg.declare_config "Containers.Logging.LogBytesPerEvent", Integer, :crunch_log_bytes_per_event
-arvcfg.declare_config "Containers.Logging.LogSecondsBetweenEvents", ActiveSupport::Duration, :crunch_log_seconds_between_events
-arvcfg.declare_config "Containers.Logging.LogThrottlePeriod", ActiveSupport::Duration, :crunch_log_throttle_period
-arvcfg.declare_config "Containers.Logging.LogThrottleBytes", Integer, :crunch_log_throttle_bytes
-arvcfg.declare_config "Containers.Logging.LogThrottleLines", Integer, :crunch_log_throttle_lines
-arvcfg.declare_config "Containers.Logging.LimitLogBytesPerJob", Integer, :crunch_limit_log_bytes_per_job
-arvcfg.declare_config "Containers.Logging.LogPartialLineThrottlePeriod", ActiveSupport::Duration, :crunch_log_partial_line_throttle_period
 arvcfg.declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
 arvcfg.declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
-arvcfg.declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
 arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
 arvcfg.declare_config "Services.Controller.ExternalURL", URI
