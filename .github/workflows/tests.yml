@@ -110,6 +110,45 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados/services/workbench2
           run: |
-            yarn install
-            yarn test --no-watchAll --bail --ci || exit $?
-            tools/run-integration-tests.sh -a /usr/src/arvados
+            pg_isready || pg_ctlcluster 13 main start && \
+            useradd -m -s /bin/bash nonroot && \
+            usermod -aG sudo nonroot && \
+            su nonroot -c 'WORKSPACE=$(pwd) build/run-tests.sh \
+              --only services/workbench2
+  remainder:
+    name: Remainder Tests
+    runs-on: ubuntu-latest
+    needs: build-test-docker-image
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # 3.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - name: Run tests
+        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          options: -v ${{ github.workspace }}:/usr/src/arvados -w /usr/src/arvados --privileged
+          run: |
+            pg_isready || pg_ctlcluster 13 main start && \
+            useradd -m -s /bin/bash nonroot && \
+            usermod -aG sudo nonroot && \
+            su nonroot -c 'WORKSPACE=$(pwd) build/run-tests.sh \
+              --skip cmd/arvados-package \
+              --skip doc \
+              --skip sdk/java-v2 \
+              --skip sdk/python \
+              --skip sdk/R \
+              --skip services/api \
+              --skip services/fuse \
+              --skip services/workbench2
