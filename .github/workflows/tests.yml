@@ -55,7 +55,7 @@ jobs:
     name: Doc PySDK API Fuse Tests
     runs-on: ubuntu-latest
     needs: build-test-docker-image
-    if: {{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -90,7 +90,7 @@ jobs:
     name: Workbench2 Tests
     runs-on: ubuntu-latest
     needs: build-test-docker-image
-    if: {{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -121,7 +121,7 @@ jobs:
     name: Remainder Tests
     runs-on: ubuntu-latest
     needs: build-test-docker-image
-    if: {{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
