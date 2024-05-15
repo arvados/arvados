@@ -346,7 +346,7 @@ subcollection$copy("destination/folder")
 
 ```r
 ?collections_update
-?jobs_get
+?workflows_get
 ```
 
  <!-- Taka konwencja USAGE -->
