@@ -35,15 +35,15 @@ h2(#main). development main
 h3. Legacy container logging system has been removed
 
 The following configuration keys are no longer supported. Remove them from your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
-* Containers.Logging.LimitLogBytesPerJob
-* Containers.Logging.LogBytesPerEvent
-* Containers.Logging.LogPartialLineThrottlePeriod
-* Containers.Logging.LogSecondsBetweenEvents
-* Containers.Logging.LogThrottleBytes
-* Containers.Logging.LogThrottleLines
-* Containers.Logging.LogThrottlePeriod
-* Containers.Logging.MaxAge
-* Containers.Logging.SweepInterval
+* @Containers.Logging.LimitLogBytesPerJob@
+* @Containers.Logging.LogBytesPerEvent@
+* @Containers.Logging.LogPartialLineThrottlePeriod@
+* @Containers.Logging.LogSecondsBetweenEvents@
+* @Containers.Logging.LogThrottleBytes@
+* @Containers.Logging.LogThrottleLines@
+* @Containers.Logging.LogThrottlePeriod@
+* @Containers.Logging.MaxAge@
+* @Containers.Logging.SweepInterval@
 
 Any container logging content remaining in the database from the legacy system will be deleted.
 
