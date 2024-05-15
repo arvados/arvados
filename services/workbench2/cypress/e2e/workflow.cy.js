@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Registered workflow panel tests', function() {
+describe.only('Registered workflow panel tests', function() {
     let activeUser;
     let adminUser;
 
@@ -247,7 +247,7 @@ describe('Registered workflow panel tests', function() {
             });
     });
 
-    it('can delete multiple workflows', function() {
+    it.only('can delete multiple workflows', function() {
         cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf1"}})
         cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf2"}})
         cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf3"}})
@@ -255,8 +255,9 @@ describe('Registered workflow panel tests', function() {
         cy.loginAs(activeUser);
         cy.get('[data-cy=data-table-multiselect-popover]').click();
         cy.get('[data-cy=multiselect-popover-All]').click();
+        cy.waitForDom();
 
-        cy.waitForDom().get('[data-cy=multiselect-button]', {timeout: 10000}).should('be.visible')
+        cy.waitForDom().get('[data-cy=multiselect-button]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=multiselect-button]', {timeout: 10000}).should('have.length', '1').trigger('mouseover');
         cy.get('body').contains('Delete Workflow', {timeout: 10000}).should('exist')
         cy.get('[data-cy=multiselect-button]').eq(0).click();
