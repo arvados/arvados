@@ -108,7 +108,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados/services/workbench2
+          options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados
           run: |
             pg_isready || pg_ctlcluster 13 main start && \
             useradd -m -s /bin/bash nonroot && \
