@@ -114,7 +114,7 @@ jobs:
             useradd -m -s /bin/bash nonroot && \
             usermod -aG sudo nonroot && \
             su nonroot -c 'WORKSPACE=$(pwd) build/run-tests.sh \
-              --only services/workbench2
+              --only services/workbench2'
   remainder:
     name: Remainder Tests
     runs-on: ubuntu-latest
@@ -151,4 +151,4 @@ jobs:
               --skip sdk/R \
               --skip services/api \
               --skip services/fuse \
-              --skip services/workbench2
+              --skip services/workbench2'
