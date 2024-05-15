@@ -257,6 +257,8 @@ describe('Registered workflow panel tests', function() {
         cy.get('[data-cy=multiselect-popover-All]').click();
         cy.waitForDom().get('[data-cy=multiselect-popover-All]', {timeout: 10000}).should('not.exist');
 
+        cy.wait(20000)
+
         cy.waitForDom().get('[data-cy=multiselect-button]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=multiselect-button]', {timeout: 10000}).should('have.length', '1').trigger('mouseover');
         cy.get('body').contains('Delete Workflow', {timeout: 10000}).should('exist')
