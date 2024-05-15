@@ -204,7 +204,7 @@ func awsKeyFingerprint(pk ssh.PublicKey) (md5fp string, sha1fp string, err error
 		N    *big.Int
 	}
 	if err := ssh.Unmarshal(pk.Marshal(), &rsaPub); err != nil {
-		return "", "", fmt.Errorf("agent: Unmarshal failed to parse public key: %v", err)
+		return "", "", fmt.Errorf("Unmarshal failed to parse public key: %w", err)
 	}
 	rsaPk := rsa.PublicKey{
 		E: int(rsaPub.E.Int64()),
@@ -359,7 +359,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 	defer instanceSet.keysMtx.Unlock()
 	md5keyFingerprint, sha1keyFingerprint, err := awsKeyFingerprint(publicKey)
 	if err != nil {
-		return "", fmt.Errorf("Could not make key fingerprint: %v", err)
+		return "", fmt.Errorf("Could not make key fingerprint: %w", err)
 	}
 	if keyname, ok := instanceSet.keys[md5keyFingerprint]; ok {
 		return keyname, nil
@@ -371,7 +371,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 		}},
 	})
 	if err != nil {
-		return "", fmt.Errorf("Could not search for keypair: %v", err)
+		return "", fmt.Errorf("Could not search for keypair: %w", err)
 	}
 	if len(keyout.KeyPairs) > 0 {
 		return *(keyout.KeyPairs[0].KeyName), nil
@@ -382,7 +382,7 @@ func (instanceSet *ec2InstanceSet) getKeyName(publicKey ssh.PublicKey) (string, 
 		PublicKeyMaterial: ssh.MarshalAuthorizedKey(publicKey),
 	})
 	if err != nil {
-		return "", fmt.Errorf("Could not import keypair: %v", err)
+		return "", fmt.Errorf("Could not import keypair: %w", err)
 	}
 	instanceSet.keys[md5keyFingerprint] = keyname
 	return keyname, nil
@@ -432,7 +432,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 		for {
 			page, err := instanceSet.client.DescribeInstanceStatus(context.TODO(), disi)
 			if err != nil {
-				instanceSet.logger.Warnf("error getting instance statuses: %s", err)
+				instanceSet.logger.WithError(err).Warn("error getting instance statuses")
 				break
 			}
 			for _, ent := range page.InstanceStatuses {
@@ -533,7 +533,7 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 	for {
 		page, err := instanceSet.client.DescribeSpotPriceHistory(context.TODO(), dsphi)
 		if err != nil {
-			instanceSet.logger.Warnf("error retrieving spot instance prices: %s", err)
+			instanceSet.logger.WithError(err).Warn("error retrieving spot instance prices")
 			break
 		}
 		for _, ent := range page.SpotPriceHistory {
