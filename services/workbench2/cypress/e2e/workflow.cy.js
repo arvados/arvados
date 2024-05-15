@@ -265,9 +265,9 @@ describe('Registered workflow panel tests', function() {
         cy.get('body').contains('Delete Workflow', {timeout: 10000}).should('exist')
         cy.get('[data-cy=multiselect-button]').eq(0).click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click();
-        
+
         wfNames.forEach((wfName) => {
-            cy.get('[data-cy=data-table-row]').contains(wfName).should('not.exist');
+            cy.get('tr').contains(wfName).should('not.exist');
         });
     });
 
