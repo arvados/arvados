@@ -39,6 +39,7 @@ import { PartialMoveToNewCollectionDialog } from "views-components/dialog-forms/
 import { PartialMoveToExistingCollectionDialog } from "views-components/dialog-forms/partial-move-to-existing-collection-dialog";
 import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-forms/partial-move-to-separate-collections-dialog";
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
+import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
 import { MainContentBar } from "views-components/main-content-bar/main-content-bar";
 import { Grid } from "@material-ui/core";
 import { TrashPanel } from "views/trash-panel/trash-panel";
@@ -435,6 +436,7 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
             <RemoveKeepServiceDialog />
             <RemoveLinkDialog />
             <RemoveProcessDialog />
+            <RemoveWorkflowDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />

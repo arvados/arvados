@@ -24,6 +24,12 @@ import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions'; 
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { ResourceKind, Resource } from 'models/resource';
+import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
+import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
+import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -120,10 +126,57 @@ export const getWorkflowDetails = (state: RootState) => {
     return workflow || undefined;
 };
 
-export const deleteWorkflow = (workflowUuid: string, ownerUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch<any>(navigateTo(ownerUuid));
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
-        await services.workflowService.delete(workflowUuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-    };
+export const openRemoveWorkflowDialog =
+(resource: ContextMenuResource, numOfWorkflows: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const confirmationText =
+        numOfWorkflows === 1
+            ? "Are you sure you want to remove this workflow?"
+            : `Are you sure you want to remove these ${numOfWorkflows} workflows?`;
+    const titleText = numOfWorkflows === 1 ? "Remove workflow permanently" : "Remove workflows permanently";
+
+    dispatch(
+        dialogActions.OPEN_DIALOG({
+            id: REMOVE_WORKFLOW_DIALOG,
+            data: {
+                title: titleText,
+                text: confirmationText,
+                confirmButtonLabel: "Remove",
+                uuid: resource.uuid,
+                resource,
+            },
+        })
+    );
+};
+
+export const REMOVE_WORKFLOW_DIALOG = "removeWorkflowDialog";
+
+export const removeWorkflowPermanently = (uuid: string, ownerUuid?: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const resource = getState().dialog.removeWorkflowDialog.data.resource;
+    const checkedList = getState().multiselect.checkedList;
+
+    const uuidsToRemove: string[] = resource.fromContextMenu ? [resource.uuid] : selectedToArray(checkedList);
+
+    //if no items in checkedlist, default to normal context menu behavior
+    if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
+    if(ownerUuid) dispatch<any>(navigateTo(ownerUuid));
+
+    const workflowsToRemove = uuidsToRemove
+        .map(uuid => getResource(uuid)(getState().resources) as Resource)
+        .filter(resource => resource.kind === ResourceKind.WORKFLOW);
+
+    for (const workflow of workflowsToRemove) {
+        try {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
+            await services.workflowService.delete(workflow.uuid);
+            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        } catch (e) {
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            } else {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            }
+        }
+    }
+};
