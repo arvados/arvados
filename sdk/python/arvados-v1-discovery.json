@@ -5691,9 +5691,6 @@
         "api_client_id": {
           "type": "integer"
         },
-        "user_id": {
-          "type": "integer"
-        },
         "created_by_ip_address": {
           "type": "string"
         },
@@ -5708,9 +5705,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "default_owner_uuid": {
-          "type": "string"
         },
         "scopes": {
           "type": "Array"

@@ -23,7 +23,6 @@ type APIClientAuthorization struct {
 	ModifiedByUserUUID   string    `json:"modified_by_user_uuid"`
 	OwnerUUID            string    `json:"owner_uuid"`
 	Scopes               []string  `json:"scopes"`
-	UserID               int       `json:"user_id"`
 }
 
 // APIClientAuthorizationList is an arvados#apiClientAuthorizationList resource.

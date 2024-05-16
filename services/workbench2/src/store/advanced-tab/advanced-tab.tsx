@@ -591,7 +591,6 @@ const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization):
 "owner_uuid": "${ownerUuid}",
 "api_token": "${stringify(apiToken)}",
 "api_client_id": "${stringify(apiClientId)}",
-"user_id": "${stringify(userId)}",
 "created_by_ip_address": "${stringify(createdByIpAddress)}",
 "last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
 "last_used_at": "${stringify(lastUsedAt)}",

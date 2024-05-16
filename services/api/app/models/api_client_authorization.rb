@@ -19,14 +19,12 @@ class ApiClientAuthorization < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :owner_uuid
-    t.add :user_id
     t.add :api_client_id
     # NB the "api_token" db column is a misnomer in that it's only the
     # "secret" part of a token: a v1 token is just the secret, but a
     # v2 token is "v2/uuid/secret".
     t.add :api_token
     t.add :created_by_ip_address
-    t.add :default_owner_uuid
     t.add :expires_at
     t.add :last_used_at
     t.add :last_used_by_ip_address
@@ -421,10 +419,10 @@ class ApiClientAuthorization < ArvadosModel
         end
       end
       auth.update!(user: user,
-                              api_token: stored_secret,
-                              api_client_id: 0,
-                              scopes: scopes,
-                              expires_at: exp)
+                   api_token: stored_secret,
+                   api_client_id: 0,
+                   scopes: scopes,
+                   expires_at: exp)
       Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} and scopes #{scopes} in local db"
       auth.api_token = secret
       return auth
