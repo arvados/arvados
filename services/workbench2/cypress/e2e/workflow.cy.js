@@ -242,8 +242,33 @@ describe('Registered workflow panel tests', function() {
                 cy.goToPath(`/projects/${activeUser.user.uuid}`);
                 cy.get('[data-cy=project-panel] table tbody').contains(workflowResource.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Delete Workflow').click();
+                cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click();
                 cy.get('[data-cy=project-panel] table tbody').should('not.contain', workflowResource.name);
             });
+    });
+
+    it('can delete multiple workflows', function() {
+        const wfNames = ["Test wf1", "Test wf2", "Test wf3"];
+
+        wfNames.forEach((wfName) => {
+            cy.createResource(activeUser.token, "workflows", {workflow: {name: wfName}})
+        });
+        
+        cy.loginAs(activeUser);
+
+        wfNames.forEach((wfName) => {
+            cy.get('tr').contains('td', wfName).should('exist').parent('tr').find('input[type="checkbox"]').click();
+        });
+        
+        cy.waitForDom().get('[data-cy=multiselect-button]', {timeout: 10000}).should('be.visible')
+        cy.get('[data-cy=multiselect-button]', {timeout: 10000}).should('have.length', '1').trigger('mouseover');
+        cy.get('body').contains('Delete Workflow', {timeout: 10000}).should('exist')
+        cy.get('[data-cy=multiselect-button]').eq(0).click();
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click();
+
+        wfNames.forEach((wfName) => {
+            cy.get('tr').contains(wfName).should('not.exist');
+        });
     });
 
     it('cannot delete readonly workflow', function() {

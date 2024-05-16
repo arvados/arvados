@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { openRunProcess, deleteWorkflow } from 'store/workflow-panel/workflow-panel-actions';
-import { StartIcon, TrashIcon, Link } from 'components/icon/icon';
+import { openRunProcess, openRemoveWorkflowDialog } from 'store/workflow-panel/workflow-panel-actions';
+import { StartIcon, DeleteForever, Link } from 'components/icon/icon';
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from './ms-menu-actions';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
@@ -24,11 +24,13 @@ const msRunWorkflow: MultiSelectMenuAction = {
 
 const msDeleteWorkflow: MultiSelectMenuAction = {
     name: DELETE_WORKFLOW,
-    icon: TrashIcon,
+    icon: DeleteForever,
     hasAlts: false,
-    isForMulti: false,
+    isForMulti: true,
     execute: (dispatch, resources) => {
-        dispatch<any>(deleteWorkflow(resources[0].uuid, resources[0].ownerUuid));
+        for (const resource of [...resources]){
+            dispatch<any>(openRemoveWorkflowDialog(resource, resources.length));
+        }
     },
 };
 

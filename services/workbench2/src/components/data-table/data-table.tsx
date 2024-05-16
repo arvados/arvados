@@ -354,7 +354,7 @@ export const DataTable = withStyles(styles)(
                     key={key || index}
                     className={classes.checkBoxCell}>
                     <div className={classes.checkBoxHead}>
-                        <Tooltip title={this.state.isSelected ? "Deselect All" : "Select All"}>
+                        <Tooltip title={this.state.isSelected ? "Deselect all" : "Select all"}>
                             <input
                                 type="checkbox"
                                 className={classes.checkBox}
