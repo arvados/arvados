@@ -175,8 +175,6 @@ export const ProjectCard = connect(
             setShowProperties(!showProperties);
         };
 
-        const parser = new DOMParser();
-
         return (
             <Card
                 className={classes.root}
