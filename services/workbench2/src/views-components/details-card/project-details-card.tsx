@@ -119,7 +119,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: '0.5rem',
     },
     description: {
-        maxWidth: '95%',
+        width: '95%',
         marginTop: 0,
     },
     toolbarStyles: {
