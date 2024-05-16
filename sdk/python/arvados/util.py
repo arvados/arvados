@@ -7,25 +7,32 @@ This module provides functions and constants that are useful across a variety
 of Arvados resource types, or extend the Arvados API client (see `arvados.api`).
 """
 
+import dataclasses
+import enum
 import errno
 import fcntl
 import functools
 import hashlib
 import httplib2
+import itertools
 import os
 import random
 import re
+import stat
 import subprocess
 import sys
 import warnings
 
 import arvados.errors
 
+from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
     Dict,
     Iterator,
+    Mapping,
+    Optional,
     TypeVar,
     Union,
 )
@@ -125,6 +132,122 @@ def _deprecated(version=None, preferred=None):
         deprecated_wrapper.__doc__ = docstring
         return deprecated_wrapper
     return deprecated_decorator
+
+@dataclasses.dataclass
+class _BaseDirectorySpec:
+    """Parse base directories
+
+    A _BaseDirectorySpec defines all the environment variable keys and defaults
+    related to a set of base directories (cache, config, state, etc.). It
+    provides pure methods to parse environment settings into valid paths.
+    """
+    systemd_key: str
+    xdg_home_key: str
+    xdg_home_default: PurePath
+    xdg_dirs_key: Optional[str] = None
+    xdg_dirs_default: str = ''
+
+    @staticmethod
+    def _abspath_from_env(env: Mapping[str, str], key: str) -> Optional[Path]:
+        try:
+            path = Path(env[key])
+        except (KeyError, ValueError):
+            ok = False
+        else:
+            ok = path.is_absolute()
+        return path if ok else None
+
+    @staticmethod
+    def _iter_abspaths(value: str) -> Iterator[Path]:
+        for path_s in value.split(':'):
+            path = Path(path_s)
+            if path.is_absolute():
+                yield path
+
+    def iter_systemd(self, env: Mapping[str, str]) -> Iterator[Path]:
+        return self._iter_abspaths(env.get(self.systemd_key, ''))
+
+    def iter_xdg(self, env: Mapping[str, str], subdir: PurePath) -> Iterator[Path]:
+        yield self.xdg_home(env, subdir)
+        if self.xdg_dirs_key is not None:
+            for path in self._iter_abspaths(env.get(self.xdg_dirs_key) or self.xdg_dirs_default):
+                yield path / subdir
+
+    def xdg_home(self, env: Mapping[str, str], subdir: PurePath) -> Path:
+        home_path = self._abspath_from_env(env, self.xdg_home_key)
+        if home_path is None:
+            home_path = self._abspath_from_env(env, 'HOME') or Path.home()
+            home_path /= self.xdg_home_default
+        return home_path / subdir
+
+
+class _BaseDirectorySpecs(enum.Enum):
+    """Base directory specifications
+
+    This enum provides easy access to the standard base directory settings.
+    """
+    CACHE = _BaseDirectorySpec(
+        'CACHE_DIRECTORY',
+        'XDG_CACHE_HOME',
+        PurePath('.cache'),
+    )
+    CONFIG = _BaseDirectorySpec(
+        'CONFIGURATION_DIRECTORY',
+        'XDG_CONFIG_HOME',
+        PurePath('.config'),
+        'XDG_CONFIG_DIRS',
+        '/etc/xdg',
+    )
+    STATE = _BaseDirectorySpec(
+        'STATE_DIRECTORY',
+        'XDG_STATE_HOME',
+        PurePath('.local', 'state'),
+    )
+
+
+class _BaseDirectories:
+    """Resolve paths from a base directory spec
+
+    Given a _BaseDirectorySpec, this class provides stateful methods to find
+    existing files and return the most-preferred directory for writing.
+    """
+    _STORE_MODE = stat.S_IFDIR | stat.S_IWUSR
+
+    def __init__(
+            self,
+            spec: Union[_BaseDirectorySpec, _BaseDirectorySpecs, str],
+            env: Mapping[str, str]=os.environ,
+            xdg_subdir: Union[os.PathLike, str]='arvados',
+    ) -> None:
+        if isinstance(spec, str):
+            spec = _BaseDirectorySpecs[spec].value
+        elif isinstance(spec, _BaseDirectorySpecs):
+            spec = spec.value
+        self._spec = spec
+        self._env = env
+        self._xdg_subdir = PurePath(xdg_subdir)
+
+    def search(self, name: str) -> Iterator[Path]:
+        for search_path in itertools.chain(
+                self._spec.iter_systemd(self._env),
+                self._spec.iter_xdg(self._env, self._xdg_subdir),
+        ):
+            path = search_path / name
+            if path.exists():
+                yield path
+
+    def storage_path(self) -> Path:
+        for path in self._spec.iter_systemd(self._env):
+            try:
+                mode = path.stat().st_mode
+            except OSError:
+                continue
+            if (mode & self._STORE_MODE) == self._STORE_MODE:
+                return path
+        path = self._spec.xdg_home(self._env, self._xdg_subdir)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
 
 def is_hex(s: str, *length_args: int) -> bool:
     """Indicate whether a string is a hexadecimal number
