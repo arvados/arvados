@@ -24,7 +24,7 @@ type DetailsCardProps = {
     currentResource: ProjectResource | UserResource;
 };
 
-export const RootDetailsCard = connect(mapStateToProps)(({ currentResource }: DetailsCardProps) => {
+export const DetailsCardRoot = connect(mapStateToProps)(({ currentResource }: DetailsCardProps) => {
     if (!currentResource) {
         return null;
     }
