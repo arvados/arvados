@@ -249,7 +249,7 @@ export const ProjectCard = connect(
                                         data-cy='project-description'
                                         //dangerouslySetInnerHTML is ok here only if description is sanitized,
                                         //which it is before it is loaded into the redux store
-                                        dangerouslySetInnerHTML={{ __html: parser.parseFromString(description, 'text/html').body.textContent || '' }}
+                                        dangerouslySetInnerHTML={{ __html: description }}
                                     />
                                 </Collapse>
                             </section>
