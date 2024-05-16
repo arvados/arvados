@@ -36,7 +36,8 @@ type CssRules =
     | 'chipToggle'
     | 'chipSection'
     | 'tag'
-    | 'description';
+    | 'description'
+    | 'toolbarStyles';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -120,6 +121,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     description: {
         maxWidth: '95%',
         marginTop: 0,
+    },
+    toolbarStyles: {
+        marginRight: '-1rem',
     },
 });
 
@@ -224,7 +228,7 @@ export const ProjectCard = connect(
                             </section>
                         }
                     />
-                    {isSelected && <MultiselectToolbar />}
+                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
                 </Grid>
                 <section onClick={(ev) => ev.stopPropagation()}>
                     {description ? (
