@@ -139,6 +139,7 @@ class FakeCurl(object):
             return self._resp_code
         raise Exception
 
+
 def mock_keep_responses(body, *codes, **headers):
     """Patch pycurl to return fake responses and raise exceptions.
 
@@ -163,21 +164,6 @@ def mock_keep_responses(body, *codes, **headers):
     cm.responses = responses
     return mock.patch('pycurl.Curl', cm)
 
-
-class MockStreamReader(object):
-    def __init__(self, name='.', *data):
-        self._name = name
-        self._data = b''.join([
-            b if isinstance(b, bytes) else b.encode()
-            for b in data])
-        self._data_locators = [str_keep_locator(d) for d in data]
-        self.num_retries = 0
-
-    def name(self):
-        return self._name
-
-    def readfrom(self, start, size, num_retries=None):
-        return self._data[start:start + size]
 
 class ApiClientMock(object):
     def api_client_mock(self):
