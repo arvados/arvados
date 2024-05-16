@@ -12,7 +12,6 @@ import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { UserResource } from 'models/user';
-import { UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { FavoriteStar, PublicFavoriteStar } from 'views-components/favorite-star/favorite-star';
 import { FreezeIcon } from 'components/icon/icon';
 import { Resource } from 'models/resource';
@@ -22,6 +21,7 @@ import { ExpandChevronRight } from 'components/expand-chevron-right/expand-chevr
 import { MultiselectToolbar } from 'components/multiselect-toolbar/MultiselectToolbar';
 import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 import { deselectAllOthers } from 'store/multiselect/multiselect-actions';
+import { UserCard } from './user-details-card';
 
 type CssRules =
     | 'root'
@@ -169,13 +169,6 @@ type DetailsCardProps = WithStyles<CssRules> & {
     handleCardClick: (resource: any) => void;
 };
 
-type UserCardProps = WithStyles<CssRules> & {
-    currentResource: UserResource;
-    isAdmin: boolean;
-    isSelected: boolean;
-    handleCardClick: (resource: any) => void;
-};
-
 type ProjectCardProps = WithStyles<CssRules> & {
     currentResource: ProjectResource;
     frozenByFullName: string | undefined;
@@ -184,7 +177,7 @@ type ProjectCardProps = WithStyles<CssRules> & {
     handleCardClick: (resource: any) => void;
 };
 
-export const ProjectDetailsCard = connect(
+export const RootDetailsCard = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
@@ -195,15 +188,7 @@ export const ProjectDetailsCard = connect(
         }
         switch (currentResource.kind as string) {
             case ResourceKind.USER:
-                return (
-                    <UserCard
-                        classes={classes}
-                        currentResource={currentResource as UserResource}
-                        isAdmin={isAdmin}
-                        isSelected={isSelected}
-                        handleCardClick={handleCardClick}
-                    />
-                );
+                return <UserCard />;
             case ResourceKind.PROJECT:
                 return (
                     <ProjectCard
@@ -220,46 +205,6 @@ export const ProjectDetailsCard = connect(
         }
     })
 );
-
-const UserCard: React.FC<UserCardProps> = ({ classes, currentResource, handleCardClick, isSelected }) => {
-    const { fullName, uuid } = currentResource as UserResource & { fullName: string };
-
-    return (
-        <Card
-            className={classes.root}
-            onClick={() => handleCardClick(uuid)}
-            data-cy='user-details-card'
-        >
-            <Grid
-                container
-                wrap='nowrap'
-                className={classes.cardHeaderContainer}
-            >
-                <CardHeader
-                    className={classes.cardHeader}
-                    title={
-                        <section className={classes.userNameContainer}>
-                            <Typography
-                                noWrap
-                                variant='h6'
-                            >
-                                {fullName}
-                            </Typography>
-                            <section className={classes.accountStatusSection}>
-                                {!currentResource.isActive && (
-                                    <Typography>
-                                        <UserResourceAccountStatus uuid={uuid} />
-                                    </Typography>
-                            )}
-                            </section>
-                        </section>
-                    }
-                />
-                {isSelected && <MultiselectToolbar />}
-            </Grid>
-        </Card>
-    );
-};
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ classes, currentResource, frozenByFullName, handleCardClick, isSelected }) => {
     const { name, description, uuid } = currentResource as ProjectResource;

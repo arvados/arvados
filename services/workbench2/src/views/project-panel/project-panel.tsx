@@ -52,7 +52,7 @@ import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
-import { ProjectDetailsCard } from 'views-components/project-details-card/project-details-card';
+import { RootDetailsCard } from 'views-components/details-card/root-details-card'; 
 
 type CssRules = 'root' | 'button' ;
 
@@ -269,7 +269,7 @@ export const ProjectPanel = withStyles(styles)(
             render() {
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
-                    <ProjectDetailsCard />
+                    <RootDetailsCard />
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}
