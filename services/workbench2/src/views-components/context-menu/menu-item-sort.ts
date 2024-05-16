@@ -121,6 +121,12 @@ const workflowOrder = [
     ContextMenuActionNames.DELETE_WORKFLOW,
 ]
 
+const rootProjectOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.USER_ACCOUNT,
+    ContextMenuActionNames.API_DETAILS,
+];
+
 const defaultMultiOrder = [
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
@@ -148,6 +154,9 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
 
     [ContextMenuKind.WORKFLOW]: workflowOrder,
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
+
+    [ContextMenuKind.ROOT_PROJECT]: rootProjectOrder,
+    [ContextMenuKind.ROOT_PROJECT_ADMIN]: rootProjectOrder,
 };
 
 export const menuDirection = {
