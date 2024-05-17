@@ -77,13 +77,8 @@ def redirected_streams(stdout=None, stderr=None):
 
 class VersionChecker(object):
     def assertVersionOutput(self, out, err):
-        if sys.version_info >= (3, 0):
-            self.assertEqual(err.getvalue(), '')
-            v = out.getvalue()
-        else:
-            # Python 2 writes version info on stderr.
-            self.assertEqual(out.getvalue(), '')
-            v = err.getvalue()
+        self.assertEqual(err.getvalue(), '')
+        v = out.getvalue()
         self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+(\.dev[0-9]+)?$\n")
 
 
@@ -247,16 +242,6 @@ class ArvadosBaseTestCase(unittest.TestCase):
         testfile.write(text)
         testfile.flush()
         return testfile
-
-if sys.version_info < (3, 0):
-    # There is no assert[Not]Regex that works in both Python 2 and 3,
-    # so we backport Python 3 style to Python 2.
-    def assertRegex(self, *args, **kwargs):
-        return self.assertRegexpMatches(*args, **kwargs)
-    def assertNotRegex(self, *args, **kwargs):
-        return self.assertNotRegexpMatches(*args, **kwargs)
-    unittest.TestCase.assertRegex = assertRegex
-    unittest.TestCase.assertNotRegex = assertNotRegex
 
 def binary_compare(a, b):
     if len(a) != len(b):

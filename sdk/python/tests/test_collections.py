@@ -408,12 +408,7 @@ class CollectionMethods(run_test_server.TestCaseWithServers):
         with c.open('bar', 'wb') as f:
             f.write(b'bar')
         self.assertEqual(2, len(c.keys()))
-        if sys.version_info < (3, 0):
-            # keys() supports indexing only for python2 callers.
-            fn0 = c.keys()[0]
-            fn1 = c.keys()[1]
-        else:
-            fn0, fn1 = c.keys()
+        fn0, fn1 = c.keys()
         self.assertEqual(2, len(c.values()))
         f0 = c.values()[0]
         f1 = c.values()[1]
@@ -466,13 +461,8 @@ class TextModes(run_test_server.TestCaseWithServers):
 
     def setUp(self):
         arvados.config.KEEP_BLOCK_SIZE = 4
-        if sys.version_info < (3, 0):
-            import unicodedata
-            self.sailboat = unicodedata.lookup('SAILBOAT')
-            self.snowman = unicodedata.lookup('SNOWMAN')
-        else:
-            self.sailboat = '\N{SAILBOAT}'
-            self.snowman = '\N{SNOWMAN}'
+        self.sailboat = '\N{SAILBOAT}'
+        self.snowman = '\N{SNOWMAN}'
 
     def tearDown(self):
         arvados.config.KEEP_BLOCK_SIZE = 2 ** 26

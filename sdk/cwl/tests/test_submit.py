@@ -86,10 +86,7 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
             stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
             stubs.fake_container_uuid = "zzzzz-dz642-zzzzzzzzzzzzzzz"
 
-            if sys.version_info[0] < 3:
-                stubs.capture_stdout = BytesIO()
-            else:
-                stubs.capture_stdout = StringIO()
+            stubs.capture_stdout = StringIO()
 
             stubs.api = mock.MagicMock()
             stubs.api._rootDesc = get_rootDesc()

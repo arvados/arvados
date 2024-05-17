@@ -114,19 +114,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
             '^d41d8cd98f00b204e9800998ecf8427e\+0',
             ('wrong locator from Keep.put(""): ' + blob_locator))
 
-    def test_unicode_must_be_ascii(self):
-        # If unicode type, must only consist of valid ASCII
-        foo_locator = self.keep_client.put(u'foo')
-        self.assertRegex(
-            foo_locator,
-            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
-            'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
-
-        if sys.version_info < (3, 0):
-            with self.assertRaises(UnicodeEncodeError):
-                # Error if it is not ASCII
-                self.keep_client.put(u'\xe2')
-
+    def test_KeepPutDataType(self):
         with self.assertRaises(AttributeError):
             # Must be bytes or have an encode() method
             self.keep_client.put({})
