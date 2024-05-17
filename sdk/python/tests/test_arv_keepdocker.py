@@ -41,7 +41,7 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
         with tutil.redirected_streams(stdout=out, stderr=out), \
              self.assertRaises(SystemExit):
             self.run_arv_keepdocker(['-x=unknown'], sys.stderr)
-        self.assertRegex(out.getvalue(), 'unrecognized arguments')
+        self.assertRegex(out.getvalue(), r'unrecognized arguments')
 
     def test_version_argument(self):
         with tutil.redirected_streams(
@@ -94,16 +94,16 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             self.assertEqual(out.getvalue(), '')
             if expect_ok:
                 self.assertNotRegex(
-                    err.getvalue(), "refusing to store",
+                    err.getvalue(), r"refusing to store",
                     msg=repr((supported, img_id)))
             else:
                 self.assertRegex(
-                    err.getvalue(), "refusing to store",
+                    err.getvalue(), r"refusing to store",
                     msg=repr((supported, img_id)))
             if not supported:
                 self.assertRegex(
                     err.getvalue(),
-                    "server does not specify supported image formats",
+                    r"server does not specify supported image formats",
                     msg=repr((supported, img_id)))
 
         fakeDD = arvados.api('v1')._rootDesc
@@ -122,13 +122,13 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             api()._rootDesc = fakeDD
             self.run_arv_keepdocker(
                 ['--force', '--force-image-format', 'testimage'], err)
-        self.assertRegex(err.getvalue(), "forcing incompatible image")
+        self.assertRegex(err.getvalue(), r"forcing incompatible image")
 
     def test_tag_given_twice(self):
         with tutil.redirected_streams(stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_arv_keepdocker(['myrepo:mytag', 'extratag'], sys.stderr)
-            self.assertRegex(err.getvalue(), "cannot add tag argument 'extratag'")
+            self.assertRegex(err.getvalue(), r"cannot add tag argument 'extratag'")
 
     def test_image_given_as_repo_colon_tag(self):
         with self.assertRaises(StopTest), \
@@ -180,7 +180,7 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             out = tutil.StringIO()
             with self.assertRaises(SystemExit):
                 self.run_arv_keepdocker([], sys.stderr, stdout=out)
-            self.assertRegex(out.getvalue(), '\nregistry.example:1234/repo +latest ')
+            self.assertRegex(out.getvalue(), r'\nregistry.example:1234/repo +latest ')
         finally:
             api.links().delete(uuid=taglink['uuid']).execute()
 
