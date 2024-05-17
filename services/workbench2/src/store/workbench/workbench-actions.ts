@@ -9,7 +9,7 @@ import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { favoritePanelActions, loadFavoritePanel } from "store/favorite-panel/favorite-panel-action";
 import { getProjectPanelCurrentUuid, setIsProjectPanelTrashed } from "store/project-panel/project-panel-action";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import {
     activateSidePanelTreeItem,
     initSidePanelTree,
@@ -18,7 +18,7 @@ import {
     SIDE_PANEL_TREE,
 } from "store/side-panel-tree/side-panel-tree-actions";
 import { updateResources } from "store/resources/resources-actions";
-import { projectPanelColumns } from "views/project-panel/project-panel";
+import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
 import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
 import { matchRootRoute } from "routes/routes";
 import {
@@ -134,7 +134,7 @@ export const loadWorkbench = () => async (dispatch: Dispatch, getState: () => Ro
     const { auth, router } = getState();
     const { user } = auth;
     if (user) {
-        dispatch(projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns }));
+        dispatch(projectPanelDataActions.SET_COLUMNS({ columns: projectPanelDataColumns }));
         dispatch(favoritePanelActions.SET_COLUMNS({ columns: favoritePanelColumns }));
         dispatch(
             allProcessesPanelActions.SET_COLUMNS({
@@ -493,7 +493,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
             );
         }
     }
-    dispatch(projectPanelActions.REQUEST_ITEMS());
+    dispatch(projectPanelDataActions.REQUEST_ITEMS());
 };
 
 export const moveCollection =

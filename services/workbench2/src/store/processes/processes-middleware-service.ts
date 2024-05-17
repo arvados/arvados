@@ -19,7 +19,7 @@ import { DataColumns } from 'components/data-table/data-table';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
-import { loadMissingProcessesInformation } from '../project-panel/project-panel-middleware-service';
+import { loadMissingProcessesInformation } from '../project-panel/project-panel-data-middleware-service';
 
 export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, private actions: BoundDataExplorerActions, id: string) {

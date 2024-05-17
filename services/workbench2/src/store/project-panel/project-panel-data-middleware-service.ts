@@ -8,7 +8,7 @@ import {
     getDataExplorerColumnFilters,
     listResultsToDataExplorerItemsMeta,
 } from "store/data-explorer/data-explorer-middleware-service";
-import { ProjectPanelColumnNames } from "views/project-panel/project-panel";
+import { ProjectPanelDataColumnNames } from "views/project-panel/project-panel-data";
 import { RootState } from "store/store";
 import { DataColumns } from "components/data-table/data-table";
 import { ServiceRepository } from "services/services";
@@ -18,7 +18,7 @@ import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "models/project";
 import { updateResources } from "store/resources/resources-actions";
@@ -35,11 +35,11 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { containerRequestFieldsNoMounts } from "models/container-request";
-import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set"; 
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 
-export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
+export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
@@ -66,7 +66,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 api.dispatch(setItems(response));
             } catch (e) {
                 api.dispatch(
-                    projectPanelActions.SET_ITEMS({
+                    projectPanelDataActions.SET_ITEMS({
                         items: [],
                         itemsAvailable: 0,
                         page: 0,
@@ -80,7 +80,7 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     api.dispatch(couldNotFetchProjectContents());
                 }
             } finally {
-                if (!background) { 
+                if (!background) {
                     api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                     api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
                 }
@@ -101,7 +101,7 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
 };
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
-    projectPanelActions.SET_ITEMS({
+    projectPanelDataActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
@@ -116,7 +116,7 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 
 export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
-    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelDataColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
     const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);
 

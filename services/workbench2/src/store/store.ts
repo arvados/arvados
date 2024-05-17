@@ -19,9 +19,9 @@ import { snackbarReducer } from "./snackbar/snackbar-reducer";
 import { collectionPanelFilesReducer } from "./collection-panel/collection-panel-files/collection-panel-files-reducer";
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
-import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action-bind";
 import { WORKFLOW_PROCESSES_PANEL_ID } from "./workflow-panel/workflow-panel-actions";
-import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
+import { PROJECT_PANEL_DATA_ID } from "./project-panel/project-panel-action-bind";
+import { ProjectPanelDataMiddlewareService } from "./project-panel/project-panel-data-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { AllProcessesPanelMiddlewareService } from "./all-processes-panel/all-processes-panel-middleware-service";
 import { WorkflowProcessesMiddlewareService } from "./workflow-panel/workflow-middleware-service";
@@ -96,7 +96,7 @@ export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
 export function configureStore(history: History, services: ServiceRepository, config: Config): RootStore {
     const rootReducer = createRootReducer(services);
 
-    const projectPanelMiddleware = dataExplorerMiddleware(new ProjectPanelMiddlewareService(services, PROJECT_PANEL_ID));
+    const projectPanelDataMiddleware = dataExplorerMiddleware(new ProjectPanelDataMiddlewareService(services, PROJECT_PANEL_DATA_ID));
     const favoritePanelMiddleware = dataExplorerMiddleware(new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID));
     const allProcessessPanelMiddleware = dataExplorerMiddleware(new AllProcessesPanelMiddlewareService(services, ALL_PROCESSES_PANEL_ID));
     const workflowProcessessPanelMiddleware = dataExplorerMiddleware(new WorkflowProcessesMiddlewareService(services, WORKFLOW_PROCESSES_PANEL_ID));
@@ -138,7 +138,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         thunkMiddleware.withExtraArgument(services),
         authMiddleware(services),
         tooltipsMiddleware(services),
-        projectPanelMiddleware,
+        projectPanelDataMiddleware,
         favoritePanelMiddleware,
         allProcessessPanelMiddleware,
         trashPanelMiddleware,

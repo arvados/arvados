@@ -24,7 +24,7 @@ import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
-import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
+import { SearchResultsPanelColumnNames } from 'views/search-results-panel/search-results-panel-view';
 import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
@@ -106,7 +106,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
     }
 }
 
-export const searchSingleCluster = (session: Session, searchValue: string) => 
+export const searchSingleCluster = (session: Session, searchValue: string) =>
     (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const state = getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, SEARCH_RESULTS_PANEL_ID);
@@ -116,7 +116,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
         }
 
         const params = getParams(dataExplorer, searchValue, session.apiRevision);
-        
+
         // If the clusterId & search offset has already been fetched, we don't need to fetch the results again
         if(state.searchBar.searchOffsets[session.clusterId] === params.offset) {
             return;
@@ -148,7 +148,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
         dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
 }
 
-const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));
 
 export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
     ...dataExplorerToListParams(dataExplorer),

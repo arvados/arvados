@@ -16,7 +16,7 @@ import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
-import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
+import { loadMissingProcessesInformation } from "store/project-panel/project-panel-data-middleware-service";
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { ResourceKind } from "models/resource";

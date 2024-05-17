@@ -8,7 +8,7 @@ import { ServiceRepository } from "services/services";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
 import { ResourceKind } from "models/resource";
 import { navigateTo, navigateToTrash } from "store/navigation/navigation-action";
@@ -35,7 +35,7 @@ export const toggleProjectTrashed =
                     successMessage = "Added project to trash";
                     await services.groupsService.trash(uuid);
                     dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
-                    
+
                     const { location } = getState().router;
                     if (matchSharedWithMeRoute(location ? location.pathname : "")) {
                         dispatch(sharedWithMePanelActions.REQUEST_ITEMS());
@@ -92,7 +92,7 @@ export const toggleCollectionTrashed =
                     errorMessage = "Could not move collection to trash";
                     successMessage = "Added to trash";
                     await services.collectionService.trash(uuid);
-                    dispatch(projectPanelActions.REQUEST_ITEMS());
+                    dispatch(projectPanelDataActions.REQUEST_ITEMS());
                 }
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({

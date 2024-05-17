@@ -24,12 +24,12 @@ import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions'; 
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { ResourceKind, Resource } from 'models/resource';
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -57,7 +57,7 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const response = await services.workflowService.list();
         dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
-        
+
         const workflows = getState().runProcessPanel.searchWorkflows;
         const listedWorkflow = workflows.find(workflow => workflow.uuid === workflowUuid);
         const workflow = listedWorkflow || await services.workflowService.get(workflowUuid);
@@ -168,7 +168,7 @@ export const removeWorkflowPermanently = (uuid: string, ownerUuid?: string) => a
         try {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
             await services.workflowService.delete(workflow.uuid);
-            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(projectPanelDataActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             const error = getCommonResourceServiceError(e);

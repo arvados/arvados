@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams } from '../data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams, getDataExplorerColumnFilters } from '../data-explorer/data-explorer-middleware-service';
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { getDataExplorer, DataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateFavorites } from 'store/favorites/favorites-actions';
 import { updateResources } from 'store/resources/resources-actions';
-import { loadMissingProcessesInformation, getFilters } from 'store/project-panel/project-panel-middleware-service';
+import { loadMissingProcessesInformation } from 'store/project-panel/project-panel-data-middleware-service';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from 'services/common-service/common-service';
@@ -22,6 +22,9 @@ import { updatePublicFavorites } from 'store/public-favorites/public-favorites-a
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { AuthState } from 'store/auth/auth-reducer';
+import { SharedWithMePanelColumnNames } from 'views/shared-with-me-panel/shared-with-me-panel';
+import { buildProcessStatusFilters, serializeResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
+import { DataColumns } from 'components/data-table/data-table';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -77,6 +80,26 @@ const getOrder = (dataExplorer: DataExplorer) => {
         return order.getOrder();
     }
 };
+
+const getFilters = (dataExplorer: DataExplorer) => {
+    const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
+    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SharedWithMePanelColumnNames.TYPE));
+    const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
+    const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);
+
+    // TODO: Extract group contents name filter
+    const nameFilters = new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+        .getFilters();
+
+    // Filter by container status
+    const statusFilters = buildProcessStatusFilters(new FilterBuilder(), activeStatusFilter || "", GroupContentsResourcePrefix.PROCESS).getFilters();
+
+    return joinFilters(statusFilters, typeFilters, nameFilters);
+};
+
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     sharedWithMePanelActions.SET_ITEMS({

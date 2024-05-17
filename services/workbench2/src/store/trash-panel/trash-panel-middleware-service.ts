@@ -16,7 +16,7 @@ import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
-import { ProjectPanelColumnNames } from "views/project-panel/project-panel";
+import { TrashPanelColumnNames } from "views/trash-panel/trash-panel";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
@@ -38,7 +38,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
 
-        const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+        const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, TrashPanelColumnNames.TYPE));
 
         const otherFilters = new FilterBuilder()
             .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
