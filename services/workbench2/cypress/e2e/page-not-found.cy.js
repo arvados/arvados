@@ -24,7 +24,7 @@ describe('Page not found tests', function() {
     });
 
 
-    it.only('shows not found popup', function() {
+    it('shows not found popup', function() {
         // given
         [
             '/projects/zzzzz-j7d0g-nonexistingproj',
