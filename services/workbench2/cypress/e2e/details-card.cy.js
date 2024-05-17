@@ -104,9 +104,10 @@ describe('Project Details Card tests', function () {
     });
 
     it('shows the appropriate buttons in the multiselect toolbar', () => {
-        const msButtonTooltips = ['View details', 'Open in new tab', 'Copy link to clipboard'];
-
-        const msOverflowMenuButtonTooltips = [
+        const msButtonTooltips = [
+            'View details',
+            'Open in new tab',
+            'Copy link to clipboard',
             'Open with 3rd party client',
             'API Details',
             'Share',
@@ -137,34 +138,19 @@ describe('Project Details Card tests', function () {
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).should('exist');
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-            cy.waitForDom()
+            cy.waitForDom();
             cy.get('body').within(() => {
                 cy.contains(msButtonTooltips[i]).should('exist');
             });
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
-
-        cy.get('[data-cy=overflow-menu-button]').click();
-        cy.get('[data-cy=overflow-menu]')
-            .should('be.visible')
-            .within(() => {
-                cy.get('[data-cy=multiselect-button]').should('exist');
-
-                for (let i = 0; i < msOverflowMenuButtonTooltips.length; i++) {
-                    cy.get('li')
-                        .eq(i)
-                        .within(() => {
-                            cy.get(`span`).should('have.prop', 'title', msOverflowMenuButtonTooltips[i]);
-                        });
-                }
-            });
     });
 
     it('should toggle description display', () => {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         //must be long enough to require a 2nd line
         const projDescription =
-            'Science! true daughter of Old Time thou art! Who alterest all things with thy peering eyes. Why preyest thou thus upon the poet’s heart, Vulture, whose wings are dull realities? '
+            'Science! true daughter of Old Time thou art! Who alterest all things with thy peering eyes. Why preyest thou thus upon the poet’s heart, Vulture, whose wings are dull realities? ';
         cy.loginAs(adminUser);
 
         // Create project
@@ -246,10 +232,9 @@ describe('Project Details Card tests', function () {
         cy.window().then((win) => {
             win.navigator.clipboard.readText().then((text) => {
                 //wait is necessary due to known issue with cypress@13.7.1
-                cy.wait(1000)
+                cy.wait(1000);
                 expect(text).to.match(new RegExp(`Importance: Critical`));
-                })
-            }
-        );
+            });
+        });
     });
 });
