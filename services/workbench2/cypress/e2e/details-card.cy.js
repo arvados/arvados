@@ -39,7 +39,7 @@ describe('User Details Card tests', function () {
     });
 
     it('shows the appropriate buttons in the multiselect toolbar', () => {
-        const msButtonTooltips = ['API Details', 'Attributes', 'User account'];
+        const msButtonTooltips = ['View details', 'User account', 'API Details'];
 
         cy.loginAs(activeUser);
 
