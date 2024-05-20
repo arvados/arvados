@@ -20,7 +20,8 @@ describe('User', () => {
                     firstName: 'Some', lastName: 'User',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'Some User'
             },
@@ -32,7 +33,8 @@ describe('User', () => {
                     firstName: 'Some', lastName: 'User',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false
                 },
                 expect: 'Some User <someuser@example.com>'
             },
@@ -43,7 +45,9 @@ describe('User', () => {
                     firstName: '', lastName: 'User',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
+
                 },
                 expect: 'someuser@example.com'
             },
@@ -54,7 +58,8 @@ describe('User', () => {
                     firstName: 'Some', lastName: '',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'someuser@example.com'
             },
@@ -65,7 +70,8 @@ describe('User', () => {
                     firstName: '', lastName: '',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'someuser@example.com'
             },
@@ -77,7 +83,8 @@ describe('User', () => {
                     firstName: '', lastName: '',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'someuser@example.com'
             },
@@ -88,7 +95,8 @@ describe('User', () => {
                     firstName: '', lastName: '',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'someuser'
             },
@@ -100,7 +108,8 @@ describe('User', () => {
                     firstName: '', lastName: '',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'someuser'
             },
@@ -111,7 +120,8 @@ describe('User', () => {
                     firstName: '', lastName: '',
                     uuid: 'zzzzz-tpzed-someusersuuid',
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
-                    prefs: {}, isAdmin: false, isActive: true
+                    prefs: {}, isAdmin: false, isActive: true,
+                    canWrite: false, canManage: false,
                 },
                 expect: 'zzzzz-tpzed-someusersuuid'
             },
