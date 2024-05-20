@@ -73,7 +73,7 @@
     "lodash.template": "4.5.0",
     "material-ui-pickers": "^2.2.4",
     "mem": "4.0.0",
-    "mime": "^3.0.0",
+    "mime": "^4.0.3",
     "mini-css-extract-plugin": "^2.4.5",
     "moment": "^2.29.4",
     "parse-duration": "0.4.4",
