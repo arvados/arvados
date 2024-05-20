@@ -374,17 +374,3 @@ def trim_name(collectionname: str) -> str:
         collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
 
     return collectionname
-
-@_deprecated('3.0', 'arvados.util.keyset_list_all')
-def list_all(fn, num_retries=0, **kwargs):
-    # Default limit to (effectively) api server's MAX_LIMIT
-    kwargs.setdefault('limit', sys.maxsize)
-    items = []
-    offset = 0
-    items_available = sys.maxsize
-    while len(items) < items_available:
-        c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
-        items += c['items']
-        items_available = c['items_available']
-        offset = c['offset'] + len(c['items'])
-    return items

@@ -116,18 +116,23 @@ def main(arguments=None):
         key = (img["repo"], img["tag"], img["timestamp"])
         old_images.append(img)
 
-    migration_links = arvados.util.list_all(api_client.links().list, filters=[
-        ['link_class', '=', _migration_link_class],
-        ['name', '=', _migration_link_name],
-    ])
+    migration_links = arvados.util.keyset_list_all(
+        api_client.links().list,
+        filters=[
+            ['link_class', '=', _migration_link_class],
+            ['name', '=', _migration_link_name],
+        ],
+        order='uuid')
 
     already_migrated = set()
     for m in migration_links:
         already_migrated.add(m["tail_uuid"])
 
-    items = arvados.util.list_all(api_client.collections().list,
-                                  filters=[["uuid", "in", [img["collection"] for img in old_images]]],
-                                  select=["uuid", "portable_data_hash", "manifest_text", "owner_uuid"])
+    items = arvados.util.keyset_list_all(
+        api_client.collections().list,
+        filters=[["uuid", "in", [img["collection"] for img in old_images]]],
+        select=["uuid", "portable_data_hash", "manifest_text", "owner_uuid"],
+        order='uuid')
     uuid_to_collection = {i["uuid"]: i for i in items}
 
     need_migrate = {}

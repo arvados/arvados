@@ -91,9 +91,9 @@ def main(arguments=None):
     for key_label in key_label_to_id_map:
         logger.debug('Querying objects with property key "{}"'.format(key_label))
         for resource in [arv.collections(), arv.groups()]:
-            objs = arvados.util.list_all(
+            objs = arvados.util.keyset_list_all(
                 resource.list,
-                order=['created_at'],
+                order='created_at',
                 select=['uuid', 'properties'],
                 filters=[['properties', 'exists', key_label]]
             )
