@@ -337,6 +337,7 @@ class RichCollectionBase(CollectionBase):
             path: str,
             mode: str="r",
             encoding: Optional[str]=None,
+            return_memoryview: bool=False
     ) -> IO:
         """Open a file-like object within the collection
 
@@ -356,6 +357,12 @@ class RichCollectionBase(CollectionBase):
         * encoding: str | None --- The text encoding of the file. Only used
           when the file is opened in text mode. The default is
           platform-dependent.
+
+        * return_memoryview: bool -- If True and the file is opened in
+          binary mode, may return either `bytes` or a zero-copy
+          `memoryview` object (more efficient, but may confuse code
+          expecting a `bytes` object).
+
         """
         if not re.search(r'^[rwa][bt]?\+?$', mode):
             raise errors.ArgumentError("Invalid mode {!r}".format(mode))
@@ -378,7 +385,7 @@ class RichCollectionBase(CollectionBase):
             arvfile.truncate(0)
 
         binmode = mode[0] + 'b' + re.sub('[bt]', '', mode[1:])
-        f = fclass(arvfile, mode=binmode, num_retries=self.num_retries)
+        f = fclass(arvfile, mode=binmode, num_retries=self.num_retries, return_memoryview=return_memoryview)
         if 'b' not in mode:
             bufferclass = io.BufferedRandom if f.writable() else io.BufferedReader
             f = io.TextIOWrapper(bufferclass(WrappableFile(f)), encoding=encoding)

@@ -79,11 +79,12 @@ class _FileLikeObjectBase(object):
 
 
 class ArvadosFileReaderBase(_FileLikeObjectBase):
-    def __init__(self, name, mode, num_retries=None):
+    def __init__(self, name, mode, num_retries=None, return_memoryview=False):
         super(ArvadosFileReaderBase, self).__init__(name, mode)
         self._filepos = 0
         self.num_retries = num_retries
         self._readline_cache = (None, None)
+        self._return_memoryview = return_memoryview
 
     def __iter__(self):
         while True:
@@ -1254,8 +1255,8 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     """
 
-    def __init__(self, arvadosfile, mode="r", num_retries=None):
-        super(ArvadosFileReader, self).__init__(arvadosfile.name, mode=mode, num_retries=num_retries)
+    def __init__(self, arvadosfile, mode="r", num_retries=None, return_memoryview=False):
+        super(ArvadosFileReader, self).__init__(arvadosfile.name, mode=mode, num_retries=num_retries, return_memoryview=return_memoryview)
         self.arvadosfile = arvadosfile
 
     def size(self):
@@ -1271,7 +1272,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     @_FileLikeObjectBase._before_close
     @retry_method
-    def read(self, size=None, num_retries=None, return_memoryview=False):
+    def read(self, size=None, num_retries=None):
         """Read up to `size` bytes from the file and return the result.
 
         Starts at the current file position.  If `size` is None, read the
@@ -1290,18 +1291,18 @@ class ArvadosFileReader(ArvadosFileReaderBase):
                 rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries, exact=False, return_memoryview=True)
             return b''.join(data)
         else:
-            data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True, return_memoryview=return_memoryview)
+            data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True, return_memoryview=self._return_memoryview)
             self._filepos += len(data)
             return data
 
     @_FileLikeObjectBase._before_close
     @retry_method
-    def readfrom(self, offset, size, num_retries=None, return_memoryview=False):
+    def readfrom(self, offset, size, num_retries=None):
         """Read up to `size` bytes from the stream, starting at the specified file offset.
 
         This method does not change the file position.
         """
-        return self.arvadosfile.readfrom(offset, size, num_retries, return_memoryview=return_memoryview)
+        return self.arvadosfile.readfrom(offset, size, num_retries, return_memoryview=self._return_memoryview)
 
     def flush(self):
         pass
@@ -1315,8 +1316,8 @@ class ArvadosFileWriter(ArvadosFileReader):
 
     """
 
-    def __init__(self, arvadosfile, mode, num_retries=None):
-        super(ArvadosFileWriter, self).__init__(arvadosfile, mode=mode, num_retries=num_retries)
+    def __init__(self, arvadosfile, mode, num_retries=None, return_memoryview=False):
+        super(ArvadosFileWriter, self).__init__(arvadosfile, mode=mode, num_retries=num_retries, return_memoryview=return_memoryview)
         self.arvadosfile.add_writer(self)
 
     def writable(self):
