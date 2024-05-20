@@ -1176,7 +1176,7 @@ class Collection(RichCollectionBase):
         return self
 
     def return_bytes_only(self) -> bool:
-        self._return_bytes_only
+        return self._return_bytes_only
 
     def get_properties(self) -> Properties:
         """Get this collection's properties
