@@ -29,37 +29,37 @@ describe("<SearchBarView />", () => {
         //     const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" {...mockSearchProps()} />);
         //     searchBar.find("input").simulate("change", { target: { value: "current value" } });
         //     expect(onSearch).not.toBeCalled();
-        //     jest.runTimersToTime(DEFAULT_SEARCH_DEBOUNCE);
+        //     jest.advanceTimersByTime(DEFAULT_SEARCH_DEBOUNCE);
         //     expect(onSearch).toBeCalledWith("current value");
         // });
 
         // it("calls onSearch after the time specified in props has passed", () => {
         //     const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" debounce={2000} {...mockSearchProps()} />);
         //     searchBar.find("input").simulate("change", { target: { value: "current value" } });
-        //     jest.runTimersToTime(1000);
+        //     jest.advanceTimersByTime(1000);
         //     expect(onSearch).not.toBeCalled();
-        //     jest.runTimersToTime(1000);
+        //     jest.advanceTimersByTime(1000);
         //     expect(onSearch).toBeCalledWith("current value");
         // });
 
         // it("calls onSearch only once after no change happened during the specified time", () => {
         //     const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" debounce={1000} {...mockSearchProps()} />);
         //     searchBar.find("input").simulate("change", { target: { value: "current value" } });
-        //     jest.runTimersToTime(500);
+        //     jest.advanceTimersByTime(500);
         //     searchBar.find("input").simulate("change", { target: { value: "changed value" } });
-        //     jest.runTimersToTime(1000);
+        //     jest.advanceTimersByTime(1000);
         //     expect(onSearch).toHaveBeenCalledTimes(1);
         // });
 
         // it("calls onSearch again after the specified time has passed since previous call", () => {
         //     const searchBar = mount(<SearchBarView onSearch={onSearch} value="latest value" debounce={1000} {...mockSearchProps()} />);
         //     searchBar.find("input").simulate("change", { target: { value: "current value" } });
-        //     jest.runTimersToTime(500);
+        //     jest.advanceTimersByTime(500);
         //     searchBar.find("input").simulate("change", { target: { value: "intermediate value" } });
-        //     jest.runTimersToTime(1000);
+        //     jest.advanceTimersByTime(1000);
         //     expect(onSearch).toBeCalledWith("intermediate value");
         //     searchBar.find("input").simulate("change", { target: { value: "latest value" } });
-        //     jest.runTimersToTime(1000);
+        //     jest.advanceTimersByTime(1000);
         //     expect(onSearch).toBeCalledWith("latest value");
         //     expect(onSearch).toHaveBeenCalledTimes(2);
 
