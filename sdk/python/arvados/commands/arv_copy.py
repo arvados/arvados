@@ -13,9 +13,9 @@
 # --no-recursive is given, arv-copy copies only the single record
 # identified by object-uuid.
 #
-# The user must have files $HOME/.config/arvados/{src}.conf and
-# $HOME/.config/arvados/{dst}.conf with valid login credentials for
-# instances src and dst.  If either of these files is not found,
+# The user must have configuration files {src}.conf and
+# {dst}.conf in a standard configuration directory with valid login credentials
+# for instances src and dst.  If either of these files is not found,
 # arv-copy will issue an error.
 
 import argparse
@@ -86,10 +86,10 @@ def main():
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
         '--src', dest='source_arvados',
-        help='The cluster id of the source Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will be inferred from the UUID of the object being copied.')
+        help='The cluster id of the source Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for finding "foo.conf" under a systemd or XDG configuration directory.  If not provided, will be inferred from the UUID of the object being copied.')
     copy_opts.add_argument(
         '--dst', dest='destination_arvados',
-        help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will use ARVADOS_API_HOST from environment.')
+        help='The name of the destination Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for finding "foo.conf" under a systemd or XDG configuration directory.  If not provided, will use ARVADOS_API_HOST from environment.')
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object, and subprojects. (default)')
@@ -197,8 +197,8 @@ def set_src_owner_uuid(resource, uuid, args):
 #     (either local or absolute) to a file with Arvados configuration
 #     settings.
 #
-#     Otherwise, it is presumed to be the name of a file in
-#     $HOME/.config/arvados/instance_name.conf
+#     Otherwise, it is presumed to be the name of a file in a standard
+#     configuration directory.
 #
 def api_for_instance(instance_name, num_retries):
     if not instance_name:
@@ -208,16 +208,22 @@ def api_for_instance(instance_name, num_retries):
     if '/' in instance_name:
         config_file = instance_name
     else:
-        config_file = os.path.join(os.environ['HOME'], '.config', 'arvados', "{}.conf".format(instance_name))
+        dirs = arvados.util._BaseDirectories('CONFIG')
+        config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
     try:
         cfg = arvados.config.load(config_file)
-    except (IOError, OSError) as e:
-        abort(("Could not open config file {}: {}\n" +
+    except OSError as e:
+        if config_file:
+            verb = 'open'
+        else:
+            verb = 'find'
+            config_file = f'{instance_name}.conf'
+        abort(("Could not {} config file {}: {}\n" +
                "You must make sure that your configuration tokens\n" +
                "for Arvados instance {} are in {} and that this\n" +
                "file is readable.").format(
-                   config_file, e, instance_name, config_file))
+                   verb, config_file, e.strerror, instance_name, config_file))
 
     if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
         api_is_insecure = (
