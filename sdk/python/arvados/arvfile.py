@@ -1041,13 +1041,22 @@ class ArvadosFile(object):
             # size == self.size()
             pass
 
-    def readfrom(self, offset, size, num_retries, exact=False):
+    def readfrom(self, offset, size, num_retries, exact=False, return_memoryview=False):
         """Read up to `size` bytes from the file starting at `offset`.
 
-        :exact:
-         If False (default), return less data than requested if the read
-         crosses a block boundary and the next block isn't cached.  If True,
-         only return less data than requested when hitting EOF.
+        Arguments:
+
+        * exact: bool --- If False (default), return less data than
+         requested if the read crosses a block boundary and the next
+         block isn't cached.  If True, only return less data than
+         requested when hitting EOF.
+
+        * return_memoryview: bool -- If False (default) always return
+          a `bytes` object, which may entail making a copy in some
+          situations.  If True, may return either `bytes` or a
+          zero-copy `memoryview` object (more efficient, but may
+          confuse code expecting a `bytes` object).
+
         """
 
         with self.lock:
@@ -1092,7 +1101,10 @@ class ArvadosFile(object):
                     locs.add(lr.locator)
 
         if len(data) == 1:
-            return data[0]
+            if return_memoryview:
+                return data[0]
+            else:
+                return data[0].tobytes()
         else:
             return b''.join(data)
 
@@ -1259,7 +1271,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     @_FileLikeObjectBase._before_close
     @retry_method
-    def read(self, size=None, num_retries=None):
+    def read(self, size=None, num_retries=None, return_memoryview=False):
         """Read up to `size` bytes from the file and return the result.
 
         Starts at the current file position.  If `size` is None, read the
@@ -1267,25 +1279,29 @@ class ArvadosFileReader(ArvadosFileReaderBase):
         """
         if size is None:
             data = []
-            rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries)
+            #
+            # specify exact=False, return_memoryview=True here so that we
+            # only copy data once into the final buffer.
+            #
+            rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries, exact=False, return_memoryview=True)
             while rd:
                 data.append(rd)
                 self._filepos += len(rd)
-                rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries)
+                rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries, exact=False, return_memoryview=True)
             return b''.join(data)
         else:
-            data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True)
+            data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True, return_memoryview=return_memoryview)
             self._filepos += len(data)
             return data
 
     @_FileLikeObjectBase._before_close
     @retry_method
-    def readfrom(self, offset, size, num_retries=None):
+    def readfrom(self, offset, size, num_retries=None, return_memoryview=False):
         """Read up to `size` bytes from the stream, starting at the specified file offset.
 
         This method does not change the file position.
         """
-        return self.arvadosfile.readfrom(offset, size, num_retries)
+        return self.arvadosfile.readfrom(offset, size, num_retries, return_memoryview=return_memoryview)
 
     def flush(self):
         pass
