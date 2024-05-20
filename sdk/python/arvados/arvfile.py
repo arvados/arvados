@@ -1092,8 +1092,16 @@ class ArvadosFile(object):
                     locs.add(lr.locator)
 
         if len(data) == 1:
-            return data[0]
+            if self.parent.return_bytes_only():
+                # return bytes (API behavior prior to 2.7.2)
+                return data[0].tobytes()
+            else:
+                # return memoryview (save a copy, significant
+                # performance improvement for FUSE)
+                return data[0]
         else:
+            # need to join multiple segments, will be copied and
+            # returned as bytes
             return b''.join(data)
 
     @must_be_writable

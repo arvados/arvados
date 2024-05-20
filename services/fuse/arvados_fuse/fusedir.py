@@ -568,11 +568,13 @@ class CollectionDirectory(CollectionDirectoryBase):
                         if uuid_pattern.match(self.collection_locator):
                             coll_reader = arvados.collection.Collection(
                                 self.collection_locator, self.api, self.api.keep,
-                                num_retries=self.num_retries)
+                                num_retries=self.num_retries,
+                                return_bytes_only=False)
                         else:
                             coll_reader = arvados.collection.CollectionReader(
                                 self.collection_locator, self.api, self.api.keep,
-                                num_retries=self.num_retries)
+                                num_retries=self.num_retries,
+                                return_bytes_only=False)
                         new_collection_record = coll_reader.api_response() or {}
                         # If the Collection only exists in Keep, there will be no API
                         # response.  Fill in the fields we need.

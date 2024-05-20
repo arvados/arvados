@@ -177,6 +177,9 @@ class RichCollectionBase(CollectionBase):
     def _my_block_manager(self):
         raise NotImplementedError()
 
+    def return_bytes_only(self) -> bool:
+        raise NotImplementedError()
+
     def writable(self) -> bool:
         """Indicate whether this collection object can be modified
 
@@ -1042,7 +1045,8 @@ class Collection(RichCollectionBase):
                  block_manager: Optional['arvados.arvfile._BlockManager']=None,
                  replication_desired: Optional[int]=None,
                  storage_classes_desired: Optional[List[str]]=None,
-                 put_threads: Optional[int]=None):
+                 put_threads: Optional[int]=None,
+                 return_bytes_only: bool=True):
         """Initialize a Collection object
 
         Arguments:
@@ -1103,6 +1107,13 @@ class Collection(RichCollectionBase):
           simultaneously to upload data blocks to Keep. This value is used when
           building a new `block_manager`. It is unused when a `block_manager`
           is provided.
+
+        * return_bytes_only: bool --- If True, ArvFile read() will
+        only actual 'bytes' objects, if False, allow ArvFile read() to
+        return a bytes-like object (memoryview) for better efficiency,
+        but slightly reduced compatibility with code expecting plain
+        'bytes' objects.
+
         """
 
         if storage_classes_desired and type(storage_classes_desired) is not list:
@@ -1111,6 +1122,7 @@ class Collection(RichCollectionBase):
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
+        self._return_bytes_only = return_bytes_only
 
         # Use the keep client from ThreadSafeApiCache
         if self._keep_client is None and isinstance(self._api_client, ThreadSafeApiCache):
@@ -1162,6 +1174,9 @@ class Collection(RichCollectionBase):
 
     def root_collection(self) -> 'Collection':
         return self
+
+    def return_bytes_only(self) -> bool:
+        self._return_bytes_only
 
     def get_properties(self) -> Properties:
         """Get this collection's properties
@@ -1787,6 +1802,9 @@ class Subcollection(RichCollectionBase):
 
     def stream_name(self) -> str:
         return os.path.join(self.parent.stream_name(), self.name)
+
+    def return_bytes_only(self) -> bool:
+        return self.root_collection().return_bytes_only()
 
     @synchronized
     def clone(
