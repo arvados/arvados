@@ -497,9 +497,6 @@ type ContainersConfig struct {
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string
 
-	JobsAPI struct {
-		Enable string
-	}
 	Logging struct {
 		LogUpdatePeriod Duration
 		LogUpdateSize   ByteSize

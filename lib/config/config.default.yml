@@ -1326,18 +1326,6 @@ Clusters:
         # MaxRunTimeDefault: 2h
         MaxRunTimeDefault: 0
 
-      JobsAPI:
-        # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.
-        #
-        # Note: this only enables read-only access, creating new
-        # legacy jobs and pipelines is not supported.
-        #
-        # 'auto' -- (default) enable the Jobs API only if it has been used before
-        #         (i.e., there are job records in the database)
-        # 'true' -- enable the Jobs API despite lack of existing records.
-        # 'false' -- disable the Jobs API despite presence of existing records.
-        Enable: 'auto'
-
       CloudVMs:
         # Enable the cloud scheduler.
         Enable: false
