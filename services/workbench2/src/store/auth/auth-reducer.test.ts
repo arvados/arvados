@@ -33,7 +33,9 @@ describe('auth-reducer', () => {
             username: "username",
             prefs: {},
             isAdmin: false,
-            isActive: true
+            isActive: true,
+            canWrite: false,
+            canManage: false,
         };
         const state = reducer(initialState, authActions.INIT_USER({ user, token: "token" }));
         expect(state).toEqual({
@@ -62,7 +64,9 @@ describe('auth-reducer', () => {
             username: "username",
             prefs: {},
             isAdmin: false,
-            isActive: true
+            isActive: true,
+            canWrite: false,
+            canManage: false,
         };
 
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
