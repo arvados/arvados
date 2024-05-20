@@ -11,10 +11,12 @@ import tempfile
 import threading
 import unittest
 
+import pytest
 from unittest import mock
 
 import arvados
 import arvados.cache
+import arvados.util
 from . import run_test_server
 
 def _random(n):
@@ -45,23 +47,29 @@ class CacheTestThread(threading.Thread):
                 raise
 
 
+class TestAPIHTTPCache:
+    @pytest.mark.parametrize('data_type', ['discovery', 'keep'])
+    def test_good_storage(self, tmp_path, monkeypatch, data_type):
+        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', lambda _: tmp_path)
+        actual = arvados.http_cache(data_type)
+        assert actual is not None
+        assert (tmp_path / data_type).is_dir()
+
+    @pytest.mark.parametrize('error', [RuntimeError, FileExistsError, PermissionError])
+    def test_unwritable_storage(self, monkeypatch, error):
+        def fail(self):
+            raise error()
+        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', fail)
+        actual = arvados.http_cache('unwritable')
+        assert actual is None
+
+
 class CacheTest(unittest.TestCase):
     def setUp(self):
         self._dir = tempfile.mkdtemp()
 
     def tearDown(self):
         shutil.rmtree(self._dir)
-
-    def test_cache_create_error(self):
-        _, filename = tempfile.mkstemp()
-        home_was = os.environ['HOME']
-        os.environ['HOME'] = filename
-        try:
-            c = arvados.http_cache('test')
-            self.assertEqual(None, c)
-        finally:
-            os.environ['HOME'] = home_was
-            os.unlink(filename)
 
     def test_cache_crud(self):
         c = arvados.cache.SafeHTTPCache(self._dir, max_age=0)
