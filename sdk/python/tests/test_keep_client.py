@@ -164,8 +164,9 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers, DiskCacheBase)
 
         # GET from a different user => bad request
         run_test_server.authorize_with('spectator')
+        keep_client2 = arvados.KeepClient(block_cache=self.make_block_cache(self.disk_cache))
         self.assertRaises(arvados.errors.KeepReadError,
-                          arvados.Keep.get,
+                          keep_client2.get,
                           bar_locator)
 
         # Unauthenticated GET for a signed locator => bad request
