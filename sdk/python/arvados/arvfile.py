@@ -1107,7 +1107,10 @@ class ArvadosFile(object):
             else:
                 return data[0].tobytes()
         else:
-            return b''.join(data)
+            if return_memoryview:
+                return memoryview(b''.join(data))
+            else:
+                return b''.join(data)
 
     @must_be_writable
     @synchronized
@@ -1289,7 +1292,10 @@ class ArvadosFileReader(ArvadosFileReaderBase):
                 data.append(rd)
                 self._filepos += len(rd)
                 rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries, exact=False, return_memoryview=True)
-            return b''.join(data)
+            if self._return_memoryview:
+                return memoryview(b''.join(data))
+            else:
+                return b''.join(data)
         else:
             data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True, return_memoryview=self._return_memoryview)
             self._filepos += len(data)
