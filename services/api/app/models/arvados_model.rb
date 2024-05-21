@@ -752,7 +752,7 @@ class ArvadosModel < ApplicationRecord
     current_time = db_current_time
     self.created_at ||= created_at_was || current_time
     self.updated_at = current_time
-    self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
+    self.owner_uuid ||= current_user.uuid if current_user && self.respond_to?(:owner_uuid=)
     if !anonymous_updater
       self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     end
