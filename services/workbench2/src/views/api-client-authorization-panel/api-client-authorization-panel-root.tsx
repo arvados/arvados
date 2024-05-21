@@ -15,7 +15,7 @@ import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-author
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { ResourcesState } from 'store/resources/resources';
 import {
-    CommonUuid, TokenApiClientId, TokenApiToken, TokenCreatedByIpAddress, TokenDefaultOwnerUuid, TokenExpiresAt,
+    CommonUuid, TokenApiClientId, TokenApiToken, TokenCreatedByIpAddress, TokenExpiresAt,
     TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
 } from 'views-components/data-explorer/renderers';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
@@ -34,7 +34,6 @@ export enum ApiClientAuthorizationPanelColumnNames {
     API_CLIENT_ID = 'API Client ID',
     API_TOKEN = 'API Token',
     CREATED_BY_IP_ADDRESS = 'Created by IP address',
-    DEFAULT_OWNER_UUID = 'Default owner',
     EXPIRES_AT = 'Expires at',
     LAST_USED_AT = 'Last used at',
     LAST_USED_BY_IP_ADDRESS = 'Last used by IP address',
@@ -71,13 +70,6 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         configurable: true,
         filters: createTree(),
         render: uuid => <TokenCreatedByIpAddress uuid={uuid} />
-    },
-    {
-        name: ApiClientAuthorizationPanelColumnNames.DEFAULT_OWNER_UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <TokenDefaultOwnerUuid uuid={uuid} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.EXPIRES_AT,

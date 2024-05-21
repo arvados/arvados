@@ -13,7 +13,6 @@ type APIClientAuthorization struct {
 	APIToken             string    `json:"api_token"`
 	CreatedAt            time.Time `json:"created_at"`
 	CreatedByIPAddress   string    `json:"created_by_ip_address"`
-	DefaultOwnerUUID     string    `json:"default_owner_uuid"`
 	Etag                 string    `json:"etag"`
 	ExpiresAt            time.Time `json:"expires_at"`
 	LastUsedAt           time.Time `json:"last_used_at"`
