@@ -7,6 +7,7 @@ require "trashable"
 class Arvados::V1::GroupsController < ApplicationController
   include TrashableController
 
+  before_action :load_include_param, only: [:shared, :contents]
   skip_before_action :find_object_by_uuid, only: :shared
   skip_before_action :render_404_if_no_object, only: :shared
 
@@ -40,7 +41,7 @@ class Arvados::V1::GroupsController < ApplicationController
                 type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
               },
               include: {
-                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid).',
+                type: 'array', required: false, description: 'Include objects referred to by listed fields in "included" response field. Subsets of ["owner_uuid", "container_uuid"] are supported.',
               },
               include_old_versions: {
                 type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
@@ -130,6 +131,7 @@ class Arvados::V1::GroupsController < ApplicationController
   end
 
   def contents
+    @orig_select = @select
     load_searchable_objects
     list = {
       :kind => "arvados#objectList",
@@ -143,7 +145,7 @@ class Arvados::V1::GroupsController < ApplicationController
       list[:items_available] = @items_available
     end
     if @extra_included
-      list[:included] = @extra_included.as_api_response(nil, {select: @select})
+      list[:included] = @extra_included.as_api_response(nil, {select: @orig_select})
     end
     send_json(list)
   end
@@ -158,7 +160,6 @@ class Arvados::V1::GroupsController < ApplicationController
     # This also returns (in the "included" field) the objects that own
     # those projects (users or non-project groups).
     #
-    #
     # The intended use of this endpoint is to support clients which
     # wish to browse those projects which are visible to the user but
     # are not part of the "home" project.
@@ -170,12 +171,20 @@ class Arvados::V1::GroupsController < ApplicationController
 
     apply_where_limit_order_params
 
-    if params["include"] == "owner_uuid"
+    if @include.include?("owner_uuid")
       owners = @objects.map(&:owner_uuid).to_set
-      @extra_included = []
+      @extra_included ||= []
       [Group, User].each do |klass|
         @extra_included += klass.readable_by(*@read_users).where(uuid: owners.to_a).to_a
       end
+    end
+
+    if @include.include?("container_uuid")
+      @extra_included ||= []
+      container_uuids = @objects.map { |o|
+        o.respond_to?(:container_uuid) ? o.container_uuid : nil
+      }.compact.to_set.to_a
+      @extra_included += Container.where(uuid: container_uuids).to_a
     end
 
     index
@@ -188,6 +197,19 @@ class Arvados::V1::GroupsController < ApplicationController
   end
 
   protected
+
+  def load_include_param
+    @include = params[:include]
+    if @include.nil? || @include == ""
+      @include = Set[]
+    elsif @include.is_a?(String) && @include.start_with?('[')
+      @include = SafeJSON.load(@include).to_set
+    elsif @include.is_a?(String)
+      @include = Set[@include]
+    else
+      return send_error("'include' parameter must be a string or array", status: 422)
+    end
+  end
 
   def load_searchable_objects
     all_objects = []
@@ -261,6 +283,9 @@ class Arvados::V1::GroupsController < ApplicationController
       all_attributes = []
       klasses.each do |klass|
         all_attributes.concat klass.selectable_attributes
+      end
+      if klasses.include?(ContainerRequest) && @include.include?("container_uuid")
+        all_attributes.concat Container.selectable_attributes
       end
       @select.each do |check|
         if !all_attributes.include? check
@@ -371,12 +396,19 @@ class Arvados::V1::GroupsController < ApplicationController
         limit_all = all_objects.count
       end
 
-      if params["include"] == "owner_uuid"
+      if @include.include?("owner_uuid")
         owners = klass_object_list[:items].map {|i| i[:owner_uuid]}.to_set
         [Group, User].each do |ownerklass|
           ownerklass.readable_by(*@read_users).where(uuid: owners.to_a).each do |ow|
             included_by_uuid[ow.uuid] = ow
           end
+        end
+      end
+
+      if @include.include?("container_uuid") && klass == ContainerRequest
+        containers = klass_object_list[:items].collect { |cr| cr[:container_uuid] }.to_set
+        Container.where(uuid: containers.to_a).each do |c|
+          included_by_uuid[c.uuid] = c
         end
       end
     end
@@ -389,7 +421,7 @@ class Arvados::V1::GroupsController < ApplicationController
       raise ArgumentError.new(error_msg)
     end
 
-    if params["include"]
+    if !@include.empty?
       @extra_included = included_by_uuid.values
     end
 
@@ -420,5 +452,4 @@ class Arvados::V1::GroupsController < ApplicationController
                      "EXISTS(SELECT 1 FROM groups as gp where gp.uuid=#{klass.table_name}.owner_uuid and gp.group_class != 'project')",
                      user_uuid: current_user.uuid)
   end
-
 end
