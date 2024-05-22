@@ -31,11 +31,6 @@ from typing import (
     Union,
     cast,
 )
-from cwltool.utils import (
-    CWLObjectType,
-    CWLOutputAtomType,
-    CWLOutputType,
-)
 
 import subprocess
 
@@ -929,7 +924,7 @@ class Runner(Process):
             if "cwl.output.json" in outc:
                 with outc.open("cwl.output.json", "rb") as f:
                     if f.size() > 0:
-                        outputs = json.loads(f.read().decode())
+                        outputs = json.loads(str(f.read(), 'utf-8'))
             def keepify(fileobj):
                 path = fileobj["location"]
                 if not path.startswith("keep:"):
