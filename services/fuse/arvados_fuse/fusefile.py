@@ -63,7 +63,7 @@ class FuseArvadosFile(File):
 
     def readfrom(self, off, size, num_retries=0):
         with llfuse.lock_released:
-            return self.arvfile.readfrom(off, size, num_retries, exact=True)
+            return self.arvfile.readfrom(off, size, num_retries, exact=True, return_memoryview=True)
 
     def writeto(self, off, buf, num_retries=0):
         with llfuse.lock_released:
