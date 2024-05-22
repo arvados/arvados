@@ -113,7 +113,8 @@ table(table table-bordered table-condensed).
 |filters|array|Conditions for filtering items.|query|@[["uuid", "is_a", "arvados#job"]]@|
 |recursive|boolean (default false)|Include items owned by subprojects.|query|@true@|
 |exclude_home_project|boolean (default false)|Only return items which are visible to the user but not accessible within the user's home project.  Use this to get a list of items that are shared with the user.  Uses the logic described under the "shared" endpoint.|query|@true@|
-|include|string|If provided with the value "owner_uuid", this will return owner objects in the "included" field of the response.|query||
+|include|array|Look up objects referenced by the indicated fields and include them in the response. Only "owner_uuid" and "container_uuid" are supported. If "owner_uuid" is given, the parent project or user will be returned. If "container_uuid" is given and container requests are returned in the response, the corresponding container records will also be returned. These referenced objects will be returned in the "included" field of the response. For compatibility, a string @"owner_uuid"@ is accepted as equivalent to @["owner_uuid"]@.|query|@"owner_uuid"@
+@["owner_uuid","container_uuid"]@|
 |include_trash|boolean (default false)|Include trashed objects.|query|@true@|
 |include_old_versions|boolean (default false)|Include past versions of the collections being listed.|query|@true@|
 |select|array|Attributes of each object to return in the response. Specify an unqualified name like @uuid@ to select that attribute on all object types, or a qualified name like @collections.name@ to select that attribute on objects of the specified type. By default, all available attributes are returned, except on collections, where @manifest_text@ is not returned and cannot be selected due to an implementation limitation. This limitation may be removed in the future.|query|@["uuid", "collections.name"]@|
@@ -125,6 +126,8 @@ Because adding access tokens to manifests can be computationally expensive, the 
 Use filters with the attribute format @<item type>.<field name>@ to filter items of a specific type. For example: @["container_requests.state", "=", "Final"]@ to filter @container_requests@ where @state@ is @Final@. All other types of items owned by this group will be unimpacted by this filter and will still be included.
 
 When called with “include=owner_uuid”, the @included@ field of the response is populated with users, projects, or other groups that own the objects returned in @items@.  This can be used to fetch an object and its parent with a single API call.
+
+When called with “include=container_uuid”, the @included@ field of the response is populated with the container associated with each container request in the response.
 
 
 h3. create
