@@ -63,8 +63,6 @@ var (
 // s3Volume implements Volume using an S3 bucket.
 type s3Volume struct {
 	arvados.S3VolumeDriverParameters
-	AuthToken      string    // populated automatically when IAMRole is used
-	AuthExpiration time.Time // populated automatically when IAMRole is used
 
 	cluster    *arvados.Cluster
 	volume     arvados.Volume

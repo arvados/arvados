@@ -190,7 +190,6 @@ func (s *stubbedS3Suite) TestIAMRoleCredentials(c *check.C) {
 
 	v := &s3Volume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
-			IAMRole:  s.metadata.URL + "/latest/api/token",
 			Endpoint: stub.URL,
 			Region:   "test-region-1",
 			Bucket:   "test-bucket-name",
@@ -602,9 +601,9 @@ func (s *stubbedS3Suite) newTestableVolume(c *check.C, params newVolumeParams, r
 	endpoint := s.s3server.URL
 	bucketName := fmt.Sprintf("testbucket%d", testBucketSerial.Add(1))
 
-	var metadataURL, iamRole, accessKey, secretKey string
+	var metadataURL, accessKey, secretKey string
 	if s.metadata != nil {
-		metadataURL, iamRole = s.metadata.URL, s.metadata.URL+"/fake-metadata/test-role"
+		metadataURL = s.metadata.URL
 	} else {
 		accessKey, secretKey = "xxx", "xxx"
 	}
@@ -612,7 +611,6 @@ func (s *stubbedS3Suite) newTestableVolume(c *check.C, params newVolumeParams, r
 	v := &testableS3Volume{
 		s3Volume: &s3Volume{
 			S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
-				IAMRole:            iamRole,
 				AccessKeyID:        accessKey,
 				SecretAccessKey:    secretKey,
 				Bucket:             bucketName,
