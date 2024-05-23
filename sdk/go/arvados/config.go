@@ -213,10 +213,6 @@ type Cluster struct {
 		TrustPrivateNetworks bool
 		IssueTrustedTokens   bool
 	}
-	Mail struct {
-		SendUserSetupNotificationEmail bool
-		SupportEmailAddress            string
-	}
 	SystemLogs struct {
 		LogLevel                  string
 		Format                    string
@@ -244,6 +240,8 @@ type Cluster struct {
 		NewInactiveUserNotificationRecipients StringSet
 		NewUserNotificationRecipients         StringSet
 		NewUsersAreActive                     bool
+		SendUserSetupNotificationEmail        bool
+		SupportEmailAddress                   string
 		UserNotifierEmailFrom                 string
 		UserNotifierEmailBcc                  StringSet
 		UserProfileNotificationAddress        string

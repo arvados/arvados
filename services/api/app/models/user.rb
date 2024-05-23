@@ -273,7 +273,7 @@ SELECT target_uuid, perm_level
 
     # Send welcome email
     if send_notification_email.nil?
-      send_notification_email = Rails.configuration.Mail.SendUserSetupNotificationEmail
+      send_notification_email = Rails.configuration.Users.SendUserSetupNotificationEmail
     end
 
     if newly_invited and send_notification_email and !Rails.configuration.Users.UserSetupMailText.empty?
