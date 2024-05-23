@@ -46,7 +46,10 @@ setup(name='arvados-cwl-runner',
           'setuptools>=40.3.0',
 
           # zipp 3.16 dropped support for Python 3.7
-          'zipp<3.16.0; python_version<"3.8"'
+          'zipp<3.16.0; python_version<"3.8"',
+
+          # lxml 5.2 dropped support for Python 3.7
+          'lxml<5.2; python_version<"3.8"',
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
