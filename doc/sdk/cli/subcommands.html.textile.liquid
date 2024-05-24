@@ -64,48 +64,63 @@ h3(#arv-copy). arv copy
 <notextile>
 <pre>
 $ <code class="userinput">arv copy --help</code>
-usage: arv_copy.py [-h] [-v] [--progress] [--no-progress] [-f] --src
-                   SOURCE_ARVADOS --dst DESTINATION_ARVADOS [--recursive]
-                   [--no-recursive] [--dst-git-repo DST_GIT_REPO]
-                   [--project-uuid PROJECT_UUID] [--retries RETRIES]
-                   object_uuid
+usage: arv-copy [-h] [--version] [-v] [--progress] [--no-progress] [-f]
+                [--src SOURCE_ARVADOS] [--dst DESTINATION_ARVADOS]
+                [--recursive] [--no-recursive] [--project-uuid PROJECT_UUID]
+                [--storage-classes STORAGE_CLASSES]
+                [--varying-url-params VARYING_URL_PARAMS]
+                [--prefer-cached-downloads] [--retries RETRIES]
+                object_uuid
 
-Copy a pipeline instance, template or collection from one Arvados instance to
-another.
+Copy a workflow, collection or project from one Arvados instance to another.
+On success, the uuid of the copied object is printed to stdout.
 
 positional arguments:
   object_uuid           The UUID of the object to be copied.
 
 optional arguments:
   -h, --help            show this help message and exit
+  --version             Print version and exit.
   -v, --verbose         Verbose output.
   --progress            Report progress on copying collections. (default)
   --no-progress         Do not report progress on copying collections.
   -f, --force           Perform copy even if the object appears to exist at
                         the remote destination.
-  --src SOURCE_ARVADOS  The name of the source Arvados instance (required) -
-                        points at an Arvados config file. May be either a
-                        pathname to a config file, or (for example) "foo" as
-                        shorthand for $HOME/.config/arvados/foo.conf.
+  --src SOURCE_ARVADOS  Client configuration location for the source Arvados
+                        cluster. May be either a configuration file path, or a
+                        plain identifier like `foo` to search for a
+                        configuration file `foo.conf` under a systemd or XDG
+                        configuration directory. If not provided, will search
+                        for a configuration file named after the cluster ID of
+                        the source object UUID.
   --dst DESTINATION_ARVADOS
-                        The name of the destination Arvados instance
-                        (required) - points at an Arvados config file. May be
-                        either a pathname to a config file, or (for example)
-                        "foo" as shorthand for $HOME/.config/arvados/foo.conf.
-  --recursive           Recursively copy any dependencies for this object.
-                        (default)
-  --no-recursive        Do not copy any dependencies. NOTE: if this option is
-                        given, the copied object will need to be updated
-                        manually in order to be functional.
-  --dst-git-repo DST_GIT_REPO
-                        The name of the destination git repository. Required
-                        when copying a pipeline recursively.
+                        Client configuration location for the destination
+                        Arvados cluster. May be either a configuration file
+                        path, or a plain identifier like `foo` to search for a
+                        configuration file `foo.conf` under a systemd or XDG
+                        configuration directory. If not provided, will use the
+                        default client configuration from the environment or
+                        `settings.conf`.
+  --recursive           Recursively copy any dependencies for this object, and
+                        subprojects. (default)
+  --no-recursive        Do not copy any dependencies or subprojects.
   --project-uuid PROJECT_UUID
                         The UUID of the project at the destination to which
-                        the pipeline should be copied.
+                        the collection or workflow should be copied.
+  --storage-classes STORAGE_CLASSES
+                        Comma separated list of storage classes to be used
+                        when saving data to the destinaton Arvados instance.
+  --varying-url-params VARYING_URL_PARAMS
+                        A comma separated list of URL query parameters that
+                        should be ignored when storing HTTP URLs in Keep.
+  --prefer-cached-downloads
+                        If a HTTP URL is found in Keep, skip upstream URL
+                        freshness check (will not notice if the upstream has
+                        changed, but also not error if upstream is
+                        unavailable).
   --retries RETRIES     Maximum number of times to retry server requests that
                         encounter temporary failures (e.g., server down).
-                        Default 3.
+                        Default 10.
 </pre>
 </notextile>
 
