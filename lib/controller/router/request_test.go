@@ -35,7 +35,8 @@ type testReq struct {
 	tokenInQuery    bool
 	noContentType   bool
 
-	body *bytes.Buffer
+	body        *bytes.Buffer // provided by caller
+	bodyContent []byte        // set by (*testReq)Request() if body not provided by caller
 }
 
 const noToken = "(no token)"
@@ -46,8 +47,10 @@ func (tr *testReq) Request() *http.Request {
 		param[k] = v
 	}
 
+	var body *bytes.Buffer
 	if tr.body != nil {
 		// caller provided a buffer
+		body = tr.body
 	} else if tr.json {
 		if tr.jsonAttrsTop {
 			for k, v := range tr.attrs {
@@ -72,11 +75,12 @@ func (tr *testReq) Request() *http.Request {
 				param[tr.attrsKey] = tr.attrs
 			}
 		}
-		tr.body = bytes.NewBuffer(nil)
-		err := json.NewEncoder(tr.body).Encode(param)
+		body = bytes.NewBuffer(nil)
+		err := json.NewEncoder(body).Encode(param)
 		if err != nil {
 			panic(err)
 		}
+		tr.bodyContent = body.Bytes()
 	} else {
 		values := make(url.Values)
 		for k, v := range param {
@@ -97,8 +101,9 @@ func (tr *testReq) Request() *http.Request {
 			}
 			values.Set(tr.attrsKey, string(jattrs))
 		}
-		tr.body = bytes.NewBuffer(nil)
-		io.WriteString(tr.body, values.Encode())
+		body = bytes.NewBuffer(nil)
+		io.WriteString(body, values.Encode())
+		tr.bodyContent = body.Bytes()
 	}
 	method := tr.method
 	if method == "" {
@@ -108,7 +113,7 @@ func (tr *testReq) Request() *http.Request {
 	if path == "" {
 		path = "example/test/path"
 	}
-	req := httptest.NewRequest(method, "https://an.example/"+path, tr.body)
+	req := httptest.NewRequest(method, "https://an.example/"+path, body)
 	token := tr.token
 	if token == "" {
 		token = arvadostest.ActiveTokenV2
@@ -125,10 +130,6 @@ func (tr *testReq) Request() *http.Request {
 		req.Header[k] = append([]string(nil), v...)
 	}
 	return req
-}
-
-func (tr *testReq) bodyContent() string {
-	return string(tr.body.Bytes())
 }
 
 func (s *RouterSuite) TestAttrsInBody(c *check.C) {
@@ -172,7 +173,7 @@ func (s *RouterSuite) TestBoolParam(c *check.C) {
 	} {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
-		c.Logf("tr.body: %s", tr.bodyContent())
+		c.Logf("tr.body: %s", tr.bodyContent)
 		var opts struct{ EnsureUniqueName bool }
 		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
 		c.Logf("params: %#v", params)
@@ -191,7 +192,7 @@ func (s *RouterSuite) TestBoolParam(c *check.C) {
 	} {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
-		c.Logf("tr.body: %s", tr.bodyContent())
+		c.Logf("tr.body: %s", tr.bodyContent)
 		var opts struct {
 			EnsureUniqueName bool `json:"ensure_unique_name"`
 		}
@@ -205,22 +206,25 @@ func (s *RouterSuite) TestBoolParam(c *check.C) {
 	}
 }
 
-func (s *RouterSuite) TestOrderParam(c *check.C) {
-	for i, tr := range []testReq{
-		{method: "POST", param: map[string]interface{}{"order": ""}, json: true},
-		{method: "POST", param: map[string]interface{}{"order": ""}, json: false},
-		{method: "POST", param: map[string]interface{}{"order": []string{}}, json: true},
-		{method: "POST", param: map[string]interface{}{"order": []string{}}, json: false},
-		{method: "POST", param: map[string]interface{}{}, json: true},
-		{method: "POST", param: map[string]interface{}{}, json: false},
-	} {
-		c.Logf("#%d, tr: %#v", i, tr)
-		req := tr.Request()
-		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, nil)
-		c.Assert(err, check.IsNil)
-		c.Assert(params, check.NotNil)
-		if order, ok := params["order"]; ok && order != nil {
-			c.Check(order, check.DeepEquals, []interface{}{})
+func (s *RouterSuite) TestStringOrArrayParam(c *check.C) {
+	for _, paramname := range []string{"order", "include"} {
+		for i, tr := range []testReq{
+			{method: "POST", param: map[string]interface{}{paramname: ""}, json: true},
+			{method: "POST", param: map[string]interface{}{paramname: ""}, json: false},
+			{method: "POST", param: map[string]interface{}{paramname: []string{}}, json: true},
+			{method: "POST", param: map[string]interface{}{paramname: []string{}}, json: false},
+			{method: "POST", param: map[string]interface{}{}, json: true},
+			{method: "POST", param: map[string]interface{}{}, json: false},
+		} {
+			c.Logf("%s #%d, tr: %#v", paramname, i, tr)
+			req := tr.Request()
+			c.Logf("tr.body: %s", tr.bodyContent)
+			params, err := s.rtr.loadRequestParams(req, tr.attrsKey, nil)
+			c.Assert(err, check.IsNil)
+			c.Assert(params, check.NotNil)
+			if order, ok := params[paramname]; ok && order != nil {
+				c.Check(order, check.DeepEquals, []interface{}{})
+			}
 		}
 	}
 
@@ -233,6 +237,7 @@ func (s *RouterSuite) TestOrderParam(c *check.C) {
 	} {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
+		c.Logf("tr.body: %s", tr.bodyContent)
 		var opts arvados.ListOptions
 		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
 		c.Assert(err, check.IsNil)
@@ -241,6 +246,42 @@ func (s *RouterSuite) TestOrderParam(c *check.C) {
 			c.Check(params["order"], check.DeepEquals, []string{"foo", "bar desc"})
 		} else {
 			c.Check(params["order"], check.DeepEquals, []interface{}{"foo", "bar desc"})
+		}
+	}
+
+	for i, tr := range []testReq{
+		{method: "POST", param: map[string]interface{}{"include": "container_uuid,owner_uuid"}, json: true},
+		{method: "POST", param: map[string]interface{}{"include": "container_uuid,owner_uuid"}, json: false},
+		{method: "POST", param: map[string]interface{}{"include": "[\"container_uuid\", \"owner_uuid\"]"}, json: false},
+		{method: "POST", param: map[string]interface{}{"include": []string{"container_uuid", "owner_uuid"}}, json: true},
+		{method: "POST", param: map[string]interface{}{"include": []string{"container_uuid", "owner_uuid"}}, json: false},
+	} {
+		c.Logf("#%d, tr: %#v", i, tr)
+		{
+			req := tr.Request()
+			c.Logf("tr.body: %s", tr.bodyContent)
+			var opts arvados.ListOptions
+			params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
+			c.Assert(err, check.IsNil)
+			c.Check(opts.Include, check.DeepEquals, []string{"container_uuid", "owner_uuid"})
+			if _, ok := params["include"].([]string); ok {
+				c.Check(params["include"], check.DeepEquals, []string{"container_uuid", "owner_uuid"})
+			} else {
+				c.Check(params["include"], check.DeepEquals, []interface{}{"container_uuid", "owner_uuid"})
+			}
+		}
+		{
+			req := tr.Request()
+			c.Logf("tr.body: %s", tr.bodyContent)
+			var opts arvados.GroupContentsOptions
+			params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
+			c.Assert(err, check.IsNil)
+			c.Check(opts.Include, check.DeepEquals, []string{"container_uuid", "owner_uuid"})
+			if _, ok := params["include"].([]string); ok {
+				c.Check(params["include"], check.DeepEquals, []string{"container_uuid", "owner_uuid"})
+			} else {
+				c.Check(params["include"], check.DeepEquals, []interface{}{"container_uuid", "owner_uuid"})
+			}
 		}
 	}
 }
