@@ -176,8 +176,9 @@ class KeepBlockCache(object):
         self._cache_updating = threading.Condition(self._cache_lock)
 
         if self._disk_cache and self._disk_cache_dir is None:
-            self._disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
-            os.makedirs(self._disk_cache_dir, mode=0o700, exist_ok=True)
+            cache_path = arvados.util._BaseDirectories('CACHE').storage_path() / 'keep'
+            cache_path.mkdir(mode=0o700, exist_ok=True)
+            self._disk_cache_dir = str(cache_path)
 
         if self._max_slots == 0:
             if self._disk_cache:
