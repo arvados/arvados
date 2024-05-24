@@ -39,7 +39,7 @@ class DiskCacheSlot(object):
         # just a few pages at a time), reducing the number of page
         # faults and improving performance by 4x compared to not
         # calling madvise.
-        if self.content:
+        if self.content and hasattr(mmap.mmap, 'madvise'):
             self.content.madvise(mmap.MADV_WILLNEED)
         return self.content
 
