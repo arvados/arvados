@@ -190,6 +190,7 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers, DiskCacheBase)
                           keep_client.get,
                           unsigned_bar_locator)
 
+
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepProxyTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
     disk_cache = False
@@ -239,6 +240,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
             keep_client = arvados.KeepClient(api_client=self.api_client,
                                              local_store='',
                                              block_cache=self.make_block_cache(self.disk_cache))
+
 
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheBase):
@@ -576,6 +578,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         self.assertEqual(pdh, actual)
         self.assertEqual(1, req_mock.call_count)
 
+
 @tutil.skip_sleep
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheBase):
@@ -617,9 +620,6 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
         self.assertEqual(b'first response', head_resp)
         # First reponse was not cached because it was from a HEAD request.
         self.assertNotEqual(head_resp, get_resp)
-
-
-
 
 
 @tutil.skip_sleep
@@ -875,6 +875,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock, DiskC
     def test_put_error_shows_probe_order(self):
         self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
 
+
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase, DiskCacheBase):
     disk_cache = False
@@ -1022,6 +1023,7 @@ class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase, DiskCacheBa
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
 
+
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheBase):
     disk_cache = False
@@ -1123,6 +1125,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         self.assertEqual(True, self.keepClient.head(locator))
         self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
                          MockCurl.return_value.getopt(pycurl.URL).decode())
+
 
 class KeepClientRetryTestMixin(object):
     disk_cache = False
@@ -1244,6 +1247,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase, Di
                 (self.DEFAULT_EXPECT, 200)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
+
 @tutil.skip_sleep
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientRetryHeadTestCase(KeepClientRetryTestMixin, unittest.TestCase, DiskCacheBase):
@@ -1286,6 +1290,7 @@ class KeepClientRetryHeadTestCase(KeepClientRetryTestMixin, unittest.TestCase, D
                 (self.DEFAULT_EXPECT, 200)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
+
 @tutil.skip_sleep
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase, DiskCacheBase):
@@ -1306,7 +1311,6 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase, Di
 
 
 class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
-
     class FakeKeepService(object):
         def __init__(self, delay, will_succeed=False, will_raise=None, replicas=1):
             self.delay = delay
@@ -1332,6 +1336,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
 
         def finished(self):
             return False
+
 
     def setUp(self):
         self.copies = 3
@@ -1418,6 +1423,7 @@ class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock, DiskCac
                 self.keep_client.put('foo', num_retries=1, copies=2)
         self.assertEqual(2, req_mock.call_count)
 
+
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class KeepClientAPIErrorTest(unittest.TestCase, DiskCacheBase):
     disk_cache = False
@@ -1464,7 +1470,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
     def tearDown(self):
         shutil.rmtree(self.disk_cache_dir)
 
-
     @mock.patch('arvados.KeepClient.KeepService.get')
     def test_disk_cache_read(self, get_mock):
         # confirm it finds an existing cache block when the cache is
@@ -1482,7 +1487,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
 
         get_mock.assert_not_called()
-
 
     @mock.patch('arvados.KeepClient.KeepService.get')
     def test_disk_cache_share(self, get_mock):
@@ -1502,7 +1506,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
         get_mock.assert_not_called()
 
-
     def test_disk_cache_write(self):
         # confirm the cache block was created
 
@@ -1517,7 +1520,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "rb") as f:
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
-
 
     def test_disk_cache_clean(self):
         # confirm that a tmp file in the cache is cleaned up
@@ -1557,7 +1559,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], "tmpXYZABC")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], "XYZABC")))
 
-
     @mock.patch('arvados.KeepClient.KeepService.get')
     def test_disk_cache_cap(self, get_mock):
         # confirm that the cache is kept to the desired limit
@@ -1579,7 +1580,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
         self.assertFalse(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock")))
-
 
     @mock.patch('arvados.KeepClient.KeepService.get')
     def test_disk_cache_share(self, get_mock):
@@ -1610,8 +1610,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock")))
 
-
-
     def test_disk_cache_error(self):
         os.chmod(self.disk_cache_dir, stat.S_IRUSR)
 
@@ -1619,7 +1617,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         with self.assertRaises(OSError):
             block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
                                                       disk_cache_dir=self.disk_cache_dir)
-
 
     def test_disk_cache_write_error(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
@@ -1635,7 +1632,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         with self.assertRaises(arvados.errors.KeepCacheError):
             with tutil.mock_keep_responses(self.data, 200) as mock:
                 keep_client.get(self.locator)
-
 
     def test_disk_cache_retry_write_error(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
@@ -1668,7 +1664,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
         # shrank the cache in response to ENOSPC
         self.assertTrue(cache_max_before > block_cache.cache_max)
-
 
     def test_disk_cache_retry_write_error2(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
