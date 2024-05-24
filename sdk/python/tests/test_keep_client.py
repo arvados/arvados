@@ -2,26 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import hashlib
-import os
 import errno
-import pycurl
+import hashlib
+import mmap
+import os
 import random
 import re
 import shutil
 import socket
-import sys
 import stat
+import sys
 import tempfile
 import time
 import unittest
 import urllib.parse
-import mmap
 
 from unittest import mock
 from unittest.mock import patch
 
 import parameterized
+import pycurl
 
 import arvados
 import arvados.retry
