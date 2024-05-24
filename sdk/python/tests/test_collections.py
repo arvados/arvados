@@ -2,25 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import arvados
+import ciso8601
 import copy
+import datetime
 import os
 import random
 import re
 import sys
-import datetime
-import ciso8601
 import time
 import unittest
-import parameterized
 
+import parameterized
 from unittest import mock
 
-from . import run_test_server
-from arvados._ranges import Range, LocatorAndRange
+import arvados
 from arvados.collection import Collection, CollectionReader
-from . import arvados_testutil as tutil
+from arvados._ranges import Range, LocatorAndRange
 from .arvados_testutil import make_block_cache
+
+from . import arvados_testutil as tutil
+from . import run_test_server
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
