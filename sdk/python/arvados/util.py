@@ -236,16 +236,22 @@ class _BaseDirectories:
             if path.exists():
                 yield path
 
-    def storage_path(self) -> Path:
+    def storage_path(
+            self,
+            subdir: Union[str, os.PathLike]=PurePath(),
+            mode: int=0o700,
+    ) -> Path:
         for path in self._spec.iter_systemd(self._env):
             try:
                 mode = path.stat().st_mode
             except OSError:
                 continue
             if (mode & self._STORE_MODE) == self._STORE_MODE:
-                return path
-        path = self._spec.xdg_home(self._env, self._xdg_subdir)
-        path.mkdir(parents=True, exist_ok=True)
+                break
+        else:
+            path = self._spec.xdg_home(self._env, self._xdg_subdir)
+        path /= subdir
+        path.mkdir(parents=True, exist_ok=True, mode=mode)
         return path
 
 

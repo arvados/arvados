@@ -238,6 +238,14 @@ class TestBaseDirectories:
     def env(self, tmp_path):
         return {'HOME': str(tmp_path)}
 
+    @pytest.fixture
+    def umask(self):
+        orig_umask = os.umask(0o002)
+        try:
+            yield
+        finally:
+            os.umask(orig_umask)
+
     def test_search_systemd_dirs(self, dir_spec, env, tmp_path):
         env['TEST_DIRECTORY'] = f'{tmp_path}:{self.SELF_PATH.parent}'
         dirs = arvados.util._BaseDirectories(dir_spec, env, 'tests')
@@ -332,6 +340,20 @@ class TestBaseDirectories:
         assert dirs.storage_path() == expected
         exp_mode = stat.S_IFDIR | stat.S_IWUSR
         assert (expected.stat().st_mode & exp_mode) == exp_mode
+
+    @pytest.mark.parametrize('subdir,mode', [
+        ('str/dir', 0o750),
+        (Path('sub', 'path'), 0o770),
+    ])
+    def test_storage_path_subdir(self, dir_spec, env, umask, tmp_path, subdir, mode):
+        expected = tmp_path / dir_spec.xdg_home_default / 'arvados' / subdir
+        dirs = arvados.util._BaseDirectories(dir_spec, env)
+        actual = dirs.storage_path(subdir, mode)
+        assert actual == expected
+        expect_mode = mode | stat.S_IFDIR
+        actual_mode = actual.stat().st_mode
+        assert (actual_mode & expect_mode) == expect_mode
+        assert not (actual_mode & stat.S_IRWXO)
 
     def test_empty_xdg_home(self, dir_spec, env, tmp_path):
         env['XDG_TEST_HOME'] = ''

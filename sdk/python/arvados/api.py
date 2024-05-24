@@ -169,8 +169,7 @@ def http_cache(data_type: str) -> cache.SafeHTTPCache:
       where data is cached.
     """
     try:
-        path = util._BaseDirectories('CACHE').storage_path() / data_type
-        path.mkdir(exist_ok=True)
+        path = util._BaseDirectories('CACHE').storage_path(data_type)
     except (OSError, RuntimeError):
         return None
     else:

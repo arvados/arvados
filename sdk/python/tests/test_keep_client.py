@@ -1473,12 +1473,11 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
     @mock.patch('arvados.util._BaseDirectories.storage_path')
     def test_default_disk_cache_dir(self, storage_path):
-        expected = Path(self.disk_cache_dir, 'keep')
-        storage_path.return_value = expected.parent
+        expected = Path(self.disk_cache_dir)
+        storage_path.return_value = expected
         cache = arvados.keep.KeepBlockCache(disk_cache=True)
-        storage_path.assert_called()
+        storage_path.assert_called_with('keep')
         self.assertEqual(cache._disk_cache_dir, str(expected))
-        self.assertTrue(expected.is_dir(), "cache did not create disk cache directory")
 
     @mock.patch('arvados.KeepClient.KeepService.get')
     def test_disk_cache_read(self, get_mock):

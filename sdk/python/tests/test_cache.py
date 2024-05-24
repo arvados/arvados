@@ -50,14 +50,17 @@ class CacheTestThread(threading.Thread):
 class TestAPIHTTPCache:
     @pytest.mark.parametrize('data_type', ['discovery', 'keep'])
     def test_good_storage(self, tmp_path, monkeypatch, data_type):
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', lambda _: tmp_path)
+        def storage_path(self, subdir='.', mode=0o700):
+            path = tmp_path / subdir
+            path.mkdir(mode=mode)
+            return path
+        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', storage_path)
         actual = arvados.http_cache(data_type)
-        assert actual is not None
-        assert (tmp_path / data_type).is_dir()
+        assert str(actual) == str(tmp_path / data_type)
 
     @pytest.mark.parametrize('error', [RuntimeError, FileExistsError, PermissionError])
     def test_unwritable_storage(self, monkeypatch, error):
-        def fail(self):
+        def fail(self, subdir='.', mode=0o700):
             raise error()
         monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', fail)
         actual = arvados.http_cache('unwritable')
