@@ -28,8 +28,8 @@ import traceback
 
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
-from arvados.util import keep_locator_pattern
 
+import arvados.util
 import arvados.commands._util as arv_cmd
 
 api_client = None
@@ -942,7 +942,7 @@ class ArvPutUploadJob(object):
         oldest_exp = None
         oldest_loc = None
         block_found = False
-        for m in keep_locator_pattern.finditer(self._state['manifest']):
+        for m in arvados.util.keep_locator_pattern.finditer(self._state['manifest']):
             loc = m.group(0)
             try:
                 exp = datetime.datetime.utcfromtimestamp(int(loc.split('@')[1], 16))
