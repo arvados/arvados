@@ -25,11 +25,14 @@ import time
 import unittest
 import uuid
 
+import pytest
 from functools import partial
+from pathlib import Path
 from unittest import mock
 
 import arvados
 import arvados.commands.put as arv_put
+import arvados.util
 from . import arvados_testutil as tutil
 
 from .arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
@@ -243,6 +246,76 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         self.assertRaises(ValueError, cache.load)
         self.assertRaises(arv_put.ResumeCacheConflict,
                           arv_put.ResumeCache, path)
+
+
+class TestArvadosPutResumeCacheDir:
+    @pytest.fixture
+    def args(self, tmp_path):
+        return arv_put.parse_arguments([str(tmp_path)])
+
+    @pytest.mark.parametrize('cache_dir', [None, 'test-put'])
+    def test_cache_subdir(self, tmp_path, monkeypatch, cache_dir, args):
+        if cache_dir is None:
+            cache_dir = arv_put.ResumeCache.CACHE_DIR
+        else:
+            monkeypatch.setattr(arv_put.ResumeCache, 'CACHE_DIR', cache_dir)
+        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', tmp_path.__truediv__)
+        actual = arv_put.ResumeCache.make_path(args)
+        assert isinstance(actual, str)
+        assert Path(actual).parent == (tmp_path / cache_dir)
+
+    def test_cache_relative_dir(self, tmp_path, monkeypatch, args):
+        expected = Path('rel', 'dir')
+        monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+        monkeypatch.setattr(arv_put.ResumeCache, 'CACHE_DIR', str(expected))
+        actual = arv_put.ResumeCache.make_path(args)
+        assert isinstance(actual, str)
+        parent = Path(actual).parent
+        assert parent == (tmp_path / expected)
+        assert parent.is_dir()
+
+    def test_cache_absolute_dir(self, tmp_path, monkeypatch, args):
+        expected = tmp_path / 'arv-put'
+        monkeypatch.setattr(Path, 'home', lambda: tmp_path / 'home')
+        monkeypatch.setattr(arv_put.ResumeCache, 'CACHE_DIR', str(expected))
+        actual = arv_put.ResumeCache.make_path(args)
+        assert isinstance(actual, str)
+        parent = Path(actual).parent
+        assert parent == expected
+        assert parent.is_dir()
+
+
+class TestArvadosPutUploadJobCacheDir:
+    @pytest.mark.parametrize('cache_dir', [None, 'test-put'])
+    def test_cache_subdir(self, tmp_path, monkeypatch, cache_dir):
+        def storage_path(self, subdir='.', mode=0o700):
+            path = tmp_path / subdir
+            path.mkdir(mode=mode)
+            return path
+        if cache_dir is None:
+            cache_dir = arv_put.ArvPutUploadJob.CACHE_DIR
+        else:
+            monkeypatch.setattr(arv_put.ArvPutUploadJob, 'CACHE_DIR', cache_dir)
+        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', storage_path)
+        job = arv_put.ArvPutUploadJob([str(tmp_path)], use_cache=True)
+        job.destroy_cache()
+        assert Path(job._cache_filename).parent == (tmp_path / cache_dir)
+
+    def test_cache_relative_dir(self, tmp_path, monkeypatch):
+        expected = Path('rel', 'dir')
+        monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+        monkeypatch.setattr(arv_put.ArvPutUploadJob, 'CACHE_DIR', str(expected))
+        job = arv_put.ArvPutUploadJob([str(tmp_path)], use_cache=True)
+        job.destroy_cache()
+        assert Path(job._cache_filename).parent == (tmp_path / expected)
+
+    def test_cache_absolute_dir(self, tmp_path, monkeypatch):
+        expected = tmp_path / 'arv-put'
+        monkeypatch.setattr(Path, 'home', lambda: tmp_path / 'home')
+        monkeypatch.setattr(arv_put.ArvPutUploadJob, 'CACHE_DIR', str(expected))
+        job = arv_put.ArvPutUploadJob([str(tmp_path)], use_cache=True)
+        job.destroy_cache()
+        assert Path(job._cache_filename).parent == expected
 
 
 class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,

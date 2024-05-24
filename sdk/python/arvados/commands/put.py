@@ -26,6 +26,8 @@ import threading
 import time
 import traceback
 
+from pathlib import Path
+
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
 
@@ -351,7 +353,7 @@ class ArvPutLogFormatter(logging.Formatter):
 
 
 class ResumeCache(object):
-    CACHE_DIR = '.cache/arvados/arv-put'
+    CACHE_DIR = 'arv-put'
 
     def __init__(self, file_spec):
         self.cache_file = open(file_spec, 'a+')
@@ -368,9 +370,14 @@ class ResumeCache(object):
             md5.update(b'-1')
         elif args.filename:
             md5.update(args.filename.encode())
-        return os.path.join(
-            arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700, 'raise'),
-            md5.hexdigest())
+        cache_path = Path(cls.CACHE_DIR)
+        if len(cache_path.parts) == 1:
+            cache_path = arvados.util._BaseDirectories('CACHE').storage_path(cache_path)
+        else:
+            # Note this is a noop if cache_path is absolute, which is what we want.
+            cache_path = Path.home() / cache_path
+            cache_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return str(cache_path / md5.hexdigest())
 
     def _lock_file(self, fileobj):
         try:
@@ -433,7 +440,7 @@ class ResumeCache(object):
 
 
 class ArvPutUploadJob(object):
-    CACHE_DIR = '.cache/arvados/arv-put'
+    CACHE_DIR = 'arv-put'
     EMPTY_STATE = {
         'manifest' : None, # Last saved manifest checkpoint
         'files' : {} # Previous run file list: {path : {size, mtime}}
@@ -859,11 +866,14 @@ class ArvPutUploadJob(object):
         md5.update(b'\0'.join([p.encode() for p in realpaths]))
         if self.filename:
             md5.update(self.filename.encode())
-        cache_filename = md5.hexdigest()
-        cache_filepath = os.path.join(
-            arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
-            cache_filename)
-        return cache_filepath
+        cache_path = Path(self.CACHE_DIR)
+        if len(cache_path.parts) == 1:
+            cache_path = arvados.util._BaseDirectories('CACHE').storage_path(cache_path)
+        else:
+            # Note this is a noop if cache_path is absolute, which is what we want.
+            cache_path = Path.home() / cache_path
+            cache_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return str(cache_path / md5.hexdigest())
 
     def _setup_state(self, update_collection):
         """
