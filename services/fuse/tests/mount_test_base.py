@@ -26,15 +26,19 @@ from .integration_test import workerPool
 
 logger = logging.getLogger('arvados.arv-mount')
 
-def make_block_cache(disk_cache):
-    if disk_cache:
-        disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
-        shutil.rmtree(disk_cache_dir, ignore_errors=True)
-    block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache)
-    return block_cache
-
 class MountTestBase(unittest.TestCase):
     disk_cache = False
+
+    @classmethod
+    def setUpClass(cls):
+        if cls.disk_cache:
+            cls._disk_cache_dir = tempfile.mkdtemp(prefix='MountTest-')
+        else:
+            cls._disk_cache_dir = None
+        cls._keep_block_cache = arvados.keep.KeepBlockCache(
+            disk_cache=cls.disk_cache,
+            disk_cache_dir=cls._disk_cache_dir,
+        )
 
     def setUp(self, api=None, local_store=True):
         # The underlying C implementation of open() makes a fstat() syscall
@@ -57,10 +61,15 @@ class MountTestBase(unittest.TestCase):
 
         self.api = api if api else arvados.safeapi.ThreadSafeApiCache(
             arvados.config.settings(),
-            keep_params={"block_cache": make_block_cache(self.disk_cache)},
+            keep_params={"block_cache": self._keep_block_cache},
             version='v1',
         )
         self.llfuse_thread = None
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._disk_cache_dir:
+            shutil.rmtree(cls._disk_cache_dir)
 
     # This is a copy of Mount's method.  TODO: Refactor MountTestBase
     # to use a Mount instead of copying its code.
