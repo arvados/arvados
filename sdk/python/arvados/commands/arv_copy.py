@@ -86,10 +86,22 @@ def main():
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
         '--src', dest='source_arvados',
-        help='The cluster id of the source Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for finding "foo.conf" under a systemd or XDG configuration directory.  If not provided, will be inferred from the UUID of the object being copied.')
+        help="""
+Client configuration location for the source Arvados cluster.
+May be either a configuration file path, or a plain identifier like `foo`
+to search for a configuration file `foo.conf` under a systemd or XDG configuration directory.
+If not provided, will search for a configuration file named after the cluster ID of the source object UUID.
+""",
+    )
     copy_opts.add_argument(
         '--dst', dest='destination_arvados',
-        help='The name of the destination Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for finding "foo.conf" under a systemd or XDG configuration directory.  If not provided, will use ARVADOS_API_HOST from environment.')
+        help="""
+Client configuration location for the destination Arvados cluster.
+May be either a configuration file path, or a plain identifier like `foo`
+to search for a configuration file `foo.conf` under a systemd or XDG configuration directory.
+If not provided, will use the default client configuration from the environment or `settings.conf`.
+""",
+    )
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object, and subprojects. (default)')
