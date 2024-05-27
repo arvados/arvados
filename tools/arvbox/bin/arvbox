@@ -148,15 +148,15 @@ wait_for_arvbox() {
 
 docker_run_dev() {
     docker run \
-           "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-           "--volume=$PG_DATA:/var/lib/postgresql:rw" \
-           "--volume=$VAR_DATA:$ARVADOS_CONTAINER_PATH:rw" \
-           "--volume=$PASSENGER:/var/lib/passenger:rw" \
-	   "--volume=$GEMS:/var/lib/arvados-arvbox/.gem:rw" \
-           "--volume=$PIPCACHE:/var/lib/pip:rw" \
-           "--volume=$NPMCACHE:/var/lib/npm:rw" \
-           "--volume=$GOSTUFF:/var/lib/gopath:rw" \
-           "--volume=$RLIBS:/var/lib/Rlibs:rw" \
+           "--mount=type=bind,src=$ARVADOS_ROOT,dst=/usr/src/arvados" \
+           "--mount=type=bind,src=$PG_DATA,dst=/var/lib/postgresql" \
+           "--mount=type=bind,src=$VAR_DATA,dst=$ARVADOS_CONTAINER_PATH" \
+           "--mount=type=bind,src=$PASSENGER,dst=/var/lib/passenger" \
+           "--mount=type=bind,src=$GEMS,dst=/var/lib/arvados-arvbox/.gem" \
+           "--mount=type=bind,src=$PIPCACHE,dst=/var/lib/pip" \
+           "--mount=type=bind,src=$NPMCACHE,dst=/var/lib/npm" \
+           "--mount=type=bind,src=$GOSTUFF,dst=/var/lib/gopath" \
+           "--mount=type=bind,src=$RLIBS,dst=/var/lib/Rlibs" \
            --label "org.arvados.arvbox_config=$CONFIG" \
            "$@"
 }
@@ -221,7 +221,7 @@ run() {
         iptemp=$(mktemp)
         echo $localip > $iptemp
         chmod og+r $iptemp
-        PUBLIC="--volume=$iptemp:/var/run/localip_override
+        PUBLIC="--mount=type=bind,src=$iptemp,dst=/var/run/localip_override
               --publish=443:443
               --publish=3001:3001
               --publish=8000:8000
@@ -306,11 +306,11 @@ run() {
             if [[ $need_setup = 1 ]] ; then
                     docker_run_dev \
                     --detach \
-                    --name=${ARVBOX_CONTAINER} \
-                    "--env=SVDIR=/etc/devenv-service" \
-                        "--volume=$HOME:$HOME:rw" \
-                    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
-                        arvados/arvbox-dev$TAG
+                    --name="${ARVBOX_CONTAINER}" \
+                    --env=SVDIR=/etc/devenv-service \
+                    --mount=type=bind,src="$HOME",dst="$HOME" \
+                    --mount=type=bind,src=/tmp/.X11-unix,dst=/tmp/.X11-unix \
+                    "arvados/arvbox-dev${TAG}"
             fi
             exec docker exec --interactive --tty \
                  -e LINES=$(tput lines) \
