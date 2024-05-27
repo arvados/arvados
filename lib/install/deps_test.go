@@ -25,13 +25,13 @@ tmp="` + tmp + `"
 sourcepath="$(realpath ../..)"
 (cd ${sourcepath} && go build -o ${tmp} ./cmd/arvados-server)
 docker run -i --rm --workdir /arvados \
-       -v ${tmp}/arvados-server:/arvados-server:ro \
-       -v ${sourcepath}:/arvados:ro \
-       -v /arvados/services/api/.bundle \
-       -v /arvados/services/api/tmp \
+       --mount type=bind,src="${tmp}/arvados-server",dst=/arvados-server,readonly \
+       --mount type=bind,src="${sourcepath}",dst=/arvados,readonly \
+       --mount type=tmpfs,dst=/arvados/services/api/.bundle \
+       --mount type=tmpfs,dst=/arvados/services/api/tmp \
        --env http_proxy \
        --env https_proxy \
-       debian:11 \
+       debian:bookworm \
        bash -c "/arvados-server install -type test &&
            git config --global --add safe.directory /arvados &&
            /arvados-server boot -type test -config doc/examples/config/zzzzz.yml -own-temporary-database -shutdown -timeout 9m"

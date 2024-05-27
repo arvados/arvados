@@ -193,7 +193,7 @@ EOF
 
 echo >&2 "Adding example user entry user=foo-bar pass=secret (retrying until server comes up)"
 docker run --rm --entrypoint= \
-       -v "${tmpdir}/add_example_user.ldif":/add_example_user.ldif:ro \
+       --mount type=bind,src="${tmpdir}/add_example_user.ldif",dst=/add_example_user.ldif,readonly \
        osixia/openldap:1.3.0 \
        bash -c "for f in \$(seq 1 5); do if ldapadd -H '${ldapurl}' -D 'cn=${adminuser},dc=example,dc=org' -w '${adminpassword}' -f /add_example_user.ldif; then exit 0; else sleep 2; fi; done; echo 'failed to add user entry'; exit 1"
 
@@ -204,10 +204,10 @@ ctrlctr=ctrl-${RANDOM}
 echo >&2 "Starting arvados controller in docker container ${ctrlctr}"
 docker run --detach --rm --name=${ctrlctr} \
        -p 9999 \
-       -v "${tmpdir}/pam_ldap.conf":/etc/pam_ldap.conf:ro \
-       -v "${tmpdir}/arvados-server":/bin/arvados-server:ro \
-       -v "${tmpdir}/zzzzz.yml":/etc/arvados/config.yml:ro \
-       -v $(realpath "${PWD}/../../.."):/arvados:ro \
+       --mount type=bind,src="${tmpdir}/pam_ldap.conf",dst=/etc/pam_ldap.conf,readonly \
+       --mount type=bind,src="${tmpdir}/arvados-server",dst=/bin/arvados-server,readonly \
+       --mount type=bind,src="${tmpdir}/zzzzz.yml",dst=/etc/arvados/config.yml,readonly \
+       --mount type=bind,src="$(realpath "${PWD}/../../..")",dst=/arvados,readonly \
        debian:11 \
        bash -c "${setup_pam_ldap:-true} && arvados-server controller"
 docker logs --follow ${ctrlctr} 2>$debug >$debug &

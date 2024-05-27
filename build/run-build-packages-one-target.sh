@@ -263,11 +263,11 @@ package_fails=""
 mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
 
 docker_volume_args=(
-    -v "$JENKINS_DIR:/jenkins"
-    -v "$WORKSPACE:/arvados"
+    --mount "type=bind,src=$JENKINS_DIR,dst=/jenkins"
+    --mount "type=bind,src=$WORKSPACE,dst=/arvados"
     --tmpfs /arvados/services/api/.bundle:rw,noexec,nosuid,size=1m
     --tmpfs /arvados/services/api/vendor:rw,exec,nosuid,size=1g
-    -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
+    --mount "type=bind,src=$WORKSPACE/services/api/vendor/cache-$TARGET,dst=/arvados/services/api/vendor/cache"
 )
 
 if [[ -n "$test_packages" ]]; then
@@ -335,7 +335,7 @@ else
     if docker run \
         --rm \
         "${docker_volume_args[@]}" \
-        -v $tmpfile:/root/.bundle/config \
+        --mount "type=bind,src=$tmpfile,dst=/root/.bundle/config" \
         --env ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION" \
         --env ARVADOS_BUILDING_ITERATION="$ARVADOS_BUILDING_ITERATION" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
