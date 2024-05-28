@@ -31,7 +31,7 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const goversion = "1.22.2"
+const goversion = "1.21.10"
 
 const (
 	defaultRubyVersion        = "3.2.2"
