@@ -56,7 +56,7 @@ handle_python_package () {
   if [[ -z "$(find dist -name "*-$version.tar.gz" -print -quit)" ]]; then
     pkg_fmts+=(sdist)
   fi
-  if [[ -z "$(find dist -name "*-$version.whl" -print -quit)" ]]; then
+  if [[ -z "$(find dist -name "*-$version-py*.whl" -print -quit)" ]]; then
     pkg_fmts+=(bdist_wheel)
   fi
   if [[ "${#pkg_fmts[@]}" -eq 0 ]]; then
