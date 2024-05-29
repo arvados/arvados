@@ -148,9 +148,12 @@ describe('Project Details Card tests', function () {
 
     it('should toggle description display', () => {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
-        //must be long enough to require a 2nd line
-        const projDescription =
-            'Science! True daughter of Old Time thou art! Who alterest all things with thy peering eyes. Why preyest thou thus upon the poet’s heart, Vulture, whose wings are dull realities? ';
+
+        //a single line description shouldn't change the height of the card
+        const projDescription = 'Science! True daughter of Old Time thou art! Who alterest all things with thy peering eyes.';
+        //a multi-line description should change the height of the card
+        const multiLineProjDescription = '{enter}Why preyest thou thus upon the poet’s heart,{enter}Vulture, whose wings are dull realities?';
+        
         cy.loginAs(adminUser);
 
         // Create project
@@ -179,13 +182,33 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
-        //toggle description
-        //description is always visible, even when collapsed
+        //card height should not change if description is a single line
         cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 91);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+        cy.get('[data-cy=toggle-description]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+
+        //modify description to be multi-line
+        cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
+        cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
+        cy.get('[data-cy=context-menu]').contains('Edit').click();
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('div[contenteditable=true]').click().type(multiLineProjDescription);
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+        cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
+        cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
+
+        //card height should change if description is multi-line
+        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+        cy.get('[data-cy=toggle-description]').click();
+        cy.waitForDom();
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 90);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
