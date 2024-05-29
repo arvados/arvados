@@ -61,7 +61,11 @@ describe('Banner / tooltip tests', function () {
 
         //login here instead of in specific tests to preserve localStorage and intercept listener
         cy.loginAs(adminUser);
+
+        //must be in localstorage to have banner option in notifications menu
+        //it doesn't matter what the value is, as long as it's truthy
         window.localStorage.setItem('bannerFileData', 'foo');
+
         cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
             req.on('response', (res) => {
                 res.body.Workbench.BannerUUID = collectionUUID;
@@ -75,7 +79,7 @@ describe('Banner / tooltip tests', function () {
     });
 
     it('should re-show the banner', () => {
-        //reload instead of cy.loginas() to preserve localStorage and intercept listener
+        //reload instead of cy.loginAs() to preserve localStorage and intercept listener
         //logged in as adminUser
         cy.reload();
         cy.waitForDom();
