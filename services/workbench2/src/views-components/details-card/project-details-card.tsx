@@ -114,7 +114,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '2rem',
     },
     chipSection: {
-        marginBottom: '-2rem',
+        marginBottom: '-1rem',
     },
     tag: {
         marginRight: '0.75rem',
