@@ -150,7 +150,7 @@ describe('Project Details Card tests', function () {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         //must be long enough to require a 2nd line
         const projDescription =
-            'Science! true daughter of Old Time thou art! Who alterest all things with thy peering eyes. Why preyest thou thus upon the poet’s heart, Vulture, whose wings are dull realities? ';
+            'Science! True daughter of Old Time thou art! Who alterest all things with thy peering eyes. Why preyest thou thus upon the poet’s heart, Vulture, whose wings are dull realities? ';
         cy.loginAs(adminUser);
 
         // Create project
@@ -214,16 +214,24 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=value-input]').should('be.visible').click().type('Critical');
         cy.get('[data-cy=property-add-btn]').should('be.visible').click();
 
+        cy.get('[data-cy=key-input]').should('be.visible').click().type('very long key');
+        cy.get('[data-cy=value-input]').should('be.visible').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value');
+        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
+
+        cy.get('[data-cy=key-input]').should('be.visible').click().type('very long key 2');
+        cy.get('[data-cy=value-input]').should('be.visible').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value 2');
+        cy.get('[data-cy=property-add-btn]').should('be.visible').click();
+
         cy.get('[data-cy=form-submit-btn]').click();
 
         //toggle chips
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 100);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
         cy.get('[data-cy=toggle-chips]').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 101);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 96);
         cy.get('[data-cy=toggle-chips').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 100);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
 
         //check for key/value pairs in project details card
         cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
