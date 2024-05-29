@@ -47,9 +47,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: 0,
         minHeight: '3rem',
     },
-    showMore: {
-        cursor: 'pointer',
-    },
     noDescription: {
         color: theme.palette.grey['600'],
         fontStyle: 'italic',
@@ -75,6 +72,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexDirection: 'row',
         cursor: 'pointer',
+        marginTop: '-0.25rem',
         paddingBottom: '0.5rem',
     },
     cardContent: {
@@ -106,6 +104,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '1rem',
         color: theme.palette.text.primary,
     },
+    showMore: {
+        marginTop: 0,
+        cursor: 'pointer',
+    },
     chipToggle: {
         display: 'flex',
         alignItems: 'center',
@@ -121,6 +123,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     description: {
         marginTop: 0,
         marginRight: '2rem',
+        marginBottom: '-0.85rem',
     },
     toolbarStyles: {
         marginRight: '-1rem',
