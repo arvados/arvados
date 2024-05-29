@@ -3,10 +3,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { BANNER_LOCAL_STORAGE_KEY } from '../../src/views-components/baner/banner';
+
 describe('Banner / tooltip tests', function () {
     let activeUser;
     let adminUser;
-    let collectionUUID;
 
     before(function () {
         // Only set up common users once. These aren't set up as aliases because
@@ -21,10 +22,21 @@ describe('Banner / tooltip tests', function () {
             .as('activeUser').then(function () {
                 activeUser = this.activeUser;
             });
+    });
+
+    beforeEach(function () {
+        cy.on('uncaught:exception', (err, runnable, promise) => {
+            Cypress.log({ message: `Application Error: ${err}`});
+            if (promise) {
+                return false;
+            }
+        });
+    });
+    
+    it('should re-show the banner', () => {
+        cy.loginAs(adminUser);
 
         cy.getAll('@adminUser').then(([adminUser]) => {
-            // This collection will not be deleted after each test, we'll
-            // clean it up manually.
             cy.createCollection(adminUser.token, {
                 name: `BannerTooltipTest${Math.floor(Math.random() * 999999)}`,
                 owner_uuid: adminUser.user.uuid,
@@ -32,10 +44,12 @@ describe('Banner / tooltip tests', function () {
         });
 
         cy.getAll('@bannerCollection').then(function ([bannerCollection]) {
-            collectionUUID = bannerCollection.uuid;
-
-            cy.loginAs(adminUser);
-
+            cy.intercept({ method: 'GET', hostname: "127.0.0.1", url: '**/arvados/v1/config?nocache=*' }, (req) => {
+                req.continue((res) => {
+                    if (res.body.Workbench) res.body.Workbench.BannerUUID = bannerCollection.uuid;
+                });
+            });    
+            
             cy.goToPath(`/collections/${bannerCollection.uuid}`);
 
             cy.get('[data-cy=upload-button]').click();
@@ -51,43 +65,31 @@ describe('Banner / tooltip tests', function () {
             cy.get('[data-cy=form-submit-btn]').click();
             cy.get('[data-cy=form-submit-btn]').should('not.exist');
             cy.get('[data-cy=collection-files-right-panel]')
-                .should('contain', 'banner.html');
+            .should('contain', 'banner.html');
             cy.get('[data-cy=collection-files-right-panel]')
-                .should('contain', 'tooltips.json');
-        });
-    });
-
-    beforeEach(function () {
-        cy.on('uncaught:exception', (err, runnable, promise) => {
-            Cypress.log({ message: `Application Error: ${err}`});
-            if (promise) {
-                return false;
-            }
-        });
-        cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
-            req.on('response', (res) => {
-                res.body.Workbench.BannerUUID = collectionUUID;
-            });
-        });
-    });
-
-    after(function () {
-        // Delete banner collection after all test used it.
-        cy.deleteResource(adminUser.token, "collections", collectionUUID);
-    });
-
-    it('should re-show the banner', () => {
-        cy.loginAs(adminUser);
+            .should('contain', 'tooltips.json');
+        })
+        cy.getAll('@bannerCollection').then((bannerCollection)=>{
+            console.log('bannerCollection', bannerCollection[0]);
+            window.localStorage.setItem(BANNER_LOCAL_STORAGE_KEY, bannerCollection)});
+        
+        //manual reload instead of loginAs() to preserve localstorage
+        cy.reload();
         cy.waitForDom();
 
+        //check that banner appears on reload
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
 
+        //check that banner appears on "Restore Banner"
         cy.get('[title=Notifications]').click();
         cy.get('li').contains('Restore Banner').click();
 
         cy.waitForDom().get('[data-cy=confirmation-dialog-ok-btn]', {timeout: 10000}).should('be.visible');
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
     });
 
 
@@ -95,9 +97,12 @@ describe('Banner / tooltip tests', function () {
         cy.loginAs(adminUser);
         cy.waitForDom();
 
-        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
-        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
+        cy.getAll('@adminUser').then(([adminUser]) => {
+            cy.createCollection(adminUser.token, {
+                name: `BannerTooltipTest${Math.floor(Math.random() * 999999)}`,
+                owner_uuid: adminUser.user.uuid,
+            }, true).as('bannerCollection');
+        });
 
         cy.contains('This allows you to navigate through the app').should('not.exist'); // This content comes from tooltips.txt
         cy.get('[data-cy=side-panel-tree]').trigger('mouseover');
