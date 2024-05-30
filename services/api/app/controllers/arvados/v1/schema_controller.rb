@@ -397,6 +397,19 @@ class Arvados::V1::SchemaController < ApplicationController
       end
     end
 
+    # The computed_permissions controller does not offer all of the
+    # usual methods and attributes.  Modify discovery doc accordingly.
+    discovery[:resources]['computed_permissions'][:methods].select! do |method|
+      method == :list
+    end
+    discovery[:resources]['computed_permissions'][:methods][:list][:parameters].select! do |param|
+      ![:cluster_id, :bypass_federation, :offset].include?(param)
+    end
+    discovery[:schemas]['ComputedPermission'].delete(:uuidPrefix)
+    discovery[:schemas]['ComputedPermission'][:properties].select! do |prop|
+      ![:uuid, :etag].include?(prop)
+    end
+
     # The 'replace_files' option is implemented in lib/controller,
     # not Rails -- we just need to add it here so discovery-aware
     # clients know how to validate it.

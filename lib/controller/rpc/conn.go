@@ -341,6 +341,13 @@ func (conn *Conn) CollectionUntrash(ctx context.Context, options arvados.Untrash
 	return resp, err
 }
 
+func (conn *Conn) ComputedPermissionList(ctx context.Context, options arvados.ListOptions) (arvados.ComputedPermissionList, error) {
+	ep := arvados.EndpointComputedPermissionList
+	var resp arvados.ComputedPermissionList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) ContainerCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Container, error) {
 	ep := arvados.EndpointContainerCreate
 	var resp arvados.Container

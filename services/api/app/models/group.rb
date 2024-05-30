@@ -231,7 +231,7 @@ insert into frozen_groups (uuid) select uuid from temptable where is_frozen on c
 
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
-      MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
+      ComputedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
       update_permissions self.owner_uuid_was, self.uuid, REVOKE_PERM
     end
   end
@@ -243,7 +243,7 @@ insert into frozen_groups (uuid) select uuid from temptable where is_frozen on c
   end
 
   def clear_permissions_trash_frozen
-    MaterializedPermission.where(target_uuid: uuid).delete_all
+    ComputedPermission.where(target_uuid: uuid).delete_all
     ActiveRecord::Base.connection.exec_delete(
       "delete from trashed_groups where group_uuid=$1",
       "Group.clear_permissions_trash_frozen",
