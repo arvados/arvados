@@ -230,10 +230,6 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       Keepbalance:
         InternalURLs:
           "http://0.0.0.0:9019/": {}
-      GitHTTP:
-        InternalURLs:
-          "http://0.0.0.0:9005/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4445/" ) }}
       DispatchCloud:
         InternalURLs:
           "http://0.0.0.0:9006/": {}

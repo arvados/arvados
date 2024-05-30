@@ -54,11 +54,6 @@ inode assigned to it and appears in the Inodes._entries dictionary.
 
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from builtins import next
-from builtins import str
-from builtins import object
 import os
 import llfuse
 import errno

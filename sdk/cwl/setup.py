@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
 import os
 import sys
 
@@ -30,12 +29,9 @@ setup(name='arvados-cwl-runner',
       # build.
       install_requires=[
           *arvados_version.iter_dependencies(version),
-          'cwltool==3.1.20230601100705',
-          'schema-salad==8.4.20230601112322',
+          'cwltool==3.1.20240508115724',
+          'schema-salad==8.5.20240503091721',
           'ciso8601 >= 2.0.0',
-          'networkx < 2.6',
-          'msgpack==1.0.3',
-          'importlib-metadata<5',
           'setuptools>=40.3.0',
       ],
       data_files=[
@@ -46,8 +42,5 @@ setup(name='arvados-cwl-runner',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=[
-          'mock>=1.0,<4',
-      ],
       zip_safe=True,
 )

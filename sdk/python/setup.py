@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
 import os
 import sys
 import re
@@ -14,7 +13,6 @@ from setuptools.command import build_py
 
 import arvados_version
 version = arvados_version.get_version()
-short_tests_only = arvados_version.short_tests_only()
 README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 class BuildPython(build_py.build_py):
@@ -111,15 +109,10 @@ setup(name='arvados-python-client',
       install_requires=[
           *arvados_version.iter_dependencies(version),
           'ciso8601 >=2.0.0',
-          'future',
-          'google-api-core <2.11.0', # 2.11.0rc1 is incompatible with google-auth<2
           'google-api-python-client >=2.1.0',
-          'google-auth <2',
-          'httplib2 >=0.9.2, <0.20.2',
-          'protobuf <4.0.0dev',
-          'pycurl >=7.19.5.1, <7.45.0',
-          'pyparsing <3',
-          'ruamel.yaml >=0.15.54, <0.17.22',
+          'google-auth',
+          'httplib2 >=0.9.2',
+          'pycurl >=7.19.5.1',
           'setuptools >=40.3.0',
           'websockets >=11.0',
       ],
@@ -128,6 +121,6 @@ setup(name='arvados-python-client',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0,<4', 'PyYAML', 'parameterized'],
+      tests_require=['PyYAML', 'parameterized'],
       zip_safe=False
       )

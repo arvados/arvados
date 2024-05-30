@@ -2,16 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import hex
-from builtins import str
-from builtins import range
-from builtins import object
 import datetime
-import mock
 import os
-import unittest
 import time
+import unittest
+
+from unittest import mock
 
 import arvados
 from arvados._ranges import Range

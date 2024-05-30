@@ -2,15 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import object
 import bz2
 import gzip
 import io
-import mock
 import os
 import unittest
 import hashlib
+
+from unittest import mock
 
 import arvados
 from arvados import StreamReader, StreamFileReader

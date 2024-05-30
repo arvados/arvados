@@ -38,16 +38,9 @@ h2(#example). Configuration example
           # Bucket name.
           Bucket: <span class="userinput">example-bucket-name</span>
 
-          # IAM role name to use when retrieving credentials from
-          # instance metadata. It can be omitted, in which case the
-          # role name itself will be retrieved from instance metadata
-          # -- but setting it explicitly may protect you from using
-          # the wrong credentials in the event of an
-          # installation/configuration error.
-          IAMRole: <span class="userinput">""</span>
-
-          # If you are not using an IAM role for authentication,
-          # specify access credentials here instead.
+          # Optionally, you can specify S3 access credentials here.
+          # If these are left blank, IAM role credentials will be
+          # retrieved from instance metadata (IMDSv2).
           AccessKeyID: <span class="userinput">""</span>
           SecretAccessKey: <span class="userinput">""</span>
 

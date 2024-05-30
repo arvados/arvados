@@ -10,12 +10,6 @@ set -e
 DATABASE_READY=1
 APPLICATION_READY=1
 
-if [ -s "$HOME/.rvm/scripts/rvm" ] || [ -s "/usr/local/rvm/scripts/rvm" ]; then
-    COMMAND_PREFIX="/usr/local/rvm/bin/rvm-exec default"
-else
-    COMMAND_PREFIX=
-fi
-
 report_not_ready() {
     local ready_flag="$1"; shift
     local config_file="$1"; shift
@@ -125,17 +119,17 @@ setup_conffile() {
 }
 
 prepare_database() {
-  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bin/rake db:migrate:status 2>&1 || true`
+  DB_MIGRATE_STATUS=`bin/rake db:migrate:status 2>&1 || true`
   if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" $COMMAND_PREFIX bin/rake \
+      run_and_report "Setting up database" bin/rake \
                      "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
   elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
       run_and_report "Running db:migrate" \
-                     $COMMAND_PREFIX bin/rake db:migrate
+                     bin/rake db:migrate
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
       if ! run_and_report "Running db:setup" \
-           $COMMAND_PREFIX bin/rake db:setup 2>/dev/null; then
+           bin/rake db:setup 2>/dev/null; then
           echo "Warning: unable to set up database." >&2
           DATABASE_READY=0
       fi
@@ -198,27 +192,26 @@ configure_version() {
   cd "$RELEASE_PATH"
   export RAILS_ENV=production
 
-  if ! $COMMAND_PREFIX bundle --version >/dev/null 2>&1; then
-      run_and_report "Installing bundler" $COMMAND_PREFIX gem install bundler --version 2.2.19 --no-document
+  run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
+  local bundle="$(gem contents --version '~> 2.4.0' bundler | grep '/exe/bundle$' | tail -n1)"
+  if ! [ -x "$bundle" ]; then
+      echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
+      return 1
   fi
 
+  local bundle_path="$SHARED_PATH/vendor_bundle"
   run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
-      $COMMAND_PREFIX bin/bundle config set --local path $SHARED_PATH/vendor_bundle
+                 "$bundle" config set --local path "$bundle_path"
 
-  run_and_report "Running bundle install" \
-      $COMMAND_PREFIX bin/bundle install --local --quiet
-
-  # As of April 2024/Bundler 2.4, for some reason `bundle install` skips
-  # zlib if it's already installed as a system-wide gem, which it often will
-  # be because arvados gems pull it in. If this happened, install it in the
-  # bundle manually as a workaround.
-  if ! $COMMAND_PREFIX bin/bundle info zlib >/dev/null 2>&1; then
-      local RUBY_VERSION="$($COMMAND_PREFIX ruby -e 'puts RUBY_VERSION')"
-      run_and_report "Adding zlib to bundle" \
-                     $COMMAND_PREFIX gem install \
-                     --install-dir="$SHARED_PATH/vendor_bundle/ruby/$RUBY_VERSION" \
-                     vendor/cache/zlib-*.gem
-  fi
+  # As of April 2024/Bundler 2.4, `bundle install` tends not to install gems
+  # which are already installed system-wide, which causes bundle activation to
+  # fail later. Work around this by installing all gems manually.
+  find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
+      | run_and_report "Installing bundle gems" xargs -0r \
+                       gem install --conservative --ignore-dependencies --local --quiet \
+                       --install-dir="$bundle_path/ruby/$(ruby -e 'puts RUBY_VERSION')"
+  run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
+  run_and_report "Verifying bundle is complete" "$bundle" exec true
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
@@ -248,14 +241,12 @@ configure_version() {
       # warn about config errors (deprecated/removed keys from
       # previous version, etc)
       run_and_report "Checking configuration for completeness" \
-                     $COMMAND_PREFIX bin/rake config:check || APPLICATION_READY=0
+                     bin/rake config:check || APPLICATION_READY=0
   else
       APPLICATION_READY=0
   fi
 
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
-
-  setup_before_nginx_restart
 
   if [ -n "$SERVICE_MANAGER" ]; then
       service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"

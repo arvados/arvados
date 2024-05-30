@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -65,6 +66,25 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {
 	s.cancel()
+
+	// Wait for dblocks to be released. Otherwise, a subsequent
+	// test might time out waiting to acquire them.
+	timeout := time.After(10 * time.Second)
+	for _, locker := range []*dblock.DBLocker{dblock.TrashSweep, dblock.ContainerLogSweep} {
+		ok := make(chan struct{})
+		go func() {
+			if locker.Lock(context.Background(), s.handler.dbConnector.GetDB) {
+				locker.Unlock()
+			}
+			close(ok)
+		}()
+		select {
+		case <-timeout:
+			c.Log("timed out waiting for dblocks")
+			c.Fail()
+		case <-ok:
+		}
+	}
 }
 
 func (s *HandlerSuite) TestConfigExport(c *check.C) {
@@ -568,8 +588,10 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Assert(resp.Code, check.Equals, http.StatusOK,
-		check.Commentf("Wasn't able to get data from the controller at %q: %q", url, resp.Body.String()))
+	if !c.Check(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the controller at %q: %q", url, resp.Body.String())) {
+		return
+	}
 	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
 	c.Check(err, check.Equals, nil)
 
@@ -581,9 +603,11 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	}
 	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + url + "/?api_token=" + token)
 	c.Check(err, check.Equals, nil)
-	c.Assert(resp2.StatusCode, check.Equals, http.StatusOK,
-		check.Commentf("Wasn't able to get data from the RailsAPI at %q", url))
 	defer resp2.Body.Close()
+	if !c.Check(resp2.StatusCode, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the RailsAPI at %q", url)) {
+		return
+	}
 	db, err := ioutil.ReadAll(resp2.Body)
 	c.Check(err, check.Equals, nil)
 	err = json.Unmarshal(db, &direct)
@@ -647,9 +671,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"groups/" + arvadostest.AProjectUUID:                           nil,
 		"keep_services/" + ksUUID:                                      nil,
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
-		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
-		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
-		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
+		"logs/" + arvadostest.CrunchstatForRunningContainerLogUUID:     nil,
 		"users/" + arvadostest.ActiveUserUUID:                          {"href": true},
 		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
 		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
@@ -705,14 +727,14 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 
 func (s *HandlerSuite) TestContainerLogSweep(c *check.C) {
 	s.cluster.SystemRootToken = arvadostest.SystemRootToken
-	s.cluster.Containers.Logging.SweepInterval = arvados.Duration(time.Second / 10)
+	s.cluster.Collections.TrashSweepInterval = arvados.Duration(2 * time.Second)
 	s.handler.CheckHealth()
 	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 	logentry, err := s.handler.federation.LogCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"object_uuid": arvadostest.CompletedContainerUUID,
 		"event_type":  "stderr",
 		"properties": map[string]interface{}{
-			"text": "test trash sweep\n",
+			"text": "test container log sweep\n",
 		},
 	}})
 	c.Assert(err, check.IsNil)

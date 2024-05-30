@@ -74,7 +74,6 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		{"KEEPWEB", super.cluster.Services.WebDAV},
 		{"KEEPWEBDL", super.cluster.Services.WebDAVDownload},
 		{"KEEPPROXY", super.cluster.Services.Keepproxy},
-		{"GIT", super.cluster.Services.GitHTTP},
 		{"HEALTH", super.cluster.Services.Health},
 		{"WORKBENCH1", super.cluster.Services.Workbench1},
 		{"WORKBENCH2", super.cluster.Services.Workbench2},
@@ -135,7 +134,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		}
 	}
 
-	configs := "error_log stderr info; "
+	configs := "error_log stderr warn; "
 	configs += "pid " + filepath.Join(super.wwwtempdir, "nginx.pid") + "; "
 	configs += "user www-data; "
 

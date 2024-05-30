@@ -43,22 +43,13 @@ HOSTTYPE=$(shell echo $${HOSTTYPE})
 GOTARBALL=${GOTARBALL_$(HOSTTYPE)}
 NODETARBALL=${NODETARBALL_$(HOSTTYPE)}
 
-RVMKEY1=mpapis.asc
-RVMKEY2=pkuczynski.asc
-
-common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL) common-generated/$(RVMKEY1) common-generated/$(RVMKEY2)
+common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL)
 
 common-generated/$(GOTARBALL): common-generated
 	wget -cqO common-generated/$(GOTARBALL) https://dl.google.com/go/$(GOTARBALL)
 
 common-generated/$(NODETARBALL): common-generated
 	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v12.22.12/$(NODETARBALL)
-
-common-generated/$(RVMKEY1): common-generated
-	wget -cqO common-generated/$(RVMKEY1) https://rvm.io/mpapis.asc
-
-common-generated/$(RVMKEY2): common-generated
-	wget -cqO common-generated/$(RVMKEY2) https://rvm.io/pkuczynski.asc
 
 common-generated:
 	mkdir common-generated

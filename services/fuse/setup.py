@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
 import os
 import sys
 import re
@@ -12,7 +11,6 @@ from setuptools import setup, find_packages
 
 import arvados_version
 version = arvados_version.get_version()
-short_tests_only = arvados_version.short_tests_only()
 README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 setup(name='arvados_fuse',
@@ -34,7 +32,6 @@ setup(name='arvados_fuse',
       install_requires=[
         *arvados_version.iter_dependencies(version),
         'arvados-llfuse >= 1.5.1',
-        'future',
         'python-daemon',
         'ciso8601 >= 2.0.0',
         'setuptools',
@@ -45,6 +42,6 @@ setup(name='arvados_fuse',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML', 'parameterized',],
+      tests_require=['PyYAML', 'parameterized',],
       zip_safe=False
       )

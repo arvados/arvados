@@ -18,13 +18,13 @@ class GroupTest < ActiveSupport::TestCase
     assert g.save, "active user should be able to modify group #{g.uuid}"
 
     # Use the group as the owner of a new object
-    s = Specimen.
+    s = Collection.
       create(owner_uuid: groups(:bad_group_has_ownership_cycle_b).uuid)
     assert s.valid?, "ownership should pass validation #{s.errors.messages}"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"
 
     # Use the group as the new owner of an existing object
-    s = specimens(:in_aproject)
+    s = collections(:collection_owned_by_active)
     s.owner_uuid = groups(:bad_group_has_ownership_cycle_b).uuid
     assert s.valid?, "ownership should pass validation"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"

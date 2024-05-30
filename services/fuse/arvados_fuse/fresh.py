@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from builtins import object
-import time
 import ciso8601
 import calendar
 import functools
+import time
 
 def convertTime(t):
     """Parse Arvados timestamp to unix time."""

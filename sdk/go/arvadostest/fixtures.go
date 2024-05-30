@@ -101,7 +101,7 @@ const (
 
 	AdminAuthorizedKeysUUID = "zzzzz-fngyi-12nc9ov4osp8nae"
 
-	CrunchstatForRunningJobLogUUID = "zzzzz-57u5n-tmymyrojrbtnxh1"
+	CrunchstatForRunningContainerLogUUID = "zzzzz-57u5n-containerlog006"
 
 	IdleNodeUUID = "zzzzz-7ekkf-2z3mc76g2q73aio"
 

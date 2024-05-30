@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
-from __future__ import absolute_import
-
-from builtins import str
-from builtins import range
 import hashlib
-import mock
 import os
 import random
 import shutil
@@ -17,10 +11,11 @@ import tempfile
 import threading
 import unittest
 
+from unittest import mock
+
 import arvados
 import arvados.cache
 from . import run_test_server
-
 
 def _random(n):
     return bytearray(random.getrandbits(8) for _ in range(n))

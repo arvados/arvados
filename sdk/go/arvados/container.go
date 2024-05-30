@@ -23,6 +23,7 @@ type Container struct {
 	Mounts                    map[string]Mount       `json:"mounts"`
 	Output                    string                 `json:"output"`
 	OutputPath                string                 `json:"output_path"`
+	OutputGlob                []string               `json:"output_glob"`
 	Priority                  int64                  `json:"priority"`
 	RuntimeConstraints        RuntimeConstraints     `json:"runtime_constraints"`
 	State                     ContainerState         `json:"state"`
@@ -68,6 +69,7 @@ type ContainerRequest struct {
 	Cwd                     string                 `json:"cwd"`
 	Command                 []string               `json:"command"`
 	OutputPath              string                 `json:"output_path"`
+	OutputGlob              []string               `json:"output_glob"`
 	OutputName              string                 `json:"output_name"`
 	OutputTTL               int                    `json:"output_ttl"`
 	Priority                int                    `json:"priority"`
@@ -94,9 +96,6 @@ type Mount struct {
 	Content           interface{} `json:"content"`
 	ExcludeFromOutput bool        `json:"exclude_from_output"`
 	Capacity          int64       `json:"capacity"`
-	Commit            string      `json:"commit"`          // only if kind=="git_tree"
-	RepositoryName    string      `json:"repository_name"` // only if kind=="git_tree"
-	GitURL            string      `json:"git_url"`         // only if kind=="git_tree"
 }
 
 type CUDARuntimeConstraints struct {

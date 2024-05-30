@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
 import os
 import sys
 import re
@@ -12,7 +11,6 @@ from setuptools import setup, find_packages
 
 import arvados_version
 version = arvados_version.get_version()
-short_tests_only = arvados_version.short_tests_only()
 README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 setup(name='crunchstat_summary',
@@ -36,6 +34,5 @@ setup(name='crunchstat_summary',
       ],
       python_requires="~=3.8",
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0'],
       zip_safe=False,
 )

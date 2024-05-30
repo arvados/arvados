@@ -47,7 +47,6 @@ table(table table-bordered table-condensed).
 |\3=. *Additional services*|
 |"Websockets server":install-ws.html |Event distribution server.|Required to view streaming container logs in Workbench.|
 |"Shell server":install-shell-server.html |Grant Arvados users access to Unix shell accounts on dedicated shell nodes.|Optional.|
-|"Git server":install-arv-git-httpd.html |Arvados-hosted git repositories, with Arvados-token based authentication.|Optional|
 |\3=. *Crunch (running containers)*|
 |"arvados-dispatch-cloud":crunch2-cloud/install-dispatch-cloud.html |Run analysis workflows on cloud by allocating and freeing cloud VM instances on demand.|Optional|
 |"crunch-dispatch-slurm":crunch2-slurm/install-dispatch.html |Run analysis workflows distributed across a Slurm cluster.|Optional|
@@ -96,7 +95,7 @@ For a production installation, this is a reasonable starting point:
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_. Function|_. Number of nodes|_. Recommended specs|
-|PostgreSQL database, Arvados API server, Arvados controller, Git, Websockets, Container dispatcher|1|16+ GiB RAM, 4+ cores, fast disk for database|
+|PostgreSQL database, Arvados API server, Arvados controller, Websockets, Container dispatcher|1|16+ GiB RAM, 4+ cores, fast disk for database|
 |Workbench, Keepproxy, Keep-web, Keep-balance|1|8 GiB RAM, 2+ cores|
 |Keepstore servers ^1^|2+|4 GiB RAM|
 |Compute worker nodes ^1^|0+ |Depends on workload; scaled dynamically in the cloud|
@@ -138,7 +137,6 @@ It is possible to use custom DNS names for the Arvados services.
 table(table table-bordered table-condensed).
 |_. Function|_. DNS name|
 |Arvados API|@ClusterID.example.com@|
-|Arvados Git server|git.@ClusterID.example.com@|
 |Arvados Webshell|webshell.@ClusterID.example.com@|
 |Arvados Websockets endpoint|ws.@ClusterID.example.com@|
 |Arvados Workbench|workbench.@ClusterID.example.com@|

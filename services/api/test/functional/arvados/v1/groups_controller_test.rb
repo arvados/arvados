@@ -65,12 +65,12 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items_available']
   end
 
-  def check_project_contents_response disabled_kinds=[]
+  def check_project_contents_response
     assert_response :success
     assert_operator 2, :<=, json_response['items_available']
     assert_operator 2, :<=, json_response['items'].count
     kinds = json_response['items'].collect { |i| i['kind'] }.uniq
-    expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job' - disabled_kinds
+    expect_kinds = %w'arvados#group'
     assert_equal expect_kinds, (expect_kinds & kinds)
 
     json_response['items'].each do |i|
@@ -78,10 +78,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         assert(i['group_class'] == 'project',
                "group#contents returned a non-project group")
       end
-    end
-
-    disabled_kinds.each do |d|
-      assert_equal true, !kinds.include?(d)
     end
   end
 
@@ -107,17 +103,17 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     authorize_with :project_viewer
     get :contents, params: {
       format: :json,
-      filters: [['uuid', 'is_a', 'arvados#specimen']]
+      filters: [['uuid', 'is_a', 'arvados#collection']]
     }
     assert_response :success
     found_uuids = json_response['items'].collect { |i| i['uuid'] }
-    [[:in_aproject, true],
-     [:in_asubproject, true],
-     [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
+    [[:foo_collection_in_aproject, true],
+     [:baz_collection_name_in_asubproject, true],
+     [:collection_not_readable_by_active, false]].each do |collection_fixture, should_find|
       if should_find
-        assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
+        assert_includes found_uuids, collections(collection_fixture).uuid, "did not find collection fixture '#{collection_fixture}'"
       else
-        refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
+        refute_includes found_uuids, collections(collection_fixture).uuid, "found collection fixture '#{collection_fixture}'"
       end
     end
   end
@@ -150,8 +146,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     }
     assert_response :success
     found_uuids = json_response['items'].collect { |i| i['uuid'] }
-    assert_includes found_uuids, specimens(:owned_by_active_user).uuid, "specimen did not appear in home project"
-    refute_includes found_uuids, specimens(:in_asubproject).uuid, "specimen appeared unexpectedly in home project"
+    assert_includes found_uuids, collections(:collection_owned_by_active).uuid, "collection did not appear in home project"
+    refute_includes found_uuids, collections(:foo_collection_in_aproject).uuid, "collection appeared unexpectedly in home project"
   end
 
   test "list collections in home project" do
@@ -279,20 +275,20 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "user with project read permission can't rename items in it" do
     authorize_with :project_viewer
-    @controller = Arvados::V1::LinksController.new
+    @controller = Arvados::V1::CollectionsController.new
     post :update, params: {
-      id: jobs(:running).uuid,
+      id: collections(:collection_to_search_for_in_aproject).uuid,
       name: "Denied test name",
     }
     assert_includes(403..404, response.status)
   end
 
   test "user with project read permission can't remove items from it" do
-    @controller = Arvados::V1::PipelineTemplatesController.new
+    @controller = Arvados::V1::CollectionsController.new
     authorize_with :project_viewer
     post :update, params: {
-      id: pipeline_templates(:two_part).uuid,
-      pipeline_template: {
+      id: collections(:collection_to_search_for_in_aproject).uuid,
+      collection: {
         owner_uuid: users(:project_viewer).uuid,
       }
     }
@@ -339,8 +335,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       select: ["uuid", "storage_classes_desired"]
     }
     assert_response :success
-    assert_equal 17, json_response['items_available']
-    assert_equal 17, json_response['items'].count
+    assert_equal 6, json_response['items_available']
+    assert_equal 6, json_response['items'].count
     json_response['items'].each do |item|
       # Expect collections to have a storage_classes field, other items should not.
       if item["kind"] == "arvados#collection"
@@ -480,9 +476,9 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   [
     [['owner_uuid', '!=', 'zzzzz-tpzed-xurymjxw79nv3jz'], 200,
-        'zzzzz-d1hrv-subprojpipeline', 'zzzzz-d1hrv-1xfj6xkicf2muk2'],
-    [["pipeline_instances.state", "not in", ["Complete", "Failed"]], 200,
-        'zzzzz-d1hrv-1xfj6xkicf2muk2', 'zzzzz-d1hrv-i3e77t9z5y8j9cc'],
+        'zzzzz-j7d0g-publicfavorites', 'zzzzz-xvhdp-cr4queuedcontnr'],
+    [["container_requests.state", "not in", ["Final"]], 200,
+        'zzzzz-xvhdp-cr4queuedcontnr', 'zzzzz-xvhdp-cr4completedctr'],
     [['container_requests.requesting_container_uuid', '=', nil], 200,
         'zzzzz-xvhdp-cr4queuedcontnr', 'zzzzz-xvhdp-cr4requestercn2'],
     [['container_requests.no_such_column', '=', nil], 422],
@@ -503,25 +499,17 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
-  test 'get contents with jobs and pipeline instances disabled' do
-    Rails.configuration.API.DisabledAPIs = ConfigLoader.to_OrderedOptions(
-      {'jobs.index'=>{}, 'pipeline_instances.index'=>{}})
-
-    authorize_with :active
-    get :contents, params: {
-      id: groups(:aproject).uuid,
-      format: :json,
-    }
-    check_project_contents_response %w'arvados#pipelineInstance arvados#job'
-  end
-
   test 'get contents with low max_index_database_read' do
     # Some result will certainly have at least 12 bytes in a
-    # restricted column
+    # restricted column.
+    #
+    # We cannot use collections.manifest_text to test this, because
+    # GroupsController refuses to select manifest_text, because
+    # controller doesn't sign manifests in a groups#contents response.
     Rails.configuration.API.MaxIndexDatabaseRead = 12
     authorize_with :active
     get :contents, params: {
-          id: groups(:aproject).uuid,
+          uuid: users(:active).uuid,
           format: :json,
         }
     assert_response :success
@@ -959,6 +947,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
 
     get :contents, params: {:include => "owner_uuid", :exclude_home_project => true}
+    assert_response 200
 
     assert_equal 1, json_response['items'].length
     assert_equal groups(:project_owned_by_foo).uuid, json_response['items'][0]["uuid"]
@@ -973,6 +962,42 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :contents, params: {id: groups(:aproject).uuid, :include => "owner_uuid", :exclude_home_project => true}
 
     assert_response 422
+  end
+
+  [[false, 'owner_uuid'],
+   [false, []],
+   [false, ''],
+   [true, 'container_uuid'],
+   [true, ['container_uuid']],
+   [true, ['owner_uuid', 'container_uuid'], ['uuid', 'container_uuid', 'state', 'output']],
+  ].each do |check_container_included, include_param, select_param|
+    test "contents, include=#{include_param.inspect}" do
+      authorize_with :active
+      get :contents, params: {
+            :id => users(:active).uuid,
+            :include => include_param,
+            :limit => 1000,
+            :select => select_param,
+          }
+      assert_response 200
+      if include_param.empty?
+        assert_equal false, json_response.include?('included')
+        return
+      end
+      incl = {}
+      json_response['included'].andand.each do |ctr|
+        incl[ctr['uuid']] = ctr
+      end
+      next if !check_container_included
+      checked_crs = 0
+      json_response['items'].each do |item|
+        next if !item['container_uuid']
+        assert_equal item['container_uuid'], incl[item['container_uuid']]['uuid']
+        assert_not_empty incl[item['container_uuid']]['state']
+        checked_crs += 1
+      end
+      assert_operator 0, :<, checked_crs
+    end
   end
 
   test "include_trash does not return trash inside frozen project" do

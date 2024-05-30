@@ -13,10 +13,15 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
+var loggedLogActivityDisabled = false
+
 func (conn *Conn) logActivity(ctx context.Context) {
 	p := conn.cluster.Users.ActivityLoggingPeriod.Duration()
 	if p < 1 {
-		ctxlog.FromContext(ctx).Debug("logActivity disabled by config")
+		if !loggedLogActivityDisabled {
+			ctxlog.FromContext(ctx).Debug("logActivity disabled by config")
+			loggedLogActivityDisabled = true
+		}
 		return
 	}
 	user, _, err := ctrlctx.CurrentAuth(ctx)

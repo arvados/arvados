@@ -71,4 +71,5 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
 
     [ROOT_PROJECT]: [UserDetailsActionSet, allActionNames(UserDetailsActionSet)],
     [ROOT_PROJECT_ADMIN]: [UserDetailsActionSet, allActionNames(UserDetailsActionSet)],
+    [ResourceKind.WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
 };

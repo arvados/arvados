@@ -4,19 +4,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
-from functools import partial
 import apiclient
 import ciso8601
+import copy
 import datetime
 import json
 import logging
-import mock
 import multiprocessing
 import os
 import pwd
@@ -31,6 +24,9 @@ import tempfile
 import time
 import unittest
 import uuid
+
+from functools import partial
+from unittest import mock
 
 import arvados
 import arvados.commands.put as arv_put
@@ -573,7 +569,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 class CachedManifestValidationTest(ArvadosBaseTestCase):
     class MockedPut(arv_put.ArvPutUploadJob):
         def __init__(self, cached_manifest=None):
-            self._state = arv_put.ArvPutUploadJob.EMPTY_STATE
+            self._state = copy.deepcopy(arv_put.ArvPutUploadJob.EMPTY_STATE)
             self._state['manifest'] = cached_manifest
             self._api_client = mock.MagicMock()
             self.logger = mock.MagicMock()

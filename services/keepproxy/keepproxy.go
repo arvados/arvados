@@ -23,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/services/keepstore"
 	"github.com/gorilla/mux"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
@@ -271,10 +272,9 @@ func (h *proxyHandler) checkLoop(resp http.ResponseWriter, req *http.Request) er
 }
 
 func setCORSHeaders(resp http.ResponseWriter) {
-	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
-	resp.Header().Set("Access-Control-Max-Age", "86486400")
+	keepstore.SetCORSHeaders(resp)
+	acam := "Access-Control-Allow-Methods"
+	resp.Header().Set(acam, resp.Header().Get(acam)+", POST")
 }
 
 type invalidPathHandler struct{}
@@ -419,9 +419,9 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	locatorIn := mux.Vars(req)["locator"]
 
 	// Check if the client specified storage classes
-	if req.Header.Get("X-Keep-Storage-Classes") != "" {
+	if req.Header.Get(keepclient.XKeepStorageClasses) != "" {
 		var scl []string
-		for _, sc := range strings.Split(req.Header.Get("X-Keep-Storage-Classes"), ",") {
+		for _, sc := range strings.Split(req.Header.Get(keepclient.XKeepStorageClasses), ",") {
 			scl = append(scl, strings.Trim(sc, " "))
 		}
 		kc.SetStorageClasses(scl)

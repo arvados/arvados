@@ -54,14 +54,10 @@ module UsersTestHelper
     # these don't get added any more!  they shouldn't appear ever.
     assert !oid_login_perms.any?, "expected all oid_login_perms deleted"
 
+    # these don't get added any more!  they shouldn't appear ever.
     repo_perms = Link.where(tail_uuid: uuid,
-                            link_class: 'permission',
-                            name: 'can_manage').where("head_uuid like ?", Repository.uuid_like_pattern)
-    if expect_repo_perms
-      assert repo_perms.any?, "expected repo_perms"
-    else
-      assert !repo_perms.any?, "expected all repo_perms deleted"
-    end
+                            link_class: 'permission').where("head_uuid like ?", '_____-s0uqq-_______________')
+    assert !repo_perms.any?, "expected all repo_perms deleted"
 
     vm_login_perms = Link.
       where(tail_uuid: uuid,

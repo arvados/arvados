@@ -21,7 +21,8 @@ Options:
 --skip install Do not run any install steps. Just run tests.
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
---only FOO     Do not test anything except the FOO component.
+--only FOO     Do not test anything except the FOO component. If given
+               more than once, all specified test suites are run.
 --temp DIR     Install components and dependencies under DIR instead of
                making a new temporary directory. Implies --leave-temp.
 --leave-temp   Do not remove GOPATH, virtualenv, and other temp dirs at exit.
@@ -29,16 +30,17 @@ Options:
                subsequent invocations.
 --repeat N     Repeat each install/test step until it succeeds N times.
 --retry        Prompt to retry if an install or test suite fails.
---only-install Run specific install step
+--only-install Run specific install step. If given more than once,
+               all but the last are ignored.
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests.
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
-sdk/python_test="--test-suite tests.test_keep_locator"
+sdk/python_test="tests/test_api.py::ArvadosApiTest"
                Restrict Python SDK tests to the given class
-services/githttpd_test="-check.vv"
+lib/dispatchcloud_test="-check.vv"
                Show all log messages, even when tests pass (also works
                with services/keepstore_test etc.)
 ARVADOS_DEBUG=1
@@ -85,7 +87,6 @@ lib/mount
 lib/pam
 lib/service
 services/api
-services/githttpd
 services/dockercleaner
 services/fuse
 services/fuse:py3
@@ -192,7 +193,7 @@ sanity_checks() {
         || fatal "Locale '${LANG}' is broken/missing. Try: echo ${LANG} | sudo tee -a /etc/locale.gen && sudo locale-gen"
     echo -n 'ruby: '
     ruby -v \
-        || fatal "No ruby. Install >=2.1.9 (using rbenv, rvm, or source)"
+        || fatal "No ruby. Install >=2.7 from package or source"
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
@@ -219,9 +220,6 @@ sanity_checks() {
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
-    echo -n 'gitolite: '
-    which gitolite \
-        || fatal "No gitolite. Try: apt-get install gitolite3"
     echo -n 'npm: '
     npm --version \
         || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz | sudo tar -C /usr/local -xJf - && sudo ln -s ../node-v12.22.12-linux-x64/bin/{node,npm} /usr/local/bin/"
@@ -393,7 +391,7 @@ start_services() {
         return 0
     fi
     . "$VENV3DIR/bin/activate"
-    echo 'Starting API, controller, keepproxy, keep-web, githttpd, ws, and nginx ssl proxy...'
+    echo 'Starting API, controller, keepproxy, keep-web, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
         mkdir -p "$WORKSPACE/services/api/log"
     fi
@@ -421,9 +419,6 @@ start_services() {
         && python3 sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
         && checkhealth WebDAV \
-        && python3 sdk/python/tests/run_test_server.py start_githttpd \
-        && checkpidfile githttpd \
-        && checkhealth GitHTTP \
         && python3 sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
@@ -444,7 +439,6 @@ stop_services() {
     . "$VENV3DIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python3 sdk/python/tests/run_test_server.py stop_nginx \
-        && python3 sdk/python/tests/run_test_server.py stop_githttpd \
         && python3 sdk/python/tests/run_test_server.py stop_ws \
         && python3 sdk/python/tests/run_test_server.py stop_keep-web \
         && python3 sdk/python/tests/run_test_server.py stop_keep_proxy \
@@ -466,98 +460,36 @@ interrupt() {
 trap interrupt INT
 
 setup_ruby_environment() {
-    if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
-        source "$HOME/.rvm/scripts/rvm"
-        using_rvm=true
-    elif [[ -s "/usr/local/rvm/scripts/rvm" ]] ; then
-        source "/usr/local/rvm/scripts/rvm"
-        using_rvm=true
-    else
-        using_rvm=false
+    # When our "bundle install"s need to install new gems to
+    # satisfy dependencies, we want them to go where "gem install
+    # --user-install" would put them. (However, if the caller has
+    # already set GEM_HOME, we assume that's where dependencies
+    # should be installed, and we should leave it alone.)
+
+    if [ -z "$GEM_HOME" ]; then
+        user_gempath="$(gem env gempath)"
+        export GEM_HOME="${user_gempath%%:*}"
     fi
+    PATH="$(gem env gemdir)/bin:$PATH"
 
-    if [[ "$using_rvm" == true ]]; then
-        # If rvm is in use, we can't just put separate "dependencies"
-        # and "gems-under-test" paths to GEM_PATH: passenger resets
-        # the environment to the "current gemset", which would lose
-        # our GEM_PATH and prevent our test suites from running ruby
-        # programs (for example, the Workbench test suite could not
-        # boot an API server or run arv). Instead, we have to make an
-        # rvm gemset and use it for everything.
+    # When we build and install our own gems, we install them in our
+    # $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
+    # PATH so integration tests prefer them over other versions that
+    # happen to be installed in $user_gempath, system dirs, etc.
 
-        [[ `type rvm | head -n1` == "rvm is a function" ]] \
-            || fatal 'rvm check'
+    tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
+    PATH="$tmpdir_gem_home/bin:$PATH"
+    export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
 
-        # Put rvm's favorite path back in first place (overriding
-        # virtualenv, which just put itself there). Ignore rvm's
-        # complaint about not being in first place already.
-        rvm use @default 2>/dev/null
-
-        # Create (if needed) and switch to an @arvados-tests-* gemset,
-        # salting the gemset name so it doesn't interfere with
-        # concurrent builds in other workspaces. Leave the choice of
-        # ruby to the caller.
-        gemset="arvados-tests-$(echo -n "${WORKSPACE}" | md5sum | head -c16)"
-        rvm use "@${gemset}" --create \
-            || fatal 'rvm gemset setup'
-
-        rvm env
-        (bundle version | grep -q 2.2.19) || gem install --no-document bundler -v 2.2.19
-        bundle="$(which bundle)"
-        echo "$bundle"
-        "$bundle" version | grep 2.2.19 || fatal 'install bundler'
-    else
-        # When our "bundle install"s need to install new gems to
-        # satisfy dependencies, we want them to go where "gem install
-        # --user-install" would put them. (However, if the caller has
-        # already set GEM_HOME, we assume that's where dependencies
-        # should be installed, and we should leave it alone.)
-
-        if [ -z "$GEM_HOME" ]; then
-            user_gempath="$(gem env gempath)"
-            export GEM_HOME="${user_gempath%%:*}"
-        fi
-        PATH="$(gem env gemdir)/bin:$PATH"
-
-        # When we build and install our own gems, we install them in our
-        # $GEMHOME tmpdir, and we want them to be at the front of GEM_PATH and
-        # PATH so integration tests prefer them over other versions that
-        # happen to be installed in $user_gempath, system dirs, etc.
-
-        tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
-        PATH="$tmpdir_gem_home/bin:$PATH"
-        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
-
-        echo "Will install dependencies to $(gem env gemdir)"
-        echo "Will install bundler and arvados gems to $tmpdir_gem_home"
-        echo "Gem search path is GEM_PATH=$GEM_PATH"
-        bundle="bundle"
-        (
-            export HOME=$GEMHOME
-            versions=(2.2.19)
-            for v in ${versions[@]}; do
-                if ! gem list --installed --version "${v}" bundler >/dev/null; then
-                    gem install --no-document --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
-                    break
-                fi
-            done
-            "$bundle" version | tee /dev/stderr | grep -q 'version 2'
-        ) || fatal 'install bundler'
-	if test -d /var/lib/arvados-arvbox/ ; then
-	    # Inside arvbox, use bundler-installed binstubs.  The
-	    # system bundler and rail's own bin/bundle refuse to work.
-	    # I don't know why.
-	    bundle=binstubs/bundle
-	fi
-    fi
+    echo "Will install dependencies to $(gem env gemdir)"
+    echo "Will install bundler and arvados gems to $tmpdir_gem_home"
+    echo "Gem search path is GEM_PATH=$GEM_PATH"
+    gem install --user --no-document --conservative --version '~> 2.4.0' bundler \
+        || fatal 'install bundler'
 }
 
 with_test_gemset() {
-    if [[ "$using_rvm" == true ]]; then
-        "$@"
-    else
-        GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
-    fi
+    GEM_HOME="$tmpdir_gem_home" GEM_PATH="$tmpdir_gem_home" "$@"
 }
 
 gem_uninstall_if_exists() {
@@ -622,8 +554,6 @@ initialize() {
 
     unset http_proxy https_proxy no_proxy
 
-    # Note: this must be the last time we change PATH, otherwise rvm will
-    # whine a lot.
     setup_ruby_environment
 
     echo "PATH is $PATH"
@@ -636,13 +566,14 @@ install_env() {
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"
 
-    # wheel modernizes the venv (as of early 2024) and makes it more closely
-    # match our package build environment.
+    # parameterized and pytest are direct dependencies of Python tests.
     # PyYAML is a test requirement used by run_test_server.py and needed for
     # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
+    # wheel modernizes the venv (as of early 2024) and makes it more closely
+    # match our package build environment.
     # We run `setup.py build` first to generate _version.py.
-    pip install PyYAML pdoc wheel \
+    pip install parameterized pytest PyYAML pdoc wheel \
         && env -C "$WORKSPACE/sdk/python" python3 setup.py build \
         && pip install "$WORKSPACE/sdk/python" \
         || fatal "installing Python SDK and related dependencies failed"
@@ -771,7 +702,7 @@ do_test_once() {
     elif [[ "$2" == "pip" ]]
     then
         tries=0
-        cd "$WORKSPACE/$1" && while :
+        cd "$WORKSPACE/$1" && pip install . && while :
         do
             tries=$((${tries}+1))
             # $3 can name a path directory for us to use, including trailing
@@ -779,11 +710,13 @@ do_test_once() {
             if [[ -e "${3}activate" ]]; then
                 . "${3}activate"
             fi
-            python setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            python3 -m pytest ${testargs[$1]}
             result=$?
-            if [[ ${tries} < 3 && ${result} == 137 ]]
+            # pytest uses exit code 2 to mean "test collection failed."
+            # See discussion in FUSE's IntegrationTest and MountTestBase.
+            if [[ ${tries} < 3 && ${result} == 2 ]]
             then
-                printf '\n*****\n%s tests killed -- retrying\n*****\n\n' "$1"
+                printf '\n*****\n%s tests exited with code 2 -- retrying\n*****\n\n' "$1"
                 continue
             else
                 break
@@ -820,7 +753,7 @@ check_arvados_config() {
 }
 
 do_install() {
-    if [[ -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
+    if [[ -n ${skip["install_$1"]} || -n "${skip[install]}" || ( -n "${only_install}" && "${only_install}" != "${1}" && "${only_install}" != "${2}" ) ]]; then
         return 0
     fi
     check_arvados_config "$1"
@@ -873,11 +806,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! "$bundle" install --local --no-deployment; then
+        if ! bundle install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            "$bundle" install --no-deployment
+            bundle install --no-deployment
         fi
-        "$bundle" package
+        bundle package
     )
 }
 
@@ -951,15 +884,6 @@ install_services/api() {
         ) || return 1
     fi
 
-    cd "$WORKSPACE/services/api" \
-        && rm -rf tmp/git \
-        && mkdir -p tmp/git \
-        && cd tmp/git \
-        && tar xf ../../test/test.git.tar \
-        && mkdir -p internal.git \
-        && git --git-dir internal.git init \
-            || return 1
-
     (
         set -ex
         cd "$WORKSPACE/services/api"
@@ -995,7 +919,7 @@ install_services/workbench2() {
 test_doc() {
     local arvados_api_host=pirca.arvadosapi.com && \
         env -C "$WORKSPACE/doc" \
-        "$bundle" exec rake linkchecker \
+        bundle exec rake linkchecker \
         arvados_api_host="$arvados_api_host" \
         arvados_workbench_host="https://workbench.$arvados_api_host" \
         baseurl="file://$WORKSPACE/doc/.site/" \
@@ -1029,12 +953,12 @@ test_arvados_version.py() {
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/ruby-google-api-client() {
@@ -1052,7 +976,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -1061,7 +985,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/workbench2_units() {
@@ -1114,14 +1038,6 @@ install_all() {
 test_all() {
     stop_services
     do_test services/api
-
-    # Shortcut for when we're only running apiserver tests. This saves a bit of time,
-    # because we don't need to start up the api server for subsequent tests.
-    if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
-        rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-        exit_cleanly
-    fi
-
     do_test gofmt
     do_test arvados_version.py
     do_test doc
@@ -1192,7 +1108,7 @@ if [[ -z ${interactive} ]]; then
 else
     skip=()
     only=()
-    only_install=()
+    only_install=""
     if [[ -e "$VENV3DIR/bin/activate" ]]; then stop_services; fi
     setnextcmd() {
         if [[ "$TERM" = dumb ]]; then

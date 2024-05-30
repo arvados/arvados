@@ -604,8 +604,6 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 
 	coll, err := conn1.CollectionCreate(userctx1, arvados.CreateOptions{})
 	c.Check(err, check.IsNil)
-	specimen, err := conn1.SpecimenCreate(userctx1, arvados.CreateOptions{})
-	c.Check(err, check.IsNil)
 
 	tests := []struct {
 		path            string
@@ -618,8 +616,6 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/nonexistant", true, true},
 		{"/arvados/v1/collections/" + coll.UUID, false, false},
 		{"/arvados/v1/collections/" + coll.UUID, true, false},
-		{"/arvados/v1/specimens/" + specimen.UUID, false, false},
-		{"/arvados/v1/specimens/" + specimen.UUID, true, false},
 		// new code path (lib/controller/router etc) - single-cluster request
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", true, true},
@@ -627,8 +623,8 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", true, true},
 		// old code path (proxyRailsAPI) - single-cluster request
-		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", false, true},
-		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", true, true},
+		{"/arvados/v1/containers/z1111-dz642-0123456789abcde", false, true},
+		{"/arvados/v1/containers/z1111-dz642-0123456789abcde", true, true},
 		// old code path (setupProxyRemoteCluster) - federated request
 		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", false, true},
 		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", true, true},
@@ -830,7 +826,6 @@ func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
 // Test for bug #18076
 func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	rootctx1, _, _ := s.super.RootClients("z1111")
-	_, rootclnt3, _ := s.super.RootClients("z3333")
 	conn1 := s.super.Conn("z1111")
 	conn3 := s.super.Conn("z3333")
 
@@ -842,92 +837,69 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
 	}
 
-	for testCaseNr, testCase := range []struct {
-		name           string
-		withRepository bool
-	}{
-		{"User without local repository", false},
-		{"User with local repository", true},
-	} {
-		c.Log(c.TestName() + " " + testCase.name)
-		// Create some users, request them on the federated cluster so they're cached.
-		var users []arvados.User
-		for userNr := 0; userNr < 2; userNr++ {
-			_, _, _, user := s.super.UserClients("z1111",
-				rootctx1,
-				c,
-				conn1,
-				fmt.Sprintf("user%d%d@example.com", testCaseNr, userNr),
-				true)
-			c.Assert(user.Username, check.Not(check.Equals), "")
-			users = append(users, user)
+	// Create some users, request them on the federated cluster so they're cached.
+	var users []arvados.User
+	for userNr := 0; userNr < 2; userNr++ {
+		_, _, _, user := s.super.UserClients("z1111",
+			rootctx1,
+			c,
+			conn1,
+			fmt.Sprintf("user0%d@example.com", userNr),
+			true)
+		c.Assert(user.Username, check.Not(check.Equals), "")
+		users = append(users, user)
 
-			lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
-			c.Assert(err, check.Equals, nil)
-			userFound := false
-			for _, fedUser := range lst.Items {
-				if fedUser.UUID == user.UUID {
-					c.Assert(fedUser.Username, check.Equals, user.Username)
-					userFound = true
-					break
-				}
-			}
-			c.Assert(userFound, check.Equals, true)
-
-			if testCase.withRepository {
-				var repo interface{}
-				err = rootclnt3.RequestAndDecode(
-					&repo, "POST", "arvados/v1/repositories", nil,
-					map[string]interface{}{
-						"repository": map[string]string{
-							"name":       fmt.Sprintf("%s/test", user.Username),
-							"owner_uuid": user.UUID,
-						},
-					},
-				)
-				c.Assert(err, check.IsNil)
-			}
-		}
-
-		// Swap the usernames
-		_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-			UUID: users[0].UUID,
-			Attrs: map[string]interface{}{
-				"username": "",
-			},
-		})
-		c.Assert(err, check.Equals, nil)
-		_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-			UUID: users[1].UUID,
-			Attrs: map[string]interface{}{
-				"username": users[0].Username,
-			},
-		})
-		c.Assert(err, check.Equals, nil)
-		_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-			UUID: users[0].UUID,
-			Attrs: map[string]interface{}{
-				"username": users[1].Username,
-			},
-		})
-		c.Assert(err, check.Equals, nil)
-
-		// Re-request the list on the federated cluster & check for updates
 		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
 		c.Assert(err, check.Equals, nil)
-		var user0Found, user1Found bool
-		for _, user := range lst.Items {
-			if user.UUID == users[0].UUID {
-				user0Found = true
-				c.Assert(user.Username, check.Equals, users[1].Username)
-			} else if user.UUID == users[1].UUID {
-				user1Found = true
-				c.Assert(user.Username, check.Equals, users[0].Username)
+		userFound := false
+		for _, fedUser := range lst.Items {
+			if fedUser.UUID == user.UUID {
+				c.Assert(fedUser.Username, check.Equals, user.Username)
+				userFound = true
+				break
 			}
 		}
-		c.Assert(user0Found, check.Equals, true)
-		c.Assert(user1Found, check.Equals, true)
+		c.Assert(userFound, check.Equals, true)
 	}
+
+	// Swap the usernames
+	_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": "",
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[1].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[0].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[1].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+
+	// Re-request the list on the federated cluster & check for updates
+	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.Equals, nil)
+	var user0Found, user1Found bool
+	for _, user := range lst.Items {
+		if user.UUID == users[0].UUID {
+			user0Found = true
+			c.Assert(user.Username, check.Equals, users[1].Username)
+		} else if user.UUID == users[1].UUID {
+			user1Found = true
+			c.Assert(user.Username, check.Equals, users[0].Username)
+		}
+	}
+	c.Assert(user0Found, check.Equals, true)
+	c.Assert(user1Found, check.Equals, true)
 }
 
 // Test for bug #16263
@@ -1339,10 +1311,12 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		err = ac.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
 		c.Assert(err, check.IsNil)
 		c.Check(allStatus, check.Matches, `Queued, waiting for dispatch\n`+
-			`(Queued, waiting.*\n)*`+
-			`(Locked, waiting for dispatch\n)?`+
-			`(Locked, waiting for new instance to be ready\n)?`+
-			`(Locked, preparing runtime environment\n)?`+
+			// Occasionally the dispatcher will
+			// unlock/retry, and we get state/status from
+			// database/dispatcher via separate API calls,
+			// so we can also see "Queued, preparing
+			// runtime environment".
+			`((Queued|Locked), (waiting .*|preparing runtime environment)\n)*`+
 			`(Running, \n)?`+
 			`Complete, \n`)
 	}

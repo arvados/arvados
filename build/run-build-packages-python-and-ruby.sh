@@ -51,12 +51,19 @@ gem_wrapper() {
 
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
-    echo "This package doesn't need rebuilding."
-    return
+  local -a pkg_fmts=()
+  local version="$(nohash_version_from_git)"
+  if [[ -z "$(find dist -name "*-$version.tar.gz" -print -quit)" ]]; then
+    pkg_fmts+=(sdist)
   fi
-  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  python3 setup.py $DASHQ_UNLESS_DEBUG sdist
+  if [[ -z "$(find dist -name "*-$version-py*.whl" -print -quit)" ]]; then
+    pkg_fmts+=(bdist_wheel)
+  fi
+  if [[ "${#pkg_fmts[@]}" -eq 0 ]]; then
+    echo "This package doesn't need rebuilding."
+  else
+    python3 setup.py $DASHQ_UNLESS_DEBUG "${pkg_fmts[@]}"
+  fi
 }
 
 python_wrapper() {
@@ -163,13 +170,6 @@ debug_echo "Workspace is $WORKSPACE"
 if [ $RUBY -eq 0 ] && [ $PYTHON -eq 0 ]; then
   echo "Nothing to do!"
   exit 0
-fi
-
-if [[ -f /etc/profile.d/rvm.sh ]]; then
-    source /etc/profile.d/rvm.sh
-    GEM="rvm-exec default gem"
-else
-    GEM=gem
 fi
 
 # Make all files world-readable -- jenkins runs with umask 027, and has checked

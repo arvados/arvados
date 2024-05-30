@@ -3,7 +3,5 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import, print_function
-
 from arvados_docker.cleaner import main
 main()

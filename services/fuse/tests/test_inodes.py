@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 import arvados_fuse
-import mock
 import unittest
 import llfuse
 import logging
+
+from unittest import mock
 
 class InodeTests(unittest.TestCase):
 

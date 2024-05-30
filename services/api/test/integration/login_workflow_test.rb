@@ -6,8 +6,8 @@ require 'test_helper'
 
 class LoginWorkflowTest < ActionDispatch::IntegrationTest
   test "default prompt to login is JSON" do
-    post('/arvados/v1/specimens',
-      params: {specimen: {}},
+    post('/arvados/v1/collections',
+      params: {collection: {}},
       headers: {'HTTP_ACCEPT' => ''})
     assert_response 401
     json_response['errors'].each do |err|
@@ -16,8 +16,8 @@ class LoginWorkflowTest < ActionDispatch::IntegrationTest
   end
 
   test "login prompt respects JSON Accept header" do
-    post('/arvados/v1/specimens',
-      params: {specimen: {}},
+    post('/arvados/v1/collections',
+      params: {collection: {}},
       headers: {'HTTP_ACCEPT' => 'application/json'})
     assert_response 401
     json_response['errors'].each do |err|
@@ -26,8 +26,8 @@ class LoginWorkflowTest < ActionDispatch::IntegrationTest
   end
 
   test "login prompt respects HTML Accept header" do
-    post('/arvados/v1/specimens',
-      params: {specimen: {}},
+    post('/arvados/v1/collections',
+      params: {collection: {}},
       headers: {'HTTP_ACCEPT' => 'text/html'})
     assert_response 302
     assert_match(%r{http://www.example.com/login$}, @response.headers['Location'],

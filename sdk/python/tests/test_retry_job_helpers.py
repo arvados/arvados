@@ -2,18 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import object
-import mock
+import hashlib
+import json
 import os
 import unittest
-import hashlib
-from . import run_test_server
-import json
-import arvados
-from . import arvados_testutil as tutil
-from apiclient import http as apiclient_http
 
+from apiclient import http as apiclient_http
+from unittest import mock
+
+import arvados
+from . import run_test_server
+from . import arvados_testutil as tutil
 
 @tutil.skip_sleep
 class ApiClientRetryTestMixin(object):
@@ -57,22 +56,3 @@ class ApiClientRetryTestMixin(object):
     def test_no_retry_after_immediate_success(self):
         with tutil.mock_api_responses(self.api_client, '{}', [200, 400]):
             self.run_method()
-
-
-class CurrentJobTestCase(ApiClientRetryTestMixin, unittest.TestCase):
-
-    DEFAULT_EXCEPTION = arvados.errors.ApiError
-
-    def setUp(self):
-        super(CurrentJobTestCase, self).setUp()
-        os.environ['JOB_UUID'] = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
-        os.environ['JOB_WORK'] = '.'
-
-    def tearDown(self):
-        del os.environ['JOB_UUID']
-        del os.environ['JOB_WORK']
-        arvados._current_job = None
-        super(CurrentJobTestCase, self).tearDown()
-
-    def run_method(self):
-        arvados.current_job()

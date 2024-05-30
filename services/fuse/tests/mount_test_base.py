@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
 import arvados
 import arvados.keep
 import arvados_fuse as fuse
@@ -11,7 +10,6 @@ import llfuse
 import logging
 import multiprocessing
 import os
-from . import run_test_server
 import shutil
 import signal
 import subprocess
@@ -21,9 +19,12 @@ import threading
 import time
 import unittest
 
-logger = logging.getLogger('arvados.arv-mount')
+import pytest
 
+from . import run_test_server
 from .integration_test import workerPool
+
+logger = logging.getLogger('arvados.arv-mount')
 
 def make_block_cache(disk_cache):
     if disk_cache:
@@ -104,10 +105,16 @@ class MountTestBase(unittest.TestCase):
             t0 = time.time()
             self.llfuse_thread.join(timeout=60)
             if self.llfuse_thread.is_alive():
-                logger.warning("MountTestBase.tearDown():"
-                               " llfuse thread still alive 60s after umount"
-                               " -- exiting with SIGKILL")
-                os.kill(os.getpid(), signal.SIGKILL)
+                # pytest uses exit status 2 when test collection failed.
+                # A UnitTest failing in setup/teardown counts as a
+                # collection failure, so pytest will exit with status 2
+                # no matter what status you specify here. run-tests.sh
+                # looks for this status, so specify 2 just to keep
+                # everything as consistent as possible.
+                # TODO: If we refactor these tests so they're not built
+                # on unittest, consider using a dedicated, non-pytest
+                # exit code like TEMPFAIL.
+                pytest.exit("llfuse thread outlived test - aborting test suite to avoid deadlock", 2)
             waited = time.time() - t0
             if waited > 0.1:
                 logger.warning("MountTestBase.tearDown(): waited %f s for llfuse thread to end", waited)

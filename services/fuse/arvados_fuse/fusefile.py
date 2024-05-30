@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
-from builtins import bytes
 import json
 import llfuse
 import logging
@@ -63,7 +61,7 @@ class FuseArvadosFile(File):
 
     def readfrom(self, off, size, num_retries=0):
         with llfuse.lock_released:
-            return self.arvfile.readfrom(off, size, num_retries, exact=True)
+            return self.arvfile.readfrom(off, size, num_retries, exact=True, return_memoryview=True)
 
     def writeto(self, off, buf, num_retries=0):
         with llfuse.lock_released:

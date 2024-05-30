@@ -2,12 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-
-from builtins import object
 import arvados
 import copy
-import mock
 import os
 import random
 import re
@@ -17,6 +13,8 @@ import ciso8601
 import time
 import unittest
 import parameterized
+
+from unittest import mock
 
 from . import run_test_server
 from arvados._ranges import Range, LocatorAndRange

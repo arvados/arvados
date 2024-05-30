@@ -2,19 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future import standard_library
-standard_library.install_aliases()
-
 import copy
 import io
 import functools
 import hashlib
 import json
 import logging
-import mock
 import sys
 import unittest
 import datetime
+
+from unittest import mock
 
 import arvados
 import arvados.collection
@@ -22,8 +20,6 @@ import arvados.keep
 import pycurl
 
 from arvados.http_to_keep import http_to_keep
-
-import ruamel.yaml as yaml
 
 # Turns out there was already "FakeCurl" that serves the same purpose, but
 # I wrote this before I knew that.  Whoops.

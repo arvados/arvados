@@ -43,6 +43,7 @@ docker/jobs/1078ECD7.key
 *.min.js
 *.png
 */proc_stat
+*/pytest.ini
 */README
 */robots.txt
 */runit-docker/*

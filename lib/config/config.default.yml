@@ -74,12 +74,6 @@ Clusters:
       Keepbalance:
         InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
-      GitHTTP:
-        InternalURLs: {SAMPLE: {ListenURL: ""}}
-        ExternalURL: ""
-      GitSSH:
-        InternalURLs: {SAMPLE: {ListenURL: ""}}
-        ExternalURL: ""
       DispatchCloud:
         InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
@@ -340,7 +334,6 @@ Clusters:
       # AutoSetupUsernameBlacklist is a list of usernames to be blacklisted for auto setup.
       AutoSetupNewUsers: false
       AutoSetupNewUsersWithVmUUID: ""
-      AutoSetupNewUsersWithRepository: false
       AutoSetupUsernameBlacklist:
         arvados: {}
         git: {}
@@ -758,8 +751,8 @@ Clusters:
         TTL: 300s
 
         # Maximum amount of data cached in /var/cache/arvados/keep.
-        # Can be given as a percentage ("10%") or a number of bytes
-        # ("10 GiB")
+        # Can be given as a percentage of filesystem size ("10%") or a
+        # number of bytes ("10 GiB")
         DiskCacheSize: 10%
 
         # Approximate memory limit (in bytes) for session cache.
@@ -1058,24 +1051,6 @@ Clusters:
       # production use.
       TrustPrivateNetworks: false
 
-    Git:
-      # Path to git or gitolite-shell executable. Each authenticated
-      # request will execute this program with the single argument "http-backend"
-      GitCommand: /usr/bin/git
-
-      # Path to Gitolite's home directory. If a non-empty path is given,
-      # the CGI environment will be set up to support the use of
-      # gitolite-shell as a GitCommand: for example, if GitoliteHome is
-      # "/gh", then the CGI environment will have GITOLITE_HTTP_HOME=/gh,
-      # PATH=$PATH:/gh/bin, and GL_BYPASS_ACCESS_CHECKS=1.
-      GitoliteHome: ""
-
-      # Git repositories must be readable by api server, or you won't be
-      # able to submit crunch jobs. To pass the test suites, put a clone
-      # of the arvados tree in {git_repositories_dir}/arvados.git or
-      # {git_repositories_dir}/arvados/.git
-      Repositories: /var/lib/arvados/git/repositories
-
     TLS:
       # Use "file:///var/lib/acme/live/example.com/cert" and
       # ".../privkey" to load externally managed certificates.
@@ -1260,45 +1235,6 @@ Clusters:
       LocalKeepLogsToContainerLog: none
 
       Logging:
-        # Periodically (see SweepInterval) Arvados will check for
-        # containers that have been finished for at least this long,
-        # and delete their stdout, stderr, arv-mount, crunch-run, and
-        # crunchstat logs from the logs table.
-        MaxAge: 720h
-
-        # How often to delete cached log entries for finished
-        # containers (see MaxAge).
-        SweepInterval: 12h
-
-        # These two settings control how frequently log events are flushed to the
-        # database.  Log lines are buffered until either crunch_log_bytes_per_event
-        # has been reached or crunch_log_seconds_between_events has elapsed since
-        # the last flush.
-        LogBytesPerEvent: 4096
-        LogSecondsBetweenEvents: 5s
-
-        # The sample period for throttling logs.
-        LogThrottlePeriod: 60s
-
-        # Maximum number of bytes that job can log over crunch_log_throttle_period
-        # before being silenced until the end of the period.
-        LogThrottleBytes: 65536
-
-        # Maximum number of lines that job can log over crunch_log_throttle_period
-        # before being silenced until the end of the period.
-        LogThrottleLines: 1024
-
-        # Maximum bytes that may be logged as legacy log events
-        # (records posted to the "logs" table). Starting with Arvados
-        # 2.7, container live logging has migrated to a new system
-        # (polling the container request live log endpoint) and this
-        # value should be 0.  As of this writing, the container will
-        # still create a single log on the API server, noting for that
-        # log events are throttled.
-        LimitLogBytesPerJob: 0
-
-        LogPartialLineThrottlePeriod: 5s
-
         # Container logs are written to Keep and saved in a
         # collection, which is updated periodically while the
         # container runs.  This value sets the interval between
@@ -1335,47 +1271,6 @@ Clusters:
         SbatchArgumentsList: []
         SbatchEnvironmentVariables:
           SAMPLE: ""
-        Managed:
-          # Path to dns server configuration directory
-          # (e.g. /etc/unbound.d/conf.d). If false, do not write any config
-          # files or touch restart.txt (see below).
-          DNSServerConfDir: ""
-
-          # Template file for the dns server host snippets. See
-          # unbound.template in this directory for an example. If false, do
-          # not write any config files.
-          DNSServerConfTemplate: ""
-
-          # String to write to {dns_server_conf_dir}/restart.txt (with a
-          # trailing newline) after updating local data. If false, do not
-          # open or write the restart.txt file.
-          DNSServerReloadCommand: ""
-
-          # Command to run after each DNS update. Template variables will be
-          # substituted; see the "unbound" example below. If false, do not run
-          # a command.
-          DNSServerUpdateCommand: ""
-
-          ComputeNodeDomain: ""
-          ComputeNodeNameservers:
-            "192.168.1.1": {}
-            SAMPLE: {}
-
-          # Hostname to assign to a compute node when it sends a "ping" and the
-          # hostname in its Node record is nil.
-          # During bootstrapping, the "ping" script is expected to notice the
-          # hostname given in the ping response, and update its unix hostname
-          # accordingly.
-          # If false, leave the hostname alone (this is appropriate if your compute
-          # nodes' hostnames are already assigned by some other mechanism).
-          #
-          # One way or another, the hostnames of your node records should agree
-          # with your DNS records and your /etc/slurm-llnl/slurm.conf files.
-          #
-          # Example for compute0000, compute0001, ....:
-          # assign_node_hostname: compute%<slot_number>04d
-          # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
-          AssignNodeHostname: "compute%<slot_number>d"
 
       LSF:
         # Arguments to bsub when submitting Arvados containers as LSF jobs.
@@ -1442,12 +1337,6 @@ Clusters:
         # 'true' -- enable the Jobs API despite lack of existing records.
         # 'false' -- disable the Jobs API despite presence of existing records.
         Enable: 'auto'
-
-        # Git repositories must be readable by api server, or you won't be
-        # able to submit crunch jobs. To pass the test suites, put a clone
-        # of the arvados tree in {git_repositories_dir}/arvados.git or
-        # {git_repositories_dir}/arvados/.git
-        GitInternalDir: /var/lib/arvados/internal.git
 
       CloudVMs:
         # Enable the cloud scheduler.
@@ -1796,7 +1685,6 @@ Clusters:
         DriverParameters:
           # for s3 driver -- see
           # https://doc.arvados.org/install/configure-s3-object-storage.html
-          IAMRole: aaaaa
           AccessKeyID: aaaaa
           SecretAccessKey: aaaaa
           Endpoint: ""

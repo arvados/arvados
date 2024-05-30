@@ -18,12 +18,6 @@
 # instances src and dst.  If either of these files is not found,
 # arv-copy will issue an error.
 
-from __future__ import division
-from future import standard_library
-from future.utils import listvalues
-standard_library.install_aliases()
-from past.builtins import basestring
-from builtins import object
 import argparse
 import contextlib
 import getpass
@@ -47,7 +41,6 @@ import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 import arvados.http_to_keep
-import ruamel.yaml as yaml
 
 from arvados._version import __version__
 
@@ -168,7 +161,7 @@ def main():
         exit(1)
 
     # Clean up any outstanding temp git repositories.
-    for d in listvalues(local_repo_dir):
+    for d in local_repo_dir.values():
         shutil.rmtree(d, ignore_errors=True)
 
     if not result:
@@ -258,10 +251,10 @@ def filter_iter(arg):
     Pass in a filter field that can either be a string or list.
     This will iterate elements as if the field had been written as a list.
     """
-    if isinstance(arg, basestring):
-        return iter((arg,))
+    if isinstance(arg, str):
+        yield arg
     else:
-        return iter(arg)
+        yield from arg
 
 def migrate_repository_filter(repo_filter, src_repository, dst_repository):
     """Update a single repository filter in-place for the destination.
@@ -409,7 +402,7 @@ def copy_collections(obj, src, dst, args):
                 collections_copied[src_id] = dst_col['uuid']
         return collections_copied[src_id]
 
-    if isinstance(obj, basestring):
+    if isinstance(obj, str):
         # Copy any collections identified in this string to dst, replacing
         # them with the dst uuids as necessary.
         obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)
@@ -735,58 +728,6 @@ def copy_collection(obj_uuid, src, dst, args):
 
     c['manifest_text'] = dst_manifest.getvalue()
     return create_collection_from(c, src, dst, args)
-
-def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_http_opt):
-    r = api.repositories().list(
-        filters=[['name', '=', repo_name]]).execute(num_retries=retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify repo {}; {} repos found'
-                        .format(repo_name, r['items_available']))
-
-    https_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https:")]
-    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("http:")]
-    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("http")]
-
-    priority = https_url + other_url + http_url
-
-    for url in priority:
-        if url.startswith("http"):
-            u = urllib.parse.urlsplit(url)
-            baseurl = urllib.parse.urlunsplit((u.scheme, u.netloc, "", "", ""))
-            git_config = ["-c", "credential.%s/.username=none" % baseurl,
-                          "-c", "credential.%s/.helper=!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred" % baseurl]
-        else:
-            git_config = []
-
-        try:
-            logger.debug("trying %s", url)
-            subprocess.run(
-                ['git', *git_config, 'ls-remote', url],
-                check=True,
-                env={
-                    'ARVADOS_API_TOKEN': api.api_token,
-                    'GIT_ASKPASS': '/bin/false',
-                    'HOME': os.environ['HOME'],
-                },
-                stdout=subprocess.DEVNULL,
-            )
-        except subprocess.CalledProcessError:
-            pass
-        else:
-            git_url = url
-            break
-    else:
-        raise Exception('Cannot access git repository, tried {}'
-                        .format(priority))
-
-    if git_url.startswith("http:"):
-        if allow_insecure_http:
-            logger.warning("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
-        else:
-            raise Exception("Refusing to use insecure git url %s, use %s if you really want this." % (git_url, allow_insecure_http_opt))
-
-    return (git_url, git_config)
-
 
 def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     """Copy the docker image identified by docker_image and

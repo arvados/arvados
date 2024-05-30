@@ -44,15 +44,15 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     assert_response 403
    end
 
-  test "specimens token can see exactly owned specimens" do
-    get_args = {params: {}, headers: auth(:active_specimens)}
-    get(v1_url('specimens'), **get_args)
+  test "collections token can see exactly owned collections" do
+    get_args = {params: {}, headers: auth(:active_all_collections)}
+    get(v1_url('collections'), **get_args)
     assert_response 403
-    get(v1_url('specimens', specimens(:owned_by_active_user).uuid), **get_args)
+    get(v1_url('collections', collections(:collection_owned_by_active).uuid), **get_args)
     assert_response :success
-    head(v1_url('specimens', specimens(:owned_by_active_user).uuid), **get_args)
+    head(v1_url('collections', collections(:collection_owned_by_active).uuid), **get_args)
     assert_response :success
-    get(v1_url('specimens', specimens(:owned_by_spectator).uuid), **get_args)
+    get(v1_url('collections', collections(:collection_owned_by_foo).uuid), **get_args)
     assert_includes(403..404, @response.status)
   end
 

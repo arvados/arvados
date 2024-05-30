@@ -4,12 +4,13 @@
 
 import json
 import logging
-import mock
 import queue
 import sys
 import threading
 import time
 import unittest
+
+from unittest import mock
 
 import websockets.exceptions as ws_exc
 
@@ -96,9 +97,9 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         # Create ancestor before subscribing.
         # When listening with start_time in the past, this should also be retrieved.
         # However, when start_time is omitted in subscribe, this should not be fetched.
-        ancestor = arvados.api('v1').humans().create(body={}).execute()
+        ancestor = arvados.api('v1').collections().create(body={}).execute()
 
-        filters = [['object_uuid', 'is_a', 'arvados#human']]
+        filters = [['object_uuid', 'is_a', 'arvados#collection']]
         if start_time:
             filters.append(['created_at', '>=', start_time])
 
@@ -117,11 +118,11 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             while not self.ws._skip_old_events:
                 self.assertLess(time.time(), deadline)
                 time.sleep(0.1)
-        human = arvados.api('v1').humans().create(body={}).execute()
+        collection = arvados.api('v1').collections().create(body={}).execute()
 
         want_uuids = []
         if expected > 0:
-            want_uuids.append(human['uuid'])
+            want_uuids.append(collection['uuid'])
         if expected > 1:
             want_uuids.append(ancestor['uuid'])
         log_object_uuids = []
@@ -227,7 +228,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         streamHandler = logging.StreamHandler(logstream)
         rootLogger.addHandler(streamHandler)
 
-        filters = [['object_uuid', 'is_a', 'arvados#human']]
+        filters = [['object_uuid', 'is_a', 'arvados#collection']]
         filters.append(['created_at', '>=', self.localiso(self.TIME_PAST)])
         self.ws = arvados.events.subscribe(
             arvados.api('v1'), filters,
@@ -238,10 +239,10 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         self.assertEqual(200, events.get(True, 5)['status'])
 
         # create obj
-        human = arvados.api('v1').humans().create(body={}).execute()
+        collection = arvados.api('v1').collections().create(body={}).execute()
 
         # expect an event
-        self.assertIn(human['uuid'], events.get(True, 5)['object_uuid'])
+        self.assertIn(collection['uuid'], events.get(True, 5)['object_uuid'])
         with self.assertRaises(queue.Empty):
             self.assertEqual(events.get(True, 2), None)
 
@@ -252,7 +253,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             self.ws.close()
 
         # create one more obj
-        human2 = arvados.api('v1').humans().create(body={}).execute()
+        collection2 = arvados.api('v1').collections().create(body={}).execute()
 
         # (un)expect the object creation event
         if close_unexpected:
@@ -263,8 +264,8 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
                     log_object_uuids.append(event['object_uuid'])
             with self.assertRaises(queue.Empty):
                 self.assertEqual(events.get(True, 2), None)
-            self.assertNotIn(human['uuid'], log_object_uuids)
-            self.assertIn(human2['uuid'], log_object_uuids)
+            self.assertNotIn(collection['uuid'], log_object_uuids)
+            self.assertIn(collection2['uuid'], log_object_uuids)
         else:
             with self.assertRaises(queue.Empty):
                 self.assertEqual(events.get(True, 2), None)

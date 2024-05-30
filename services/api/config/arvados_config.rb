@@ -84,7 +84,6 @@ arvcfg = ConfigLoader.new
 arvcfg.declare_config "ClusterID", NonemptyString, :uuid_prefix
 arvcfg.declare_config "ManagementToken", String, :ManagementToken
 arvcfg.declare_config "SystemRootToken", String
-arvcfg.declare_config "Git.Repositories", String, :git_repositories_dir
 arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, ->(cfg, k, v) { arrayToHash cfg, "API.DisabledAPIs", v }
 arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
@@ -94,7 +93,6 @@ arvcfg.declare_config "API.RequestTimeout", ActiveSupport::Duration
 arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
-arvcfg.declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
 arvcfg.declare_config "Users.AutoSetupUsernameBlacklist", Hash, :auto_setup_name_blacklist, ->(cfg, k, v) { arrayToHash cfg, "Users.AutoSetupUsernameBlacklist", v }
 arvcfg.declare_config "Users.NewUsersAreActive", Boolean, :new_users_are_active
 arvcfg.declare_config "Users.AutoAdminUserWithEmail", String, :auto_admin_user
@@ -132,33 +130,14 @@ arvcfg.declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_defa
 arvcfg.declare_config "Containers.MaxDispatchAttempts", Integer, :max_container_dispatch_attempts
 arvcfg.declare_config "Containers.MaxRetryAttempts", Integer, :container_count_max
 arvcfg.declare_config "Containers.AlwaysUsePreemptibleInstances", Boolean, :preemptible_instances
-arvcfg.declare_config "Containers.Logging.LogBytesPerEvent", Integer, :crunch_log_bytes_per_event
-arvcfg.declare_config "Containers.Logging.LogSecondsBetweenEvents", ActiveSupport::Duration, :crunch_log_seconds_between_events
-arvcfg.declare_config "Containers.Logging.LogThrottlePeriod", ActiveSupport::Duration, :crunch_log_throttle_period
-arvcfg.declare_config "Containers.Logging.LogThrottleBytes", Integer, :crunch_log_throttle_bytes
-arvcfg.declare_config "Containers.Logging.LogThrottleLines", Integer, :crunch_log_throttle_lines
-arvcfg.declare_config "Containers.Logging.LimitLogBytesPerJob", Integer, :crunch_limit_log_bytes_per_job
-arvcfg.declare_config "Containers.Logging.LogPartialLineThrottlePeriod", ActiveSupport::Duration, :crunch_log_partial_line_throttle_period
 arvcfg.declare_config "Containers.Logging.LogUpdatePeriod", ActiveSupport::Duration, :crunch_log_update_period
 arvcfg.declare_config "Containers.Logging.LogUpdateSize", Integer, :crunch_log_update_size
-arvcfg.declare_config "Containers.Logging.MaxAge", ActiveSupport::Duration, :clean_container_log_rows_after
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfDir", Pathname, :dns_server_conf_dir
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerConfTemplate", Pathname, :dns_server_conf_template
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerReloadCommand", String, :dns_server_reload_command
-arvcfg.declare_config "Containers.SLURM.Managed.DNSServerUpdateCommand", String, :dns_server_update_command
-arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeDomain", String, :compute_node_domain
-arvcfg.declare_config "Containers.SLURM.Managed.ComputeNodeNameservers", Hash, :compute_node_nameservers, ->(cfg, k, v) { arrayToHash cfg, "Containers.SLURM.Managed.ComputeNodeNameservers", v }
-arvcfg.declare_config "Containers.SLURM.Managed.AssignNodeHostname", String, :assign_node_hostname
-arvcfg.declare_config "Containers.JobsAPI.Enable", String, :enable_legacy_jobs_api, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Containers.JobsAPI.Enable", v.to_s }
-arvcfg.declare_config "Containers.JobsAPI.GitInternalDir", String, :git_internal_dir
 arvcfg.declare_config "Mail.MailchimpAPIKey", String, :mailchimp_api_key
 arvcfg.declare_config "Mail.MailchimpListID", String, :mailchimp_list_id
 arvcfg.declare_config "Services.Controller.ExternalURL", URI
 arvcfg.declare_config "Services.Workbench1.ExternalURL", URI, :workbench_address
 arvcfg.declare_config "Services.Websocket.ExternalURL", URI, :websocket_address
 arvcfg.declare_config "Services.WebDAV.ExternalURL", URI, :keep_web_service_url
-arvcfg.declare_config "Services.GitHTTP.ExternalURL", URI, :git_repo_https_base
-arvcfg.declare_config "Services.GitSSH.ExternalURL", URI, :git_repo_ssh_base, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Services.GitSSH.ExternalURL", "ssh://#{v}" }
 arvcfg.declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
   h = if cfg["RemoteClusters"] then
         cfg["RemoteClusters"].deep_dup

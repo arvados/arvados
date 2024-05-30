@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
-from __future__ import absolute_import
-from future.utils import listvalues
-from builtins import object
 import collections
 import hashlib
 import os
@@ -70,7 +66,7 @@ class StreamReader(object):
         return self._files
 
     def all_files(self):
-        return listvalues(self._files)
+        return list(self._files.values())
 
     def size(self):
         n = self._data_locators[-1]
@@ -105,5 +101,5 @@ class StreamReader(object):
             manifest_text.extend([d.locator for d in self._data_locators])
         manifest_text.extend([' '.join(["{}:{}:{}".format(seg.locator, seg.range_size, f.name.replace(' ', '\\040'))
                                         for seg in f.segments])
-                              for f in listvalues(self._files)])
+                              for f in self._files.values()])
         return ' '.join(manifest_text) + '\n'

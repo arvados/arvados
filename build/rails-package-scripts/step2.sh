@@ -26,9 +26,6 @@ SHARED_PATH=$INSTALL_PATH/shared
 if ! type setup_extra_conffiles >/dev/null 2>&1; then
     setup_extra_conffiles() { return; }
 fi
-if ! type setup_before_nginx_restart >/dev/null 2>&1; then
-    setup_before_nginx_restart() { return; }
-fi
 
 if [ -e /run/systemd/system ]; then
     USING_SYSTEMD=1

@@ -144,23 +144,3 @@ read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
 }
 EOF
 </pre>
-
-h3. Git repository
-
-Give @$user_uuid@ permission to commit to @$repo_uuid@ as @$repo_username@
-
-<pre>
-user_uuid=xxxxxxxchangeme
-repo_uuid=xxxxxxxchangeme
-repo_username=xxxxxxxchangeme
-
-read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
-{
-"tail_uuid":"$user_uuid",
-"head_uuid":"$repo_uuid",
-"link_class":"permission",
-"name":"can_write",
-"properties":{"username":"$repo_username"}
-}
-EOF
-</pre>

@@ -12,8 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -39,8 +39,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/manifest"
 
 	. "gopkg.in/check.v1"
-	git_client "gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-	git_http "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 // Gocheck boilerplate
@@ -113,6 +111,7 @@ func (s *TestSuite) SetUpTest(c *C) {
 	err = ioutil.WriteFile(s.keepmount+"/by_id/"+fakeInputCollectionPDH+"/input.json", []byte(`{"input":true}`), 0644)
 	c.Assert(err, IsNil)
 	s.runner.ArvMountPoint = s.keepmount
+	os.Setenv("InstanceType", `{"ProviderType":"a1.2xlarge","Price":1.2}`)
 }
 
 type ArvTestClient struct {
@@ -121,7 +120,6 @@ type ArvTestClient struct {
 	Content []arvadosclient.Dict
 	arvados.Container
 	secretMounts []byte
-	Logs         map[string]*bytes.Buffer
 	sync.Mutex
 	WasSetRunning bool
 	callraw       bool
@@ -129,8 +127,8 @@ type ArvTestClient struct {
 
 type KeepTestClient struct {
 	Called         bool
-	Content        []byte
 	StorageClasses []string
+	blocks         sync.Map
 }
 
 type stubExecutor struct {
@@ -207,14 +205,7 @@ func (client *ArvTestClient) Create(resourceType string,
 	client.Content = append(client.Content, parameters)
 
 	if resourceType == "logs" {
-		et := parameters["log"].(arvadosclient.Dict)["event_type"].(string)
-		if client.Logs == nil {
-			client.Logs = make(map[string]*bytes.Buffer)
-		}
-		if client.Logs[et] == nil {
-			client.Logs[et] = &bytes.Buffer{}
-		}
-		client.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
+		panic("logs.create called")
 	}
 
 	if resourceType == "collections" && output != nil {
@@ -311,20 +302,14 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 	} else if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
 		output.(*arvados.Collection).UUID = uuid
-		output.(*arvados.Collection).PortableDataHash = fmt.Sprintf("%x", md5.Sum([]byte(mt)))
+		output.(*arvados.Collection).PortableDataHash = arvados.PortableDataHash(mt)
 	}
 	return nil
 }
 
 var discoveryMap = map[string]interface{}{
-	"defaultTrashLifetime":               float64(1209600),
-	"crunchLimitLogBytesPerJob":          float64(67108864),
-	"crunchLogThrottleBytes":             float64(65536),
-	"crunchLogThrottlePeriod":            float64(60),
-	"crunchLogThrottleLines":             float64(1024),
-	"crunchLogPartialLineThrottlePeriod": float64(5),
-	"crunchLogBytesPerEvent":             float64(4096),
-	"crunchLogSecondsBetweenEvents":      float64(1),
+	"crunchLogUpdateSize":   float64(crunchLogUpdateSize),
+	"crunchLogUpdatePeriod": float64(crunchLogUpdatePeriod.Seconds()),
 }
 
 func (client *ArvTestClient) Discovery(key string) (interface{}, error) {
@@ -358,18 +343,30 @@ func (client *KeepTestClient) LocalLocator(locator string) (string, error) {
 }
 
 func (client *KeepTestClient) BlockWrite(_ context.Context, opts arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
-	client.Content = opts.Data
+	locator := fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data))
+	client.blocks.Store(locator, append([]byte(nil), opts.Data...))
 	return arvados.BlockWriteResponse{
-		Locator: fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)),
+		Locator: locator,
 	}, nil
 }
 
-func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
-	return 0, errors.New("not implemented")
+func (client *KeepTestClient) ReadAt(locator string, dst []byte, offset int) (int, error) {
+	loaded, ok := client.blocks.Load(locator)
+	if !ok {
+		return 0, os.ErrNotExist
+	}
+	data := loaded.([]byte)
+	if offset >= len(data) {
+		return 0, io.EOF
+	}
+	return copy(dst, data[offset:]), nil
 }
 
 func (client *KeepTestClient) Close() {
-	client.Content = nil
+	client.blocks.Range(func(locator, value interface{}) bool {
+		client.blocks.Delete(locator)
+		return true
+	})
 }
 
 func (client *KeepTestClient) SetStorageClasses(sc []string) {
@@ -591,31 +588,8 @@ func (ErrorReader) Seek(int64, int) (int64, error) {
 	return 0, errors.New("ErrorReader")
 }
 
-func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
+func (*KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	return ErrorReader{}, nil
-}
-
-type ClosableBuffer struct {
-	bytes.Buffer
-}
-
-func (*ClosableBuffer) Close() error {
-	return nil
-}
-
-type TestLogs struct {
-	Stdout ClosableBuffer
-	Stderr ClosableBuffer
-}
-
-func (tl *TestLogs) NewTestLoggingWriter(logstr string) (io.WriteCloser, error) {
-	if logstr == "stdout" {
-		return &tl.Stdout, nil
-	}
-	if logstr == "stderr" {
-		return &tl.Stderr, nil
-	}
-	return nil, errors.New("???")
 }
 
 func dockerLog(fd byte, msg string) []byte {
@@ -633,8 +607,6 @@ func (s *TestSuite) TestRunContainer(c *C) {
 		return 0
 	}
 
-	var logs TestLogs
-	s.runner.NewLogWriter = logs.NewTestLoggingWriter
 	s.runner.Container.ContainerImage = arvadostest.DockerImage112PDH
 	s.runner.Container.Command = []string{"./hw"}
 	s.runner.Container.OutputStorageClasses = []string{"default"}
@@ -651,8 +623,8 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	err = s.runner.WaitFinish()
 	c.Assert(err, IsNil)
 
-	c.Check(logs.Stdout.String(), Matches, ".*Hello world\n")
-	c.Check(logs.Stderr.String(), Equals, "")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, `Hello world\n`)
+	c.Check(logFileContent(c, s.runner, "stderr.txt"), Matches, ``)
 }
 
 func (s *TestSuite) TestCommitLogs(c *C) {
@@ -661,7 +633,9 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	defer kc.Close()
 	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
-	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
+	f, err := cr.openLogFile("crunch-run")
+	c.Assert(err, IsNil)
+	cr.CrunchLog = newLogWriter(newTestTimestamper(f))
 
 	cr.CrunchLog.Print("Hello world!")
 	cr.CrunchLog.Print("Goodbye")
@@ -670,10 +644,10 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	err = cr.CommitLogs()
 	c.Check(err, IsNil)
 
-	c.Check(api.Calls, Equals, 2)
-	c.Check(api.Content[1]["ensure_unique_name"], Equals, true)
-	c.Check(api.Content[1]["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Check(api.Content[1]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
+	c.Check(api.Calls, Equals, 1)
+	c.Check(api.Content[0]["ensure_unique_name"], Equals, true)
+	c.Check(api.Content[0]["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Check(api.Content[0]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
@@ -794,10 +768,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, fn 
 	}
 
 	if err != nil {
-		for k, v := range s.api.Logs {
-			c.Log(k)
-			c.Log(v.String())
-		}
+		dumpAllLogFiles(c, s.runner)
 	}
 
 	return s.api, s.runner, realTemp
@@ -832,7 +803,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(s.api.Logs["stdout"].String(), Matches, ".*hello world\n")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, "hello world\n")
 	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"default"})
 	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"default"})
 }
@@ -905,6 +876,48 @@ func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
 	spotInterruptionCheckInterval = time.Second / 8
 	ec2MetadataBaseURL = stub.URL
 
+	checkedLogs := false
+	checkLogs := func() {
+		checkedLogs = true
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Checking for spot interruptions every 125ms using instance metadata at http://.*`)
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
+		if failureRate == 1 {
+			c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Giving up on checking spot interruptions after too many consecutive failures.*`)
+			return
+		}
+		text := `Cloud provider scheduled instance stop at ` + stoptime.Load().(time.Time).Format(time.RFC3339)
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*`+text+`.*`)
+		c.Check(s.api.CalledWith("container.runtime_status.warning", "preemption notice"), NotNil)
+		c.Check(s.api.CalledWith("container.runtime_status.warningDetail", text), NotNil)
+		c.Check(s.api.CalledWith("container.runtime_status.preemptionNotice", text), NotNil)
+
+		// Check that the log collection was saved, and the
+		// container record updated with the new PDH,
+		// immediately after the preemption notice was
+		// received -- i.e., while the container is still
+		// running.
+		lastpdh := ""
+		saved := make(map[string]string) // pdh => manifest_text
+		for _, call := range s.api.Content {
+			if ctr, ok := call["container"].(arvadosclient.Dict); ok {
+				if pdh, ok := ctr["log"].(string); ok {
+					lastpdh = pdh
+				}
+			}
+			if coll, ok := call["collection"].(arvadosclient.Dict); ok {
+				mt, _ := coll["manifest_text"].(string)
+				if strings.Contains(mt, ":crunch-run.txt") {
+					saved[arvados.PortableDataHash(mt)] = mt
+				}
+			}
+		}
+		logfs, err := (&arvados.Collection{ManifestText: saved[lastpdh]}).FileSystem(s.runner.dispatcherClient, s.runner.DispatcherKeepClient)
+		c.Assert(err, IsNil)
+		log, err := fs.ReadFile(arvados.FS(logfs), "crunch-run.txt")
+		c.Check(err, IsNil)
+		c.Check(string(log), Matches, `(?ms).*\Q`+text+`\E.*`)
+	}
+
 	go s.runner.checkSpotInterruptionNotices()
 	s.fullRunHelper(c, `{
     "command": ["sleep", "3"],
@@ -921,19 +934,10 @@ func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
 		stoptime.Store(time.Now().Add(time.Minute).UTC())
 		token = "different-fake-ec2-metadata-token"
 		time.Sleep(time.Second)
+		checkLogs()
 		return 0
 	})
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Checking for spot interruptions every 125ms using instance metadata at http://.*`)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
-	if failureRate == 1 {
-		c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Giving up on checking spot interruptions after too many consecutive failures.*`)
-	} else {
-		text := `Cloud provider scheduled instance stop at ` + stoptime.Load().(time.Time).Format(time.RFC3339)
-		c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*`+text+`.*`)
-		c.Check(s.api.CalledWith("container.runtime_status.warning", "preemption notice"), NotNil)
-		c.Check(s.api.CalledWith("container.runtime_status.warningDetail", text), NotNil)
-		c.Check(s.api.CalledWith("container.runtime_status.preemptionNotice", text), NotNil)
-	}
+	c.Check(checkedLogs, Equals, true)
 }
 
 func (s *TestSuite) TestRunTimeExceeded(c *C) {
@@ -954,7 +958,7 @@ func (s *TestSuite) TestRunTimeExceeded(c *C) {
 	})
 
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*maximum run time exceeded.*")
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, "(?ms).*maximum run time exceeded.*")
 }
 
 func (s *TestSuite) TestContainerWaitFails(c *C) {
@@ -972,7 +976,7 @@ func (s *TestSuite) TestContainerWaitFails(c *C) {
 	})
 
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Container is not running.*")
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, "(?ms).*Container is not running.*")
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
@@ -995,17 +999,15 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	c.Assert(s.api.Logs["crunchstat"], NotNil)
-	c.Check(s.api.Logs["crunchstat"].String(), Matches, `(?ms).*mem \d+ swap \d+ pgmajfault \d+ rss.*`)
+	c.Check(logFileContent(c, s.runner, "crunchstat.txt"), Matches, `(?ms).*mem \d+ swap \d+ pgmajfault \d+ rss.*`)
 
 	// Check that we called (*crunchstat.Reporter)Stop().
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Maximum crunch-run memory rss usage was \d+ bytes\n.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Maximum crunch-run memory rss usage was \d+ bytes\n.*`)
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
-	os.Setenv("SLURMD_NODENAME", "compute2")
 	s.fullRunHelper(c, `{
-		"command": ["sleep", "1"],
+		"command": ["true"],
 		"container_image": "`+arvadostest.DockerImage112PDH+`",
 		"cwd": ".",
 		"environment": {},
@@ -1015,26 +1017,22 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked"
 	}`, nil, func() int {
-		time.Sleep(time.Second)
 		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	c.Assert(s.api.Logs["node"], NotNil)
-	json := s.api.Logs["node"].String()
-	c.Check(json, Matches, `(?ms).*"uuid": *"zzzzz-7ekkf-2z3mc76g2q73aio".*`)
-	c.Check(json, Matches, `(?ms).*"total_cpu_cores": *16.*`)
-	c.Check(json, Not(Matches), `(?ms).*"info":.*`)
+	json := logFileContent(c, s.runner, "node.json")
+	c.Check(json, Matches, `(?ms).*"ProviderType": *"a1\.2xlarge".*`)
+	c.Check(json, Matches, `(?ms).*"Price": *1\.2.*`)
 
-	c.Assert(s.api.Logs["node-info"], NotNil)
-	json = s.api.Logs["node-info"].String()
-	c.Check(json, Matches, `(?ms).*Host Information.*`)
-	c.Check(json, Matches, `(?ms).*CPU Information.*`)
-	c.Check(json, Matches, `(?ms).*Memory Information.*`)
-	c.Check(json, Matches, `(?ms).*Disk Space.*`)
-	c.Check(json, Matches, `(?ms).*Disk INodes.*`)
+	nodeinfo := logFileContent(c, s.runner, "node-info.txt")
+	c.Check(nodeinfo, Matches, `(?ms).*Host Information.*`)
+	c.Check(nodeinfo, Matches, `(?ms).*CPU Information.*`)
+	c.Check(nodeinfo, Matches, `(?ms).*Memory Information.*`)
+	c.Check(nodeinfo, Matches, `(?ms).*Disk Space.*`)
+	c.Check(nodeinfo, Matches, `(?ms).*Disk INodes.*`)
 }
 
 func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
@@ -1052,11 +1050,10 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 		return 0
 	})
 
-	c.Assert(s.api.Logs["crunch-run"], NotNil)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run \S+ \(go\S+\) start.*`)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run process has uid=\d+\(.+\) gid=\d+\(.+\) groups=\d+\(.+\)(,\d+\(.+\))*\n.*`)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container: zzzzz-zzzzz-zzzzzzzzzzzzzzz.*`)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Using container runtime: stub.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*crunch-run \S+ \(go\S+\) start.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*crunch-run process has uid=\d+\(.+\) gid=\d+\(.+\) groups=\d+\(.+\)(,\d+\(.+\))*\n.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Executing container: zzzzz-zzzzz-zzzzzzzzzzzzzzz.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Using container runtime: stub.*`)
 }
 
 func (s *TestSuite) testLogRSSThresholds(c *C, ram int64, expected []int, notExpected int) {
@@ -1072,8 +1069,9 @@ func (s *TestSuite) testLogRSSThresholds(c *C, ram int64, expected []int, notExp
 		"runtime_constraints": {"ram": `+fmt.Sprintf("%d", ram)+`},
 		"state": "Locked"
 	}`, nil, func() int { return 0 })
-	c.Logf("=== crunchstat logs\n%s\n", s.api.Logs["crunchstat"].String())
-	logs := s.api.Logs["crunch-run"].String()
+	logs := logFileContent(c, s.runner, "crunch-run.txt")
+	c.Log("=== crunchstat logs")
+	c.Log(logs)
 	pattern := logLineStart + `Container using over %d%% of memory \(rss %d/%d bytes\)`
 	var threshold int
 	for _, threshold = range expected {
@@ -1111,7 +1109,7 @@ func (s *TestSuite) TestLogMaximaAfterRun(c *C) {
         "runtime_constraints": {"ram": `+fmt.Sprintf("%d", s.debian12MemoryCurrent*10)+`},
         "state": "Locked"
     }`, nil, func() int { return 0 })
-	logs := s.api.Logs["crunch-run"].String()
+	logs := logFileContent(c, s.runner, "crunch-run.txt")
 	for _, expected := range []string{
 		`Maximum disk usage was \d+%, \d+/\d+ bytes`,
 		fmt.Sprintf(`Maximum container memory swap usage was %d bytes`, s.debian12SwapCurrent),
@@ -1179,8 +1177,7 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	c.Assert(s.api.Logs["container"], NotNil)
-	c.Check(s.api.Logs["container"].String(), Matches, `(?ms).*container_image.*`)
+	c.Check(logFileContent(c, s.runner, "container.json"), Matches, `(?ms).*container_image.*`)
 }
 
 func (s *TestSuite) TestFullRunStderr(c *C) {
@@ -1205,8 +1202,8 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 	c.Check(final["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
 	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
 
-	c.Check(s.api.Logs["stdout"].String(), Matches, ".*hello\n")
-	c.Check(s.api.Logs["stderr"].String(), Matches, ".*world\n")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, ".*hello\n")
+	c.Check(logFileContent(c, s.runner, "stderr.txt"), Matches, ".*world\n")
 }
 
 func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
@@ -1227,8 +1224,7 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Log(s.api.Logs["stdout"])
-	c.Check(s.api.Logs["stdout"].String(), Matches, `.*workdir=""\n`)
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, `.*workdir=""`)
 }
 
 func (s *TestSuite) TestFullRunSetCwd(c *C) {
@@ -1249,7 +1245,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, ".*/bin\n")
 }
 
 func (s *TestSuite) TestFullRunSetOutputStorageClasses(c *C) {
@@ -1271,7 +1267,7 @@ func (s *TestSuite) TestFullRunSetOutputStorageClasses(c *C) {
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, ".*/bin\n")
 	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
 	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
 }
@@ -1368,14 +1364,11 @@ func (s *TestSuite) testStopContainer(c *C) {
 	case err = <-done:
 		c.Check(err, IsNil)
 	}
-	for k, v := range s.api.Logs {
-		c.Log(k)
-		c.Log(v.String(), "\n")
-	}
+	dumpAllLogFiles(c, s.runner)
 
 	c.Check(s.api.CalledWith("container.log", nil), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(s.api.Logs["stdout"].String(), Matches, "(?ms).*foo\n$")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, "(?ms).*foo\n$")
 }
 
 func (s *TestSuite) TestFullRunSetEnv(c *C) {
@@ -1396,7 +1389,7 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(s.api.Logs["stdout"].String(), Matches, `.*map\[FROBIZ:bilbo\]\n`)
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, `.*map\[FROBIZ:bilbo\]`)
 }
 
 type ArvMountCmdLine struct {
@@ -1740,54 +1733,6 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.CleanupDirs()
 		checkEmpty()
 	}
-
-	// git_tree mounts
-	{
-		i = 0
-		cr.ArvMountPoint = ""
-		git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
-		cr.token = arvadostest.ActiveToken
-		cr.Container.Mounts = make(map[string]arvados.Mount)
-		cr.Container.Mounts = map[string]arvados.Mount{
-			"/tip": {
-				Kind:   "git_tree",
-				UUID:   arvadostest.Repository2UUID,
-				Commit: "fd3531f42995344f36c30b79f55f27b502f3d344",
-				Path:   "/",
-			},
-			"/non-tip": {
-				Kind:   "git_tree",
-				UUID:   arvadostest.Repository2UUID,
-				Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
-				Path:   "/",
-			},
-		}
-		cr.Container.OutputPath = "/tmp"
-
-		bindmounts, err := cr.SetupMounts()
-		c.Check(err, IsNil)
-
-		for path, mount := range bindmounts {
-			c.Check(mount.ReadOnly, Equals, !cr.Container.Mounts[path].Writable, Commentf("%s %#v", path, mount))
-		}
-
-		data, err := ioutil.ReadFile(bindmounts["/tip"].HostPath + "/dir1/dir2/file with mode 0644")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "\000\001\002\003")
-		_, err = ioutil.ReadFile(bindmounts["/tip"].HostPath + "/file only on testbranch")
-		c.Check(err, FitsTypeOf, &os.PathError{})
-		c.Check(os.IsNotExist(err), Equals, true)
-
-		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/dir1/dir2/file with mode 0644")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "\000\001\002\003")
-		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/file only on testbranch")
-		c.Check(err, IsNil)
-		c.Check(string(data), Equals, "testfile\n")
-
-		cr.CleanupDirs()
-		checkEmpty()
-	}
 }
 
 func (s *TestSuite) TestStdout(c *C) {
@@ -1869,7 +1814,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 	})
 	c.Check(s.api.CalledWith("container.exit_code", 3), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*status code 3\n.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*status code 3\n.*`)
 }
 
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
@@ -1924,7 +1869,7 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 	c.Check(s.api.CalledWith("container.runtime_status.warning", "arv-mount: Keep write error"), NotNil)
 	c.Check(s.api.CalledWith("container.runtime_status.warningDetail", "Test: Keep write error: I am a teapot"), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Container exited with status code 137 \(signal 9, SIGKILL\).*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Container exited with status code 137 \(signal 9, SIGKILL\).*`)
 }
 
 func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C) {
@@ -2234,13 +2179,14 @@ func (s *TestSuite) TestFullBrokenDocker(c *C) {
     "state": "Locked"
 }`, nil, func() int { return 0 })
 		c.Check(s.api.CalledWith("container.state", nextState), NotNil)
-		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+		logs := logFileContent(c, s.runner, "crunch-run.txt")
+		c.Check(logs, Matches, "(?ms).*unable to run containers.*")
 		if s.runner.brokenNodeHook != "" {
-			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Running broken node hook.*")
-			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*killme.*")
-			c.Check(s.api.Logs["crunch-run"].String(), Not(Matches), "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
+			c.Check(logs, Matches, "(?ms).*Running broken node hook.*")
+			c.Check(logs, Matches, "(?ms).*killme.*")
+			c.Check(logs, Not(Matches), "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
 		} else {
-			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
+			c.Check(logs, Matches, "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
 		}
 	}
 }
@@ -2265,7 +2211,7 @@ func (s *TestSuite) TestBadCommand(c *C) {
     "state": "Locked"
 }`, nil, func() int { return 0 })
 		c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
-		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+		c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, "(?ms).*Possible causes:.*is missing.*")
 	}
 }
 
@@ -2375,7 +2321,7 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	cr := s.runner
 	cr.costStartTime = now.Add(-time.Hour)
 	var logbuf bytes.Buffer
-	cr.CrunchLog.Immediate = log.New(&logbuf, "", 0)
+	cr.CrunchLog = newLogWriter(&logbuf)
 
 	// if there's no InstanceType env var, cost is calculated as 0
 	os.Unsetenv("InstanceType")
@@ -2386,7 +2332,6 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	// hasn't found any data), cost is calculated based on
 	// InstanceType env var
 	os.Setenv("InstanceType", `{"Price":1.2}`)
-	defer os.Unsetenv("InstanceType")
 	cost = cr.calculateCost(now)
 	c.Check(cost, Equals, 1.2)
 
@@ -2432,7 +2377,6 @@ func (s *TestSuite) TestSIGUSR2CostUpdate(c *C) {
 	c.Assert(err, IsNil)
 
 	os.Setenv("InstanceType", `{"Price":2.2}`)
-	defer os.Unsetenv("InstanceType")
 	defer func(s string) { lockdir = s }(lockdir)
 	lockdir = c.MkDir()
 
@@ -2502,4 +2446,21 @@ type FakeProcess struct {
 
 func (fp FakeProcess) CmdlineSlice() ([]string, error) {
 	return fp.cmdLine, nil
+}
+
+func logFileContent(c *C, cr *ContainerRunner, fnm string) string {
+	buf, err := fs.ReadFile(arvados.FS(cr.LogCollection), fnm)
+	c.Assert(err, IsNil)
+	return string(buf)
+}
+
+func dumpAllLogFiles(c *C, cr *ContainerRunner) {
+	d, err := cr.LogCollection.OpenFile("/", os.O_RDONLY, 0)
+	c.Assert(err, IsNil)
+	fis, err := d.Readdir(-1)
+	c.Assert(err, IsNil)
+	for _, fi := range fis {
+		c.Logf("=== %s", fi.Name())
+		c.Log(logFileContent(c, cr, fi.Name()))
+	}
 }

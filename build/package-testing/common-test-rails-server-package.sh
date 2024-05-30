@@ -29,4 +29,4 @@ case "$TARGET" in
         ;;
 esac
 
-/usr/local/rvm/bin/rvm-exec default bundle list >"$ARV_PACKAGES_DIR/$PACKAGE_NAME.gems"
+bundle list >"$ARV_PACKAGES_DIR/$PACKAGE_NAME.gems"

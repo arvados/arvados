@@ -100,6 +100,8 @@ const (
 	XKeepReplicasStored          = "X-Keep-Replicas-Stored"
 	XKeepStorageClasses          = "X-Keep-Storage-Classes"
 	XKeepStorageClassesConfirmed = "X-Keep-Storage-Classes-Confirmed"
+	XKeepSignature               = "X-Keep-Signature"
+	XKeepLocator                 = "X-Keep-Locator"
 )
 
 type HTTPClient interface {
@@ -209,8 +211,8 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 		Retries:       2,
 	}
 	err = kc.loadDefaultClasses()
-	if err != nil {
-		DebugPrintf("DEBUG: Unable to load the default storage classes cluster config")
+	if err != nil && arv.Logger != nil {
+		arv.Logger.WithError(err).Debug("unable to load the default storage classes cluster config")
 	}
 	return kc
 }
@@ -370,7 +372,9 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 			time.Sleep(delay.Next())
 		}
 	}
-	DebugPrintf("DEBUG: %s %s failed: %v", method, locator, errs)
+	if kc.Arvados.Logger != nil {
+		kc.Arvados.Logger.Debugf("DEBUG: %s %s failed: %v", method, locator, errs)
+	}
 
 	var err error
 	if count404 == numServers {
@@ -418,6 +422,7 @@ func (kc *KeepClient) upstreamGateway() arvados.KeepGateway {
 			Dir:         cachedir,
 			MaxSize:     kc.DiskCacheSize,
 			KeepGateway: backend,
+			Logger:      kc.Arvados.Logger,
 		}
 	}
 	return kc.gatewayStack
@@ -723,6 +728,13 @@ func (kc *KeepClient) getRequestID() string {
 		return kc.RequestID
 	}
 	return reqIDGen.Next()
+}
+
+func (kc *KeepClient) debugf(format string, args ...interface{}) {
+	if kc.Arvados.Logger == nil {
+		return
+	}
+	kc.Arvados.Logger.Debugf(format, args...)
 }
 
 type Locator struct {
