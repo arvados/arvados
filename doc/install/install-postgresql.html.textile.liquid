@@ -41,7 +41,7 @@ h3(#debian). Debian or Ubuntu
 All supported versions of Debian and Ubuntu include a version of PostgreSQL you can use with Arvados.
 
 # Install PostgreSQL
-<notextile><pre># <span class="userinput">apt-get --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
+<notextile><pre># <span class="userinput">apt --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
 # Configure PostgreSQL to accept password connections from the local network (replace @10.9.8.0/24@ with your private network mask)
 <notextile><pre># <span class="userinput">echo 'host all all 10.9.8.0/24 md5' | tee -a /etc/postgresql/*/main/pg_hba.conf</span></pre></notextile>
 # Configure the database to launch at boot and start now

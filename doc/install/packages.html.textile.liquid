@@ -50,14 +50,18 @@ First, register the Arvados signing key in apt's database:
 
 {% include 'gpg_key_fingerprint' %}
 
-As root, add the Arvados package repository to your sources.  This command depends on your OS vendor and version:
+Then set up the package source by running this command:
 
-table(table table-bordered table-condensed).
-|_. OS version|_. Command|
-|Debian 12 ("bookworm")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/bookworm bookworm main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Debian 11 ("bullseye")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/bullseye bullseye main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 22.04 ("jammy")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/jammy jammy main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 20.04 ("focal")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/focal focal main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+<notextile>
+<pre><code># <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
+Types: deb
+URIs: https://apt.arvados.org/$(lsb_release -cs)
+Suites: $(lsb_release -cs)
+Components: main
+Signed-by: /etc/apt/keyrings/arvados.asc
+EOF
+</span></code></pre>
+</notextile>
 
 {% include 'notebox_begin' %}
 
@@ -68,6 +72,6 @@ fn1. Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's 
 Retrieve the package list:
 
 <notextile>
-<pre><code># <span class="userinput">apt-get update</span>
+<pre><code># <span class="userinput">apt update</span>
 </code></pre>
 </notextile>
