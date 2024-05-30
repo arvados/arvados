@@ -25,6 +25,10 @@ For example, let's copy from the <a href="https://playground.arvados.org/">Arvad
 
 In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of creating the default @~/.config/arvados/settings.conf@ you need two configuration files, one for each cluster, with filenames in the format of <notextile><code><strong>ClusterID</strong>.conf</code></notextile>. For this example, follow these steps:
 
+{% include 'notebox_begin' %}
+@arv-copy@ searches for configuration files following the XDG Base Directory Specification. This is uncommon, but if you have customized the @XDG_CONFIG_HOME@ environment variable, save both configuration files under @$XDG_CONFIG_HOME/arvados/@ instead of the default @~/.config/arvados/@ shown below.
+{% include 'notebox_end' %}
+
 # Open the "Arvados Playground Workbench":https://playground.arvados.org.
 # On the system where you'll run @arv-copy@, start a new file named @~/.config/arvados/pirca.conf@ in your editor.
 # In Workbench, open the user menu in the upper right, and select "Get API token."

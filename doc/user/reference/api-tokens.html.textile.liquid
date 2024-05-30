@@ -42,6 +42,8 @@ EOF
 
 {% include 'notebox_begin' %}
 This will overwrite the file @~/.config/arvados/settings.conf@.
+
+Arvados tools written in Python (most notably the @arv keep@ commands, @arv copy@, and @arv-mount@) search for configuration files following the XDG Base Directory Specification. This is uncommon, but if you have customized the @XDG_CONFIG_HOME@ environment variable, you may need to add @$HOME/.config@ to the @XDG_CONFIG_DIRS@ envirnoment variable to have all the tools find the same configuration.
 {% include 'notebox_end' %}
 
 h2. .bashrc
