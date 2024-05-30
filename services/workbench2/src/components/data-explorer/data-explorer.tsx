@@ -107,6 +107,7 @@ interface DataExplorerDataProps<T> {
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
     isNotFound: boolean;
+    searchBarValue: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -132,10 +133,20 @@ export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
+        maxItemsAvailable = 0;
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
+            }
+        }
+
+        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
+            if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
+                this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
+            }
+            if (this.props.searchBarValue !== prevProps.searchBarValue) {
+                this.maxItemsAvailable = 0;
             }
         }
 
@@ -326,7 +337,7 @@ export const DataExplorer = withStyles(styles)(
                                     ) : (
                                         <Grid className={classes.loadMoreContainer}>
                                             <Typography  className={classes.numResults}>
-                                                Showing {items.length} / {itemsAvailable} results
+                                                Showing {items.length} / {this.maxItemsAvailable} results
                                             </Typography>
                                             <Button
                                                 size="small"
