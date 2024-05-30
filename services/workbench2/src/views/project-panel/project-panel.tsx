@@ -52,12 +52,15 @@ import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
+import { DetailsCardRoot } from 'views-components/details-card/details-card-root'; 
 
 type CssRules = 'root' | 'button' ;
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
     },
     button: {
         marginLeft: theme.spacing.unit,
@@ -266,6 +269,7 @@ export const ProjectPanel = withStyles(styles)(
             render() {
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
+                    <DetailsCardRoot />
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}

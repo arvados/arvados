@@ -360,7 +360,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />
-            {Object.keys(item.properties).length > 0
+            {item.properties && Object.keys(item.properties).length > 0
                 ? Object.keys(item.properties).map(k =>
                     Array.isArray(item.properties[k])
                         ? item.properties[k].map((v: string) =>

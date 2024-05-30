@@ -25,7 +25,12 @@ describe('Multiselect Toolbar Tests', () => {
 
     it('exists in DOM in neutral state', () => {
         cy.loginAs(activeUser);
-        cy.get('[data-cy=multiselect-toolbar]').should('exist');
-        cy.get('[data-cy=multiselect-button]').should('not.exist');
+        //multiselect toolbar should exist in details card and not in data explorer
+        cy.get('[data-cy=user-details-card]').should('exist').within(() => {
+            cy.get('[data-cy=multiselect-toolbar]').should('exist');
+        });
+        cy.get('[data-cy=title-wrapper]').should('exist').within(() => {
+            cy.get('[data-cy=multiselect-button]').should('not.exist');
+        });
     });
 });

@@ -29,6 +29,7 @@ import { SvgIconProps } from "@material-ui/core/SvgIcon";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
@@ -50,11 +51,13 @@ export interface DataTableDataProps<I> {
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
-    currentItemUuid?: string;
-    currentRoute?: string;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    currentRoute?: string;
+    currentRouteUuid: string;
     checkedList: TCheckedList;
+    selectedResourceUuid: string;
+    setSelectedUuid: (uuid: string | null) => void;
     isNotFound?: boolean;
 }
 
@@ -159,8 +162,9 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items, setCheckedListOnStore } = this.props;
+            const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
+            const singleSelected = isExactlyOneSelected(this.props.checkedList);
             if (prevProps.items !== items) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items);
@@ -168,6 +172,15 @@ export const DataTable = withStyles(styles)(
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
                 this.initializeCheckedList([])
+            }
+            if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
+                this.props.setSelectedUuid(singleSelected);
+            }
+            if (!singleSelected && !!currentRouteUuid && !this.isAnySelected()) {
+                this.props.setSelectedUuid(currentRouteUuid);
+            }
+            if (!singleSelected && this.isAnySelected()) {
+                this.props.setSelectedUuid(null);
             }
             if(prevProps.working === true && this.props.working === false) {
                 this.setState({ isLoaded: true });
@@ -220,11 +233,12 @@ export const DataTable = withStyles(styles)(
         initializeCheckedList = (uuids: any[]): void => {
             const newCheckedList = { ...this.props.checkedList };
 
-            uuids.forEach(uuid => {
-                if (!newCheckedList.hasOwnProperty(uuid)) {
-                    newCheckedList[uuid] = false;
+            if(Object.keys(newCheckedList).length === 0){
+                for(const uuid of uuids){
+                    newCheckedList[uuid] = false
                 }
-            });
+            }
+
             for (const key in newCheckedList) {
                 if (!uuids.includes(key)) {
                     delete newCheckedList[key];
@@ -412,7 +426,7 @@ export const DataTable = withStyles(styles)(
         );
 
         renderBodyRow = (item: any, index: number) => {
-            const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
+            const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -421,7 +435,7 @@ export const DataTable = withStyles(styles)(
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={item === currentItemUuid}>
+                    selected={item === selectedResourceUuid}>
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}

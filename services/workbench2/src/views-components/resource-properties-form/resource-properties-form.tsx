@@ -42,10 +42,12 @@ export const ResourcePropertiesForm = connect(mapStateToProps)(({ handleSubmit, 
     const propertyValue = applySelector(formValueSelector(props.form));
     return <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
         <Grid container spacing={16} classes={classes}>
-            <Grid item xs>
+            <Grid item xs 
+            data-cy='key-input'>
                 <PropertyKeyField clearPropertyKeyOnSelect />
             </Grid>
-            <Grid item xs>
+            <Grid item xs
+            data-cy='value-input'>
                 <PropertyValueField />
             </Grid>
             <Grid item>

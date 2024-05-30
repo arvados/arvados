@@ -62,13 +62,14 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
     }
     return (
         <div className={className}>
-            <Tooltip title="More Options" disableFocusListener>
+            <Tooltip title="More options" disableFocusListener>
                 <IconButton
                     aria-label='more'
                     aria-controls='long-menu'
                     aria-haspopup='true'
                     onClick={handleClick}
                     className={classes.openMenuButton}
+                    data-cy='overflow-menu-button'
                 >
                         <DoubleRightArrows />
                 </IconButton>
@@ -81,6 +82,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                 onClose={handleClose}
                 disableAutoFocusItem
                 className={classes.menu}
+                data-cy='overflow-menu'
             >
                 {React.Children.map(children, (child: any) => {
                     if (!visibilityMap[child.props['data-targetid']]) {

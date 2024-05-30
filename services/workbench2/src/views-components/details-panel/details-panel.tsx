@@ -15,6 +15,7 @@ import { EmptyResource } from 'models/empty';
 import { Dispatch } from "redux";
 import { ResourceKind } from "models/resource";
 import { ProjectDetails } from "./project-details";
+import { RootProjectDetails } from './root-project-details';
 import { CollectionDetails } from "./collection-details";
 import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
@@ -28,6 +29,7 @@ import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from 'store/detai
 import { FileDetails } from 'views-components/details-panel/file-details';
 import { getNode } from 'models/tree';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -64,7 +66,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const EMPTY_RESOURCE: EmptyResource = { kind: undefined, name: 'Projects' };
 
-const getItem = (res: DetailsResource): DetailsData => {
+const getItem = (res: DetailsResource, pathName: string): DetailsData => {
     if ('kind' in res) {
         switch (res.kind) {
             case ResourceKind.PROJECT:
@@ -75,19 +77,21 @@ const getItem = (res: DetailsResource): DetailsData => {
                 return new ProcessDetails(res);
             case ResourceKind.WORKFLOW:
                 return new WorkflowDetails(res);
+            case ResourceKind.USER:
+                if(pathName.includes('projects')) {
+                    return new RootProjectDetails(res);
+                }
+                return new EmptyDetails(EMPTY_RESOURCE);
             default:
-                return new EmptyDetails(res);
+                return new EmptyDetails(res as EmptyResource);
         }
     } else {
         return new FileDetails(res);
     }
 };
 
-const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, multiselect, router }: RootState) => {
-    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
-    const currentRoute = router.location ? router.location.pathname : "";
-    const currentItemUuid = isDetailsResourceChecked || currentRoute.includes('collections') ? detailsPanel.resourceUuid : multiselect.selectedUuid ? multiselect.selectedUuid : currentRoute.split('/')[2];
-    const resource = getResource(currentItemUuid)(resources) as DetailsResource | undefined;
+const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, selectedResourceUuid, properties, router }: RootState) => {
+    const resource = getResource(selectedResourceUuid ?? properties.currentRouteUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
@@ -103,12 +107,13 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles, 
         isOpened: detailsPanel.isOpened,
         tabNr: detailsPanel.tabNr,
         res: resource || (file && file.value) || EMPTY_RESOURCE,
+        pathname: router.location ? router.location.pathname : "",
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onCloseDrawer: () => {
-        dispatch<any>(toggleDetailsPanel());
+    onCloseDrawer: (currentItemId) => {
+        dispatch<any>(toggleDetailsPanel(currentItemId));
     },
     setActiveTab: (tabNr: number) => {
         dispatch<any>(openDetailsPanel(undefined, tabNr));
@@ -116,13 +121,14 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 });
 
 export interface DetailsPanelDataProps {
-    onCloseDrawer: () => void;
+    onCloseDrawer: (currentItemId) => void;
     setActiveTab: (tabNr: number) => void;
     authConfig: Config;
     isOpened: boolean;
     tabNr: number;
     res: DetailsResource;
     isFrozen: boolean;
+    pathname: string;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -162,8 +168,7 @@ export const DetailsPanel = withStyles(styles)(
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, res, tabNr, authConfig } = this.props;
-
+                const { classes, onCloseDrawer, res, tabNr, authConfig, pathname } = this.props;
                 let shouldShowInlinePreview = false;
                 if (!('kind' in res)) {
                     shouldShowInlinePreview = isInlineFileUrlSafe(
@@ -173,7 +178,7 @@ export const DetailsPanel = withStyles(styles)(
                     ) || authConfig.clusterConfig.Collections.TrustAllContent;
                 }
 
-                const item = getItem(res);
+                const item = getItem(res, pathname);
                 return <Grid
                     data-cy='details-panel'
                     container
@@ -199,7 +204,7 @@ export const DetailsPanel = withStyles(styles)(
                             </Tooltip>
                         </Grid>
                         <Grid item>
-                            <IconButton color="inherit" onClick={onCloseDrawer}>
+                            <IconButton color="inherit" onClick={()=>onCloseDrawer(CLOSE_DRAWER)}>
                                 <CloseIcon />
                             </IconButton>
                         </Grid>

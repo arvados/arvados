@@ -93,11 +93,13 @@ const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
                 : ''
             }
             <DetailsAttribute label='Type' value={project.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)} />
+            <DetailsAttribute label='UUID' linkToUuid={project.uuid} value={project.uuid} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-            <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
-            <DetailsAttribute label='UUID' linkToUuid={project.uuid} value={project.uuid} />
+            <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
+            <DetailsAttribute label='Last modified by' linkToUuid={project.modifiedByUserUuid}
+                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
             <DetailsAttribute label='Description'>
                 {project.description ?
                     <RichTextEditorLink
