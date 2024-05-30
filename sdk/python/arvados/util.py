@@ -15,9 +15,11 @@ import functools
 import hashlib
 import httplib2
 import itertools
+import logging
 import os
 import random
 import re
+import shlex
 import stat
 import subprocess
 import sys
@@ -80,6 +82,8 @@ job_uuid_pattern = re.compile(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}')
    Arvados job resources are deprecated and will be removed in a future
    release. Prefer the containers API instead.
 """
+
+logger = logging.getLogger('arvados')
 
 def _deprecated(version=None, preferred=None):
     """Mark a callable as deprecated in the SDK
@@ -174,11 +178,17 @@ class _BaseDirectorySpec:
                 yield path / subdir
 
     def xdg_home(self, env: Mapping[str, str], subdir: PurePath) -> Path:
-        home_path = self._abspath_from_env(env, self.xdg_home_key)
-        if home_path is None:
-            home_path = self._abspath_from_env(env, 'HOME') or Path.home()
-            home_path /= self.xdg_home_default
-        return home_path / subdir
+        return (
+            self._abspath_from_env(env, self.xdg_home_key)
+            or self.xdg_home_default_path(env)
+        ) / subdir
+
+    def xdg_home_default_path(self, env: Mapping[str, str]) -> Path:
+        return (self._abspath_from_env(env, 'HOME') or Path.home()) / self.xdg_home_default
+
+    def xdg_home_is_customized(self, env: Mapping[str, str]) -> bool:
+        xdg_home = self._abspath_from_env(env, self.xdg_home_key)
+        return xdg_home is not None and xdg_home != self.xdg_home_default_path(env)
 
 
 class _BaseDirectorySpecs(enum.Enum):
@@ -228,6 +238,7 @@ class _BaseDirectories:
         self._xdg_subdir = PurePath(xdg_subdir)
 
     def search(self, name: str) -> Iterator[Path]:
+        any_found = False
         for search_path in itertools.chain(
                 self._spec.iter_systemd(self._env),
                 self._spec.iter_xdg(self._env, self._xdg_subdir),
@@ -235,6 +246,37 @@ class _BaseDirectories:
             path = search_path / name
             if path.exists():
                 yield path
+                any_found = True
+        # The rest of this function is dedicated to warning the user if they
+        # have a custom XDG_*_HOME value that prevented the search from
+        # succeeding. This should be rare.
+        if any_found or not self._spec.xdg_home_is_customized(self._env):
+            return
+        default_home = self._spec.xdg_home_default_path(self._env)
+        default_path = Path(self._xdg_subdir / name)
+        if not (default_home / default_path).exists():
+            return
+        if self._spec.xdg_dirs_key is None:
+            suggest_key = self._spec.xdg_home_key
+            suggest_value = default_home
+        else:
+            suggest_key = self._spec.xdg_dirs_key
+            cur_value = self._env.get(suggest_key, '')
+            value_sep = ':' if cur_value else ''
+            suggest_value = f'{cur_value}{value_sep}{default_home}'
+        logger.warning(
+            "\
+%s was not found under your configured $%s (%s), \
+but does exist at the default location (%s) - \
+consider running this program with the environment setting %s=%s\
+",
+            default_path,
+            self._spec.xdg_home_key,
+            self._spec.xdg_home(self._env, ''),
+            default_home,
+            suggest_key,
+            shlex.quote(suggest_value),
+        )
 
     def storage_path(
             self,

@@ -310,6 +310,23 @@ class TestBaseDirectories:
         dirs = arvados.util._BaseDirectories(dir_spec, env, parent_path)
         assert not list(dirs.search(test_path.name))
 
+    def test_search_warns_nondefault_home(self, dir_spec, env, tmp_path, caplog):
+        search_path = tmp_path / dir_spec.xdg_home_default / 'Search' / 'SearchConfig'
+        search_path.parent.mkdir(parents=True)
+        search_path.touch()
+        env[dir_spec.xdg_home_key] = str(tmp_path / '.nonexistent')
+        dirs = arvados.util._BaseDirectories(dir_spec, env, search_path.parent.name)
+        results = list(dirs.search(search_path.name))
+        expect_msg = "{} was not found under your configured ${} ({}), but does exist at the default location ({})".format(
+            Path(*search_path.parts[-2:]),
+            dir_spec.xdg_home_key,
+            env[dir_spec.xdg_home_key],
+            Path(*search_path.parts[:-2]),
+        )
+        assert caplog.messages
+        assert any(msg.startswith(expect_msg) for msg in caplog.messages)
+        assert not results
+
     def test_storage_path_systemd(self, dir_spec, env, tmp_path):
         expected = tmp_path / 'rwsystemd'
         expected.mkdir(0o700)
