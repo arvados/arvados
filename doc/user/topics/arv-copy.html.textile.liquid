@@ -23,20 +23,22 @@ For workflow definitions, @arv-copy@ will recursively go through the workflow an
 
 For example, let's copy from the <a href="https://playground.arvados.org/">Arvados Playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster ID. You can find the cluster ID from the prefix of the UUID of the object you want to copy. For example, in <notextile><code><strong>zzzzz</strong>-4zz18-tci4vn4fa95w0zx</code></notextile>, the cluster name is *zzzzz*.
 
-In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of creating the default @~/.config/arvados/settings.conf@ you need two configuration files, one for each cluster, with filenames in the format of <notextile><code><strong>ClusterID</strong>.conf</code></notextile>.
+In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of creating the default @~/.config/arvados/settings.conf@ you need two configuration files, one for each cluster, with filenames in the format of <notextile><code><strong>ClusterID</strong>.conf</code></notextile>. For this example, follow these steps:
 
-In this example, navigate to the *Current token* page on each of *pirca* and *dstcl* to get the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
-
-The config file consists of two lines, one for @ARVADOS_API_HOST@ and one for @ARVADOS_API_TOKEN@:
-
-<pre>
-ARVADOS_API_HOST=zzzzz.arvadosapi.com
-ARVADOS_API_TOKEN=v2/zzzzz-gj3su-xxxxxxxxxxxxxxx/123456789abcdefghijkl
-</pre>
-
-Copy your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ into the config files as shown below in the shell account from which you are executing the commands.  In our example, you need two files, @~/.config/arvados/pirca.conf@ and @~/.config/arvados/dstcl.conf@.
-
-Now you're ready to copy between *pirca* and *dstcl*!
+# Open the "Arvados Playground Workbench":https://playground.arvados.org.
+# On the system where you'll run @arv-copy@, start a new file named @~/.config/arvados/pirca.conf@ in your editor.
+# In Workbench, open the user menu in the upper right, and select "Get API token."
+# In the Workbench "Get API Token" dialog, under the "API Host" header, copy the value to your clipboard using the button.
+# In your editor, write the text @ARVADOS_API_HOST=@, then paste the "API Host" value you copied in the previous step, and start a new line.
+# In the Workbench "Get API Token" dialog, under the "API Token" header, copy the value to your clipboard using the button.
+# In your editor, write the text @ARVADOS_API_TOKEN=@, then paste the "API Token" value you copied in the previous step, and start a new line.
+# Review your work. In your editor, @pirca.conf@ should look like this, with a different value for @ARVADOS_API_TOKEN@:
+  <pre><code>ARVADOS_API_HOST=pirca.arvadosapi.com
+ARVADOS_API_TOKEN=v2/jutro-gj3su-12345abcde67890/abcdefghijklmnopqrstuvwxyz1234567890
+</code></pre> If it looks right, save and close the file.
+# Open Workbench for your destination cluster *dstcl*.
+# On the system where you'll run @arv-copy@, start a new file named <notextile><code>~/.config/arvados/<b>dstcl</b>.conf</code></notextile> in your editor. Replace *@dstcl@* in the filename with the actual cluster ID of your destination cluster.
+# Repeat steps 3-8 to create a settings file with credentials for *dsctl*.
 
 h3. How to copy a collection
 
