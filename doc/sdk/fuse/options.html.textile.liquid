@@ -164,8 +164,21 @@ Documentation={{ site.baseurl }}/sdk/fuse/options.html
 
 [Service]
 Type=simple
-CacheDirectory=arvados/keep
-CacheDirectoryMode=0700
+
+# arv-mount will cache data under a `keep` subdirectory of CacheDirectory.
+# If this is a system service installed under /etc/systemd/system,
+# the cache will be at /var/cache/arvados/keep.
+# The default value of `arvados` lets arv-mount share the cache with other
+# tools.
+CacheDirectory=arvados
+
+# arv-mount will get Arvados API credentials from the `settings.conf` file
+# under ConfigurationDirectory.
+# If this is a system service installed under /etc/systemd/system,
+# the configuration will be read from /etc/arvados/settings.conf.
+# The default value of `arvados` lets arv-mount read configuration from the
+# same location as other tools.
+ConfigurationDirectory=arvados
 
 # This unit makes the mount available as `Arvados` under the runtime directory root.
 # If this is a system service installed under /etc/systemd/system,
@@ -175,19 +188,13 @@ CacheDirectoryMode=0700
 # If you want to mount at another location on the filesystem, remove RuntimeDirectory
 # and replace both instances of %t/Arvados with your desired path.
 RuntimeDirectory=Arvados
+
 # The arv-mount path must be the absolute path where you installed the command.
 # If you installed from a distribution package, make this /usr/bin/arv-mount.
 # If you installed from pip, replace ... with the path to your virtualenv.
 # You can add options to select what gets mounted, access permissions,
 # cache size, log level, etc.
-ExecStart=<span class="userinput">...</span>/bin/arv-mount --foreground --disk-cache-dir %C/arvados/keep %t/Arvados
+ExecStart=<span class="userinput">...</span>/bin/arv-mount --foreground %t/Arvados
 ExecStop=/usr/bin/fusermount -u %t/Arvados
-
-# This unit assumes the running user has a ~/.config/arvados/settings.conf
-# with ARVADOS_API_HOST and ARVADOS_API_TOKEN defined.
-# If not, you can write those in a separate file
-# and set its path as EnvironmentFile.
-# Make sure that file is owned and only readable by the running user (mode 0600).
-#EnvironmentFile=...
 </code></pre>
 </notextile>
