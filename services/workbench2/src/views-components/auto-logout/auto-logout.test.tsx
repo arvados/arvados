@@ -31,28 +31,28 @@ describe('<AutoLogoutComponent />', () => {
     });
 
     it('should logout after idle timeout', () => {
-        jest.runTimersToTime((sessionIdleTimeout-1)*1000);
+        jest.advanceTimersByTime((sessionIdleTimeout-1)*1000);
         expect(props.doLogout).not.toBeCalled();
-        jest.runTimersToTime(1*1000);
+        jest.advanceTimersByTime(1*1000);
         expect(props.doLogout).toBeCalled();
     });
 
     it('should warn the user previous to close the session', () => {
-        jest.runTimersToTime((sessionIdleTimeout-lastWarningDuration-1)*1000);
+        jest.advanceTimersByTime((sessionIdleTimeout-lastWarningDuration-1)*1000);
         expect(props.doWarn).not.toBeCalled();
-        jest.runTimersToTime(1*1000);
+        jest.advanceTimersByTime(1*1000);
         expect(props.doWarn).toBeCalled();
     });
 
     it('should reset the idle timer when activity event is received', () => {
-        jest.runTimersToTime((sessionIdleTimeout-lastWarningDuration-1)*1000);
+        jest.advanceTimersByTime((sessionIdleTimeout-lastWarningDuration-1)*1000);
         expect(props.doWarn).not.toBeCalled();
         // Simulate activity from other window/tab
         eventListeners.storage({
             key: LAST_ACTIVE_TIMESTAMP,
             newValue: '42' // value currently doesn't matter
         })
-        jest.runTimersToTime(1*1000);
+        jest.advanceTimersByTime(1*1000);
         // Warning should not appear because idle timer was reset
         expect(props.doWarn).not.toBeCalled();
     });

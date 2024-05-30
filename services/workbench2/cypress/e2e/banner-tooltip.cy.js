@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 describe('Banner / tooltip tests', function () {
-    let activeUser;
     let adminUser;
     let collectionUUID;
 
@@ -17,11 +16,6 @@ describe('Banner / tooltip tests', function () {
             .as('adminUser').then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser('collectionuser1', 'Collection', 'User', false, true)
-            .as('activeUser').then(function () {
-                activeUser = this.activeUser;
-            });
-
         cy.getAll('@adminUser').then(([adminUser]) => {
             // This collection will not be deleted after each test, we'll
             // clean it up manually.
@@ -64,6 +58,14 @@ describe('Banner / tooltip tests', function () {
                 return false;
             }
         });
+
+        //login here instead of in specific tests to preserve localStorage and intercept listener
+        cy.loginAs(adminUser);
+
+        //must be in localstorage to have banner option in notifications menu
+        //it doesn't matter what the value is, as long as it's truthy
+        window.localStorage.setItem('bannerFileData', 'foo');
+
         cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
             req.on('response', (res) => {
                 res.body.Workbench.BannerUUID = collectionUUID;
@@ -77,24 +79,33 @@ describe('Banner / tooltip tests', function () {
     });
 
     it('should re-show the banner', () => {
-        cy.loginAs(adminUser);
+        //reload instead of cy.loginAs() to preserve localStorage and intercept listener
+        //logged in as adminUser
+        cy.reload();
         cy.waitForDom();
 
+        //check that banner appears on reload
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
 
+        //check that banner appears on toggle
         cy.get('[title=Notifications]').click();
         cy.get('li').contains('Restore Banner').click();
 
         cy.waitForDom().get('[data-cy=confirmation-dialog-ok-btn]', {timeout: 10000}).should('be.visible');
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
     });
 
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
-        cy.loginAs(adminUser);
+        //reload instead of cy.loginAs() to preserve localStorage and intercept listener
+        //logged in as adminUser
+        cy.reload();
         cy.waitForDom();
 
+        //banner appears on reload
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');

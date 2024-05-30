@@ -41,14 +41,14 @@ describe("CommonResourceService", () => {
     });
 
     it("#create maps request params to snake case", async () => {
-        axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
+        axiosInstance.post = jest.fn(() => Promise.resolve({data: {}})) as AxiosInstance['post'];
         const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
         expect(axiosInstance.post).toHaveBeenCalledWith("/resources", {resource: {owner_uuid: "ownerUuidValue"}});
     });
 
     it("#create ignores fields listed as readonly", async () => {
-        axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
+        axiosInstance.post = jest.fn(() => Promise.resolve({data: {}})) as AxiosInstance['post'];
         const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         // UUID fields are read-only on all resources.
         await commonResourceService.create({ uuid: "this should be ignored", ownerUuid: "ownerUuidValue" });
@@ -56,7 +56,7 @@ describe("CommonResourceService", () => {
     });
 
     it("#update ignores fields listed as readonly", async () => {
-        axiosInstance.put = jest.fn(() => Promise.resolve({data: {}}));
+        axiosInstance.put = jest.fn(() => Promise.resolve({data: {}})) as AxiosInstance['post'];
         const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         // UUID fields are read-only on all resources.
         await commonResourceService.update('resource-uuid', { uuid: "this should be ignored", ownerUuid: "ownerUuidValue" });
