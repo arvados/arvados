@@ -45,16 +45,22 @@ You can test the change by running::
 
   arv-mount --version
 
-Installing on Debian systems
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing on Debian and Ubuntu systems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Add this Arvados repository to your sources list::
+Arvados publishes packages for Debian 11 "bullseye," Debian 12 "bookworm," Ubuntu 20.04 "focal," and Ubuntu 22.04 "jammy." You can install the Python SDK package on any of these distributions by running the following commands::
 
-     deb http://apt.arvados.org/buster buster main
-
-2. Update your package list.
-
-3. Install the ``python3-arvados-fuse`` package.
+  sudo install -d /etc/apt/keyrings
+  sudo curl -fsSL -o /etc/apt/keyrings/arvados.asc https://apt.arvados.org/pubkey.gpg
+  sudo tee /etc/apt/sources.list.d/arvados.sources >/dev/null <<EOF
+  Types: deb
+  URIs: https://apt.arvados.org/$(lsb_release -cs)
+  Suites: $(lsb_release -cs)
+  Components: main
+  Signed-by: /etc/apt/keyrings/arvados.asc
+  EOF
+  sudo apt update
+  sudo apt install python3-arvados-fuse
 
 Configuration
 -------------
