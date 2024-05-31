@@ -159,25 +159,21 @@ def http_cache(data_type: str) -> cache.SafeHTTPCache:
     """Set up an HTTP file cache
 
     This function constructs and returns an `arvados.cache.SafeHTTPCache`
-    backed by the filesystem under `~/.cache/arvados/`, or `None` if the
-    directory cannot be set up. The return value can be passed to
+    backed by the filesystem under a cache directory from the environment, or
+    `None` if the directory cannot be set up. The return value can be passed to
     `httplib2.Http` as the `cache` argument.
 
     Arguments:
 
-    * data_type: str --- The name of the subdirectory under `~/.cache/arvados`
+    * data_type: str --- The name of the subdirectory
       where data is cached.
     """
     try:
-        homedir = pathlib.Path.home()
-    except RuntimeError:
+        path = util._BaseDirectories('CACHE').storage_path(data_type)
+    except (OSError, RuntimeError):
         return None
-    path = pathlib.Path(homedir, '.cache', 'arvados', data_type)
-    try:
-        path.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        return None
-    return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
+    else:
+        return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
         version: str,
@@ -211,8 +207,7 @@ def api_client(
     Keyword-only arguments:
 
     * cache: bool --- If true, loads the API discovery document from, or
-      saves it to, a cache on disk (located at
-      `~/.cache/arvados/discovery`).
+      saves it to, a cache on disk.
 
     * http: httplib2.Http | None --- The HTTP client object the API client
       object will use to make requests.  If not provided, this function will

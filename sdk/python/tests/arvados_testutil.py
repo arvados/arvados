@@ -280,14 +280,6 @@ def binary_compare(a, b):
             return False
     return True
 
-def make_block_cache(disk_cache):
-    if disk_cache:
-        disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
-        shutil.rmtree(disk_cache_dir, ignore_errors=True)
-    block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache)
-    return block_cache
-
-
 class DiskCacheBase:
     def make_block_cache(self, disk_cache):
         self.disk_cache_dir = tempfile.mkdtemp() if disk_cache else None

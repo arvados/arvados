@@ -2,13 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import itertools
 import os
 import sys
 import tempfile
 import unittest
 import shutil
 import arvados.api
+import arvados.util
 from arvados.collection import Collection, CollectionReader
+
+import pytest
 
 import arvados.commands.arv_copy as arv_copy
 from . import arvados_testutil as tutil
@@ -87,3 +91,69 @@ class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionC
         finally:
             os.environ['HOME'] = home_was
             shutil.rmtree(tmphome)
+
+
+class TestApiForInstance:
+    _token_counter = itertools.count(1)
+
+    @staticmethod
+    def api_config(version, **kwargs):
+        assert version == 'v1'
+        return kwargs
+
+    @pytest.fixture
+    def patch_api(self, monkeypatch):
+        monkeypatch.setattr(arvados, 'api', self.api_config)
+
+    @pytest.fixture
+    def config_file(self, tmp_path):
+        count = next(self._token_counter)
+        path = tmp_path / f'config{count}.conf'
+        with path.open('w') as config_file:
+            print(
+                "ARVADOS_API_HOST=localhost",
+                f"ARVADOS_API_TOKEN={self.expected_token(path)}",
+                sep="\n", file=config_file,
+            )
+        return path
+
+    @pytest.fixture
+    def patch_search(self, tmp_path, monkeypatch):
+        def search(self, name):
+            path = tmp_path / name
+            if path.exists():
+                yield path
+        monkeypatch.setattr(arvados.util._BaseDirectories, 'search', search)
+
+    def expected_token(self, path):
+        return f"v2/zzzzz-gj3su-{path.stem:>015s}/{path.stem:>050s}"
+
+    def test_from_environ(self, patch_api):
+        actual = arv_copy.api_for_instance('', 0)
+        assert actual == {}
+
+    def test_relative_path(self, patch_api, config_file, monkeypatch):
+        monkeypatch.chdir(config_file.parent)
+        actual = arv_copy.api_for_instance(f'./{config_file.name}', 0)
+        assert actual['host'] == 'localhost'
+        assert actual['token'] == self.expected_token(config_file)
+
+    def test_absolute_path(self, patch_api, config_file):
+        actual = arv_copy.api_for_instance(str(config_file), 0)
+        assert actual['host'] == 'localhost'
+        assert actual['token'] == self.expected_token(config_file)
+
+    def test_search_path(self, patch_api, patch_search, config_file):
+        actual = arv_copy.api_for_instance(config_file.stem, 0)
+        assert actual['host'] == 'localhost'
+        assert actual['token'] == self.expected_token(config_file)
+
+    def test_search_failed(self, patch_api, patch_search):
+        with pytest.raises(SystemExit) as exc_info:
+            arv_copy.api_for_instance('NotFound', 0)
+        assert exc_info.value.code > 0
+
+    def test_path_unreadable(self, patch_api, tmp_path):
+        with pytest.raises(SystemExit) as exc_info:
+            arv_copy.api_for_instance(str(tmp_path / 'nonexistent.conf'), 0)
+        assert exc_info.value.code > 0

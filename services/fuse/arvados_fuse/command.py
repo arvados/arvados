@@ -305,7 +305,7 @@ After this time, the mount will be forcefully unmounted.
         cache.add_argument(
             '--disk-cache-dir',
             metavar="DIRECTORY",
-            help="Filesystem cache location (default `~/.cache/arvados/keep`)",
+            help="Set custom filesystem cache location",
         )
         cache.add_argument(
             '--directory-cache',

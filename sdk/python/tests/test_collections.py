@@ -2,31 +2,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import arvados
+import ciso8601
 import copy
+import datetime
 import os
 import random
 import re
+import shutil
 import sys
-import datetime
-import ciso8601
+import tempfile
 import time
 import unittest
-import parameterized
 
+import parameterized
 from unittest import mock
 
-from . import run_test_server
-from arvados._ranges import Range, LocatorAndRange
+import arvados
+import arvados.keep
 from arvados.collection import Collection, CollectionReader
+from arvados._ranges import Range, LocatorAndRange
+
 from . import arvados_testutil as tutil
-from .arvados_testutil import make_block_cache
+from . import run_test_server
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
 
     def current_state(self):
         return self.dump_state(copy.deepcopy)
+
 
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
@@ -39,10 +43,23 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         super(ArvadosCollectionsTest, cls).setUpClass()
         # need admin privileges to make collections with unsigned blocks
         run_test_server.authorize_with('admin')
+        if cls.disk_cache:
+            cls._disk_cache_dir = tempfile.mkdtemp(prefix='CollectionsTest-')
+        else:
+            cls._disk_cache_dir = None
+        block_cache = arvados.keep.KeepBlockCache(
+            disk_cache=cls.disk_cache,
+            disk_cache_dir=cls._disk_cache_dir,
+        )
         cls.api_client = arvados.api('v1')
         cls.keep_client = arvados.KeepClient(api_client=cls.api_client,
                                              local_store=cls.local_store,
-                                             block_cache=make_block_cache(cls.disk_cache))
+                                             block_cache=block_cache)
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._disk_cache_dir:
+            shutil.rmtree(cls._disk_cache_dir)
 
     def write_foo_bar_baz(self):
         cw = arvados.CollectionWriter(self.api_client)
@@ -649,7 +666,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertRaises(IOError, reader.open, 'nonexistent')
 
 
-@tutil.skip_sleep
+@unittest.skip("will be removed in #15397")
 class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
     def mock_keep(self, body, *codes, **headers):
         headers.setdefault('x-keep-replicas-stored', 2)
