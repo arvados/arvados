@@ -623,7 +623,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	err = s.runner.WaitFinish()
 	c.Assert(err, IsNil)
 
-	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, `Hello world\n`)
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, `2\S+Z Hello world\n`)
 	c.Check(logFileContent(c, s.runner, "stderr.txt"), Matches, ``)
 }
 
@@ -803,7 +803,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, "hello world\n")
+	c.Check(logFileContent(c, s.runner, "stdout.txt"), Matches, `2\S+Z hello world\n`)
 	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"default"})
 	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"default"})
 }
