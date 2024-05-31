@@ -32,6 +32,12 @@ h2(#main). development main
 
 "previous: Upgrading to 2.7.1":#v2_7_1
 
+h3. Debian 10, Ubuntu 18.04, and CentOS 7 are no longer supported
+
+Arvados 3.0 no longer supports some of the older distributions supported by Arvados 2.7: Debian 10 "buster," Ubuntu 18.04 "bionic," and CentOS 7. If you are running Arvados on any of these distributions, you must first upgrade to the next major release of your distribution before you upgrade to Arvados 3.0.
+
+Arvados 2.7 supports Debian 11 "bullseye," Ubuntu 20.04 "focal," and CentOS 8. You can upgrade to one of those releases, then proceed to upgrade Arvados to 3.0.
+
 h3. S3 volume IAMRole configuration entry has been removed
 
 The @Volumes.*.DriverParameters.IAMRole@ configuration entry for S3 volumes has been removed. You should remove it from your @/etc/arvados/config.yml@ file to avoid warnings when services start up. As before, if @AccessKeyID@ and @SecretAccessKey@ are blank, keepstore will retrieve IAM role credentials from instance metadata. Previously, documentation indicated that keepstore would refuse to use the IAM credentials if @IAMRole@ was specified and did not match the instance metadata, but that check has not been working for some time.
