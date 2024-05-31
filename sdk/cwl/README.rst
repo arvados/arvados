@@ -60,8 +60,8 @@ Arvados publishes packages for Debian 11 "bullseye," Debian 12 "bookworm," Ubunt
   sudo apt update
   sudo apt install python3-arvados-cwl-runner
 
-Installing on AlmaLinux, CentOS, RHEL, and Rocky Linux
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing on Red Hat, AlmaLinux, and Rocky Linux
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Arvados publishes packages for RHEL 8 and distributions based on it. Note that these packages depend on, and will automatically enable, the Python 3.9 module. You can install the Python SDK package on any of these distributions by running the following commands::
 

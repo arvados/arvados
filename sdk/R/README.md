@@ -28,12 +28,12 @@ library('ArvadosR')
 > **Note**
 > On Linux, you may have to install supporting packages.
 >
-> On Centos 7, this is:
+> On Red Hat, AlmaLinux, and Rocky Linux, this is:
 > ```
 > yum install libxml2-devel openssl-devel curl-devel
 > ```
 >
-> On Debian, this is:
+> On Debian and Ubuntu, this is:
 > ```
 > apt-get install build-essential libxml2-dev libssl-dev libcurl4-gnutls-dev
 > ```
