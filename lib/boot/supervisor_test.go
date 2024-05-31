@@ -8,6 +8,7 @@ import (
 	"net"
 	"testing"
 
+	"golang.org/x/net/nettest"
 	check "gopkg.in/check.v1"
 )
 
@@ -32,9 +33,11 @@ func (s *supervisorSuite) TestAddrIsLocal(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(is, check.Equals, true)
 
-	is, err = addrIsLocal("[::1]:32767")
-	c.Check(err, check.IsNil)
-	c.Check(is, check.Equals, true)
+	if nettest.SupportsIPv6() {
+		is, err = addrIsLocal("[::1]:32767")
+		c.Check(err, check.IsNil)
+		c.Check(is, check.Equals, true)
+	}
 
 	is, err = addrIsLocal("8.8.8.8:32767")
 	c.Check(err, check.IsNil)
