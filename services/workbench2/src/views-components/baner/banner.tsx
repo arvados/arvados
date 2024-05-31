@@ -82,7 +82,9 @@ export const BannerComponent = (props: BannerComponentProps) => {
                                 localStorage.setItem(BANNER_LOCAL_STORAGE_KEY, JSON.stringify(bannerFileData));
                             });
                     }
-                });
+                }).catch((e) => {
+		    console.error("Failed to load banner", e);
+		});
         }
     }, [bannerUUID, keepWebInlineServiceUrl, openBanner, isOpen]);
 
