@@ -46,24 +46,43 @@ You can test the change by running::
 
   arv-get --version
 
-Installing on Debian systems
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing on Debian and Ubuntu systems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Add this Arvados repository to your sources list::
+Arvados publishes packages for Debian 11 "bullseye," Debian 12 "bookworm," Ubuntu 20.04 "focal," and Ubuntu 22.04 "jammy." You can install the Python SDK package on any of these distributions by running the following commands::
 
-     deb http://apt.arvados.org/ buster main
+  sudo install -d /etc/apt/keyrings
+  sudo curl -fsSL -o /etc/apt/keyrings/arvados.asc https://apt.arvados.org/pubkey.gpg
+  sudo tee /etc/apt/sources.list.d/arvados.sources >/dev/null <<EOF
+  Types: deb
+  URIs: https://apt.arvados.org/$(lsb_release -cs)
+  Suites: $(lsb_release -cs)
+  Components: main
+  Signed-by: /etc/apt/keyrings/arvados.asc
+  EOF
+  sudo apt update
+  sudo apt install python3-arvados-python-client
 
-2. Update your package list.
+Installing on Red Hat, AlmaLinux, and Rocky Linux
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-3. Install the ``python3-arvados-python-client`` package.
+Arvados publishes packages for RHEL 8 and distributions based on it. Note that these packages depend on, and will automatically enable, the Python 3.9 module. You can install the Python SDK package on any of these distributions by running the following commands::
+
+  sudo tee /etc/yum.repos.d/arvados.repo >/dev/null <<EOF
+  [arvados]
+  name=Arvados
+  baseurl=http://rpm.arvados.org/CentOS/\$releasever/os/\$basearch/
+  gpgcheck=1
+  gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+  EOF
+  sudo dnf install python3-arvados-python-client
 
 Configuration
 -------------
 
 This client software needs two pieces of information to connect to
 Arvados: the DNS name of the API server, and an API authorization
-token.  You can set these in environment variables, or the file
-``$HOME/.config/arvados/settings.conf``.  `The Arvados user
+token. `The Arvados user
 documentation
 <http://doc.arvados.org/user/reference/api-tokens.html>`_ describes
 how to find this information in the Arvados Workbench, and install it

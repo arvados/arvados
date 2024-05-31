@@ -22,7 +22,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#introduction). Introduction
 
-This assumes you already have a Slurm cluster, and have set up all of your compute nodes with "Docker":../crunch2/install-compute-node-docker.html or "Singularity":../crunch2/install-compute-node-singularity.html.  Slurm packages are available for CentOS, Debian and Ubuntu. Please see your distribution package repositories. For information on installing Slurm from source, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
+This assumes you already have a Slurm cluster, and have set up all of your compute nodes with "Docker":../crunch2/install-compute-node-docker.html or "Singularity":../crunch2/install-compute-node-singularity.html.  Slurm packages are available on all distributions supported by Arvados. Please see your distribution package repositories. For information on installing Slurm from source, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
 
 The Arvados Slurm dispatcher can run on any node that can submit requests to both the Arvados API server and the Slurm controller (via @sbatch@).  It is not resource-intensive, so you can run it on the API server node.
 

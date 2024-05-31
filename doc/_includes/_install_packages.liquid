@@ -13,7 +13,7 @@ fallback on arvados_component if not defined
 
 h2(#install-packages). Install {{packages_to_install | join: " and " }}
 
-h3. Alma/CentOS/Red Hat/Rocky
+h3. Red Hat, AlmaLinux, and Rocky Linux
 
 <notextile>
 <pre><code># <span class="userinput">dnf install {{packages_to_install | join: " "}}</span>
@@ -23,6 +23,6 @@ h3. Alma/CentOS/Red Hat/Rocky
 h3. Debian and Ubuntu
 
 <notextile>
-<pre><code># <span class="userinput">apt-get install {{packages_to_install  | join " "}}</span>
+<pre><code># <span class="userinput">apt install {{packages_to_install  | join " "}}</span>
 </code></pre>
 </notextile>
