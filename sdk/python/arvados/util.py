@@ -402,18 +402,32 @@ def keyset_list_all(
             # In cases where there's more than one record with the
             # same order key, the result could include records we
             # already saw in the last page.  Skip them.
-            if i["uuid"] in seen_prevpage:
+            seen_key = None
+            if "uuid" in i:
+                seen_key = i["uuid"]
+            elif "user_uuid" in i and "target_uuid" in i:
+                # If we are looking at computed_permissions, there is
+                # no uuid field. The primary key is a tuple.
+                seen_key = (i["user_uuid"], i["target_uuid"])
+            if seen_key in seen_prevpage:
                 continue
-            seen_thispage.add(i["uuid"])
+            if seen_key is not None:
+                seen_thispage.add(seen_key)
             yield i
 
         firstitem = items["items"][0]
         lastitem = items["items"][-1]
 
+        tiebreak_key = "uuid"
+        if "uuid" not in lastitem and "target_uuid" in lastitem:
+            # Special case for computed_permissions, where items do
+            # not have a uuid.
+            tiebreak_key = "target_uuid"
+
         if firstitem[order_key] == lastitem[order_key]:
             # Got a page where every item has the same order key.
-            # Switch to using uuid for paging.
-            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">" if ascending else "<", lastitem["uuid"]]]
+            # Switch to using tiebreak key for paging.
+            nextpage = [[order_key, "=", lastitem[order_key]], [tiebreak_key, ">" if ascending else "<", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = True
         else:
             # Start from the last order key seen, but skip the last
@@ -422,7 +436,9 @@ def keyset_list_all(
             # still likely we'll end up retrieving duplicate rows.
             # That's handled by tracking the "seen" rows for each page
             # so they can be skipped if they show up on the next page.
-            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
+            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]]]
+            if tiebreak_key == "uuid":
+                nextpage += [[tiebreak_key, "!=", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = False
 
 def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:

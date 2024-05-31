@@ -55,4 +55,8 @@ class ComputedPermission < ApplicationRecord
   def self.serialized_attributes
     {}
   end
+
+  def self.unique_columns
+    []
+  end
 end
