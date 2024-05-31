@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from "@material-ui/core";
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
@@ -17,7 +17,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -41,6 +41,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     footer: {
         overflow: "auto",
     },
+    loadMoreContainer: {
+        minWidth: '8rem',
+    },
     root: {
         height: "100%",
         flex: 1,
@@ -48,6 +51,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     moreOptionsButton: {
         padding: 0,
+    },
+    numResults: {
+        marginTop: 0,
+        fontSize: "10px",
+        marginLeft: "10px",
+        marginBottom: '-0.5rem',
+        minWidth: '8.5rem',
     },
     title: {
         display: "inline-block",
@@ -106,6 +116,7 @@ interface DataExplorerDataProps<T> {
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
     isNotFound: boolean;
+    searchBarValue: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -135,6 +146,7 @@ export const DataExplorer = withStyles(styles)(
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
+        maxItemsAvailable = 0;
 
         componentDidMount() {
             if (this.props.onSetColumns) {
@@ -148,6 +160,11 @@ export const DataExplorer = withStyles(styles)(
                 this.setState({
                     msToolbarInDetailsCard: selectedResourceUuid === this.props.currentRouteUuid,
                 })
+            if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
+                this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
+            }
+            if (this.props.searchBarValue !== prevProps.searchBarValue) {
+                this.maxItemsAvailable = 0;
             }
         }
 
@@ -318,7 +335,7 @@ export const DataExplorer = withStyles(styles)(
                             <Toolbar className={classes.footer}>
                                 {elementPath && (
                                     <Grid container>
-                                        <span data-cy="element-path">{elementPath}</span>
+                                        <span data-cy="element-path">{elementPath.length > 2 ? elementPath : ''}</span>
                                     </Grid>
                                 )}
                                 <Grid
@@ -338,13 +355,21 @@ export const DataExplorer = withStyles(styles)(
                                             component="div"
                                         />
                                     ) : (
-                                        <Button
-                                            variant="text"
-                                            size="medium"
-                                            onClick={this.loadMore}
-                                        >
-                                            Load more
-                                        </Button>
+                                        <Grid className={classes.loadMoreContainer}>
+                                            <Typography  className={classes.numResults}>
+                                                Showing {items.length} / {this.maxItemsAvailable} results
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                onClick={this.loadMore}
+                                                variant="contained"
+                                                color="primary"  
+                                                style={{width: '100%', margin: '10px'}}
+                                                disabled={working || items.length >= itemsAvailable}
+                                            >
+                                                Load more
+                                            </Button>
+                                        </Grid>
                                     )}
                                 </Grid>
                             </Toolbar>

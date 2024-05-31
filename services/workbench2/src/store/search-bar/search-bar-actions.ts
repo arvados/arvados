@@ -39,6 +39,7 @@ export const searchBarActions = unionize({
     MOVE_UP: ofType<{}>(),
     MOVE_DOWN: ofType<{}>(),
     SELECT_FIRST_ITEM: ofType<{}>(),
+    SET_SEARCH_OFFSETS: ofType<Record<string, number>>(),
 });
 
 export type SearchBarActions = UnionOf<typeof searchBarActions>;
@@ -430,3 +431,9 @@ export const moveDown = () =>
     (dispatch: Dispatch) => {
         dispatch(searchBarActions.MOVE_DOWN());
     };
+
+export const setSearchOffsets = (sessionId: string, offset: number) => {
+    return (dispatch: Dispatch) => {
+        dispatch(searchBarActions.SET_SEARCH_OFFSETS({id:[sessionId], offset }));
+    };
+}

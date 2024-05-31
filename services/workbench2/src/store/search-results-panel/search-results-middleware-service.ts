@@ -18,6 +18,7 @@ import {
     getSearchSessions,
     queryToFilters,
     getAdvancedDataFromQuery,
+    setSearchOffsets,
 } from 'store/search-bar/search-bar-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
@@ -28,6 +29,8 @@ import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { Session } from 'models/session';
+import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -50,7 +53,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             items: [] as GroupContentsResource[],
             kind: '',
             offset: 0,
-            limit: 10
+            limit: 50
         };
 
         if (criteriaChanged) {
@@ -63,8 +66,15 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         api.dispatch(progressIndicatorActions.START_WORKING(this.id))
         api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
 
+        //In SearchResultsPanel, if we don't reset the items available, the items available will
+        //will be added to the previous value every time the 'load more' button is clicked.
+        api.dispatch(resetItemsAvailable());
+
         sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
+            //this prevents double fetching of the same search results when a new session is logged in
+            api.dispatch<any>(setSearchOffsets(session.clusterId, params.offset ));
+
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
                     api.dispatch(updateResources(response.items));
@@ -94,6 +104,48 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             }
         );
     }
+}
+
+export const searchSingleCluster = (session: Session, searchValue: string) => 
+    (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const state = getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, SEARCH_RESULTS_PANEL_ID);
+
+        if (searchValue.trim() === '') {
+            return;
+        }
+
+        const params = getParams(dataExplorer, searchValue, session.apiRevision);
+        
+        // If the clusterId & search offset has already been fetched, we don't need to fetch the results again
+        if(state.searchBar.searchOffsets[session.clusterId] === params.offset) {
+            return;
+        }
+
+        dispatch(progressIndicatorActions.START_WORKING(SEARCH_RESULTS_PANEL_ID))
+
+        services.groupsService.contents('', params, session)
+            .then((response) => {
+                dispatch<any>(setSearchOffsets(session.clusterId, params.offset ));
+                dispatch(updateResources(response.items));
+                dispatch(appendItems(response));
+                // Request all containers for process status to be available
+                const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
+                const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
+                containerUuids.length && services.containerService
+                    .list({
+                        filters: new FilterBuilder()
+                            .addIn('uuid', containerUuids)
+                            .getFilters()
+                    }, false)
+                    .then((containers) => {
+                        dispatch(updateResources(containers.items));
+                    });
+                }).catch(() => {
+                    dispatch(couldNotFetchSearchResults(session.clusterId));
+                    dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
+                });
+        dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
 }
 
 const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
@@ -134,6 +186,9 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         ...listResultsToDataExplorerItemsMeta(listResults),
         items: listResults.items.map(resource => resource.uuid),
     });
+
+const resetItemsAvailable = () =>
+    searchResultsPanelActions.RESET_ITEMS_AVAILABLE();
 
 export const appendItems = (listResults: ListResults<GroupContentsResource>) =>
     searchResultsPanelActions.APPEND_ITEMS({
