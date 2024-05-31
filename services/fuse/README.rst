@@ -61,8 +61,7 @@ Configuration
 
 This driver needs two pieces of information to connect to
 Arvados: the DNS name of the API server, and an API authorization
-token.  You can set these in environment variables, or the file
-``$HOME/.config/arvados/settings.conf``.  `The Arvados user
+token.  `The Arvados user
 documentation
 <http://doc.arvados.org/user/reference/api-tokens.html>`_ describes
 how to find this information in the Arvados Workbench, and install it
