@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
+	"dario.cat/mergo"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
-	"github.com/imdario/mergo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
