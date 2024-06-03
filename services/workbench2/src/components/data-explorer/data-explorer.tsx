@@ -160,6 +160,7 @@ export const DataExplorer = withStyles(styles)(
                 this.setState({
                     msToolbarInDetailsCard: selectedResourceUuid === this.props.currentRouteUuid,
                 })
+            }
             if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
                 this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
             }
