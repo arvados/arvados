@@ -124,6 +124,8 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 flexBasis: `${spacing.unit * 8}vh`,
                 flexShrink: 1,
                 minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
             },
         });
 
