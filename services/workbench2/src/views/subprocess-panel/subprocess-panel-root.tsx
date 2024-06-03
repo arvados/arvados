@@ -126,5 +126,5 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         panelMaximized={props.panelMaximized}
         panelName={props.panelName}
         title={<SubProcessesTitle/>}
-        progressBar={<SubprocessProgressBar process={props.process} />} />;
+        progressBar={<SubprocessProgressBar parentResource={props.process} />} />;
 };
