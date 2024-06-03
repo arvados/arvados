@@ -9,7 +9,7 @@ import { RootState } from 'store/store';
 import { getDataExplorer, DataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateFavorites } from 'store/favorites/favorites-actions';
 import { updateResources } from 'store/resources/resources-actions';
-import { loadMissingProcessesInformation } from 'store/project-panel/project-panel-data-middleware-service';
+import { loadMissingProcessesInformation } from 'store/project-panel/project-panel-run-middleware-service';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from 'services/common-service/common-service';

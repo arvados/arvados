@@ -9,3 +9,6 @@ import { bindDataExplorerActions } from "store/data-explorer/data-explorer-actio
 
 export const PROJECT_PANEL_DATA_ID = "projectPanelData";
 export const projectPanelDataActions = bindDataExplorerActions(PROJECT_PANEL_DATA_ID);
+
+export const PROJECT_PANEL_RUN_ID = "projectPanelRun";
+export const projectPanelRunActions = bindDataExplorerActions(PROJECT_PANEL_RUN_ID);

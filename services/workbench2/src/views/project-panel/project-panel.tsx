@@ -24,6 +24,7 @@ import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-acti
 import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProjectPanelData } from './project-panel-data';
+import { ProjectPanelRun } from './project-panel-run';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
@@ -46,6 +47,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const panelsData: MPVPanelState[] = [
     { name: "Data", visible: true },
+    { name: "Workflow Runs", visible: false },
 ];
 
 interface ProjectPanelDataProps {
@@ -93,6 +95,13 @@ export const ProjectPanel = withStyles(styles)(
                             data-cy="process-details"
                             className={classes.dataExplorer}>
                             <ProjectPanelData />
+                        </MPVPanelContent>
+                        <MPVPanelContent
+                            forwardProps
+                            xs="auto"
+                            data-cy="process-details"
+                            className={classes.dataExplorer}>
+                            <ProjectPanelRun />
                         </MPVPanelContent>
                     </MPVContainer>
                 </div>

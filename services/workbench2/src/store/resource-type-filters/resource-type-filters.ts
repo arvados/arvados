@@ -93,6 +93,30 @@ export const getInitialResourceTypeFilters = pipe(
 
 );
 
+/**
+ * Resource type filters for Data tab (excludes main/sub process runs)
+ */
+export const getInitialDataResourceTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    pipe(
+        initFilter(ObjectTypeFilter.PROJECT, '', true, true),
+        initFilter(GroupTypeFilter.PROJECT, ObjectTypeFilter.PROJECT),
+        initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.WORKFLOW, '', false, true),
+        initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.COLLECTION, '', true, true),
+        initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+    ),
+
+);
+
 // Using pipe() with more than 7 arguments makes the return type be 'any',
 // causing compile issues.
 export const getInitialSearchTypeFilters = pipe(
@@ -283,6 +307,9 @@ const buildProcessTypeFilters = ({ fb, filters, use_prefix }: { fb: FilterBuilde
     }
 };
 
+/**
+ * Serializes general resource type filters with prefix for group contents API
+ */
 export const serializeResourceTypeFilters = pipe(
     createFiltersBuilder,
     serializeObjectTypeFilters,
@@ -299,6 +326,27 @@ export const serializeOnlyProcessTypeFilters = pipe(
         filters => filters,
         mappedFilters => ({
             fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: false }),
+            selectedFilters
+        })
+    )(),
+    ({ fb }) => fb.getFilters(),
+);
+
+/**
+ * Serializes process type filters with prefix for group contents request
+ * Uses buildProcessTypeFilters to disable filters when no process type is selected
+ */
+export const serializeProcessTypeGroupContentsFilters = pipe(
+    createFiltersBuilder,
+    ({fb, selectedFilters }): ReturnType<typeof createFiltersBuilder> => ({
+            fb: fb.addIsA('uuid', [ResourceKind.PROCESS]),
+            selectedFilters,
+    }),
+    ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
+        () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
+        filters => filters,
+        mappedFilters => ({
+            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: true }),
             selectedFilters
         })
     )(),

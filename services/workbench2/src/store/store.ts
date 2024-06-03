@@ -20,8 +20,9 @@ import { collectionPanelFilesReducer } from "./collection-panel/collection-panel
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
 import { WORKFLOW_PROCESSES_PANEL_ID } from "./workflow-panel/workflow-panel-actions";
-import { PROJECT_PANEL_DATA_ID } from "./project-panel/project-panel-action-bind";
+import { PROJECT_PANEL_DATA_ID, PROJECT_PANEL_RUN_ID } from "./project-panel/project-panel-action-bind";
 import { ProjectPanelDataMiddlewareService } from "./project-panel/project-panel-data-middleware-service";
+import { ProjectPanelRunMiddlewareService } from "./project-panel/project-panel-run-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { AllProcessesPanelMiddlewareService } from "./all-processes-panel/all-processes-panel-middleware-service";
 import { WorkflowProcessesMiddlewareService } from "./workflow-panel/workflow-middleware-service";
@@ -97,6 +98,7 @@ export function configureStore(history: History, services: ServiceRepository, co
     const rootReducer = createRootReducer(services);
 
     const projectPanelDataMiddleware = dataExplorerMiddleware(new ProjectPanelDataMiddlewareService(services, PROJECT_PANEL_DATA_ID));
+    const projectPanelRunMiddleware = dataExplorerMiddleware(new ProjectPanelRunMiddlewareService(services, PROJECT_PANEL_RUN_ID));
     const favoritePanelMiddleware = dataExplorerMiddleware(new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID));
     const allProcessessPanelMiddleware = dataExplorerMiddleware(new AllProcessesPanelMiddlewareService(services, ALL_PROCESSES_PANEL_ID));
     const workflowProcessessPanelMiddleware = dataExplorerMiddleware(new WorkflowProcessesMiddlewareService(services, WORKFLOW_PROCESSES_PANEL_ID));
@@ -139,6 +141,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         authMiddleware(services),
         tooltipsMiddleware(services),
         projectPanelDataMiddleware,
+        projectPanelRunMiddleware,
         favoritePanelMiddleware,
         allProcessessPanelMiddleware,
         trashPanelMiddleware,
