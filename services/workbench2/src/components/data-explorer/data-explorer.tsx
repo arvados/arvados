@@ -16,8 +16,9 @@ import { DataTableFilters } from "components/data-table-filters/data-table-filte
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
+import classNames from "classnames";
 
-type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | 'progressWrapper' | 'progressWrapperNoTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -73,6 +74,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: "18px",
         flexGrow: 0,
         paddingRight: "10px",
+    },
+    progressWrapper: {
+        margin: "28px 0 0",
+        flexGrow: 1,
+        flexBasis: "100px",
+    },
+    progressWrapperNoTitle: {
+        paddingLeft: "10px",
     },
     dataTable: {
         height: "100%",
@@ -233,7 +242,12 @@ export const DataExplorer = withStyles(styles)(
                                     {title}
                                 </Grid>
                             )}
-                            {!!progressBar && progressBar}
+                            {!!progressBar &&
+                                <div className={classNames({
+                                    [classes.progressWrapper]: true,
+                                    [classes.progressWrapperNoTitle]: !title,
+                                })}>{progressBar}</div>
+                            }
                             {this.multiSelectToolbarInTitle && !this.state.msToolbarInDetailsCard && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
@@ -364,7 +378,7 @@ export const DataExplorer = withStyles(styles)(
                                                 size="small"
                                                 onClick={this.loadMore}
                                                 variant="contained"
-                                                color="primary"  
+                                                color="primary"
                                                 style={{width: '100%', margin: '10px'}}
                                                 disabled={working || items.length >= itemsAvailable}
                                             >

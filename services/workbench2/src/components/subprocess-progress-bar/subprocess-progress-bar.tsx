@@ -19,14 +19,9 @@ import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-
 import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
 import { DataColumns } from "components/data-table/data-table";
 
-type CssRules = 'progressWrapper' | 'progressStacked';
+type CssRules = 'progressStacked';
 
 const styles: StyleRulesCallback<CssRules> = (theme) => ({
-    progressWrapper: {
-        margin: "28px 0 0",
-        flexGrow: 1,
-        flexBasis: "100px",
-    },
     progressStacked: {
         border: "1px solid gray",
         height: "10px",
@@ -129,20 +124,18 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
             }
         }
 
-        return progressCounts !== undefined && getStatusTotal(progressCounts) > 0 ? <div className={classes.progressWrapper}>
-            <Tooltip title={tooltip}>
-                <CProgressStacked className={classes.progressStacked}>
-                    <CProgress height={10} color="success"
-                        value={getStatusPercent(progressCounts, ProcessStatusFilter.COMPLETED)} />
-                    <CProgress height={10} color="success" variant="striped"
-                        value={getStatusPercent(progressCounts, ProcessStatusFilter.RUNNING)} />
-                    <CProgress height={10} color="danger"
-                        value={getStatusPercent(progressCounts, ProcessStatusFilter.FAILED)} />
-                    <CProgress height={10} color="secondary" variant="striped"
-                        value={getStatusPercent(progressCounts, ProcessStatusFilter.QUEUED)} />
-                </CProgressStacked>
-            </Tooltip>
-        </div> : <></>;
+        return progressCounts !== undefined && getStatusTotal(progressCounts) > 0 ? <Tooltip title={tooltip}>
+            <CProgressStacked className={classes.progressStacked}>
+                <CProgress height={10} color="success"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.COMPLETED)} />
+                <CProgress height={10} color="success" variant="striped"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.RUNNING)} />
+                <CProgress height={10} color="danger"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.FAILED)} />
+                <CProgress height={10} color="secondary" variant="striped"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.QUEUED)} />
+            </CProgressStacked>
+        </Tooltip> : <></>;
     }
 ));
 
