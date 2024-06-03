@@ -44,6 +44,10 @@ The following configuration keys have been renamed or removed.  Renamed keys wil
 * @Mail.SendUserSetupNotificationEmail@ has moved to @Users.SendUserSetupNotificationEmail@
 * @Mail.SupportEmailAddress@ has moved to @Users.SupportEmailAddress@
 
+h3. S3 volume IAMRole configuration entry has been removed
+
+The @Volumes.*.DriverParameters.IAMRole@ configuration entry for S3 volumes has been removed. You should remove it from your @/etc/arvados/config.yml@ file to avoid warnings when services start up. As before, if @AccessKeyID@ and @SecretAccessKey@ are blank, keepstore will retrieve IAM role credentials from instance metadata. Previously, documentation indicated that keepstore would refuse to use the IAM credentials if @IAMRole@ was specified and did not match the instance metadata, but that check has not been working for some time.
+
 h3. Legacy container logging system has been removed
 
 The following configuration keys are no longer supported. Remove them from your @/etc/arvados/config.yml@ file to avoid warnings when services start up.

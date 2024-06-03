@@ -335,7 +335,7 @@ class RichCollectionBase(CollectionBase):
             self,
             path: str,
             mode: str="r",
-            encoding: Optional[str]=None,
+            encoding: Optional[str]=None
     ) -> IO:
         """Open a file-like object within the collection
 
@@ -355,6 +355,7 @@ class RichCollectionBase(CollectionBase):
         * encoding: str | None --- The text encoding of the file. Only used
           when the file is opened in text mode. The default is
           platform-dependent.
+
         """
         if not re.search(r'^[rwa][bt]?\+?$', mode):
             raise errors.ArgumentError("Invalid mode {!r}".format(mode))

@@ -87,7 +87,7 @@ export const msToggleTrashAction: MultiSelectMenuAction = {
     altIcon: RestoreFromTrashIcon,
     isForMulti: true,
     useAlts: (uuid, iconProps) => {
-        return uuid ? (getResource(uuid)(iconProps.resources) as any).isTrashed : false;
+        return uuid ? (getResource(uuid)(iconProps.resources) as any)?.isTrashed : false;
     },
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {

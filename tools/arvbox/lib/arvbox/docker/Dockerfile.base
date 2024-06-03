@@ -79,10 +79,10 @@ FROM debian:11
 ENV DEBIAN_FRONTEND noninteractive
 
 # The arvbox-specific dependencies are
-#  gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less
+#  gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less openssh-server
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less vim-tiny && \
+    gnupg2 runit python3-dev python3-venv shellinabox netcat-openbsd less vim-tiny openssh-server && \
     apt-get clean
 
 ENV GOPATH /var/lib/gopath

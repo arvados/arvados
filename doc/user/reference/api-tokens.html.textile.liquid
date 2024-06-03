@@ -33,13 +33,18 @@ h2. settings.conf
 Arvados tools will also look for the authentication information in @~/.config/arvados/settings.conf@. If you have already put the variables into the environment following the instructions above, you can use these commands to create an Arvados configuration file:
 
 <notextile>
-<pre><code>$ <span class="userinput">echo "ARVADOS_API_HOST=$ARVADOS_API_HOST" > ~/.config/arvados/settings.conf</span>
-$ <span class="userinput">echo "ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.config/arvados/settings.conf</span>
-</code></pre>
+<pre><code>$ <span class="userinput">cat >~/.config/arvados/settings.conf &lt;&lt;EOF
+ARVADOS_API_HOST=$ARVADOS_API_HOST
+ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN
+EOF
+</span></code></pre>
 </notextile>
 
-* The output-redirection operator @>@ in the first command will cause the target file @~/.config/arvados/settings.conf@ to be created anew, wiping out the content of any existing file at that path.
-* The @>>@ operator in the second command appends to the target file.
+{% include 'notebox_begin' %}
+This will overwrite the file @~/.config/arvados/settings.conf@.
+
+Arvados tools written in Python (most notably the @arv keep@ commands, @arv copy@, and @arv-mount@) search for configuration files following the XDG Base Directory Specification. This is uncommon, but if you have customized the @XDG_CONFIG_HOME@ environment variable, you may need to add @$HOME/.config@ to the @XDG_CONFIG_DIRS@ envirnoment variable to have all the tools find the same configuration.
+{% include 'notebox_end' %}
 
 h2. .bashrc
 

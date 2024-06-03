@@ -57,6 +57,7 @@ export enum ContextMenuActionNames {
     SETUP_USER = 'Setup user',
     SHARE = 'Share',
     UNSELECT_ALL = 'Unselect all',
+    USER_ACCOUNT = 'User account',
     VIEW_DETAILS = 'View details',
     WRITE = 'Write',
 }

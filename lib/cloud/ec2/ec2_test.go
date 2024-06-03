@@ -23,10 +23,10 @@
 package ec2
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -37,9 +37,10 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/config"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/smithy-go"
 	"github.com/ghodss/yaml"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -101,17 +102,17 @@ type ec2stub struct {
 	subnetErrorOnRunInstances map[string]error
 }
 
-func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error) {
+func (e *ec2stub) ImportKeyPair(ctx context.Context, input *ec2.ImportKeyPairInput, _ ...func(*ec2.Options)) (*ec2.ImportKeyPairOutput, error) {
 	e.importKeyPairCalls = append(e.importKeyPairCalls, input)
 	return nil, nil
 }
 
-func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.DescribeKeyPairsOutput, error) {
+func (e *ec2stub) DescribeKeyPairs(ctx context.Context, input *ec2.DescribeKeyPairsInput, _ ...func(*ec2.Options)) (*ec2.DescribeKeyPairsOutput, error) {
 	e.describeKeyPairsCalls = append(e.describeKeyPairsCalls, input)
 	return &ec2.DescribeKeyPairsOutput{}, nil
 }
 
-func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
+func (e *ec2stub) RunInstances(ctx context.Context, input *ec2.RunInstancesInput, _ ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error) {
 	e.runInstancesCalls = append(e.runInstancesCalls, input)
 	if len(input.NetworkInterfaces) > 0 && input.NetworkInterfaces[0].SubnetId != nil {
 		err := e.subnetErrorOnRunInstances[*input.NetworkInterfaces[0].SubnetId]
@@ -119,98 +120,90 @@ func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, 
 			return nil, err
 		}
 	}
-	return &ec2.Reservation{Instances: []*ec2.Instance{{
+	return &ec2.RunInstancesOutput{Instances: []types.Instance{{
 		InstanceId:   aws.String("i-123"),
-		InstanceType: aws.String("t2.micro"),
+		InstanceType: types.InstanceTypeT2Micro,
 		Tags:         input.TagSpecifications[0].Tags,
 	}}}, nil
 }
 
-func (e *ec2stub) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
+func (e *ec2stub) DescribeInstances(ctx context.Context, input *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
 	return &ec2.DescribeInstancesOutput{
-		Reservations: []*ec2.Reservation{{
-			Instances: []*ec2.Instance{{
+		Reservations: []types.Reservation{{
+			Instances: []types.Instance{{
 				InstanceId:        aws.String("i-123"),
-				InstanceLifecycle: aws.String("spot"),
-				InstanceType:      aws.String("t2.micro"),
+				InstanceLifecycle: types.InstanceLifecycleTypeSpot,
+				InstanceType:      types.InstanceTypeT2Micro,
 				PrivateIpAddress:  aws.String("10.1.2.3"),
-				State:             &ec2.InstanceState{Name: aws.String("running"), Code: aws.Int64(16)},
+				State:             &types.InstanceState{Name: types.InstanceStateNameRunning, Code: aws.Int32(16)},
 			}, {
 				InstanceId:        aws.String("i-124"),
-				InstanceLifecycle: aws.String("spot"),
-				InstanceType:      aws.String("t2.micro"),
+				InstanceLifecycle: types.InstanceLifecycleTypeSpot,
+				InstanceType:      types.InstanceTypeT2Micro,
 				PrivateIpAddress:  aws.String("10.1.2.4"),
-				State:             &ec2.InstanceState{Name: aws.String("running"), Code: aws.Int64(16)},
+				State:             &types.InstanceState{Name: types.InstanceStateNameRunning, Code: aws.Int32(16)},
 			}},
 		}},
 	}, nil
 }
 
-func (e *ec2stub) DescribeInstanceStatusPages(input *ec2.DescribeInstanceStatusInput, fn func(*ec2.DescribeInstanceStatusOutput, bool) bool) error {
-	fn(&ec2.DescribeInstanceStatusOutput{
-		InstanceStatuses: []*ec2.InstanceStatus{{
+func (e *ec2stub) DescribeInstanceStatus(ctx context.Context, input *ec2.DescribeInstanceStatusInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstanceStatusOutput, error) {
+	return &ec2.DescribeInstanceStatusOutput{
+		InstanceStatuses: []types.InstanceStatus{{
 			InstanceId:       aws.String("i-123"),
 			AvailabilityZone: aws.String("aa-east-1a"),
 		}, {
 			InstanceId:       aws.String("i-124"),
 			AvailabilityZone: aws.String("aa-east-1a"),
 		}},
-	}, true)
-	return nil
+	}, nil
 }
 
-func (e *ec2stub) DescribeSpotPriceHistoryPages(input *ec2.DescribeSpotPriceHistoryInput, fn func(*ec2.DescribeSpotPriceHistoryOutput, bool) bool) error {
-	if !fn(&ec2.DescribeSpotPriceHistoryOutput{
-		SpotPriceHistory: []*ec2.SpotPrice{
-			&ec2.SpotPrice{
-				InstanceType:     aws.String("t2.micro"),
-				AvailabilityZone: aws.String("aa-east-1a"),
-				SpotPrice:        aws.String("0.005"),
-				Timestamp:        aws.Time(e.reftime.Add(-9 * time.Minute)),
+func (e *ec2stub) DescribeSpotPriceHistory(ctx context.Context, input *ec2.DescribeSpotPriceHistoryInput, _ ...func(*ec2.Options)) (*ec2.DescribeSpotPriceHistoryOutput, error) {
+	if input.NextToken == nil {
+		return &ec2.DescribeSpotPriceHistoryOutput{
+			SpotPriceHistory: []types.SpotPrice{
+				types.SpotPrice{
+					InstanceType:     types.InstanceTypeT2Micro,
+					AvailabilityZone: aws.String("aa-east-1a"),
+					SpotPrice:        aws.String("0.005"),
+					Timestamp:        aws.Time(e.reftime.Add(-9 * time.Minute)),
+				},
+				types.SpotPrice{
+					InstanceType:     types.InstanceTypeT2Micro,
+					AvailabilityZone: aws.String("aa-east-1a"),
+					SpotPrice:        aws.String("0.015"),
+					Timestamp:        aws.Time(e.reftime.Add(-5 * time.Minute)),
+				},
 			},
-			&ec2.SpotPrice{
-				InstanceType:     aws.String("t2.micro"),
-				AvailabilityZone: aws.String("aa-east-1a"),
-				SpotPrice:        aws.String("0.015"),
-				Timestamp:        aws.Time(e.reftime.Add(-5 * time.Minute)),
+			NextToken: aws.String("stubnexttoken"),
+		}, nil
+	} else {
+		return &ec2.DescribeSpotPriceHistoryOutput{
+			SpotPriceHistory: []types.SpotPrice{
+				types.SpotPrice{
+					InstanceType:     types.InstanceTypeT2Micro,
+					AvailabilityZone: aws.String("aa-east-1a"),
+					SpotPrice:        aws.String("0.01"),
+					Timestamp:        aws.Time(e.reftime.Add(-2 * time.Minute)),
+				},
 			},
-		},
-	}, false) {
-		return nil
+		}, nil
 	}
-	fn(&ec2.DescribeSpotPriceHistoryOutput{
-		SpotPriceHistory: []*ec2.SpotPrice{
-			&ec2.SpotPrice{
-				InstanceType:     aws.String("t2.micro"),
-				AvailabilityZone: aws.String("aa-east-1a"),
-				SpotPrice:        aws.String("0.01"),
-				Timestamp:        aws.Time(e.reftime.Add(-2 * time.Minute)),
-			},
-		},
-	}, true)
-	return nil
 }
 
-func (e *ec2stub) CreateTags(input *ec2.CreateTagsInput) (*ec2.CreateTagsOutput, error) {
+func (e *ec2stub) CreateTags(ctx context.Context, input *ec2.CreateTagsInput, _ ...func(*ec2.Options)) (*ec2.CreateTagsOutput, error) {
 	return nil, nil
 }
 
-func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
+func (e *ec2stub) TerminateInstances(ctx context.Context, input *ec2.TerminateInstancesInput, _ ...func(*ec2.Options)) (*ec2.TerminateInstancesOutput, error) {
 	return nil, nil
 }
 
-type ec2stubError struct {
-	code    string
-	message string
-}
+type ec2stubError = smithy.GenericAPIError
 
-func (err *ec2stubError) Code() string    { return err.code }
-func (err *ec2stubError) Message() string { return err.message }
-func (err *ec2stubError) Error() string   { return fmt.Sprintf("%s: %s", err.code, err.message) }
-func (err *ec2stubError) OrigErr() error  { return errors.New("stub OrigErr") }
-
-// Ensure ec2stubError satisfies the aws.Error interface
-var _ = awserr.Error(&ec2stubError{})
+// Ensure ec2stubError satisfies the smithy.APIError interface
+var _ = smithy.APIError(&ec2stubError{})
 
 func GetInstanceSet(c *check.C, conf string) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster, *prometheus.Registry) {
 	reg := prometheus.NewRegistry()
@@ -280,8 +273,8 @@ func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 
 		runcalls := ap.client.(*ec2stub).runInstancesCalls
 		if c.Check(runcalls, check.HasLen, 1) {
-			c.Check(runcalls[0].MetadataOptions.HttpEndpoint, check.DeepEquals, aws.String("enabled"))
-			c.Check(runcalls[0].MetadataOptions.HttpTokens, check.DeepEquals, aws.String("required"))
+			c.Check(runcalls[0].MetadataOptions.HttpEndpoint, check.DeepEquals, types.InstanceMetadataEndpointStateEnabled)
+			c.Check(runcalls[0].MetadataOptions.HttpTokens, check.DeepEquals, types.HttpTokensStateRequired)
 		}
 	}
 }
@@ -333,8 +326,8 @@ func (*EC2InstanceSetSuite) TestCreateFailoverSecondSubnet(c *check.C) {
 	ap, img, cluster, reg := GetInstanceSet(c, `{"SubnetID":["subnet-full","subnet-good"]}`)
 	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
 		"subnet-full": &ec2stubError{
-			code:    "InsufficientFreeAddressesInSubnet",
-			message: "subnet is full",
+			Code:    "InsufficientFreeAddressesInSubnet",
+			Message: "subnet is full",
 		},
 	}
 	inst, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
@@ -368,49 +361,49 @@ func (*EC2InstanceSetSuite) TestIsErrorSubnetSpecific(c *check.C) {
 	c.Check(isErrorSubnetSpecific(errors.New("misc error")), check.Equals, false)
 
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code: "InsufficientInstanceCapacity",
+		Code: "InsufficientInstanceCapacity",
 	}), check.Equals, true)
 
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code: "InsufficientVolumeCapacity",
+		Code: "InsufficientVolumeCapacity",
 	}), check.Equals, true)
 
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code:    "InsufficientFreeAddressesInSubnet",
-		message: "Not enough free addresses in subnet subnet-abcdefg\n\tstatus code: 400, request id: abcdef01-2345-6789-abcd-ef0123456789",
+		Code:    "InsufficientFreeAddressesInSubnet",
+		Message: "Not enough free addresses in subnet subnet-abcdefg\n\tstatus code: 400, request id: abcdef01-2345-6789-abcd-ef0123456789",
 	}), check.Equals, true)
 
 	// #21603: (Sometimes?) EC2 returns code InvalidParameterValue
 	// even though the code "InsufficientFreeAddressesInSubnet"
 	// seems like it must be meant for exactly this error.
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code:    "InvalidParameterValue",
-		message: "Not enough free addresses in subnet subnet-abcdefg\n\tstatus code: 400, request id: abcdef01-2345-6789-abcd-ef0123456789",
+		Code:    "InvalidParameterValue",
+		Message: "Not enough free addresses in subnet subnet-abcdefg\n\tstatus code: 400, request id: abcdef01-2345-6789-abcd-ef0123456789",
 	}), check.Equals, true)
 
 	// Similarly, AWS docs
 	// (https://repost.aws/knowledge-center/vpc-insufficient-ip-errors)
 	// suggest the following code/message combinations also exist.
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code:    "Client.InvalidParameterValue",
-		message: "There aren't sufficient free Ipv4 addresses or prefixes",
+		Code:    "Client.InvalidParameterValue",
+		Message: "There aren't sufficient free Ipv4 addresses or prefixes",
 	}), check.Equals, true)
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code:    "InvalidParameterValue",
-		message: "There aren't sufficient free Ipv4 addresses or prefixes",
+		Code:    "InvalidParameterValue",
+		Message: "There aren't sufficient free Ipv4 addresses or prefixes",
 	}), check.Equals, true)
 	// Meanwhile, other AWS docs
 	// (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html)
 	// suggest Client.InvalidParameterValue is not a real code but
 	// ClientInvalidParameterValue is.
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code:    "ClientInvalidParameterValue",
-		message: "There aren't sufficient free Ipv4 addresses or prefixes",
+		Code:    "ClientInvalidParameterValue",
+		Message: "There aren't sufficient free Ipv4 addresses or prefixes",
 	}), check.Equals, true)
 
 	c.Check(isErrorSubnetSpecific(&ec2stubError{
-		code:    "InvalidParameterValue",
-		message: "Some other invalid parameter error",
+		Code:    "InvalidParameterValue",
+		Message: "Some other invalid parameter error",
 	}), check.Equals, false)
 }
 
@@ -423,12 +416,12 @@ func (*EC2InstanceSetSuite) TestCreateAllSubnetsFailing(c *check.C) {
 	ap, img, cluster, reg := GetInstanceSet(c, `{"SubnetID":["subnet-full","subnet-broken"]}`)
 	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
 		"subnet-full": &ec2stubError{
-			code:    "InsufficientFreeAddressesInSubnet",
-			message: "subnet is full",
+			Code:    "InsufficientFreeAddressesInSubnet",
+			Message: "subnet is full",
 		},
 		"subnet-broken": &ec2stubError{
-			code:    "InvalidSubnetId.NotFound",
-			message: "bogus subnet id",
+			Code:    "InvalidSubnetId.NotFound",
+			Message: "bogus subnet id",
 		},
 	}
 	_, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
@@ -464,12 +457,12 @@ func (*EC2InstanceSetSuite) TestCreateOneSubnetFailingCapacity(c *check.C) {
 	ap, img, cluster, reg := GetInstanceSet(c, `{"SubnetID":["subnet-full","subnet-broken"]}`)
 	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
 		"subnet-full": &ec2stubError{
-			code:    "InsufficientFreeAddressesInSubnet",
-			message: "subnet is full",
+			Code:    "InsufficientFreeAddressesInSubnet",
+			Message: "subnet is full",
 		},
 		"subnet-broken": &ec2stubError{
-			code:    "InsufficientInstanceCapacity",
-			message: "insufficient capacity",
+			Code:    "InsufficientInstanceCapacity",
+			Message: "insufficient capacity",
 		},
 	}
 	for i := 0; i < 3; i++ {
@@ -560,7 +553,7 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 		running := 0
 		for _, inst := range instances {
 			ec2i := inst.(*ec2Instance).instance
-			if *ec2i.InstanceLifecycle == "spot" && *ec2i.State.Code&16 != 0 {
+			if ec2i.InstanceLifecycle == types.InstanceLifecycleTypeSpot && *ec2i.State.Code&16 != 0 {
 				running++
 			}
 		}
@@ -591,12 +584,12 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
-	retryError := awserr.New("Throttling", "", nil)
+	retryError := &ec2stubError{Code: "Throttling"}
 	wrapped := wrapError(retryError, &atomic.Value{})
 	_, ok := wrapped.(cloud.RateLimitError)
 	c.Check(ok, check.Equals, true)
 
-	quotaError := awserr.New("InstanceLimitExceeded", "", nil)
+	quotaError := &ec2stubError{Code: "InstanceLimitExceeded"}
 	wrapped = wrapError(quotaError, nil)
 	_, ok = wrapped.(cloud.QuotaError)
 	c.Check(ok, check.Equals, true)
@@ -608,7 +601,7 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 		{"InsufficientInstanceCapacity", ""},
 		{"Unsupported", "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f."},
 	} {
-		capacityError := awserr.New(trial.code, trial.msg, nil)
+		capacityError := &ec2stubError{Code: trial.code, Message: trial.msg}
 		wrapped = wrapError(capacityError, nil)
 		caperr, ok := wrapped.(cloud.CapacityError)
 		c.Check(ok, check.Equals, true)

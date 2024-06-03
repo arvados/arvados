@@ -32,8 +32,9 @@ import { CollectionResource } from "models/collection";
 import { getProcess } from "store/processes/process";
 import { Process } from "store/processes/process";
 import { PublicFavoritesState } from "store/public-favorites/public-favorites-reducer";
-import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
+import { AuthState } from "store/auth/auth-reducer";
 import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
+import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 
 type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
@@ -43,9 +44,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         flexDirection: "row",
         width: 0,
-        height: '2.7rem',
+        height: '2.5rem',
         padding: 0,
-        margin: "1rem auto auto 0.3rem",
+        margin: 0,
         overflow: 'hidden',
     },
     button: {
@@ -68,11 +69,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
-    singleSelectedUuid: string | null
+    selectedResourceUuid: string | null;
     iconProps: IconProps
     user: User | null
     disabledButtons: Set<string>
-    executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
+    auth: AuthState;
+    location: string;
+    isSubPanel?: boolean;
+    injectedStyles?: string;
+    executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 type IconProps = {
@@ -81,13 +86,25 @@ type IconProps = {
     publicFavorites: PublicFavoritesState;
 }
 
+const disallowedPaths = [
+    "/favorites",
+    "/public-favorites",
+    "/trash",
+    "/group",
+]
+
+const isPathDisallowed = (location: string): boolean => {
+    return disallowedPaths.some(path => location.includes(path))
+}
+
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, singleSelectedUuid, iconProps, user, disabledButtons } = props;
-        const singleResourceKind = singleSelectedUuid ? [resourceToMsResourceKind(singleSelectedUuid, iconProps.resources, user)] : null
+        const { classes, checkedList, iconProps, user, disabledButtons, location, isSubPanel, injectedStyles } = props;
+        const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
+        const singleResourceKind = selectedResourceUuid && !isSubPanel ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -95,7 +112,7 @@ export const MultiselectToolbar = connect(
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [msToggleTrashAction]
                 : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
-                        singleSelectedUuid === null ? action.isForMulti : true
+                        selectedResourceUuid === null ? action.isForMulti : true
                     );
                     
         const actions: ContextMenuAction[] | MultiSelectMenuAction[] = sortMenuItems(
@@ -104,11 +121,13 @@ export const MultiselectToolbar = connect(
             menuDirection.HORIZONTAL
         ); 
 
+        const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
+
         return (
             <React.Fragment>
                 <Toolbar
-                    className={classes.root}
-                    style={{ width: `${(actions.length * 2.5) + 6}rem`}}
+                    className={classNames(classes.root, injectedStyles)}
+                    style={{ width: `${(actions.length * 2.5) + 2}rem`}}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
@@ -129,7 +148,7 @@ export const MultiselectToolbar = connect(
                                 <Tooltip
                                     className={classes.button}
                                     data-targetid={name}
-                                    title={currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altName : name}
+                                    title={currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}
                                     key={i}
                                     disableFocusListener
                                 >
@@ -137,10 +156,10 @@ export const MultiselectToolbar = connect(
                                         <IconButton
                                             data-cy='multiselect-button'
                                             disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                            onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
                                             className={classes.icon}
                                         >
-                                            {currentPathIsTrash || (useAlts && useAlts(singleSelectedUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                            {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                         </IconButton>
                                     </span>
                                 </Tooltip>
@@ -155,7 +174,8 @@ export const MultiselectToolbar = connect(
                                     <span className={classes.iconContainer}>
                                         <IconButton
                                             data-cy='multiselect-button'
-                                            onClick={() => props.executeMulti(action, checkedList, iconProps.resources)}
+                                            onClick={() => {
+                                                props.executeMulti(action, targetResources, iconProps.resources)}}
                                             className={classes.icon}
                                         >
                                             {action.icon({})}
@@ -214,7 +234,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
     const { isAdmin } = user;
     const kind = extractUuidKind(uuid);
 
-    const isFrozen = resourceIsFrozen(resource, resources);
+    const isFrozen = resource?.kind && resource.kind === ResourceKind.PROJECT ? resourceIsFrozen(resource, resources) : false;
     const isEditable = (user.isAdmin || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
 
     switch (kind) {
@@ -259,7 +279,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
                 ? ContextMenuKind.RUNNING_PROCESS_RESOURCE
                 : ContextMenuKind.PROCESS_RESOURCE;
         case ResourceKind.USER:
-            return ContextMenuKind.ROOT_PROJECT;
+            return isAdmin ? ContextMenuKind.ROOT_PROJECT_ADMIN : ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:
             return ContextMenuKind.LINK;
         case ResourceKind.WORKFLOW:
@@ -305,12 +325,14 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
 //--------------------------------------------------//
 
-function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites}: RootState) {
+function mapStateToProps({auth, multiselect, resources, favorites, publicFavorites, selectedResourceUuid}: RootState) {
     return {
         checkedList: multiselect.checkedList as TCheckedList,
-        singleSelectedUuid: isExactlyOneSelected(multiselect.checkedList),
         user: auth && auth.user ? auth.user : null,
         disabledButtons: new Set<string>(multiselect.disabledButtons),
+        auth,
+        selectedResourceUuid,
+        location: window.location.pathname,
         iconProps: {
             resources,
             favorites,
@@ -323,15 +345,16 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
+            const currentList = selectedToArray(checkedList)
             switch (selectedAction.name) {
                 case ContextMenuActionNames.MOVE_TO:
                 case ContextMenuActionNames.REMOVE:
-                    const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as ContainerRequestResource | Resource;
+                    const firstResource = getResource(currentList[0])(resources) as ContainerRequestResource | Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
                 case ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD:
-                    const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
+                    const selectedResources = currentList.map(uuid => getResource(uuid)(resources));
                     dispatch<any>(copyToClipboardAction(selectedResources));
                     break;
                 default:

@@ -13,8 +13,6 @@ StartLimitIntervalSec=0
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
 ExecStart=/usr/bin/crunch-dispatch-slurm
-# Set a reasonable default for the open file limit
-LimitNOFILE=65536
 Restart=always
 RestartSec=1
 RestartPreventExitStatus=2

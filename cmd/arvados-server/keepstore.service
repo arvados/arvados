@@ -17,8 +17,6 @@ StartLimitIntervalSec=0
 Environment=GOGC=10
 Type=notify
 ExecStart=/usr/bin/keepstore
-# Set a reasonable default for the open file limit
-LimitNOFILE=65536
 Restart=always
 RestartSec=1
 RestartPreventExitStatus=2

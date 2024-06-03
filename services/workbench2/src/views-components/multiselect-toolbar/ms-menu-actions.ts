@@ -67,8 +67,8 @@ const msViewDetailsAction: MultiSelectMenuAction  = {
     icon: DetailsIcon,
     hasAlts: false,
     isForMulti: false,
-    execute: (dispatch) => {
-        dispatch<any>(toggleDetailsPanel());
+    execute: (dispatch, resources) => {
+        dispatch<any>(toggleDetailsPanel(resources[0].uuid));
     },
 };
 

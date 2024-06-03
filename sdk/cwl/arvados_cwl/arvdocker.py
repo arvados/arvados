@@ -19,11 +19,10 @@ logger = logging.getLogger('arvados.cwl-runner')
 
 def determine_image_id(dockerImageId):
     for line in (
-        subprocess.check_output(  # nosec
-            ["docker", "images", "--no-trunc", "--all"]
-        )
-        .decode("utf-8")
-        .splitlines()
+            str(subprocess.check_output(  # nosec
+                ["docker", "images", "--no-trunc", "--all"]
+            ), "utf-8")
+            .splitlines()
     ):
         try:
             match = re.match(r"^([^ ]+)\s+([^ ]+)\s+([^ ]+)", line)

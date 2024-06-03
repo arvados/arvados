@@ -928,7 +928,7 @@ func (runner *ContainerRunner) getStdoutFile(mntPath string) (*os.File, error) {
 
 // CreateContainer creates the docker container.
 func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[string]bindmount) error {
-	var stdin io.ReadCloser = ioutil.NopCloser(bytes.NewReader(nil))
+	var stdin io.Reader
 	if mnt, ok := runner.Container.Mounts["stdin"]; ok {
 		switch mnt.Kind {
 		case "collection":
@@ -944,28 +944,35 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 				return err
 			}
 			stdin = f
+			runner.executorStdin = f
 		case "json":
 			j, err := json.Marshal(mnt.Content)
 			if err != nil {
 				return fmt.Errorf("error encoding stdin json data: %v", err)
 			}
-			stdin = ioutil.NopCloser(bytes.NewReader(j))
+			stdin = bytes.NewReader(j)
+			runner.executorStdin = io.NopCloser(nil)
 		default:
 			return fmt.Errorf("stdin mount has unsupported kind %q", mnt.Kind)
 		}
+	} else {
+		stdin = bytes.NewReader(nil)
+		runner.executorStdin = ioutil.NopCloser(nil)
 	}
 
-	var stdout, stderr io.WriteCloser
+	var stdout, stderr io.Writer
 	if mnt, ok := runner.Container.Mounts["stdout"]; ok {
 		f, err := runner.getStdoutFile(mnt.Path)
 		if err != nil {
 			return err
 		}
 		stdout = f
+		runner.executorStdout = f
 	} else if w, err := runner.openLogFile("stdout"); err != nil {
 		return err
 	} else {
-		stdout = w
+		stdout = newTimestamper(w)
+		runner.executorStdout = w
 	}
 
 	if mnt, ok := runner.Container.Mounts["stderr"]; ok {
@@ -974,10 +981,12 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 			return err
 		}
 		stderr = f
+		runner.executorStderr = f
 	} else if w, err := runner.openLogFile("stderr"); err != nil {
 		return err
 	} else {
-		stderr = w
+		stderr = newTimestamper(w)
+		runner.executorStderr = w
 	}
 
 	env := runner.Container.Environment
@@ -1006,9 +1015,6 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 	if !runner.enableMemoryLimit {
 		ram = 0
 	}
-	runner.executorStdin = stdin
-	runner.executorStdout = stdout
-	runner.executorStderr = stderr
 
 	if runner.Container.RuntimeConstraints.CUDA.DeviceCount > 0 {
 		nvidiaModprobe(runner.CrunchLog)

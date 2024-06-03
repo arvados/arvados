@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet, ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { openRunProcess, deleteWorkflow } from "store/workflow-panel/workflow-panel-actions";
-import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon, TrashIcon } from "components/icon/icon";
+import { openRunProcess, openRemoveWorkflowDialog } from "store/workflow-panel/workflow-panel-actions";
+import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon, DeleteForever } from "components/icon/icon";
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
@@ -53,10 +53,10 @@ export const workflowActionSet: ContextMenuActionSet = [
     [
         ...readOnlyWorkflowActionSet[0],
         {
-            icon: TrashIcon,
-            name: ContextMenuActionNames.DELETE_WORKFLOW,
+            icon: DeleteForever,
+            name: "Delete Workflow",
             execute: (dispatch, resources) => {
-                dispatch<any>(deleteWorkflow(resources[0].uuid, resources[0].ownerUuid));
+                dispatch<any>(openRemoveWorkflowDialog(resources[0], resources.length));
             },
         },
     ],

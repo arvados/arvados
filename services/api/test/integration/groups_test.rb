@@ -157,6 +157,23 @@ class GroupsTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test "group contents with include=array" do
+    get "/arvados/v1/groups/contents",
+      params: {
+        filters: [["uuid", "is_a", "arvados#container_request"]].to_json,
+        include: ["container_uuid"].to_json,
+        select: ["uuid", "state"],
+        limit: 1000,
+      },
+      headers: auth(:active)
+    assert_response 200
+    incl = {}
+    json_response['included'].each { |i| incl[i['uuid']] = i }
+    json_response['items'].each do |c|
+      assert_not_nil incl[c['container_uuid']]['state']
+    end
+  end
 end
 
 class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest

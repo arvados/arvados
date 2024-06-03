@@ -317,7 +317,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
         text = tool.doc_loader.fetch_text(w)
         if isinstance(text, bytes):
-            textIO = StringIO(text.decode('utf-8'))
+            textIO = StringIO(str(text, 'utf-8'))
         else:
             textIO = StringIO(text)
 

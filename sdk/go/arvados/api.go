@@ -151,7 +151,7 @@ type ListOptions struct {
 	IncludeOldVersions bool                   `json:"include_old_versions"`
 	BypassFederation   bool                   `json:"bypass_federation"`
 	ForwardedFor       string                 `json:"forwarded_for,omitempty"`
-	Include            string                 `json:"include"`
+	Include            []string               `json:"include"`
 }
 
 type CreateOptions struct {
@@ -182,7 +182,7 @@ type GroupContentsOptions struct {
 	Order              []string `json:"order"`
 	Distinct           bool     `json:"distinct"`
 	Count              string   `json:"count"`
-	Include            string   `json:"include"`
+	Include            []string `json:"include"`
 	Recursive          bool     `json:"recursive"`
 	IncludeTrash       bool     `json:"include_trash"`
 	IncludeOldVersions bool     `json:"include_old_versions"`

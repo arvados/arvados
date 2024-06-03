@@ -947,6 +947,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
 
     get :contents, params: {:include => "owner_uuid", :exclude_home_project => true}
+    assert_response 200
 
     assert_equal 1, json_response['items'].length
     assert_equal groups(:project_owned_by_foo).uuid, json_response['items'][0]["uuid"]
@@ -961,6 +962,42 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :contents, params: {id: groups(:aproject).uuid, :include => "owner_uuid", :exclude_home_project => true}
 
     assert_response 422
+  end
+
+  [[false, 'owner_uuid'],
+   [false, []],
+   [false, ''],
+   [true, 'container_uuid'],
+   [true, ['container_uuid']],
+   [true, ['owner_uuid', 'container_uuid'], ['uuid', 'container_uuid', 'state', 'output']],
+  ].each do |check_container_included, include_param, select_param|
+    test "contents, include=#{include_param.inspect}" do
+      authorize_with :active
+      get :contents, params: {
+            :id => users(:active).uuid,
+            :include => include_param,
+            :limit => 1000,
+            :select => select_param,
+          }
+      assert_response 200
+      if include_param.empty?
+        assert_equal false, json_response.include?('included')
+        return
+      end
+      incl = {}
+      json_response['included'].andand.each do |ctr|
+        incl[ctr['uuid']] = ctr
+      end
+      next if !check_container_included
+      checked_crs = 0
+      json_response['items'].each do |item|
+        next if !item['container_uuid']
+        assert_equal item['container_uuid'], incl[item['container_uuid']]['uuid']
+        assert_not_empty incl[item['container_uuid']]['state']
+        checked_crs += 1
+      end
+      assert_operator 0, :<, checked_crs
+    end
   end
 
   test "include_trash does not return trash inside frozen project" do

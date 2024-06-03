@@ -86,7 +86,7 @@ describe("GroupsPanelMiddlewareService", () => {
                 return Promise.resolve(
                     { data: {}} as AxiosResponse);
             }
-        });
+        }) as AxiosInstance['get'];
 
         // When
         await store.dispatch(dataExplorerActions.REQUEST_ITEMS({id: GROUPS_PANEL_ID}));
@@ -142,7 +142,7 @@ describe("GroupsPanelMiddlewareService", () => {
             } else {
                 return Promise.resolve({ data: {}} as AxiosResponse);
             }
-        });
+        }) as AxiosInstance['get'];
 
         // When
         await store.dispatch(dataExplorerActions.REQUEST_ITEMS({id: GROUPS_PANEL_ID}));

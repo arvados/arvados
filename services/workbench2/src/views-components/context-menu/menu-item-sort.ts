@@ -11,6 +11,7 @@ import { MultiSelectMenuAction } from 'views-components/multiselect-toolbar/ms-m
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
     ROOT_PROJECT = "RootProject",
+    ROOT_PROJECT_ADMIN = "RootProjectAdmin",
     PROJECT = "Project",
     FILTER_GROUP = "FilterGroup",
     READONLY_PROJECT = "ReadOnlyProject",
@@ -47,6 +48,7 @@ export enum ContextMenuKind {
     VIRTUAL_MACHINE = "VirtualMachine",
     KEEP_SERVICE = "KeepService",
     USER = "User",
+    USER_DETAILS = "UserDetails",
     GROUPS = "Group",
     GROUP_MEMBER = "GroupMember",
     PERMISSION_EDIT = "PermissionEdit",
@@ -119,6 +121,12 @@ const workflowOrder = [
     ContextMenuActionNames.DELETE_WORKFLOW,
 ]
 
+const rootProjectOrder = [
+    ContextMenuActionNames.VIEW_DETAILS,
+    ContextMenuActionNames.USER_ACCOUNT,
+    ContextMenuActionNames.API_DETAILS,
+];
+
 const defaultMultiOrder = [
     ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MAKE_A_COPY,
@@ -146,6 +154,9 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
 
     [ContextMenuKind.WORKFLOW]: workflowOrder,
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
+
+    [ContextMenuKind.ROOT_PROJECT]: rootProjectOrder,
+    [ContextMenuKind.ROOT_PROJECT_ADMIN]: rootProjectOrder,
 };
 
 export const menuDirection = {

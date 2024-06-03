@@ -9,20 +9,28 @@ import { loadResource } from "store/resources/resources-actions";
 import { RootState } from "store/store";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set"; 
 import { addDisabledButton, removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
 export const freezeProject = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch<any>(addDisabledButton(ContextMenuActionNames.FREEZE_PROJECT))
     const userUUID = getState().auth.user!.uuid;
-    
-    const updatedProject = await services.projectService.update(uuid, {
-        frozenByUuid: userUUID,
-    });
-    
+    let updatedProject;
+
+    try {
+        updatedProject = await services.projectService.update(uuid, {
+            frozenByUuid: userUUID,
+        });
+    } catch (e) {
+        console.error(e);
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not freeze project', hideDuration: 4000, kind: SnackbarKind.ERROR }));
+    }
+
     dispatch(projectPanelActions.REQUEST_ITEMS());
     dispatch<any>(loadResource(uuid, false));
     dispatch<any>(removeDisabledButton(ContextMenuActionNames.FREEZE_PROJECT))
     return updatedProject;
 };
+
 
 export const unfreezeProject = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch<any>(addDisabledButton(ContextMenuActionNames.FREEZE_PROJECT))

@@ -1938,9 +1938,9 @@
               "location": "query"
             },
             "include": {
-              "type": "string",
+              "type": "array",
               "required": false,
-              "description": "Include objects referred to by listed field in \"included\" (only owner_uuid).",
+              "description": "Include objects referred to by listed fields in \"included\" response field. Subsets of [\"owner_uuid\", \"container_uuid\"] are supported.",
               "location": "query"
             },
             "include_old_versions": {

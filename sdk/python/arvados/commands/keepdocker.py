@@ -18,6 +18,7 @@ import tempfile
 
 import ciso8601
 from operator import itemgetter
+from pathlib import Path
 from stat import *
 
 import arvados
@@ -26,6 +27,10 @@ import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
 from arvados._version import __version__
+
+from typing import (
+    Callable,
+)
 
 logger = logging.getLogger('arvados.keepdocker')
 logger.setLevel(logging.DEBUG if arvados.config.get('ARVADOS_DEBUG')
@@ -181,9 +186,12 @@ def save_image(image_hash, image_file):
     except STAT_CACHE_ERRORS:
         pass  # We won't resume from this cache.  No big deal.
 
-def get_cache_dir():
-    return arv_cmd.make_home_conf_dir(
-        os.path.join('.cache', 'arvados', 'docker'), 0o700)
+def get_cache_dir(
+        mkparent: Callable[[], Path]=arvados.util._BaseDirectories('CACHE').storage_path,
+) -> str:
+    path = mkparent() / 'docker'
+    path.mkdir(mode=0o700, exist_ok=True)
+    return str(path)
 
 def prep_image_file(filename):
     # Return a file object ready to save a Docker image,

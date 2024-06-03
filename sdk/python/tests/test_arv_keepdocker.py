@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest import mock
 
 import parameterized
+import pytest
 
 import arvados.commands.keepdocker as arv_keepdocker
 from . import arvados_testutil as tutil
@@ -255,3 +256,12 @@ class ImageMetadataTestCase(unittest.TestCase):
     def test_image_config(self):
         self.assertIsInstance(self.config, collections.abc.Mapping)
         self.assertEqual(self.config.get('created'), '2023-05-02T16:49:27Z')
+
+
+def test_get_cache_dir(tmp_path):
+    actual = arv_keepdocker.get_cache_dir(lambda: tmp_path)
+    assert isinstance(actual, str)
+    actual = Path(actual)
+    assert actual.is_dir()
+    assert actual.name == 'docker'
+    assert actual.parent == tmp_path
