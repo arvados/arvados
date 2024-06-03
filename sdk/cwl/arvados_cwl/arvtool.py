@@ -82,7 +82,6 @@ class ArvadosCommandTool(CommandLineTool):
 
         if isinstance(inputschema, Sequence):
             for i in inputschema:
-                print(i)
                 self._collect_globs(i)
 
         if isinstance(inputschema, Mapping):
