@@ -377,6 +377,18 @@ class ArvadosContainer(JobBase):
                     output_glob.append(gbeval)
                     output_glob.append(gbeval + "/**")
             if output_glob:
+                # Tools should either use cwl.output.json or output
+                # binding glob. Unfortunately one CWL conformance test
+                # has both, but that test uses cwl.output.json return
+                # a string, not a File.
+                #
+                # It could happen that a tool uses cwl.output.json,
+                # references a file, but also uses a glob, and that
+                # would break, because we don't know about it ahead of
+                # time.  However I don't think any conformance tests
+                # do this and I'd even be inclined to rule that out of
+                # order in the CWL spec if it came up.
+                output_glob.append("cwl.output.json")
                 container_request["output_glob"] = output_glob
 
         ram_multiplier = [1]
