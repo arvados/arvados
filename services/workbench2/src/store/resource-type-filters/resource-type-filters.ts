@@ -43,8 +43,8 @@ export enum CollectionTypeFilter {
 }
 
 export enum ProcessTypeFilter {
-    MAIN_PROCESS = 'Runs',
-    CHILD_PROCESS = 'Intermediate Steps',
+    MAIN_PROCESS = 'Workflow Runs',
+    CHILD_PROCESS = 'Workflow Steps',
 }
 
 const initFilter = (name: string, parent = '', isSelected?: boolean, isExpanded?: boolean) =>
