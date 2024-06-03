@@ -255,7 +255,7 @@ describe('Favorites tests', function () {
             });
     });
 
-    it.only('shows the correct favorites and public favorites in the side panel', () => {
+    it('shows the correct favorites and public favorites in the side panel', () => {
         cy.createProject({
             owningUser: adminUser,
             projectName: 'myFavoriteProject1',
