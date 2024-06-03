@@ -563,6 +563,7 @@ class TestContainer(unittest.TestCase):
 
         arvjob = arvados_cwl.ArvadosContainer(runner,
                                               runtimeContext,
+                                              [],
                                               mock.MagicMock(),
                                               {},
                                               None,
@@ -667,6 +668,7 @@ class TestContainer(unittest.TestCase):
 
         arvjob = arvados_cwl.ArvadosContainer(runner,
                                               runtimeContext,
+                                              [],
                                               mock.MagicMock(),
                                               {},
                                               None,
@@ -1482,6 +1484,93 @@ class TestContainer(unittest.TestCase):
                 self.assertEqual({"foo": "bar", "baz": "quux"}, kwargs['body'].get('output_properties'))
             else:
                 self.assertEqual(None, kwargs['body'].get('output_properties'))
+
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_output_glob(self, keepdocker):
+        arvados_cwl.add_arv_hints()
+        for rev in ["20231117", "20240502"]:
+            runner = mock.MagicMock()
+            runner.ignore_docker_for_reuse = False
+            runner.intermediate_output_ttl = 0
+            runner.secret_store = cwltool.secrets.SecretStore()
+            runner.api._rootDesc = {"revision": rev}
+            runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+
+            keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+            runner.api.collections().get().execute.return_value = {
+                "portable_data_hash": "99999999999999999999999999999993+99"}
+
+            tool = cmap({
+                "inputs": [{
+                    "id": "inp",
+                    "type": "string"
+                }],
+                "outputs": [
+                    {
+                        "id": "o1",
+                        "type": "File",
+                        "outputBinding": {
+                            "glob": "*.txt"
+                        }
+                    },
+                    {
+                        "id": "o2",
+                        "type": "File",
+                        "outputBinding": {
+                            "glob": ["*.dat", "*.bat"]
+                        }
+                    },
+                    {
+                        "id": "o3",
+                        "type": {
+                            "type": "record",
+                            "fields": [
+                                {
+                                    "name": "f1",
+                                    "type": "File",
+                                    "outputBinding": {
+                                        "glob": ["*.cat"]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "o4",
+                        "type": "File",
+                        "outputBinding": {
+                            "glob": "$(inputs.inp)"
+                        }
+                    },
+
+                ],
+                "baseCommand": "ls",
+                "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+                "id": "",
+                "cwlVersion": "v1.2",
+                "class": "CommandLineTool",
+                "hints": [ ]
+            })
+
+            loadingContext, runtimeContext = self.helper(runner)
+            runtimeContext.name = "test_timelimit"
+
+            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+            arvtool.formatgraph = None
+
+            for j in arvtool.job({"inp": "quux"}, mock.MagicMock(), runtimeContext):
+                j.run(runtimeContext)
+
+            _, kwargs = runner.api.container_requests().create.call_args
+            if rev == "20240502":
+                self.assertEqual(['*.txt', '*.txt/**',
+                                  '*.dat', '*.dat/**',
+                                  '*.bat', '*.bat/**',
+                                  '*.cat', '*.cat/**',
+                                  'quux', 'quux/**',
+                                  ], kwargs['body'].get('output_glob'))
+            else:
+                self.assertEqual(None, kwargs['body'].get('output_glob'))
 
 
 class TestWorkflow(unittest.TestCase):
