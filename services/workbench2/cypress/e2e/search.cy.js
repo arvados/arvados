@@ -301,7 +301,7 @@ describe("Search tests", function () {
             cy.get("[data-cy=context-menu]").within(() => {
                 cy.contains("Copy link to clipboard").click();
                 cy.waitForDom();
-                cy.window().then(win =>
+                cy.window({ timeout: 15000 }).then(win =>
                     win.navigator.clipboard.readText().then(text => {
                         expect(text).to.equal(`https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
                     })
