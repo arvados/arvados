@@ -61,6 +61,7 @@ export const BannerComponent = (props: BannerComponentProps) => {
 
     useEffect(() => {
         if (!!bannerUUID && bannerUUID !== "") {
+            try {
             servicesProvider
                 .getServices()
                 .collectionService.files(bannerUUID)
@@ -82,9 +83,10 @@ export const BannerComponent = (props: BannerComponentProps) => {
                                 localStorage.setItem(BANNER_LOCAL_STORAGE_KEY, JSON.stringify(bannerFileData));
                             });
                     }
-                }).catch((e) => {
-		    console.error("Failed to load banner", e);
-		});
+                })
+            } catch (e) {
+                console.error("Failed to load banner", e);
+            }
         }
     }, [bannerUUID, keepWebInlineServiceUrl, openBanner, isOpen]);
 
