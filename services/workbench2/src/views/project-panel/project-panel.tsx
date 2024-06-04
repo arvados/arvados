@@ -39,6 +39,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     mpvRoot: {
         flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        '& > div': {
+            height: '100%',
+        },
     },
     dataExplorer: {
         height: "100%",
@@ -92,14 +97,14 @@ export const ProjectPanel = withStyles(styles)(
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
-                            data-cy="process-details"
+                            data-cy="process-data"
                             className={classes.dataExplorer}>
                             <ProjectPanelData />
                         </MPVPanelContent>
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
-                            data-cy="process-details"
+                            data-cy="process-run"
                             className={classes.dataExplorer}>
                             <ProjectPanelRun />
                         </MPVPanelContent>

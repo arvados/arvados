@@ -21,11 +21,31 @@ import { InfoIcon } from 'components/icon/icon';
 import { ReactNodeArray } from 'prop-types';
 import classNames from 'classnames';
 
-type CssRules = 'root' | 'button' | 'buttonIcon' | 'content' | 'tabsWrapper' | 'tabsRoot' | 'tabs';
+type CssRules =
+    | 'gridContainerRoot'
+    | 'exclusiveGridContainerRoot'
+    | 'gridItemRoot'
+    | 'paperRoot'
+    | 'button'
+    | 'buttonIcon'
+    | 'content'
+    | 'exclusiveContentPaper'
+    | 'tabs';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
-    root: {
+    gridContainerRoot: {
         marginTop: '10px',
+    },
+    exclusiveGridContainerRoot: {
+        marginTop: 0,
+    },
+    gridItemRoot: {
+        paddingTop: '0 !important',
+    },
+    paperRoot: {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
     },
     button: {
         padding: '2px 5px',
@@ -40,11 +60,8 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         overflow: 'auto',
         maxWidth: 'initial',
     },
-    tabsWrapper: {
-        width: '100%',
-    },
-    tabsRoot: {
-        flexGrow: 1,
+    exclusiveContentPaper: {
+        boxShadow: 'none',
     },
     tabs: {
         flexGrow: 1,
@@ -60,6 +77,7 @@ interface MPVHideablePanelDataProps {
     illuminated: boolean;
     children: ReactNode;
     panelRef?: MutableRefObject<any>;
+    paperClassName?: string;
 }
 
 interface MPVHideablePanelActionProps {
@@ -70,10 +88,19 @@ interface MPVHideablePanelActionProps {
 
 type MPVHideablePanelProps = MPVHideablePanelDataProps & MPVHideablePanelActionProps;
 
-const MPVHideablePanel = ({ doHidePanel, doMaximizePanel, doUnMaximizePanel, name, visible, maximized, illuminated, ...props }: MPVHideablePanelProps) =>
+const MPVHideablePanel = ({ doHidePanel, doMaximizePanel, doUnMaximizePanel, name, visible, maximized, illuminated, paperClassName, ...props }: MPVHideablePanelProps) =>
     visible
         ? <>
-            {React.cloneElement((props.children as ReactElement), { doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName: name, panelMaximized: maximized, panelIlluminated: illuminated, panelRef: props.panelRef })}
+            {React.cloneElement((props.children as ReactElement), {
+                doHidePanel,
+                doMaximizePanel,
+                doUnMaximizePanel,
+                panelName: name,
+                panelMaximized: maximized,
+                panelIlluminated: illuminated,
+                panelRef: props.panelRef,
+                paperClassName,
+            })}
         </>
         : null;
 
@@ -85,6 +112,7 @@ interface MPVPanelDataProps {
     forwardProps?: boolean;
     maxHeight?: string;
     minHeight?: string;
+    paperClassName?: string;
 }
 
 interface MPVPanelActionProps {
@@ -100,7 +128,7 @@ type MPVPanelContentProps = { children: ReactElement } & MPVPanelProps & GridPro
 
 // Grid item compatible component for layout and MPV props passing
 export const MPVPanelContent = ({ doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName,
-    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight, minHeight,
+    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight, minHeight, paperClassName,
     ...props }: MPVPanelContentProps) => {
     useEffect(() => {
         if (panelRef && panelRef.current) {
@@ -116,8 +144,8 @@ export const MPVPanelContent = ({ doHidePanel, doMaximizePanel, doUnMaximizePane
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{ height: '100%' }} elevation={panelIlluminated ? 8 : 0}>
             {forwardProps
-                ? React.cloneElement(props.children, { doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized })
-                : props.children}
+                ? React.cloneElement(props.children, { doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, paperClassName })
+                : React.cloneElement(props.children, { paperClassName })}
         </Paper>
     </Grid>;
 }
@@ -231,7 +259,11 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
             ];
 
             const aPanel =
-                <MPVHideablePanel key={idx} visible={panelVisibility[idx]} name={panelName}
+                <MPVHideablePanel
+                    key={idx}
+                    visible={panelVisibility[idx]}
+                    name={panelName}
+                    paperClassName={props.mutuallyExclusive ? classes.exclusiveContentPaper : undefined}
                     panelRef={(idx === selectedPanel) ? panelRef : undefined}
                     maximized={panelIsMaximized} illuminated={idx === highlightedPanel}
                     doHidePanel={hideFn(idx)} doMaximizePanel={maximizeFn(idx)} doUnMaximizePanel={panelIsMaximized ? unMaximizeFn(idx) : () => null}>
@@ -241,29 +273,38 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
         };
 
         buttonBar = props.mutuallyExclusive ?
-            <Paper className={classes.tabsWrapper}>
-                <Tabs className={classes.tabsRoot} value={currentSelectedPanel} onChange={(e, val) => showFn(val)()}>
-                    {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
-                </Tabs>
-            </Paper> :
-            <>
+            <Tabs value={currentSelectedPanel} onChange={(e, val) => showFn(val)()}>
+                {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
+            </Tabs> :
+            <Grid container item direction="row">
                 {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
-            </>;
+            </Grid>;
     };
 
-    return <Grid container {...props} className={classNames(classes.root, props.className)}>
-        <Grid container item direction="row">
-            {buttonBar}
-        </Grid>
-        <Grid container item {...props} xs className={classes.content}
-            onScroll={() => setSelectedPanel(-1)}>
-            {panelVisibility.includes(true)
-                ? panels
-                : <Grid container item alignItems='center' justify='center'>
-                    <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
-                </Grid>}
-        </Grid>
+    const content = <Grid container item {...props} xs className={classes.content}
+        onScroll={() => setSelectedPanel(-1)}>
+        {panelVisibility.includes(true)
+            ? panels
+            : <Grid container item alignItems='center' justify='center'>
+                <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
+            </Grid>}
     </Grid>;
+
+    if (props.mutuallyExclusive) {
+        return <Grid container {...props} className={classNames(classes.exclusiveGridContainerRoot, props.className)}>
+            <Grid item {...props} className={classes.gridItemRoot}>
+                <Paper className={classes.paperRoot}>
+                    {buttonBar}
+                    {content}
+                </Paper>
+            </Grid>
+        </Grid>;
+    } else {
+        return <Grid container {...props} className={classNames(classes.gridContainerRoot, props.className)}>
+            {buttonBar}
+            {content}
+        </Grid>;
+    }
 };
 
 export const MPVContainer = withStyles(styles)(MPVContainerComponent);

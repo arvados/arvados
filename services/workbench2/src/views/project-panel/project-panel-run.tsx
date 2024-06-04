@@ -174,6 +174,7 @@ const DEFAULT_VIEW_MESSAGES = ['No workflow runs found'];
 
 interface ProjectPanelRunProps {
     project?: ProjectResource;
+    paperClassName?: string;
 }
 
 const mapStateToProps = (state: RootState): ProjectPanelRunProps => {
@@ -198,5 +199,6 @@ export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunP
         defaultViewIcon={ProjectIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         progressBar={<SubprocessProgressBar parentResource={props.project} dataExplorerId={PROJECT_PANEL_RUN_ID} />}
+        paperClassName={props.paperClassName}
     />;
 });

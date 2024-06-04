@@ -126,6 +126,7 @@ interface DataExplorerDataProps<T> {
     checkedList: TCheckedList;
     isNotFound: boolean;
     searchBarValue: string;
+    paperClassName?: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -218,10 +219,11 @@ export const DataExplorer = withStyles(styles)(
                 setCheckedListOnStore,
                 checkedList,
                 working,
+                paperClassName,
             } = this.props;
             return (
                 <Paper
-                    className={classes.root}
+                    className={classNames(classes.root, paperClassName)}
                     {...paperProps}
                     key={paperKey}
                     data-cy={this.props["data-cy"]}

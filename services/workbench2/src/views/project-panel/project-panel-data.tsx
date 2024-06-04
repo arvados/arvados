@@ -150,7 +150,11 @@ export const projectPanelDataColumns: DataColumns<string, ProjectResource> = [
 
 const DEFAULT_VIEW_MESSAGES = ['No data found'];
 
-export const ProjectPanelData = class extends React.Component {
+interface ProjectPanelDataProps {
+    paperClassName?: string;
+};
+
+export const ProjectPanelData = class extends React.Component<ProjectPanelDataProps> {
     handleRowClick = () => {};
     handleRowDoubleClick = () => {};
     handleContextMenu = () => {};
@@ -164,6 +168,7 @@ export const ProjectPanelData = class extends React.Component {
             contextMenuColumn={true}
             defaultViewIcon={ProjectIcon}
             defaultViewMessages={DEFAULT_VIEW_MESSAGES}
+            paperClassName={this.props.paperClassName}
         />;
     }
 };

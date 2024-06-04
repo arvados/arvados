@@ -86,7 +86,7 @@ const mapDispatchToProps = () => {
         setSelectedUuid: (uuid: string | null) => {
             dispatch<any>(setSelectedResourceUuid(uuid));
         },
-        
+
         onRowClick,
 
         onRowDoubleClick,
