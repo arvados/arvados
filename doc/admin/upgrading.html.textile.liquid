@@ -46,6 +46,10 @@ Some Arvados packages, most notably the Rails API server package @arvados-api-se
 
 If you have a custom install that requires a different version of Ruby than the one included with your distribution, you must configure your system to ensure package scripts find that version of @ruby@ before any others. For example, you might do this on Debian-based distributions by customizing apt's @DPkg::Path@ setting.
 
+h3. Slow migration on upgrade
+
+This upgrade includes a database schema update to rebuild full text search indexes to remove UUID and portable data hash column data.  This will provide better search results to users and take less space on the databaes, but plan for the @arvados-api-server@ package upgrade to take longer than usual.
+
 h3. S3 volume IAMRole configuration entry has been removed
 
 The @Volumes.*.DriverParameters.IAMRole@ configuration entry for S3 volumes has been removed. You should remove it from your @/etc/arvados/config.yml@ file to avoid warnings when services start up. As before, if @AccessKeyID@ and @SecretAccessKey@ are blank, keepstore will retrieve IAM role credentials from instance metadata. Previously, documentation indicated that keepstore would refuse to use the IAM credentials if @IAMRole@ was specified and did not match the instance metadata, but that check has not been working for some time.

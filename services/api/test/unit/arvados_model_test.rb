@@ -187,6 +187,15 @@ class ArvadosModelTest < ActiveSupport::TestCase
         assert ok, "Invalid or no trigram index on #{table} named #{indexname}\nexpect: #{expect.inspect}\nfound: #{searchable}"
       end
     end
+
+    test "UUID and hash columns are excluded from #{table} full text index" do
+      class_name = model.first.classify
+      actual = class_name.constantize.full_text_searchable_columns
+      assert_equal(
+        actual & full_text_excluded_columns, [],
+        "UUID/hash columns returned by #{class_name}.full_text_searchable_columns",
+      )
+    end
   end
 
   test "selectable_attributes includes database attributes" do

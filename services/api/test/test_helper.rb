@@ -49,6 +49,44 @@ module ArvadosTestSupport
     {'HTTP_AUTHORIZATION' => "Bearer #{api_token(api_client_auth_name)}"}
   end
 
+  def full_text_excluded_columns
+    [
+      # All the columns that end with "hash" or "uuid" as of June 2024/Arvados 3.0.
+      # It's okay if this list isn't complete, it just needs to be complete
+      # enough to test that full text indexes exclude the right columns.
+      "authorized_user_uuid",
+      "auth_uuid",
+      "cancelled_by_client_uuid",
+      "cancelled_by_user_uuid",
+      "container_uuid",
+      "current_version_uuid",
+      "for_container_uuid",
+      "frozen_by_uuid",
+      "group_uuid",
+      "head_uuid",
+      "is_locked_by_uuid",
+      "locked_by_uuid",
+      "log_uuid",
+      "modified_by_client_uuid",
+      "modified_by_user_uuid",
+      "node_uuid",
+      "object_owner_uuid",
+      "object_uuid",
+      "output_uuid",
+      "owner_uuid",
+      "perm_origin_uuid",
+      "portable_data_hash",
+      "pri_container_uuid",
+      "redirect_to_user_uuid",
+      "requesting_container_uuid",
+      "starting_uuid",
+      "tail_uuid",
+      "target_uuid",
+      "user_uuid",
+      "uuid",
+    ]
+  end
+
   def show_errors model
     return lambda { model.errors.full_messages.inspect }
   end
