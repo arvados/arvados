@@ -374,8 +374,19 @@ class ArvadosContainer(JobBase):
                 if not gb:
                     continue
                 for gbeval in aslist(gb):
-                    output_glob.append(gbeval)
-                    output_glob.append(gbeval + "/**")
+                    if gbeval.startswith(self.outdir+"/"):
+                        gbeval = gbeval[len(self.outdir)+1:]
+                    if gbeval in (self.outdir, "", "."):
+                        output_glob.append("**")
+                    else:
+                        output_glob.append(gbeval)
+                        output_glob.append(gbeval + "/**")
+
+            if "**" in output_glob:
+                # if it's going to match all, prefer not to provide it
+                # at all.
+                output_glob.clear()
+
             if output_glob:
                 # Tools should either use cwl.output.json or output
                 # binding glob. Unfortunately one CWL conformance test

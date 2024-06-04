@@ -94,10 +94,7 @@ class ArvadosCommandTool(CommandLineTool):
 
             if "outputBinding" in inputschema and "glob" in inputschema["outputBinding"]:
                 for gb in aslist(inputschema["outputBinding"]["glob"]):
-                    if gb == ".":
-                        self.globpatterns.append("**")
-                    else:
-                        self.globpatterns.append(gb)
+                    self.globpatterns.append(gb)
                 if "secondaryFiles" in inputschema:
                     for sf in aslist(inputschema["secondaryFiles"]):
                         if "$(" in sf["pattern"] or "${" in sf["pattern"]:
