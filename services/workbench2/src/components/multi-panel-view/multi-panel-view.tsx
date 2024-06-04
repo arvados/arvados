@@ -162,7 +162,7 @@ type MPVContainerProps = MPVContainerDataProps & GridProps;
 
 // Grid container compatible component that also handles panel toggling.
 const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPVContainerProps & WithStyles<CssRules>) => {
-    if (children === undefined || children === null || children === {}) {
+    if (children === undefined || children === null || Object.keys(children).length === 0) {
         children = [];
     } else if (!isArray(children)) {
         children = [children];
