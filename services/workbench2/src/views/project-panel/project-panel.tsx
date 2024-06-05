@@ -275,7 +275,7 @@ export const ProjectPanel = withStyles(styles)(
                         onRowClick={this.handleRowClick}
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
-                        contextMenuColumn={true}
+                        contextMenuColumn={false}
                         defaultViewIcon={ProjectIcon}
                         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
                     />

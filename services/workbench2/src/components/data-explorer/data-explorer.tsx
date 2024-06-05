@@ -308,7 +308,7 @@ export const DataExplorer = withStyles(styles)(
                             style={currentRoute?.includes('search-results')  || !!progressBar ? {marginTop: '-10px'} : {}}
                         >
                             <DataTable
-                                columns={this.props.contextMenuColumn && !this.state.msToolbarInDetailsCard ? [...columns, this.contextMenuColumn] : columns}
+                                columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                                 items={items}
                                 onRowClick={(_, item: T) => onRowClick(item)}
                                 onContextMenu={onContextMenu}
