@@ -152,19 +152,18 @@ const DEFAULT_VIEW_MESSAGES = ['No data found'];
 
 interface ProjectPanelDataProps {
     paperClassName?: string;
+    onRowClick: (uuid: string) => void;
+    onRowDoubleClick: (uuid: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
 };
 
 export const ProjectPanelData = class extends React.Component<ProjectPanelDataProps> {
-    handleRowClick = () => {};
-    handleRowDoubleClick = () => {};
-    handleContextMenu = () => {};
-
     render () {
         return <DataExplorer
             id={PROJECT_PANEL_DATA_ID}
-            onRowClick={this.handleRowClick}
-            onRowDoubleClick={this.handleRowDoubleClick}
-            onContextMenu={this.handleContextMenu}
+            onRowClick={this.props.onRowClick}
+            onRowDoubleClick={this.props.onRowDoubleClick}
+            onContextMenu={this.props.onContextMenu}
             contextMenuColumn={true}
             defaultViewIcon={ProjectIcon}
             defaultViewMessages={DEFAULT_VIEW_MESSAGES}

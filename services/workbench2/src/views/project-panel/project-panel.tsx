@@ -99,14 +99,22 @@ export const ProjectPanel = withStyles(styles)(
                             xs="auto"
                             data-cy="process-data"
                             className={classes.dataExplorer}>
-                            <ProjectPanelData />
+                            <ProjectPanelData
+                                onRowClick={this.handleRowClick}
+                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onContextMenu={this.handleContextMenu}
+                            />
                         </MPVPanelContent>
                         <MPVPanelContent
                             forwardProps
                             xs="auto"
                             data-cy="process-run"
                             className={classes.dataExplorer}>
-                            <ProjectPanelRun />
+                            <ProjectPanelRun
+                                onRowClick={this.handleRowClick}
+                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onContextMenu={this.handleContextMenu}
+                            />
                         </MPVPanelContent>
                     </MPVContainer>
                 </div>

@@ -175,9 +175,12 @@ const DEFAULT_VIEW_MESSAGES = ['No workflow runs found'];
 interface ProjectPanelRunProps {
     project?: ProjectResource;
     paperClassName?: string;
+    onRowClick: (uuid: string) => void;
+    onRowDoubleClick: (uuid: string) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
 }
 
-const mapStateToProps = (state: RootState): ProjectPanelRunProps => {
+const mapStateToProps = (state: RootState): Pick<ProjectPanelRunProps, 'project'> => {
     const projectUuid = getProjectPanelCurrentUuid(state) || "";
     const project = getResource<ProjectResource>(projectUuid)(state.resources);
     return {
@@ -186,15 +189,11 @@ const mapStateToProps = (state: RootState): ProjectPanelRunProps => {
 };
 
 export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunProps) => {
-    const handleRowClick = () => {};
-    const handleRowDoubleClick = () => {};
-    const handleContextMenu = () => {};
-
     return <DataExplorer
         id={PROJECT_PANEL_RUN_ID}
-        onRowClick={handleRowClick}
-        onRowDoubleClick={handleRowDoubleClick}
-        onContextMenu={handleContextMenu}
+        onRowClick={props.onRowClick}
+        onRowDoubleClick={props.onRowDoubleClick}
+        onContextMenu={props.onContextMenu}
         contextMenuColumn={true}
         defaultViewIcon={ProjectIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
