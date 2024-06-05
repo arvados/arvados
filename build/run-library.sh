@@ -715,14 +715,14 @@ fpm_build_virtualenv_worker () {
       fi
   fi
   if [[ $? -ne 0 ]]; then
-    printf "Error, unable to download/build wheel for %s @ %s" "$PKG" "$PKG_DIR"
+    printf "Error, unable to download/build wheel for %s @ %s\n" "$PKG" "$PKG_DIR"
     exit 1
   fi
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
   elif ! "$PYTHON_BUILDROOT/venv/bin/piprepo" build "$PYTHON_BUILDROOT/wheelhouse"; then
-    printf "Error, unable to update local wheel repository"
+    printf "Error, unable to update local wheel repository\n"
     exit 1
   fi
 
@@ -741,7 +741,7 @@ fpm_build_virtualenv_worker () {
 
   local pip_wheel="$(ls --sort=time --reverse "$PYTHON_BUILDROOT/wheelhouse/$(echo "$PKG" | sed s/-/_/g)-"*.whl | tail -n1)"
   if [[ -z "$pip_wheel" ]]; then
-    printf "Error, unable to find built wheel for $PKG"
+    printf "Error, unable to find built wheel for $PKG\n"
     exit 1
   elif ! "$venv_dir/bin/pip" install $DASHQ_UNLESS_DEBUG $CACHE_FLAG --extra-index-url="file://$PYTHON_BUILDROOT/wheelhouse/simple" "$pip_wheel"; then
     printf "Error, unable to run
