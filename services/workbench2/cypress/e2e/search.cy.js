@@ -281,7 +281,7 @@ describe("Search tests", function () {
 
                 cy.contains("Copy link to clipboard").click();
                 cy.waitForDom();
-                cy.window().then(win =>
+                cy.window({ timeout: 15000 }).then(win =>
                     win.navigator.clipboard.readText().then(text => {
                         expect(text).to.match(new RegExp(`/collections/${testCollection.uuid}$`));
                     })

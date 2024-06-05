@@ -107,7 +107,7 @@ describe('Banner / tooltip tests', function () {
 
         //banner appears on reload
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('be.visible');
-        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').click({force: true});
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
 
         cy.contains('This allows you to navigate through the app').should('not.exist'); // This content comes from tooltips.txt

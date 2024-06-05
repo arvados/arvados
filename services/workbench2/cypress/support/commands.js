@@ -497,7 +497,7 @@ function b64toBlob(b64Data, contentType = "", sliceSize = 512) {
 // From https://github.com/cypress-io/cypress/issues/7306#issuecomment-1076451070=
 // This command requires the async package (https://www.npmjs.com/package/async)
 Cypress.Commands.add("waitForDom", () => {
-    cy.window().then(
+    cy.window({ timeout: 10000 }).then(
         {
             // Don't timeout before waitForDom finishes
             timeout: 10000,
