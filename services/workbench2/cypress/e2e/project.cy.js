@@ -97,7 +97,7 @@ describe("Project tests", function () {
         // Add another property
         cy.get("[data-cy=resource-properties-form]").within(() => {
             cy.get("[data-cy=property-field-key]").within(() => {
-                cy.get("input").type("Animal").blur();
+                cy.get("input").type("Animal{enter}").blur();
             });
             cy.get("[data-cy=property-field-value]").within(() => {
                 cy.get("input").type("Dog").blur();
