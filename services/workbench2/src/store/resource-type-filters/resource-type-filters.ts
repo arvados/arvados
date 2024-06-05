@@ -104,7 +104,7 @@ export const getInitialDataResourceTypeFilters = pipe(
         initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
     ),
     pipe(
-        initFilter(ObjectTypeFilter.WORKFLOW, '', false, true),
+        initFilter(ObjectTypeFilter.WORKFLOW, '', true, true),
         initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
     ),
     pipe(
@@ -191,6 +191,22 @@ const objectTypeToResourceKind = (type: ObjectTypeFilter) => {
     }
 };
 
+/**
+ * object to resource which clasifies workflow category as only registered workflows, not processes
+ * Used for data tab that excludes process runs
+ */
+const dataObjectTypeToResourceKind = (type: ObjectTypeFilter) => {
+    switch (type) {
+        case ObjectTypeFilter.PROJECT:
+            return ResourceKind.PROJECT;
+        case ObjectTypeFilter.COLLECTION:
+            return ResourceKind.COLLECTION;
+        case ObjectTypeFilter.WORKFLOW:
+        case ObjectTypeFilter.DEFINITION:
+            return ResourceKind.WORKFLOW;
+    }
+};
+
 const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => {
     const groupFilters = getMatchingFilters(values(GroupTypeFilter), selectedFilters);
     const collectionFilters = getMatchingFilters(values(CollectionTypeFilter), selectedFilters);
@@ -212,6 +228,31 @@ const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof c
     return {
         fb: typeFilters.length > 0
             ? fb.addIsA('uuid', typeFilters.map(objectTypeToResourceKind))
+            : fb.addIsA('uuid', ResourceKind.NONE),
+        selectedFilters,
+    };
+};
+
+/**
+ * Serialize only data object types, excludes processes
+ */
+const serializeDataObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => {
+    const groupFilters = getMatchingFilters(values(GroupTypeFilter), selectedFilters);
+    const collectionFilters = getMatchingFilters(values(CollectionTypeFilter), selectedFilters);
+    const typeFilters = pipe(
+        () => new Set(getMatchingFilters(values(ObjectTypeFilter), selectedFilters)),
+        set => groupFilters.length > 0
+            ? set.add(ObjectTypeFilter.PROJECT)
+            : set,
+        set => collectionFilters.length > 0
+            ? set.add(ObjectTypeFilter.COLLECTION)
+            : set,
+        set => Array.from(set)
+    )();
+
+    return {
+        fb: typeFilters.length > 0
+            ? fb.addIsA('uuid', typeFilters.map(dataObjectTypeToResourceKind))
             : fb.addIsA('uuid', ResourceKind.NONE),
         selectedFilters,
     };
@@ -316,6 +357,17 @@ export const serializeResourceTypeFilters = pipe(
     serializeGroupTypeFilters,
     serializeCollectionTypeFilters,
     serializeProcessTypeFilters,
+    ({ fb }) => fb.getFilters(),
+);
+
+/**
+ * Serializes data tab resource type filters with prefix for group contents API
+ */
+export const serializeDataResourceTypeFilters = pipe(
+    createFiltersBuilder,
+    serializeDataObjectTypeFilters,
+    serializeGroupTypeFilters,
+    serializeCollectionTypeFilters,
     ({ fb }) => fb.getFilters(),
 );
 

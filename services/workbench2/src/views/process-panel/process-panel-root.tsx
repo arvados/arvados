@@ -3,13 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
 import { ProcessIcon } from "components/icon/icon";
 import { Process } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
 import { SubprocessFilterDataProps } from "components/subprocess-filter/subprocess-filter";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
-import { ArvadosTheme } from "common/custom-theme";
 import { ProcessDetailsCard } from "./process-details-card";
 import { ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from "./process-io-card";
 import { ProcessResourceCard } from "./process-resource-card";

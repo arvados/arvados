@@ -28,7 +28,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { ListResults } from "services/common-service/common-service";
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
-import { serializeResourceTypeFilters, buildProcessStatusFilters } from "store/resource-type-filters/resource-type-filters";
+import { buildProcessStatusFilters, serializeDataResourceTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { updatePublicFavorites } from "store/public-favorites/public-favorites-actions";
 import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
@@ -101,7 +101,7 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 
 export const getFilters = (dataExplorer: DataExplorer) => {
     const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
-    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelDataColumnNames.TYPE));
+    const typeFilters = serializeDataResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelDataColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
     const activeStatusFilter = Object.keys(statusColumnFilters).find(filterName => statusColumnFilters[filterName].selected);
 
