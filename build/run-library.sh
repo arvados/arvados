@@ -717,13 +717,13 @@ fpm_build_virtualenv_worker () {
   if [[ $? -ne 0 ]]; then
     printf "Error, unable to download/build wheel for %s @ %s" "$PKG" "$PKG_DIR"
     exit 1
-  elif ! "$PYTHON_BUILDROOT/venv/bin/piprepo" build "$PYTHON_BUILDROOT/wheelhouse"; then
-    printf "Error, unable to update local wheel repository"
-    exit 1
   fi
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
+  elif ! "$PYTHON_BUILDROOT/venv/bin/piprepo" build "$PYTHON_BUILDROOT/wheelhouse"; then
+    printf "Error, unable to update local wheel repository"
+    exit 1
   fi
 
   local venv_dir="$PYTHON_BUILDROOT/$PYTHON_PKG"
