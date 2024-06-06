@@ -317,7 +317,7 @@ def flush_containers(arv_client, csvwriter, pending, include_steps, exclude):
 
         workflowname = workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing")
 
-        if exclude and re.search(exclude, workflowname):
+        if exclude and re.search(exclude, workflowname, flags=re.IGNORECASE):
             continue
 
         csvwriter.writerow({
