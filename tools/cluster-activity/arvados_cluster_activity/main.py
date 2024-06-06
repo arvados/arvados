@@ -84,6 +84,8 @@ def parse_arguments(arguments):
     return args, since, to
 
 def data_usage(prom, timestamp, cluster, label):
+    from prometheus_api_client import PrometheusConnect, MetricsList, Metric
+
     metric_data = prom.get_current_metric_value(metric_name='arvados_keep_total_bytes',
                                                 label_config={"cluster": cluster},
                                                 params={"time": timestamp.timestamp()})
@@ -192,11 +194,12 @@ def report_from_prometheus(cluster, since, to):
     try:
         data_usage(prom, since, cluster, "at start:")
     except:
-        pass
+        logging.exception("Failed to get start value")
+
     try:
         data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
     except:
-        pass
+        logging.exception("Failed to get end value")
 
     container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
     container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
