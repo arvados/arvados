@@ -30,6 +30,7 @@ def parse_arguments(arguments):
                             action="store_true", help='Include individual workflow steps (optional)')
     arg_parser.add_argument('--columns', type=str, help="""Cost report columns (optional), must be comma separated with no spaces between column names.
     Available columns are: Project, ProjectUUID, Workflow, WorkflowUUID, Step, StepUUID, Sample, SampleUUID, User, UserUUID, Submitted, Started, Runtime, Cost""")
+    arg_parser.add_argument('--exclude', type=str, help="Exclude workflows containing this substring (may be a regular expression)")
 
     if prometheus_support:
         arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
@@ -218,7 +219,7 @@ def csv_dateformat(date):
     dt = ciso8601.parse_datetime(date)
     return dt.strftime("%Y-%m-%d %H:%M%S")
 
-def flush_containers(arv_client, csvwriter, pending, include_steps):
+def flush_containers(arv_client, csvwriter, pending, include_steps, exclude):
     containers = {}
 
     for container in arvados.util.keyset_list_all(
@@ -265,6 +266,7 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
         name_regex = re.compile(r"(.+)_[0-9]+")
         child_crs = {}
         child_cr_containers = set()
+        stepcount = 0
         for cr in arvados.util.keyset_list_all(
             arv_client.container_requests().list,
             filters=[
@@ -282,6 +284,8 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
             child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
             child_cr_containers.add(cr["container_uuid"])
             if len(child_cr_containers) == 1000:
+                stepcount += len(child_cr_containers)
+                logging.info("Exporting workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
                 for container in arvados.util.keyset_list_all(
                         arv_client.containers().list,
                         filters=[
@@ -293,23 +297,31 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
 
                 child_cr_containers.clear()
 
-        for container in arvados.util.keyset_list_all(
-                arv_client.containers().list,
-                filters=[
-                    ["uuid", "in", list(child_cr_containers)],
-                ],
-                select=["uuid", "started_at", "finished_at", "cost"]):
+        if child_cr_containers:
+            stepcount += len(child_cr_containers)
+            logging.info("Exporting workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
+            for container in arvados.util.keyset_list_all(
+                    arv_client.containers().list,
+                    filters=[
+                        ["uuid", "in", list(child_cr_containers)],
+                    ],
+                    select=["uuid", "started_at", "finished_at", "cost"]):
 
-            containers[container["uuid"]] = container
+                containers[container["uuid"]] = container
 
     for container_request in pending:
         if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
             continue
 
+        workflowname = workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing")
+
+        if exclude and re.search(exclude, workflowname):
+            continue
+
         csvwriter.writerow({
             "Project": projects.get(container_request["owner_uuid"], "unknown owner"),
             "ProjectUUID": container_request["owner_uuid"],
-            "Workflow": workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+            "Workflow": workflowname,
             "WorkflowUUID": container_request["properties"].get("template_uuid", "none"),
             "Step": "workflow runner",
             "StepUUID": container_request["uuid"],
@@ -345,7 +357,7 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
                     })
 
 
-def report_from_api(since, to, out, include_steps, columns):
+def report_from_api(since, to, out, include_steps, columns, exclude):
     arv_client = arvados.api()
 
     if columns:
@@ -378,12 +390,12 @@ def report_from_api(since, to, out, include_steps, columns):
         else:
             count += len(pending)
             logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
-            flush_containers(arv_client, csvwriter, pending, include_steps)
+            flush_containers(arv_client, csvwriter, pending, include_steps, exclude)
             pending.clear()
 
     count += len(pending)
     logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
-    flush_containers(arv_client, csvwriter, pending, include_steps)
+    flush_containers(arv_client, csvwriter, pending, include_steps, exclude)
 
 def main(arguments=None):
     if arguments is None:
@@ -404,7 +416,7 @@ def main(arguments=None):
 
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
-            report_from_api(since, to, f, args.include_workflow_steps, args.columns)
+            report_from_api(since, to, f, args.include_workflow_steps, args.columns, args.exclude)
     else:
         logging.warn("--cost-report-file not provided, not writing cost report")
 
