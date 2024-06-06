@@ -22,13 +22,14 @@ prometheus_support = True
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC)')
+    arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC) (or use --days)')
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC), default "now"')
-    arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report')
+    arg_parser.add_argument('--days', type=int, help='Number of days before "end" to start the report (or use --start)')
     arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
     arg_parser.add_argument('--include-workflow-steps', default=False,
-                            action="store_true", help='Include individual workflow steps')
-    arg_parser.add_argument('--columns', type=str, help='Cost report columns')
+                            action="store_true", help='Include individual workflow steps (optional)')
+    arg_parser.add_argument('--columns', type=str, help="""Cost report columns (optional), must be comma separated with no spaces between column names.
+    Available columns are: Project, ProjectUUID, Workflow, WorkflowUUID, Step, StepUUID, Sample, SampleUUID, User, UserUUID, Submitted, Started, Runtime, Cost""")
 
     if prometheus_support:
         arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
