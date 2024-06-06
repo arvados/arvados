@@ -40,7 +40,7 @@ table(table table-bordered table-condensed).
 |container_request|collection|string|The UUID of the container request that produced an output or log collection.|
 |docker-image-repo-tag|collection|string|For collections containing a Docker image, the repo/name:tag identifier|
 |container_uuid|collection|string|The UUID of the container that produced a collection (set on collections with type=log)|
-|container|collection|string|(legacy) The UUID of the container that produced a collection.  Set on intermediate collections created by arvados-cwl-runner.  Starting with Arvados 2.6.0 a-c-r uses @container_uuid@ instead, but older versions of a-c-r may still set the @container@ property.|
+|container|collection|string|(legacy) The UUID of the container that produced a collection.  Set on intermediate collections created by arvados-cwl-runner.  Starting with Arvados 2.6.0 arvados-cwl-runner uses @container_uuid@ instead, but older versions may still set the @container@ property.|
 |cwl_input|container_request|object|On an intermediate container request, the CWL workflow-level input parameters used to generate the container request|
 |cwl_output|container_request|object|On an intermediate container request, the CWL workflow-level output parameters collected from the container request|
 |template_uuid|container_request|string|For a workflow runner container request, the workflow record that was used to launch it.|
