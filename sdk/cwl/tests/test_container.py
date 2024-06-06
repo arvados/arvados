@@ -1542,6 +1542,14 @@ class TestContainer(unittest.TestCase):
                             "glob": "$(inputs.inp)"
                         }
                     },
+                    {
+                        "id": "o5",
+                        "type": "File",
+                        "outputBinding": {
+                            "glob": "*.foo"
+                        },
+                        "secondaryFiles": [".goo", "^.hoo"]
+                    },
 
                 ],
                 "baseCommand": "ls",
@@ -1568,6 +1576,10 @@ class TestContainer(unittest.TestCase):
                                   '*.bat', '*.bat/**',
                                   '*.cat', '*.cat/**',
                                   'quux', 'quux/**',
+                                  '*.foo', '*.foo/**',
+                                  '*.foo.goo', '*.foo.goo/**',
+                                  '*.hoo', '*.hoo/**',
+                                  'cwl.output.json',
                                   ], kwargs['body'].get('output_glob'))
             else:
                 self.assertEqual(None, kwargs['body'].get('output_glob'))
