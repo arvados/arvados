@@ -35,15 +35,33 @@ func (v *Vocabulary) systemTagKeys() map[string]bool {
 		// Collection keys - set by arvados-cwl-runner
 		"container_request": true,
 		"container_uuid":    true,
-		"type":              true,
+
+		// legacy Collection key, set by arvados-cwl-runner,
+		// was changed to container_uuid in Arvados 2.6.0 but
+		// still gets set if an older version of a-c-r is
+		// used.
+		"container": true,
+
+		// Set by several components to indicate the intended
+		// role of a collection
+		"type": true,
+
 		// Collection keys - set by arv-keepdocker (on the way out)
 		"docker-image-repo-tag": true,
+
 		// Container request keys - set by arvados-cwl-runner
-		"cwl_input":     true,
-		"cwl_output":    true,
+		"cwl_input":  true,
+		"cwl_output": true,
+
+		// Container request key set alongside by Workbench 2
+		// to link to the Workflow definition used to launch
+		// the workflow
 		"template_uuid": true,
+		"workflowName":  true,
+
 		// Group keys
 		"filters": true,
+
 		// Link keys
 		"groups":          true,
 		"image_timestamp": true,
