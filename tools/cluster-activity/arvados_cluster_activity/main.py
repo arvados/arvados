@@ -28,6 +28,8 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--cost-report-file', type=str, help='Export cost report to specified CSV file')
     arg_parser.add_argument('--include-workflow-steps', default=False,
                             action="store_true", help='Include individual workflow steps')
+    arg_parser.add_argument('--columns', type=str, help='Cost report columns')
+
     if prometheus_support:
         arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
         arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
@@ -199,6 +201,19 @@ def report_from_prometheus(cluster, since, to):
     container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
     print()
 
+def runtime_str(container_request, containers):
+    length = ciso8601.parse_datetime(containers[container_request["container_uuid"]]["finished_at"]) - ciso8601.parse_datetime(containers[container_request["container_uuid"]]["started_at"])
+
+    hours = length.days * 24 + (length.seconds // 3600)
+    minutes = (length.seconds // 60) % 60
+    seconds = length.seconds % 60
+
+    return "%i:%02i:%02i" % (hours, minutes, seconds)
+
+def csv_dateformat(date):
+    dt = ciso8601.parse_datetime(date)
+    return dt.strftime("%Y-%m-%d %H:%M%S")
+
 def flush_containers(arv_client, csvwriter, pending, include_steps):
     containers = {}
 
@@ -245,6 +260,7 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
     if include_steps:
         name_regex = re.compile(r"(.+)_[0-9]+")
         child_crs = {}
+        child_cr_containers = set()
         for cr in arvados.util.keyset_list_all(
             arv_client.container_requests().list,
             filters=[
@@ -260,48 +276,84 @@ def flush_containers(arv_client, csvwriter, pending, include_steps):
                 cr["name"] = g[1]
 
             child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
+            child_cr_containers.add(cr["container_uuid"])
+            if len(child_cr_containers) == 1000:
+                for container in arvados.util.keyset_list_all(
+                        arv_client.containers().list,
+                        filters=[
+                            ["uuid", "in", list(child_cr_containers)],
+                        ],
+                        select=["uuid", "started_at", "finished_at", "cost"]):
+
+                    containers[container["uuid"]] = container
+
+                child_cr_containers.clear()
+
+        for container in arvados.util.keyset_list_all(
+                arv_client.containers().list,
+                filters=[
+                    ["uuid", "in", list(child_cr_containers)],
+                ],
+                select=["uuid", "started_at", "finished_at", "cost"]):
+
+            containers[container["uuid"]] = container
 
     for container_request in pending:
         if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
             continue
 
-        length = ciso8601.parse_datetime(containers[container_request["container_uuid"]]["finished_at"]) - ciso8601.parse_datetime(containers[container_request["container_uuid"]]["started_at"])
-
-        hours = length.seconds // 3600
-        minutes = (length.seconds // 60) % 60
-        seconds = length.seconds % 60
-
-        csvwriter.writerow((
-            projects.get(container_request["owner_uuid"], "unknown owner"),
-            workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
-            "workflow runner",
-            container_request["name"],
-            projects.get(container_request["modified_by_user_uuid"], "unknown user"),
-            container_request["created_at"],
-            #"%i:%02i:%02i:%02i" % (length.days, hours, minutes, seconds),
-            round(containers[container_request["container_uuid"]]["cost"] if include_steps else container_request["cumulative_cost"], 3),
-            container_request["uuid"]
-            ))
+        csvwriter.writerow({
+            "Project": projects.get(container_request["owner_uuid"], "unknown owner"),
+            "ProjectUUID": container_request["owner_uuid"],
+            "Workflow": workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+            "WorkflowUUID": container_request["properties"].get("template_uuid", "none"),
+            "Step": "workflow runner",
+            "StepUUID": container_request["uuid"],
+            "Sample": container_request["name"],
+            "SampleUUID": container_request["uuid"],
+            "User": projects.get(container_request["modified_by_user_uuid"], "unknown user"),
+            "UserUUID": container_request["modified_by_user_uuid"],
+            "Submitted": csv_dateformat(container_request["created_at"]),
+            "Started": csv_dateformat(containers[container_request["container_uuid"]]["started_at"]),
+            "Runtime": runtime_str(container_request, containers),
+            "Cost": round(containers[container_request["container_uuid"]]["cost"] if include_steps else container_request["cumulative_cost"], 3)
+            })
 
         if include_steps:
             for child_cr in child_crs.get(container_request["container_uuid"], []):
-                csvwriter.writerow((
-                    projects.get(container_request["owner_uuid"], "unknown owner"),
-                    workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
-                    child_cr["name"],
-                    container_request["name"],
-                    projects.get(container_request["modified_by_user_uuid"], "unknown user"),
-                    child_cr["created_at"],
-                    round(child_cr["cumulative_cost"], 3),
-                    child_cr["uuid"]
-                    ))
+                if not child_cr["container_uuid"] or not containers[child_cr["container_uuid"]]["started_at"] or not containers[child_cr["container_uuid"]]["finished_at"]:
+                    continue
+                csvwriter.writerow({
+                    "Project": projects.get(container_request["owner_uuid"], "unknown owner"),
+                    "ProjectUUID": container_request["owner_uuid"],
+                    "Workflow": workflows.get(container_request["properties"].get("template_uuid", "none"), "workflow missing"),
+                    "WorkflowUUID": container_request["properties"].get("template_uuid", "none"),
+                    "Step": child_cr["name"],
+                    "StepUUID": child_cr["uuid"],
+                    "Sample": container_request["name"],
+                    "SampleUUID": container_request["name"],
+                    "User": projects.get(container_request["modified_by_user_uuid"], "unknown user"),
+                    "UserUUID": container_request["modified_by_user_uuid"],
+                    "Submitted": csv_dateformat(child_cr["created_at"]),
+                    "Started": csv_dateformat(containers[child_cr["container_uuid"]]["started_at"]),
+                    "Runtime": runtime_str(child_cr, containers),
+                    "Cost": round(containers[child_cr["container_uuid"]]["cost"], 3),
+                    })
 
 
-def report_from_api(since, to, out, include_steps):
+def report_from_api(since, to, out, include_steps, columns):
     arv_client = arvados.api()
 
-    csvwriter = csv.writer(out)
-    csvwriter.writerow(("Project", "Workflow", "Step", "Sample", "User", "Submitted", "Cost", "UUID"))
+    if columns:
+        columns = columns.split(",")
+    else:
+        if include_steps:
+            columns = ("Project", "Workflow", "Step", "Sample", "User", "Submitted", "Runtime", "Cost")
+        else:
+            columns = ("Project", "Workflow", "Sample", "User", "Submitted", "Runtime", "Cost")
+
+    csvwriter = csv.DictWriter(out, fieldnames=columns, extrasaction="ignore")
+    csvwriter.writeheader()
 
     pending = []
 
@@ -348,7 +400,7 @@ def main(arguments=None):
 
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
-            report_from_api(since, to, f, args.include_workflow_steps)
+            report_from_api(since, to, f, args.include_workflow_steps, args.columns)
     else:
         logging.warn("--cost-report-file not provided, not writing cost report")
 
