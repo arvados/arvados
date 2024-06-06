@@ -24,6 +24,7 @@ interface SearchBar {
     savedQueries: SearchBarAdvancedFormData[];
     recentQueries: string[];
     selectedItem: SearchBarSelectedItem;
+    searchOffsets: Record<string, number>;
 }
 
 export enum SearchView {
@@ -43,6 +44,7 @@ const initialState: SearchBar = {
         id: '',
         query: ''
     },
+    searchOffsets: {},
 };
 
 const makeSelectedItem = (id: string, query?: string): SearchBarSelectedItem => ({ id, query: query ? query : id });
@@ -142,6 +144,9 @@ export const searchBarReducer = (state = initialState, action: SearchBarActions)
                 ...state,
                 selectedItem
             };
+        },
+        SET_SEARCH_OFFSETS: ({id, offset}) => {
+            return {...state, searchOffsets: {...state.searchOffsets, [id]: offset}};
         },
         default: () => state
     });

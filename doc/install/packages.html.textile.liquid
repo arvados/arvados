@@ -11,24 +11,22 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 On any host where you install Arvados software, you'll need to add the Arvados package repository.  They're available for several popular distributions.
 
-* "AlmaLinux, CentOS, RHEL, and Rocky Linux":#redhat
+* "Red Hat, AlmaLinux, and Rocky Linux":#redhat
 * "Debian and Ubuntu":#debian
 
 <notextile>
 <a id="centos7" style="display: none;"></a>
 </notextile>
 
-h3(#redhat). AlmaLinux, CentOS, RHEL, and Rocky Linux
+h3(#redhat). Red Hat, AlmaLinux, and Rocky Linux
 
 Packages are available for the following Red Hat-based distributions:
 
 * AlmaLinux 8
-* CentOS 7
-* CentOS 8
 * RHEL 8
 * Rocky Linux 8
 
-To install them with dnf or yum, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
+To install them with dnf, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
 
 <notextile>
 <pre><code>[arvados]
@@ -51,15 +49,18 @@ First, register the Arvados signing key in apt's database:
 
 {% include 'gpg_key_fingerprint' %}
 
-As root, add the Arvados package repository to your sources.  This command depends on your OS vendor and version:
+Then set up the package source by running this command:
 
-table(table table-bordered table-condensed).
-|_. OS version|_. Command|
-|Debian 11 ("bullseye")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/bullseye bullseye main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Debian 10 ("buster")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/buster buster main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 20.04 ("focal")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/focal focal main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 18.04 ("bionic")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/bionic bionic main" &#x7c; tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-
+<notextile>
+<pre><code># <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
+Types: deb
+URIs: https://apt.arvados.org/$(lsb_release -cs)
+Suites: $(lsb_release -cs)
+Components: main
+Signed-by: /etc/apt/keyrings/arvados.asc
+EOF
+</span></code></pre>
+</notextile>
 
 {% include 'notebox_begin' %}
 
@@ -70,6 +71,6 @@ fn1. Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's 
 Retrieve the package list:
 
 <notextile>
-<pre><code># <span class="userinput">apt-get update</span>
+<pre><code># <span class="userinput">apt update</span>
 </code></pre>
 </notextile>

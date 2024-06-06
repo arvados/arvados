@@ -15,7 +15,7 @@ import { Dispatch } from "redux";
 
 export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
-        <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flexBasis: '960px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ProjectsTreePicker
                 pickerId={props.pickerId}
                 toggleItemActive={handleChange(props)}

@@ -20,7 +20,7 @@ A single-node installation supports all Arvados functionality at small scale. Su
 h2. Prerequisites
 
 You will need:
-* a server host running Debian 10 (buster) or Debian 11 (bullseye).
+* a server host running Debian 11 (bullseye) or Debian 12 (bookworm).
 * a unique 5-character ID like @x9999@ for your cluster (first character should be @[a-w]@ for a long-lived / production cluster; all characters are @[a-z0-9]@).
 * a DNS name like @x9999.example.com@ that resolves to your server host (or a load balancer / proxy that passes HTTP requests on port 80[1] and HTTPS requests on ports 443 and 4440-4460 through to the same port on your server host).
 * a firewall setup that allows incoming connections to ports 80[1], 443, and 4440-4460.
