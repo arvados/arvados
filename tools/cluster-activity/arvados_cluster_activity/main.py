@@ -267,6 +267,8 @@ def flush_containers(arv_client, csvwriter, pending, include_steps, exclude):
         child_crs = {}
         child_cr_containers = set()
         stepcount = 0
+
+        logging.info("Getting workflow steps")
         for cr in arvados.util.keyset_list_all(
             arv_client.container_requests().list,
             filters=[
@@ -285,7 +287,6 @@ def flush_containers(arv_client, csvwriter, pending, include_steps, exclude):
             child_cr_containers.add(cr["container_uuid"])
             if len(child_cr_containers) == 1000:
                 stepcount += len(child_cr_containers)
-                logging.info("Exporting workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
                 for container in arvados.util.keyset_list_all(
                         arv_client.containers().list,
                         filters=[
@@ -295,11 +296,11 @@ def flush_containers(arv_client, csvwriter, pending, include_steps, exclude):
 
                     containers[container["uuid"]] = container
 
+                logging.info("Got workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
                 child_cr_containers.clear()
 
         if child_cr_containers:
             stepcount += len(child_cr_containers)
-            logging.info("Exporting workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
             for container in arvados.util.keyset_list_all(
                     arv_client.containers().list,
                     filters=[
@@ -308,6 +309,7 @@ def flush_containers(arv_client, csvwriter, pending, include_steps, exclude):
                     select=["uuid", "started_at", "finished_at", "cost"]):
 
                 containers[container["uuid"]] = container
+            logging.info("Got workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
 
     for container_request in pending:
         if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
