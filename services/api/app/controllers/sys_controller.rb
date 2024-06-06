@@ -19,16 +19,25 @@ class SysController < ApplicationController
         in_batches(of: 15).
         update_all('is_trashed = true')
 
-      # Sweep trashed projects and their contents (as well as role
-      # groups that were trashed before #18340 when that was
-      # disallowed)
+      # Want to make sure the #update_trash hook on the Group class
+      # runs.  It does a couple of important things:
+      #
+      # - For projects, puts all the subprojects in the trashed_groups table.
+      #
+      # - For role groups, starting from #20943, when a role group
+      # enters the trash it keeps its members but loses its outbound
+      # permissions.
       Group.
-        where('delete_at is not null and delete_at < statement_timestamp()').each do |project|
-          delete_project_and_contents(project.uuid)
+        where("is_trashed = false and trash_at < statement_timestamp()").each do |grp|
+        grp.is_trashed = true
+        grp.save
       end
+
+      # Sweep groups and their contents that are ready to be deleted
       Group.
-        where('is_trashed = false and trash_at < statement_timestamp()').
-        update_all('is_trashed = true')
+        where('delete_at is not null and delete_at < statement_timestamp()').each do |group|
+          delete_project_and_contents(group.uuid)
+      end
 
       # Sweep expired tokens
       ActiveRecord::Base.connection.execute("DELETE from api_client_authorizations where expires_at <= statement_timestamp()")

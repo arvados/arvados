@@ -171,8 +171,15 @@ with temptable as (select * from project_subtree_with_trash_at($1, LEAST($2, $3)
       [self.uuid,
        TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
        self.trash_at])
+
     if frozen_descendants.any?
       raise ArgumentError.new("cannot trash project containing frozen project #{frozen_descendants[0]["uuid"]}")
+    end
+
+    if self.trash_at and self.group_class == 'role'
+      # if this is a role group that is now in the trash, it loses all
+      # of its outgoing permissions.
+      Link.where(link_class: 'permission', tail_uuid: self.uuid).destroy_all
     end
 
     ActiveRecord::Base.connection.exec_query(%{

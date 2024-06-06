@@ -91,6 +91,17 @@ class SysControllerTest < ActionController::TestCase
     assert_not_empty Group.where('uuid=? and is_trashed=true', p.uuid)
   end
 
+  test "trash_sweep - move roles groups to trash" do
+    p = groups(:trashed_role_on_next_sweep)
+    assert_empty Group.where('uuid=? and is_trashed=true', p.uuid)
+    assert_not_empty Link.where(uuid: links(:foo_file_readable_by_soon_to_be_trashed_role).uuid)
+    authorize_with :admin
+    post :trash_sweep
+    assert_response :success
+    assert_not_empty Group.where('uuid=? and is_trashed=true', p.uuid)
+    assert_empty Link.where(uuid: links(:foo_file_readable_by_soon_to_be_trashed_role).uuid)
+  end
+
   test "trash_sweep - delete projects and their contents" do
     g_foo = groups(:trashed_project)
     g_bar = groups(:trashed_subproject)

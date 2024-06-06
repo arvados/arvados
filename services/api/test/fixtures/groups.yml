@@ -434,3 +434,13 @@ trashed_on_next_sweep:
   delete_at: 2038-03-01T00:00:00Z
   is_trashed: false
   modified_at: 2001-01-01T00:00:00Z
+
+trashed_role_on_next_sweep:
+  uuid: zzzzz-j7d0g-soontobetrashd2
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: soon to be trashed role group
+  group_class: role
+  trash_at: 2001-01-01T00:00:00Z
+  delete_at: 2038-03-01T00:00:00Z
+  is_trashed: false
+  modified_at: 2001-01-01T00:00:00Z
