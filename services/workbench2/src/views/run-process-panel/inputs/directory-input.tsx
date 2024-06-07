@@ -129,7 +129,7 @@ const DirectoryInputComponent = connect(null, mapDispatchToProps)(
                 flexDirection: 'column',
             },
             pickerWrapper: {
-                flexBasis: `${spacing.unit * 8}vh`,
+                flexBasis: `${spacing(8)}vh`,
                 flexShrink: 1,
                 minHeight: 0,
                 display: 'flex',

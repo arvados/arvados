@@ -238,7 +238,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
             pickerWrapper: {
                 display: 'flex',
                 flexDirection: 'column',
-                flexBasis: `${spacing.unit * 8}vh`,
+                flexBasis: `${spacing(8)}vh`,
                 flexShrink: 1,
                 minHeight: 0,
             },
@@ -247,12 +247,12 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
                 overflow: 'auto',
             },
             divider: {
-                margin: `${spacing.unit}px 0`,
+                margin: `${spacing(1)}px 0`,
             },
             chips: {
                 flex: 1,
                 overflow: 'auto',
-                padding: `${spacing.unit}px 0`,
+                padding: `${spacing(1)}px 0`,
                 overflowX: 'hidden',
             },
         });

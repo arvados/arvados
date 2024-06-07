@@ -29,7 +29,7 @@ type CssRules = 'chips' | 'input' | 'inputContainer';
 
 const styles: CustomStyleRulesCallback = ({ spacing }) => ({
     chips: {
-        minHeight: spacing.unit * 5,
+        minHeight: spacing(5),
         zIndex: 1,
         position: 'relative',
     },
