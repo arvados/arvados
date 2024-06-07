@@ -285,11 +285,11 @@ VERSION="latest"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
-SALT_VERSION="3006"
+SALT_VERSION="3007"
 
 # Other formula versions we depend on
-POSTGRES_TAG="7529300c287b1c288af0f494ca668c2217bd1c5d"
-POSTGRES_URL="https://github.com/saltstack-formulas/postgres-formula.git"
+POSTGRES_TAG="a809e03bad115bbdf24ad347e2dc9a52e144c31f"
+POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
 NGINX_TAG="v2.8.1"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.5"
