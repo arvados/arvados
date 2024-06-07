@@ -285,7 +285,7 @@ VERSION="latest"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
-SALT_VERSION="3007"
+SALT_VERSION="3007.1"
 
 # Other formula versions we depend on
 POSTGRES_TAG="a809e03bad115bbdf24ad347e2dc9a52e144c31f"
