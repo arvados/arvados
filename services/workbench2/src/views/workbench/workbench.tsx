@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useState } from "react";
-import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core/styles";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from "@material-ui/core/styles";
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
 import { DetailsPanel } from "views-components/details-panel/details-panel";
@@ -111,7 +112,7 @@ import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-pa
 
 type CssRules = "root" | "container" | "splitter" | "asidePanel" | "contentWrapper" | "content";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         paddingTop: theme.spacing.unit * 7,
         background: theme.palette.background.default,

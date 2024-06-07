@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Grid, CircularProgress } from '@material-ui/core';
 
 type CssRules = 'root' | 'img';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     img: {
         marginBottom: theme.spacing.unit * 4
     },

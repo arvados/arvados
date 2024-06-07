@@ -6,11 +6,12 @@ import React from "react";
 import { FavoriteIcon, PublicFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { withStyles, StyleRulesCallback, WithStyles, Tooltip } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles, Tooltip } from "@material-ui/core";
 
 type CssRules = "icon";
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     icon: {
         fontSize: "inherit"
     }

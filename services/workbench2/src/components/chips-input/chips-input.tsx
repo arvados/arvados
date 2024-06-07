@@ -5,7 +5,7 @@
 import React from 'react';
 import { Chips } from 'components/chips/chips';
 import { Input as MuiInput, withStyles, WithStyles } from '@material-ui/core';
-import { StyleRulesCallback } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { InputProps } from '@material-ui/core/Input';
 
 interface ChipsInputProps<Value> {
@@ -27,7 +27,7 @@ interface ChipsInputProps<Value> {
 
 type CssRules = 'chips' | 'input' | 'inputContainer';
 
-const styles: StyleRulesCallback = ({ spacing }) => ({
+const styles: CustomStyleRulesCallback = ({ spacing }) => ({
     chips: {
         minHeight: spacing.unit * 5,
         zIndex: 1,

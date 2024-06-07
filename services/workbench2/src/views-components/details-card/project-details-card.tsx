@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse, Grid } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
@@ -39,7 +40,7 @@ type CssRules =
     | 'description'
     | 'toolbarStyles';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         marginBottom: '1rem',

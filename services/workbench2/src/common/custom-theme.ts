@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createMuiTheme } from '@material-ui/core/styles';
-import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
+import { StyleRulesCallback, createMuiTheme } from '@material-ui/core/styles';
+import { ThemeOptions, Theme } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
@@ -19,6 +19,9 @@ export interface ArvadosTheme extends Theme {
         colors: Colors
     };
 }
+
+export type CustomStyleRulesCallback<ClassKey extends string = string> = 
+    StyleRulesCallback<Theme, {}, ClassKey>
 
 interface Colors {
     green700: string;

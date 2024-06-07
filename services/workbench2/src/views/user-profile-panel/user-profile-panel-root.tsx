@@ -9,8 +9,8 @@ import { UserResource } from 'models/user';
 import { TextField } from "components/text-field/text-field";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { NativeSelectField } from "components/select-field/select-field";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     CardContent,
@@ -38,7 +38,7 @@ import { PermissionResource } from 'models/permission';
 
 type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon' | 'userProfileFormMessage';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'

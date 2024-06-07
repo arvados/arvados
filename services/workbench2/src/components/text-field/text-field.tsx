@@ -5,9 +5,9 @@
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     TextField as MaterialTextField,
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     PropTypes
@@ -16,7 +16,7 @@ import RichTextEditor from 'react-rte';
 
 type CssRules = 'textField' | 'rte';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     textField: {
         marginBottom: theme.spacing.unit
     },

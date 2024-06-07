@@ -6,8 +6,8 @@ import React from 'react';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { DispatchProp, connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
-import { StyleRulesCallback, WithStyles } from '@material-ui/core';
-
+import { WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { DataColumns } from 'components/data-table/data-table';
 import { RootState } from 'store/store';
@@ -56,7 +56,7 @@ import { DetailsCardRoot } from 'views-components/details-card/details-card-root
 
 type CssRules = 'root' | 'button' ;
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         display: 'flex',

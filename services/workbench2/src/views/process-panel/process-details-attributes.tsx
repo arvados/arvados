@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, StyleRulesCallback, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, withStyles } from "@material-ui/core";
 import { Dispatch } from 'redux';
 import { formatCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -26,7 +27,7 @@ import { getCollectionUrl } from 'models/collection';
 
 type CssRules = 'link' | 'propertyTag';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         fontSize: '0.875rem',
         color: theme.palette.primary.main,

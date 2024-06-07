@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     Button
@@ -38,7 +38,7 @@ import { CollectionResource } from 'models/collection';
 
 type CssRules = 'backLink' | 'backIcon' | 'root' | 'content';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backLink: {
         fontSize: '12px',
         fontWeight: 600,

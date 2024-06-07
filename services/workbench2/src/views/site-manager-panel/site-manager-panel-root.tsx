@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Card,
     CardContent,
     CircularProgress,
     Grid,
     IconButton,
-    StyleRulesCallback,
     Table,
     TableBody,
     TableCell,
@@ -35,7 +35,7 @@ type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
     'statusCell';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'

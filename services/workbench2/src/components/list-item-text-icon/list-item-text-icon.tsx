@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ListItemIcon, ListItemText, Typography } from '@material-ui/core';
 import { IconType } from '../icon/icon';
@@ -11,7 +12,7 @@ import classnames from "classnames";
 
 type CssRules = 'root' | 'listItemText' | 'hasMargin' | 'active';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: 'flex',
         alignItems: 'center'

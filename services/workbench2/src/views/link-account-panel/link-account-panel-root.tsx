@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     Card,
@@ -23,7 +23,7 @@ import { Config } from 'common/config';
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto',

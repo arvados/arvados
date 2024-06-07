@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Chip, Grid, StyleRulesCallback, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Chip, Grid, withStyles } from '@material-ui/core';
 import {
     DragSource,
     DragSourceSpec,
@@ -28,7 +29,7 @@ interface ChipsProps<Value> {
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = ({ spacing }) => ({
+const styles: CustomStyleRulesCallback<CssRules> = ({ spacing }) => ({
     root: {
         margin: `0px -${spacing.unit / 2}px`,
     },

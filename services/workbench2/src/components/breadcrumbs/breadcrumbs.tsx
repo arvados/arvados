@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, Grid, WithStyles, Typography, Tooltip } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
@@ -22,7 +23,7 @@ export interface Breadcrumb {
 
 type CssRules = "item" | "chevron" | "label" | "buttonLabel" | "icon" | "frozenIcon";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
         borderRadius: '16px',
         height: '32px',

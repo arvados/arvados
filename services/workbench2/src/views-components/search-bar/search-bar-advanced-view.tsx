@@ -5,7 +5,8 @@
 import React from 'react';
 import { reduxForm, InjectedFormProps, reset } from 'redux-form';
 import { compose, Dispatch } from 'redux';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
 import {
     SEARCH_BAR_ADVANCED_FORM_NAME, SEARCH_BAR_ADVANCED_FORM_PICKER_ID,
     searchAdvancedData,
@@ -24,7 +25,7 @@ import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
     | 'button' | 'circularProgress' | 'searchView' | 'selectGrid';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
         padding: theme.spacing.unit * 2,
         borderBottom: `1px solid ${theme.palette.grey["200"]}`,

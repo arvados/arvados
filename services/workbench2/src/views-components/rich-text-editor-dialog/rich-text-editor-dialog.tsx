@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Dialog, 
     DialogTitle, 
     DialogContent, 
     DialogActions, 
     Button,
-    StyleRulesCallback,
     WithStyles,
     withStyles
 } from "@material-ui/core";
@@ -21,7 +21,7 @@ import RichTextEditor from 'react-rte';
 
 type CssRules = 'rte';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rte: {
         fontFamily: 'Arial',
         '& a': {

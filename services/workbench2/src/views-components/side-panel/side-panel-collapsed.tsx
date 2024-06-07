@@ -7,7 +7,8 @@ import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, ResourceIcon } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
 import { IconButton, List, ListItem, Tooltip } from '@material-ui/core'
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles'
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles'
 import { ArvadosTheme } from 'common/custom-theme'
 import { navigateTo, navigateToInstanceTypes } from 'store/navigation/navigation-action'
 import { RootState } from 'store/store'
@@ -26,7 +27,7 @@ import { User } from 'models/user'
 
 type CssRules = 'button' | 'unselected' | 'selected'
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         width: '40px',
         height: '40px',

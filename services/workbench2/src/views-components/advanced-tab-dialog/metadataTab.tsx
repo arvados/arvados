@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Table, TableHead, TableCell, TableRow, TableBody, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Table, TableHead, TableCell, TableRow, TableBody, WithStyles, withStyles } from '@material-ui/core';
 
 type CssRules = 'cell';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     cell: {
         paddingRight: theme.spacing.unit * 2
     }

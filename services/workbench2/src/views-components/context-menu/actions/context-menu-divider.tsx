@@ -4,14 +4,15 @@
 
 import React from 'react';
 import { ContextMenuAction } from '../context-menu-action-set';
-import { Divider as DividerComponent, StyleRulesCallback, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Divider as DividerComponent, withStyles } from '@material-ui/core';
 import { WithStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { VerticalLineDivider } from 'components/icon/icon';
 
 type CssRules = 'horizontal' | 'vertical';
 
-const styles:StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles:CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
   horizontal: {
       backgroundColor: 'black',
   },

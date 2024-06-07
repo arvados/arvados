@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, CardHeader, Tab, Tabs } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogActions, Button, WithStyles, withStyles, CardHeader, Tab, Tabs } from '@material-ui/core';
 import { withDialog } from "store/dialog/with-dialog";
 import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from 'store/collections/collection-info-actions';
 import { WithDialogProps } from 'store/dialog/with-dialog';
@@ -14,7 +15,7 @@ import { DefaultCodeSnippet } from "components/default-code-snippet/default-code
 
 export type CssRules = 'details' | 'downloadButton' | 'detailsAttrValWithCode';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     details: {
         marginLeft: theme.spacing.unit * 3,
         marginRight: theme.spacing.unit * 3,

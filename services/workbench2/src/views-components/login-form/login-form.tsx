@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { Button, Card, CardContent, TextField, CardActions } from '@material-ui/core';
 import { green } from '@material-ui/core/colors';
@@ -17,7 +18,7 @@ import { PasswordLoginResponse } from 'views/login-panel/login-panel';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
         display: 'flex',
         flexWrap: 'wrap',

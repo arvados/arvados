@@ -4,13 +4,14 @@
 
 import React from 'react';
 import { Location } from 'history';
-import { StyleRulesCallback, WithStyles, withStyles, Paper, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles, Paper, Grid } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ClusterConfigJSON } from 'common/config';
 
 export type CssRules = 'root' | 'title' | 'active';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         overflow: 'hidden',
         width: '100vw',

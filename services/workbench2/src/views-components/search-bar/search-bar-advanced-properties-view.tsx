@@ -6,7 +6,8 @@ import React from 'react';
 import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
-import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, withStyles, WithStyles, Button } from '@material-ui/core';
 import { RootState } from 'store/store';
 import {
     SEARCH_BAR_ADVANCED_FORM_NAME,
@@ -24,7 +25,7 @@ import { isEqual } from 'lodash';
 
 type CssRules = 'label' | 'button';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
         color: theme.palette.grey["500"],
         fontSize: '0.8125rem',

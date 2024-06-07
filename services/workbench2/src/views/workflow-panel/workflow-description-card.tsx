@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     CardContent,
@@ -24,7 +24,7 @@ import { WorkflowDetailsCardDataProps, WorkflowDetailsAttributes } from 'views-c
 
 export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         height: '100%'
     },

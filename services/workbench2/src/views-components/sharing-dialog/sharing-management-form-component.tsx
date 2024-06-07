@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, StyleRulesCallback, Divider, IconButton, Typography, Tooltip } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Divider, IconButton, Typography, Tooltip } from '@material-ui/core';
 import {
     Field,
     WrappedFieldProps,
@@ -22,7 +23,7 @@ export interface SaveProps {
     onSave: () => void;
 }
 
-const headerStyles: StyleRulesCallback<'heading'> = (theme: ArvadosTheme) => ({
+const headerStyles: CustomStyleRulesCallback<'heading'> = (theme: ArvadosTheme) => ({
     heading: {
         fontSize: '1.25rem',
     }
@@ -42,7 +43,7 @@ const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } 
         <PermissionManagementRow key={field} {...{ field, index, fields }} onSave={onSave} />)}
     </div>;
 
-const permissionManagementRowStyles: StyleRulesCallback<'root'> = theme => ({
+const permissionManagementRowStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
         padding: `${theme.spacing.unit}px 0`,
     }

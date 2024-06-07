@@ -4,8 +4,8 @@
 
 import React, { ReactElement, memo } from "react";
 import { Dispatch } from "redux";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     Card,
@@ -90,7 +90,7 @@ type CssRules =
     | "symmetricTabs"
     | "wrapTooltip";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: "100%",
     },

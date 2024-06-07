@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, withStyles, Grid, Button, WithStyles, List, ListItem, ListItemText, ListItemIcon } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, Grid, Button, WithStyles, List, ListItem, ListItemText, ListItemIcon } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowResource } from 'models/workflow';
 import { WorkflowIcon } from 'components/icon/icon';
@@ -12,7 +13,7 @@ import { SearchInput } from 'components/search-input/search-input';
 
 type CssRules = 'root' | 'searchGrid' | 'workflowDetailsGrid' | 'list' | 'listItem' | 'itemSelected' | 'listItemText' | 'listItemIcon';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         alignSelf: 'flex-start'
     },

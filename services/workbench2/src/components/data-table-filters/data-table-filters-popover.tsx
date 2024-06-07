@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     WithStyles,
     withStyles,
     ButtonBase,
-    StyleRulesCallback,
     Theme,
     Popover,
     Button,
@@ -27,7 +27,7 @@ import debounce from 'lodash/debounce';
 
 export type CssRules = 'root' | 'icon' | 'iconButton' | 'active' | 'checkbox';
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
         cursor: 'pointer',
         display: 'inline-flex',

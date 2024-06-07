@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useRef, useEffect } from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelTree, SidePanelTreeProps } from 'views-components/side-panel-tree/side-panel-tree';
 import { Dispatch } from 'redux';
@@ -19,7 +20,7 @@ const DRAWER_WIDTH = 240;
 
 type CssRules = 'root' | 'topButtonContainer';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
         borderRight: `1px solid ${theme.palette.divider}`,

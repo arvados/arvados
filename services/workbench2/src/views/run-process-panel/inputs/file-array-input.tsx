@@ -25,7 +25,8 @@ import { InputProps } from '@material-ui/core/Input';
 import { TreePicker } from 'store/tree-picker/tree-picker';
 import { RootState } from 'store/store';
 import { Chips } from 'components/chips/chips';
-import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import withStyles from '@material-ui/core/styles/withStyles';
 
 export interface FileArrayInputProps {
     input: FileArrayCommandInputParameter;
@@ -216,7 +217,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                 onKeyPress={!this.props.commandInput.disabled ? this.openDialog : undefined}
                 onBlur={this.props.input.onBlur} />
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',

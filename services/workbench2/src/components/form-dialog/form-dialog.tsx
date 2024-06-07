@@ -5,12 +5,13 @@
 import React from 'react';
 import { InjectedFormProps } from 'redux-form';
 import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
-import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 
 type CssRules = "button" | "lastButton" | "form" | "formContainer" | "dialogTitle" | "progressIndicator" | "dialogActions";
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     button: {
         marginLeft: theme.spacing.unit
     },

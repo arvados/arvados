@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     ExpansionPanel,
     ExpansionPanelDetails,
     ExpansionPanelSummary,
     Paper,
-    StyleRulesCallback,
     Typography,
     withStyles,
     WithStyles
@@ -30,7 +30,7 @@ type CssRules = 'root'
     | 'warningColor'
     | 'paperRoot';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         marginBottom: theme.spacing.unit * 1,
     },

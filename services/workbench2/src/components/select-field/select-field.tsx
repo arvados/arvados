@@ -5,11 +5,12 @@
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
-import { StyleRulesCallback, WithStyles, withStyles, FormControl, InputLabel, Select, FormHelperText } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles, FormControl, InputLabel, Select, FormHelperText } from '@material-ui/core';
 
 type CssRules = 'formControl' | 'selectWrapper' | 'select' | 'option';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     formControl: {
         width: '100%',
     },
@@ -71,7 +72,7 @@ interface SelectFieldProps {
 
 type SelectFieldCssRules = 'formControl';
 
-const selectFieldStyles: StyleRulesCallback<SelectFieldCssRules> = (theme: ArvadosTheme) => ({
+const selectFieldStyles: CustomStyleRulesCallback<SelectFieldCssRules> = (theme: ArvadosTheme) => ({
     formControl: {
         marginBottom: theme.spacing.unit * 3,
     },

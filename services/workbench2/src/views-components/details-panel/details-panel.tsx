@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { IconButton, Tabs, Tab, Typography, Grid, Tooltip } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { Transition } from 'react-transition-group';
 import { ArvadosTheme } from 'common/custom-theme';
 import classnames from "classnames";
@@ -34,7 +35,7 @@ import { CLOSE_DRAWER } from 'store/details-panel/details-panel-action';
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
 const DRAWER_WIDTH = 320;
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
         borderLeft: `1px solid ${theme.palette.divider}`,

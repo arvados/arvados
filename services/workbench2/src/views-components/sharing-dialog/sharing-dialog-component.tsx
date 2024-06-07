@@ -17,8 +17,8 @@ import {
     FormControlLabel,
     Typography,
 } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles
 } from '@material-ui/core/styles';
@@ -211,7 +211,7 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
     </Dialog>;
 };
 
-const loadingIndicatorStyles: StyleRulesCallback<'root'> = theme => ({
+const loadingIndicatorStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
         position: 'absolute',
         top: 0,

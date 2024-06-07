@@ -4,7 +4,8 @@
 
 import React from "react";
 import { AppBar, Toolbar, Typography, Grid } from "@material-ui/core";
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { Link } from "react-router-dom";
 import { User } from "models/user";
 import { SearchBar } from "views-components/search-bar/search-bar";
@@ -19,7 +20,7 @@ import { sanitizeHTML } from "common/html-sanitize";
 
 type CssRules = 'toolbar' | 'link';
 
-const styles: StyleRulesCallback<CssRules> = () => ({
+const styles: CustomStyleRulesCallback<CssRules> = () => ({
     link: {
         textDecoration: 'none',
         color: 'inherit'

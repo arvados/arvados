@@ -7,14 +7,15 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
 import { REPOSITORY_ATTRIBUTES_DIALOG } from "store/repositories/repositories-actions";
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
 import { RepositoryResource } from "models/repositories";
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rightContainer: {
         textAlign: 'right',
         paddingRight: theme.spacing.unit * 2,

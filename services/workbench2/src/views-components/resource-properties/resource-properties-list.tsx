@@ -5,9 +5,9 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     withStyles,
-    StyleRulesCallback,
     WithStyles,
 } from '@material-ui/core';
 import { RootState } from 'store/store';
@@ -18,7 +18,7 @@ import { formValueSelector } from 'redux-form';
 
 type CssRules = 'tag';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
         marginRight: theme.spacing.unit,
         marginBottom: theme.spacing.unit

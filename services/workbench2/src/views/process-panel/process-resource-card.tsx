@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     Card,
@@ -40,7 +40,7 @@ interface ProcessResourceCardDataProps {
 
 type CssRules = "card" | "header" | "title" | "avatar" | "iconHeader" | "content" | "sectionH3" | "reportButton";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: '100%'
     },

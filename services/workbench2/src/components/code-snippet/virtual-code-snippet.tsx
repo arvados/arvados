@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, Typography, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, Typography, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 import { connect, DispatchProp } from 'react-redux';
@@ -15,7 +16,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 
 type CssRules = 'root' | 'space' | 'content' ;
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         height: '100%',

@@ -19,7 +19,8 @@ import { TreeItem } from 'components/tree/tree';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { PublicFavoritesTreePicker } from './public-favorites-tree-picker';
 import { SearchInput } from 'components/search-input/search-input';
-import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 
 export interface ToplevelPickerProps {
@@ -83,7 +84,7 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (Pr
 
 type CssRules = 'pickerHeight' | 'searchFlex' | 'scrolledBox';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     pickerHeight: {
         display: "flex",
         flexDirection: "column",

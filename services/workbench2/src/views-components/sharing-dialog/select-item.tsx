@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, withStyles, StyleRulesCallback } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, withStyles } from '@material-ui/core';
 import { WithStyles } from '@material-ui/core/styles';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 type SelectItemClasses = 'value' | 'icon';
 
-const permissionItemStyles: StyleRulesCallback<SelectItemClasses> = theme => ({
+const permissionItemStyles: CustomStyleRulesCallback<SelectItemClasses> = theme => ({
     value: {
         marginLeft: theme.spacing.unit,
     },

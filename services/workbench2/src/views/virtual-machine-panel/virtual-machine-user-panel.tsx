@@ -5,7 +5,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-machines/virtual-machines-actions';
@@ -24,7 +25,7 @@ type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 
 
 const EXTRA_TOKEN = "exraToken";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         marginTop: theme.spacing.unit,
         marginBottom: theme.spacing.unit

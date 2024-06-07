@@ -4,12 +4,13 @@
 
 import React from "react";
 import { WarningIcon } from "components/icon/icon";
-import { StyleRulesCallback, DialogContentText, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { DialogContentText, WithStyles, withStyles } from "@material-ui/core";
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'container' | 'text';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
         display: 'flex',
         alignItems: 'center',

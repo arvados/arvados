@@ -10,9 +10,9 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from "common/service-provider";
 import { DownloadIcon, MoreHorizontalIcon, MoreVerticalIcon } from "components/icon/icon";
 import { SearchInput } from "components/search-input/search-input";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     ListItemIcon,
-    StyleRulesCallback,
     Theme,
     WithStyles,
     withStyles,
@@ -77,7 +77,7 @@ type CssRules =
     | "searchWrapper"
     | "searchWrapperHidden";
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
         display: "flex",
         minHeight: "600px",

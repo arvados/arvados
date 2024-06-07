@@ -4,9 +4,9 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Grid,
-    StyleRulesCallback,
     Table, TableBody, TableCell, TableHead, TableRow,
     Typography,
     WithStyles,
@@ -22,7 +22,7 @@ type CssRules = "root" | "dropzone" | "dropzoneWrapper" | "container" | "uploadI
     | "dropzoneBorder" | "dropzoneBorderLeft" | "dropzoneBorderRight" | "dropzoneBorderTop" | "dropzoneBorderBottom"
     | "dropzoneBorderHorzActive" | "dropzoneBorderVertActive" | "deleteButton" | "deleteButtonDisabled" | "deleteIcon";
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
     },
     dropzone: {

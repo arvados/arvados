@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WithStyles, StyleRulesCallback, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
 import { DataColumn } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
@@ -19,7 +20,7 @@ interface ColumnSelectorDataProps {
 
 type CssRules = "checkbox" | "listItem" | "listItemText";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     checkbox: {
         width: 24,
         height: 24

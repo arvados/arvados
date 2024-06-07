@@ -8,7 +8,8 @@ import { ProjectsIcon } from 'components/icon/icon';
 import { formatDate } from 'common/formatters';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
-import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Dispatch } from 'redux';
 import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/projects/project-update-actions';
@@ -29,7 +30,7 @@ export class RootProjectDetails extends DetailsData<UserResource> {
 
 type CssRules = 'tag' | 'editIcon' | 'editButton';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
         marginRight: theme.spacing.unit / 2,
         marginBottom: theme.spacing.unit / 2,

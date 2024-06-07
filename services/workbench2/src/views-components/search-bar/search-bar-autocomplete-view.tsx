@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper, withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
 import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
 
 type CssRules = 'searchView' | 'list' | 'listItem';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
+const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         searchView: {
             borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`

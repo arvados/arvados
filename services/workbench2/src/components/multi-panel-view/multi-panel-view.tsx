@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { MutableRefObject, ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Button,
     Grid,
     Paper,
-    StyleRulesCallback,
     Tooltip,
     withStyles,
     WithStyles
@@ -21,7 +21,7 @@ import classNames from 'classnames';
 
 type CssRules = 'root' | 'button' | 'buttonIcon' | 'content';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
         marginTop: '10px',
     },

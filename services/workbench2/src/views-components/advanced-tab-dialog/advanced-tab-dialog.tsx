@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, DialogTitle, DialogContent, Tabs, Tab, DialogContentText } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogActions, Button, WithStyles, withStyles, DialogTitle, DialogContent, Tabs, Tab, DialogContentText } from '@material-ui/core';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { withDialog } from "store/dialog/with-dialog";
 import { compose } from 'redux';
@@ -15,7 +16,7 @@ import { ListResults } from "services/common-service/common-service";
 
 type CssRules = 'content' | 'codeSnippet' | 'spacing';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     content: {
         paddingTop: theme.spacing.unit * 3,
         minHeight: '400px',

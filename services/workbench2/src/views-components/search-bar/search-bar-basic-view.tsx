@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper, withStyles, WithStyles } from '@material-ui/core';
 import {
     SearchBarRecentQueries,
     SearchBarRecentQueriesActionProps
@@ -16,7 +17,7 @@ import {
 
 type CssRules = 'advanced' | 'label' | 'root';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
+const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         root: {
             color: theme.palette.common.black,

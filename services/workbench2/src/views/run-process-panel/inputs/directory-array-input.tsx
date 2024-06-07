@@ -24,7 +24,8 @@ import { InputProps } from '@material-ui/core/Input';
 import { TreePicker } from 'store/tree-picker/tree-picker';
 import { RootState } from 'store/store';
 import { Chips } from 'components/chips/chips';
-import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import withStyles from '@material-ui/core/styles/withStyles';
 import { CollectionResource } from 'models/collection';
 import { PORTABLE_DATA_HASH_PATTERN, ResourceKind } from 'models/resource';
 import { Dispatch } from 'redux';
@@ -229,7 +230,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
                 onBlur={this.props.input.onBlur}
                 disabled={this.props.commandInput.disabled} />
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',

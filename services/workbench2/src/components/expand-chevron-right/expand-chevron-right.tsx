@@ -4,12 +4,13 @@
 
 import React from 'react';
 import { ChevronRight } from '@material-ui/icons';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'root' | 'default' | 'expanded';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: 'flex',
         alignItems: 'center',

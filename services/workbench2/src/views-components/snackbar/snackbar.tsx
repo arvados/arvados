@@ -6,7 +6,8 @@ import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { Button, IconButton, StyleRulesCallback, WithStyles, withStyles, SnackbarContent } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, IconButton, WithStyles, withStyles, SnackbarContent } from '@material-ui/core';
 import MaterialSnackbar, { SnackbarOrigin } from "@material-ui/core/Snackbar";
 import { snackbarActions, SnackbarKind, SnackbarMessage } from "store/snackbar/snackbar-actions";
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -58,7 +59,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
 
 type CssRules = "success" | "error" | "info" | "warning" | "icon" | "iconVariant" | "message" | "linkButton" | "snackbarContent";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     success: {
         backgroundColor: green[600]
     },

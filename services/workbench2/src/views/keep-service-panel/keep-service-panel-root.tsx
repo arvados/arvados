@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton, Checkbox } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles, Card, CardContent, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { MoreVerticalIcon } from 'components/icon/icon';
 import { KeepServiceResource } from 'models/keep-services';
 
 type CssRules = 'root' | 'tableRow';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'

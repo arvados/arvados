@@ -8,13 +8,14 @@ import { connect } from "react-redux";
 import { RootState } from 'store/store';
 import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
 import { NOT_FOUND_DIALOG_NAME } from 'store/not-found-panel/not-found-panel-action';
-import { Dialog, DialogContent, DialogActions, Button, withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogContent, DialogActions, Button, withStyles, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { NotFoundPanel } from "views/not-found-panel/not-found-panel";
 
 type CssRules = 'tag';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
         marginRight: theme.spacing.unit,
         marginBottom: theme.spacing.unit

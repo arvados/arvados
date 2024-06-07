@@ -4,7 +4,8 @@
 
 import React from "react";
 import { MenuItem, Divider } from "@material-ui/core";
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { User, getUserDisplayName } from "models/user";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "components/icon/icon";
@@ -41,7 +42,7 @@ const mapStateToProps = (state: RootState): AccountMenuProps => ({
 
 type CssRules = 'link';
 
-const styles: StyleRulesCallback<CssRules> = () => ({
+const styles: CustomStyleRulesCallback<CssRules> = () => ({
     link: {
         textDecoration: 'none',
         color: 'inherit'

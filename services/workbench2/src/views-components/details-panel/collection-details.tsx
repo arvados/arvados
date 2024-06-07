@@ -10,7 +10,8 @@ import { CollectionDetailsAttributes } from 'views/collection-panel/collection-p
 import { RootState } from 'store/store';
 import { filterResources, getResource, ResourcesState } from 'store/resources/resources';
 import { connect } from 'react-redux';
-import { Button, Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, Grid, ListItem, Typography, withStyles, WithStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from 'common/formatters';
 import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
@@ -26,7 +27,7 @@ export type CssRules = 'versionBrowserHeader'
     | 'editIcon'
     | 'tag';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
         textAlign: 'center',
         fontWeight: 'bold',

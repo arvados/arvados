@@ -7,7 +7,8 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import { PopoverOrigin } from '@material-ui/core/Popover';
-import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, MenuItem, Menu } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles, Toolbar, Grid, Button, MenuItem, Menu } from '@material-ui/core';
 import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from 'components/icon/icon';
 import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 import { openCollectionCreateDialog } from 'store/collections/collection-create-actions';
@@ -25,7 +26,7 @@ import { ProjectResource } from 'models/project';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         boxShadow: 'none',
         padding: '2px 10px 2px 5px',

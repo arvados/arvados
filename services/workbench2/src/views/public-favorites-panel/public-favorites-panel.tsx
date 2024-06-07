@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
@@ -40,7 +41,7 @@ import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-acti
 
 type CssRules = "toolbar" | "button" | "root";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
         paddingBottom: theme.spacing.unit * 3,
         textAlign: "right"

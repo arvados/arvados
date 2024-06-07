@@ -13,7 +13,8 @@ import { BooleanInput } from './inputs/boolean-input';
 import { FileInput } from './inputs/file-input';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
-import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, withStyles, WithStyles } from '@material-ui/core';
 import { EnumInput } from './inputs/enum-input';
 import { DirectoryInput } from './inputs/directory-input';
 import { StringArrayInput } from './inputs/string-array-input';
@@ -60,7 +61,7 @@ export const RunProcessInputsForm = compose(
 
 type CssRules = 'inputItem';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     inputItem: {
         marginBottom: theme.spacing.unit * 2,
     }

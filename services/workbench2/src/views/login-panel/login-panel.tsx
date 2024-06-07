@@ -5,7 +5,8 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Grid, Typography, Button, Select } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { login, authActions } from 'store/auth/auth-action';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
@@ -16,7 +17,7 @@ import { sanitizeHTML } from 'common/html-sanitize';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         position: 'relative',
         backgroundColor: theme.palette.grey["200"],

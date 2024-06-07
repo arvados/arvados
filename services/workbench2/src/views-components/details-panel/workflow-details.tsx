@@ -13,7 +13,8 @@ import { DetailsAttribute } from 'components/details-attribute/details-attribute
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
 import { Grid } from '@material-ui/core';
-import { withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles, Button } from '@material-ui/core';
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
@@ -39,7 +40,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 type CssRules = 'runButton' | 'propertyTag';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     runButton: {
         backgroundColor: theme.customs.colors.green700,
         '&:hover': {

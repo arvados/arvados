@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Button, WithStyles, withStyles } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
@@ -23,7 +24,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = "root";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
     }

@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     withStyles,
     WithStyles,
-    StyleRulesCallback,
     FormControl,
     Select,
     MenuItem,
@@ -16,7 +16,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'formControl';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     formControl: {
         minWidth: theme.spacing.unit * 15,
     }

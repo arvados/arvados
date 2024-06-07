@@ -4,7 +4,8 @@
 
 import React from 'react';
 import classnames from "classnames";
-import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -27,7 +28,7 @@ type CssRules = 'list'
     | 'virtualFileTree'
     | 'virtualizedList';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
         padding: '3px 0px',
     },

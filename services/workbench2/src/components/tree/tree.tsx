@@ -4,7 +4,8 @@
 
 import React, { useCallback, useState } from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
-import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles } from '@material-ui/core/styles';
 import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, ProcessIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -31,7 +32,7 @@ type CssRules = 'list'
     | 'frozenIcon'
     | 'indentSpacer';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
         padding: '3px 0px'
     },

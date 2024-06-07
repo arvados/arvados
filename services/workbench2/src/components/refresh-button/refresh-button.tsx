@@ -6,12 +6,13 @@
 import React from 'react';
 import classNames from 'classnames';
 import { withRouter, RouteComponentProps } from 'react-router';
-import { StyleRulesCallback, Button, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, WithStyles, withStyles } from "@material-ui/core";
 import { ReRunProcessIcon } from 'components/icon/icon';
 
 type CssRules = 'button' | 'buttonRight';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     button: {
         boxShadow: 'none',
         padding: '2px 10px 2px 5px',

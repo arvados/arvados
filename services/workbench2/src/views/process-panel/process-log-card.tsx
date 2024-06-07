@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState } from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
     WithStyles,
     withStyles,
     Card,
@@ -42,7 +42,7 @@ import CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'card' | 'content' | 'title' | 'iconHeader' | 'header' | 'root' | 'logViewer' | 'logViewerContainer';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: '100%'
     },

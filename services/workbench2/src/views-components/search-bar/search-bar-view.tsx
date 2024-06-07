@@ -4,7 +4,8 @@
 
 import React from "react";
 import { compose } from "redux";
-import { IconButton, Paper, StyleRulesCallback, withStyles, WithStyles, Tooltip, InputAdornment, Input } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { IconButton, Paper, withStyles, WithStyles, Tooltip, InputAdornment, Input } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
 import { ArvadosTheme } from "common/custom-theme";
@@ -28,7 +29,7 @@ import { Session } from "models/session";
 
 type CssRules = "container" | "containerSearchViewOpened" | "input" | "view";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
     return {
         container: {
             position: "relative",

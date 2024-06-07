@@ -5,7 +5,8 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import Typography from '@material-ui/core/Typography';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { Tooltip } from '@material-ui/core';
 import { CopyIcon } from 'components/icon/icon';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -18,7 +19,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link' | 'copyIcon';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
         marginBottom: ".6 rem"
     },

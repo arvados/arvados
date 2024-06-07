@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useRef, useState } from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     MuiThemeProvider,
     createMuiTheme,
-    StyleRulesCallback,
     withStyles,
     WithStyles
 } from '@material-ui/core/styles';
@@ -22,7 +22,7 @@ import { RootState } from 'store/store';
 
 type CssRules = 'root' | 'wordWrapOn' | 'wordWrapOff' | 'logText';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',

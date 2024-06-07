@@ -5,7 +5,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { loadVirtualMachinesAdminData, openAddVirtualMachineLoginDialog, openRemoveVirtualMachineLoginDialog, openEditVirtualMachineLoginDialog } from 'store/virtual-machines/virtual-machines-actions';
@@ -18,7 +19,7 @@ import { ResourceUuid, VirtualMachineHostname, VirtualMachineLogin } from 'views
 
 type CssRules = 'moreOptionsButton' | 'moreOptions' | 'chipsRoot' | 'vmTableWrapper';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     moreOptionsButton: {
         padding: 0
     },

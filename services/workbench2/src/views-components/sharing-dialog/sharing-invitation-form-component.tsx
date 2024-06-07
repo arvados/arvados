@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
-import { Grid, FormControl, InputLabel, StyleRulesCallback } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, FormControl, InputLabel } from '@material-ui/core';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { ParticipantSelect, Participant } from './participant-select';
 import { WithStyles } from '@material-ui/core/styles';
@@ -13,7 +14,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 
 type SharingStyles = 'root';
 
-const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     root: {
         padding: `${theme.spacing.unit}px 0`,
     },

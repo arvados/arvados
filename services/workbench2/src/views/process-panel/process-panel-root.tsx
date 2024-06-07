@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from "@material-ui/core";
 import { ProcessIcon } from "components/icon/icon";
 import { Process } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
@@ -27,7 +28,7 @@ import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
 type CssRules = "root";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: "100%",
     },

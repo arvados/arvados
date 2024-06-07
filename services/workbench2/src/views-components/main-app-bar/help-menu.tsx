@@ -7,14 +7,15 @@ import { MenuItem, Typography } from "@material-ui/core";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { ImportContactsIcon, HelpIcon } from "components/icon/icon";
 import { ArvadosTheme } from 'common/custom-theme';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { RootState } from "store/store";
 import { compose } from "redux";
 import { connect } from "react-redux";
 
 type CssRules = 'link' | 'icon' | 'title' | 'linkTitle';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         textDecoration: 'none',
         color: 'inherit',

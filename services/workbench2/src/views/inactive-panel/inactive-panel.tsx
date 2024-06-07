@@ -6,7 +6,8 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { navigateToLinkAccount } from 'store/navigation/navigation-action';
 import { RootState } from 'store/store';
@@ -14,7 +15,7 @@ import { sanitizeHTML } from 'common/html-sanitize';
 
 export type CssRules = 'root' | 'ontop' | 'title';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         position: 'relative',
         backgroundColor: theme.palette.grey["200"],

@@ -5,7 +5,8 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles } from '@material-ui/core';
 import {
     GenericCommandInputParameter
 } from 'models/workflow';
@@ -115,7 +116,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 {...this.props} />;
         }
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',

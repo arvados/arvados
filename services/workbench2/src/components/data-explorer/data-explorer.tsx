@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Paper, Toolbar, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
@@ -19,7 +20,7 @@ import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
 type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",

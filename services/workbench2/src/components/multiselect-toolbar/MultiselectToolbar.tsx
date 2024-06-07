@@ -4,7 +4,8 @@
 
 import React from "react";
 import { connect } from "react-redux";
-import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
 import { ArvadosTheme } from "common/custom-theme";
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
@@ -39,7 +40,7 @@ import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/
 
 type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",

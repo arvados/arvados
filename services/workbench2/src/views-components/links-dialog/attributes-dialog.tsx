@@ -4,7 +4,8 @@
 
 import React from "react";
 import { compose } from 'redux';
-import { withStyles, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, WithStyles, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, Dialog, DialogTitle, DialogContent, DialogActions, Button, WithStyles, Grid } from '@material-ui/core';
 import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
 import { LINK_ATTRIBUTES_DIALOG } from 'store/link-panel/link-panel-actions';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -12,7 +13,7 @@ import { LinkResource } from 'models/link';
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         fontSize: '0.875rem',
         '& div:nth-child(odd)': {

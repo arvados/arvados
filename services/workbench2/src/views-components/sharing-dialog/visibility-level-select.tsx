@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { MenuItem, Select, withStyles, StyleRulesCallback } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { MenuItem, Select, withStyles } from '@material-ui/core';
 import Lock from '@material-ui/icons/Lock';
 import People from '@material-ui/icons/People';
 import Public from '@material-ui/icons/Public';
@@ -15,7 +16,7 @@ import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 type VisibilityLevelSelectClasses = 'root';
 
-const VisibilityLevelSelectStyles: StyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
+const VisibilityLevelSelectStyles: CustomStyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
     root: {
     }
 });

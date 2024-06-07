@@ -5,7 +5,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Link } from 'react-router-dom';
 import { Dispatch, compose } from 'redux';
@@ -19,7 +20,7 @@ import { Routes } from 'routes/routes';
 
 type CssRules = 'link' | 'button' | 'icon' | 'iconRow' | 'moreOptionsButton' | 'moreOptions' | 'cloneUrls';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         textDecoration: 'none',
         color: theme.palette.primary.main,

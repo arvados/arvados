@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Table,
     TableBody,
@@ -10,7 +11,6 @@ import {
     TableCell,
     TableHead,
     TableSortLabel,
-    StyleRulesCallback,
     Theme,
     WithStyles,
     withStyles,
@@ -76,7 +76,7 @@ type CssRules =
     | "arrowButton"
     | "tableCellWorkflows";
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
         width: "100%",
     },

@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { WithStyles, withStyles, ButtonBase, StyleRulesCallback, Theme, Popover, Card, Tooltip, IconButton } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles, ButtonBase, Theme, Popover, Card, Tooltip, IconButton } from "@material-ui/core";
 import classnames from "classnames";
 import { DefaultTransformOrigin } from "components/popover/helpers";
 import { grey } from "@material-ui/core/colors";
@@ -11,7 +12,7 @@ import { TCheckedList } from "components/data-table/data-table";
 
 export type CssRules = "root" | "icon" | "iconButton" | "disabled" | "optionsContainer" | "option";
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
         borderRadius: "7px",
         "&:hover": {

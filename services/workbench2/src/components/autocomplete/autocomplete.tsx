@@ -8,8 +8,9 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip
+    FormControl, InputLabel, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip
 } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
@@ -231,7 +232,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
 type ChipClasses = 'root';
 
-const chipStyles: StyleRulesCallback<ChipClasses> = theme => ({
+const chipStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
         marginRight: theme.spacing.unit / 4,
         height: theme.spacing.unit * 3,
@@ -242,7 +243,7 @@ const Chip = withStyles(chipStyles)(MuiChip);
 
 type PopperClasses = 'root';
 
-const popperStyles: StyleRulesCallback<ChipClasses> = theme => ({
+const popperStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
         zIndex: theme.zIndex.modal,
     }
@@ -255,7 +256,7 @@ const Popper = withStyles(popperStyles)(
 
 type InputClasses = 'root';
 
-const inputStyles: StyleRulesCallback<InputClasses> = () => ({
+const inputStyles: CustomStyleRulesCallback<InputClasses> = () => ({
     root: {
         display: 'flex',
         flexWrap: 'wrap',

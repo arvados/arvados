@@ -12,7 +12,8 @@ import {
 } from 'models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
@@ -116,7 +117,7 @@ const FileInputComponent = connect()(
                 {...this.props} />;
         }
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',

@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Grid,
     IconButton,
     Link,
-    StyleRulesCallback,
     Tooltip,
     Typography,
     WithStyles,
@@ -24,7 +24,7 @@ type CssRules = 'sharingUrlText'
     | 'sharingUrlList'
     | 'sharingUrlRow';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     sharingUrlText: {
         fontSize: '1rem',
     },

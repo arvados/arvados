@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
 
 type CssRules = 'root' | 'listItem' | 'listItemText';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         padding: '0px'
     },

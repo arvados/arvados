@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Dialog,
     DialogActions,
@@ -10,7 +11,6 @@ import {
     DialogContent,
     WithStyles,
     withStyles,
-    StyleRulesCallback,
     Button,
     Typography
 } from '@material-ui/core';
@@ -32,7 +32,7 @@ import moment from 'moment';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         color: theme.palette.primary.main,
         textDecoration: 'none',

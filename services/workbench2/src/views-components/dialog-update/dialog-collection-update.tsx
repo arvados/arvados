@@ -13,12 +13,13 @@ import {
     CollectionStorageClassesField
 } from 'views-components/form-fields/collection-form-fields';
 import { UpdateCollectionPropertiesForm } from 'views-components/collection-properties/update-collection-properties-form';
-import { FormGroup, FormLabel, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { FormGroup, FormLabel, withStyles, WithStyles } from '@material-ui/core';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 
 type CssRules = 'propertiesForm';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     propertiesForm: {
         marginTop: theme.spacing.unit * 2,
         marginBottom: theme.spacing.unit * 2,

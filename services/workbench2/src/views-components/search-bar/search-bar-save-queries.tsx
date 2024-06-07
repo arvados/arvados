@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { withStyles, WithStyles, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from 'components/icon/icon';
 import { SearchBarAdvancedFormData } from 'models/search-bar';
@@ -12,7 +13,7 @@ import { getQueryFromAdvancedData } from "store/search-bar/search-bar-actions";
 
 type CssRules = 'root' | 'listItem' | 'listItemText' | 'button';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         padding: '0px'
     },
