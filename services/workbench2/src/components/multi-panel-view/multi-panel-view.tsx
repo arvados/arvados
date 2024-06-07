@@ -273,7 +273,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
         };
 
         buttonBar = props.mutuallyExclusive ?
-            <Tabs value={currentSelectedPanel} onChange={(e, val) => showFn(val)()}>
+            <Tabs value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
                 {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
             </Tabs> :
             <Grid container item direction="row">
