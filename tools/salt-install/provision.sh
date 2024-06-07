@@ -285,7 +285,7 @@ VERSION="latest"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
-SALT_VERSION="3007.1"
+SALT_VERSION="3007"
 
 # Other formula versions we depend on
 POSTGRES_TAG="a809e03bad115bbdf24ad347e2dc9a52e144c31f"
@@ -361,39 +361,58 @@ fi
 if [ "${DUMP_CONFIG}" = "yes" ]; then
   echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  OS_IDS="$(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}")"
-  echo "Detected distro families: $OS_IDS"
+  . /etc/os-release
+  echo "Detected distro families: ${ID:-} ${ID_LIKE:-}"
 
   # Several of our formulas use the cron module, which requires the crontab
   # command. We install systemd-cron to ensure we have that.
   # The rest of these packages are required by the rest of the script.
-  for OS_ID in $OS_IDS; do
+  for OS_ID in ${ID:-} ${ID_LIKE:-}; do
     case "$OS_ID" in
       rhel)
         echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
         sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
         setenforce permissive
         yum install -y curl git jq systemd-cron
+        if command -v salt-call >/dev/null; then
+            echo "Salt already installed"
+            break
+        fi
+        curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+        sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
         break
         ;;
       debian)
-        DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
-        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq systemd-cron
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 update
+        # This list includes our own dependencies, plus depdencies necessary
+        # to retrieve the Salt apt repository.
+        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                                       apt-transport-https ca-certificates curl git gnupg jq systemd-cron
+        if command -v salt-call >/dev/null; then
+            echo "Salt already installed"
+            break
+        fi
+        salt_apt_url="https://repo.saltproject.io/salt/py3/$ID/$VERSION_ID/$(dpkg --print-architecture)"
+        salt_apt_key=SALT-PROJECT-GPG-PUBKEY-2023.gpg
+        install -d -m 755 /etc/apt/keyrings
+        curl -fsSL -o "/etc/apt/keyrings/$salt_apt_key" "$salt_apt_url/$salt_apt_key"
+        chmod go+r "/etc/apt/keyrings/$salt_apt_key"
+        install -b -m 644 /dev/stdin "/etc/apt/sources.list.d/salt$SALT_VERSION.sources" <<EOFSOURCES
+Types: deb
+URIs: $salt_apt_url/$SALT_VERSION
+Suites: $VERSION_CODENAME
+Components: main
+Signed-by: /etc/apt/keyrings/$salt_apt_key
+EOFSOURCES
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y salt-minion
         break
         ;;
     esac
   done
 
-  if which salt-call; then
-    echo "Salt already installed"
-  else
-    curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-    sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
-    /bin/systemctl stop salt-minion.service
-    /bin/systemctl disable salt-minion.service
-  fi
-
   # Set salt to masterless mode
+  systemctl disable --now salt-minion.service
   cat > /etc/salt/minion << EOFSM
 failhard: "True"
 
