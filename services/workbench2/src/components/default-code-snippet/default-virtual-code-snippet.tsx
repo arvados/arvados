@@ -21,7 +21,6 @@ const theme = createMuiTheme(Object.assign({}, themeOptions, {
     },
     typography: {
         fontFamily: 'monospace',
-        useNextVariants: true,
     }
 }));
 

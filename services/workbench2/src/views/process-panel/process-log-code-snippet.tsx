@@ -53,7 +53,6 @@ const theme = createMuiTheme({
     },
     typography: {
         fontFamily: 'monospace',
-        useNextVariants: true,
     }
 });
 
