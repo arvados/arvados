@@ -60,18 +60,14 @@ export const SidePanel = withStyles(styles)(
             if (!splitPane) return;
 
             const observerCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
-                try {
-                    //prevents potential infinite resize triggers
-                    window.requestAnimationFrame((): void | undefined => {
-                    if (!Array.isArray(entries) || !entries.length) {
-                        return;
-                    }
-                        const width = entries[0].contentRect.width
-                        props.setCurrentSideWidth(width)
-                    });
-                } catch (error) {
-                    console.error('Error in resize observer callback', error);
-                }
+                //prevents potential infinite resize triggers
+                window.requestAnimationFrame((): void | undefined => {
+                  if (!Array.isArray(entries) || !entries.length) {
+                    return;
+                  }
+                    const width = entries[0].contentRect.width
+                    props.setCurrentSideWidth(width)
+                });
               };
 
             const observer = new ResizeObserver(observerCallback)
