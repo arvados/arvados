@@ -42,3 +42,33 @@ variable "instance_ami" {
   type = string
   default = ""
 }
+
+variable "use_rds" {
+  description = "Enable to create an RDS instance as the cluster's database service"
+  type = bool
+  default = false
+}
+
+variable "rds_admin_username" {
+  description = "RDS instance's admin username"
+  type = string
+  default = ""
+}
+
+variable "rds_admin_password" {
+  description = "RDS instance's admin password"
+  type = string
+  default = ""
+}
+
+variable "rds_instance_type" {
+  description = "RDS instance type"
+  type = string
+  default = "db.m5.large"
+}
+
+variable "rds_max_allocated_storage" {
+  description = "RDS maximum storage size that will autoscale to (GiB)"
+  type = number
+  default = 300
+}

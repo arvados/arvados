@@ -21,6 +21,15 @@
 #   controller = 300
 # }
 
+# Use an RDS instance for database.
+# use_rds = true
+#
+# Provide custom values if needed.
+# rds_admin_username = ""
+# rds_admin_password = ""
+# rds_instance_type = "db.m5.xlarge"
+# rds_max_allocated_storage = 1000
+
 # AWS secret's name which holds the SSL certificate private key's password.
 # Default: "arvados-ssl-privkey-password"
 # ssl_password_secret_name_suffix = "some-name-suffix"

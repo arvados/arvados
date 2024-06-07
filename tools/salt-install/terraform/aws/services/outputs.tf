@@ -60,3 +60,16 @@ output "region_name" {
 output "ssl_password_secret_name" {
   value = aws_secretsmanager_secret.ssl_password_secret.name
 }
+
+output "rds_service_endpoint" {
+  value = one(aws_db_instance.postgresql_service[*].endpoint)
+}
+
+output "rds_service_admin_username" {
+  value = one(aws_db_instance.postgresql_service[*].username)
+}
+
+output "rds_service_admin_password" {
+  value = one(aws_db_instance.postgresql_service[*].password)
+  sensitive = true
+}

@@ -25,7 +25,13 @@ locals {
   }
   private_subnet_id = data.terraform_remote_state.vpc.outputs.private_subnet_id
   public_subnet_id = data.terraform_remote_state.vpc.outputs.public_subnet_id
+  additional_rds_subnet_id = data.terraform_remote_state.vpc.outputs.additional_rds_subnet_id
   arvados_sg_id = data.terraform_remote_state.vpc.outputs.arvados_sg_id
   eip_id = data.terraform_remote_state.vpc.outputs.eip_id
   keepstore_iam_role_name = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
+  use_rds = (var.use_rds && data.terraform_remote_state.vpc.outputs.use_rds)
+  rds_admin_username = var.rds_admin_username != "" ? var.rds_admin_username : "${local.cluster_name}_arvados_admin"
+  rds_admin_password = var.rds_admin_password != "" ? var.rds_admin_password : one(random_string.default_rds_admin_password[*].result)
+  rds_max_allocated_storage = max(var.rds_max_allocated_storage, 20)
+  rds_instance_type = var.rds_instance_type
 }

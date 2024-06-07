@@ -22,6 +22,14 @@ provider "aws" {
   }
 }
 
+provider "random" {}
+
+resource "random_string" "default_rds_admin_password" {
+  count = (local.use_rds && var.rds_admin_password == "") ? 1 : 0
+  length  = 24
+  special = true
+}
+
 resource "aws_iam_instance_profile" "keepstore_instance_profile" {
   name = "${local.cluster_name}-keepstore-00-iam-role"
   role = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
@@ -79,6 +87,44 @@ resource "aws_instance" "arvados_service" {
       # an AMI change.
       ami,
     ]
+  }
+}
+
+resource "aws_db_subnet_group" "arvados_db_subnet_group" {
+  count = local.use_rds ? 1 : 0
+  name       = "${local.cluster_name}_db_subnet_group"
+  subnet_ids = [local.private_subnet_id, local.additional_rds_subnet_id]
+}
+
+resource "aws_db_instance" "postgresql_service" {
+  count = local.use_rds ? 1 : 0
+  allocated_storage = 20
+  max_allocated_storage = local.rds_max_allocated_storage
+  engine = "postgres"
+  engine_version = "15"
+  instance_class = local.rds_instance_type
+  db_name = "${local.cluster_name}_arvados"
+  username = local.rds_admin_username
+  password = local.rds_admin_password
+  skip_final_snapshot  = true
+
+  vpc_security_group_ids = [local.arvados_sg_id]
+  db_subnet_group_name = aws_db_subnet_group.arvados_db_subnet_group[0].name
+
+  backup_retention_period = 7
+  publicly_accessible = false
+  storage_encrypted = true
+  multi_az = false
+
+  lifecycle {
+    ignore_changes = [
+      username,
+      password,
+    ]
+  }
+
+  tags = {
+    Name = "${local.cluster_name}_postgresql_service"
   }
 }
 
