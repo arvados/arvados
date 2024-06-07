@@ -70,9 +70,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         transform: 'rotate(90deg)',
     },
     checkbox: {
-        width: theme.spacing.unit * 3,
-        height: theme.spacing.unit * 3,
-        margin: `0 ${theme.spacing.unit}px`,
+        width: theme.spacing(3),
+        height: theme.spacing(3),
+        margin: `0 ${theme.spacing(1)}px`,
         padding: 0,
         color: theme.palette.grey["500"],
     }

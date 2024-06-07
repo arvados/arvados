@@ -18,18 +18,18 @@ type CssRules = 'content' | 'codeSnippet' | 'spacing';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     content: {
-        paddingTop: theme.spacing.unit * 3,
+        paddingTop: theme.spacing(3),
         minHeight: '400px',
         minWidth: '1232px'
     },
     codeSnippet: {
-        borderRadius: theme.spacing.unit * 0.5,
+        borderRadius: theme.spacing(0.5),
         border: '1px solid',
         borderColor: theme.palette.grey["400"],
         maxHeight: '400px'
     },
     spacing: {
-        paddingBottom: theme.spacing.unit * 2
+        paddingBottom: theme.spacing(2)
     },
 });
 

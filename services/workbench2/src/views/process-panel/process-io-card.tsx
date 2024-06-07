@@ -95,7 +95,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "100%",
     },
     header: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
         paddingBottom: 0,
     },
     iconHeader: {
@@ -104,28 +104,28 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     avatar: {
         alignSelf: "flex-start",
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
     },
     // Card content
     content: {
-        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
-        padding: theme.spacing.unit * 1.0,
+        height: `calc(100% - ${theme.spacing(6),}px)`,
+        padding: theme.spacing(1),
         paddingTop: 0,
         "&:last-child": {
-            paddingBottom: theme.spacing.unit * 1,
+            paddingBottom: theme.spacing(1),
         },
     },
     // Card title
     title: {
         overflow: "hidden",
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
     // Applies to table tab and collection table content
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
+        maxHeight: `calc(100% - ${theme.spacing(6),}px)`,
         overflow: "auto",
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
@@ -209,7 +209,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     // JSON tab wrapper
     jsonWrapper: {
-        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
+        height: `calc(100% - ${theme.spacing(6),}px)`,
     },
     keepLink: {
         color: theme.palette.primary.main,

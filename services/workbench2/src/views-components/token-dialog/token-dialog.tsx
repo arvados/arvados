@@ -39,8 +39,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         margin: '0px 4px'
     },
     paper: {
-        padding: theme.spacing.unit,
-        marginBottom: theme.spacing.unit * 2,
+        padding: theme.spacing(1),
+        marginBottom: theme.spacing(2),
         backgroundColor: theme.palette.grey["200"],
         border: `1px solid ${theme.palette.grey["300"]}`
     },
@@ -50,9 +50,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     actionButton: {
         boxShadow: 'none',
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
-        marginRight: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
+        marginRight: theme.spacing(2),
     },
     codeBlock: {
         fontSize: '0.8125rem',

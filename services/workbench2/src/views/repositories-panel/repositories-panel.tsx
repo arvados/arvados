@@ -42,7 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     iconRow: {
-        paddingTop: theme.spacing.unit * 2,
+        paddingTop: theme.spacing(2),
         textAlign: 'right'
     },
     moreOptionsButton: {

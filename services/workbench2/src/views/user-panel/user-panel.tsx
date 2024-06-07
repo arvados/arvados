@@ -31,8 +31,8 @@ type UserPanelRules = "button" | 'root';
 
 const styles = withStyles<UserPanelRules>(theme => ({
     button: {
-        marginTop: theme.spacing.unit,
-        marginRight: theme.spacing.unit * 2,
+        marginTop: theme.spacing(1),
+        marginRight: theme.spacing(2),
         textAlign: 'right',
         alignSelf: 'center'
     },

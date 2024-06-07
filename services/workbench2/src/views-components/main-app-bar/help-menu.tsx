@@ -27,13 +27,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '16px'
     },
     title: {
-        paddingBottom: theme.spacing.unit * 0.5,
-        paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingBottom: theme.spacing(0.5),
+        paddingLeft: theme.spacing(2),
+        paddingTop: theme.spacing(0.5),
         outline: 'none',
     },
     linkTitle: {
-        marginLeft: theme.spacing.unit
+        marginLeft: theme.spacing(1)
     },
 });
 

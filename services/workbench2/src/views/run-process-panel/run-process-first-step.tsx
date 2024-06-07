@@ -18,7 +18,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignSelf: 'flex-start'
     },
     searchGrid: {
-        marginBottom: theme.spacing.unit * 2
+        marginBottom: theme.spacing(2)
     },
     workflowDetailsGrid: {
         borderLeft: `1px solid ${theme.palette.grey["300"]}`
@@ -29,7 +29,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto'
     },
     listItem: {
-        padding: theme.spacing.unit,
+        padding: theme.spacing(1),
     },
     itemSelected: {
         backgroundColor: 'rgba(3, 190, 171, 0.3) !important'

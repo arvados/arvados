@@ -36,11 +36,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         zIndex: 10
     },
     title: {
-        marginBottom: theme.spacing.unit * 6,
+        marginBottom: theme.spacing(6),,
         color: theme.palette.grey["800"]
     },
     content: {
-        marginBottom: theme.spacing.unit * 3,
+        marginBottom: theme.spacing(3),
         lineHeight: '1.2rem',
         color: theme.palette.grey["800"]
     },

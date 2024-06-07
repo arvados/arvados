@@ -49,7 +49,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%'
     },
     siteManagerLink: {
-        marginRight: theme.spacing.unit * 2,
+        marginRight: theme.spacing(2),
         float: 'right'
     }
 });

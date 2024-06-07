@@ -46,7 +46,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     emptyRoot: {
         width: '100%',
         overflow: 'auto',
-        padding: theme.spacing.unit * 4,
+        padding: theme.spacing(4),
     },
     gridItem: {
         height: 45,
@@ -71,10 +71,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
+        height: `calc(100% - ${theme.spacing(7)}px)`,
     },
     copyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
         color: theme.palette.grey["500"],
         cursor: 'pointer',
         display: 'inline',

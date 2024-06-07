@@ -18,7 +18,7 @@ type CssRules = 'formControl';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     formControl: {
-        minWidth: theme.spacing.unit * 15,
+        minWidth: theme.spacing(15),
     }
 });
 

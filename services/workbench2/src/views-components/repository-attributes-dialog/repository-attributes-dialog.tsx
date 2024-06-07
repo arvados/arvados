@@ -18,15 +18,15 @@ type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rightContainer: {
         textAlign: 'right',
-        paddingRight: theme.spacing.unit * 2,
+        paddingRight: theme.spacing(2),
         color: theme.palette.grey["500"]
     },
     leftContainer: {
         textAlign: 'left',
-        paddingLeft: theme.spacing.unit * 2
+        paddingLeft: theme.spacing(2)
     },
     spacing: {
-        paddingTop: theme.spacing.unit * 2
+        paddingTop: theme.spacing(2)
     },
 });
 

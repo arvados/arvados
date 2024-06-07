@@ -15,7 +15,7 @@ type CssRules = 'copyIcon';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     copyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
         color: theme.palette.grey['500'],
         cursor: 'pointer',
         display: 'inline',

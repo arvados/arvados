@@ -15,7 +15,7 @@ type CssRules = 'codeSnippet';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     codeSnippet: {
-        borderRadius: theme.spacing.unit * 0.5,
+        borderRadius: theme.spacing(0.5),
         border: '1px solid',
         borderColor: theme.palette.grey["400"],
         '& pre': {

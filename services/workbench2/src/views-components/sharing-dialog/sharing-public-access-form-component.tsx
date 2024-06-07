@@ -13,7 +13,7 @@ import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 const sharingPublicAccessStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
-        padding: `${theme.spacing.unit * 2}px 0`,
+        padding: `${theme.spacing(2)}px 0`,
     },
     heading: {
         fontSize: '1.25rem',

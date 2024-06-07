@@ -52,8 +52,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: 'auto'
     },
     propertyTag: {
-        marginRight: theme.spacing.unit / 2,
-        marginBottom: theme.spacing.unit / 2
+        marginRight: theme.spacing(1) /2,
+        marginBottom: theme.spacing(1) /2
     },
 });
 

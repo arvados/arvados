@@ -18,7 +18,7 @@ type CssRules = 'textField' | 'rte';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     textField: {
-        marginBottom: theme.spacing.unit
+        marginBottom: theme.spacing(1)
     },
     rte: {
         fontFamily: 'Arial',

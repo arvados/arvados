@@ -26,7 +26,7 @@ type ImageFileThumbnailCssRules = 'thumbnail';
 const imageFileThumbnailStyle = withStyles<ImageFileThumbnailCssRules>(theme => ({
     thumbnail: {
         maxWidth: 250,
-        margin: `${theme.spacing.unit}px 0`,
+        margin: `${theme.spacing(1)}px 0`,
     }
 }));
 

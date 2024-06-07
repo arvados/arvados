@@ -21,19 +21,19 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         root: {
             color: theme.palette.common.black,
-            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+            borderRadius: `0 0 ${theme.spacing(1) /2}px ${theme.spacing(1) /2}px`
         },
         advanced: {
             display: 'flex',
             justifyContent: 'flex-end',
-            padding: theme.spacing.unit,
+            padding: theme.spacing(1),
             fontSize: '0.875rem',
             cursor: 'pointer',
             color: theme.palette.primary.main
         },
         label: {
             fontSize: '0.775rem',
-            padding: `${theme.spacing.unit}px ${theme.spacing.unit}px `,
+            padding: `${theme.spacing(1)}px ${theme.spacing(1)}px `,
             color: theme.palette.grey["900"],
             background: 'white',
             textAlign: 'right',

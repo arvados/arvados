@@ -20,8 +20,8 @@ type CssRules = 'tag';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
-        marginRight: theme.spacing.unit,
-        marginBottom: theme.spacing.unit
+        marginRight: theme.spacing(1),
+        marginBottom: theme.spacing(1)
     }
 });
 

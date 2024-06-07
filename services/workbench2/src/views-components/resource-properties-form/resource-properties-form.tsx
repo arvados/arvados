@@ -13,7 +13,7 @@ import { ProgressButton } from 'components/progress-button/progress-button';
 import { GridClassKey } from '@material-ui/core/Grid';
 
 const AddButton = withStyles(theme => ({
-    root: { marginTop: theme.spacing.unit }
+    root: { marginTop: theme.spacing(1) }
 }))(ProgressButton);
 
 const mapStateToProps = (state: RootState) => {

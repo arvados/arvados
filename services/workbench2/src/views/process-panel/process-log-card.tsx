@@ -47,11 +47,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%'
     },
     header: {
-        paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
+        paddingBottom: theme.spacing(1),
     },
     content: {
-        padding: theme.spacing.unit * 0,
+        padding: theme.spacing(0)
         height: '100%',
     },
     logViewer: {
@@ -63,7 +63,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         overflow: 'hidden',
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
         color: theme.customs.colors.greyD
     },
     iconHeader: {

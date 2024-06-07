@@ -13,8 +13,8 @@ type CssRules = 'classRoot';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     classRoot: {
-        marginTop: theme.spacing.unit * 4,
-        marginBottom: theme.spacing.unit * 4,
+        marginTop: theme.spacing(4),
+        marginBottom: theme.spacing(4),
     },
 });
 type DataTableDefaultViewDataProps = Partial<Pick<DefaultViewDataProps, 'icon' | 'messages' | 'filtersApplied'>>;

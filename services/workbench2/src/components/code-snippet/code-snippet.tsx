@@ -19,7 +19,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',
-        padding: theme.spacing.unit,
+        padding: theme.spacing(1),
     },
     inlineRoot: {
         padding: "3px",

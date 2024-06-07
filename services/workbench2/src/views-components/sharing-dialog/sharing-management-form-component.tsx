@@ -45,7 +45,7 @@ const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } 
 
 const permissionManagementRowStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
-        padding: `${theme.spacing.unit}px 0`,
+        padding: `${theme.spacing(1)}px 0`,
     }
 });
 

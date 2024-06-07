@@ -7,7 +7,7 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { withStyles } from '@material-ui/core';
 
 const styles: CustomStyleRulesCallback<'root'> = theme => {
-    const margin = theme.spacing.unit * 3;
+    const margin = theme.spacing(3);
     return {
         root: {
             marginRight: margin,

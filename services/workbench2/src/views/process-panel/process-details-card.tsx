@@ -30,8 +30,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%'
     },
     header: {
-        paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
+        paddingBottom: theme.spacing(1),
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -39,18 +39,18 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     avatar: {
         alignSelf: 'flex-start',
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing(0.5)
     },
     content: {
-        padding: theme.spacing.unit * 1.0,
-        paddingTop: theme.spacing.unit * 0.5,
+        padding: theme.spacing(1),
+        paddingTop: theme.spacing(0.5),
         '&:last-child': {
-            paddingBottom: theme.spacing.unit * 1,
+            paddingBottom: theme.spacing(1),
         }
     },
     title: {
         overflow: 'hidden',
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
         color: theme.customs.colors.green700,
     },
     actionButton: {

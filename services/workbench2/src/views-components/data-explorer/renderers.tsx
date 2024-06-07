@@ -1080,11 +1080,11 @@ export const ProcessStatus = compose(
         <Chip
             label={getProcessStatus(props.process)}
             style={{
-                height: props.theme.spacing.unit * 3,
-                width: props.theme.spacing.unit * 12,
+                height: props.theme.spacing(3),
+                width: props.theme.spacing(12),
                 ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
                 fontSize: "0.875rem",
-                borderRadius: props.theme.spacing.unit * 0.625,
+                borderRadius: props.theme.spacing(0.625),
             }}
         />
     ) : (

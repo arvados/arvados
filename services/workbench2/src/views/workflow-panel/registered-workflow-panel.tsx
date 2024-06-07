@@ -68,8 +68,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyL
     },
     tag: {
-        marginRight: theme.spacing.unit / 2,
-        marginBottom: theme.spacing.unit / 2
+        marginRight: theme.spacing(1) /2,
+        marginBottom: theme.spacing(1) /2
     },
     label: {
         fontSize: '0.875rem',
@@ -96,27 +96,27 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     readOnlyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
         fontSize: 'small',
     },
     header: {
-        paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
+        paddingBottom: theme.spacing(1),
     },
     title: {
         overflow: 'hidden',
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
         color: theme.customs.colors.green700,
     },
     avatar: {
         alignSelf: 'flex-start',
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing(0.5)
     },
     content: {
-        padding: theme.spacing.unit * 1.0,
-        paddingTop: theme.spacing.unit * 0.5,
+        padding: theme.spacing(1),
+        paddingTop: theme.spacing(0.5),
         '&:last-child': {
-            paddingBottom: theme.spacing.unit * 1,
+            paddingBottom: theme.spacing(1),
         }
     }
 });

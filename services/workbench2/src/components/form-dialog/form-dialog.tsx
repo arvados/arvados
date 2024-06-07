@@ -13,10 +13,10 @@ type CssRules = "button" | "lastButton" | "form" | "formContainer" | "dialogTitl
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     button: {
-        marginLeft: theme.spacing.unit
+        marginLeft: theme.spacing(1),
     },
     lastButton: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
         marginRight: "0",
     },
     form: {
@@ -31,16 +31,16 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         paddingBottom: "0",
     },
     dialogTitle: {
-        paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
+        paddingBottom: theme.spacing(1),
     },
     progressIndicator: {
         position: "absolute",
         minWidth: "20px",
     },
     dialogActions: {
-        marginBottom: theme.spacing.unit,
-        marginRight: theme.spacing.unit * 3,
+        marginBottom: theme.spacing(1),
+        marginRight: theme.spacing(3),
     }
 });
 

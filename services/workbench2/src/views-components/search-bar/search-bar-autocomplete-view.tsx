@@ -14,14 +14,14 @@ type CssRules = 'searchView' | 'list' | 'listItem';
 const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         searchView: {
-            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+            borderRadius: `0 0 ${theme.spacing(1) /2}px ${theme.spacing(1) /2}px`
         },
         list: {
             padding: 0
         },
         listItem: {
-            paddingLeft: theme.spacing.unit,
-            paddingRight: theme.spacing.unit * 2,
+            paddingLeft: theme.spacing(1),
+            paddingRight: theme.spacing(2),
         }
     };
 };

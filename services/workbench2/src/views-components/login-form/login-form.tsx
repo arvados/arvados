@@ -23,18 +23,18 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         display: 'flex',
         flexWrap: 'wrap',
         width: '100%',
-        margin: `${theme.spacing.unit} auto`
+        margin: `${theme.spacing(1)} auto`
     },
     loginBtn: {
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
         flexGrow: 1
     },
     card: {
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
         width: '100%'
     },
     wrapper: {
-        margin: theme.spacing.unit,
+        margin: theme.spacing(1),
         position: 'relative',
     },
     progress: {

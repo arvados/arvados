@@ -34,13 +34,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         container: {
             position: "relative",
             width: "100%",
-            borderRadius: theme.spacing.unit / 2,
+            borderRadius: theme.spacing(1) /2,
             zIndex: theme.zIndex.modal,
         },
         containerSearchViewOpened: {
             position: "relative",
             width: "100%",
-            borderRadius: `${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px 0 0`,
+            borderRadius: `${theme.spacing(1) /2}px ${theme.spacing(1) /2}px 0 0`,
             zIndex: theme.zIndex.modal,
         },
         input: {

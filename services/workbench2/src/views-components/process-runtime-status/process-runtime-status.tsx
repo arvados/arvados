@@ -32,21 +32,21 @@ type CssRules = 'root'
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        marginBottom: theme.spacing.unit * 1,
+        marginBottom: theme.spacing(1),
     },
     heading: {
         fontSize: '1rem',
     },
     summary: {
-        paddingLeft: theme.spacing.unit * 1,
-        paddingRight: theme.spacing.unit * 1,
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
     },
     summaryText: {
         whiteSpace: 'pre-line',
     },
     details: {
-        paddingLeft: theme.spacing.unit * 1,
-        paddingRight: theme.spacing.unit * 1,
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
     },
     detailsText: {
         fontSize: '0.8rem',
@@ -68,7 +68,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.grey700,
     },
     paperRoot: {
-        minHeight: theme.spacing.unit * 6,
+        minHeight: theme.spacing(6),,
         display: 'flex',
         alignItems: 'center',
     },

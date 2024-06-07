@@ -37,7 +37,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["700"]
     },
     icon: {
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing(1)
     }
 });
 

@@ -24,7 +24,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.primary.main,
     },
     hasMargin: {
-        marginLeft: `${theme.spacing.unit}px`,
+        marginLeft: `${theme.spacing(1)}px`,
     }
 });
 

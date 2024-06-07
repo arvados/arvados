@@ -48,10 +48,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingBottom: "0px"
     },
     title: {
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing(0.5),
     },
     avatar: {
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing(0.5),
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -59,7 +59,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         paddingTop: "0px",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 7.5}px)`,
+        maxHeight: `calc(100% - ${theme.spacing(7.5)}px)`,
         overflow: "auto"
     },
     sectionH3: {

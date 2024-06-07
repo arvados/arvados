@@ -74,7 +74,7 @@ type SelectFieldCssRules = 'formControl';
 
 const selectFieldStyles: CustomStyleRulesCallback<SelectFieldCssRules> = (theme: ArvadosTheme) => ({
     formControl: {
-        marginBottom: theme.spacing.unit * 3,
+        marginBottom: theme.spacing(3),
     },
 });
 export const SelectField = withStyles(selectFieldStyles)((props: WrappedFieldProps & SelectFieldProps & WithStyles<SelectFieldCssRules>) => (

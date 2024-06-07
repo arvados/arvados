@@ -17,11 +17,11 @@ export type CssRules = 'details' | 'downloadButton' | 'detailsAttrValWithCode';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     details: {
-        marginLeft: theme.spacing.unit * 3,
-        marginRight: theme.spacing.unit * 3,
+        marginLeft: theme.spacing(3),
+        marginRight: theme.spacing(3),
     },
     downloadButton: {
-        marginTop: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
     },
     detailsAttrValWithCode: {
         display: "flex",

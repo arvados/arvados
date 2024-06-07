@@ -18,9 +18,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100vh'
     },
     title: {
-        paddingLeft: theme.spacing.unit * 3,
-        paddingTop: theme.spacing.unit * 3,
-        paddingBottom: theme.spacing.unit * 3,
+        paddingLeft: theme.spacing(3),
+        paddingTop: theme.spacing(3),
+        paddingBottom: theme.spacing(3),
         fontSize: '18px'
     },
     active: {

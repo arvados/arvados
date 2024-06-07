@@ -27,13 +27,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         boxSizing: 'border-box',
         overflow: 'auto',
         backgroundColor: '#000',
-        height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
+        height: `calc(100% - ${theme.spacing(4)}px)`, // so that horizontal scollbar is visible
         "& a": {
             color: theme.palette.primary.main,
         },
     },
     logText: {
-        padding: `0 ${theme.spacing.unit * 0.5}px`,
+        padding: `0 ${theme.spacing(0.5)}px`,
     },
     wordWrapOn: {
         overflowWrap: 'anywhere',

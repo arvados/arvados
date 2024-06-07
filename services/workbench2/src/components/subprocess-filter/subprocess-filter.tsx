@@ -23,7 +23,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     value: {
         width: '24px',
-        paddingLeft: theme.spacing.unit,
+        paddingLeft: theme.spacing(1),
     }
 });
 

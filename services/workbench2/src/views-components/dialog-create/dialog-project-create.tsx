@@ -19,12 +19,12 @@ type CssRules = 'propertiesForm' | 'description';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     propertiesForm: {
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
     },
     description: {
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
     },
 });
 

@@ -28,7 +28,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.greyL,
-        marginRight: theme.spacing.unit * 2,
+        marginRight: theme.spacing(2),
     },
     cardHeader: {
         display: 'flex',

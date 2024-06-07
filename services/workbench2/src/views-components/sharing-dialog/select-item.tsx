@@ -12,10 +12,10 @@ type SelectItemClasses = 'value' | 'icon';
 
 const permissionItemStyles: CustomStyleRulesCallback<SelectItemClasses> = theme => ({
     value: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
     },
     icon: {
-        margin: `-${theme.spacing.unit / 2}px 0`
+        margin: `-${theme.spacing(1) /2}px 0`
     }
 });
 

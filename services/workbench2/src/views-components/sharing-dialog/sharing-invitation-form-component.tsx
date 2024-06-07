@@ -16,7 +16,7 @@ type SharingStyles = 'root';
 
 const styles: CustomStyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     root: {
-        padding: `${theme.spacing.unit}px 0`,
+        padding: `${theme.spacing(1)}px 0`,
     },
 });
 
