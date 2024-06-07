@@ -60,13 +60,16 @@ export const SidePanel = withStyles(styles)(
             if (!splitPane) return;
 
             const observerCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
+                //entries[0] targets the left side of the split pane
+                const width = entries[0].contentRect.width
+                if (width === props.currentSideWidth) return;
+                
                 //prevents potential infinite resize triggers
                 window.requestAnimationFrame((): void | undefined => {
                   if (!Array.isArray(entries) || !entries.length) {
+                      props.setCurrentSideWidth(width)
                     return;
                   }
-                    const width = entries[0].contentRect.width
-                    props.setCurrentSideWidth(width)
                 });
               };
 
