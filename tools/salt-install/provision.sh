@@ -361,13 +361,15 @@ fi
 if [ "${DUMP_CONFIG}" = "yes" ]; then
   echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  . /etc/os-release
-  echo "Detected distro families: ${ID:-} ${ID_LIKE:-}"
+  # Read the variables of /etc/os-release but prefix their names with `_OS_`
+  # to avoid name conflicts.
+  eval "$(awk '(/^[A-Z_]+=/) { print "_OS_" $0 }' /etc/os-release)"
+  echo "Detected distro families: ${_OS_ID:-} ${_OS_ID_LIKE:-}"
 
   # Several of our formulas use the cron module, which requires the crontab
   # command. We install systemd-cron to ensure we have that.
   # The rest of these packages are required by the rest of the script.
-  for OS_ID in ${ID:-} ${ID_LIKE:-}; do
+  for OS_ID in ${_OS_ID:-} ${_OS_ID_LIKE:-}; do
     case "$OS_ID" in
       rhel)
         echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
@@ -392,7 +394,7 @@ else
             echo "Salt already installed"
             break
         fi
-        salt_apt_url="https://repo.saltproject.io/salt/py3/$ID/$VERSION_ID/$(dpkg --print-architecture)"
+        salt_apt_url="https://repo.saltproject.io/salt/py3/$_OS_ID/$_OS_VERSION_ID/$(dpkg --print-architecture)"
         salt_apt_key=SALT-PROJECT-GPG-PUBKEY-2023.gpg
         install -d -m 755 /etc/apt/keyrings
         curl -fsSL -o "/etc/apt/keyrings/$salt_apt_key" "$salt_apt_url/$salt_apt_key"
@@ -400,7 +402,7 @@ else
         install -b -m 644 /dev/stdin "/etc/apt/sources.list.d/salt$SALT_VERSION.sources" <<EOFSOURCES
 Types: deb
 URIs: $salt_apt_url/$SALT_VERSION
-Suites: $VERSION_CODENAME
+Suites: $_OS_VERSION_CODENAME
 Components: main
 Signed-by: /etc/apt/keyrings/$salt_apt_key
 EOFSOURCES
