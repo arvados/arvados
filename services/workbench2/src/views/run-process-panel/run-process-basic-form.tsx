@@ -24,7 +24,7 @@ export const RunProcessBasicForm =
         form: RUN_PROCESS_BASIC_FORM
     })(() =>
         <form>
-            <Grid container spacing={32}>
+            <Grid container spacing={4}>
                 <Grid item xs={12} md={6}>
                     <Field
                         name='name'

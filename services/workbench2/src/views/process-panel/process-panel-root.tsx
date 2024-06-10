@@ -125,7 +125,7 @@ export const ProcessPanelRoot = withStyles(styles)(
         return process ? (
             <MPVContainer
                 className={props.classes.root}
-                spacing={8}
+                spacing={1}
                 panelStates={panelsData}
                 justify-content="flex-start"
                 direction="column"

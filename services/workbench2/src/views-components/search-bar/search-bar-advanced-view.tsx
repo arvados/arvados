@@ -150,7 +150,7 @@ export const SearchBarAdvancedView = compose(
                                 <CloseIcon />
                             </IconButton>
                         </Grid>
-                        <Grid container item xs={12} className={classes.container} spacing={16}>
+                        <Grid container item xs={12} className={classes.container} spacing={2}>
                             <Grid item xs={2} className={classes.label}>Date modified</Grid>
                             <Grid item xs={4}>
                                 <SearchBarDateFromField />
@@ -161,7 +161,7 @@ export const SearchBarAdvancedView = compose(
                         </Grid>
                         <Grid container item xs={12} className={classes.container}>
                             <SearchBarPropertiesField />
-                            <Grid container item xs={12} justify="flex-start" alignItems="center" spacing={16}>
+                            <Grid container item xs={12} justify="flex-start" alignItems="center" spacing={2}>
                                 <Grid item xs={2} className={classes.label} />
                                 <Grid item xs={4}>
                                     <SearchBarSaveSearchField />

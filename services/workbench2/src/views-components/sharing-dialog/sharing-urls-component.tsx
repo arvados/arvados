@@ -57,7 +57,7 @@ export interface SharingURLsComponentActionProps {
 
 export type SharingURLsComponentProps = SharingURLsComponentDataProps & SharingURLsComponentActionProps;
 
-export const SharingURLsComponent = withStyles(styles)((props: SharingURLsComponentProps & WithStyles<CssRules>) => <Grid container direction='column' spacing={24} className={props.classes.sharingUrlList}>
+export const SharingURLsComponent = withStyles(styles)((props: SharingURLsComponentProps & WithStyles<CssRules>) => <Grid container direction='column' spacing={3} className={props.classes.sharingUrlList}>
     {props.sharingTokens.length > 0
         ? props.sharingTokens
             .sort((a, b) => (new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()))

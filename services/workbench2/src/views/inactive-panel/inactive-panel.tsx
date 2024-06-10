@@ -26,7 +26,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         zIndex: 10
     },
     title: {
-        marginBottom: theme.spacing(6),,
+        marginBottom: theme.spacing(6),
         color: theme.palette.grey["800"]
     }
 });
@@ -54,7 +54,7 @@ export interface InactivePanelStateProps {
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
 
 export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isLoginClusterFederation }: InactivePanelProps) =>
-    <Grid container justify="center" alignItems="center" direction="column" spacing={24}
+    <Grid container justify="center" alignItems="center" direction="column" spacing={3}
         className={classes.root}
         style={{ marginTop: 56, height: "100%" }}>
         <Grid item>

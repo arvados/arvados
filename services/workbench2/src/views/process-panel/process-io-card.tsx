@@ -108,7 +108,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     // Card content
     content: {
-        height: `calc(100% - ${theme.spacing(6),}px)`,
+        height: `calc(100% - ${theme.spacing(6)}px)`,
         padding: theme.spacing(1),
         paddingTop: 0,
         "&:last-child": {
@@ -125,7 +125,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     // Applies to table tab and collection table content
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing(6),}px)`,
+        maxHeight: `calc(100% - ${theme.spacing(6)}px)`,
         overflow: "auto",
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
@@ -209,7 +209,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     // JSON tab wrapper
     jsonWrapper: {
-        height: `calc(100% - ${theme.spacing(6),}px)`,
+        height: `calc(100% - ${theme.spacing(6)}px)`,
     },
     keepLink: {
         color: theme.palette.primary.main,

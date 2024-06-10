@@ -55,7 +55,7 @@ const mapStateToProps = createStructuredSelector({
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
 export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChange: selectPreset })(
     ({ inputs, workflow, selectedPreset, presets, onPresetChange, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
-        <Grid container spacing={16} data-cy="new-process-panel">
+        <Grid container spacing={2} data-cy="new-process-panel">
             <Grid item xs={12}>
                 <RunProcessBasicForm />
                 <RunProcessInputsForm inputs={inputs} />

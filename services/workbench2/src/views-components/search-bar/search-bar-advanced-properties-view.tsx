@@ -95,7 +95,7 @@ export const SearchBarAdvancedPropertiesView = compose(
     connect(mapStateToProps, mapDispatchToProps))(
     withStyles(styles)(
         ({ classes, fields, propertyValues, setProps, addProp, getAllFields, vocabulary }: SearchBarAdvancedPropertiesViewProps) =>
-            <Grid container item xs={12} spacing={16}>
+            <Grid container item xs={12} spacing={2}>
                 <Grid item xs={2} className={classes.label}>Properties</Grid>
                 <Grid item xs={4}>
                     <SearchBarKeyField />
@@ -113,7 +113,7 @@ export const SearchBarAdvancedPropertiesView = compose(
                     </Button>
                 </Grid>
                 <Grid item xs={2} />
-                <Grid container item xs={10} spacing={8}>
+                <Grid container item xs={10} spacing={1}>
                     <Chips values={getAllFields(fields)}
                         deletable
                         onChange={setProps}

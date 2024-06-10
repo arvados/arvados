@@ -68,7 +68,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.grey700,
     },
     paperRoot: {
-        minHeight: theme.spacing(6),,
+        minHeight: theme.spacing(6),
         display: 'flex',
         alignItems: 'center',
     },

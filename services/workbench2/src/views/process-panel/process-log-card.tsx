@@ -51,7 +51,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingBottom: theme.spacing(1),
     },
     content: {
-        padding: theme.spacing(0)
+        padding: theme.spacing(0),
         height: '100%',
     },
     logViewer: {
@@ -176,7 +176,7 @@ export const ProcessLogsCard = withStyles(styles)(
                         ? < Grid
                             className={classes.logViewerContainer}
                             container
-                            spacing={24}
+                            spacing={3}
                             direction='column'>
                             <Grid className={classes.logViewer} item xs>
                                 <ProcessLogCodeSnippet fontSize={fontBaseSize+(fontStepSize*fontSize)} wordWrap={wordWrap} lines={lines} />

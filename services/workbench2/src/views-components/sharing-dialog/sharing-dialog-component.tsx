@@ -109,7 +109,7 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
         }
         <DialogContent>
             {tabNr === SharingDialogTab.PERMISSIONS &&
-                <Grid container direction='column' spacing={24}>
+                <Grid container direction='column' spacing={3}>
                     <Grid item>
                         <SharingInvitationForm onSave={onSave} />
                     </Grid>
@@ -126,7 +126,7 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
             }
         </DialogContent>
         <DialogActions>
-            <Grid container spacing={8}>
+            <Grid container spacing={1}>
                 {tabNr === SharingDialogTab.URLS && withExpiration && <>
                     <Grid item container direction='row' md={12}>
                         <MuiPickersUtilsProvider utils={DateFnsUtils}>

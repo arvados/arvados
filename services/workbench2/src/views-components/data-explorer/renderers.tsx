@@ -74,7 +74,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             container
             alignItems="center"
             wrap="nowrap"
-            spacing={16}
+            spacing={2}
         >
             <Grid item>{renderIcon(item)}</Grid>
             <Grid item>
@@ -166,7 +166,7 @@ const renderWorkflowName = (item: WorkflowResource) => (
         container
         alignItems="center"
         wrap="nowrap"
-        spacing={16}
+        spacing={2}
     >
         <Grid item>{renderIcon(item)}</Grid>
         <Grid item>
@@ -298,7 +298,7 @@ const renderAccountStatus = (props: { status: UserAccountStatus }) => (
         container
         alignItems="center"
         wrap="nowrap"
-        spacing={8}
+        spacing={1}
         data-cy="account-status"
     >
         <Grid item>

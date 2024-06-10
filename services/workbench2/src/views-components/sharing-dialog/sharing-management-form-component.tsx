@@ -52,7 +52,7 @@ const permissionManagementRowStyles: CustomStyleRulesCallback<'root'> = theme =>
 const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
     ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }>, onSave: () => void; } & WithStyles<'root'>) =>
         <>
-            <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
+            <Grid container alignItems='center' spacing={1} wrap='nowrap' className={classes.root}>
                 <Grid item xs={7}>
                     <Typography noWrap variant='subtitle1'>{fields.get(index).email}</Typography>
                 </Grid>

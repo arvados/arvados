@@ -37,7 +37,7 @@ export const AttributesKeepServiceDialog = compose(
             <Dialog open={open} onClose={closeDialog} fullWidth maxWidth='sm'>
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    {data.keepService && <Grid container direction="row" spacing={16} className={classes.root}>
+                    {data.keepService && <Grid container direction="row" spacing={2} className={classes.root}>
                         <Grid item xs={5}>UUID</Grid>
                         <Grid item xs={7}>{data.keepService.uuid}</Grid>
                         <Grid item xs={5}>Read only</Grid>

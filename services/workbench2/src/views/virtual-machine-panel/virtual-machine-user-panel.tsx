@@ -140,7 +140,7 @@ export const VirtualMachineUserPanel = compose(
             render() {
                 const { virtualMachines, links } = this.props;
                 return (
-                    <Grid container spacing={16} data-cy="vm-user-panel">
+                    <Grid container spacing={2} data-cy="vm-user-panel">
                         {virtualMachines.itemsAvailable === 0 && <CardContentWithoutVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {<CardSSHSection {...this.props} />}
@@ -227,7 +227,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
                             <TableCell>
-                                <Grid container spacing={8} className={props.classes.chipsRoot}>
+                                <Grid container spacing={1} className={props.classes.chipsRoot}>
                                     {
                                         (lk.properties.groups || []).map((group, i) => (
                                             <Grid item key={i}>

@@ -57,7 +57,7 @@ type RunProcessFirstStepProps = RunProcessFirstStepDataProps & RunProcessFirstSt
 
 export const RunProcessFirstStep = withStyles(styles)(
     ({ onSearch, onSetStep, onSetWorkflow, workflows, selectedWorkflow, classes }: RunProcessFirstStepProps) =>
-        <Grid container spacing={16}>
+        <Grid container spacing={2}>
             <Grid container item xs={6} className={classes.root}>
                 <Grid item xs={12} className={classes.searchGrid}>
                     <SearchInput selfClearProp={JSON.stringify(selectedWorkflow)} value='' onSearch={onSearch} />

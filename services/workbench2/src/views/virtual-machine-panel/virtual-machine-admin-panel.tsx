@@ -88,7 +88,7 @@ export const VirtualMachineAdminPanel = compose(
             render() {
                 const { virtualMachines } = this.props;
                 return (
-                    <Grid container spacing={16}>
+                    <Grid container spacing={2}>
                         {virtualMachines.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                     </Grid>
                 );
@@ -122,7 +122,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     <TableCell><ResourceUuid uuid={machine.uuid} /></TableCell>
                     <TableCell><VirtualMachineHostname uuid={machine.uuid} /></TableCell>
                     <TableCell>
-                        <Grid container spacing={8} className={props.classes.chipsRoot}>
+                        <Grid container spacing={1} className={props.classes.chipsRoot}>
                             {props.links.items.filter((link) => (link.headUuid === machine.uuid)).map((permission, i) => (
                                 <Grid item key={i}>
                                     <Chip label={<VirtualMachineLogin linkUuid={permission.uuid} />} onDelete={event => props.onDeleteLogin(permission.uuid)} onClick={event => props.onLoginEdit(permission.uuid)} />

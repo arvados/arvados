@@ -38,7 +38,7 @@ export const Chips = withStyles(styles)(
     class Chips<Value> extends React.Component<ChipsProps<Value> & WithStyles<CssRules>> {
         render() {
             const { values, filler } = this.props;
-            return <Grid container spacing={8} className={this.props.classes.root}>
+            return <Grid container spacing={1} className={this.props.classes.root}>
                 {values && values.map(this.renderChip)}
                 {filler && <Grid item xs>{filler}</Grid>}
             </Grid>;

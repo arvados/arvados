@@ -40,7 +40,7 @@ export const RunProcessAdvancedForm =
                     Advanced
                 </ExpansionPanelSummary>
                 <ExpansionPanelDetails style={{ padding: 0 }}>
-                    <Grid container spacing={32}>
+                    <Grid container spacing={4}>
                         <Grid item xs={12} md={6}>
                             <Field
                                 name={OUTPUT_FIELD}

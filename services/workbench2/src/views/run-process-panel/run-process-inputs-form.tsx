@@ -53,7 +53,7 @@ export const RunProcessInputsForm = compose(
     }))(
         (props: InjectedFormProps & RunProcessInputFormProps) =>
             <form>
-                <Grid container spacing={32}>
+                <Grid container spacing={4}>
                     {props.inputs.map(input =>
                         <InputItem input={input} key={input.id} />)}
                 </Grid>

@@ -41,7 +41,7 @@ export const ResourcePropertiesForm = connect(mapStateToProps)(({ handleSubmit, 
     change('uuid', uuid); // Sets the uuid field to the uuid of the resource.
     const propertyValue = applySelector(formValueSelector(props.form));
     return <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
-        <Grid container spacing={16} classes={classes}>
+        <Grid container spacing={2} classes={classes}>
             <Grid item xs 
             data-cy='key-input'>
                 <PropertyKeyField clearPropertyKeyOnSelect />

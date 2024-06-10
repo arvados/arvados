@@ -38,7 +38,7 @@ export const AttributesApiClientAuthorizationDialog = compose(
             <Dialog open={open} onClose={closeDialog} fullWidth maxWidth='sm'>
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    {data.apiClientAuthorization && <Grid container direction="row" spacing={16} className={classes.root}>
+                    {data.apiClientAuthorization && <Grid container direction="row" spacing={2} className={classes.root}>
                         <Grid item xs={5}>UUID</Grid>
                         <Grid item xs={7}>{data.apiClientAuthorization.uuid}</Grid>
                         <Grid item xs={5}>Owner uuid</Grid>

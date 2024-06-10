@@ -26,7 +26,7 @@ export default SharingInvitationFormComponent;
 
 const StyledSharingInvitationFormComponent = withStyles(styles)(
     ({ classes }: { onSave: () => void } & WithStyles<SharingStyles>) =>
-        <Grid container spacing={8} wrap='nowrap' className={classes.root} >
+        <Grid container spacing={1} wrap='nowrap' className={classes.root} >
             <Grid data-cy="invite-people-field" item xs={8}>
                 <InvitedPeopleField />
             </Grid>

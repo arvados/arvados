@@ -37,7 +37,7 @@ export const AttributesSshKeyDialog = compose(
                 maxWidth='sm'>
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    {data.sshKey && <Grid container direction="row" spacing={16} className={classes.root}>
+                    {data.sshKey && <Grid container direction="row" spacing={2} className={classes.root}>
                         <Grid item xs={5}>Name</Grid>
                         <Grid item xs={7}>{data.sshKey.name}</Grid>
                         <Grid item xs={5}>uuid</Grid>

@@ -232,7 +232,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                 </Grid>
                             </Grid>
                             <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
-                                <Grid container spacing={24}>
+                                <Grid container spacing={3}>
                                     <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
                                         <Field
                                             label="First name"

@@ -37,7 +37,7 @@ export const AttributesLinkDialog = compose(
                 maxWidth='sm'>
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    {data.link && <Grid container direction="row" spacing={16} className={classes.root}>
+                    {data.link && <Grid container direction="row" spacing={2} className={classes.root}>
                         <Grid item xs={5}>Uuid</Grid>
                         <Grid item xs={7}>{data.link.uuid}</Grid>
                         <Grid item xs={5}>Name</Grid>

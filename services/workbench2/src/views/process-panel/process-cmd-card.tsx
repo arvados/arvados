@@ -42,7 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing(0.5)
     },
     content: {
-        height: `calc(100% - ${theme.spacing(6),}px)`,
+        height: `calc(100% - ${theme.spacing(6)}px)`,
         padding: theme.spacing(1),
         paddingTop: 0,
         '&:last-child': {

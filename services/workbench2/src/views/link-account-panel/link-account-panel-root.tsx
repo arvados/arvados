@@ -78,7 +78,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
         // currently available.
         if (loginCluster !== "") {
             return <Card className={classes.root}><CardContent>
-                <Grid container spacing={16}>
+                <Grid container spacing={2}>
                     <Grid item xs={12}>
                         If you would like to link this account to another one, please contact your administrator.
                     </Grid>
@@ -86,7 +86,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
             </CardContent></Card>;
         }
         return <Card className={classes.root}><CardContent>
-            { isProcessing && <Grid container item direction="column" alignContent="center" spacing={24}>
+            { isProcessing && <Grid container item direction="column" alignContent="center" spacing={3}>
                 <Grid item>
                     Loading user info. Please wait.
                 </Grid>
@@ -97,8 +97,8 @@ export const LinkAccountPanelRoot = withStyles(styles)(
 
             { !isProcessing && status === LinkAccountPanelStatus.INITIAL && targetUser && <div>
                 { isLocalUser(targetUser.uuid, localCluster)
-                ? <Grid container spacing={24}>
-                    <Grid container item direction="column" spacing={24}>
+                ? <Grid container spacing={3}>
+                    <Grid container item direction="column" spacing={3}>
                         <Grid item>
                             You are currently logged in as {displayUser(targetUser, true)}
                         </Grid>
@@ -106,7 +106,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                             You can link Arvados accounts. After linking, either login will take you to the same account.
                         </Grid >
                     </Grid>
-                    <Grid container item direction="row" spacing={24}>
+                    <Grid container item direction="row" spacing={3}>
                         <Grid item>
                             <Button disabled={!targetUser.isActive} color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_OTHER_LOGIN)}>
                                 Add another login to this account
@@ -118,7 +118,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                             </Button>
                         </Grid>
                     </Grid>
-                    {hasRemoteHosts && selectedCluster && <Grid container item direction="column" spacing={24}>
+                    {hasRemoteHosts && selectedCluster && <Grid container item direction="column" spacing={3}>
                         <Grid item>
                             You can also link {displayUser(targetUser, false)} with an account from a remote cluster.
                         </Grid>
@@ -136,8 +136,8 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                         </Grid>
                     </Grid>}
                 </Grid>
-                : <Grid container spacing={24}>
-                    <Grid container item direction="column" spacing={24}>
+                : <Grid container spacing={3}>
+                    <Grid container item direction="column" spacing={3}>
                         <Grid item>
                             You are currently logged in as {displayUser(targetUser, true, true)}
                         </Grid>
@@ -167,8 +167,8 @@ export const LinkAccountPanelRoot = withStyles(styles)(
             </div> }
 
             {!isProcessing && (status === LinkAccountPanelStatus.LINKING || status === LinkAccountPanelStatus.ERROR) && userToLink && targetUser &&
-                <Grid container spacing={24}>
-                    {status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={24}>
+                <Grid container spacing={3}>
+                    {status === LinkAccountPanelStatus.LINKING && <Grid container item direction="column" spacing={3}>
                         <Grid item>
                             Clicking 'Link accounts' will link {displayUser(userToLink, true, !isLocalUser(targetUser.uuid, localCluster))} to {displayUser(targetUser, true, !isLocalUser(targetUser.uuid, localCluster))}.
                         </Grid>
@@ -191,7 +191,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                     {error === LinkAccountPanelError.INACTIVE && <Grid item>
                         Cannot link account {displayUser(userToLink)} to inactive account {displayUser(targetUser)}.
                     </Grid>}
-                    <Grid container item direction="row" spacing={24}>
+                    <Grid container item direction="row" spacing={3}>
                         <Grid item>
                             <Button variant="contained" onClick={() => cancelLinking()}>
                                 Cancel
