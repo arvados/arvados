@@ -913,7 +913,7 @@ const _resourceWithName = withStyles(
         return (
             <Typography
                 style={{ color: theme.palette.primary.main }}
-                inline
+                display="inline"
             >
                 {uuid}
             </Typography>
@@ -923,7 +923,7 @@ const _resourceWithName = withStyles(
     return (
         <Typography
             style={{ color: theme.palette.primary.main }}
-            inline
+            display="inline"
         >
             {userFullname} ({uuid})
         </Typography>
@@ -942,7 +942,7 @@ const _resourceWithNameLink = withStyles(
     return (
         <Typography
             style={{ color: theme.palette.primary.main, cursor: 'pointer' }}
-            inline
+            display="inline"
             noWrap
             onClick={() => dispatch<any>(navigateTo(uuid))}
         >
@@ -1014,7 +1014,7 @@ export const ResponsiblePerson = compose(
         return (
             <Typography
                 style={{ color: theme.palette.primary.main }}
-                inline
+                display="inline"
                 noWrap
             >
                 {uuid}
@@ -1025,7 +1025,7 @@ export const ResponsiblePerson = compose(
     return (
         <Typography
             style={{ color: theme.palette.primary.main }}
-            inline
+            display="inline"
             noWrap
         >
             {responsiblePersonName} ({uuid})
