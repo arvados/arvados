@@ -132,9 +132,11 @@ export const themeOptions: ArvadosThemeOptions = {
             }
         },
         MuiExpansionPanel: {
-            expanded: {
-                marginTop: '8px',
-            }
+            root: {
+                "&$expanded": {
+                  "marginTop": "8px"
+                },
+              },
         },
         MuiExpansionPanelDetails: {
             root: {
