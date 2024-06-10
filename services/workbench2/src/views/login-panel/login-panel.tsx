@@ -113,7 +113,7 @@ export const LoginPanel = withStyles(styles)(
                     <Typography component="div" align="right">
                         <label>Please select the cluster that hosts your user account:</label>
                         <Select native value={homeCluster} style={{ margin: "1em" }}
-                            onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value))}>
+                            onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value as string))}>
                             {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
                         </Select>
                     </Typography>}

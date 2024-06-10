@@ -936,7 +936,7 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
 type MuiLinkWithTooltipProps = WithStyles<CssRules> & React.PropsWithChildren<LinkProps>;
 
 const MuiLinkWithTooltip = withStyles(styles)((props: MuiLinkWithTooltipProps) => (
-    <Tooltip title={props.title} classes={{tooltip: props.classes.wrapTooltip}}>
+    <Tooltip title={props.title as string} classes={{tooltip: props.classes.wrapTooltip}}>
         <MuiLink {...props}>
             {props.children}
         </MuiLink>

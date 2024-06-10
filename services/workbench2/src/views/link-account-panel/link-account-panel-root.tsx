@@ -125,7 +125,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                         <Grid item>
                             Please select the cluster that hosts the account you want to link with:
                             <Select id="remoteHostsDropdown" native defaultValue={selectedCluster} style={{ marginLeft: "1em" }}
-                                onChange={(event) => setSelectedCluster(event.target.value)}>
+                                onChange={(event) => setSelectedCluster(event.target.value as string)}>
                                 {Object.keys(remoteHostsConfig).map((k) => k !== localCluster ? <option key={k} value={k}>{k}</option> : null)}
                             </Select>
                         </Grid>
