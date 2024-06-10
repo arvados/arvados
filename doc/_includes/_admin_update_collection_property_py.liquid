@@ -12,7 +12,7 @@ new_uuid = 'zzzzz-tpzed-yyyyyyyyyyyyyyy'
 
 api = arvados.api()
 filters = [['properties.responsible_person_uuid', '=', '{}'.format(old_uuid)]]
-cols = util.list_all(api.collections().list, filters=filters, select=['uuid', 'properties'])
+cols = util.keyset_list_all(api.collections().list, filters=filters, select=['uuid', 'properties'], order='uuid')
 
 print('Found {} collections'.format(len(cols)))
 for c in cols:

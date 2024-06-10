@@ -134,18 +134,6 @@ navbar:
       - api/methods/containers.html.textile.liquid
       - api/methods/workflows.html.textile.liquid
       - api/dispatch.html.textile.liquid
-    - Jobs engine (legacy):
-      - api/crunch-scripts.html.textile.liquid
-      - api/methods/jobs.html.textile.liquid
-      - api/methods/job_tasks.html.textile.liquid
-      - api/methods/pipeline_instances.html.textile.liquid
-      - api/methods/pipeline_templates.html.textile.liquid
-      - api/methods/nodes.html.textile.liquid
-      - api/methods/keep_disks.html.textile.liquid
-    - Metadata for bioinformatics (legacy):
-      - api/methods/humans.html.textile.liquid
-      - api/methods/specimens.html.textile.liquid
-      - api/methods/traits.html.textile.liquid
   architecture:
     - Topics:
       - architecture/index.html.textile.liquid

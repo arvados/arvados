@@ -21,8 +21,8 @@ ENV['ARVADOS_API_TOKEN'] = 'qwertyuiopasdfghjklzxcvbnm1234567890abcdefghijklmn'
 require 'arvados'
 arv = Arvados.new( { :suppress_ssl_warnings => false } )
 
-pt_list = arv.pipeline_template.list(where:{})
-puts pt_list[:items].first.inspect
+cr_list = arv.container_request.list(where:{})
+puts cr_list[:items].first.inspect
 
-pt = arv.pipeline_template.get(uuid:"9zb4a-p5p6p-fkkbrl98u3pk87m")
+cr = arv.container_request.get(uuid:"zzzzz-xvhdp-fkkbrl98u3pk87m")
 puts pt.inspect

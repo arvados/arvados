@@ -46,6 +46,18 @@ Some Arvados packages, most notably the Rails API server package @arvados-api-se
 
 If you have a custom install that requires a different version of Ruby than the one included with your distribution, you must configure your system to ensure package scripts find that version of @ruby@ before any others. For example, you might do this on Debian-based distributions by customizing apt's @DPkg::Path@ setting.
 
+h3. Configuration entries have been removed or renamed
+
+The following configuration keys have been renamed or removed.  Renamed keys will still be loaded if they appear with their old names, but you should update your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
+* @Containers.JobsAPI.Enable@ has been removed
+* @Mail.EmailFrom@ has been removed
+* @Mail.IssueReporterEmailFrom@ has been removed
+* @Mail.IssueReporterEmailTo@ has been removed
+* @Mail.MailchimpAPIKey@ has been removed
+* @Mail.MailchimpListID@ has been removed
+* @Mail.SendUserSetupNotificationEmail@ has moved to @Users.SendUserSetupNotificationEmail@
+* @Mail.SupportEmailAddress@ has moved to @Users.SupportEmailAddress@
+
 h3. S3 volume IAMRole configuration entry has been removed
 
 The @Volumes.*.DriverParameters.IAMRole@ configuration entry for S3 volumes has been removed. You should remove it from your @/etc/arvados/config.yml@ file to avoid warnings when services start up. As before, if @AccessKeyID@ and @SecretAccessKey@ are blank, keepstore will retrieve IAM role credentials from instance metadata. Previously, documentation indicated that keepstore would refuse to use the IAM credentials if @IAMRole@ was specified and did not match the instance metadata, but that check has not been working for some time.

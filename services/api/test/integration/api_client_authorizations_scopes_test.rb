@@ -70,7 +70,7 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     token_count = get_token_count
     # Test the POST scope.
     post(v1_url('api_client_authorizations'),
-      params: {api_client_authorization: {user_id: users(:active).id}},
+      params: {api_client_authorization: {owner_uuid: users(:active).uuid}},
       headers: auth(:active_apitokens))
     assert_response :success
     assert_equal(token_count + 1, get_token_count,

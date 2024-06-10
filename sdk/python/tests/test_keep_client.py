@@ -60,7 +60,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         foo_locator = self.keep_client.put('foo')
         self.assertRegex(
             foo_locator,
-            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3',
             'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
 
         # 6 bytes because uploaded 2 copies
@@ -77,7 +77,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put(blob_str)
         self.assertRegex(
             blob_locator,
-            '^7fc7c53b45e53926ba52821140fef396\+6',
+            r'^7fc7c53b45e53926ba52821140fef396\+6',
             ('wrong locator from Keep.put(<binarydata>):' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
                          blob_str,
@@ -90,7 +90,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put(blob_data)
         self.assertRegex(
             blob_locator,
-            '^84d90fc0d8175dd5dcfab04b999bc956\+67108864',
+            r'^84d90fc0d8175dd5dcfab04b999bc956\+67108864',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
                          blob_data,
@@ -102,7 +102,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put(blob_data, copies=1)
         self.assertRegex(
             blob_locator,
-            '^c902006bc98a3eb4a3663b65ab4a6fab\+8',
+            r'^c902006bc98a3eb4a3663b65ab4a6fab\+8',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
                          blob_data,
@@ -112,22 +112,10 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put('', copies=1)
         self.assertRegex(
             blob_locator,
-            '^d41d8cd98f00b204e9800998ecf8427e\+0',
+            r'^d41d8cd98f00b204e9800998ecf8427e\+0',
             ('wrong locator from Keep.put(""): ' + blob_locator))
 
-    def test_unicode_must_be_ascii(self):
-        # If unicode type, must only consist of valid ASCII
-        foo_locator = self.keep_client.put(u'foo')
-        self.assertRegex(
-            foo_locator,
-            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
-            'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
-
-        if sys.version_info < (3, 0):
-            with self.assertRaises(UnicodeEncodeError):
-                # Error if it is not ASCII
-                self.keep_client.put(u'\xe2')
-
+    def test_KeepPutDataType(self):
         with self.assertRaises(AttributeError):
             # Must be bytes or have an encode() method
             self.keep_client.put({})
@@ -136,7 +124,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         locator = self.keep_client.put('test_head')
         self.assertRegex(
             locator,
-            '^b9a772c7049325feb7130fff1f8333e9\+9',
+            r'^b9a772c7049325feb7130fff1f8333e9\+9',
             'wrong md5 hash from Keep.put for "test_head": ' + locator)
         self.assertEqual(True, self.keep_client.head(locator))
         self.assertEqual(self.keep_client.get(locator),
@@ -177,8 +165,9 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers, DiskCacheBase)
 
         # GET from a different user => bad request
         run_test_server.authorize_with('spectator')
+        keep_client2 = arvados.KeepClient(block_cache=self.make_block_cache(self.disk_cache))
         self.assertRaises(arvados.errors.KeepReadError,
-                          arvados.Keep.get,
+                          keep_client2.get,
                           bar_locator)
 
         # Unauthenticated GET for a signed locator => bad request
@@ -217,7 +206,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         baz_locator = keep_client.put('baz')
         self.assertRegex(
             baz_locator,
-            '^73feffa4b7f6bb68e44cf984c85f6e88\+3',
+            r'^73feffa4b7f6bb68e44cf984c85f6e88\+3',
             'wrong md5 hash from Keep.put("baz"): ' + baz_locator)
         self.assertEqual(keep_client.get(baz_locator),
                          b'baz',

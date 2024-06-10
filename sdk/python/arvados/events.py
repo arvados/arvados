@@ -264,7 +264,7 @@ class EventClient(threading.Thread):
         This method runs in a separate thread to receive and process events
         from the server.
         """
-        self.setName(f'ArvadosWebsockets-{self.ident}')
+        self.name = f'ArvadosWebsockets-{self.ident}'
         while self._client_ok and not self.is_closed.is_set():
             try:
                 with self._subscribe_lock:

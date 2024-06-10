@@ -63,6 +63,12 @@
               "description": "The UUID of the ApiClient in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -76,7 +82,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.api_clients.list",
           "path": "api_clients",
           "httpMethod": "GET",
@@ -249,131 +255,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.api_clients.list",
-          "path": "api_clients",
-          "httpMethod": "GET",
-          "description": "List ApiClients.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ApiClients. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#apiClientList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ApiClientList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.api_clients.show",
-          "path": "api_clients/{uuid}",
-          "httpMethod": "GET",
-          "description": "show api_clients",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ApiClient"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.api_clients.destroy",
-          "path": "api_clients/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy api_clients",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "ApiClient"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -390,6 +271,12 @@
               "description": "The UUID of the ApiClientAuthorization in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -403,7 +290,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.api_client_authorizations.list",
           "path": "api_client_authorizations",
           "httpMethod": "GET",
@@ -615,131 +502,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.api_client_authorizations.list",
-          "path": "api_client_authorizations",
-          "httpMethod": "GET",
-          "description": "List ApiClientAuthorizations.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ApiClientAuthorizations. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#apiClientAuthorizationList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ApiClientAuthorizationList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.api_client_authorizations.show",
-          "path": "api_client_authorizations/{uuid}",
-          "httpMethod": "GET",
-          "description": "show api_client_authorizations",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ApiClientAuthorization"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.api_client_authorizations.destroy",
-          "path": "api_client_authorizations/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy api_client_authorizations",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "ApiClientAuthorization"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -756,6 +518,12 @@
               "description": "The UUID of the AuthorizedKey in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -769,7 +537,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.authorized_keys.list",
           "path": "authorized_keys",
           "httpMethod": "GET",
@@ -942,131 +710,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.authorized_keys.list",
-          "path": "authorized_keys",
-          "httpMethod": "GET",
-          "description": "List AuthorizedKeys.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching AuthorizedKeys. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#authorizedKeyList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "AuthorizedKeyList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.authorized_keys.show",
-          "path": "authorized_keys/{uuid}",
-          "httpMethod": "GET",
-          "description": "show authorized_keys",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "AuthorizedKey"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.authorized_keys.destroy",
-          "path": "authorized_keys/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy authorized_keys",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "AuthorizedKey"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -1083,6 +726,26 @@
               "description": "The UUID of the Collection in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "include_trash": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "Show collection even if its is_trashed attribute is true.",
+              "location": "query"
+            },
+            "include_old_versions": {
+              "type": "boolean",
+              "required": false,
+              "default": "true",
+              "description": "Include past collection versions.",
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -1096,7 +759,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.collections.list",
           "path": "collections",
           "httpMethod": "GET",
@@ -1383,159 +1046,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.collections.list",
-          "path": "collections",
-          "httpMethod": "GET",
-          "description": "List Collections.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Collections. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#collectionList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            },
-            "include_trash": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Include collections whose is_trashed attribute is true.",
-              "location": "query"
-            },
-            "include_old_versions": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Include past collection versions.",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "CollectionList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.collections.show",
-          "path": "collections/{uuid}",
-          "httpMethod": "GET",
-          "description": "show collections",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "include_trash": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Show collection even if its is_trashed attribute is true.",
-              "location": "query"
-            },
-            "include_old_versions": {
-              "type": "boolean",
-              "required": false,
-              "default": "true",
-              "description": "Include past collection versions.",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Collection"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.collections.destroy",
-          "path": "collections/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy collections",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Collection"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -1552,6 +1062,12 @@
               "description": "The UUID of the Container in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -1565,7 +1081,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.containers.list",
           "path": "containers",
           "httpMethod": "GET",
@@ -1851,131 +1367,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.containers.list",
-          "path": "containers",
-          "httpMethod": "GET",
-          "description": "List Containers.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Containers. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#containerList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ContainerList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.containers.show",
-          "path": "containers/{uuid}",
-          "httpMethod": "GET",
-          "description": "show containers",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Container"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.containers.destroy",
-          "path": "containers/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy containers",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Container"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -1992,6 +1383,19 @@
               "description": "The UUID of the ContainerRequest in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "include_trash": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "Show container request even if its owner project is trashed.",
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -2005,7 +1409,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.container_requests.list",
           "path": "container_requests",
           "httpMethod": "GET",
@@ -2205,145 +1609,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.container_requests.list",
-          "path": "container_requests",
-          "httpMethod": "GET",
-          "description": "List ContainerRequests.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ContainerRequests. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#containerRequestList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            },
-            "include_trash": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Include container requests whose owner project is trashed.",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ContainerRequestList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.container_requests.show",
-          "path": "container_requests/{uuid}",
-          "httpMethod": "GET",
-          "description": "show container_requests",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "include_trash": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Show container request even if its owner project is trashed.",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ContainerRequest"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.container_requests.destroy",
-          "path": "container_requests/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy container_requests",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "ContainerRequest"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -2360,6 +1625,19 @@
               "description": "The UUID of the Group in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "include_trash": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "Show group/project even if its is_trashed attribute is true.",
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -2373,7 +1651,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.groups.list",
           "path": "groups",
           "httpMethod": "GET",
@@ -2810,145 +2088,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.groups.list",
-          "path": "groups",
-          "httpMethod": "GET",
-          "description": "List Groups.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Groups. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#groupList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            },
-            "include_trash": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Include items whose is_trashed attribute is true.",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "GroupList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.groups.show",
-          "path": "groups/{uuid}",
-          "httpMethod": "GET",
-          "description": "show groups",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "include_trash": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "Show group/project even if its is_trashed attribute is true.",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Group"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.groups.destroy",
-          "path": "groups/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy groups",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Group"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -2965,6 +2104,12 @@
               "description": "The UUID of the KeepService in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -2978,7 +2123,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.keep_services.list",
           "path": "keep_services",
           "httpMethod": "GET",
@@ -3164,131 +2309,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.keep_services.list",
-          "path": "keep_services",
-          "httpMethod": "GET",
-          "description": "List KeepServices.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching KeepServices. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#keepServiceList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "KeepServiceList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.keep_services.show",
-          "path": "keep_services/{uuid}",
-          "httpMethod": "GET",
-          "description": "show keep_services",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "KeepService"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.keep_services.destroy",
-          "path": "keep_services/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy keep_services",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "KeepService"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -3305,6 +2325,12 @@
               "description": "The UUID of the Link in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -3318,7 +2344,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.links.list",
           "path": "links",
           "httpMethod": "GET",
@@ -3492,131 +2518,6 @@
             "https://api.arvados.org/auth/arvados"
           ]
         },
-        "list": {
-          "id": "arvados.links.list",
-          "path": "links",
-          "httpMethod": "GET",
-          "description": "List Links.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Links. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#linkList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "LinkList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.links.show",
-          "path": "links/{uuid}",
-          "httpMethod": "GET",
-          "description": "show links",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Link"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.links.destroy",
-          "path": "links/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy links",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Link"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
         "get_permissions": {
           "id": "arvados.links.get_permissions",
           "path": "permissions/{uuid}",
@@ -3652,6 +2553,12 @@
               "description": "The UUID of the Log in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -3665,7 +2572,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.logs.list",
           "path": "logs",
           "httpMethod": "GET",
@@ -3838,131 +2745,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.logs.list",
-          "path": "logs",
-          "httpMethod": "GET",
-          "description": "List Logs.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Logs. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#logList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "LogList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.logs.show",
-          "path": "logs/{uuid}",
-          "httpMethod": "GET",
-          "description": "show logs",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Log"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.logs.destroy",
-          "path": "logs/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy logs",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Log"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -3979,6 +2761,12 @@
               "description": "The UUID of the User in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -3992,7 +2780,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.users.list",
           "path": "users",
           "httpMethod": "GET",
@@ -4328,131 +3116,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.users.list",
-          "path": "users",
-          "httpMethod": "GET",
-          "description": "List Users.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Users. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.users.show",
-          "path": "users/{uuid}",
-          "httpMethod": "GET",
-          "description": "show users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.users.destroy",
-          "path": "users/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy users",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "User"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -4469,6 +3132,12 @@
               "description": "The UUID of the UserAgreement in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -4482,7 +3151,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.user_agreements.list",
           "path": "user_agreements",
           "httpMethod": "GET",
@@ -4682,137 +3351,12 @@
             "https://api.arvados.org/auth/arvados"
           ]
         },
-        "list": {
-          "id": "arvados.user_agreements.list",
-          "path": "user_agreements",
-          "httpMethod": "GET",
-          "description": "List UserAgreements.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching UserAgreements. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userAgreementList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreementList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
         "new": {
           "id": "arvados.user_agreements.new",
           "path": "user_agreements/new",
           "httpMethod": "GET",
           "description": "new user_agreements",
           "parameters": {},
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "show": {
-          "id": "arvados.user_agreements.show",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "GET",
-          "description": "show user_agreements",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.user_agreements.destroy",
-          "path": "user_agreements/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy user_agreements",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
           "response": {
             "$ref": "UserAgreement"
           },
@@ -4835,6 +3379,12 @@
               "description": "The UUID of the VirtualMachine in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -4848,7 +3398,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.virtual_machines.list",
           "path": "virtual_machines",
           "httpMethod": "GET",
@@ -5054,131 +3604,6 @@
           "scopes": [
             "https://api.arvados.org/auth/arvados"
           ]
-        },
-        "list": {
-          "id": "arvados.virtual_machines.list",
-          "path": "virtual_machines",
-          "httpMethod": "GET",
-          "description": "List VirtualMachines.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching VirtualMachines. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#virtualMachineList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "VirtualMachineList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.virtual_machines.show",
-          "path": "virtual_machines/{uuid}",
-          "httpMethod": "GET",
-          "description": "show virtual_machines",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "VirtualMachine"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.virtual_machines.destroy",
-          "path": "virtual_machines/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy virtual_machines",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "VirtualMachine"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
         }
       }
     },
@@ -5195,6 +3620,12 @@
               "description": "The UUID of the Workflow in question.",
               "required": true,
               "location": "path"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of the object to return in the response.",
+              "required": false,
+              "location": "query"
             }
           },
           "parameterOrder": [
@@ -5208,7 +3639,7 @@
             "https://api.arvados.org/auth/arvados.readonly"
           ]
         },
-        "index": {
+        "list": {
           "id": "arvados.workflows.list",
           "path": "workflows",
           "httpMethod": "GET",
@@ -5371,131 +3802,6 @@
             "uuid": {
               "type": "string",
               "description": "The UUID of the Workflow in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "Workflow"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "list": {
-          "id": "arvados.workflows.list",
-          "path": "workflows",
-          "httpMethod": "GET",
-          "description": "List Workflows.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Workflows. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#workflowList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "WorkflowList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "show": {
-          "id": "arvados.workflows.show",
-          "path": "workflows/{uuid}",
-          "httpMethod": "GET",
-          "description": "show workflows",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "Workflow"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "destroy": {
-          "id": "arvados.workflows.destroy",
-          "path": "workflows/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "destroy workflows",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "",
               "required": true,
               "location": "path"
             }
@@ -5691,9 +3997,6 @@
         "api_client_id": {
           "type": "integer"
         },
-        "user_id": {
-          "type": "integer"
-        },
         "created_by_ip_address": {
           "type": "string"
         },
@@ -5708,9 +4011,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "default_owner_uuid": {
-          "type": "string"
         },
         "scopes": {
           "type": "Array"

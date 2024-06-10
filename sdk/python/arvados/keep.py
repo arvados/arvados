@@ -131,40 +131,6 @@ class KeepLocator(object):
         return self.perm_expiry <= as_of_dt
 
 
-class Keep(object):
-    """Simple interface to a global KeepClient object.
-
-    THIS CLASS IS DEPRECATED.  Please instantiate your own KeepClient with your
-    own API client.  The global KeepClient will build an API client from the
-    current Arvados configuration, which may not match the one you built.
-    """
-    _last_key = None
-
-    @classmethod
-    def global_client_object(cls):
-        global global_client_object
-        # Previously, KeepClient would change its behavior at runtime based
-        # on these configuration settings.  We simulate that behavior here
-        # by checking the values and returning a new KeepClient if any of
-        # them have changed.
-        key = (config.get('ARVADOS_API_HOST'),
-               config.get('ARVADOS_API_TOKEN'),
-               config.flag_is_true('ARVADOS_API_HOST_INSECURE'),
-               config.get('ARVADOS_KEEP_PROXY'),
-               os.environ.get('KEEP_LOCAL_STORE'))
-        if (global_client_object is None) or (cls._last_key != key):
-            global_client_object = KeepClient()
-            cls._last_key = key
-        return global_client_object
-
-    @staticmethod
-    def get(locator, **kwargs):
-        return Keep.global_client_object().get(locator, **kwargs)
-
-    @staticmethod
-    def put(data, **kwargs):
-        return Keep.global_client_object().put(data, **kwargs)
-
 class KeepBlockCache(object):
     def __init__(self, cache_max=0, max_slots=0, disk_cache=False, disk_cache_dir=None):
         self.cache_max = cache_max

@@ -647,8 +647,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 			"api_client_authorization": {
 				"owner_uuid": "`+arvadostest.AdminUserUUID+`",
 				"created_by_ip_address": "::1",
-				"last_used_by_ip_address": "::1",
-				"default_owner_uuid": "`+arvadostest.AdminUserUUID+`"
+				"last_used_by_ip_address": "::1"
 			}
 		}`))
 	req.Header.Set("Authorization", "Bearer "+arvadostest.SystemRootToken)

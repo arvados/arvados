@@ -460,8 +460,6 @@ export const TokenApiToken = withResourceData("apiToken", renderCommonData);
 
 export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderCommonDate);
 
-export const TokenDefaultOwnerUuid = withResourceData("defaultOwnerUuid", renderCommonData);
-
 export const TokenExpiresAt = withResourceData("expiresAt", renderCommonDate);
 
 export const TokenLastUsedAt = withResourceData("lastUsedAt", renderCommonDate);

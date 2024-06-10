@@ -94,7 +94,7 @@ enum UserData {
 
 enum ApiClientAuthorizationsData {
     API_CLIENT_AUTHORIZATION = 'api_client_authorization',
-    DEFAULT_OWNER_UUID = 'default_owner_uuid'
+    EXPIRES_AT = 'expires_at'
 }
 
 enum LinkData {
@@ -252,8 +252,8 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     data: dataApiClientAuthorization,
                     resourceKind: ApiClientAuthorizationsData.API_CLIENT_AUTHORIZATION,
                     resourcePrefix: ResourcePrefix.API_CLIENT_AUTHORIZATIONS,
-                    resourceKindProperty: ApiClientAuthorizationsData.DEFAULT_OWNER_UUID,
-                    property: dataApiClientAuthorization!.defaultOwnerUuid
+                    resourceKindProperty: ApiClientAuthorizationsData.EXPIRES_AT,
+                    property: dataApiClientAuthorization!.createdAt
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataApiClientAuthorization));
                 break;
@@ -559,7 +559,7 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource): JSX.Element =
 const userApiResponse = (apiResponse: UserResource): JSX.Element => {
     const {
         uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
-        email, firstName, lastName, username, isActive, isAdmin, prefs, defaultOwnerUuid,
+        email, firstName, lastName, username, isActive, isAdmin, prefs,
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -575,7 +575,6 @@ const userApiResponse = (apiResponse: UserResource): JSX.Element => {
 "is_active": "${isActive},
 "is_admin": "${isAdmin},
 "prefs": "${stringifyObject(prefs)},
-"default_owner_uuid": "${defaultOwnerUuid},
 "username": "${username}"`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
@@ -584,21 +583,19 @@ const userApiResponse = (apiResponse: UserResource): JSX.Element => {
 const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization): JSX.Element => {
     const {
         uuid, ownerUuid, apiToken, apiClientId, userId, createdByIpAddress, lastUsedByIpAddress,
-        lastUsedAt, expiresAt, defaultOwnerUuid, scopes, updatedAt, createdAt
+        lastUsedAt, expiresAt, scopes, updatedAt, createdAt
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "api_token": "${stringify(apiToken)}",
 "api_client_id": "${stringify(apiClientId)}",
-"user_id": "${stringify(userId)}",
 "created_by_ip_address": "${stringify(createdByIpAddress)}",
 "last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
 "last_used_at": "${stringify(lastUsedAt)}",
 "expires_at": "${stringify(expiresAt)}",
 "created_at": "${stringify(createdAt)}",
 "updated_at": "${stringify(updatedAt)}",
-"default_owner_uuid": "${stringify(defaultOwnerUuid)}",
 "scopes": "${JSON.stringify(scopes, null, 2)}"`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;

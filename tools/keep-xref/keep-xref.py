@@ -22,7 +22,10 @@ container requests.
 """
 
 def rerun_request(arv, container_requests_to_rerun, ct):
-    requests = arvados.util.list_all(arv.container_requests().list, filters=[["container_uuid", "=", ct["uuid"]]])
+    requests = arvados.util.keyset_list_all(
+        arv.container_requests().list,
+        filters=[["container_uuid", "=", ct["uuid"]]],
+        order='uuid')
     for cr in requests:
         if cr["requesting_container_uuid"]:
             rerun_request(arv, container_requests_to_rerun, arv.containers().get(uuid=cr["requesting_container_uuid"]).execute())
@@ -74,7 +77,7 @@ def main():
         if (i % 100) == 0:
             logging.log(lglvl, "%d/%d", i, len(busted_collections))
         i += 1
-        collections_to_delete = arvados.util.list_all(arv.collections().list, filters=[["portable_data_hash", "=", b]])
+        collections_to_delete = arvados.util.keyset_list_all(arv.collections().list, filters=[["portable_data_hash", "=", b]], order='uuid')
         for d in collections_to_delete:
             t = ""
             if d["properties"].get("type") not in ("output", "log"):
@@ -82,7 +85,7 @@ def main():
             ou = get_owner(arv, owners, d)
             out.writerow((d["uuid"], "", d["name"], d["modified_at"], d["owner_uuid"], ou[0], ou[1], owners[ou[1]][0], t))
 
-        maybe_containers_to_rerun = arvados.util.list_all(arv.containers().list, filters=[["output", "=", b]])
+        maybe_containers_to_rerun = arvados.util.keyset_list_all(arv.containers().list, filters=[["output", "=", b]], order='uuid')
         for ct in maybe_containers_to_rerun:
             rerun_request(arv, container_requests_to_rerun, ct)
 

@@ -213,15 +213,6 @@ type Cluster struct {
 		TrustPrivateNetworks bool
 		IssueTrustedTokens   bool
 	}
-	Mail struct {
-		MailchimpAPIKey                string
-		MailchimpListID                string
-		SendUserSetupNotificationEmail bool
-		IssueReporterEmailFrom         string
-		IssueReporterEmailTo           string
-		SupportEmailAddress            string
-		EmailFrom                      string
-	}
 	SystemLogs struct {
 		LogLevel                  string
 		Format                    string
@@ -249,6 +240,8 @@ type Cluster struct {
 		NewInactiveUserNotificationRecipients StringSet
 		NewUserNotificationRecipients         StringSet
 		NewUsersAreActive                     bool
+		SendUserSetupNotificationEmail        bool
+		SupportEmailAddress                   string
 		UserNotifierEmailFrom                 string
 		UserNotifierEmailBcc                  StringSet
 		UserProfileNotificationAddress        string
@@ -501,9 +494,6 @@ type ContainersConfig struct {
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string
 
-	JobsAPI struct {
-		Enable string
-	}
 	Logging struct {
 		LogUpdatePeriod Duration
 		LogUpdateSize   ByteSize

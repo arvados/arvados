@@ -9,13 +9,13 @@ import arvados.util as util
 
 def get_subproject_uuids(api, root_uuid):
     uuids = []
-    groups = util.list_all(api.groups().list, filters=[['owner_uuid', '=', '{}'.format(root_uuid)]], select=['uuid'])
+    groups = util.keyset_list_all(api.groups().list, filters=[['owner_uuid', '=', '{}'.format(root_uuid)]], select=['uuid'], order='uuid')
     for g in groups:
         uuids += ([g['uuid']] + get_subproject_uuids(api, g['uuid']))
     return uuids
 
 def get_cols(api, filters):
-    cols = util.list_all(api.collections().list, filters=filters, select=['uuid', 'properties'])
+    cols = util.keyset_list_all(api.collections().list, filters=filters, select=['uuid', 'properties'], order='uuid')
     return cols
 
 # Search for collections on project hierarchy rooted at root_uuid

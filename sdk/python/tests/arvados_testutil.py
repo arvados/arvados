@@ -77,13 +77,8 @@ def redirected_streams(stdout=None, stderr=None):
 
 class VersionChecker(object):
     def assertVersionOutput(self, out, err):
-        if sys.version_info >= (3, 0):
-            self.assertEqual(err.getvalue(), '')
-            v = out.getvalue()
-        else:
-            # Python 2 writes version info on stderr.
-            self.assertEqual(out.getvalue(), '')
-            v = err.getvalue()
+        self.assertEqual(err.getvalue(), '')
+        v = out.getvalue()
         self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+(\.dev[0-9]+)?$\n")
 
 
@@ -139,6 +134,7 @@ class FakeCurl(object):
             return self._resp_code
         raise Exception
 
+
 def mock_keep_responses(body, *codes, **headers):
     """Patch pycurl to return fake responses and raise exceptions.
 
@@ -163,21 +159,6 @@ def mock_keep_responses(body, *codes, **headers):
     cm.responses = responses
     return mock.patch('pycurl.Curl', cm)
 
-
-class MockStreamReader(object):
-    def __init__(self, name='.', *data):
-        self._name = name
-        self._data = b''.join([
-            b if isinstance(b, bytes) else b.encode()
-            for b in data])
-        self._data_locators = [str_keep_locator(d) for d in data]
-        self.num_retries = 0
-
-    def name(self):
-        return self._name
-
-    def readfrom(self, start, size, num_retries=None):
-        return self._data[start:start + size]
 
 class ApiClientMock(object):
     def api_client_mock(self):
@@ -261,16 +242,6 @@ class ArvadosBaseTestCase(unittest.TestCase):
         testfile.write(text)
         testfile.flush()
         return testfile
-
-if sys.version_info < (3, 0):
-    # There is no assert[Not]Regex that works in both Python 2 and 3,
-    # so we backport Python 3 style to Python 2.
-    def assertRegex(self, *args, **kwargs):
-        return self.assertRegexpMatches(*args, **kwargs)
-    def assertNotRegex(self, *args, **kwargs):
-        return self.assertNotRegexpMatches(*args, **kwargs)
-    unittest.TestCase.assertRegex = assertRegex
-    unittest.TestCase.assertNotRegex = assertNotRegex
 
 def binary_compare(a, b):
     if len(a) != len(b):

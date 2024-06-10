@@ -59,44 +59,38 @@ class FuseMountTest(MountTestBase):
     def setUp(self):
         super(FuseMountTest, self).setUp()
 
-        cw = arvados.CollectionWriter()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'w') as f:
+            f.write('data 1')
+        with cw.open('thing2.txt', 'w') as f:
+            f.write('data 2')
 
-        cw.start_new_file('thing1.txt')
-        cw.write("data 1")
-        cw.start_new_file('thing2.txt')
-        cw.write("data 2")
+        with cw.open('dir1/thing3.txt', 'w') as f:
+            f.write('data 3')
+        with cw.open('dir1/thing4.txt', 'w') as f:
+            f.write('data 4')
 
-        cw.start_new_stream('dir1')
-        cw.start_new_file('thing3.txt')
-        cw.write("data 3")
-        cw.start_new_file('thing4.txt')
-        cw.write("data 4")
+        with cw.open('dir2/thing5.txt', 'w') as f:
+            f.write('data 5')
+        with cw.open('dir2/thing6.txt', 'w') as f:
+            f.write('data 6')
 
-        cw.start_new_stream('dir2')
-        cw.start_new_file('thing5.txt')
-        cw.write("data 5")
-        cw.start_new_file('thing6.txt')
-        cw.write("data 6")
+        with cw.open('dir2/dir3/thing7.txt', 'w') as f:
+            f.write('data 7')
+        with cw.open('dir2/dir3/thing8.txt', 'w') as f:
+            f.write('data 8')
 
-        cw.start_new_stream('dir2/dir3')
-        cw.start_new_file('thing7.txt')
-        cw.write("data 7")
+        for fnm in ":/.../-/*/ ".split("/"):
+            with cw.open('edgecases/'+fnm, 'w') as f:
+                f.write('x')
 
-        cw.start_new_file('thing8.txt')
-        cw.write("data 8")
+        for fnm in ":/.../-/*/ ".split("/"):
+            with cw.open('edgecases/dirs/'+fnm+'/x/x', 'w') as f:
+                f.write('x')
 
-        cw.start_new_stream('edgecases')
-        for f in ":/.../-/*/ ".split("/"):
-            cw.start_new_file(f)
-            cw.write('x')
-
-        for f in ":/.../-/*/ ".split("/"):
-            cw.start_new_stream('edgecases/dirs/' + f)
-            cw.start_new_file('x/x')
-            cw.write('x')
-
-        self.testcollection = cw.finish()
-        self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
+        self.testcollection = cw.portable_data_hash()
+        self.test_manifest = cw.manifest_text()
+        self.api.collections().create(body={"manifest_text": self.test_manifest}).execute()
 
     def runTest(self):
         self.make_mount(fuse.CollectionDirectory, collection_record=self.testcollection)
@@ -136,12 +130,11 @@ class FuseMagicTest(MountTestBase):
         self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
         self.collection_in_filter_group = run_test_server.fixture('collections')['baz_file']['name']
 
-        cw = arvados.CollectionWriter()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'w') as f:
+            f.write('data 1')
 
-        cw.start_new_file('thing1.txt')
-        cw.write("data 1")
-
-        self.testcollection = cw.finish()
+        self.testcollection = cw.portable_data_hash()
         self.test_manifest = cw.manifest_text()
         coll = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
         self.test_manifest_pdh = coll['portable_data_hash']
@@ -1160,12 +1153,11 @@ class FuseMagicTestPDHOnly(MountTestBase):
     def setUp(self, api=None):
         super(FuseMagicTestPDHOnly, self).setUp(api=api)
 
-        cw = arvados.CollectionWriter()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'w') as f:
+            f.write('data 1')
 
-        cw.start_new_file('thing1.txt')
-        cw.write("data 1")
-
-        self.testcollection = cw.finish()
+        self.testcollection = cw.portable_data_hash()
         self.test_manifest = cw.manifest_text()
         created = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
         self.testcollectionuuid = str(created['uuid'])
@@ -1263,8 +1255,8 @@ class SlashSubstitutionTest(IntegrationTest):
             f.write('foo')
 
     def checkContents(self):
-        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
-        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcolleasy['uuid']).execute()['manifest_text'], ' f561aaf6') # md5(xxx)
+        self.assertRegex(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], r' acbd18db') # md5(foo)
+        self.assertRegex(self.api.collections().get(uuid=self.testcolleasy['uuid']).execute()['manifest_text'], r' f561aaf6') # md5(xxx)
 
     @IntegrationTest.mount(argv=mnt_args)
     @mock.patch('arvados.util.get_config_once')
@@ -1272,7 +1264,7 @@ class SlashSubstitutionTest(IntegrationTest):
         self.testcollconflict = self.api.collections().create(body={"name": self.fusename}).execute()
         get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
-        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcollconflict['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
+        self.assertRegex(self.api.collections().get(uuid=self.testcollconflict['uuid']).execute()['manifest_text'], r' acbd18db') # md5(foo)
         # foo/bar/baz collection unchanged, because it is masked by foo[SLASH]bar[SLASH]baz
         self.assertEqual(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], '')
     @staticmethod

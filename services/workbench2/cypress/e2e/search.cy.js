@@ -199,7 +199,6 @@ describe("Search tests", function () {
                     Containers: {},
                     InstanceTypes: {},
                     Login: {},
-                    Mail: { SupportEmailAddress: "arvados@example.com" },
                     RemoteClusters: {
                         "*": {
                             ActivateUsers: false,
@@ -230,7 +229,7 @@ describe("Search tests", function () {
                     StorageClasses: {
                         default: { Default: true, Priority: 0 },
                     },
-                    Users: {},
+                    Users: { SupportEmailAddress: "arvados@example.com" },
                     Volumes: {},
                     Workbench: {},
                 },

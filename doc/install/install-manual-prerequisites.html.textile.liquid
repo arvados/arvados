@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Before attempting installation, you should begin by reviewing supported platforms, choosing backends for identity, storage, and scheduling, and decide how you will distribute Arvados services onto machines.  You should also choose an Arvados Cluster ID, choose your hostnames, and aquire TLS certificates.  It may be helpful to make notes as you go along using one of these worksheets:  "New cluster checklist for AWS":new_cluster_checklist_AWS.xlsx - "New cluster checklist for Azure":new_cluster_checklist_Azure.xlsx - "New cluster checklist for on premises Slurm":new_cluster_checklist_slurm.xlsx
 
-The installation guide describes how to set up a basic standalone Arvados instance.  Additional configuration for features including "federation,":{{site.baseurl}}/admin/federation.html "collection versioning,":{{site.baseurl}}/admin/collection-versioning.html "managed properties,":{{site.baseurl}}/admin/collection-managed-properties.html and "storage classes":{{site.baseurl}}/admin/collection-managed-properties.html are described in the "Admin guide.":{{site.baseurl}}/admin
+The installation guide describes how to set up a basic standalone Arvados instance.  Additional configuration for features including "federation,":{{site.baseurl}}/admin/federation.html "collection versioning,":{{site.baseurl}}/admin/collection-versioning.html "managed properties,":{{site.baseurl}}/admin/collection-managed-properties.html and "storage classes":{{site.baseurl}}/admin/collection-managed-properties.html are described in the "Admin guide.":{{site.baseurl}}/admin/
 
 The Arvados storage subsystem is called "keep".  The compute subsystem is called "crunch".
 
@@ -31,7 +31,7 @@ h2(#supportedlinux). Supported GNU/Linux distributions
 
 h2(#components). Choosing which components to install
 
-Arvados consists of many components, some of which may be omitted (at the cost of reduced functionality.)  It may also be helpful to review the "Arvados Architecture":{{site.baseurl}}/architecture to understand how these components interact.
+Arvados consists of many components, some of which may be omitted (at the cost of reduced functionality.)  It may also be helpful to review the "Arvados Architecture":{{site.baseurl}}/architecture/ to understand how these components interact.
 
 table(table table-bordered table-condensed).
 |\3=. *Core*|

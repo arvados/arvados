@@ -49,6 +49,26 @@ func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvado
 	return cluster, nil
 }
 
+func (s *LoadSuite) TestOldEmailConfiguration(c *check.C) {
+	logs := checkEquivalent(c, `
+Clusters:
+ z1111:
+  Mail:
+    SendUserSetupNotificationEmail: false
+    SupportEmailAddress: "support@example.invalid"
+`, `
+Clusters:
+ z1111:
+  Users:
+    SendUserSetupNotificationEmail: false
+    SupportEmailAddress: "support@example.invalid"
+`)
+	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*Mail\.SendUserSetupNotificationEmail.*`)
+	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*Mail\.SupportEmailAddress.*`)
+	c.Check(logs, check.Matches, `(?ms).*using your old config key Mail\.SendUserSetupNotificationEmail -- but you should rename it to Users\.SendUserSetupNotificationEmail.*`)
+	c.Check(logs, check.Matches, `(?ms).*using your old config key Mail\.SupportEmailAddress -- but you should rename it to Users\.SupportEmailAddress.*`)
+}
+
 func (s *LoadSuite) TestLegacyVolumeDriverParameters(c *check.C) {
 	logs := checkEquivalent(c, `
 Clusters:

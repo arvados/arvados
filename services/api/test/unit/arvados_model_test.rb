@@ -230,15 +230,15 @@ class ArvadosModelTest < ActiveSupport::TestCase
     group.update!(name: "test create and update name 1")
     results = Group.where(uuid: group.uuid)
     assert_equal "test create and update name 1", results.first.name, "Expected name to be updated to 1"
-    updated_at_1 = results.first.updated_at.to_f
+    modified_at_1 = results.first.modified_at.to_f
 
     # update 2
     group.update!(name: "test create and update name 2")
     results = Group.where(uuid: group.uuid)
     assert_equal "test create and update name 2", results.first.name, "Expected name to be updated to 2"
-    updated_at_2 = results.first.updated_at.to_f
+    modified_at_2 = results.first.modified_at.to_f
 
-    assert_equal true, (updated_at_2 > updated_at_1), "Expected updated time 2 to be newer than 1"
+    assert_equal true, (modified_at_2 > modified_at_1), "Expected modified time 2 to be newer than 1"
   end
 
   test 'jsonb column' do
