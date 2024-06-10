@@ -1156,7 +1156,7 @@ export const GroupMembersCount = connect(
         };
 
     }
-)(withTheme()((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
+)(withTheme((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
     if (props.value === undefined) {
         // Loading
         return <Typography component={"div"}>

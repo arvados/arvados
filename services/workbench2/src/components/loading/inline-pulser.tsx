@@ -18,7 +18,7 @@ type Props = {
     radius?: number;
 };
 
-export const InlinePulser = withTheme()((props: Props & ThemeProps) => (
+export const InlinePulser = withTheme((props: Props & ThemeProps) => (
     <ThreeDots
         visible={true}
         height={props.height || "30"}
