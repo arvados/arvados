@@ -71,7 +71,7 @@ export const AdvancedTabDialog = compose(
                 onClose={closeDialog}
                 onExit={() => this.setState({ value: 0 })} >
                 <DialogTitle>API Details</DialogTitle>
-                <Tabs value={value} onChange={this.handleChange} fullWidth>
+                <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
                     <Tab label="API RESPONSE" />
                     <Tab label="METADATA" />
                     <Tab label="PYTHON EXAMPLE" />
