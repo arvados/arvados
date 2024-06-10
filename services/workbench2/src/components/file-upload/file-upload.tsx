@@ -116,7 +116,7 @@ export const FileUpload = withStyles(styles)(
                 focused: false
             };
         }
-        onDelete = (event: React.MouseEvent<HTMLTableCellElement>, file: UploadFile): void => {
+        onDelete = (event: React.MouseEvent<HTMLButtonElement>, file: UploadFile): void => {
             const { onDelete, disabled } = this.props;
 
             event.stopPropagation();
@@ -195,7 +195,7 @@ export const FileUpload = withStyles(styles)(
                                         <TableCell>
                                             <IconButton
                                                 aria-label="Remove"
-                                                onClick={(event: React.MouseEvent<HTMLTableCellElement>) => this.onDelete(event, f)}
+                                                onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => this.onDelete(event, f)}
                                                 className={disabled ? classnames(classes.deleteButtonDisabled, classes.deleteIcon) : classnames(classes.deleteButton, classes.deleteIcon)}
                                             >
                                                 <RemoveIcon />
