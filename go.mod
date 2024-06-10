@@ -140,3 +140,6 @@ require (
 replace github.com/AdRoll/goamz => github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef
 
 replace gopkg.in/yaml.v2 => github.com/arvados/yaml v0.0.0-20210427145106-92a1cab0904b
+
+// Avoid v1.8.1, see https://dev.arvados.org/issues/21705#note-16
+replace github.com/gorilla/mux => github.com/gorilla/mux v1.8.0
