@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     MuiThemeProvider,
-    createMuiTheme,
+    createTheme,
     withStyles,
     WithStyles
 } from '@material-ui/core/styles';
@@ -43,7 +43,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const theme = createMuiTheme({
+const theme = createTheme({
     overrides: {
         MuiTypography: {
             body2: {

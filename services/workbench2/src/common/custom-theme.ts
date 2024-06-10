@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { StyleRulesCallback, createMuiTheme } from '@material-ui/core/styles';
+import { StyleRulesCallback, createTheme } from '@material-ui/core/styles';
 import { ThemeOptions, Theme } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
@@ -207,4 +207,4 @@ export const themeOptions: ArvadosThemeOptions = {
     },
 };
 
-export const CustomTheme = createMuiTheme(themeOptions);
+export const CustomTheme = createTheme(themeOptions);
