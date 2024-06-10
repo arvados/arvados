@@ -63,7 +63,7 @@ const mapDispatchToProps = () => {
             dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
         },
 
-        onChangePage: (page: number) => {
+        onPageChange: (page: number) => {
             dispatch(dataExplorerActions.SET_PAGE({ id, page }));
         },
 

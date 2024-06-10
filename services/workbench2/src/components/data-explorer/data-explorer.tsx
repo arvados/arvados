@@ -129,7 +129,7 @@ interface DataExplorerActionProps<T> {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T, any>) => void;
     onFiltersChange: (filters: DataTableFilters, column: DataColumn<T, any>) => void;
-    onChangePage: (page: number) => void;
+    onPageChange: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
     extractKey?: (item: T) => React.Key;
@@ -350,7 +350,7 @@ export const DataExplorer = withStyles(styles)(
                                             rowsPerPage={rowsPerPage}
                                             rowsPerPageOptions={rowsPerPageOptions}
                                             page={this.props.page}
-                                            onChangePage={this.changePage}
+                                            onPageChange={this.changePage}
                                             onChangeRowsPerPage={this.changeRowsPerPage}
                                             // Disable next button on empty lists since that's not default behavior
                                             nextIconButtonProps={itemsAvailable > 0 ? {} : { disabled: true }}
@@ -382,7 +382,7 @@ export const DataExplorer = withStyles(styles)(
         }
 
         changePage = (event: React.MouseEvent<HTMLButtonElement>, page: number) => {
-            this.props.onChangePage(page);
+            this.props.onPageChange(page);
         };
 
         changeRowsPerPage: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement> = event => {

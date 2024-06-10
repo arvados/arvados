@@ -107,7 +107,7 @@ describe("<DataExplorer />", () => {
     });
 
     it("communicates with <TablePagination/>", () => {
-        const onChangePage = jest.fn();
+        const onPageChange = jest.fn();
         const onChangeRowsPerPage = jest.fn();
         const onSetColumns = jest.fn();
         const dataExplorer = mount(
@@ -117,7 +117,7 @@ describe("<DataExplorer />", () => {
                     items={[{ name: "item 1" }]}
                     page={10}
                     rowsPerPage={50}
-                    onChangePage={onChangePage}
+                    onPageChange={onPageChange}
                     onChangeRowsPerPage={onChangeRowsPerPage}
                     onSetColumns={onSetColumns}
                 />
@@ -125,9 +125,9 @@ describe("<DataExplorer />", () => {
         );
         expect(dataExplorer.find(TablePagination).prop("page")).toEqual(10);
         expect(dataExplorer.find(TablePagination).prop("rowsPerPage")).toEqual(50);
-        dataExplorer.find(TablePagination).prop("onChangePage")(undefined, 6);
+        dataExplorer.find(TablePagination).prop("onPageChange")(undefined, 6);
         dataExplorer.find(TablePagination).prop("onChangeRowsPerPage")({ target: { value: 10 } });
-        expect(onChangePage).toHaveBeenCalledWith(6);
+        expect(onPageChange).toHaveBeenCalledWith(6);
         expect(onChangeRowsPerPage).toHaveBeenCalledWith(10);
     });
 });
@@ -148,7 +148,7 @@ const mockDataExplorerProps = () => ({
     onRowClick: jest.fn(),
     onRowDoubleClick: jest.fn(),
     onColumnToggle: jest.fn(),
-    onChangePage: jest.fn(),
+    onPageChange: jest.fn(),
     onChangeRowsPerPage: jest.fn(),
     onContextMenu: jest.fn(),
     defaultIcon: ProjectIcon,
