@@ -49,14 +49,14 @@ variable "use_rds" {
   default = false
 }
 
-variable "rds_admin_username" {
-  description = "RDS instance's admin username"
+variable "rds_username" {
+  description = "RDS instance's username. Default: <cluster_name>_arvados"
   type = string
   default = ""
 }
 
-variable "rds_admin_password" {
-  description = "RDS instance's admin password"
+variable "rds_password" {
+  description = "RDS instance's password. Default: randomly-generated 32 chars"
   type = string
   default = ""
 }

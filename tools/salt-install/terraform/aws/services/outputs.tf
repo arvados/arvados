@@ -61,15 +61,19 @@ output "ssl_password_secret_name" {
   value = aws_secretsmanager_secret.ssl_password_secret.name
 }
 
-output "rds_service_endpoint" {
-  value = one(aws_db_instance.postgresql_service[*].endpoint)
+output "database_address" {
+  value = one(aws_db_instance.postgresql_service[*].address)
 }
 
-output "rds_service_admin_username" {
+output "database_name" {
+  value = one(aws_db_instance.postgresql_service[*].db_name)
+}
+
+output "database_username" {
   value = one(aws_db_instance.postgresql_service[*].username)
 }
 
-output "rds_service_admin_password" {
+output "database_password" {
   value = one(aws_db_instance.postgresql_service[*].password)
   sensitive = true
 }

@@ -24,10 +24,10 @@ provider "aws" {
 
 provider "random" {}
 
-resource "random_string" "default_rds_admin_password" {
-  count = (local.use_rds && var.rds_admin_password == "") ? 1 : 0
-  length  = 24
-  special = true
+resource "random_string" "default_rds_password" {
+  count = (local.use_rds && var.rds_password == "") ? 1 : 0
+  length  = 32
+  special = false
 }
 
 resource "aws_iam_instance_profile" "keepstore_instance_profile" {
@@ -104,8 +104,8 @@ resource "aws_db_instance" "postgresql_service" {
   engine_version = "15"
   instance_class = local.rds_instance_type
   db_name = "${local.cluster_name}_arvados"
-  username = local.rds_admin_username
-  password = local.rds_admin_password
+  username = local.rds_username
+  password = local.rds_password
   skip_final_snapshot  = true
 
   vpc_security_group_ids = [local.arvados_sg_id]

@@ -21,12 +21,13 @@
 #   controller = 300
 # }
 
-# Use an RDS instance for database.
+# Use an RDS instance for database. For this to work, make sure to also set
+# 'use_rds' to true in '../vpc/terraform.tfvars'.
 # use_rds = true
 #
 # Provide custom values if needed.
-# rds_admin_username = ""
-# rds_admin_password = ""
+# rds_username = ""
+# rds_password = ""
 # rds_instance_type = "db.m5.xlarge"
 # rds_max_allocated_storage = 1000
 
