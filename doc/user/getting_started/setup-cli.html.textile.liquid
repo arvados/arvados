@@ -25,21 +25,33 @@ h2. Option 2: Installing Arvados tools on your own system
 
 This option gives you more flexibility in your work, but takes more time to set up.
 
-h3. Configure Arvados package repositories for your system
+h3. Install client tools on Red Hat, AlmaLinux, and Rocky Linux
 
-Doing this isn't strictly required for most tools, but will streamline the installation process. Follow the "Arvados package repository instructions":{{site.baseurl}}/install/packages.html.
+{% assign modules_to_enable = "python39:3.9" %}
+{% assign packages_to_install = "arvados-client python3-arvados-python-client python3-arvados-cwl-runner python3-arvados-fuse python3-crunchstat-summary" %}
+{% include 'setup_redhat_repo' %}
 
-h3. Install individual tool packages
+Proceed to build and install the Arvados CLI tools:
 
-Here are the client packages you can install on your system. You can skip any you don't want or need except for the Python SDK (most other tools require it).
+<notextile>
+<pre><code># <span class="userinput">dnf module enable ruby:3.1</span>
+# <span class="userinput">dnf install ruby ruby-devel gcc-c++ make redhat-rpm-config glibc-devel glibc-headers curl-devel openssl-devel zlib-devel</span>
+# <span class="userinput">gem install arvados-cli</span>
+</code></pre>
+</notextile>
 
-* "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html: This provides an Arvados API client in Python, as well as low-level command line tools.
-* "Command-line SDK":{{site.baseurl}}/sdk/cli/install.html: This provides the high-level @arv@ command and user interface to the Arvados API.
-* "FUSE Driver":{{site.baseurl}}/sdk/fuse/install.html: This provides the @arv-mount@ command and FUSE driver that lets you access Keep using standard Linux filesystem tools.
-* "CWL Runner":{{site.baseurl}}/sdk/python/arvados-cwl-runner.html: This provides the @arvados-cwl-runner@ command to register and run workflows in Crunch.
-* "crunchstat-summary":{{site.baseurl}}/user/cwl/crunchstat-summary.html: This tool provides performance reports for Crunch containers.
-* "arvados-client":{{site.baseurl}}/user/debugging/container-shell-access.html: This tool provides subcommands for inspecting Crunch containers, both interactively while they're running and after they've finished.
+h3. Install client tools on Debian and Ubuntu
 
-h2. After Installation: Check your environment
+{% include 'setup_debian_repo' %}
 
-Once you are logged in or have command line tools installed, move on to "getting an API token":{{site.baseurl}}/user/reference/api-tokens.html and "checking your environment":{{site.baseurl}}/user/getting_started/check-environment.html.
+Proceed to build and install the Arvados CLI tools:
+
+<notextile>
+<pre><code># <span class="userinput">apt install ruby ruby-dev gcc g++ make libc-dev libcurl4-openssl-dev zlib1g-dev</span>
+# <span class="userinput">gem install arvados-cli</span>
+</code></pre>
+</notextile>
+
+h3. Proceed to configuration
+
+Once you have the command line tools installed, proceed to "getting an API token":{{site.baseurl}}/user/reference/api-tokens.html.
