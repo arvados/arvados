@@ -43,7 +43,7 @@ def cleanup_name_for_collection(name):
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
-    def __init__(self, runner, job_runtime,
+    def __init__(self, runner, job_runtime, globpatterns,
                  builder,   # type: Builder
                  joborder,  # type: Dict[Text, Union[Dict[Text, Any], List, Text]]
                  make_path_mapper,  # type: Callable[..., PathMapper]
@@ -57,6 +57,7 @@ class ArvadosContainer(JobBase):
         self.running = False
         self.uuid = None
         self.attempt_count = 0
+        self.globpatterns = globpatterns
 
     def update_pipeline_component(self, r):
         pass
@@ -365,6 +366,56 @@ class ArvadosContainer(JobBase):
             else:
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
+
+        if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
+            output_glob = []
+            for gb in self.globpatterns:
+                gb = self.builder.do_eval(gb)
+                if not gb:
+                    continue
+                for gbeval in aslist(gb):
+                    if gbeval.startswith(self.outdir+"/"):
+                        gbeval = gbeval[len(self.outdir)+1:]
+                    if gbeval in (self.outdir, "", "."):
+                        output_glob.append("**")
+                    else:
+                        output_glob.append(gbeval)
+                        output_glob.append(gbeval + "/**")
+
+            if "**" in output_glob:
+                # if it's going to match all, prefer not to provide it
+                # at all.
+                output_glob.clear()
+
+            if output_glob:
+                # Tools should either use cwl.output.json or
+                # outputBinding globs. However, one CWL conformance
+                # test has both, so we need to make sure we collect
+                # cwl.output.json in this case. That test uses
+                # cwl.output.json return a string, but also uses
+                # outputBinding.
+                output_glob.append("cwl.output.json")
+
+                # It could happen that a tool creates cwl.output.json,
+                # references a file, but also uses a outputBinding
+                # glob that doesn't include the file being referenced.
+                #
+                # In this situation, output_glob will only match the
+                # pattern we know about.  If cwl.output.json referred
+                # to other files in the output, those would be
+                # missing.  We could upload the entire output, but we
+                # currently have no way of knowing at this point
+                # whether cwl.output.json will be used this way.
+                #
+                # Because this is a corner case, I'm inclined to leave
+                # this as a known issue for now.  No conformance tests
+                # do this and I'd even be inclined to have it ruled
+                # incompatible in the CWL spec if it did come up.
+                # That said, in retrospect it would have been good to
+                # require CommandLineTool to declare when it expects
+                # cwl.output.json.
+
+                container_request["output_glob"] = output_glob
 
         ram_multiplier = [1]
 
