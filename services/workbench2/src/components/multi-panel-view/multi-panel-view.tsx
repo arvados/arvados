@@ -67,6 +67,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         flexGrow: 1,
         flexShrink: 1,
         maxWidth: 'initial',
+        borderBottom: `1px solid ${theme.palette.grey[300]}`,
     },
 });
 
