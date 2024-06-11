@@ -26,37 +26,27 @@ Packages are available for the following Red Hat-based distributions:
 * RHEL 8
 * Rocky Linux 8
 
-To install them with dnf, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
+Set up the Arvados package repository by running these commands:
 
 <notextile>
-<pre><code>[arvados]
+<pre><code># <span class="userinput">tee /etc/yum.repos.d/arvados.repo &gt;/dev/null &lt;&lt;'EOF'
+[arvados]
 name=Arvados
 baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
 gpgcheck=1
 gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
-</code></pre>
+EOF
+</span></code></pre>
 </notextile>
 
 h3(#debian). Debian and Ubuntu
 
-Packages are available for recent versions of Debian and Ubuntu.
+Packages are available for the following Debian-based distributions:
 
-First, register the Arvados signing key in apt's database:
-
-{% include 'install_debian_key' %}
-
-Then set up the package source by running this command:
-
-<notextile>
-<pre><code># <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
-Types: deb
-URIs: https://apt.arvados.org/$(lsb_release -cs)
-Suites: $(lsb_release -cs)
-Components: main
-Signed-by: /etc/apt/keyrings/arvados.asc
-EOF
-</span></code></pre>
-</notextile>
+* Debian 12 ("bookworm")
+* Debian 11 ("bullseye")
+* Ubuntu 22.04 ("jammy")
+* Ubuntu 20.04 ("focal")
 
 {% include 'notebox_begin' %}
 
@@ -64,9 +54,18 @@ fn1. Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's 
 
 {% include 'notebox_end' %}
 
-Retrieve the package list:
+Set up the Arvados package repository by running these commands:
 
 <notextile>
-<pre><code># <span class="userinput">apt update</span>
+<pre><code># <span class="userinput">install -d /etc/apt/keyrings</span>
+# <span class="userinput">curl -fsSL -o /etc/apt/keyrings/arvados.asc https://apt.arvados.org/pubkey.gpg</span>
+# <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
+Types: deb
+URIs: https://apt.arvados.org/$(lsb_release -cs)
+Suites: $(lsb_release -cs)
+Components: main
+Signed-by: /etc/apt/keyrings/arvados.asc
+EOF</span>
+# <span class="userinput">apt update</span>
 </code></pre>
 </notextile>
