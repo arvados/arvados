@@ -26,18 +26,7 @@ Packages are available for the following Red Hat-based distributions:
 * RHEL 8
 * Rocky Linux 8
 
-Set up the Arvados package repository by running these commands:
-
-<notextile>
-<pre><code># <span class="userinput">tee /etc/yum.repos.d/arvados.repo &gt;/dev/null &lt;&lt;'EOF'
-[arvados]
-name=Arvados
-baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
-gpgcheck=1
-gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
-EOF
-</span></code></pre>
-</notextile>
+{% include 'setup_redhat_repo' %}
 
 h3(#debian). Debian and Ubuntu
 
@@ -48,19 +37,4 @@ Packages are available for the following Debian-based distributions:
 * Ubuntu 22.04 ("jammy")
 * Ubuntu 20.04 ("focal")
 
-Set up the Arvados package repository by running these commands:
-
-<notextile>
-<pre><code># <span class="userinput">install -d /etc/apt/keyrings</span>
-# <span class="userinput">curl -fsSL -o /etc/apt/keyrings/arvados.asc https://apt.arvados.org/pubkey.gpg</span>
-# <span class="userinput">declare "$(grep "^VERSION_CODENAME=" /etc/os-release || echo VERSION_CODENAME=MISSING)"</span>
-# <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
-Types: deb
-URIs: https://apt.arvados.org/$VERSION_CODENAME
-Suites: $VERSION_CODENAME
-Components: main
-Signed-by: /etc/apt/keyrings/arvados.asc
-EOF</span>
-# <span class="userinput">apt update</span>
-</code></pre>
-</notextile>
+{% include 'setup_debian_repo' %}

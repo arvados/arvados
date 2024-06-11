@@ -1,0 +1,18 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Set up the Arvados package repository by running these commands:
+
+<notextile>
+<pre><code># <span class="userinput">tee /etc/yum.repos.d/arvados.repo &gt;/dev/null &lt;&lt;'EOF'
+[arvados]
+name=Arvados
+baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+EOF
+</span></code></pre>
+</notextile>

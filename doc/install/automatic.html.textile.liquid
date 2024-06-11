@@ -49,26 +49,31 @@ Arvados needs a login backend. To get started quickly, add a user account on you
 
 h2. Initialize the cluster
 
-<pre>
-# echo > /etc/apt/sources.list.d/arvados.list "deb http://apt.arvados.org/$(lsb_release -sc) $(lsb_release -sc) main"
-# apt update
-# apt install arvados-server-easy
-# arvados-server init -cluster-id x9999 -domain x9999.example.com -tls acme -login pam
-</pre>
+{% include 'setup_debian_repo' %}
+
+Then install and run @arvados-server-easy@:
+
+<notextile>
+<pre><code># <span class="userinput">apt install arvados-server-easy</span>
+# <span class="userinput">arvados-server init -cluster-id x9999 -domain x9999.example.com -tls acme -login pam</span>
+</code></pre>
+</notextile>
 
 When the "init" command is finished, navigate to the link shown in the terminal (e.g., @https://x9999.example.com/@) and log in with the account you created above.
 
 Activate your new Arvados user account. Copy the UUID (looks like @x9999-tpzed-xxxxxxxxxxxxxxx@) from your browser's location bar and run:
 
-<pre>
-# arv sudo user setup --uuid x9999-tpzed-xxxxxxxxxxxxxxx
-</pre>
+<notextile>
+<pre><code># <span class="userinput">arv sudo user setup --uuid x9999-tpzed-xxxxxxxxxxxxxxx</span>
+</code></pre>
+</notextile>
 
 Run the diagnostics tool to ensure everything is working.
 
-<pre>
-# arv sudo diagnostics
-</pre>
+<notextile>
+<pre><code># <span class="userinput">arv sudo diagnostics</span>
+</code></pre>
+</notextile>
 
 h2. Customize the cluster
 

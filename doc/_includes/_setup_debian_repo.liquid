@@ -1,0 +1,22 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Set up the Arvados package repository by running these commands:
+
+<notextile>
+<pre><code># <span class="userinput">install -d /etc/apt/keyrings</span>
+# <span class="userinput">curl -fsSL -o /etc/apt/keyrings/arvados.asc https://apt.arvados.org/pubkey.gpg</span>
+# <span class="userinput">declare $(grep "^VERSION_CODENAME=" /etc/os-release || echo VERSION_CODENAME=MISSING)</span>
+# <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
+Types: deb
+URIs: https://apt.arvados.org/$VERSION_CODENAME
+Suites: $VERSION_CODENAME
+Components: main
+Signed-by: /etc/apt/keyrings/arvados.asc
+EOF</span>
+# <span class="userinput">apt update</span>
+</code></pre>
+</notextile>
