@@ -3,8 +3,16 @@ Copyright (C) The Arvados Authors. All rights reserved.
 
 SPDX-License-Identifier: CC-BY-SA-3.0
 
-packages_to_install may be a space-separated string
+modules_to_enable and packages_to_install may be space-separated strings
 {% endcomment %}
+
+{%- if modules_to_enable != nil %}
+{% include 'notebox_begin_warning' %}
+
+Arvados tools require newer language runtimes than the default versions included with these distributions. These instructions will **upgrade language runtimes for the entire system**. Check that won't interfere with any existing software before you proceed.
+
+{% include 'notebox_end' %}
+{% endif -%}
 
 Set up the Arvados package repository
 {%- if packages_to_install == nil %}
@@ -20,7 +28,10 @@ baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
 gpgcheck=1
 gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
 EOF</span>
-{%- if packages_to_install != nil %}
+{%- if modules_to_enable != nil %}
+# <span class="userinput">dnf module enable {{ modules_to_enable }}</span>
+{% endif -%}
+{%- if packages_to_install != nil -%}
 # <span class="userinput">dnf install {{ packages_to_install }}</span>
 {% endif -%}
 </code></pre>
