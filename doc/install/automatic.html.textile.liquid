@@ -49,13 +49,13 @@ Arvados needs a login backend. To get started quickly, add a user account on you
 
 h2. Initialize the cluster
 
+{% assign packages_to_install = "arvados-server-easy" %}
 {% include 'setup_debian_repo' %}
 
-Then install and run @arvados-server-easy@:
+Then initialize your cluster:
 
 <notextile>
-<pre><code># <span class="userinput">apt install arvados-server-easy</span>
-# <span class="userinput">arvados-server init -cluster-id x9999 -domain x9999.example.com -tls acme -login pam</span>
+<pre><code># <span class="userinput">arvados-server init -cluster-id x9999 -domain x9999.example.com -tls acme -login pam</span>
 </code></pre>
 </notextile>
 

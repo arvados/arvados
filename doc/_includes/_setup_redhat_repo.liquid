@@ -2,9 +2,15 @@
 Copyright (C) The Arvados Authors. All rights reserved.
 
 SPDX-License-Identifier: CC-BY-SA-3.0
+
+packages_to_install may be a space-separated string
 {% endcomment %}
 
-Set up the Arvados package repository by running these commands:
+Set up the Arvados package repository
+{%- if packages_to_install == nil %}
+{%- elsif packages_to_install contains " " %} and install the packages
+{%- else %} and install @{{ packages_to_install }}@
+{%- endif %} by running these commands:
 
 <notextile>
 <pre><code># <span class="userinput">tee /etc/yum.repos.d/arvados.repo &gt;/dev/null &lt;&lt;'EOF'
@@ -13,6 +19,9 @@ name=Arvados
 baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
 gpgcheck=1
 gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
-EOF
-</span></code></pre>
+EOF</span>
+{%- if packages_to_install != nil %}
+# <span class="userinput">dnf install {{ packages_to_install }}</span>
+{% endif -%}
+</code></pre>
 </notextile>
