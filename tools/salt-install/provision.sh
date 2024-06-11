@@ -742,6 +742,10 @@ else
   for R in ${ROLES:-}; do
     case "${R}" in
       "database")
+        # Skip if using an external service
+        if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
+          continue
+        fi
         # States
         grep -q "\- postgres$" ${STATES_TOP} || echo "    - postgres" >> ${STATES_TOP}
         grep -q "extra.prometheus_pg_exporter" ${STATES_TOP} || echo "    - extra.prometheus_pg_exporter" >> ${STATES_TOP}
@@ -859,6 +863,9 @@ else
         fi
         echo "    - extra.passenger_rvm" >> ${STATES_TOP}
         grep -q "^    - postgres\\.client$" ${STATES_TOP} || echo "    - postgres.client" >> ${STATES_TOP}
+        if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
+          grep -q "    - extra.postgresql_external" ${STATES_TOP} || echo "    - extra.postgresql_external" >> ${STATES_TOP}
+        fi
 
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
@@ -885,6 +892,10 @@ else
         grep -q "nginx_snippets" ${PILLARS_TOP}           || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
         grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
+
+        if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
+          grep -q "    - postgresql_external" ${PILLARS_TOP} || echo "    - postgresql_external" >> ${PILLARS_TOP}
+        fi
 
         if [ "${ENABLE_BALANCER}" == "no" ]; then
           if [ "${SSL_MODE}" = "lets-encrypt" ]; then
