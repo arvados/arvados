@@ -159,6 +159,12 @@ export const DataTable = withStyles(styles)(
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
+            // If table is initialized loaded but empty
+            // isLoaded won't be set true by componentDidUpdate later
+            // So we set it to true here
+            if (!this.props.working) {
+                this.setState({ isLoaded: true });
+            }
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
@@ -171,7 +177,7 @@ export const DataTable = withStyles(styles)(
                 else setCheckedListOnStore({});
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
-                this.initializeCheckedList([])
+                this.initializeCheckedList([]);
             }
             if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
                 this.props.setSelectedUuid(singleSelected);
@@ -191,7 +197,7 @@ export const DataTable = withStyles(styles)(
         }
 
         componentWillUnmount(): void {
-            this.initializeCheckedList([])
+            this.initializeCheckedList([]);
         }
 
         checkBoxColumn: DataColumn<any, any> = {
@@ -334,17 +340,17 @@ export const DataTable = withStyles(styles)(
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
             if (isNotFound && isLoaded) {
                 return (
-                    <DataTableDefaultView 
-                        icon={this.props.defaultViewIcon} 
-                        messages={["No items found"]} 
+                    <DataTableDefaultView
+                        icon={this.props.defaultViewIcon}
+                        messages={["No items found"]}
                     />
                 );
-            } else 
+            } else
             if (isLoaded === false || working === true) {
                 return (
-                    <DataTableDefaultView 
-                        icon={PendingIcon} 
-                        messages={["Loading data, please wait"]} 
+                    <DataTableDefaultView
+                        icon={PendingIcon}
+                        messages={["Loading data, please wait"]}
                     />
                 );
             } else {

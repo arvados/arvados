@@ -30,7 +30,6 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
-        currentRoute: currentRoute,
         paperKey: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
@@ -86,7 +85,7 @@ const mapDispatchToProps = () => {
         setSelectedUuid: (uuid: string | null) => {
             dispatch<any>(setSelectedResourceUuid(uuid));
         },
-        
+
         onRowClick,
 
         onRowDoubleClick,

@@ -43,8 +43,8 @@ export enum CollectionTypeFilter {
 }
 
 export enum ProcessTypeFilter {
-    MAIN_PROCESS = 'Runs',
-    CHILD_PROCESS = 'Intermediate Steps',
+    MAIN_PROCESS = 'Workflow Runs',
+    CHILD_PROCESS = 'Workflow Steps',
 }
 
 const initFilter = (name: string, parent = '', isSelected?: boolean, isExpanded?: boolean) =>
@@ -81,6 +81,30 @@ export const getInitialResourceTypeFilters = pipe(
         initFilter(ObjectTypeFilter.WORKFLOW, '', false, true),
         initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.WORKFLOW),
         initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.WORKFLOW, false),
+        initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.COLLECTION, '', true, true),
+        initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+    ),
+
+);
+
+/**
+ * Resource type filters for Data tab (excludes main/sub process runs)
+ */
+export const getInitialDataResourceTypeFilters = pipe(
+    (): DataTableFilters => createTree<DataTableFilterItem>(),
+    pipe(
+        initFilter(ObjectTypeFilter.PROJECT, '', true, true),
+        initFilter(GroupTypeFilter.PROJECT, ObjectTypeFilter.PROJECT),
+        initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
+    ),
+    pipe(
+        initFilter(ObjectTypeFilter.WORKFLOW, '', true, true),
         initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
     ),
     pipe(
@@ -167,6 +191,22 @@ const objectTypeToResourceKind = (type: ObjectTypeFilter) => {
     }
 };
 
+/**
+ * object to resource which clasifies workflow category as only registered workflows, not processes
+ * Used for data tab that excludes process runs
+ */
+const dataObjectTypeToResourceKind = (type: ObjectTypeFilter) => {
+    switch (type) {
+        case ObjectTypeFilter.PROJECT:
+            return ResourceKind.PROJECT;
+        case ObjectTypeFilter.COLLECTION:
+            return ResourceKind.COLLECTION;
+        case ObjectTypeFilter.WORKFLOW:
+        case ObjectTypeFilter.DEFINITION:
+            return ResourceKind.WORKFLOW;
+    }
+};
+
 const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => {
     const groupFilters = getMatchingFilters(values(GroupTypeFilter), selectedFilters);
     const collectionFilters = getMatchingFilters(values(CollectionTypeFilter), selectedFilters);
@@ -188,6 +228,31 @@ const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof c
     return {
         fb: typeFilters.length > 0
             ? fb.addIsA('uuid', typeFilters.map(objectTypeToResourceKind))
+            : fb.addIsA('uuid', ResourceKind.NONE),
+        selectedFilters,
+    };
+};
+
+/**
+ * Serialize only data object types, excludes processes
+ */
+const serializeDataObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => {
+    const groupFilters = getMatchingFilters(values(GroupTypeFilter), selectedFilters);
+    const collectionFilters = getMatchingFilters(values(CollectionTypeFilter), selectedFilters);
+    const typeFilters = pipe(
+        () => new Set(getMatchingFilters(values(ObjectTypeFilter), selectedFilters)),
+        set => groupFilters.length > 0
+            ? set.add(ObjectTypeFilter.PROJECT)
+            : set,
+        set => collectionFilters.length > 0
+            ? set.add(ObjectTypeFilter.COLLECTION)
+            : set,
+        set => Array.from(set)
+    )();
+
+    return {
+        fb: typeFilters.length > 0
+            ? fb.addIsA('uuid', typeFilters.map(dataObjectTypeToResourceKind))
             : fb.addIsA('uuid', ResourceKind.NONE),
         selectedFilters,
     };
@@ -283,12 +348,26 @@ const buildProcessTypeFilters = ({ fb, filters, use_prefix }: { fb: FilterBuilde
     }
 };
 
+/**
+ * Serializes general resource type filters with prefix for group contents API
+ */
 export const serializeResourceTypeFilters = pipe(
     createFiltersBuilder,
     serializeObjectTypeFilters,
     serializeGroupTypeFilters,
     serializeCollectionTypeFilters,
     serializeProcessTypeFilters,
+    ({ fb }) => fb.getFilters(),
+);
+
+/**
+ * Serializes data tab resource type filters with prefix for group contents API
+ */
+export const serializeDataResourceTypeFilters = pipe(
+    createFiltersBuilder,
+    serializeDataObjectTypeFilters,
+    serializeGroupTypeFilters,
+    serializeCollectionTypeFilters,
     ({ fb }) => fb.getFilters(),
 );
 
@@ -299,6 +378,27 @@ export const serializeOnlyProcessTypeFilters = pipe(
         filters => filters,
         mappedFilters => ({
             fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: false }),
+            selectedFilters
+        })
+    )(),
+    ({ fb }) => fb.getFilters(),
+);
+
+/**
+ * Serializes process type filters with prefix for group contents request
+ * Uses buildProcessTypeFilters to disable filters when no process type is selected
+ */
+export const serializeProcessTypeGroupContentsFilters = pipe(
+    createFiltersBuilder,
+    ({fb, selectedFilters }): ReturnType<typeof createFiltersBuilder> => ({
+            fb: fb.addIsA('uuid', [ResourceKind.PROCESS]),
+            selectedFilters,
+    }),
+    ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
+        () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
+        filters => filters,
+        mappedFilters => ({
+            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: true }),
             selectedFilters
         })
     )(),
