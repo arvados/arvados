@@ -21,7 +21,10 @@ import { setSelectedResourceUuid } from "store/selected-resource/selected-resour
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
     sidePanelProgress?: boolean;
-    isCollapsed?: boolean
+    isCollapsed?: boolean;
+    currentSideWidth?: number;
+    currentRoute?: string;
+    isDetailsPanelTransitioning?: boolean;
     setCurrentSideWidth: (width: number) => void
 }
 

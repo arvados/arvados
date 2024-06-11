@@ -179,6 +179,8 @@ describe('Project Details Card tests', function () {
             cy.get('div[contenteditable=true]').click().type(projDescription);
             cy.get('[data-cy=form-submit-btn]').click();
         });
+        cy.waitForDom();
+        cy.get('[data-cy=project-panel]').should('be.visible');
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
