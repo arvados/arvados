@@ -37,8 +37,6 @@ gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
 </code></pre>
 </notextile>
 
-{% include 'gpg_key_fingerprint' %}
-
 h3(#debian). Debian and Ubuntu
 
 Packages are available for recent versions of Debian and Ubuntu.
@@ -46,8 +44,6 @@ Packages are available for recent versions of Debian and Ubuntu.
 First, register the Arvados signing key in apt's database:
 
 {% include 'install_debian_key' %}
-
-{% include 'gpg_key_fingerprint' %}
 
 Then set up the package source by running this command:
 
