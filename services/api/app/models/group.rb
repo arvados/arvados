@@ -250,6 +250,7 @@ insert into frozen_groups (uuid) select uuid from temptable where is_frozen on c
   end
 
   def clear_permissions_trash_frozen
+    Link.where(link_class: 'permission', tail_uuid: self.uuid).destroy_all
     MaterializedPermission.where(target_uuid: uuid).delete_all
     ActiveRecord::Base.connection.exec_delete(
       "delete from trashed_groups where group_uuid=$1",
