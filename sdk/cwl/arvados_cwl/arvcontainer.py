@@ -376,8 +376,13 @@ class ArvadosContainer(JobBase):
                 for gbeval in aslist(gb):
                     if gbeval.startswith(self.outdir+"/"):
                         gbeval = gbeval[len(self.outdir)+1:]
+                    while gbeval.startswith("./"):
+                        gbeval = gbeval[2:]
+
                     if gbeval in (self.outdir, "", "."):
                         output_glob.append("**")
+                    elif gbeval.endswith("/"):
+                        output_glob.append(gbeval+"**")
                     else:
                         output_glob.append(gbeval)
                         output_glob.append(gbeval + "/**")
