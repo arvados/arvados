@@ -600,6 +600,7 @@ const ProcessIORaw = withStyles(styles)(({ data, hidden, classes }: ProcessIORaw
             <DefaultVirtualCodeSnippet
                 lines={JSON.stringify(data, null, 2).split('\n')}
                 linked
+                copyButton
             />
         </Paper>
     </div>
