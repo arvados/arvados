@@ -582,7 +582,7 @@ const userApiResponse = (apiResponse: UserResource): JSX.Element => {
 
 const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization): JSX.Element => {
     const {
-        uuid, ownerUuid, apiToken, apiClientId, userId, createdByIpAddress, lastUsedByIpAddress,
+        uuid, ownerUuid, apiToken, apiClientId, createdByIpAddress, lastUsedByIpAddress,
         lastUsedAt, expiresAt, scopes, updatedAt, createdAt
     } = apiResponse;
     const response = `

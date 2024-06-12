@@ -317,7 +317,7 @@ export const DataTable = withStyles(styles)(
         render() {
             const { items, classes, columns, isNotFound } = this.props;
             const { isLoaded } = this.state;
-            if (columns[0].name === this.checkBoxColumn.name) columns.shift();
+            if (columns.length && columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
                 <div className={classes.root}>
