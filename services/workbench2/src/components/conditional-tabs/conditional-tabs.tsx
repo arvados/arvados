@@ -20,9 +20,9 @@ type ConditionalTabsProps = {
     tabs: TabData[];
 };
 
-export const ConditionalTabs = (props: Omit<TabsProps, 'value' | 'onChange'> & ConditionalTabsProps) => {
+export const ConditionalTabs = ({ tabs: tabData, ...props }: Omit<TabsProps, 'value' | 'onChange'> & ConditionalTabsProps) => {
     const [tabState, setTabState] = useState(0);
-    const visibleTabs = props.tabs.filter(tab => tab.show);
+    const visibleTabs = tabData.filter(tab => tab.show);
     const visibleTabNames = visibleTabs.map(tab => tab.label).join();
 
     const handleTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
