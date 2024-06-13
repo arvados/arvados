@@ -52,6 +52,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toggableIcon: {
         fontSize: '14px',
+        minWidth: '14px',
     },
     renderContainer: {
         flex: 1
