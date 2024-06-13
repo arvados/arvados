@@ -36,7 +36,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     copyButton: {
         position: 'absolute',
         top: '8px',
-        right: '8px',
+        right: '16px',
         zIndex: 100,
     },
 });
