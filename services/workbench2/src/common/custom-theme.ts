@@ -83,7 +83,7 @@ export const themeOptions: ArvadosThemeOptions = {
     overrides: {
         MuiTypography: {
             body1: {
-                fontSize: '0.8125rem'
+                fontSize: '0.875rem'
             }
         },
         MuiAppBar: {
