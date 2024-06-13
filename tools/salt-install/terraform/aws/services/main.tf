@@ -98,7 +98,7 @@ resource "aws_db_subnet_group" "arvados_db_subnet_group" {
 
 resource "aws_db_instance" "postgresql_service" {
   count = local.use_rds ? 1 : 0
-  allocated_storage = 20
+  allocated_storage = local.rds_allocated_storage
   max_allocated_storage = local.rds_max_allocated_storage
   engine = "postgres"
   engine_version = "15"
@@ -119,7 +119,6 @@ resource "aws_db_instance" "postgresql_service" {
   lifecycle {
     ignore_changes = [
       username,
-      password,
     ]
   }
 

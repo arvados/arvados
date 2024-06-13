@@ -32,6 +32,7 @@ locals {
   use_rds = (var.use_rds && data.terraform_remote_state.vpc.outputs.use_rds)
   rds_username = var.rds_username != "" ? var.rds_username : "${local.cluster_name}_arvados"
   rds_password = var.rds_password != "" ? var.rds_password : one(random_string.default_rds_password[*].result)
-  rds_max_allocated_storage = max(var.rds_max_allocated_storage, 20)
+  rds_allocated_storage = var.rds_allocated_storage
+  rds_max_allocated_storage = max(var.rds_max_allocated_storage, var.rds_allocated_storage)
   rds_instance_type = var.rds_instance_type
 }

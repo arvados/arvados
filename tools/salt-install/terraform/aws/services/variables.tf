@@ -67,6 +67,12 @@ variable "rds_instance_type" {
   default = "db.m5.large"
 }
 
+variable "rds_allocated_storage" {
+  description = "RDS initial storage size (GiB)"
+  type = number
+  default = 60
+}
+
 variable "rds_max_allocated_storage" {
   description = "RDS maximum storage size that will autoscale to (GiB)"
   type = number

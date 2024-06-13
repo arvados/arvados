@@ -29,6 +29,7 @@
 # rds_username = ""
 # rds_password = ""
 # rds_instance_type = "db.m5.xlarge"
+# rds_allocated_storage = 200
 # rds_max_allocated_storage = 1000
 
 # AWS secret's name which holds the SSL certificate private key's password.
