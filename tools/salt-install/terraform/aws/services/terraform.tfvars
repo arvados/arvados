@@ -33,6 +33,8 @@
 # rds_allocated_storage = 200
 # rds_max_allocated_storage = 1000
 # rds_backup_retention_period = 30
+# rds_backup_before_deletion = false
+# rds_final_backup_name = ""
 
 # AWS secret's name which holds the SSL certificate private key's password.
 # Default: "arvados-ssl-privkey-password"

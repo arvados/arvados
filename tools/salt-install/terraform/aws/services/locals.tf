@@ -36,5 +36,7 @@ locals {
   rds_max_allocated_storage = max(var.rds_max_allocated_storage, var.rds_allocated_storage)
   rds_instance_type = var.rds_instance_type
   rds_backup_retention_period = var.rds_backup_retention_period
+  rds_backup_before_deletion = var.rds_backup_before_deletion
+  rds_final_backup_name = var.rds_final_backup_name != "" ? var.rds_final_backup_name : "arvados-${local.cluster_name}-db-final-snapshot"
   rds_postgresql_version = var.rds_postgresql_version
 }

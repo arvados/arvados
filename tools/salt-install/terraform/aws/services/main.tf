@@ -106,7 +106,8 @@ resource "aws_db_instance" "postgresql_service" {
   db_name = "${local.cluster_name}_arvados"
   username = local.rds_username
   password = local.rds_password
-  skip_final_snapshot  = true
+  skip_final_snapshot  = !local.rds_backup_before_deletion
+  final_snapshot_identifier = local.rds_final_backup_name
 
   vpc_security_group_ids = [local.arvados_sg_id]
   db_subnet_group_name = aws_db_subnet_group.arvados_db_subnet_group[0].name

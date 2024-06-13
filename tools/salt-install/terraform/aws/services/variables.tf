@@ -80,9 +80,25 @@ variable "rds_max_allocated_storage" {
 }
 
 variable "rds_backup_retention_period" {
-  description = "RDS Backup retention (days). Set to 0 to disable."
+  description = "RDS Backup retention (days). Set to 0 to disable"
   type = number
   default = 7
+  validation {
+    condition = (var.rds_backup_retention_period <= 35)
+    error_message = "rds_backup_retention_period should be less than 36 days"
+  }
+}
+
+variable "rds_backup_before_deletion" {
+  description = "Create a snapshot before deleting the RDS instance"
+  type = bool
+  default = true
+}
+
+variable "rds_final_backup_name" {
+  description = "Snapshot name to use for the RDS final snapshot"
+  type = string
+  default = ""
 }
 
 variable "rds_postgresql_version" {
