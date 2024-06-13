@@ -351,11 +351,11 @@ class PermissionsTest < ActionDispatch::IntegrationTest
       headers: auth(:admin)
     assert_response 422
 
-    # take the group out of the trash
+    # can't take group out of the trash
     post "/arvados/v1/groups/#{groups(:private_role).uuid}/untrash",
       params: {:format => :json},
       headers: auth(:admin)
-    assert_response :success
+    assert_response 422
 
     # when a role group is untrashed the permissions don't
     # automatically come back
@@ -364,7 +364,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
       headers: auth(:spectator)
     assert_response 404
 
-    # re-add permission for group to read collection
+    # can't add permission for group to read collection either
     post "/arvados/v1/links",
       params: {
         :format => :json,
@@ -377,14 +377,13 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         }
       },
       headers: auth(:admin)
-    assert_response :success
+    assert_response 422
 
-    # since spectator is still be a member of the group, it should be
-    # able to read foo file now.
+    # still can't read foo file
     get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
       params: {:format => :json},
       headers: auth(:spectator)
-    assert_response :success
+    assert_response 404
   end
 
   test "read-only group-admin cannot modify administered user" do

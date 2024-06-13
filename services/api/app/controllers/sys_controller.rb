@@ -24,9 +24,7 @@ class SysController < ApplicationController
       #
       # - For projects, puts all the subprojects in the trashed_groups table.
       #
-      # - For role groups, starting from #20943, when a role group
-      # enters the trash it keeps its members but loses its outbound
-      # permissions.
+      # - For role groups, outbound permissions are deleted.
       Group.
         where("is_trashed = false and trash_at < statement_timestamp()").each do |grp|
         grp.is_trashed = true

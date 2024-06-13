@@ -49,6 +49,30 @@ class Group < ArvadosModel
     t.add :can_manage
   end
 
+  def default_delete_after_trash_interval
+    if self.group_class == 'role'
+      ActiveSupport::Duration.build(0)
+    else
+      super
+    end
+  end
+
+  def minimum_delete_after_trash_interval
+    if self.group_class == 'role'
+      ActiveSupport::Duration.build(0)
+    else
+      super
+    end
+  end
+
+  def validate_trash_and_delete_timing
+    if self.group_class == 'role' && delete_at && delete_at != trash_at
+      errors.add :delete_at, "must be == trash_at for role groups"
+    else
+      super
+    end
+  end
+
   # check if admins are allowed to make changes to the project, e.g. it
   # isn't trashed or frozen.
   def admin_change_permitted
