@@ -1,0 +1,38 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+
+modules_to_enable and packages_to_install may be space-separated strings
+{% endcomment %}
+
+{%- if modules_to_enable != nil %}
+{% include 'notebox_begin_warning' %}
+
+Arvados tools require newer language runtimes than the default versions included with these distributions. These instructions will **upgrade language runtimes for the entire system**. Check that won't interfere with any existing software before you proceed.
+
+{% include 'notebox_end' %}
+{% endif -%}
+
+Set up the Arvados package repository
+{%- if packages_to_install == nil %}
+{%- elsif packages_to_install contains " " %} and install the packages
+{%- else %} and install @{{ packages_to_install }}@
+{%- endif %} by running these commands:
+
+<notextile>
+<pre><code># <span class="userinput">tee /etc/yum.repos.d/arvados.repo &gt;/dev/null &lt;&lt;'EOF'
+[arvados]
+name=Arvados
+baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+EOF</span>
+{%- if modules_to_enable != nil %}
+# <span class="userinput">dnf module enable {{ modules_to_enable }}</span>
+{% endif -%}
+{%- if packages_to_install != nil -%}
+# <span class="userinput">dnf install {{ packages_to_install }}</span>
+{% endif -%}
+</code></pre>
+</notextile>
