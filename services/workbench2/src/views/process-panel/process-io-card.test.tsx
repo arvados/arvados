@@ -14,11 +14,15 @@ import { DefaultView } from "components/default-view/default-view";
 import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
+import { CopyIcon } from 'components/icon/icon';
+import copy from 'copy-to-clipboard';
 
 // Mock collection files component since it just needs to exist
 jest.mock('views/process-panel/process-output-collection-files');
 // Mock autosizer for the io panel virtual list
 jest.mock('react-virtualized-auto-sizer', () => ({ children }: any) => children({ height: 600, width: 600 }));
+// Mock copy to clipboard
+jest.mock('copy-to-clipboard');
 
 configure({ adapter: new Adapter() });
 
@@ -92,7 +96,7 @@ describe('renderers', () => {
             expect(panel.find(DefaultView).text()).toEqual('No parameters found');
         });
 
-        it('shows main process with raw', () => {
+        it('shows main process with raw and allows copying json', () => {
             // when
             const raw = {some: 'data'};
             let panel = mount(
@@ -112,6 +116,10 @@ describe('renderers', () => {
             expect(panel.find(CircularProgress).exists()).toBeFalsy();
             expect(panel.find(Tab).length).toBe(1);
             expect(panel.find(DefaultVirtualCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2).replace(/\n/g, ''));
+
+            // when
+            panel.find(CopyIcon).simulate('click');
+            expect(copy).toHaveBeenCalledWith(JSON.stringify(raw, null, 2), undefined);
         });
 
         it('shows main process with params', () => {
