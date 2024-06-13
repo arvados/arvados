@@ -24,5 +24,16 @@ class ComputedPermissionsTest < ActionDispatch::IntegrationTest
       headers: auth(:admin)
     assert_response :success
     assert_equal users(:active).uuid, json_response['items'][0]['user_uuid']
+    assert_nil json_response['count']
+  end
+
+  test "reject count=exact" do
+    get "/arvados/v1/computed_permissions",
+      params: {
+        :format => :json,
+        :count => 'exact',
+      },
+      headers: auth(:admin)
+    assert_response 422
   end
 end
