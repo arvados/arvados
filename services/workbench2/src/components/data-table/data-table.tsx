@@ -31,6 +31,7 @@ import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
+import { CustomTheme } from "common/custom-theme";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -427,6 +428,7 @@ export const DataTable = withStyles(styles)(
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
+            const isSelected = item === selectedResourceUuid;
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -435,7 +437,9 @@ export const DataTable = withStyles(styles)(
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={item === selectedResourceUuid}>
+                    selected={isSelected}
+                    style={isSelected ? { backgroundColor: CustomTheme.palette.grey['200'] } : {}}
+                >
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}
