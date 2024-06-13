@@ -10,6 +10,11 @@ class Arvados::V1::ComputedPermissionsController < ApplicationController
       raise ArgumentError.new("count parameter must be 'none'")
     end
     params[:count] = 'none'
+
+    if !['0', 0, nil].include?(params[:offset])
+      raise ArgumentError.new("non-zero offset parameter #{params[:offset].inspect} is not supported")
+    end
+
     super
   end
 end

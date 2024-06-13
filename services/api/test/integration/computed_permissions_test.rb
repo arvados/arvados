@@ -36,4 +36,14 @@ class ComputedPermissionsTest < ActionDispatch::IntegrationTest
       headers: auth(:admin)
     assert_response 422
   end
+
+  test "reject offset>0" do
+    get "/arvados/v1/computed_permissions",
+      params: {
+        :format => :json,
+        :offset => 7,
+      },
+      headers: auth(:admin)
+    assert_response 422
+  end
 end
