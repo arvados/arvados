@@ -429,7 +429,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX
 "log_uuid": ${stringify(logUuid)},
 "output_name": ${stringify(outputName)},
 "output_ttl": ${stringify(outputTtl)},
-"output_glob": ${stringify(outputGlob)}`;
+"output_glob": ${stringifyObject(outputGlob)}`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
