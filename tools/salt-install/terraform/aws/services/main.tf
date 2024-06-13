@@ -111,7 +111,7 @@ resource "aws_db_instance" "postgresql_service" {
   vpc_security_group_ids = [local.arvados_sg_id]
   db_subnet_group_name = aws_db_subnet_group.arvados_db_subnet_group[0].name
 
-  backup_retention_period = 7
+  backup_retention_period = local.rds_backup_retention_period
   publicly_accessible = false
   storage_encrypted = true
   multi_az = false

@@ -78,3 +78,9 @@ variable "rds_max_allocated_storage" {
   type = number
   default = 300
 }
+
+variable "rds_backup_retention_period" {
+  description = "RDS Backup retention (days). Set to 0 to disable."
+  type = number
+  default = 7
+}
