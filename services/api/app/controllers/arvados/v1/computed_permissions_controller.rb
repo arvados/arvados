@@ -17,4 +17,10 @@ class Arvados::V1::ComputedPermissionsController < ApplicationController
 
     super
   end
+
+  def limit_database_read(**args)
+    # This is counterproductive for this table, and the default
+    # implementation doesn't work because it relies on some
+    # real-model-like behavior that ComputedPermission does not offer.
+  end
 end
