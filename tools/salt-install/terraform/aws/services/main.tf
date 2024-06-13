@@ -101,7 +101,7 @@ resource "aws_db_instance" "postgresql_service" {
   allocated_storage = local.rds_allocated_storage
   max_allocated_storage = local.rds_max_allocated_storage
   engine = "postgres"
-  engine_version = "15"
+  engine_version = local.rds_postgresql_version
   instance_class = local.rds_instance_type
   db_name = "${local.cluster_name}_arvados"
   username = local.rds_username

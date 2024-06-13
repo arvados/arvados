@@ -77,3 +77,7 @@ output "database_password" {
   value = one(aws_db_instance.postgresql_service[*].password)
   sensitive = true
 }
+
+output "database_version" {
+  value = one(aws_db_instance.postgresql_service[*].engine_version_actual)
+}

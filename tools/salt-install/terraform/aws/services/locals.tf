@@ -36,4 +36,5 @@ locals {
   rds_max_allocated_storage = max(var.rds_max_allocated_storage, var.rds_allocated_storage)
   rds_instance_type = var.rds_instance_type
   rds_backup_retention_period = var.rds_backup_retention_period
+  rds_postgresql_version = var.rds_postgresql_version
 }

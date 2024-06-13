@@ -84,3 +84,9 @@ variable "rds_backup_retention_period" {
   type = number
   default = 7
 }
+
+variable "rds_postgresql_version" {
+  description = "RDS PostgreSQL version"
+  type = string
+  default = "15"
+}

@@ -29,6 +29,7 @@
 # rds_username = ""
 # rds_password = ""
 # rds_instance_type = "db.m5.xlarge"
+# rds_postgresql_version = "16.3"
 # rds_allocated_storage = 200
 # rds_max_allocated_storage = 1000
 # rds_backup_retention_period = 30
