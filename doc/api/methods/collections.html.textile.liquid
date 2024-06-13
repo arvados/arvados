@@ -26,10 +26,10 @@ Each collection has, in addition to the "Common resource fields":{{site.baseurl}
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
-|description|text|||
+|description|text|Free text description of the group.  May be HTML formatted, must be appropriately sanitized before display.||
 |properties|hash|User-defined metadata, may be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters ||
 |portable_data_hash|string|The MD5 sum of the manifest text stripped of block hints other than the size hint.||
-|manifest_text|text|||
+|manifest_text|text|The manifest describing how to assemble blocks into files, in the "Arvados manifest format":{{site.baseurl}}/architecture/manifest-format.html||
 |replication_desired|number|Minimum storage replication level desired for each data block referenced by this collection. A value of @null@ signifies that the site default replication level (typically 2) is desired.|@2@|
 |replication_confirmed|number|Replication level most recently confirmed by the storage system. This field is null when a collection is first created, and is reset to null when the manifest_text changes in a way that introduces a new data block. An integer value indicates the replication level of the _least replicated_ data block in the collection.|@2@, null|
 |replication_confirmed_at|datetime|When @replication_confirmed@ was confirmed. If @replication_confirmed@ is null, this field is also null.||
@@ -55,6 +55,69 @@ Referenced blocks are protected from garbage collection in Keep.
 
 Data can be shared with other users via the Arvados permission model.
 
+h3(#trashing). Trashing collections
+
+Collections can be trashed by updating the record and setting the @trash_at@ field, or with the "delete":#delete method.  The delete method sets @trash_at@ to "now".
+
+The value of @trash_at@ can be set to a time in the future as a feature to automatically expire collections.
+
+When @trash_at@ is set, @delete_at@ will also be set.  Normally @delete_at = trash_at + Collections.DefaultTrashLifetime@.  When the @trash_at@ time is past but @delete_at@ is in the future, the trashed collection is invisible to most API calls unless the @include_trash@ parameter is true.  Collections in the trashed state can be "untrashed":#untrash so long as @delete_at@ has not past.  Collections are also trashed if they are contained in a "trashed group":groups.html#trashing
+
+Once @delete_at@ is past, the collection and all of its previous versions will be deleted permanently and can no longer be untrashed.
+
+h3(#replace_files). Using "replace_files" to create/update collections
+
+The @replace_files@ option can be used with the "create":#create and "update":#update APIs to efficiently copy individual files and directory trees from other collections, and copy/rename/delete items within an existing collection, without transferring any file data.
+
+@replace_files@ keys indicate target paths in the new collection, and values specify sources that should be copied to the target paths.
+* Each target path must be an absolute canonical path beginning with @/@. It must not contain @.@ or @..@ components, consecutive @/@ characters, or a trailing @/@ after the final component.
+* Each source must be either an empty string (signifying that the target path is to be deleted), or @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection.
+* In an @update@ request, sources may reference the current portable data hash of the collection being updated.
+
+Example: delete @foo.txt@ from a collection
+
+<notextile><pre>
+"replace_files": {
+  "/foo.txt": ""
+}
+</pre></notextile>
+
+Example: rename @foo.txt@ to @bar.txt@ in a collection with portable data hash @fa7aeb5140e2848d39b416daeef4ffc5+45@
+
+<notextile><pre>
+"replace_files": {
+  "/foo.txt": "",
+  "/bar.txt": "fa7aeb5140e2848d39b416daeef4ffc5+45/foo.txt"
+}
+</pre></notextile>
+
+Example: delete current contents, then add content from multiple collections
+
+<notextile><pre>
+"replace_files": {
+  "/": "",
+  "/copy of collection 1": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/",
+  "/copy of collection 2": "ea10d51bcf88862dbcc36eb292017dfd+45/"
+}
+</pre></notextile>
+
+Example: replace entire collection with a copy of a subdirectory from another collection
+
+<notextile><pre>
+"replace_files": {
+  "/": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/subdir"
+}
+</pre></notextile>
+
+A target path with a non-empty source cannot be the ancestor of another target path in the same request. For example, the following request is invalid:
+
+<notextile><pre>
+"replace_files": {
+  "/foo": "fa7aeb5140e2848d39b416daeef4ffc5+45/",
+  "/foo/this_will_return_an_error": ""
+}
+</pre></notextile>
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
@@ -63,7 +126,7 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 Supports federated @get@ only, which may be called with either a uuid or a portable data hash.  When requesting a portable data hash which is not available on the home cluster, the query is forwarded to all the clusters listed in @RemoteClusters@ and returns the first successful result.
 
-h3. create
+h3(#create). create
 
 Create a new Collection.
 
@@ -76,7 +139,7 @@ table(table table-bordered table-condensed).
 
 The new collection's content can be initialized by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
 
-h3. delete
+h3(#delete). delete
 
 Put a Collection in the trash.  This sets the @trash_at@ field to @now@ and @delete_at@ field to @now@ + token TTL.  A trashed collection is invisible to most API calls unless the @include_trash@ parameter is true.
 
@@ -139,7 +202,7 @@ As a workaround, you can search for both the directory path and file name separa
 filters: [["file_names", "ilike", "%dir1/dir2/dir3%"], ["file_names", "ilike", "%sample1234.fastq%"]]
 </pre>
 
-h3. update
+h3(#update). update
 
 Update attributes of an existing Collection.
 
@@ -153,7 +216,7 @@ table(table table-bordered table-condensed).
 
 The collection's content can be updated by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
 
-h3. untrash
+h3(#untrash). untrash
 
 Remove a Collection from the trash.  This sets the @trash_at@ and @delete_at@ fields to @null@.
 
@@ -196,56 +259,3 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection to get usage.|path||
-
-h2(#replace_files). Using "replace_files" to create/update collections
-
-The @replace_files@ option can be used with the @create@ and @update@ APIs to efficiently copy individual files and directory trees from other collections, and copy/rename/delete items within an existing collection, without transferring any file data.
-
-@replace_files@ keys indicate target paths in the new collection, and values specify sources that should be copied to the target paths.
-* Each target path must be an absolute canonical path beginning with @/@. It must not contain @.@ or @..@ components, consecutive @/@ characters, or a trailing @/@ after the final component.
-* Each source must be either an empty string (signifying that the target path is to be deleted), or @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection.
-* In an @update@ request, sources may reference the current portable data hash of the collection being updated.
-
-Example: delete @foo.txt@ from a collection
-
-<notextile><pre>
-"replace_files": {
-  "/foo.txt": ""
-}
-</pre></notextile>
-
-Example: rename @foo.txt@ to @bar.txt@ in a collection with portable data hash @fa7aeb5140e2848d39b416daeef4ffc5+45@
-
-<notextile><pre>
-"replace_files": {
-  "/foo.txt": "",
-  "/bar.txt": "fa7aeb5140e2848d39b416daeef4ffc5+45/foo.txt"
-}
-</pre></notextile>
-
-Example: delete current contents, then add content from multiple collections
-
-<notextile><pre>
-"replace_files": {
-  "/": "",
-  "/copy of collection 1": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/",
-  "/copy of collection 2": "ea10d51bcf88862dbcc36eb292017dfd+45/"
-}
-</pre></notextile>
-
-Example: replace entire collection with a copy of a subdirectory from another collection
-
-<notextile><pre>
-"replace_files": {
-  "/": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/subdir"
-}
-</pre></notextile>
-
-A target path with a non-empty source cannot be the ancestor of another target path in the same request. For example, the following request is invalid:
-
-<notextile><pre>
-"replace_files": {
-  "/foo": "fa7aeb5140e2848d39b416daeef4ffc5+45/",
-  "/foo/this_will_return_an_error": ""
-}
-</pre></notextile>

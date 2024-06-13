@@ -28,27 +28,29 @@ table(table table-bordered table-condensed).
 |group_class|string|Type of group. @project@ and @filter@ indicate that the group should be displayed by Workbench and arv-mount as a project for organizing and naming objects. @role@ is used as part of the "permission system":{{site.baseurl}}/api/permission-model.html. |@"filter"@
 @"project"@
 @"role"@|
-|description|text|||
+|description|text|Free text description of the group.  May be HTML formatted, must be appropriately sanitized before display.||
 |properties|hash|User-defined metadata, may be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters ||
 |writable_by|array|(Deprecated) List of UUID strings identifying Users and other Groups that have write permission for this Group.  Users who are allowed to administer the Group will receive a list of user/group UUIDs that have permission via explicit permission links; permissions via parent/ancestor groups are not taken into account.  Other users will receive a partial list including only the Group's owner_uuid and (if applicable) their own user UUID.||
 |can_write|boolean|True if the current user has write permission on this group.||
 |can_manage|boolean|True if the current user has manage permission on this group.||
-|trash_at|datetime|If @trash_at@ is non-null and in the past, this group and all objects directly or indirectly owned by the group will be hidden from API calls.  May be untrashed.||
+|trash_at|datetime|If @trash_at@ is non-null and in the past, this group and all objects directly or indirectly owned by the group will be hidden from API calls.  May be untrashed as long as @delete_at@ is in the future.||
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the group and all objects directly or indirectly owned by the group may be permanently deleted.||
 |is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
 |frozen_by_uuid|string|For a frozen project, indicates the user who froze the project; null in all other cases. When a project is frozen, no further changes can be made to the project or its contents, even by admins. Attempting to add new items or modify, rename, move, trash, or delete the project or its contents, including any subprojects, will return an error.||
 
-h3(#frozen). Frozen projects
+h2. Group types and states
 
-A user with @manage@ permission can set the @frozen_by_uuid@ attribute of a @project@ group to their own user UUID. Once this is done, no further changes can be made to the project or its contents, including subprojects.
+h3(#project). Project groups
 
-The @frozen_by_uuid@ attribute can be cleared by an admin user. It can also be cleared by a user with @manage@ permission, unless the @API.UnfreezeProjectRequiresAdmin@ configuration setting is active.
+Groups with @group_class: project@ are used to organize objects and subprojects through ownership.
 
-The optional @API.FreezeProjectRequiresDescription@ and @API.FreezeProjectRequiresProperties@ configuration settings can be used to prevent users from freezing projects that have empty @description@ and/or specified @properties@ entries.
+h3(#role). Role groups
+
+Groups with @group_class: role@ are used to grant permissions to users (or other groups) through permission links.  Role groups cannot own objects.
 
 h3(#filter). Filter groups
 
-@filter@ groups are virtual groups; they can not own other objects. Filter groups have a special @properties@ field named @filters@, which must be an array of filter conditions. See "list method filters":{{site.baseurl}}/api/methods.html#filters for details on the syntax of valid filters, but keep in mind that the attributes must include the object type (@collections@, @container_requests@, @groups@, @workflows@), separated with a dot from the field to be filtered on.
+Groups with @group_class: filter@ groups are virtual groups; they can not own other objects, but instead their contents (as returned by the "contents":#contents API method) are defined by a query. Filter groups have a special @properties@ field named @filters@, which must be an array of filter conditions. See "list method filters":{{site.baseurl}}/api/methods.html#filters for details on the syntax of valid filters, but keep in mind that the attributes must include the object type (@collections@, @container_requests@, @groups@, @workflows@), separated with a dot from the field to be filtered on.
 
 Filters are applied with an implied *and* between them, but each filter only applies to the object type specified. The results are subject to the usual access controls - they are a subset of all objects the user can see. Here is an example:
 
@@ -92,6 +94,26 @@ The 'is_a' filter operator is of particular interest to limit the @filter@ group
   ]
  },
  </pre>
+
+h3(#trashing). Trashing groups
+
+Groups can be trashed by updating the record and setting the @trash_at@ field, or with the "delete":#delete method.  The delete method sets @trash_at@ to "now".
+
+The value of @trash_at@ can be set to a time in the future as a feature to automatically expire groups.
+
+When @trash_at@ is set, @delete_at@ will also be set.  Normally @delete_at = trash_at + Collections.DefaultTrashLifetime@ for projects and filter groups, and @delete_at = trash_at@ for role groups.  When the @trash_at@ time is past but @delete_at@ is in the future, the trashed group is invisible to most API calls unless the @include_trash@ parameter is true.  All objects directly or indirectly owned by the group (including subprojects, collections, or container requests) are considered trashed as well.  Groups in the trashed state can be "untrashed":#untrash so long as @delete_at@ has not past.
+
+Once @delete_at@ is past, the group will be deleted permanently and can no longer be untrashed.  All items owned by the group (including subprojects, collections, or container requests) are also deleted.
+
+Note: like other groups, "role" groups may have @trash_at@ set to date in the future, however roles groups are required to have @delete_at = trash_at@, so the trash time and delete time expire at the same time.  This means once @trash_at@ expires the role group is deleted immediately.  Role groups with @trash_at@ set can only be "untrashed":#untrash before they expire.
+
+h3(#frozen). Frozen projects
+
+A user with @manage@ permission can set the @frozen_by_uuid@ attribute of a @project@ group to their own user UUID. Once this is done, no further changes can be made to the project or its contents, including subprojects.
+
+The @frozen_by_uuid@ attribute can be cleared by an admin user. It can also be cleared by a user with @manage@ permission, unless the @API.UnfreezeProjectRequiresAdmin@ configuration setting is active.
+
+The optional @API.FreezeProjectRequiresDescription@ and @API.FreezeProjectRequiresProperties@ configuration settings can be used to prevent users from freezing projects that have empty @description@ and/or empty @properties@ entries.
 
 h2. Methods
 
@@ -141,9 +163,9 @@ table(table table-bordered table-condensed).
 |group|object||query||
 |async|boolean (default false)|Defer the permissions graph update by a configured number of seconds. (By default, @async_permissions_update_interval@ is 20 seconds). On success, the response is 202 (Accepted).|query|@true@|
 
-h3. delete
+h3(#delete). delete
 
-Put a Group in the trash.  This sets the @trash_at@ field to @now@ and @delete_at@ field to @now@ + token TTL.  A trashed group is invisible to most API calls unless the @include_trash@ parameter is true.  All objects directly or indirectly owned by the Group are considered trashed as well.
+Put a Group in the trash.  See "Trashing groups":#trashing for details.
 
 Arguments:
 
@@ -189,9 +211,9 @@ table(table table-bordered table-condensed).
 |group|object||query||
 |async|boolean (default false)|Defer the permissions graph update by a configured number of seconds. (By default, @async_permissions_update_interval@ is 20 seconds). On success, the response is 202 (Accepted).|query|@true@|
 
-h3. untrash
+h3(#untrash). untrash
 
-Remove a Group from the trash.  This sets the @trash_at@ and @delete_at@ fields to @null@.
+Remove a Group from the trash.  Only valid when @delete_at@ is in the future.  This sets the @trash_at@ and @delete_at@ fields to @null@.
 
 Arguments:
 
