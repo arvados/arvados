@@ -25,7 +25,18 @@ locals {
   }
   private_subnet_id = data.terraform_remote_state.vpc.outputs.private_subnet_id
   public_subnet_id = data.terraform_remote_state.vpc.outputs.public_subnet_id
+  additional_rds_subnet_id = data.terraform_remote_state.vpc.outputs.additional_rds_subnet_id
   arvados_sg_id = data.terraform_remote_state.vpc.outputs.arvados_sg_id
   eip_id = data.terraform_remote_state.vpc.outputs.eip_id
   keepstore_iam_role_name = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
+  use_rds = (var.use_rds && data.terraform_remote_state.vpc.outputs.use_rds)
+  rds_username = var.rds_username != "" ? var.rds_username : "${local.cluster_name}_arvados"
+  rds_password = var.rds_password != "" ? var.rds_password : one(random_string.default_rds_password[*].result)
+  rds_allocated_storage = var.rds_allocated_storage
+  rds_max_allocated_storage = max(var.rds_max_allocated_storage, var.rds_allocated_storage)
+  rds_instance_type = var.rds_instance_type
+  rds_backup_retention_period = var.rds_backup_retention_period
+  rds_backup_before_deletion = var.rds_backup_before_deletion
+  rds_final_backup_name = var.rds_final_backup_name != "" ? var.rds_final_backup_name : "arvados-${local.cluster_name}-db-final-snapshot"
+  rds_postgresql_version = var.rds_postgresql_version
 }
