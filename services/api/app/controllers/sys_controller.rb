@@ -50,19 +50,21 @@ class SysController < ApplicationController
     if !p
       raise "can't sweep group '#{p_uuid}', it may not exist"
     end
-    # First delete sub projects
-    Group.where({group_class: 'project', owner_uuid: p_uuid}).each do |sub_project|
-      delete_project_and_contents(sub_project.uuid)
-    end
-    # Next, iterate over all tables which have owner_uuid fields, with some
-    # exceptions, and delete records owned by this project
-    skipped_classes = ['Group', 'User']
-    ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
-      if !skipped_classes.include?(klass.name) && klass.columns.collect(&:name).include?('owner_uuid')
-        klass.where({owner_uuid: p_uuid}).in_batches(of: 15).destroy_all
+    if p.group_class == 'project'
+      # First delete sub projects
+      Group.where({group_class: 'project', owner_uuid: p_uuid}).each do |sub_project|
+        delete_project_and_contents(sub_project.uuid)
+      end
+      # Next, iterate over all tables which have owner_uuid fields, with some
+      # exceptions, and delete records owned by this project
+      skipped_classes = ['Group', 'User']
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
+        if !skipped_classes.include?(klass.name) && klass.columns.collect(&:name).include?('owner_uuid')
+          klass.where({owner_uuid: p_uuid}).in_batches(of: 15).destroy_all
+        end
       end
     end
-    # Finally delete the project itself
+    # Finally delete the group itself
     p.destroy
   end
 end

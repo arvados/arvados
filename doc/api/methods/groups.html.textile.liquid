@@ -42,11 +42,11 @@ h2. Group types and states
 
 h3(#project). Project groups
 
-Groups with @group_class: project@ are used to organize objects and subprojects through ownership.
+Groups with @group_class: project@ are used to organize objects and subprojects through ownership.  When "trashed or deleted":#trashing, all items owned by the project (including subprojects, collections, or container requests) as well as permissions (permission links) granted to the project are also trashed or deleted.
 
 h3(#role). Role groups
 
-Groups with @group_class: role@ are used to grant permissions to users (or other groups) through permission links.  Role groups cannot own objects.
+Groups with @group_class: role@ are used to grant permissions to users (or other groups) through permission links.  Role groups can confer "can_manage" permission but cannot directly own objects.  When "trashed and deleted":#trashing group membership and permission grants (expressed as permission links) are deleted as well.
 
 h3(#filter). Filter groups
 
@@ -95,6 +95,8 @@ The 'is_a' filter operator is of particular interest to limit the @filter@ group
  },
  </pre>
 
+"Trashed or deleting":#trashing a filter group causes the group itself to be hidden or deleted, but has no effect on the items returned in "contents", i.e. the database objects in "contents" are not hidden or deleted and may be accessed by other means.
+
 h3(#trashing). Trashing groups
 
 Groups can be trashed by updating the record and setting the @trash_at@ field, or with the "delete":#delete method.  The delete method sets @trash_at@ to "now".
@@ -103,7 +105,7 @@ The value of @trash_at@ can be set to a time in the future as a feature to autom
 
 When @trash_at@ is set, @delete_at@ will also be set.  Normally @delete_at = trash_at + Collections.DefaultTrashLifetime@ for projects and filter groups, and @delete_at = trash_at@ for role groups.  When the @trash_at@ time is past but @delete_at@ is in the future, the trashed group is invisible to most API calls unless the @include_trash@ parameter is true.  All objects directly or indirectly owned by the group (including subprojects, collections, or container requests) are considered trashed as well.  Groups in the trashed state can be "untrashed":#untrash so long as @delete_at@ has not past.
 
-Once @delete_at@ is past, the group will be deleted permanently and can no longer be untrashed.  All items owned by the group (including subprojects, collections, or container requests) are also deleted.
+Once @delete_at@ is past, the group will be deleted permanently and can no longer be untrashed.  Different group types have different behavior when deleted, described above.
 
 Note: like other groups, "role" groups may have @trash_at@ set to date in the future, however roles groups are required to have @delete_at = trash_at@, so the trash time and delete time expire at the same time.  This means once @trash_at@ expires the role group is deleted immediately.  Role groups with @trash_at@ set can only be "untrashed":#untrash before they expire.
 
