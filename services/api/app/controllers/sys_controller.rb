@@ -51,8 +51,8 @@ class SysController < ApplicationController
       raise "can't sweep group '#{p_uuid}', it may not exist"
     end
     if p.group_class == 'project'
-      # First delete sub projects
-      Group.where({group_class: 'project', owner_uuid: p_uuid}).each do |sub_project|
+      # First delete sub projects and owned filter groups
+      Group.where({owner_uuid: p_uuid}).each do |sub_project|
         delete_project_and_contents(sub_project.uuid)
       end
       # Next, iterate over all tables which have owner_uuid fields, with some
