@@ -6,8 +6,6 @@ import React, { ReactElement, memo } from "react";
 import { Dispatch } from "redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    WithStyles,
-    withStyles,
     Card,
     CardHeader,
     IconButton,
@@ -23,7 +21,9 @@ import {
     Grid,
     Chip,
     CircularProgress,
-} from "@material-ui/core";
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
 import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
@@ -55,7 +55,7 @@ import mime from "mime";
 import { DefaultView } from "components/default-view/default-view";
 import { getNavUrl } from "routes/routes";
 import { Link as RouterLink } from "react-router-dom";
-import { Link as MuiLink } from "@material-ui/core";
+import { Link as MuiLink } from "@mui/material";
 import { InputCollectionMount } from "store/processes/processes-actions";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
@@ -67,7 +67,7 @@ import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/defau
 import { KEEP_URL_REGEX } from "models/resource";
 import { FixedSizeList } from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
-import { LinkProps } from "@material-ui/core/Link";
+import { LinkProps } from "@mui/material/Link";
 import { ConditionalTabs } from "components/conditional-tabs/conditional-tabs";
 
 type CssRules =
@@ -108,7 +108,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     // Card content
     content: {
-        height: `calc(100% - ${theme.spacing(6)}px)`,
+        height: `calc(100% - ${theme.spacing(6)})`,
         padding: theme.spacing(1),
         paddingTop: 0,
         "&:last-child": {
@@ -125,7 +125,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     // Applies to table tab and collection table content
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing(6)}px)`,
+        maxHeight: `calc(100% - ${theme.spacing(6)})`,
         overflow: "auto",
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
@@ -209,7 +209,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     // JSON tab wrapper
     jsonWrapper: {
-        height: `calc(100% - ${theme.spacing(6)}px)`,
+        height: `calc(100% - ${theme.spacing(6)})`,
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -330,7 +330,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     title={`Unmaximize ${panelName || "panel"}`}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={doUnMaximizePanel}>
+                                    <IconButton onClick={doUnMaximizePanel} size="large">
                                         <UnMaximizeIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -340,7 +340,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     title={`Maximize ${panelName || "panel"}`}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={doMaximizePanel}>
+                                    <IconButton onClick={doMaximizePanel} size="large">
                                         <MaximizeIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -350,10 +350,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     title={`Close ${panelName || "panel"}`}
                                     disableFocusListener
                                 >
-                                    <IconButton
-                                        disabled={panelMaximized}
-                                        onClick={doHidePanel}
-                                    >
+                                    <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
                                         <CloseIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -370,7 +367,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
                                     <CircularProgress />
                                 </Grid>
@@ -411,7 +408,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
                                     <DefaultView messages={["No parameters found"]} />
                                 </Grid>
@@ -425,7 +422,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
                                     <CircularProgress />
                                 </Grid>
@@ -456,7 +453,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
                                     <DefaultView messages={["No data to display"]} />
                                 </Grid>

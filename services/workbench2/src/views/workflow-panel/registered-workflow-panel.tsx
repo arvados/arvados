@@ -4,16 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    WithStyles,
-    withStyles,
-    Tooltip,
-    Typography,
-    Card,
-    CardHeader,
-    CardContent,
-    IconButton
-} from '@material-ui/core';
+import { Tooltip, Typography, Card, CardHeader, CardContent, IconButton } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -68,8 +61,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyL
     },
     tag: {
-        marginRight: theme.spacing(1) /2,
-        marginBottom: theme.spacing(1) /2
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
     },
     label: {
         fontSize: '0.875rem',
@@ -169,7 +162,8 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                         <Tooltip title="More options" disableFocusListener>
                                             <IconButton
                                                 aria-label="More options"
-                                                onClick={event => this.handleContextMenu(event)}>
+                                                onClick={event => this.handleContextMenu(event)}
+                                                size="large">
                                                 <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>}
@@ -211,7 +205,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     <NotFoundView
                         icon={WorkflowIcon}
                         messages={["Workflow not found"]}
-                    />
+                    />;
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {

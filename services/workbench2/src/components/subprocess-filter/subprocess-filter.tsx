@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { Typography, Switch } from '@material-ui/core';
+import { Typography, Switch } from '@mui/material';
 
 type CssRules = 'container' | 'label' | 'value';
 

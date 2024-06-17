@@ -7,7 +7,9 @@ import { connect, DispatchProp } from 'react-redux';
 import { memoize } from 'lodash/fp';
 import { Field } from 'redux-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     isRequiredInput,
     DirectoryCommandInputParameter,

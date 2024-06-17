@@ -5,10 +5,18 @@
 import React from 'react';
 import { mount, configure } from 'enzyme';
 import Adapter from "enzyme-adapter-react-16";
-import { StyledComponentProps, MuiThemeProvider } from '@material-ui/core';
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
+import { StyledComponentProps } from '@mui/styles';
 import { ClusterConfigJSON } from 'common/config';
 import { CustomTheme } from 'common/custom-theme';
 import { NotFoundPanelRoot, NotFoundPanelRootDataProps, CssRules } from './not-found-panel-root';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 configure({ adapter: new Adapter() });
 
@@ -37,9 +45,11 @@ describe('NotFoundPanelRoot', () => {
 
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <NotFoundPanelRoot {...props} />
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <NotFoundPanelRoot {...props} />
+                </ThemeProvider>
+            </StyledEngineProvider>
             );
 
         // then
@@ -52,9 +62,11 @@ describe('NotFoundPanelRoot', () => {
 
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <NotFoundPanelRoot {...props} />
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <NotFoundPanelRoot {...props} />
+                </ThemeProvider>
+            </StyledEngineProvider>
             );
 
         // then
@@ -73,9 +85,11 @@ describe('NotFoundPanelRoot', () => {
 
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <NotFoundPanelRoot {...props} />
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <NotFoundPanelRoot {...props} />
+                </ThemeProvider>
+            </StyledEngineProvider>
             );
 
         // then

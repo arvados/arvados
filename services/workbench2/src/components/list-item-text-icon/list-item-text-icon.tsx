@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { ListItemIcon, ListItemText, Typography } from '@material-ui/core';
+import { ListItemIcon, ListItemText, Typography } from '@mui/material';
 import { IconType } from '../icon/icon';
 import classnames from "classnames";
 
@@ -24,7 +25,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.primary.main,
     },
     hasMargin: {
-        marginLeft: `${theme.spacing(1)}px`,
+        marginLeft: theme.spacing(1),
     }
 });
 

@@ -4,11 +4,13 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } from '@material-ui/core';
-import MenuIcon from "@material-ui/icons/Menu";
+import { IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import MenuIcon from "@mui/icons-material/Menu";
 import { DataColumn } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
-import { IconButtonProps } from '@material-ui/core/IconButton';
+import { IconButtonProps } from '@mui/material/IconButton';
 import { DataColumns } from '../data-table/data-table';
 import { ArvadosTheme } from "common/custom-theme";
 
@@ -66,7 +68,7 @@ export const ColumnSelector = withStyles(styles)(
 
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>
     <Tooltip disableFocusListener title="Select columns">
-        <IconButton {...props}>
+        <IconButton {...props} size="large">
             <MenuIcon aria-label="Select columns" />
         </IconButton>
     </Tooltip>;

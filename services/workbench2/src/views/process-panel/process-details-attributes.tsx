@@ -4,7 +4,8 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, withStyles } from "@material-ui/core";
+import { Grid } from "@mui/material";
+import withStyles from '@mui/styles/withStyles';
 import { Dispatch } from 'redux';
 import { formatCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -36,8 +37,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     propertyTag: {
-        marginRight: theme.spacing(1) /2,
-        marginBottom: theme.spacing(1) /2
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
     },
 });
 

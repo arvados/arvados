@@ -9,10 +9,17 @@ import { Provider } from "react-redux";
 import { configureStore } from "store/store";
 import { createBrowserHistory } from "history";
 import { ConnectedRouter } from "react-router-redux";
-import { MuiThemeProvider } from '@material-ui/core/styles';
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles';
 import { CustomTheme } from 'common/custom-theme';
 import { createServices } from "services/services";
 import 'jest-localstorage-mock';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 jest.mock('views-components/baner/banner', () => ({ Banner: () => 'Banner' }))
 
@@ -24,13 +31,15 @@ it('renders without crashing', () => {
 	services.authService.getUuid = jest.fn().mockReturnValueOnce('test');
     const store = configureStore(createBrowserHistory(), services);
     ReactDOM.render(
-        <MuiThemeProvider theme={CustomTheme}>
-            <Provider store={store}>
-                <ConnectedRouter history={history}>
-                    <WorkbenchPanel />
-                </ConnectedRouter>
-            </Provider>
-        </MuiThemeProvider>,
+        <StyledEngineProvider injectFirst>
+            <ThemeProvider theme={CustomTheme}>
+                <Provider store={store}>
+                    <ConnectedRouter history={history}>
+                        <WorkbenchPanel />
+                    </ConnectedRouter>
+                </Provider>
+            </ThemeProvider>
+        </StyledEngineProvider>,
     div);
     ReactDOM.unmountComponentAtNode(div);
 });

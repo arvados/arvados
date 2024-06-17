@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { Grid, CircularProgress } from '@material-ui/core';
+import { Grid, CircularProgress } from '@mui/material';
 
 type CssRules = 'root' | 'img';
 
@@ -26,7 +27,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export const WorkbenchLoadingScreen = withStyles(styles)(({ classes }: WithStyles<CssRules>) =>
-    <Grid container direction="column" alignItems='center' justify='center' className={classes.root}>
+    <Grid container direction="column" alignItems='center' justifyContent='center' className={classes.root}>
         <img src='/arvados_logo.png' alt='Arvados logo' className={classes.img} />
         <CircularProgress data-cy='loading-spinner' />
     </Grid>

@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
+import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { loadVirtualMachinesAdminData, openAddVirtualMachineLoginDialog, openRemoveVirtualMachineLoginDialog, openEditVirtualMachineLoginDialog } from 'store/virtual-machines/virtual-machines-actions';
@@ -30,7 +31,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     chipsRoot: {
-        margin: `0px -${theme.spacing(1) /2}px`,
+        margin: `0px -calc(${theme.spacing(1)} / 2)`,
     },
     vmTableWrapper: {
         overflowX: 'auto',
@@ -132,14 +133,20 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     </TableCell>
                     <TableCell>
                         <Tooltip title="Add Login Permission" disableFocusListener>
-                            <IconButton onClick={event => props.onAddLogin(machine.uuid)} className={props.classes.moreOptionsButton}>
+                            <IconButton
+                                onClick={event => props.onAddLogin(machine.uuid)}
+                                className={props.classes.moreOptionsButton}
+                                size="large">
                                 <AddUserIcon />
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                     <TableCell className={props.classes.moreOptions}>
                         <Tooltip title="More options" disableFocusListener>
-                            <IconButton onClick={event => props.onOptionsMenuOpen(event, machine)} className={props.classes.moreOptionsButton}>
+                            <IconButton
+                                onClick={event => props.onOptionsMenuOpen(event, machine)}
+                                className={props.classes.moreOptionsButton}
+                                size="large">
                                 <MoreVerticalIcon />
                             </IconButton>
                         </Tooltip>

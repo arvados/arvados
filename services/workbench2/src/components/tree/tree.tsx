@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useCallback, useState } from 'react';
-import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
+import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@mui/material";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, ProcessIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
-import CircularProgress from '@material-ui/core/CircularProgress';
+import CircularProgress from '@mui/material/CircularProgress';
 import classnames from "classnames";
 
 import { ArvadosTheme } from 'common/custom-theme';
@@ -67,7 +68,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     checkbox: {
         width: theme.spacing(3),
         height: theme.spacing(3),
-        margin: `0 ${theme.spacing(1)}px`,
+        margin: `0 ${theme.spacing(1)}`,
         padding: 0,
         color: theme.palette.grey["500"],
     },

@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { IconButton, Tabs, Tab, Typography, Grid, Tooltip } from '@material-ui/core';
+import { IconButton, Tabs, Tab, Typography, Grid, Tooltip } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { Transition } from 'react-transition-group';
 import { ArvadosTheme } from 'common/custom-theme';
 import classnames from "classnames";
@@ -53,7 +54,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerContainer: {
         color: theme.palette.grey["600"],
-        margin: `${theme.spacing(1)}px 0`,
+        margin: `${theme.spacing(1)} 0`,
         textAlign: 'center',
     },
     headerIcon: {
@@ -180,48 +181,50 @@ export const DetailsPanel = withStyles(styles)(
                 }
 
                 const item = getItem(res, pathname);
-                return <Grid
-                    data-cy='details-panel'
-                    container
-                    direction="column"
-                    item
-                    xs
-                    className={classes.container} >
+                return (
                     <Grid
-                        item
-                        className={classes.headerContainer}
+                        data-cy='details-panel'
                         container
-                        alignItems='center'
-                        justify='space-around'
-                        wrap="nowrap">
-                        <Grid item xs={2}>
-                            {item.getIcon(classes.headerIcon)}
-                        </Grid>
-                        <Grid item xs={8}>
-                            <Tooltip title={item.getTitle()}>
-                                <Typography variant='h6' noWrap>
-                                    {item.getTitle()}
-                                </Typography>
-                            </Tooltip>
+                        direction="column"
+                        item
+                        xs
+                        className={classes.container} >
+                        <Grid
+                            item
+                            className={classes.headerContainer}
+                            container
+                            alignItems='center'
+                            justifyContent='space-around'
+                            wrap="nowrap">
+                            <Grid item xs={2}>
+                                {item.getIcon(classes.headerIcon)}
+                            </Grid>
+                            <Grid item xs={8}>
+                                <Tooltip title={item.getTitle()}>
+                                    <Typography variant='h6' noWrap>
+                                        {item.getTitle()}
+                                    </Typography>
+                                </Tooltip>
+                            </Grid>
+                            <Grid item>
+                                <IconButton color="inherit" onClick={()=>onCloseDrawer(CLOSE_DRAWER)} size="large">
+                                    <CloseIcon />
+                                </IconButton>
+                            </Grid>
                         </Grid>
                         <Grid item>
-                            <IconButton color="inherit" onClick={()=>onCloseDrawer(CLOSE_DRAWER)}>
-                                <CloseIcon />
-                            </IconButton>
+                            <Tabs onChange={this.handleChange}
+                                value={(item.getTabLabels().length >= tabNr + 1) ? tabNr : 0}>
+                                {item.getTabLabels().map((tabLabel, idx) =>
+                                    <Tab key={`tab-label-${idx}`} disableRipple label={tabLabel} />)
+                                }
+                            </Tabs>
                         </Grid>
-                    </Grid>
-                    <Grid item>
-                        <Tabs onChange={this.handleChange}
-                            value={(item.getTabLabels().length >= tabNr + 1) ? tabNr : 0}>
-                            {item.getTabLabels().map((tabLabel, idx) =>
-                                <Tab key={`tab-label-${idx}`} disableRipple label={tabLabel} />)
-                            }
-                        </Tabs>
-                    </Grid>
-                    <Grid item xs className={this.props.classes.tabContainer} >
-                        {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
-                    </Grid>
-                </Grid >;
+                        <Grid item xs className={this.props.classes.tabContainer} >
+                            {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
+                        </Grid>
+                    </Grid >
+                );
             }
         }
     )

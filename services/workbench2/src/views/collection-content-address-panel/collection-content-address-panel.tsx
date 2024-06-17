@@ -4,11 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    WithStyles,
-    withStyles,
-    Button
-} from '@material-ui/core';
+import { Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CollectionIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
 import { BackIcon } from 'components/icon/icon';
@@ -56,7 +54,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         // reserve space for the content address bar
-        height: `calc(100% - ${theme.spacing(7)}px)`,
+        height: `calc(100% - ${theme.spacing(7)})`,
     },
 });
 

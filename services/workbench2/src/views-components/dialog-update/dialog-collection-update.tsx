@@ -14,7 +14,9 @@ import {
 } from 'views-components/form-fields/collection-form-fields';
 import { UpdateCollectionPropertiesForm } from 'views-components/collection-properties/update-collection-properties-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { FormGroup, FormLabel, withStyles, WithStyles } from '@material-ui/core';
+import { FormGroup, FormLabel } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 
 type CssRules = 'propertiesForm';

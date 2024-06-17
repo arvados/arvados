@@ -4,9 +4,11 @@
 
 import React from 'react';
 import { Chips } from 'components/chips/chips';
-import { Input as MuiInput, withStyles, WithStyles } from '@material-ui/core';
+import { Input as MuiInput } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { InputProps } from '@material-ui/core/Input';
+import { InputProps } from '@mui/material/Input';
 
 interface ChipsInputProps<Value> {
     values: Value[];

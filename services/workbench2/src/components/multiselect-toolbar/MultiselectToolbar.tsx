@@ -5,7 +5,9 @@
 import React from "react";
 import { connect } from "react-redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
+import { Toolbar, Tooltip, IconButton } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
@@ -159,7 +161,7 @@ export const MultiselectToolbar = connect(
                                             disabled={disabledButtons.has(name)}
                                             onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
                                             className={classes.icon}
-                                        >
+                                            size="large">
                                             {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                         </IconButton>
                                     </span>
@@ -178,7 +180,7 @@ export const MultiselectToolbar = connect(
                                             onClick={() => {
                                                 props.executeMulti(action, targetResources, iconProps.resources)}}
                                             className={classes.icon}
-                                        >
+                                            size="large">
                                             {action.icon({})}
                                         </IconButton>
                                     </span>
@@ -191,7 +193,7 @@ export const MultiselectToolbar = connect(
                     )}
                 </Toolbar>
             </React.Fragment>
-        )
+        );
     })
 );
 
@@ -288,7 +290,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
         default:
             return;
     }
-}; 
+};
 
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters): MultiSelectMenuAction[] {
     const rawResult: Set<MultiSelectMenuAction> = new Set();

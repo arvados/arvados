@@ -4,16 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    WithStyles,
-    withStyles,
-    Card,
-    CardContent,
-    Button,
-    Grid,
-    Select,
-    CircularProgress
-} from '@material-ui/core';
+import { Card, CardContent, Button, Grid, Select, CircularProgress } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { UserResource } from "models/user";
 import { LinkAccountType } from "models/link-account";

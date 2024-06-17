@@ -6,7 +6,7 @@ import React from "react";
 import { mount, configure } from "enzyme";
 import { DataTableFiltersPopover } from "./data-table-filters-popover";
 import Adapter from 'enzyme-adapter-react-16';
-import { Checkbox, IconButton } from "@material-ui/core";
+import { Checkbox, IconButton } from "@mui/material";
 import { getInitialProcessStatusFilters } from "store/resource-type-filters/resource-type-filters"
 
 configure({ adapter: new Adapter() });

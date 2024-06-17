@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
+import { List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from 'components/icon/icon';
 import { SearchBarAdvancedFormData } from 'models/search-bar';
@@ -57,12 +59,20 @@ export const SearchBarSavedQueries = withStyles(styles)(
                         className={classes.listItemText} />
                     <ListItemSecondaryAction>
                         <Tooltip title="Edit">
-                            <IconButton aria-label="Edit" onClick={() => editSavedQuery(query, index)} className={classes.button}>
+                            <IconButton
+                                aria-label="Edit"
+                                onClick={() => editSavedQuery(query, index)}
+                                className={classes.button}
+                                size="large">
                                 <EditSavedQueryIcon />
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Remove">
-                            <IconButton aria-label="Remove" onClick={() => deleteSavedQuery(index)} className={classes.button}>
+                            <IconButton
+                                aria-label="Remove"
+                                onClick={() => deleteSavedQuery(index)}
+                                className={classes.button}
+                                size="large">
                                 <RemoveIcon />
                             </IconButton>
                         </Tooltip>

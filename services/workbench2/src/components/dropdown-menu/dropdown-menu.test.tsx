@@ -6,7 +6,7 @@ import React from "react";
 import { shallow, configure } from "enzyme";
 import { DropdownMenu } from "./dropdown-menu";
 import Adapter from 'enzyme-adapter-react-16';
-import { MenuItem, IconButton, Menu } from "@material-ui/core";
+import { MenuItem, IconButton, Menu } from "@mui/material";
 import { PaginationRightArrowIcon } from "../icon/icon";
 
 configure({ adapter: new Adapter() });

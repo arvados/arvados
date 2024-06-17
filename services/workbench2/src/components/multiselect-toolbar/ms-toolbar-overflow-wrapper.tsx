@@ -4,7 +4,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import classnames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { OverflowMenu, OverflowChild } from './ms-toolbar-overflow-menu';

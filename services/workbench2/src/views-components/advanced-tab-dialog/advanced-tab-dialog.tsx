@@ -4,7 +4,18 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Dialog, DialogActions, Button, WithStyles, withStyles, DialogTitle, DialogContent, Tabs, Tab, DialogContentText } from '@material-ui/core';
+import {
+    Dialog,
+    DialogActions,
+    Button,
+    DialogTitle,
+    DialogContent,
+    Tabs,
+    Tab,
+    DialogContentText,
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { withDialog } from "store/dialog/with-dialog";
 import { compose } from 'redux';
@@ -65,39 +76,43 @@ export const AdvancedTabDialog = compose(
                 curlExample,
                 uuid,
             } = this.props.data;
-            return <Dialog
-                open={open}
-                maxWidth="lg"
-                onClose={closeDialog}
-                onExit={() => this.setState({ value: 0 })} >
-                <DialogTitle>API Details</DialogTitle>
-                <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
-                    <Tab label="API RESPONSE" />
-                    <Tab label="METADATA" />
-                    <Tab label="PYTHON EXAMPLE" />
-                    <Tab label="CLI EXAMPLE" />
-                    <Tab label="CURL EXAMPLE" />
-                </Tabs>
-                <DialogContent className={classes.content}>
-                    {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
-                    {value === 1 && <div>
-                        {metadata !== '' && (metadata as ListResults<LinkResource>).items.length > 0 ?
-                            <MetadataTab items={(metadata as ListResults<LinkResource>).items} uuid={uuid} />
-                            : dialogContentHeader('(No metadata links found)')}
-                    </div>}
-                    {value === 2 && dialogContent(pythonHeader, pythonExample, classes)}
-                    {value === 3 && <div>
-                        {dialogContent(cliGetHeader, cliGetExample, classes)}
-                        {dialogContent(cliUpdateHeader, cliUpdateExample, classes)}
-                    </div>}
-                    {value === 4 && dialogContent(curlHeader, curlExample, classes)}
-                </DialogContent>
-                <DialogActions>
-                    <Button data-cy="close-advanced-dialog" variant='text' color='primary' onClick={closeDialog}>
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>;
+            return (
+                <Dialog
+                    open={open}
+                    maxWidth="lg"
+                    onClose={closeDialog}
+                    TransitionProps={{
+                        onExit: () => this.setState({ value: 0 })
+                    }}>
+                    <DialogTitle>API Details</DialogTitle>
+                    <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
+                        <Tab label="API RESPONSE" />
+                        <Tab label="METADATA" />
+                        <Tab label="PYTHON EXAMPLE" />
+                        <Tab label="CLI EXAMPLE" />
+                        <Tab label="CURL EXAMPLE" />
+                    </Tabs>
+                    <DialogContent className={classes.content}>
+                        {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
+                        {value === 1 && <div>
+                            {metadata !== '' && (metadata as ListResults<LinkResource>).items.length > 0 ?
+                                <MetadataTab items={(metadata as ListResults<LinkResource>).items} uuid={uuid} />
+                                : dialogContentHeader('(No metadata links found)')}
+                        </div>}
+                        {value === 2 && dialogContent(pythonHeader, pythonExample, classes)}
+                        {value === 3 && <div>
+                            {dialogContent(cliGetHeader, cliGetExample, classes)}
+                            {dialogContent(cliUpdateHeader, cliUpdateExample, classes)}
+                        </div>}
+                        {value === 4 && dialogContent(curlHeader, curlExample, classes)}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button data-cy="close-advanced-dialog" variant='text' color='primary' onClick={closeDialog}>
+                            Close
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            );
         }
     }
 );

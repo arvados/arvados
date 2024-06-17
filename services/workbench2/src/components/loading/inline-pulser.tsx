@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { ThreeDots } from 'react-loader-spinner'
-import { withTheme } from '@material-ui/core';
+import withTheme from '@mui/styles/withTheme';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type ThemeProps = {

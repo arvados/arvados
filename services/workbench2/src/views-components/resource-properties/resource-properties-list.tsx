@@ -6,10 +6,8 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    withStyles,
-    WithStyles,
-} from '@material-ui/core';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';

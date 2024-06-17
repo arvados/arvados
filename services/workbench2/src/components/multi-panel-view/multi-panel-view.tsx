@@ -4,19 +4,13 @@
 
 import React, { MutableRefObject, ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    Button,
-    Grid,
-    Paper,
-    Tooltip,
-    withStyles,
-    WithStyles
-} from "@material-ui/core";
-import { GridProps } from '@material-ui/core/Grid';
+import { Button, Grid, Paper, Tooltip } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { GridProps } from '@mui/material/Grid';
 import { isArray } from 'lodash';
 import { DefaultView } from 'components/default-view/default-view';
 import { InfoIcon } from 'components/icon/icon';
-import { ReactNodeArray } from 'prop-types';
 import classNames from 'classnames';
 
 type CssRules = 'root' | 'button' | 'buttonIcon' | 'content';
@@ -124,7 +118,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
     } else if (!isArray(children)) {
         children = [children];
     }
-    const initialVisibility = (children as ReactNodeArray).map((_, idx) =>
+    const initialVisibility = (children as ReactNode[]).map((_, idx) =>
         !panelStates || // if panelStates wasn't passed, default to all visible panels
         (panelStates[idx] &&
             (panelStates[idx].visible || panelStates[idx].visible === undefined)));
@@ -209,19 +203,21 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
         };
     };
 
-    return <Grid container {...props} className={classes.root}>
-        <Grid container item direction="row">
-            {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
+    return (
+        <Grid container {...props} className={classes.root}>
+            <Grid container item direction="row">
+                {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
+            </Grid>
+            <Grid container item {...props} xs className={classes.content}
+                onScroll={() => setSelectedPanel(-1)}>
+                {panelVisibility.includes(true)
+                    ? panels
+                    : <Grid container item alignItems='center' justifyContent='center'>
+                        <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
+                    </Grid>}
+            </Grid>
         </Grid>
-        <Grid container item {...props} xs className={classes.content}
-            onScroll={() => setSelectedPanel(-1)}>
-            {panelVisibility.includes(true)
-                ? panels
-                : <Grid container item alignItems='center' justify='center'>
-                    <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
-                </Grid>}
-        </Grid>
-    </Grid>;
+    );
 };
 
 export const MPVContainer = withStyles(styles)(MPVContainerComponent);

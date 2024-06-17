@@ -4,15 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    Grid,
-    IconButton,
-    Link,
-    Tooltip,
-    Typography,
-    WithStyles,
-    withStyles
-} from '@material-ui/core';
+import { Grid, IconButton, Link, Tooltip, Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 import { CopyIcon, CloseIcon } from 'components/icon/icon';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -70,26 +64,28 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
                     ? `Token ${token.apiToken.slice(0, 8)}... expiring at: ${expDate.toLocaleString()} (${moment(expDate).fromNow()})`
                     : `Token ${token.apiToken.slice(0, 8)}... with no expiration date`;
 
-                return <Grid container alignItems='center' key={token.uuid} className={props.classes.sharingUrlRow}>
-                    <Grid item>
-                        <Link className={props.classes.sharingUrlText} href={url} target='_blank' rel="noopener">
-                            {urlLabel}
-                        </Link>
+                return (
+                    <Grid container alignItems='center' key={token.uuid} className={props.classes.sharingUrlRow}>
+                        <Grid item>
+                            <Link className={props.classes.sharingUrlText} href={url} target='_blank' rel="noopener">
+                                {urlLabel}
+                            </Link>
+                        </Grid>
+                        <Grid item xs />
+                        <Grid item>
+                            <span className={props.classes.sharingUrlButton}><Tooltip title='Copy link to clipboard'>
+                                <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
+                                    <CopyIcon />
+                                </CopyToClipboard>
+                            </Tooltip></span>
+                            <span data-cy='remove-url-btn' className={props.classes.sharingUrlButton}><Tooltip title='Remove'>
+                                <IconButton onClick={() => props.onDeleteSharingToken(token.uuid)} size="large">
+                                    <CloseIcon />
+                                </IconButton>
+                            </Tooltip></span>
+                        </Grid>
                     </Grid>
-                    <Grid item xs />
-                    <Grid item>
-                        <span className={props.classes.sharingUrlButton}><Tooltip title='Copy link to clipboard'>
-                            <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
-                                <CopyIcon />
-                            </CopyToClipboard>
-                        </Tooltip></span>
-                        <span data-cy='remove-url-btn' className={props.classes.sharingUrlButton}><Tooltip title='Remove'>
-                            <IconButton onClick={() => props.onDeleteSharingToken(token.uuid)}>
-                                <CloseIcon />
-                            </IconButton>
-                        </Tooltip></span>
-                    </Grid>
-                </Grid>
+                );
             })
         : <Grid item><Typography>No sharing URLs</Typography></Grid>}
 </Grid>);

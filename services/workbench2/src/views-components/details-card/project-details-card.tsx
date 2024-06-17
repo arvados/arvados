@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse, Grid } from '@material-ui/core';
+import { Card, CardHeader, Typography, CardContent, Tooltip, Collapse, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
@@ -244,7 +246,7 @@ export const ProjectCard = connect(
                                 <Collapse
                                     in={showDescription}
                                     timeout='auto'
-                                    collapsedHeight='1.25rem'
+                                    collapsedSize='1.25rem'
                                 >
                                     <Typography
                                         className={classes.description}
@@ -274,7 +276,7 @@ export const ProjectCard = connect(
                                 <Collapse
                                     in={showProperties}
                                     timeout='auto'
-                                    collapsedHeight='35px'
+                                    collapsedSize='35px'
                                 >
                                     <div
                                         className={classes.description}

@@ -10,8 +10,8 @@ import {
     Input,
     InputAdornment,
     Tooltip,
-} from '@material-ui/core';
-import SearchIcon from '@material-ui/icons/Search';
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 
 interface SearchInputDataProps {
     value: string;
@@ -77,24 +77,25 @@ export const SearchInput = (props: SearchInputProps) => {
         ));
     };
 
-    return <form onSubmit={handleSubmit}>
-        <FormControl style={{ width: '14rem'}}>
-            <InputLabel>{label}</InputLabel>
-            <Input
-                type="text"
-                data-cy="search-input"
-                value={value}
-                onChange={handleChange}
-                endAdornment={
-                    <InputAdornment position="end">
-                        <Tooltip title='Search'>
-                            <IconButton
-                                onClick={handleSubmit}>
-                                <SearchIcon />
-                            </IconButton>
-                        </Tooltip>
-                    </InputAdornment>
-                } />
-        </FormControl>
-    </form>;
+    return (
+        <form onSubmit={handleSubmit}>
+            <FormControl style={{ width: '14rem'}}>
+                <InputLabel>{label}</InputLabel>
+                <Input
+                    type="text"
+                    data-cy="search-input"
+                    value={value}
+                    onChange={handleChange}
+                    endAdornment={
+                        <InputAdornment position="end">
+                            <Tooltip title='Search'>
+                                <IconButton onClick={handleSubmit} size="large">
+                                    <SearchIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </InputAdornment>
+                    } />
+            </FormControl>
+        </form>
+    );
 };

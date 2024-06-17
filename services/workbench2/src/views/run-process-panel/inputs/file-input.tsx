@@ -13,7 +13,9 @@ import {
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';

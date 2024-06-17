@@ -7,12 +7,16 @@ import classnames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Grid,
-    Table, TableBody, TableCell, TableHead, TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
     Typography,
-    WithStyles,
-    IconButton
-} from '@material-ui/core';
-import { withStyles } from '@material-ui/core';
+    IconButton,
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, RemoveIcon } from "../icon/icon";
 import { formatFileSize, formatProgress, formatUploadSpeed } from "common/formatters";
@@ -138,76 +142,78 @@ export const FileUpload = withStyles(styles)(
         }
         render() {
             const { classes, onDrop, disabled, files } = this.props;
-            return <div className={"file-upload-dropzone " + classes.dropzoneWrapper}>
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
-                <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
-                <Dropzone className={classes.dropzone}
-                    onDrop={files => onDrop(files)}
-                    onClick={() => {
-                        const el = document.getElementsByClassName("file-upload-dropzone")[0];
-                        const inputs = el.getElementsByTagName("input");
-                        if (inputs.length > 0) {
-                            inputs[0].focus();
-                        }
-                    }}
-                    data-cy="drag-and-drop"
-                    disabled={disabled}
-                    inputProps={{
-                        onFocus: () => {
-                            this.setState({
-                                focused: true
-                            });
-                        },
-                        onBlur: () => {
-                            this.setState({
-                                focused: false
-                            });
-                        }
-                    }}>
-                    {files.length === 0 &&
-                        <Grid container justify="center" alignItems="center" className={classes.container}>
-                            <Grid item component={"span"}>
-                                <Typography variant='subtitle1'>
-                                    <CloudUploadIcon className={classes.uploadIcon} /> Drag and drop data or click to browse
-                            </Typography>
-                            </Grid>
-                        </Grid>}
-                    {files.length > 0 &&
-                        <Table style={{ width: "100%" }}>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>File name</TableCell>
-                                    <TableCell>File size</TableCell>
-                                    <TableCell>Upload speed</TableCell>
-                                    <TableCell>Upload progress</TableCell>
-                                    <TableCell>Delete</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {files.map(f =>
-                                    <TableRow key={f.id}>
-                                        <TableCell>{f.file.name}</TableCell>
-                                        <TableCell>{formatFileSize(f.file.size)}</TableCell>
-                                        <TableCell>{formatUploadSpeed(f.prevLoaded, f.loaded, f.prevTime, f.currentTime)}</TableCell>
-                                        <TableCell>{formatProgress(f.loaded, f.total)}</TableCell>
-                                        <TableCell>
-                                            <IconButton
-                                                aria-label="Remove"
-                                                onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => this.onDelete(event, f)}
-                                                className={disabled ? classnames(classes.deleteButtonDisabled, classes.deleteIcon) : classnames(classes.deleteButton, classes.deleteIcon)}
-                                            >
-                                                <RemoveIcon />
-                                            </IconButton>
-                                        </TableCell>
+            return (
+                <div className={"file-upload-dropzone " + classes.dropzoneWrapper}>
+                    <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderLeft, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
+                    <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderRight, { [classes.dropzoneBorderHorzActive]: this.state.focused })} />
+                    <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderTop, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
+                    <div className={classnames(classes.dropzoneBorder, classes.dropzoneBorderBottom, { [classes.dropzoneBorderVertActive]: this.state.focused })} />
+                    <Dropzone className={classes.dropzone}
+                        onDrop={files => onDrop(files)}
+                        onClick={() => {
+                            const el = document.getElementsByClassName("file-upload-dropzone")[0];
+                            const inputs = el.getElementsByTagName("input");
+                            if (inputs.length > 0) {
+                                inputs[0].focus();
+                            }
+                        }}
+                        data-cy="drag-and-drop"
+                        disabled={disabled}
+                        inputProps={{
+                            onFocus: () => {
+                                this.setState({
+                                    focused: true
+                                });
+                            },
+                            onBlur: () => {
+                                this.setState({
+                                    focused: false
+                                });
+                            }
+                        }}>
+                        {files.length === 0 &&
+                            <Grid container justifyContent="center" alignItems="center" className={classes.container}>
+                                <Grid item component={"span"}>
+                                    <Typography variant='subtitle1'>
+                                        <CloudUploadIcon className={classes.uploadIcon} /> Drag and drop data or click to browse
+                                </Typography>
+                                </Grid>
+                            </Grid>}
+                        {files.length > 0 &&
+                            <Table style={{ width: "100%" }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>File name</TableCell>
+                                        <TableCell>File size</TableCell>
+                                        <TableCell>Upload speed</TableCell>
+                                        <TableCell>Upload progress</TableCell>
+                                        <TableCell>Delete</TableCell>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    }
-                </Dropzone>
-            </div>;
+                                </TableHead>
+                                <TableBody>
+                                    {files.map(f =>
+                                        <TableRow key={f.id}>
+                                            <TableCell>{f.file.name}</TableCell>
+                                            <TableCell>{formatFileSize(f.file.size)}</TableCell>
+                                            <TableCell>{formatUploadSpeed(f.prevLoaded, f.loaded, f.prevTime, f.currentTime)}</TableCell>
+                                            <TableCell>{formatProgress(f.loaded, f.total)}</TableCell>
+                                            <TableCell>
+                                                <IconButton
+                                                    aria-label="Remove"
+                                                    onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => this.onDelete(event, f)}
+                                                    className={disabled ? classnames(classes.deleteButtonDisabled, classes.deleteIcon) : classnames(classes.deleteButton, classes.deleteIcon)}
+                                                    size="large">
+                                                    <RemoveIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        }
+                    </Dropzone>
+                </div>
+            );
         }
     }
 );

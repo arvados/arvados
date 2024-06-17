@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { MenuItem, Typography } from "@material-ui/core";
+import { MenuItem, Typography } from "@mui/material";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { ImportContactsIcon, HelpIcon } from "components/icon/icon";
 import { ArvadosTheme } from 'common/custom-theme';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RootState } from "store/store";
 import { compose } from "redux";
 import { connect } from "react-redux";

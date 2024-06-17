@@ -15,7 +15,9 @@ import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, ope
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, Button, Tabs, Tab, Paper, WithStyles, withStyles } from '@material-ui/core';
+import { Grid, Button, Tabs, Tab, Paper } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
 import { getUserUuid } from 'common/getuser';
 import { GroupResource, isBuiltinGroup } from 'models/group';
@@ -30,7 +32,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing(7)}px)`,
+        height: `calc(100% - ${theme.spacing(7)})`,
     }
 });
 
@@ -189,7 +191,7 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
                                 hideSearchInput
                                 actions={
                                     this.props.groupCanManage &&
-                                    <Grid container justify='flex-end'>
+                                    <Grid container justifyContent='flex-end'>
                                         <Button
                                             data-cy="group-member-add"
                                             variant="contained"

@@ -4,17 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    WithStyles,
-    withStyles,
-    Card,
-    CardHeader,
-    IconButton,
-    CardContent,
-    Tooltip,
-    Typography,
-    Button,
-} from '@material-ui/core';
+import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreVerticalIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
 import { Process, isProcessRunnable, isProcessResumable, isProcessCancelable } from 'store/processes/process';
@@ -89,69 +81,72 @@ export const ProcessDetailsCard = withStyles(styles)(
             runAction = resumeOnHoldWorkflow;
         }
 
-        return <Card className={classes.card}>
-            <CardHeader
-                className={classes.header}
-                classes={{
-                    content: classes.title,
-                    avatar: classes.avatar,
-                }}
-                avatar={<ProcessIcon className={classes.iconHeader} />}
-                title={
-                    <Tooltip title={process.containerRequest.name} placement="bottom-start">
-                        <Typography noWrap variant='h6'>
-                            {process.containerRequest.name}
-                        </Typography>
-                    </Tooltip>
-                }
-                subheader={
-                    <Tooltip title={getDescription(process)} placement="bottom-start">
-                        <Typography noWrap variant='body1' color='inherit'>
-                            {getDescription(process)}
-                        </Typography>
-                    </Tooltip>}
-                action={
-                    <div>
-                        {runAction !== undefined &&
-                            <Button
-                                data-cy="process-run-button"
-                                variant="contained"
-                                size="small"
-                                color="primary"
-                                className={classes.actionButton}
-                                onClick={() => runAction && runAction(process.containerRequest.uuid)}>
-                                <StartIcon />
-                                Run
-                            </Button>}
-                        {isProcessCancelable(process) &&
-                            <Button
-                                data-cy="process-cancel-button"
-                                variant="contained"
-                                size="small"
-                                color="primary"
-                                className={classNames(classes.actionButton, classes.cancelButton)}
-                                onClick={() => cancelProcess(process.containerRequest.uuid)}>
-                                <StopIcon />
-                                Cancel
-                            </Button>}
-                        <ProcessStatus uuid={process.containerRequest.uuid} />
-                        <Tooltip title="More options" disableFocusListener>
-                            <IconButton
-                                aria-label="More options"
-                                onClick={event => onContextMenu(event)}>
-                                <MoreVerticalIcon />
-                            </IconButton>
+        return (
+            <Card className={classes.card}>
+                <CardHeader
+                    className={classes.header}
+                    classes={{
+                        content: classes.title,
+                        avatar: classes.avatar,
+                    }}
+                    avatar={<ProcessIcon className={classes.iconHeader} />}
+                    title={
+                        <Tooltip title={process.containerRequest.name} placement="bottom-start">
+                            <Typography noWrap variant='h6'>
+                                {process.containerRequest.name}
+                            </Typography>
                         </Tooltip>
-                        {doHidePanel &&
-                            <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
-                            </Tooltip>}
-                    </div>
-                } />
-            <CardContent className={classes.content}>
-                <ProcessDetailsAttributes request={process.containerRequest} twoCol hideProcessPanelRedundantFields />
-            </CardContent>
-        </Card>;
+                    }
+                    subheader={
+                        <Tooltip title={getDescription(process)} placement="bottom-start">
+                            <Typography noWrap variant='body1' color='inherit'>
+                                {getDescription(process)}
+                            </Typography>
+                        </Tooltip>}
+                    action={
+                        <div>
+                            {runAction !== undefined &&
+                                <Button
+                                    data-cy="process-run-button"
+                                    variant="contained"
+                                    size="small"
+                                    color="primary"
+                                    className={classes.actionButton}
+                                    onClick={() => runAction && runAction(process.containerRequest.uuid)}>
+                                    <StartIcon />
+                                    Run
+                                </Button>}
+                            {isProcessCancelable(process) &&
+                                <Button
+                                    data-cy="process-cancel-button"
+                                    variant="contained"
+                                    size="small"
+                                    color="primary"
+                                    className={classNames(classes.actionButton, classes.cancelButton)}
+                                    onClick={() => cancelProcess(process.containerRequest.uuid)}>
+                                    <StopIcon />
+                                    Cancel
+                                </Button>}
+                            <ProcessStatus uuid={process.containerRequest.uuid} />
+                            <Tooltip title="More options" disableFocusListener>
+                                <IconButton
+                                    aria-label="More options"
+                                    onClick={event => onContextMenu(event)}
+                                    size="large">
+                                    <MoreVerticalIcon />
+                                </IconButton>
+                            </Tooltip>
+                            {doHidePanel &&
+                                <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                    <IconButton onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
+                                </Tooltip>}
+                        </div>
+                    } />
+                <CardContent className={classes.content}>
+                    <ProcessDetailsAttributes request={process.containerRequest} twoCol hideProcessPanelRedundantFields />
+                </CardContent>
+            </Card>
+        );
     }
 );
 

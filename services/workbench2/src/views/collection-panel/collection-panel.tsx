@@ -4,15 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    WithStyles,
-    withStyles,
-    IconButton,
-    Grid,
-    Tooltip,
-    Typography,
-    Card, CardHeader, CardContent
-} from '@material-ui/core';
+import { IconButton, Grid, Tooltip, Typography, Card, CardHeader, CardContent } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -33,7 +27,7 @@ import { GroupResource } from 'models/group';
 import { UserResource } from 'models/user';
 import { getUserUuid } from 'common/getuser';
 import { Link } from 'react-router-dom';
-import { Link as ButtonLink } from '@material-ui/core';
+import { Link as ButtonLink } from '@mui/material';
 import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { resourceIsFrozen } from 'common/frozen-resources';
@@ -78,8 +72,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyL
     },
     tag: {
-        marginRight: theme.spacing(1) /2,
-        marginBottom: theme.spacing(1) /2
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
     },
     label: {
         fontSize: '0.875rem',
@@ -180,7 +174,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                                         content: classes.title,
                                         avatar: classes.avatar,
                                     }}
-                                    avatar={<IconButton onClick={this.openCollectionDetails}>
+                                    avatar={<IconButton onClick={this.openCollectionDetails} size="large">
                                         {isOldVersion
                                             ? <CollectionOldVersionIcon className={classes.iconHeader} />
                                             : <CollectionIcon className={classes.iconHeader} />}
@@ -200,7 +194,8 @@ export const CollectionPanel = withStyles(styles)(connect(
                                             <IconButton
                                                 data-cy='collection-panel-options-btn'
                                                 aria-label="Actions"
-                                                onClick={this.handleContextMenu}>
+                                                onClick={this.handleContextMenu}
+                                                size="large">
                                                 <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>
@@ -233,8 +228,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                     : <NotFoundView
                         icon={CollectionIcon}
                         messages={["Collection not found"]}
-                    />
-                    ;
+                    />;
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {

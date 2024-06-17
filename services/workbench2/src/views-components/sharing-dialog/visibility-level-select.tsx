@@ -4,12 +4,13 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { MenuItem, Select, withStyles } from '@material-ui/core';
-import Lock from '@material-ui/icons/Lock';
-import People from '@material-ui/icons/People';
-import Public from '@material-ui/icons/Public';
-import { WithStyles } from '@material-ui/core/styles';
-import { SelectProps } from '@material-ui/core/Select';
+import { MenuItem, Select } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import Lock from '@mui/icons-material/Lock';
+import People from '@mui/icons-material/People';
+import Public from '@mui/icons-material/Public';
+import { WithStyles } from '@mui/styles';
+import { SelectProps } from '@mui/material/Select';
 import { SelectItem } from './select-item';
 import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 

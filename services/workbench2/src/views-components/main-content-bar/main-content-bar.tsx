@@ -4,7 +4,9 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Toolbar, IconButton, Tooltip, Grid, WithStyles, withStyles } from "@material-ui/core";
+import { Toolbar, IconButton, Tooltip, Grid } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DetailsIcon } from "components/icon/icon";
 import { Breadcrumbs } from "views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
@@ -84,10 +86,12 @@ export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withS
             </Grid>
             <Grid item>
                 {props.buttonVisible && <Tooltip title="Additional Info" disableFocusListener>
-                    <IconButton data-cy="additional-info-icon"
+                    <IconButton
+                        data-cy="additional-info-icon"
                         color="inherit"
                         className={props.classes.infoTooltip}
-                        onClick={()=>props.onDetailsPanelToggle(props.projectUuid)}>
+                        onClick={()=>props.onDetailsPanelToggle(props.projectUuid)}
+                        size="large">
                         <DetailsIcon />
                     </IconButton>
                 </Tooltip>}

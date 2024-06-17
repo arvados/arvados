@@ -5,8 +5,9 @@
 import React from 'react';
 import { ContextMenuAction } from '../context-menu-action-set';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Divider as DividerComponent, withStyles } from '@material-ui/core';
-import { WithStyles } from '@material-ui/core/styles';
+import { Divider as DividerComponent } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { WithStyles } from '@mui/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { VerticalLineDivider } from 'components/icon/icon';
 

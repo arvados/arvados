@@ -2,15 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { StyleRulesCallback, createTheme } from '@material-ui/core/styles';
-import { ThemeOptions, Theme } from '@material-ui/core/styles';
-import blue from '@material-ui/core/colors/blue';
-import grey from '@material-ui/core/colors/grey';
-import green from '@material-ui/core/colors/green';
-import yellow from '@material-ui/core/colors/yellow';
-import red from '@material-ui/core/colors/red';
+import { createTheme, adaptV4Theme } from '@mui/material/styles';
+import { StyleRulesCallback } from '@mui/styles';
+import { DeprecatedThemeOptions, Theme } from '@mui/material/styles';
+import { blue, grey, green, yellow, red } from '@mui/material/colors';
 
-export interface ArvadosThemeOptions extends ThemeOptions {
+export interface ArvadosThemeOptions extends DeprecatedThemeOptions {
     customs: any;
 }
 
@@ -49,8 +46,8 @@ interface Colors {
 */
 
 const arvadosDarkBlue = '#052a3c';
-const arvadosGreyLight = '#737373'; 
-const arvadosGreyDark = '#212121'; 
+const arvadosGreyLight = '#737373';
+const arvadosGreyDark = '#212121';
 const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
@@ -131,20 +128,20 @@ export const themeOptions: ArvadosThemeOptions = {
                 fontSize: '1.25rem'
             }
         },
-        MuiExpansionPanel: {
+        MuiAccordion: {
             root: {
                 "&$expanded": {
                   "marginTop": "8px"
                 },
               },
         },
-        MuiExpansionPanelDetails: {
+        MuiAccordionDetails: {
             root: {
                 marginBottom: 0,
                 paddingBottom: '4px',
             }
         },
-        MuiExpansionPanelSummary: {
+        MuiAccordionSummary: {
             content: {
                 '&$expanded': {
                     margin: 0,
@@ -209,4 +206,4 @@ export const themeOptions: ArvadosThemeOptions = {
     },
 };
 
-export const CustomTheme = createTheme(themeOptions);
+export const CustomTheme = createTheme(adaptV4Theme(themeOptions));

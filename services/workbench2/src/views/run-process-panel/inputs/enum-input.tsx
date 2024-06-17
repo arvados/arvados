@@ -6,7 +6,7 @@ import React from 'react';
 import { Field } from 'redux-form';
 import { memoize } from 'lodash/fp';
 import { fieldRequire } from 'validators/require';
-import { Select, MenuItem } from '@material-ui/core';
+import { Select, MenuItem } from '@mui/material';
 import { EnumCommandInputParameter, CommandInputEnumSchema, isRequiredInput, getEnumType } from 'models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
 

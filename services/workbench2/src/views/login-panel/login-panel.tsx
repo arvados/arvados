@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Grid, Typography, Button, Select } from '@material-ui/core';
+import { Grid, Typography, Button, Select } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { login, authActions } from 'store/auth/auth-action';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
@@ -101,36 +102,38 @@ export const LoginPanel = withStyles(styles)(
         }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, passwordLogin }: LoginPanelProps) => {
         const loginBtnLabel = `Log in${(localCluster !== homeCluster && loginCluster !== homeCluster) ? " to "+localCluster+" with user from "+homeCluster : ''}`;
 
-        return (<Grid container justify="center" alignItems="center"
-            className={classes.root}
-            style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
-            <Grid item className={classes.container}>
-                <Typography component="div">
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(welcomePage) }} style={{ margin: "1em" }} />
-                </Typography>
-                {Object.keys(remoteHosts).length > 1 && loginCluster === "" &&
+        return (
+            <Grid container justifyContent="center" alignItems="center"
+                className={classes.root}
+                style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
+                <Grid item className={classes.container}>
+                    <Typography component="div">
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(welcomePage) }} style={{ margin: "1em" }} />
+                    </Typography>
+                    {Object.keys(remoteHosts).length > 1 && loginCluster === "" &&
 
-                    <Typography component="div" align="right">
-                        <label>Please select the cluster that hosts your user account:</label>
-                        <Select native value={homeCluster} style={{ margin: "1em" }}
-                            onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value as string))}>
-                            {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
-                        </Select>
+                        <Typography component="div" align="right">
+                            <label>Please select the cluster that hosts your user account:</label>
+                            <Select native value={homeCluster} style={{ margin: "1em" }}
+                                onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value as string))}>
+                                {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
+                            </Select>
+                        </Typography>}
+
+                    {passwordLogin
+                    ? <Typography component="div">
+                        <LoginForm dispatch={dispatch}
+                            loginLabel={loginBtnLabel}
+                            handleSubmit={doPasswordLogin(`https://${remoteHosts[loginCluster || homeCluster]}`)}/>
+                    </Typography>
+                    : <Typography component="div" align="right">
+                        <Button variant="contained" color="primary" style={{ margin: "1em" }}
+                            className={classes.button}
+                            onClick={() => dispatch(login(localCluster, homeCluster, loginCluster, remoteHosts))}>
+                            {loginBtnLabel}
+                        </Button>
                     </Typography>}
-
-                {passwordLogin
-                ? <Typography component="div">
-                    <LoginForm dispatch={dispatch}
-                        loginLabel={loginBtnLabel}
-                        handleSubmit={doPasswordLogin(`https://${remoteHosts[loginCluster || homeCluster]}`)}/>
-                </Typography>
-                : <Typography component="div" align="right">
-                    <Button variant="contained" color="primary" style={{ margin: "1em" }}
-                        className={classes.button}
-                        onClick={() => dispatch(login(localCluster, homeCluster, loginCluster, remoteHosts))}>
-                        {loginBtnLabel}
-                    </Button>
-                </Typography>}
-            </Grid>
-        </Grid >);}
+                </Grid>
+            </Grid >
+        );}
     ));

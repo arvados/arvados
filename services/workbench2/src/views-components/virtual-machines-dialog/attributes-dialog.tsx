@@ -3,18 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@mui/material";
 import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
 import { VIRTUAL_MACHINE_ATTRIBUTES_DIALOG } from "store/virtual-machines/virtual-machines-actions";
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
 import { VirtualMachinesResource } from "models/virtual-machines";
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 
-const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rightContainer: {
         textAlign: 'right',
         paddingRight: theme.spacing(2),
@@ -27,7 +29,7 @@ const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
     spacing: {
         paddingTop: theme.spacing(2)
     },
-}));
+});
 
 interface VirtualMachineAttributesDataProps {
     virtualMachineData: VirtualMachinesResource;
@@ -37,7 +39,7 @@ type VirtualMachineAttributesProps = VirtualMachineAttributesDataProps & WithSty
 
 export const VirtualMachineAttributesDialog = compose(
     withDialog(VIRTUAL_MACHINE_ATTRIBUTES_DIALOG),
-    styles)(
+    withStyles(styles))(
         (props: WithDialogProps<VirtualMachineAttributesProps> & VirtualMachineAttributesProps) =>
             <Dialog open={props.open}
                 onClose={props.closeDialog}

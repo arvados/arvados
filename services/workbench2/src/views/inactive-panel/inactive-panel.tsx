@@ -5,9 +5,10 @@
 import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button } from '@material-ui/core';
+import { Grid, Typography, Button } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { navigateToLinkAccount } from 'store/navigation/navigation-action';
 import { RootState } from 'store/store';
@@ -54,7 +55,7 @@ export interface InactivePanelStateProps {
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
 
 export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isLoginClusterFederation }: InactivePanelProps) =>
-    <Grid container justify="center" alignItems="center" direction="column" spacing={3}
+    <Grid container justifyContent="center" alignItems="center" direction="column" spacing={3}
         className={classes.root}
         style={{ marginTop: 56, height: "100%" }}>
         <Grid item>

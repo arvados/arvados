@@ -20,7 +20,8 @@ import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware
 import { PublicFavoritesTreePicker } from './public-favorites-tree-picker';
 import { SearchInput } from 'components/search-input/search-input';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles } from '@material-ui/core';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 export interface ToplevelPickerProps {

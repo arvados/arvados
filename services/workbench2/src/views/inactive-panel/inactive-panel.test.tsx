@@ -7,7 +7,16 @@ import { mount, configure } from 'enzyme';
 import Adapter from "enzyme-adapter-react-16";
 import { CustomTheme } from 'common/custom-theme';
 import { InactivePanelStateProps, CssRules, InactivePanelRoot } from './inactive-panel';
-import { MuiThemeProvider, StyledComponentProps } from '@material-ui/core';
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
+
+import { StyledComponentProps } from '@mui/styles';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 configure({ adapter: new Adapter() });
 
@@ -33,9 +42,11 @@ describe('InactivePanel', () => {
 
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <InactivePanelRoot {...props} />
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <InactivePanelRoot {...props} />
+                </ThemeProvider>
+            </StyledEngineProvider>
             );
 
         // then
@@ -51,9 +62,11 @@ describe('InactivePanel', () => {
 
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <InactivePanelRoot {...props} />
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <InactivePanelRoot {...props} />
+                </ThemeProvider>
+            </StyledEngineProvider>
             );
 
         // then

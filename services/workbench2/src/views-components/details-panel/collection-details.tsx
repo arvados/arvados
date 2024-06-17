@@ -11,7 +11,9 @@ import { RootState } from 'store/store';
 import { filterResources, getResource, ResourcesState } from 'store/resources/resources';
 import { connect } from 'react-redux';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button, Grid, ListItem, Typography, withStyles, WithStyles } from '@material-ui/core';
+import { Button, Grid, ListItem, Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { formatDate, formatFileSize } from 'common/formatters';
 import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
@@ -39,7 +41,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         textAlign: 'center',
     },
     editIcon: {
-        paddingRight: theme.spacing(1) / 2,
+        paddingRight: theme.spacing(0.5),
         fontSize: '1.125rem',
     },
     editButton: {
@@ -48,8 +50,8 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
         fontSize: '0.75rem'
     },
     tag: {
-        marginRight: theme.spacing(1) /2,
-        marginBottom: theme.spacing(1) /2
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
     },
 });
 

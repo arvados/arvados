@@ -4,7 +4,9 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Dialog, DialogActions, Button, WithStyles, withStyles, CardHeader, Tab, Tabs } from '@material-ui/core';
+import { Dialog, DialogActions, Button, CardHeader, Tab, Tabs } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { withDialog } from "store/dialog/with-dialog";
 import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from 'store/collections/collection-info-actions';
 import { WithDialogProps } from 'store/dialog/with-dialog';

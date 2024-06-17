@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Chip, withTheme } from "@material-ui/core";
+import { Grid, Typography, Tooltip, IconButton, Checkbox, Chip } from "@mui/material";
+import withStyles from '@mui/styles/withStyles';
+import withTheme from '@mui/styles/withTheme';
 import { FavoriteStar, PublicFavoriteStar } from "../favorite-star/favorite-star";
 import { Resource, ResourceKind, TrashableResource } from "models/resource";
 import {
@@ -195,7 +197,7 @@ const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: strin
         <div>
             {!isPublic && uuid && (
                 <Tooltip title="Share">
-                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))}>
+                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))} size="large">
                         <ShareIcon />
                     </IconButton>
                 </Tooltip>
@@ -594,16 +596,13 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
                 <IconButton
                     data-cy="resource-delete-button"
                     onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}
-                >
+                    size="large">
                     <RemoveIcon />
                 </IconButton>
             </Typography>
         ) : (
             <Typography noWrap>
-                <IconButton
-                    disabled
-                    data-cy="resource-delete-button"
-                >
+                <IconButton disabled data-cy="resource-delete-button" size="large">
                     <RemoveIcon />
                 </IconButton>
             </Typography>
@@ -645,7 +644,7 @@ const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage
                 <IconButton
                     data-cy="edit-permission-button"
                     onClick={event => dispatch<any>(openPermissionEditContextMenu(event, link))}
-                >
+                    size="large">
                     <RenameIcon />
                 </IconButton>
             ) : (
@@ -691,7 +690,7 @@ const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
         <div>
             {uuid && (
                 <Tooltip title="Run process">
-                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))}>
+                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))} size="large">
                         <ProcessIcon />
                     </IconButton>
                 </Tooltip>

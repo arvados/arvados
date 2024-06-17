@@ -12,11 +12,11 @@ import {
     TableHead,
     TableSortLabel,
     Theme,
-    WithStyles,
-    withStyles,
     IconButton,
     Tooltip,
-} from "@material-ui/core";
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
 import { DataColumn, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
@@ -25,8 +25,8 @@ import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/d
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty } from "models/tree";
 import { IconType } from "components/icon/icon";
-import { SvgIconProps } from "@material-ui/core/SvgIcon";
-import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
+import { SvgIconProps } from "@mui/material/SvgIcon";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
@@ -418,7 +418,8 @@ export const DataTable = withStyles(styles)(
             <IconButton
                 component="span"
                 className={this.props.classes.arrowButton}
-                tabIndex={-1}>
+                tabIndex={-1}
+                size="large">
                 <ArrowDownwardIcon
                     {...props}
                     className={classnames(className, this.props.classes.arrow)}

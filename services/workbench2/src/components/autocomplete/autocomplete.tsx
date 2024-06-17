@@ -8,11 +8,18 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip
-} from '@material-ui/core';
+    FormControl,
+    InputLabel,
+    ListItemText,
+    ListItem,
+    List,
+    FormHelperText,
+    Tooltip,
+} from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { PopperProps } from '@material-ui/core/Popper';
-import { WithStyles } from '@material-ui/core/styles';
+import { PopperProps } from '@mui/material/Popper';
+import { WithStyles } from '@mui/styles';
 import { noop } from 'lodash';
 
 export interface AutocompleteProps<Item, Suggestion> {
@@ -52,14 +59,14 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     render() {
         return (
-            <RootRef rootRef={this.containerRef}>
+            <>
                 <FormControl fullWidth error={this.props.error}>
                     {this.renderLabel()}
                     {this.renderInput()}
                     {this.renderHelperText()}
                     {this.renderSuggestions()}
                 </FormControl>
-            </RootRef>
+            </>
         );
     }
 
@@ -234,7 +241,7 @@ type ChipClasses = 'root';
 
 const chipStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
-        marginRight: theme.spacing(1) / 4,
+        marginRight: theme.spacing(0.25),
         height: theme.spacing(3),
     }
 });

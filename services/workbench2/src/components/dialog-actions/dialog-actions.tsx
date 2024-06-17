@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DialogActions as MuiDialogActions } from '@material-ui/core/';
+import { DialogActions as MuiDialogActions } from '@mui/material/';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles } from '@material-ui/core';
+import withStyles from '@mui/styles/withStyles';
 
 const styles: CustomStyleRulesCallback<'root'> = theme => {
     const margin = theme.spacing(3);

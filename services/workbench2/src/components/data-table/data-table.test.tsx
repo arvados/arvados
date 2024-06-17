@@ -5,7 +5,7 @@
 import React from "react";
 import { mount, configure } from "enzyme";
 import { pipe } from "lodash/fp";
-import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
+import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@mui/material";
 import Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
 import { SortDirection, createDataColumn } from "./data-column";

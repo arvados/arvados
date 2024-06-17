@@ -6,7 +6,7 @@ import React from "react";
 import { mount, configure } from "enzyme";
 import { ConditionalTabs, TabData } from "./conditional-tabs";
 import Adapter from 'enzyme-adapter-react-16';
-import { Tab } from "@material-ui/core";
+import { Tab } from "@mui/material";
 
 configure({ adapter: new Adapter() });
 

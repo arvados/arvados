@@ -5,7 +5,7 @@
 import React from 'react';
 import { configure, shallow, mount } from "enzyme";
 import { BannerComponent } from './banner';
-import { Button } from "@material-ui/core";
+import { Button } from "@mui/material";
 import Adapter from "enzyme-adapter-react-16";
 import servicesProvider from '../../common/service-provider';
 

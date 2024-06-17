@@ -4,10 +4,12 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles, ButtonBase, Theme, Popover, Card, Tooltip, IconButton } from "@material-ui/core";
+import { ButtonBase, Theme, Popover, Card, Tooltip, IconButton } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
 import { DefaultTransformOrigin } from "components/popover/helpers";
-import { grey } from "@material-ui/core/colors";
+import { grey } from "@mui/material/colors";
 import { TCheckedList } from "components/data-table/data-table";
 
 export type CssRules = "root" | "icon" | "iconButton" | "disabled" | "optionsContainer" | "option";
@@ -81,61 +83,59 @@ export const DataTableMultiselectPopover = withStyles(styles)(
 
         render() {
             const { classes, children, options, checkedList, disabled } = this.props;
-            return (
-                <>
-                    <Tooltip
-                        disableFocusListener
-                        title="Select options"
-                        data-cy="data-table-multiselect-popover"
+            return <>
+                <Tooltip
+                    disableFocusListener
+                    title="Select options"
+                    data-cy="data-table-multiselect-popover"
+                >
+                    <ButtonBase
+                        className={classnames(classes.root)}
+                        component="span"
+                        onClick={disabled ? () => {} : this.open}
+                        disableRipple
                     >
-                        <ButtonBase
-                            className={classnames(classes.root)}
+                        {children}
+                        <IconButton
                             component="span"
-                            onClick={disabled ? () => {} : this.open}
-                            disableRipple
-                        >
-                            {children}
-                            <IconButton
-                                component="span"
-                                classes={{ root: classes.iconButton }}
-                                tabIndex={-1}
-                            >
-                                <i
-                                    className={`${classnames(["fas fa-sort-down", classes.icon])}${disabled ? ` ${classes.disabled}` : ""}`}
-                                    data-fa-transform="shrink-3"
-                                    ref={this.icon}
-                                />
-                            </IconButton>
-                        </ButtonBase>
-                    </Tooltip>
-                    <Popover
-                        anchorEl={this.state.anchorEl}
-                        open={!!this.state.anchorEl}
-                        anchorOrigin={DefaultTransformOrigin}
-                        transformOrigin={DefaultTransformOrigin}
-                        onClose={this.close}
-                    >
-                        <Card>
-                            <div className={classes.optionsContainer}>
-                                {options.length &&
-                                    options.map((option, i) => (
-                                        <div
-                                            data-cy={`multiselect-popover-${option.name}`}
-                                            key={i}
-                                            className={classes.option}
-                                            onClick={() => {
-                                                option.fn(checkedList);
-                                                this.close();
-                                            }}
-                                        >
-                                            {option.name}
-                                        </div>
-                                    ))}
-                            </div>
-                        </Card>
-                    </Popover>
-                </>
-            );
+                            classes={{ root: classes.iconButton }}
+                            tabIndex={-1}
+                            size="large">
+                            <i
+                                className={`${classnames(["fas fa-sort-down", classes.icon])}${disabled ? ` ${classes.disabled}` : ""}`}
+                                data-fa-transform="shrink-3"
+                                ref={this.icon}
+                            />
+                        </IconButton>
+                    </ButtonBase>
+                </Tooltip>
+                <Popover
+                    anchorEl={this.state.anchorEl}
+                    open={!!this.state.anchorEl}
+                    anchorOrigin={DefaultTransformOrigin}
+                    transformOrigin={DefaultTransformOrigin}
+                    onClose={this.close}
+                >
+                    <Card>
+                        <div className={classes.optionsContainer}>
+                            {options.length &&
+                                options.map((option, i) => (
+                                    <div
+                                        data-cy={`multiselect-popover-${option.name}`}
+                                        key={i}
+                                        className={classes.option}
+                                        onClick={() => {
+                                            option.fn(checkedList);
+                                            this.close();
+                                        }}
+                                    >
+                                        {option.name}
+                                    </div>
+                                ))}
+                        </div>
+                    </Card>
+                </Popover>
+            </>;
         }
 
         open = () => {

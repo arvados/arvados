@@ -12,9 +12,11 @@ import { DetailsData } from "./details-data";
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
-import { Grid } from '@material-ui/core';
+import { Grid } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles, Button } from '@material-ui/core';
+import { Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
@@ -52,14 +54,14 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: 'auto'
     },
     propertyTag: {
-        marginRight: theme.spacing(1) /2,
-        marginBottom: theme.spacing(1) /2
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
     },
 });
 
 interface AuthStateDataProps {
     auth: AuthState;
-};
+}
 
 export interface RegisteredWorkflowPanelDataProps {
     item: WorkflowResource;
@@ -67,7 +69,7 @@ export interface RegisteredWorkflowPanelDataProps {
     inputParams: ProcessIOParameter[];
     outputParams: ProcessIOParameter[];
     gitprops: { [key: string]: string; };
-};
+}
 
 export const getRegisteredWorkflowPanelData = (item: WorkflowResource, auth: AuthState): RegisteredWorkflowPanelDataProps => {
     let inputParams: ProcessIOParameter[] = [];

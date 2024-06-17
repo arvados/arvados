@@ -4,10 +4,11 @@
 
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
-import { Tooltip } from '@material-ui/core';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { Tooltip } from '@mui/material';
 import { CopyIcon } from 'components/icon/icon';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';

@@ -5,10 +5,11 @@
 import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles } from '@material-ui/core/styles';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import { Button, Card, CardContent, TextField, CardActions } from '@material-ui/core';
-import { green } from '@material-ui/core/colors';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import CircularProgress from '@mui/material/CircularProgress';
+import { Button, Card, CardContent, TextField, CardActions } from '@mui/material';
+import { green } from '@mui/material/colors';
 import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
 import { saveApiToken } from 'store/auth/auth-action';

@@ -8,7 +8,7 @@ import { isRequiredInput, StringCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
 import { fieldRequire } from 'validators/require';
 import { GenericInputProps, GenericInput } from 'views/run-process-panel/inputs/generic-input';
-import { Input as MaterialInput } from '@material-ui/core';
+import { Input as MaterialInput } from '@mui/material';
 
 export interface StringInputProps {
     input: StringCommandInputParameter;

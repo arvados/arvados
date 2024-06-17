@@ -18,7 +18,9 @@ import { getInitialProcessStatusFilters } from 'store/resource-type-filters/reso
 import { ResourcesState } from 'store/resources/resources';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Typography, WithStyles, withStyles } from '@material-ui/core';
+import { Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
 import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';

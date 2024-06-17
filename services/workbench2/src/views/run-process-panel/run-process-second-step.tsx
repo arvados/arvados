@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, Button } from '@material-ui/core';
+import { Grid, Button } from '@mui/material';
 import { RunProcessBasicForm, RUN_PROCESS_BASIC_FORM } from './run-process-basic-form';
 import { RunProcessInputsForm } from 'views/run-process-panel/run-process-inputs-form';
 import { CommandInputParameter, WorkflowResource } from 'models/workflow';

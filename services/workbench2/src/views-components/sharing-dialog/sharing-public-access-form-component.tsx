@@ -4,16 +4,16 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, Typography } from '@material-ui/core';
+import { Grid, Typography } from '@mui/material';
 import { Field, WrappedFieldProps } from 'redux-form';
-import { WithStyles } from '@material-ui/core/styles';
-import withStyles from '@material-ui/core/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { VisibilityLevelSelect } from './visibility-level-select';
 import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 const sharingPublicAccessStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
-        padding: `${theme.spacing(2)}px 0`,
+        padding: `${theme.spacing(2)} 0`,
     },
     heading: {
         fontSize: '1.25rem',

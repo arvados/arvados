@@ -4,12 +4,13 @@
 
 import React from "react";
 import isImage from 'is-image';
-import { withStyles, WithStyles } from '@material-ui/core';
+import { WithStyles, withStyles } from '@mui/styles';
 import { FileTreeData } from 'components/file-tree/file-tree-data';
 import { CollectionFileType } from 'models/collection-file';
 import { getInlineFileUrl, sanitizeToken } from "views-components/context-menu/actions/helpers";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
+import { Styles } from '@mui/styles';
 
 interface FileThumbnailProps {
     file: FileTreeData;
@@ -21,12 +22,12 @@ export const FileThumbnail =
             ? <ImageFileThumbnail file={file} />
             : null;
 
-type ImageFileThumbnailCssRules = 'thumbnail';
+type ImageFileThumbnailCssRules = Styles<any, any, 'thumbnail'>;
 
 const imageFileThumbnailStyle = withStyles<ImageFileThumbnailCssRules>(theme => ({
     thumbnail: {
         maxWidth: 250,
-        margin: `${theme.spacing(1)}px 0`,
+        margin: `${theme.spacing(1)} 0`,
     }
 }));
 

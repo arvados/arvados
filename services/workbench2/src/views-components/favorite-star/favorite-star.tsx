@@ -7,7 +7,10 @@ import { FavoriteIcon, PublicFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles, Tooltip } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 
 type CssRules = "icon";
 

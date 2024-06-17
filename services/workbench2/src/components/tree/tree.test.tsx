@@ -5,12 +5,12 @@ import React from 'react';
 import { mount } from 'enzyme';
 import * as Enzyme from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
-import ListItem from "@material-ui/core/ListItem/ListItem";
+import ListItem from "@mui/material/ListItem/ListItem";
 
 import { Tree, TreeItem, TreeItemStatus } from './tree';
 import { ProjectResource } from '../../models/project';
 import { mockProjectResource } from '../../models/test-utils';
-import { Checkbox } from '@material-ui/core';
+import { Checkbox } from '@mui/material';
 
 Enzyme.configure({ adapter: new Adapter() });
 

@@ -6,7 +6,7 @@ import React from "react";
 import { Field } from "redux-form";
 import { TextField } from "components/text-field/text-field";
 import { REPOSITORY_NAME_VALIDATION } from "validators/validators";
-import { Grid } from "@material-ui/core";
+import { Grid } from "@mui/material";
 
 export const RepositoryNameField = (props: any) =>
     <Grid container style={{ marginTop: '0', paddingTop: '24px' }}>

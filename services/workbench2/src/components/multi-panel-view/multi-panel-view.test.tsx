@@ -6,7 +6,7 @@ import React from "react";
 import { configure, mount } from "enzyme";
 import Adapter from "enzyme-adapter-react-16";
 import { MPVContainer } from './multi-panel-view';
-import { Button } from "@material-ui/core";
+import { Button } from "@mui/material";
 
 configure({ adapter: new Adapter() });
 

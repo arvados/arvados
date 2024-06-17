@@ -5,7 +5,9 @@
 import React from "react";
 import { WarningIcon } from "components/icon/icon";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { DialogContentText, WithStyles, withStyles } from "@material-ui/core";
+import { DialogContentText } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'container' | 'text';

@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import Menu from "@material-ui/core/Menu";
-import IconButton from "@material-ui/core/IconButton";
-import { PopoverOrigin } from "@material-ui/core/Popover";
-import { Tooltip } from "@material-ui/core";
+import Menu from "@mui/material/Menu";
+import IconButton from "@mui/material/IconButton";
+import { PopoverOrigin } from "@mui/material/Popover";
+import { Tooltip } from "@mui/material";
 
 interface DropdownMenuProps {
     id: string;
@@ -40,7 +40,8 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
                         aria-owns={anchorEl ? id : undefined}
                         aria-haspopup="true"
                         color="inherit"
-                        onClick={this.handleOpen}>
+                        onClick={this.handleOpen}
+                        size="large">
                         {icon}
                     </IconButton>
                 </Tooltip>

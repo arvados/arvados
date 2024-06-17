@@ -14,14 +14,14 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     ListItemIcon,
     Theme,
-    WithStyles,
-    withStyles,
     Tooltip,
     IconButton,
     Checkbox,
     CircularProgress,
     Button,
-} from "@material-ui/core";
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { FileTreeData } from "../file-tree/file-tree-data";
 import { TreeItem, TreeItemStatus } from "../tree/tree";
 import { RootState } from "store/store";
@@ -523,7 +523,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                             onClick={ev => {
                                 onOptionsMenuOpen(ev, isWritable);
                             }}
-                        >
+                            size="large">
                             <MoreVerticalIcon />
                         </IconButton>
                     </Tooltip>
@@ -537,7 +537,9 @@ export const CollectionPanelFiles = withStyles(styles)(
                             title="Go back"
                             className={path.length > 1 ? classes.backButton : classes.backButtonHidden}
                         >
-                            <IconButton onClick={() => setPath(state => [...state.slice(0, state.length - 1)])}>
+                            <IconButton
+                                onClick={() => setPath(state => [...state.slice(0, state.length - 1)])}
+                                size="large">
                                 <BackIcon />
                             </IconButton>
                         </Tooltip>
@@ -679,7 +681,7 @@ export const CollectionPanelFiles = withStyles(styles)(
                                                                     data-id="moreOptions"
                                                                     data-cy="file-item-options-btn"
                                                                     className={classes.moreOptionsButton}
-                                                                >
+                                                                    size="large">
                                                                     <MoreHorizontalIcon
                                                                         data-id="moreOptions"
                                                                         className={classes.moreOptions}

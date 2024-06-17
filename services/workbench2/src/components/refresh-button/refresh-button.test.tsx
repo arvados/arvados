@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Button } from "@material-ui/core";
+import { Button } from "@mui/material";
 import { shallow, configure } from "enzyme";
 import Adapter from "enzyme-adapter-react-16";
 import { LAST_REFRESH_TIMESTAMP, RefreshButton } from './refresh-button';

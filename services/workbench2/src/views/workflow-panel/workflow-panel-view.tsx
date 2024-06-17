@@ -16,7 +16,7 @@ import {
 import { SortDirection } from 'components/data-table/data-column';
 import { DataColumns } from 'components/data-table/data-table';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
-import { Grid, Paper } from '@material-ui/core';
+import { Grid, Paper } from '@mui/material';
 import { WorkflowDetailsCard } from './workflow-description-card';
 import { WorkflowResource } from 'models/workflow';
 import { createTree } from 'models/tree';

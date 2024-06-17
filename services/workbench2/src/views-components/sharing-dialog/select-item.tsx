@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, withStyles } from '@material-ui/core';
-import { WithStyles } from '@material-ui/core/styles';
-import { SvgIconProps } from '@material-ui/core/SvgIcon';
+import { Grid } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import { SvgIconProps } from '@mui/material/SvgIcon';
 
 type SelectItemClasses = 'value' | 'icon';
 
@@ -15,7 +16,7 @@ const permissionItemStyles: CustomStyleRulesCallback<SelectItemClasses> = theme 
         marginLeft: theme.spacing(1),
     },
     icon: {
-        margin: `-${theme.spacing(1) /2}px 0`
+        margin: `-calc(${theme.spacing(1)} / 2) 0`
     }
 });
 

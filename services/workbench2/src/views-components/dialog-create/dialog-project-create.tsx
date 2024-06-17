@@ -11,7 +11,9 @@ import { ProjectNameField, ProjectDescriptionField, UsersField } from 'views-com
 import { CreateProjectPropertiesForm } from 'views-components/project-properties/create-project-properties-form';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { FormGroup, FormLabel, WithStyles, withStyles } from '@material-ui/core';
+import { FormGroup, FormLabel } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 import { GroupClass } from 'models/group';
 

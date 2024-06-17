@@ -4,7 +4,9 @@
 
 import React, { useEffect, useState } from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Tooltip, WithStyles, withStyles } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CProgressStacked, CProgress } from '@coreui/react';
 import { useAsyncInterval } from "common/use-async-interval";
 import { Process, isProcessRunning } from "store/processes/process";

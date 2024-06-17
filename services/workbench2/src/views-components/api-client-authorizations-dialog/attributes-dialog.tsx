@@ -5,10 +5,9 @@
 import React from "react";
 import { compose } from 'redux';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    withStyles, Dialog, DialogTitle, DialogContent, DialogActions,
-    Button, WithStyles, Grid
-} from '@material-ui/core';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
 import { API_CLIENT_AUTHORIZATION_ATTRIBUTES_DIALOG } from 'store/api-client-authorizations/api-client-authorizations-actions';
 import { ArvadosTheme } from 'common/custom-theme';

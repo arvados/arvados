@@ -6,7 +6,9 @@ import React, { useState, useMemo, ReactElement, JSXElementConstructor } from 'r
 import { DoubleRightArrows } from 'components/icon/icon';
 import classnames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { IconButton, Menu, MenuItem, Tooltip, WithStyles, withStyles } from '@material-ui/core';
+import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'inOverflowMenu' | 'openMenuButton' | 'menu' | 'menuItem' | 'menuElement';
@@ -71,7 +73,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                     onClick={handleClick}
                     className={classes.openMenuButton}
                     data-cy='overflow-menu-button'
-                >
+                    size="large">
                         <DoubleRightArrows />
                 </IconButton>
             </Tooltip>

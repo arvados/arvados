@@ -6,7 +6,10 @@ import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles, FormControl, InputLabel, Select, FormHelperText } from '@material-ui/core';
+import { FormControl, InputLabel, Select, FormHelperText } from '@mui/material';
+
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 
 type CssRules = 'formControl' | 'selectWrapper' | 'select' | 'option';
 

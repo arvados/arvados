@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Chip, Grid, withStyles } from '@material-ui/core';
+import { Chip, Grid } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
 import {
     DragSource,
     DragSourceSpec,
@@ -16,7 +17,7 @@ import {
     ConnectDropTarget
 } from 'react-dnd';
 import { compose } from 'lodash/fp';
-import { WithStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
 interface ChipsProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
@@ -31,7 +32,7 @@ type CssRules = 'root';
 
 const styles: CustomStyleRulesCallback<CssRules> = ({ spacing }) => ({
     root: {
-        margin: `0px -${spacing(1) / 2}px`,
+        margin: `0px -calc(${spacing(1)} / 2)`,
     },
 });
 export const Chips = withStyles(styles)(

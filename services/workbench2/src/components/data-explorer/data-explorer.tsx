@@ -4,7 +4,18 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, Paper, Toolbar, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
+import {
+    Grid,
+    Paper,
+    Toolbar,
+    TablePagination,
+    IconButton,
+    Tooltip,
+    Button,
+    Typography,
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
@@ -15,7 +26,7 @@ import { TCheckedList } from "components/data-table/data-table";
 import { createTree } from "models/tree";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
-import { PaperProps } from "@material-ui/core/Paper";
+import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
 type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
@@ -243,7 +254,7 @@ export const DataExplorer = withStyles(styles)(
                                     xs
                                 >
                                     <Toolbar className={classes.toolbar}>
-                                        <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                                        <Grid container justifyContent="space-between" wrap="nowrap" alignItems="center">
                                             {!hideSearchInput && (
                                                 <div className={classes.searchBox}>
                                                     {!hideSearchInput && (
@@ -269,7 +280,7 @@ export const DataExplorer = withStyles(styles)(
                                                 title={`Unmaximize ${panelName || "panel"}`}
                                                 disableFocusListener
                                             >
-                                                <IconButton onClick={doUnMaximizePanel}>
+                                                <IconButton onClick={doUnMaximizePanel} size="large">
                                                     <UnMaximizeIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -279,7 +290,7 @@ export const DataExplorer = withStyles(styles)(
                                                 title={`Maximize ${panelName || "panel"}`}
                                                 disableFocusListener
                                             >
-                                                <IconButton onClick={doMaximizePanel}>
+                                                <IconButton onClick={doMaximizePanel} size="large">
                                                     <MaximizeIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -289,10 +300,7 @@ export const DataExplorer = withStyles(styles)(
                                                 title={`Close ${panelName || "panel"}`}
                                                 disableFocusListener
                                             >
-                                                <IconButton
-                                                    disabled={panelMaximized}
-                                                    onClick={doHidePanel}
-                                                >
+                                                <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
                                                     <CloseIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -342,7 +350,7 @@ export const DataExplorer = withStyles(styles)(
                                 )}
                                 <Grid
                                     container={!elementPath}
-                                    justify="flex-end"
+                                    justifyContent="flex-end"
                                 >
                                     {fetchMode === DataTableFetchMode.PAGINATED ? (
                                         <TablePagination
@@ -351,7 +359,7 @@ export const DataExplorer = withStyles(styles)(
                                             rowsPerPageOptions={rowsPerPageOptions}
                                             page={this.props.page}
                                             onPageChange={this.changePage}
-                                            onChangeRowsPerPage={this.changeRowsPerPage}
+                                            onRowsPerPageChange={this.changeRowsPerPage}
                                             // Disable next button on empty lists since that's not default behavior
                                             nextIconButtonProps={itemsAvailable > 0 ? {} : { disabled: true }}
                                             component="div"
@@ -396,7 +404,7 @@ export const DataExplorer = withStyles(styles)(
         renderContextMenuTrigger = (item: T) => (
             <Grid
                 container
-                justify="center"
+                justifyContent="center"
             >
                 <Tooltip
                     title="More options"
@@ -408,7 +416,7 @@ export const DataExplorer = withStyles(styles)(
                             event.stopPropagation()
                             this.props.onContextMenu(event, item)
                         }}
-                    >
+                        size="large">
                         <MoreVerticalIcon />
                     </IconButton>
                 </Tooltip>

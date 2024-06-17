@@ -6,9 +6,10 @@ import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, ResourceIcon } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
-import { IconButton, List, ListItem, Tooltip } from '@material-ui/core'
+import { IconButton, List, ListItem, Tooltip } from '@mui/material'
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles'
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme'
 import { navigateTo, navigateToInstanceTypes } from 'store/navigation/navigation-action'
 import { RootState } from 'store/store'
@@ -154,7 +155,7 @@ export const SidePanelCollapsed = withStyles(styles)(
                             title={cat.name}
                             disableFocusListener
                             >
-                            <IconButton className={button}>{cat.icon}</IconButton>
+                            <IconButton className={button} size="large">{cat.icon}</IconButton>
                         </Tooltip>
                     </ListItem>
                 ))}

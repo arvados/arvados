@@ -5,13 +5,21 @@
 import React from 'react';
 import { mount, configure } from 'enzyme';
 import Adapter from "enzyme-adapter-react-16";
-import { MuiThemeProvider, WithStyles } from '@material-ui/core';
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
+import { WithStyles } from '@mui/styles';
 import { CustomTheme } from 'common/custom-theme';
 import { WebDavS3InfoDialog, CssRules } from './webdav-s3-dialog';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { WebDavS3InfoDialogData, COLLECTION_WEBDAV_S3_DIALOG_NAME } from 'store/collections/collection-info-actions';
 import { Provider } from "react-redux";
 import { createStore, combineReducers } from 'redux';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 configure({ adapter: new Adapter() });
 
@@ -56,11 +64,13 @@ describe('WebDavS3InfoDialog', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 0;
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <WebDavS3InfoDialog {...props} />
-                </Provider>
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <Provider store={store}>
+                        <WebDavS3InfoDialog {...props} />
+                    </Provider>
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
 
         // then
@@ -71,11 +81,13 @@ describe('WebDavS3InfoDialog', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 1;
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <WebDavS3InfoDialog {...props} />
-                </Provider>
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <Provider store={store}>
+                        <WebDavS3InfoDialog {...props} />
+                    </Provider>
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
 
         // then
@@ -86,11 +98,13 @@ describe('WebDavS3InfoDialog', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 2;
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <WebDavS3InfoDialog {...props} />
-                </Provider>
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <Provider store={store}>
+                        <WebDavS3InfoDialog {...props} />
+                    </Provider>
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
 
         // then
@@ -102,11 +116,13 @@ describe('WebDavS3InfoDialog', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.token = "v2/zzzzz-jjjjj-123123/xxxtokenxxx";
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <WebDavS3InfoDialog {...props} />
-                </Provider>
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <Provider store={store}>
+                        <WebDavS3InfoDialog {...props} />
+                    </Provider>
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
 
         // then
@@ -118,11 +134,13 @@ describe('WebDavS3InfoDialog', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.collectionsUrl = "https://*.collections.example.com";
         // when
         const wrapper = mount(
-            <MuiThemeProvider theme={CustomTheme}>
-                <Provider store={store}>
-                    <WebDavS3InfoDialog {...props} />
-                </Provider>
-            </MuiThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={CustomTheme}>
+                    <Provider store={store}>
+                        <WebDavS3InfoDialog {...props} />
+                    </Provider>
+                </ThemeProvider>
+            </StyledEngineProvider>
         );
 
         // then

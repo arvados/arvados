@@ -7,7 +7,7 @@ import { mount, configure } from "enzyme";
 import Adapter from "enzyme-adapter-react-16";
 
 import { Popover, DefaultTrigger } from "./popover";
-import Button, { ButtonProps } from "@material-ui/core/Button";
+import Button, { ButtonProps } from "@mui/material/Button";
 
 configure({ adapter: new Adapter() });
 

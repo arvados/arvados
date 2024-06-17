@@ -4,17 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    WithStyles,
-    withStyles,
-    Card,
-    CardHeader,
-    IconButton,
-    CardContent,
-    Tooltip,
-    Typography,
-    Grid,
-} from '@material-ui/core';
+import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, CommandIcon, CopyIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -42,7 +34,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing(0.5)
     },
     content: {
-        height: `calc(100% - ${theme.spacing(6)}px)`,
+        height: `calc(100% - ${theme.spacing(6)})`,
         padding: theme.spacing(1),
         paddingTop: 0,
         '&:last-child': {
@@ -107,7 +99,7 @@ export const ProcessCmdCard = withStyles(styles)(
             <Grid container direction="row" alignItems="center">
               <Grid item>
                 <Tooltip title="Copy link to clipboard" disableFocusListener>
-                  <IconButton>
+                  <IconButton size="large">
                     <CopyResultToClipboard
                       getText={formatClipboardText(process.containerRequest.command)}
                       onCopy={() => onCopy("Command copied to clipboard")}
@@ -123,7 +115,7 @@ export const ProcessCmdCard = withStyles(styles)(
                     title={`Close Command Panel`}
                     disableFocusListener
                   >
-                    <IconButton onClick={doHidePanel}>
+                    <IconButton onClick={doHidePanel} size="large">
                       <CloseIcon />
                     </IconButton>
                   </Tooltip>

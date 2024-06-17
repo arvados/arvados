@@ -11,7 +11,7 @@ import {
     FormGroup,
     FormLabel,
     FormHelperText
-} from '@material-ui/core';
+} from '@mui/material';
 
 export const CheckboxField = (props: WrappedFieldProps & { label?: string }) =>
     <FormControlLabel

@@ -4,7 +4,8 @@
 
 import React, { useEffect, useState } from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from "@material-ui/core/styles";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
 import { DetailsPanel } from "views-components/details-panel/details-panel";
@@ -42,7 +43,7 @@ import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
 import { MainContentBar } from "views-components/main-content-bar/main-content-bar";
-import { Grid } from "@material-ui/core";
+import { Grid } from "@mui/material";
 import { TrashPanel } from "views/trash-panel/trash-panel";
 import { SharedWithMePanel } from "views/shared-with-me-panel/shared-with-me-panel";
 import { RunProcessPanel } from "views/run-process-panel/run-process-panel";
@@ -142,7 +143,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing(3),
         paddingRight: theme.spacing(3),
         // Reserve vertical space for app bar + MainContentBar
-        minHeight: `calc(100vh - ${theme.spacing(16)}px)`,
+        minHeight: `calc(100vh - ${theme.spacing(16)})`,
         display: "flex",
     },
 });

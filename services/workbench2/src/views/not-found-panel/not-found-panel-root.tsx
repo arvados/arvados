@@ -5,7 +5,9 @@
 import React from 'react';
 import { Location } from 'history';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles, Paper, Grid } from '@material-ui/core';
+import { Paper, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ClusterConfigJSON } from 'common/config';
 
@@ -75,7 +77,7 @@ const getEmailLink = (email: string, classes: Record<CssRules, string>) => {
 export const NotFoundPanelRoot = withStyles(styles)(
     ({ classes, clusterConfig, location, notWrapped }: NotFoundPanelRootProps) => {
 
-        const content = <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+        const content = <Grid container justifyContent="space-between" wrap="nowrap" alignItems="center">
             <div data-cy="not-found-content" className={classes.title}>
                 <h2>Not Found</h2>
                 {getAdditionalMessage(location)}

@@ -5,18 +5,18 @@
 import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, FormControl, InputLabel } from '@material-ui/core';
+import { Grid, FormControl, InputLabel } from '@mui/material';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { ParticipantSelect, Participant } from './participant-select';
-import { WithStyles } from '@material-ui/core/styles';
-import withStyles from '@material-ui/core/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type SharingStyles = 'root';
 
 const styles: CustomStyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     root: {
-        padding: `${theme.spacing(1)}px 0`,
+        padding: `${theme.spacing(1)} 0`,
     },
 });
 

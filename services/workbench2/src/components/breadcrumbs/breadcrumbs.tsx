@@ -4,17 +4,18 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button, Grid, WithStyles, Typography, Tooltip } from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import { withStyles } from '@material-ui/core';
+import { Button, Grid, Typography, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import withStyles from '@mui/styles/withStyles';
 import { IllegalNamingWarning } from '../warning/warning';
 import { IconType, FreezeIcon } from 'components/icon/icon';
-import grey from '@material-ui/core/colors/grey';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupClass } from "models/group";
 import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
+import { grey } from '@mui/material/colors';
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
@@ -91,9 +92,6 @@ export const Breadcrumbs = withStyles(styles)(
                                 isLastItem ? null : 'parentItem',
                                 classes.item
                             )}
-                            classes={{
-                                label: classes.buttonLabel
-                            }}
                             color="inherit"
                             onClick={() => onClick(navFunc, item)}
                             onContextMenu={event => onContextMenu(event, item)}>

@@ -3,12 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { MuiThemeProvider, createTheme } from '@material-ui/core/styles';
+import { ThemeProvider, Theme, StyledEngineProvider, createTheme, adaptV4Theme } from '@mui/material/styles';
 import { CodeSnippet, CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
-import grey from '@material-ui/core/colors/grey';
 import { themeOptions } from 'common/custom-theme';
+import { grey } from '@mui/material/colors';
 
-const theme = createTheme(Object.assign({}, themeOptions, {
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+
+const theme = createTheme(adaptV4Theme(Object.assign({}, themeOptions, {
     overrides: {
         MuiTypography: {
             body1: {
@@ -22,9 +29,11 @@ const theme = createTheme(Object.assign({}, themeOptions, {
     typography: {
         fontFamily: 'monospace',
     }
-}));
+})));
 
 export const DefaultCodeSnippet = (props: CodeSnippetDataProps) =>
-    <MuiThemeProvider theme={theme}>
-        <CodeSnippet {...props} />
-    </MuiThemeProvider>;
+    <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+            <CodeSnippet {...props} />
+        </ThemeProvider>
+    </StyledEngineProvider>;

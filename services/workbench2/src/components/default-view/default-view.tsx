@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from '../../common/custom-theme';
-import { Typography } from '@material-ui/core';
+import { Typography } from '@mui/material';
 import { IconType } from '../icon/icon';
 import classnames from "classnames";
 

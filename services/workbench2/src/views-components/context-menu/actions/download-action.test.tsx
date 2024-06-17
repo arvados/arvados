@@ -6,7 +6,7 @@ import React from 'react';
 import axios from 'axios';
 import { configure, shallow } from "enzyme";
 import Adapter from 'enzyme-adapter-react-16';
-import { ListItem } from '@material-ui/core';
+import { ListItem } from '@mui/material';
 import JSZip from 'jszip';
 import { DownloadAction } from './download-action';
 

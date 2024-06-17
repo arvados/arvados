@@ -7,7 +7,9 @@ import React from 'react';
 import classNames from 'classnames';
 import { withRouter, RouteComponentProps } from 'react-router';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button, WithStyles, withStyles } from "@material-ui/core";
+import { Button } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ReRunProcessIcon } from 'components/icon/icon';
 
 type CssRules = 'button' | 'buttonRight';

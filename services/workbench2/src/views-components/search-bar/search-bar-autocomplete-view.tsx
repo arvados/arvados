@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Paper, withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
+import { Paper, List, ListItem, ListItemText } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
 import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
@@ -14,7 +16,7 @@ type CssRules = 'searchView' | 'list' | 'listItem';
 const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         searchView: {
-            borderRadius: `0 0 ${theme.spacing(1) /2}px ${theme.spacing(1) /2}px`
+            borderRadius: `0 0 calc(${theme.spacing(1)} / 2) calc(${theme.spacing(1)} / 2)`
         },
         list: {
             padding: 0

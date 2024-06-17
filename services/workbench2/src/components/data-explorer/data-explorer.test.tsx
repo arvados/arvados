@@ -10,7 +10,7 @@ import { DataExplorer } from "./data-explorer";
 import { ColumnSelector } from "../column-selector/column-selector";
 import { DataTable, DataTableFetchMode } from "../data-table/data-table";
 import { SearchInput } from "../search-input/search-input";
-import { TablePagination } from "@material-ui/core";
+import { TablePagination } from "@mui/material";
 import { ProjectIcon } from "../icon/icon";
 import { SortDirection } from "../data-table/data-column";
 import { combineReducers, createStore } from "redux";

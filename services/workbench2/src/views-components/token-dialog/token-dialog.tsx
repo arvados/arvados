@@ -4,16 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    Dialog,
-    DialogActions,
-    DialogTitle,
-    DialogContent,
-    WithStyles,
-    withStyles,
-    Button,
-    Typography
-} from '@material-ui/core';
+import { Dialog, DialogActions, DialogTitle, DialogContent, Button, Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
 import { withDialog } from 'store/dialog/with-dialog';

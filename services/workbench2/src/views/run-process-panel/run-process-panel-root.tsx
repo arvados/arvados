@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Stepper, Step, StepLabel, StepContent, withStyles, WithStyles } from '@material-ui/core';
+import { Stepper, Step, StepLabel, StepContent } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RunProcessFirstStepDataProps, RunProcessFirstStepActionProps, RunProcessFirstStep } from 'views/run-process-panel/run-process-first-step';
 import { RunProcessSecondStepForm } from './run-process-second-step';
 

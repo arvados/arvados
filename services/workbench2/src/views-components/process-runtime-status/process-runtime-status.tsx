@@ -4,16 +4,10 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    ExpansionPanel,
-    ExpansionPanelDetails,
-    ExpansionPanelSummary,
-    Paper,
-    Typography,
-    withStyles,
-    WithStyles
-} from "@material-ui/core";
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { Accordion, AccordionDetails, AccordionSummary, Paper, Typography } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { RuntimeStatus } from "models/runtime-status";
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
@@ -84,32 +78,32 @@ export const ProcessRuntimeStatus = withStyles(styles)(
     ({ runtimeStatus, containerCount, classes }: ProcessRuntimeStatusProps) => {
     return <div className={classes.root}>
         { runtimeStatus?.error &&
-        <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
-            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
+        <div data-cy='process-runtime-status-error'><Accordion className={classes.error} elevation={0}>
+            <AccordionSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.errorColor)}>
                     {`Error: ${runtimeStatus.error }`}
                 </Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails className={classes.details}>
+            </AccordionSummary>
+            <AccordionDetails className={classes.details}>
                 <Typography className={classNames(classes.errorColor, classes.detailsText)}>
                     {runtimeStatus?.errorDetail || 'No additional error details available'}
                 </Typography>
-            </ExpansionPanelDetails>
-        </ExpansionPanel></div>
+            </AccordionDetails>
+        </Accordion></div>
         }
         { runtimeStatus?.warning &&
-        <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0}>
-            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
+        <div data-cy='process-runtime-status-warning' ><Accordion className={classes.warning} elevation={0}>
+            <AccordionSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.warningColor)}>
                     {`Warning: ${runtimeStatus.warning }`}
                 </Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails className={classes.details}>
+            </AccordionSummary>
+            <AccordionDetails className={classes.details}>
                 <Typography className={classNames(classes.warningColor, classes.detailsText)}>
                     {runtimeStatus?.warningDetail || 'No additional warning details available'}
                 </Typography>
-            </ExpansionPanelDetails>
-        </ExpansionPanel></div>
+            </AccordionDetails>
+        </Accordion></div>
         }
         { containerCount > 1 &&
         <div data-cy='process-runtime-status-retry-warning' >

@@ -7,7 +7,9 @@ import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Grid, withStyles, WithStyles, Button } from '@material-ui/core';
+import { Grid, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RootState } from 'store/store';
 import {
     SEARCH_BAR_ADVANCED_FORM_NAME,
@@ -103,7 +105,7 @@ export const SearchBarAdvancedPropertiesView = compose(
                 <Grid item xs={4}>
                     <SearchBarValueField />
                 </Grid>
-                <Grid container item xs={2} justify='flex-end' alignItems="center">
+                <Grid container item xs={2} justifyContent='flex-end' alignItems="center">
                     <Button className={classes.button} onClick={() => addProp(propertyValues, getAllFields(fields))}
                         color="primary"
                         size='small'

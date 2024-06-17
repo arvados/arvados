@@ -4,9 +4,11 @@
 
 import React from 'react';
 import { InjectedFormProps } from 'redux-form';
-import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core/';
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material/';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Button, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
+import { Button, CircularProgress } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 
 type CssRules = "button" | "lastButton" | "form" | "formContainer" | "dialogTitle" | "progressIndicator" | "dialogActions";
@@ -60,7 +62,6 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
     <Dialog
         open={props.open}
         onClose={props.closeDialog}
-        disableBackdropClick
         disableEscapeKeyDown={props.submitting}
         fullWidth
         scroll='paper'

@@ -6,7 +6,9 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Field } from 'redux-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     GenericCommandInputParameter
 } from 'models/workflow';
@@ -53,7 +55,7 @@ interface ProjectInputComponentState {
 
 interface HasUserUuid {
     userUuid: string;
-};
+}
 
 const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
 

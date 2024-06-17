@@ -4,7 +4,9 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Dialog, DialogContent, DialogActions, Button, withStyles, WithStyles } from "@material-ui/core";
+import { Dialog, DialogContent, DialogActions, Button } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import bannerActions from "store/banner/banner-action";

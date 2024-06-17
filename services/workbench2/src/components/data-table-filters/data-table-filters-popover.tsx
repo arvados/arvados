@@ -5,8 +5,6 @@
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    WithStyles,
-    withStyles,
     ButtonBase,
     Theme,
     Popover,
@@ -17,7 +15,9 @@ import {
     CardContent,
     Tooltip,
     IconButton,
-} from '@material-ui/core';
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
 import { createTree } from 'models/tree';
@@ -73,6 +73,7 @@ export interface DataTableFilterProps {
     name: string;
     filters: DataTableFilters;
     onChange?: (filters: DataTableFilters) => void;
+    children: React.ReactNode;
 
     /**
      * When set to true, only one filter can be selected at a time.
@@ -108,41 +109,43 @@ export const DataTableFiltersPopover = withStyles(styles)(
         render() {
             const { name, classes, defaultSelection = SelectionMode.ALL, children } = this.props;
             const isActive = getNodeDescendants('')(this.state.filters).some((f) => (defaultSelection === SelectionMode.ALL ? !f.selected : f.selected));
-            return (
-                <>
-                    <Tooltip disableFocusListener title='Filters'>
-                        <ButtonBase className={classnames([classes.root, { [classes.active]: isActive }])} component='span' onClick={this.open} disableRipple>
-                            {children}
-                            <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
-                                <i className={classnames(['fas fa-filter', classes.icon])} data-fa-transform='shrink-3' ref={this.icon} />
-                            </IconButton>
-                        </ButtonBase>
-                    </Tooltip>
-                    <Popover
-                        anchorEl={this.state.anchorEl}
-                        open={!!this.state.anchorEl}
-                        anchorOrigin={DefaultTransformOrigin}
-                        transformOrigin={DefaultTransformOrigin}
-                        onClose={this.close}
-                    >
-                        <Card>
-                            <CardContent>
-                                <Typography variant='caption'>{name}</Typography>
-                            </CardContent>
-                            <DataTableFiltersTree filters={this.state.filters} mutuallyExclusive={this.props.mutuallyExclusive} onChange={this.onChange} />
-                            <>
-                                {this.props.mutuallyExclusive || (
-                                    <CardActions>
-                                        <Button color='primary' variant='outlined' size='small' onClick={this.close}>
-                                            Close
-                                        </Button>
-                                    </CardActions>
-                                )}
-                            </>
-                        </Card>
-                    </Popover>
-                </>
-            );
+            return <>
+                <Tooltip disableFocusListener title='Filters'>
+                    <ButtonBase className={classnames([classes.root, { [classes.active]: isActive }])} component='span' onClick={this.open} disableRipple>
+                        {children}
+                        <IconButton
+                            component='span'
+                            classes={{ root: classes.iconButton }}
+                            tabIndex={-1}
+                            size="large">
+                            <i className={classnames(['fas fa-filter', classes.icon])} data-fa-transform='shrink-3' ref={this.icon} />
+                        </IconButton>
+                    </ButtonBase>
+                </Tooltip>
+                <Popover
+                    anchorEl={this.state.anchorEl}
+                    open={!!this.state.anchorEl}
+                    anchorOrigin={DefaultTransformOrigin}
+                    transformOrigin={DefaultTransformOrigin}
+                    onClose={this.close}
+                >
+                    <Card>
+                        <CardContent>
+                            <Typography variant='caption'>{name}</Typography>
+                        </CardContent>
+                        <DataTableFiltersTree filters={this.state.filters} mutuallyExclusive={this.props.mutuallyExclusive} onChange={this.onChange} />
+                        <>
+                            {this.props.mutuallyExclusive || (
+                                <CardActions>
+                                    <Button color='primary' variant='outlined' size='small' onClick={this.close}>
+                                        Close
+                                    </Button>
+                                </CardActions>
+                            )}
+                        </>
+                    </Card>
+                </Popover>
+            </>;
         }
 
         static getDerivedStateFromProps(props: DataTableFilterProps, state: DataTableFilterState): DataTableFilterState {

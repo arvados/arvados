@@ -4,9 +4,10 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@material-ui/core';
+import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-machines/virtual-machines-actions';
@@ -63,7 +64,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: theme.spacing(1)
     },
     chipsRoot: {
-        margin: `0px -${theme.spacing(1) /2}px`,
+        margin: `0px -calc(${theme.spacing(1)} / 2)`,
     },
     copyIcon: {
         marginLeft: theme.spacing(1),

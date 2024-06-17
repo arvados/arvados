@@ -6,7 +6,9 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, WithStyles, Typography } from '@material-ui/core';
+import { Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { openRichTextEditorDialog } from 'store/rich-text-editor-dialog/rich-text-editor-dialog-actions';
 

@@ -4,13 +4,14 @@
 
 import React, { useRef, useEffect } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelTree, SidePanelTreeProps } from 'views-components/side-panel-tree/side-panel-tree';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { navigateFromSidePanel, setCurrentSideWidth } from 'store/side-panel/side-panel-action';
-import { Grid } from '@material-ui/core';
+import { Grid } from '@mui/material';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
 import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggle';

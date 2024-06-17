@@ -11,7 +11,7 @@ jest.mock('copy-to-clipboard', () => {
 });
 
 import React from 'react';
-import { Button } from '@material-ui/core';
+import { Button } from '@mui/material';
 import { mount, configure } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import CopyToClipboard from 'react-copy-to-clipboard';

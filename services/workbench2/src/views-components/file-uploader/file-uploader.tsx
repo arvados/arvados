@@ -10,7 +10,7 @@ import { FileUploadProps } from '../../components/file-upload/file-upload';
 import { Dispatch } from 'redux';
 import { fileUploaderActions, getFileUploaderState } from 'store/file-uploader/file-uploader-actions';
 import { WrappedFieldProps } from 'redux-form';
-import { Typography } from '@material-ui/core';
+import { Typography } from '@mui/material';
 
 export type FileUploaderProps = Pick<FileUploadProps, 'disabled' | 'onDrop'>;
 

@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Card, CardHeader, WithStyles, withStyles, Typography, Grid } from '@material-ui/core';
+import { Card, CardHeader, Typography, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { UserResource } from 'models/user';
 import { connect } from 'react-redux';

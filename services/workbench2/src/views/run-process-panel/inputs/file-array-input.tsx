@@ -11,7 +11,17 @@ import {
 } from 'models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, WithStyles, Typography } from '@material-ui/core';
+import {
+    Input,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Divider,
+    Typography,
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
@@ -21,12 +31,12 @@ import { CollectionFile, CollectionFileType } from 'models/collection-file';
 import { createSelector, createStructuredSelector } from 'reselect';
 import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity, values, noop } from 'lodash';
-import { InputProps } from '@material-ui/core/Input';
+import { InputProps } from '@mui/material/Input';
 import { TreePicker } from 'store/tree-picker/tree-picker';
 import { RootState } from 'store/store';
 import { Chips } from 'components/chips/chips';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import withStyles from '@material-ui/core/styles/withStyles';
+import withStyles from '@mui/styles/withStyles';
 
 export interface FileArrayInputProps {
     input: FileArrayCommandInputParameter;
@@ -234,12 +244,12 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                 overflow: 'auto',
             },
             divider: {
-                margin: `${spacing(1)}px 0`,
+                margin: `${spacing(1)} 0`,
             },
             chips: {
                 flex: 1,
                 overflow: 'auto',
-                padding: `${spacing(1)}px 0`,
+                padding: `${spacing(1)} 0`,
                 overflowX: 'hidden',
             },
         })

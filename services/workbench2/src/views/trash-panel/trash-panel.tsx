@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { IconButton, WithStyles, withStyles, Tooltip } from '@material-ui/core';
+import { IconButton, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
@@ -71,16 +73,18 @@ export const ResourceRestore =
         return { resource, dispatch: props.dispatch };
     })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
         <Tooltip title="Restore">
-            <IconButton style={{ padding: '0' }} onClick={() => {
-                if (props.resource && props.dispatch) {
-                    props.dispatch(toggleTrashed(
-                        props.resource.kind,
-                        props.resource.uuid,
-                        props.resource.ownerUuid,
-                        props.resource.isTrashed
-                    ));
-                }}}
-            >
+            <IconButton
+                style={{ padding: '0' }}
+                onClick={() => {
+                    if (props.resource && props.dispatch) {
+                        props.dispatch(toggleTrashed(
+                            props.resource.kind,
+                            props.resource.uuid,
+                            props.resource.ownerUuid,
+                            props.resource.isTrashed
+                        ));
+                    }}}
+                size="large">
                 <RestoreFromTrashIcon />
             </IconButton>
         </Tooltip>

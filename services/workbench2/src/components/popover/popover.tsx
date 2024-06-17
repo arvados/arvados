@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Popover as MaterialPopover } from '@material-ui/core';
+import { Popover as MaterialPopover } from '@mui/material';
 
-import { PopoverOrigin } from '@material-ui/core/Popover';
-import IconButton, { IconButtonProps } from '@material-ui/core/IconButton';
+import { PopoverOrigin } from '@mui/material/Popover';
+import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 
 export interface PopoverProps {
     triggerComponent?: React.ComponentType<{ onClick: (event: React.MouseEvent<any>) => void }>;
@@ -58,7 +58,7 @@ export class Popover extends React.Component<PopoverProps> {
 }
 
 export const DefaultTrigger: React.SFC<IconButtonProps> = (props) => (
-    <IconButton {...props}>
+    <IconButton {...props} size="large">
         <i className="fas" />
     </IconButton>
 );

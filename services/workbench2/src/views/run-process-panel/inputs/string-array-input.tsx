@@ -10,7 +10,7 @@ import { GenericInputProps, GenericInput } from 'views/run-process-panel/inputs/
 import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity } from 'lodash';
 import { createSelector } from 'reselect';
-import { Input } from '@material-ui/core';
+import { Input } from '@mui/material';
 
 export interface StringArrayInputProps {
     input: StringArrayCommandInputParameter;

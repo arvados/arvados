@@ -4,7 +4,10 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Table, TableHead, TableCell, TableRow, TableBody, WithStyles, withStyles } from '@material-ui/core';
+import { Table, TableHead, TableCell, TableRow, TableBody } from '@mui/material';
+
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 
 type CssRules = 'cell';
 

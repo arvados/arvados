@@ -5,7 +5,14 @@
 import React from 'react';
 import { mount, configure } from 'enzyme';
 import { combineReducers, createStore } from "redux";
-import { CircularProgress, MuiThemeProvider, Tab, TableBody } from "@material-ui/core";
+import {
+    CircularProgress,
+    ThemeProvider,
+    Theme,
+    StyledEngineProvider,
+    Tab,
+    TableBody,
+} from "@mui/material";
 import { CustomTheme } from 'common/custom-theme';
 import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
@@ -14,6 +21,13 @@ import { DefaultView } from "components/default-view/default-view";
 import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 // Mock collection files component since it just needs to exist
 jest.mock('views/process-panel/process-output-collection-files');
@@ -37,14 +51,16 @@ describe('renderers', () => {
             // when
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.INPUT}
-                            process={false} // Treat as a main process, no requestingContainerUuid
-                            params={null}
-                            raw={{}}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                params={null}
+                                raw={{}}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -55,14 +71,16 @@ describe('renderers', () => {
             // when
             panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.INPUT}
-                            process={false} // Treat as a main process, no requestingContainerUuid
-                            params={[]}
-                            raw={null}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                params={[]}
+                                raw={null}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -75,14 +93,16 @@ describe('renderers', () => {
             // when
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.INPUT}
-                            process={false} // Treat as a main process, no requestingContainerUuid
-                            params={[]}
-                            raw={{}}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                params={[]}
+                                raw={{}}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -97,14 +117,16 @@ describe('renderers', () => {
             const raw = {some: 'data'};
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.INPUT}
-                            process={false} // Treat as a main process, no requestingContainerUuid
-                            params={[]}
-                            raw={raw}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                params={[]}
+                                raw={raw}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -119,14 +141,16 @@ describe('renderers', () => {
             const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.INPUT}
-                            process={false} // Treat as a main process, no requestingContainerUuid
-                            params={parameters}
-                            raw={{}}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                params={parameters}
+                                raw={{}}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -144,15 +168,17 @@ describe('renderers', () => {
             const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.OUTPUT}
-                            process={false} // Treat as a main process, no requestingContainerUuid
-                            outputUuid={outputCollection}
-                            params={parameters}
-                            raw={{}}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.OUTPUT}
+                                process={false} // Treat as a main process, no requestingContainerUuid
+                                outputUuid={outputCollection}
+                                params={parameters}
+                                raw={{}}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -175,14 +201,16 @@ describe('renderers', () => {
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.INPUT}
-                            process={subprocess} // Treat as a subprocess without outputUuid
-                            params={null}
-                            raw={null}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.INPUT}
+                                process={subprocess} // Treat as a subprocess without outputUuid
+                                params={null}
+                                raw={null}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -198,15 +226,17 @@ describe('renderers', () => {
             let panel = mount(
                 <Provider store={store}>
                     <MemoryRouter>
-                        <MuiThemeProvider theme={CustomTheme}>
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                process={subprocess} // Treat as a subprocess without outputUuid
-                                params={null}
-                                raw={null}
-                                mounts={[sampleMount]}
-                            />
-                        </MuiThemeProvider>
+                        <StyledEngineProvider injectFirst>
+                            <ThemeProvider theme={CustomTheme}>
+                                <ProcessIOCard
+                                    label={ProcessIOCardType.INPUT}
+                                    process={subprocess} // Treat as a subprocess without outputUuid
+                                    params={null}
+                                    raw={null}
+                                    mounts={[sampleMount]}
+                                />
+                            </ThemeProvider>
+                        </StyledEngineProvider>
                     </MemoryRouter>
                 </Provider>
                 );
@@ -224,15 +254,17 @@ describe('renderers', () => {
             const outputCollection = '123456789';
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.OUTPUT}
-                            process={subprocess} // Treat as a subprocess with outputUuid
-                            outputUuid={outputCollection}
-                            params={null}
-                            raw={null}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.OUTPUT}
+                                process={subprocess} // Treat as a subprocess with outputUuid
+                                outputUuid={outputCollection}
+                                params={null}
+                                raw={null}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 
@@ -248,15 +280,17 @@ describe('renderers', () => {
             const outputCollection = '123456789';
             let panel = mount(
                 <Provider store={store}>
-                    <MuiThemeProvider theme={CustomTheme}>
-                        <ProcessIOCard
-                            label={ProcessIOCardType.OUTPUT}
-                            process={subprocess} // Treat as a subprocess with outputUuid
-                            outputUuid={outputCollection}
-                            params={null}
-                            raw={{}}
-                        />
-                    </MuiThemeProvider>
+                    <StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessIOCard
+                                label={ProcessIOCardType.OUTPUT}
+                                process={subprocess} // Treat as a subprocess with outputUuid
+                                outputUuid={outputCollection}
+                                params={null}
+                                raw={{}}
+                            />
+                        </ThemeProvider>
+                    </StyledEngineProvider>
                 </Provider>
                 );
 

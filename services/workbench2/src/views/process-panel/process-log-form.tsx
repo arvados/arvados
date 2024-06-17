@@ -4,14 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import {
-    withStyles,
-    WithStyles,
-    FormControl,
-    Select,
-    MenuItem,
-    Input
-} from '@material-ui/core';
+import { FormControl, Select, MenuItem, Input } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'formControl';

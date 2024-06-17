@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { shallow, configure } from 'enzyme';
-import { ListItem } from "@material-ui/core";
+import { ListItem } from "@mui/material";
 import Adapter from 'enzyme-adapter-react-16';
 import { CopyToClipboardAction } from './copy-to-clipboard-action';
 

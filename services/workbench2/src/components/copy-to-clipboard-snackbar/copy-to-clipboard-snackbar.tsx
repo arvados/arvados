@@ -5,7 +5,9 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Tooltip, WithStyles, withStyles } from '@material-ui/core';
+import { Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';

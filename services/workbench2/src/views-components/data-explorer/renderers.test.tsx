@@ -12,10 +12,17 @@ import { ResourceKind } from '../../models/resource';
 import { ContainerRequestState as CR } from '../../models/container-request';
 import { ContainerState as C } from '../../models/container';
 import { ProcessStatus as PS } from '../../store/processes/process';
-import { MuiThemeProvider } from '@material-ui/core';
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
 import { CustomTheme } from 'common/custom-theme';
 import { InlinePulser} from 'components/loading/inline-pulser';
 import { ErrorIcon } from "components/icon/icon";
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 const middlewares = [];
 const mockStore = configureMockStore(middlewares);
@@ -205,9 +212,11 @@ describe('renderers', () => {
             }});
 
             const wrapper = mount(<Provider store={store}>
-                <MuiThemeProvider theme={CustomTheme}>
-                    <GroupMembersCount {...props} />
-                </MuiThemeProvider>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <GroupMembersCount {...props} />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
 
             expect(wrapper.find(InlinePulser)).toHaveLength(1);
@@ -223,9 +232,11 @@ describe('renderers', () => {
             }});
 
             const wrapper = mount(<Provider store={store}>
-                <MuiThemeProvider theme={CustomTheme}>
-                    <GroupMembersCount {...props} />
-                </MuiThemeProvider>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <GroupMembersCount {...props} />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
 
             expect(wrapper.text()).toBe("765");
@@ -241,9 +252,11 @@ describe('renderers', () => {
             }});
 
             const wrapper = mount(<Provider store={store}>
-                <MuiThemeProvider theme={CustomTheme}>
-                    <GroupMembersCount {...props} />
-                </MuiThemeProvider>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <GroupMembersCount {...props} />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
 
             expect(wrapper.find(ErrorIcon)).toHaveLength(1);

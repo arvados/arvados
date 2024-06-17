@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Paper, withStyles, WithStyles } from '@material-ui/core';
+import { Paper } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     SearchBarRecentQueries,
     SearchBarRecentQueriesActionProps
@@ -21,7 +23,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         root: {
             color: theme.palette.common.black,
-            borderRadius: `0 0 ${theme.spacing(1) /2}px ${theme.spacing(1) /2}px`
+            borderRadius: `0 0 calc(${theme.spacing(1)} / 2) calc(${theme.spacing(1)} / 2)`
         },
         advanced: {
             display: 'flex',
@@ -33,7 +35,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => {
         },
         label: {
             fontSize: '0.775rem',
-            padding: `${theme.spacing(1)}px ${theme.spacing(1)}px `,
+            padding: `${theme.spacing(1)} ${theme.spacing(1)} `,
             color: theme.palette.grey["900"],
             background: 'white',
             textAlign: 'right',

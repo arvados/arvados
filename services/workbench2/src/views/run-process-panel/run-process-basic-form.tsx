@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { reduxForm, Field } from 'redux-form';
-import { Grid } from '@material-ui/core';
+import { Grid } from '@mui/material';
 import { TextField } from 'components/text-field/text-field';
 import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
 import { PROCESS_NAME_VALIDATION } from 'validators/validators';

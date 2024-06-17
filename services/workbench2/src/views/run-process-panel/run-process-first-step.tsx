@@ -4,7 +4,9 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { withStyles, Grid, Button, WithStyles, List, ListItem, ListItemText, ListItemIcon } from '@material-ui/core';
+import { Grid, Button, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowResource } from 'models/workflow';
 import { WorkflowIcon } from 'components/icon/icon';

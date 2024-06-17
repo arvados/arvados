@@ -7,11 +7,18 @@ import { configure, mount } from "enzyme";
 
 import Adapter from "enzyme-adapter-react-16";
 import { Breadcrumbs } from "./breadcrumbs";
-import { Button, MuiThemeProvider } from "@material-ui/core";
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import { Button, ThemeProvider, Theme, StyledEngineProvider } from "@mui/material";
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { CustomTheme } from 'common/custom-theme';
 import { Provider } from "react-redux";
 import { combineReducers, createStore } from "redux";
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 configure({ adapter: new Adapter() });
 
@@ -42,9 +49,11 @@ describe("<Breadcrumbs />", () => {
         ];
         const breadcrumbs = mount(
             <Provider store={store}>
-                <MuiThemeProvider theme={CustomTheme}>
-                    <Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />
-                </MuiThemeProvider>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
         expect(breadcrumbs.find(Button)).toHaveLength(1);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(0);
@@ -57,9 +66,11 @@ describe("<Breadcrumbs />", () => {
         ];
         const breadcrumbs = mount(
             <Provider store={store}>
-                <MuiThemeProvider theme={CustomTheme}>
-                    <Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />
-                </MuiThemeProvider>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
         expect(breadcrumbs.find(Button)).toHaveLength(2);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(1);
@@ -72,9 +83,11 @@ describe("<Breadcrumbs />", () => {
         ];
         const breadcrumbs = mount(
             <Provider store={store}>
-                <MuiThemeProvider theme={CustomTheme}>
-                    <Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />
-                </MuiThemeProvider>
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
         breadcrumbs.find(Button).at(1).simulate('click');
         expect(onClick).toHaveBeenCalledWith(expect.any(Function), items[1]);

@@ -11,18 +11,19 @@ import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { NativeSelectField } from "components/select-field/select-field";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    WithStyles,
-    withStyles,
     CardContent,
     Button,
     Typography,
     Grid,
     InputLabel,
-    Tabs, Tab,
+    Tabs,
+    Tab,
     Paper,
     Tooltip,
     IconButton,
-} from '@material-ui/core';
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { PROFILE_EMAIL_VALIDATION, PROFILE_URL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
@@ -71,7 +72,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     content: {
         // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing(7)}px)`,
+        height: `calc(100% - ${theme.spacing(7)})`,
     },
     copyIcon: {
         marginLeft: theme.spacing(1),
@@ -201,143 +202,146 @@ export const UserProfilePanelRoot = withStyles(styles)(
                     </Paper>
                 );
             } else {
-                return <Paper className={this.props.classes.root}>
-                    <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
-                        <Tab label={TABS.PROFILE} value={TABS.PROFILE} />
-                        <Tab label={TABS.GROUPS} value={TABS.GROUPS} />
-                    </Tabs>
-                    {this.state.value === TABS.PROFILE &&
-                        <CardContent>
-                            <Grid container justify="space-between">
-                                <Grid item>
-                                    <Typography className={this.props.classes.title}>
-                                        {this.props.userUuid}
-                                        <CopyToClipboardSnackbar value={this.props.userUuid} />
-                                    </Typography>
-                                </Grid>
-                                <Grid item>
-                                    <Grid container alignItems="center">
-                                        <Grid item style={{ marginRight: '10px' }}><UserResourceAccountStatus uuid={this.props.userUuid} /></Grid>
-                                        <Grid item>
-                                            <Tooltip title="Actions" disableFocusListener>
-                                                <IconButton
-                                                    data-cy='user-profile-panel-options-btn'
-                                                    aria-label="Actions"
-                                                    onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
-                                                    <MoreVerticalIcon />
-                                                </IconButton>
-                                            </Tooltip>
+                return (
+                    <Paper className={this.props.classes.root}>
+                        <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
+                            <Tab label={TABS.PROFILE} value={TABS.PROFILE} />
+                            <Tab label={TABS.GROUPS} value={TABS.GROUPS} />
+                        </Tabs>
+                        {this.state.value === TABS.PROFILE &&
+                            <CardContent>
+                                <Grid container justifyContent="space-between">
+                                    <Grid item>
+                                        <Typography className={this.props.classes.title}>
+                                            {this.props.userUuid}
+                                            <CopyToClipboardSnackbar value={this.props.userUuid} />
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item>
+                                        <Grid container alignItems="center">
+                                            <Grid item style={{ marginRight: '10px' }}><UserResourceAccountStatus uuid={this.props.userUuid} /></Grid>
+                                            <Grid item>
+                                                <Tooltip title="Actions" disableFocusListener>
+                                                    <IconButton
+                                                        data-cy='user-profile-panel-options-btn'
+                                                        aria-label="Actions"
+                                                        onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}
+                                                        size="large">
+                                                        <MoreVerticalIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Grid>
                                         </Grid>
                                     </Grid>
                                 </Grid>
-                            </Grid>
-                            <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
-                                <Grid container spacing={3}>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
-                                        <Field
-                                            label="First name"
-                                            name="firstName"
-                                            component={TextField as any}
-                                            disabled={!this.props.isAdmin && !this.props.isSelf}
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="lastName">
-                                        <Field
-                                            label="Last name"
-                                            name="lastName"
-                                            component={TextField as any}
-                                            disabled={!this.props.isAdmin && !this.props.isSelf}
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="email">
-                                        <Field
-                                            label="E-mail"
-                                            name="email"
-                                            component={ReadOnlyField as any}
-                                            disabled
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="username">
-                                        <Field
-                                            label="Username"
-                                            name="username"
-                                            component={ReadOnlyField as any}
-                                            disabled
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} xs={12}>
-                                        <span className={this.props.classes.userProfileFormMessage}>{this.props.userProfileFormMessage}</span>
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="Organization"
-                                            name="prefs.profile.organization"
-                                            component={TextField as any}
-                                            disabled={!this.props.isAdmin && !this.props.isSelf}
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="E-mail at Organization"
-                                            name="prefs.profile.organization_email"
-                                            component={TextField as any}
-                                            disabled={!this.props.isAdmin && !this.props.isSelf}
-                                            validate={PROFILE_EMAIL_VALIDATION}
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <InputLabel className={this.props.classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
-                                        <Field
-                                            id="prefs.profile.role"
-                                            name="prefs.profile.role"
-                                            component={NativeSelectField as any}
-                                            items={RoleTypes}
-                                            disabled={!this.props.isAdmin && !this.props.isSelf}
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="Website"
-                                            name="prefs.profile.website_url"
-                                            component={TextField as any}
-                                            disabled={!this.props.isAdmin && !this.props.isSelf}
-                                            validate={PROFILE_URL_VALIDATION}
-                                        />
-                                    </Grid>
-                                    <Grid item sm={12}>
-                                        <Grid container direction="row" justify="flex-end">
-                                            <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
-                                            <Button
-                                                color="primary"
-                                                variant="contained"
-                                                type="submit"
-                                                disabled={this.props.isPristine || this.props.invalid || this.props.submitting}>
-                                                Save changes
-                                            </Button>
+                                <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
+                                    <Grid container spacing={3}>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
+                                            <Field
+                                                label="First name"
+                                                name="firstName"
+                                                component={TextField as any}
+                                                disabled={!this.props.isAdmin && !this.props.isSelf}
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="lastName">
+                                            <Field
+                                                label="Last name"
+                                                name="lastName"
+                                                component={TextField as any}
+                                                disabled={!this.props.isAdmin && !this.props.isSelf}
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="email">
+                                            <Field
+                                                label="E-mail"
+                                                name="email"
+                                                component={ReadOnlyField as any}
+                                                disabled
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="username">
+                                            <Field
+                                                label="Username"
+                                                name="username"
+                                                component={ReadOnlyField as any}
+                                                disabled
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} xs={12}>
+                                            <span className={this.props.classes.userProfileFormMessage}>{this.props.userProfileFormMessage}</span>
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                            <Field
+                                                label="Organization"
+                                                name="prefs.profile.organization"
+                                                component={TextField as any}
+                                                disabled={!this.props.isAdmin && !this.props.isSelf}
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                            <Field
+                                                label="E-mail at Organization"
+                                                name="prefs.profile.organization_email"
+                                                component={TextField as any}
+                                                disabled={!this.props.isAdmin && !this.props.isSelf}
+                                                validate={PROFILE_EMAIL_VALIDATION}
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                            <InputLabel className={this.props.classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
+                                            <Field
+                                                id="prefs.profile.role"
+                                                name="prefs.profile.role"
+                                                component={NativeSelectField as any}
+                                                items={RoleTypes}
+                                                disabled={!this.props.isAdmin && !this.props.isSelf}
+                                            />
+                                        </Grid>
+                                        <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                            <Field
+                                                label="Website"
+                                                name="prefs.profile.website_url"
+                                                component={TextField as any}
+                                                disabled={!this.props.isAdmin && !this.props.isSelf}
+                                                validate={PROFILE_URL_VALIDATION}
+                                            />
+                                        </Grid>
+                                        <Grid item sm={12}>
+                                            <Grid container direction="row" justifyContent="flex-end">
+                                                <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
+                                                <Button
+                                                    color="primary"
+                                                    variant="contained"
+                                                    type="submit"
+                                                    disabled={this.props.isPristine || this.props.invalid || this.props.submitting}>
+                                                    Save changes
+                                                </Button>
+                                            </Grid>
                                         </Grid>
                                     </Grid>
-                                </Grid>
-                            </form >
-                        </CardContent>
-                    }
-                    {this.state.value === TABS.GROUPS &&
-                        <div className={this.props.classes.content}>
-                            <DataExplorer
-                                id={USER_PROFILE_PANEL_ID}
-                                data-cy="user-profile-groups-data-explorer"
-                                onRowClick={noop}
-                                onRowDoubleClick={noop}
-                                onContextMenu={noop}
-                                contextMenuColumn={false}
-                                hideColumnSelector
-                                hideSearchInput
-                                paperProps={{
-                                    elevation: 0,
-                                }}
-                                defaultViewIcon={GroupsIcon}
-                                defaultViewMessages={['Group list is empty.']} />
-                        </div>}
-                </Paper >;
+                                </form >
+                            </CardContent>
+                        }
+                        {this.state.value === TABS.GROUPS &&
+                            <div className={this.props.classes.content}>
+                                <DataExplorer
+                                    id={USER_PROFILE_PANEL_ID}
+                                    data-cy="user-profile-groups-data-explorer"
+                                    onRowClick={noop}
+                                    onRowDoubleClick={noop}
+                                    onContextMenu={noop}
+                                    contextMenuColumn={false}
+                                    hideColumnSelector
+                                    hideSearchInput
+                                    paperProps={{
+                                        elevation: 0,
+                                    }}
+                                    defaultViewIcon={GroupsIcon}
+                                    defaultViewMessages={['Group list is empty.']} />
+                            </div>}
+                    </Paper >
+                );
             }
         }
 

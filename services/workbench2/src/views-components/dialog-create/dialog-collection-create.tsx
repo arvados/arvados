@@ -16,7 +16,9 @@ import { FileUploaderField } from '../file-uploader/file-uploader';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
 import { CreateCollectionPropertiesForm } from 'views-components/collection-properties/create-collection-properties-form';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { FormGroup, FormLabel, WithStyles, withStyles } from '@material-ui/core';
+import { FormGroup, FormLabel } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 
 type CssRules = 'propertiesForm';

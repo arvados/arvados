@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { ListItemIcon, ListItemText, ListItem } from '@material-ui/core';
+import { ListItemIcon, ListItemText, ListItem } from '@mui/material';
 import { DownloadIcon } from '../../../components/icon/icon';
 import JSZip from 'jszip';
 import FileSaver from 'file-saver';

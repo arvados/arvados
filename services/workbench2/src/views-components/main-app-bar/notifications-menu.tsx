@@ -5,7 +5,7 @@
 import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { Badge, MenuItem } from "@material-ui/core";
+import { Badge, MenuItem } from "@mui/material";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { NotificationIcon } from "components/icon/icon";
 import bannerActions from "store/banner/banner-action";
