@@ -134,7 +134,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 }
 
 export const SidePanelCollapsed = withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & SidePanelCollapsedProps) => {
+    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles<CssRules> & SidePanelCollapsedProps) => {
 
         const handleClick = (cat: TCollapsedCategory) => {
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
