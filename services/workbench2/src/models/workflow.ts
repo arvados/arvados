@@ -5,6 +5,7 @@
 import { Resource, ResourceKind } from "./resource";
 import { safeLoad } from 'js-yaml';
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
+import { CwlSecrets } from 'models/process';
 
 export interface WorkflowResource extends Resource {
     kind: ResourceKind.WORKFLOW;
@@ -111,6 +112,7 @@ export interface GenericCommandInputParameter<Type, Value> {
     type?: Type | Array<Type | CWLType.NULL>;
     value?: Value;
     disabled?: boolean;
+    secret?: boolean;
 }
 export type GenericArrayCommandInputParameter<Type, Value> = GenericCommandInputParameter<CommandInputArraySchema<Type>, Value[]>;
 
@@ -152,10 +154,21 @@ export const getWorkflow = (workflowDefinition: WorkflowResourceDefinition) => {
 
 export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition) { return undefined; }
-    return getWorkflow(workflowDefinition)
-        ? getWorkflow(workflowDefinition)!.inputs
-        : undefined;
+    const wf = getWorkflow(workflowDefinition);
+    if (!wf) { return undefined; }
+    const inputs = wf.inputs;
+    if (wf.hints) {
+	const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
+	if (secrets && secrets.secrets) {
+	    inputs.forEach((param) => {
+		param.secret = secrets.secrets.includes(param.id);
+	    });
+	}
+    }
+
+    return inputs;
 };
+
 
 export const getWorkflowOutputs = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition) { return undefined; }
