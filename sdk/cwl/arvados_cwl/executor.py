@@ -28,7 +28,7 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
-from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map, print_keep_deps
+from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map, print_keep_deps, ArvSecretStore
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow, make_workflow_record
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
@@ -206,6 +206,7 @@ The 'jobs' API is no longer supported.
         self.toplevel_runtimeContext = ArvRuntimeContext(vars(arvargs))
         self.toplevel_runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
+        self.toplevel_runtimeContext.secret_store = ArvSecretStore()
 
         self.defer_downloads = arvargs.submit and arvargs.defer_downloads
 
@@ -963,3 +964,7 @@ The 'jobs' API is no longer supported.
             self.trash_intermediate_output()
 
         return (self.final_output, self.final_status)
+
+def blank_secrets(job_order_object, process):
+    secrets_req, _ = process.get_requirement("http://commonwl.org/cwltool#Secrets")
+    pass
