@@ -12,7 +12,7 @@ import { getFormValues, initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from 'views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
 import { WorkflowInputsData } from 'models/workflow';
-import { createWorkflowMounts } from 'models/process';
+import { createWorkflowMounts, createWorkflowSecretMounts } from 'models/process';
 import { ContainerRequestState } from 'models/container-request';
 import { navigateTo } from '../navigation/navigation-action';
 import {
@@ -157,13 +157,16 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const ownerUUid = basicForm.owner ? basicForm.owner.uuid : (processOwnerUuid ? processOwnerUuid : userUuid);
     if (selectedWorkflow) {
         const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || getWorkflowRunnerSettings(selectedWorkflow);
+	const inputObject = normalizeInputKeys(inputsForm);
+	const secret_mounts = createWorkflowSecretMounts(selectedWorkflow, inputObject);
         const newProcessData = {
-            ownerUuid: ownerUUid,
-            name: basicForm.name,
-            description: basicForm.description,
-            state: ContainerRequestState.COMMITTED,
-            mounts: createWorkflowMounts(selectedWorkflow, normalizeInputKeys(inputsForm)),
-            runtimeConstraints: {
+	    ownerUuid: ownerUUid,
+	    name: basicForm.name,
+	    description: basicForm.description,
+	    state: ContainerRequestState.COMMITTED,
+	    mounts: createWorkflowMounts(selectedWorkflow, inputObject),
+	    secret_mounts: secret_mounts,
+	    runtimeConstraints: {
                 API: true,
                 vcpus: advancedForm[VCPUS_FIELD],
                 ram: (advancedForm[KEEP_CACHE_RAM_FIELD] + advancedForm[RAM_FIELD]),
@@ -175,8 +178,10 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             cwd: '/var/spool/cwl',
             command: [
                 'arvados-cwl-runner',
-                '--api=containers',
                 '--local',
+                '--api=containers',
+		'--no-log-timestamps',
+		'--disable-color',
                 `--project-uuid=${ownerUUid}`,
                 '/var/lib/cwl/workflow.json#main',
                 '/var/lib/cwl/cwl.input.json'

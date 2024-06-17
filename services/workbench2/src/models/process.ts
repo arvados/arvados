@@ -4,7 +4,7 @@
 
 import { ContainerRequestResource } from "./container-request";
 import { MountType, MountKind } from 'models/mount-types';
-import { WorkflowResource, parseWorkflowDefinition } from 'models/workflow';
+import { WorkflowResource, parseWorkflowDefinition, getWorkflow } from 'models/workflow';
 import { WorkflowInputsData } from './workflow';
 
 export type ProcessResource = ContainerRequestResource;
@@ -12,8 +12,15 @@ export type ProcessResource = ContainerRequestResource;
 export const MOUNT_PATH_CWL_WORKFLOW = '/var/lib/cwl/workflow.json';
 export const MOUNT_PATH_CWL_INPUT = '/var/lib/cwl/cwl.input.json';
 
+export interface CwlSecrets {
+    class: 'http://commonwl.org/cwltool#Secrets';
+    secrets: string[];
+}
+
 export const createWorkflowMounts = (workflow: WorkflowResource, inputs: WorkflowInputsData): { [path: string]: MountType } => {
-    return {
+
+    const wfdef = parseWorkflowDefinition(workflow);
+    const mounts: {[path: string]: MountType} = {
         '/var/spool/cwl': {
             kind: MountKind.COLLECTION,
             writable: true,
@@ -24,11 +31,42 @@ export const createWorkflowMounts = (workflow: WorkflowResource, inputs: Workflo
         },
         '/var/lib/cwl/workflow.json': {
             kind: MountKind.JSON,
-            content: parseWorkflowDefinition(workflow)
+            content: wfdef,
         },
         '/var/lib/cwl/cwl.input.json': {
             kind: MountKind.JSON,
             content: inputs,
         }
     };
+
+    return mounts;
+};
+
+export const createWorkflowSecretMounts = (workflow: WorkflowResource, inputs: WorkflowInputsData): { [path: string]: MountType } => {
+
+    const wfdef = parseWorkflowDefinition(workflow);
+    const secret_mounts: {[path: string]: MountType} = {};
+
+    const wf = getWorkflow(wfdef);
+    if (wf && wf.hints) {
+        const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
+        if (secrets && secrets.secrets) {
+	    let secretCount = 0;
+	    secrets.secrets.forEach((paramId) => {
+		const param = paramId.split("/").pop();
+		if (!param || !inputs[param]) {
+		    return;
+		}
+		const value: string = inputs[param] as string;
+		const mnt = "/secrets/s"+secretCount;
+		secret_mounts[mnt] = {
+                    "kind": MountKind.TEXT,
+                    "content": value
+		}
+		inputs[param] = {"$include": mnt}
+		secretCount++;
+	    });
+        }
+    }
+    return secret_mounts;
 };

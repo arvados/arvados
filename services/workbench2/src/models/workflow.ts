@@ -130,8 +130,12 @@ export type FloatArrayCommandInputParameter = GenericArrayCommandInputParameter<
 export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FILE, File>;
 export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
 
+type SecretInclude = {
+    $include: string;
+}
+
 export type WorkflowInputsData = {
-    [key: string]: boolean | number | string | File | Directory;
+    [key: string]: boolean | number | string | File | Directory | SecretInclude;
 };
 export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResourceDefinition => {
     const definition = safeLoad(workflow.definition);
