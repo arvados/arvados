@@ -91,6 +91,17 @@ class SysControllerTest < ActionController::TestCase
     assert_not_empty Group.where('uuid=? and is_trashed=true', p.uuid)
   end
 
+  test "trash_sweep - role groups are deleted" do
+    p = groups(:trashed_role_on_next_sweep)
+    assert_empty Group.where('uuid=? and is_trashed=true', p.uuid)
+    assert_not_empty Link.where(uuid: links(:foo_file_readable_by_soon_to_be_trashed_role).uuid)
+    authorize_with :admin
+    post :trash_sweep
+    assert_response :success
+    assert_empty Group.where(uuid: p.uuid)
+    assert_empty Link.where(uuid: links(:foo_file_readable_by_soon_to_be_trashed_role).uuid)
+  end
+
   test "trash_sweep - delete projects and their contents" do
     g_foo = groups(:trashed_project)
     g_bar = groups(:trashed_subproject)
@@ -110,6 +121,8 @@ class SysControllerTest < ActionController::TestCase
     assert_not_empty ContainerRequest.where(uuid: cr.uuid)
 
     authorize_with :admin
+    Group.find_by_uuid(g_foo.uuid).update!(delete_at: Time.now - 1.second)
+
     post :trash_sweep
     assert_response :success
 
@@ -122,7 +135,8 @@ class SysControllerTest < ActionController::TestCase
     assert_equal user_nr_was, User.all.length
     assert_equal coll_nr_was-2,        # collection_in_trashed_subproject
                  Collection.all.length # & deleted_on_next_sweep collections
-    assert_equal group_nr_was, Group.where('group_class<>?', 'project').length
+    assert_equal group_nr_was-1,       # trashed_role_on_next_sweep
+                 Group.where('group_class<>?', 'project').length
     assert_equal project_nr_was-3, Group.where(group_class: 'project').length
     assert_equal cr_nr_was-1, ContainerRequest.all.length
   end

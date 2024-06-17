@@ -11,8 +11,6 @@ class Arvados::V1::GroupsController < ApplicationController
   skip_before_action :find_object_by_uuid, only: :shared
   skip_before_action :render_404_if_no_object, only: :shared
 
-  TRASHABLE_CLASSES = ['project']
-
   def self._index_requires_parameters
     (super rescue {}).
       merge({
@@ -98,15 +96,6 @@ class Arvados::V1::GroupsController < ApplicationController
       render_accepted
     else
       super
-    end
-  end
-
-  def destroy
-    if !TRASHABLE_CLASSES.include?(@object.group_class)
-      @object.destroy
-      show
-    else
-      super # Calls destroy from TrashableController module
     end
   end
 
