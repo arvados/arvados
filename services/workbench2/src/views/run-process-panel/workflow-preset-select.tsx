@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Select, FormControl, InputLabel, MenuItem, Tooltip, withStyles, WithStyles } from '@material-ui/core';
+import { Select, FormControl, InputLabel, MenuItem, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WorkflowResource } from 'models/workflow';
 import { DetailsIcon } from 'components/icon/icon';
 
@@ -16,16 +19,18 @@ export interface WorkflowPresetSelectProps {
 
 type CssRules = 'root' | 'icon';
 
-export const WorkflowPresetSelect = withStyles<CssRules>(theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
         display: 'flex',
     },
     icon: {
-        color: theme.palette.text.hint,
+        color: 'rgba(0, 0, 0, 0.38)',
         marginTop: 18,
         marginLeft: 8,
     },
-}))(
+});
+
+export const WorkflowPresetSelect = withStyles(styles)(
     class extends React.Component<WorkflowPresetSelectProps & WithStyles<CssRules>> {
 
         render() {
@@ -38,7 +43,7 @@ export const WorkflowPresetSelect = withStyles<CssRules>(theme => ({
                         <InputLabel>Preset</InputLabel>
                         <Select
                             value={selectedPreset.uuid}
-                            onChange={this.handleChange}>
+                            onChange={(event: any)=>this.handleChange(event)}>
                             <MenuItem value={workflow.uuid}>
                                 <em>Default</em>
                             </MenuItem>

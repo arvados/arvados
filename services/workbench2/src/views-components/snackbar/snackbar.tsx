@@ -108,9 +108,13 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
 
         return (
             <MaterialSnackbar
+                TransitionProps={
+                    {
+                        onExited: props.onExited
+                    }
+                }
                 open={props.open}
                 onClose={props.onClose}
-                onExited={props.onExited}
                 anchorOrigin={props.anchorOrigin}
                 autoHideDuration={props.autoHideDuration}>
                 <div data-cy="snackbar">
