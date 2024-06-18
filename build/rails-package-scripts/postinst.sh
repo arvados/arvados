@@ -193,12 +193,13 @@ configure_version() {
   export RAILS_ENV=production
 
   run_and_report "Installing bundler" gem install --conservative --version '~> 2.4.0' bundler
+  local ruby_minor_ver="$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
   local bundle="$(gem contents --version '~> 2.4.0' bundler | grep -E '/(bin|exe)/bundle$' | tail -n1)"
   if ! [ -x "$bundle" ]; then
       # Some distros (at least Ubuntu 24.04) append the Ruby version to the
       # executable name, but that isn't reflected in the output of
       # `gem contents`. Check for that version.
-      bundle="$bundle$(ruby -e 'puts RUBY_VERSION.split(".")[..1].join(".")')"
+      bundle="$bundle$ruby_minor_ver"
       if ! [ -x "$bundle" ]; then
           echo "Error: failed to find \`bundle\` command after installing bundler gem" >&2
           return 1
@@ -215,7 +216,7 @@ configure_version() {
   find vendor/cache -maxdepth 1 -name '*.gem' -print0 \
       | run_and_report "Installing bundle gems" xargs -0r \
                        gem install --conservative --ignore-dependencies --local --quiet \
-                       --install-dir="$bundle_path/ruby/$(ruby -e 'puts RUBY_VERSION')"
+                       --install-dir="$bundle_path/ruby/$ruby_minor_ver.0"
   run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
   run_and_report "Verifying bundle is complete" "$bundle" exec true
 
