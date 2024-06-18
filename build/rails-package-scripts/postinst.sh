@@ -158,30 +158,16 @@ configure_version() {
   fi
 
   if [ -e /etc/redhat-release ]; then
-      # Recognize any service that starts with "nginx"; e.g., nginx16.
-      if [ "$WEB_SERVICE" != "${WEB_SERVICE#nginx}" ]; then
-        WWW_OWNER=nginx
-      else
-        WWW_OWNER=apache
-      fi
+      case "$WEB_SERVICE" in
+          "") ;;
+          nginx*) WWW_OWNER=nginx ;;
+          *) WWW_OWNER=apache ;;
+      esac
   else
       # Assume we're on a Debian-based system for now.
       # Both Apache and Nginx run as www-data by default.
       WWW_OWNER=www-data
   fi
-
-  echo
-  echo "Assumption: $WEB_SERVICE is configured to serve Rails from"
-  echo "            $RELEASE_PATH"
-  echo "Assumption: $WEB_SERVICE and passenger run as $WWW_OWNER"
-  echo
-
-  echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
-  setup_confdirs /etc/arvados "$CONFIG_PATH"
-  setup_conffile environments/production.rb environments/production.rb.example \
-      || true
-  setup_extra_conffiles
-  echo "... done."
 
   # Before we do anything else, make sure some directories and files are in place
   if [ ! -e $SHARED_PATH/log ]; then mkdir -p $SHARED_PATH/log; fi
@@ -220,25 +206,40 @@ configure_version() {
   run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
   run_and_report "Verifying bundle is complete" "$bundle" exec true
 
-  echo -n "Ensuring directory and file permissions ..."
-  # Ensure correct ownership of a few files
-  chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
-  chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
-  chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
-  chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp || true
-  chown -R "$WWW_OWNER:" $SHARED_PATH/log
-  # Make sure postgres doesn't try to use a pager.
-  export PAGER=
-  case "$RAILSPKG_DATABASE_LOAD_TASK" in
-      # db:structure:load was deprecated in Rails 6.1 and shouldn't be used.
-      db:schema:load | db:structure:load)
-          chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb || true
-          chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql || true
-          ;;
-  esac
-  chmod 644 $SHARED_PATH/log/*
-  chmod -R 2775 $RELEASE_PATH/tmp || true
-  echo "... done."
+  if [ -n "$WWW_OWNER" ]; then
+    cat <<EOF
+
+Assumption: $WEB_SERVICE is configured to serve Rails from
+            $RELEASE_PATH
+Assumption: $WEB_SERVICE and passenger run as $WWW_OWNER
+
+EOF
+
+    echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
+    setup_confdirs /etc/arvados "$CONFIG_PATH"
+    setup_conffile environments/production.rb environments/production.rb.example \
+        || true
+    setup_extra_conffiles
+    echo "... done."
+
+    echo -n "Ensuring directory and file permissions ..."
+    # Ensure correct ownership of a few files
+    chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
+    chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
+    chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
+    chown -R "$WWW_OWNER:" $SHARED_PATH/log
+    # Make sure postgres doesn't try to use a pager.
+    export PAGER=
+    case "$RAILSPKG_DATABASE_LOAD_TASK" in
+        # db:structure:load was deprecated in Rails 6.1 and shouldn't be used.
+        db:schema:load | db:structure:load)
+            chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb || true
+            chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql || true
+            ;;
+    esac
+    chmod 644 $SHARED_PATH/log/*
+    echo "... done."
+  fi
 
   if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
       prepare_database
@@ -253,7 +254,10 @@ configure_version() {
       APPLICATION_READY=0
   fi
 
-  chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
+  if [ -n "$WWW_OWNER" ]; then
+    chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
+    chmod -R 2775 $RELEASE_PATH/tmp
+  fi
 
   if [ -n "$SERVICE_MANAGER" ]; then
       service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"
