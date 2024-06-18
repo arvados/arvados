@@ -50,24 +50,26 @@ cleanup() {
 }
 trap cleanup ERR
 
-if [[ -z "$(docker image ls -q osixia/openldap:1.3.0)" ]]; then
+ldapimage="osixia/openldap:1.5.0"
+if [[ -z "$(docker image ls -q ${ldapimage})" ]]; then
     echo >&2 "Pulling docker image for ldap server"
-    docker pull osixia/openldap:1.3.0
+    docker pull ${ldapimage}
 fi
 
 ldapctr=ldap-${RANDOM}
 echo >&2 "Starting ldap server in docker container ${ldapctr}"
 docker run --rm --detach \
-       -p 389 -p 636 \
+       -p 0.0.0.0::389 \
+       -p 0.0.0.0::636 \
        --name=${ldapctr} \
-       osixia/openldap:1.3.0
+       ${ldapimage}
 docker logs --follow ${ldapctr} 2>$debug >$debug &
 ldaphostports=$(docker port ${ldapctr} 389/tcp)
 ldapport=${ldaphostports##*:}
 ldapurl="ldap://${hostname}:${ldapport}"
 passwordhash="$(docker exec -i ${ldapctr} slappasswd -s "secret")"
 
-# These are the default admin credentials for osixia/openldap:1.3.0
+# These are the default admin credentials for osixia/openldap:1.5.0
 adminuser=admin
 adminpassword=admin
 
@@ -194,7 +196,7 @@ EOF
 echo >&2 "Adding example user entry user=foo-bar pass=secret (retrying until server comes up)"
 docker run --rm --entrypoint= \
        -v "${tmpdir}/add_example_user.ldif":/add_example_user.ldif:ro \
-       osixia/openldap:1.3.0 \
+       ${ldapimage} \
        bash -c "for f in \$(seq 1 5); do if ldapadd -H '${ldapurl}' -D 'cn=${adminuser},dc=example,dc=org' -w '${adminpassword}' -f /add_example_user.ldif; then exit 0; else sleep 2; fi; done; echo 'failed to add user entry'; exit 1"
 
 echo >&2 "Building arvados controller binary to run in container"
@@ -202,13 +204,14 @@ go build -o "${tmpdir}" ../../../cmd/arvados-server
 
 ctrlctr=ctrl-${RANDOM}
 echo >&2 "Starting arvados controller in docker container ${ctrlctr}"
-docker run --detach --rm --name=${ctrlctr} \
-       -p 9999 \
+docker run --detach --rm \
+       -p 0.0.0.0::9999 \
+       --name=${ctrlctr} \
        -v "${tmpdir}/pam_ldap.conf":/etc/pam_ldap.conf:ro \
        -v "${tmpdir}/arvados-server":/bin/arvados-server:ro \
        -v "${tmpdir}/zzzzz.yml":/etc/arvados/config.yml:ro \
        -v $(realpath "${PWD}/../../.."):/arvados:ro \
-       debian:11 \
+       debian:12 \
        bash -c "${setup_pam_ldap:-true} && arvados-server controller"
 docker logs --follow ${ctrlctr} 2>$debug >$debug &
 ctrlhostports=$(docker port ${ctrlctr} 9999/tcp)
