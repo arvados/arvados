@@ -258,7 +258,7 @@ if [ -n "$NOT_READY_REASON" ]; then
     cat >&2 <<EOF
 NOTE: The $PACKAGE_NAME package was not configured completely because
 $NOT_READY_REASON.
-Please refer to the documentaion for next steps:
+Please refer to the documentation for next steps:
   <$NOT_READY_DOC_URL>
 
 After you do that, resume $PACKAGE_NAME setup by running:
