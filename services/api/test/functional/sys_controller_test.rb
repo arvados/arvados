@@ -141,4 +141,10 @@ class SysControllerTest < ActionController::TestCase
     assert_equal cr_nr_was-1, ContainerRequest.all.length
   end
 
+  test "trash_sweep - delete unused uuid_locks" do
+    uuid = "zzzzz-zzzzz-deleteuuidlocks"
+    ActiveRecord::Base.connection.exec_query("INSERT INTO uuid_locks (uuid) VALUES ($1)", "", [uuid])
+    post :trash_sweep
+    assert_equal [[uuid]], ActiveRecord::Base.connection.exec_query("SELECT uuid FROM uuid_locks", "", []).rows
+  end
 end
