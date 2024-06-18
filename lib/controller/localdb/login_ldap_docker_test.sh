@@ -254,7 +254,7 @@ if [[ "${config_method}" = pam ]]; then
     echo >&2 "Testing expired credentials"
     resp="$(set -x; curl -s --include -d username=expired -d password=secret "http://0.0.0.0:${ctrlport}/arvados/v1/users/authenticate" | tee $debug)"
     check_contains "${resp}" "HTTP/1.1 401"
-    check_contains "${resp}" '{"errors":["PAM: Authentication failure; \"You are required to change your LDAP password immediately.\""]}'
+    check_contains "${resp}" '{"errors":["PAM: Authentication token is no longer valid; new one required; \"You are required to change your password immediately (password expired).\""]}'
 fi
 
 echo >&2 "Testing authentication success"
