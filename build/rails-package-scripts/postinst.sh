@@ -7,27 +7,22 @@
 
 set -e
 
-DATABASE_READY=1
-APPLICATION_READY=1
-
-report_not_ready() {
-    local ready_flag="$1"; shift
-    local config_file="$1"; shift
-    if [ "1" != "$ready_flag" ]; then cat >&2 <<EOF
-
-PLEASE NOTE:
-
-The $PACKAGE_NAME package was not configured completely because
-$config_file needs some tweaking.
-Please refer to the documentation at
-<$DOC_URL> for more details.
-
-When $(basename "$config_file") has been modified,
-reconfigure or reinstall this package.
-
-EOF
-    fi
-}
+for DISTRO_FAMILY in $(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}"); do
+    case "$DISTRO_FAMILY" in
+        debian)
+            RESETUP_CMD="dpkg-reconfigure $PACKAGE_NAME"
+            break ;;
+        rhel)
+            RESETUP_CMD="dnf reinstall $PACKAGE_NAME"
+            break ;;
+    esac
+done
+if [ -z "$RESETUP_CMD" ]; then
+   echo "$PACKAGE_NAME postinst skipped: don't recognize the distribution from /etc/os-release" >&2
+   exit 0
+fi
+# Default documentation URL. This can be set to a more specific URL.
+NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html"
 
 report_web_service_warning() {
     local warning="$1"; shift
@@ -38,10 +33,8 @@ WARNING: $warning.
 To override, set the WEB_SERVICE environment variable to the name of the service
 hosting the Rails server.
 
-For Debian-based systems, then reconfigure this package with dpkg-reconfigure.
-
-For RPM-based systems, then reinstall this package.
-
+After you do that, resume $PACKAGE_NAME setup by running:
+  $RESETUP_CMD
 EOF
 }
 
@@ -128,14 +121,10 @@ prepare_database() {
       run_and_report "Running db:migrate" \
                      bin/rake db:migrate
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
-      if ! run_and_report "Running db:setup" \
-           bin/rake db:setup 2>/dev/null; then
-          echo "Warning: unable to set up database." >&2
-          DATABASE_READY=0
-      fi
+      run_and_report "Running db:setup" bin/rake db:setup
   else
-    echo "Warning: Database is not ready to set up. Skipping database setup." >&2
-    DATABASE_READY=0
+      # We don't have enough configuration to even check the database.
+      return 1
   fi
 }
 
@@ -157,17 +146,14 @@ configure_version() {
         "Multiple web services found.  Choosing the first one ($WEB_SERVICE)"
   fi
 
-  if [ -e /etc/redhat-release ]; then
-      case "$WEB_SERVICE" in
-          "") ;;
-          nginx*) WWW_OWNER=nginx ;;
-          *) WWW_OWNER=apache ;;
-      esac
-  else
-      # Assume we're on a Debian-based system for now.
-      # Both Apache and Nginx run as www-data by default.
-      WWW_OWNER=www-data
-  fi
+  case "$DISTRO_FAMILY" in
+      debian) WWW_OWNER=www-data ;;
+      rhel) case "$WEB_SERVICE" in
+                httpd*) WWW_OWNER=apache ;;
+                nginx*) WWW_OWNER=nginx ;;
+            esac
+            ;;
+  esac
 
   # Before we do anything else, make sure some directories and files are in place
   if [ ! -e $SHARED_PATH/log ]; then mkdir -p $SHARED_PATH/log; fi
@@ -206,7 +192,10 @@ configure_version() {
   run_and_report "Running bundle install" "$bundle" install --prefer-local --quiet
   run_and_report "Verifying bundle is complete" "$bundle" exec true
 
-  if [ -n "$WWW_OWNER" ]; then
+  if [ -z "$WWW_OWNER" ]; then
+    NOT_READY_REASON="there is no web service account to own Arvados configuration"
+    NOT_READY_DOC_URL="https://doc.arvados.org/install/nginx.html"
+  else
     cat <<EOF
 
 Assumption: $WEB_SERVICE is configured to serve Rails from
@@ -241,17 +230,17 @@ EOF
     echo "... done."
   fi
 
-  if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
-      prepare_database
-  fi
-
-  if [ -e /etc/arvados/config.yml ]; then
-      # warn about config errors (deprecated/removed keys from
-      # previous version, etc)
-      run_and_report "Checking configuration for completeness" \
-                     bin/rake config:check || APPLICATION_READY=0
-  else
-      APPLICATION_READY=0
+  if [ -n "$NOT_READY_REASON" ]; then
+      :
+  # warn about config errors (deprecated/removed keys from
+  # previous version, etc)
+  elif ! run_and_report "Checking configuration for completeness" bin/rake config:check; then
+      NOT_READY_REASON="you must add required configuration settings to /etc/arvados/config.yml"
+      NOT_READY_DOC_URL="https://doc.arvados.org/install/install-api-server.html#update-config"
+  elif [ -z "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
+      :
+  elif ! prepare_database; then
+      NOT_READY_REASON="database setup could not be completed"
   fi
 
   if [ -n "$WWW_OWNER" ]; then
@@ -259,17 +248,20 @@ EOF
     chmod -R 2775 $RELEASE_PATH/tmp
   fi
 
-  if [ -n "$SERVICE_MANAGER" ]; then
+  if [ -z "$NOT_READY_REASON" ] && [ -n "$SERVICE_MANAGER" ]; then
       service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"
   fi
 }
 
-if [ "$1" = configure ]; then
-  # This is a debian-based system
-  configure_version
-elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
-  # This is an rpm-based system
-  configure_version
-fi
+configure_version
+if [ -n "$NOT_READY_REASON" ]; then
+    cat >&2 <<EOF
+NOTE: The $PACKAGE_NAME package was not configured completely because
+$NOT_READY_REASON.
+Please refer to the documentaion for next steps:
+  <$NOT_READY_DOC_URL>
 
-report_not_ready "$APPLICATION_READY" "/etc/arvados/config.yml"
+After you do that, resume $PACKAGE_NAME setup by running:
+  $RESETUP_CMD
+EOF
+fi
