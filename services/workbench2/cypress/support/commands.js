@@ -620,8 +620,8 @@ Cypress.Commands.add("setupDockerImage", (image_name) => {
                         }).as("dockerImageHash");
                     });
             });
-        return cy.getAll("@dockerImage", "@dockerImageRepoTag", "@dockerImageHash", "@dockerImagePermission").then(function ([dockerImage]) {
-            return dockerImage;
-        });
+    });
+    return cy.getAll("@dockerImage", "@dockerImageRepoTag", "@dockerImageHash", "@dockerImagePermission").then(function ([dockerImage]) {
+        return dockerImage;
     });
 });
