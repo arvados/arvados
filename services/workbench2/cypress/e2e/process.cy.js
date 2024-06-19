@@ -145,7 +145,19 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
             });
 
-            // Fake submitted by another user
+            // Fake submitted by another user to test "runtime user" field.
+	    //
+	    // Need to override both group contents and direct get,
+	    // because it displays the the cached value from
+	    // 'contents' for a few moments while requesting the full
+	    // object.
+            cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents?*" }, req => {
+                req.on('response', res => {
+		    res.body.items.forEach(item => {
+			item.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
+		    });
+                });
+            });
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                 req.on('response', res => {
                     res.body.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
@@ -223,16 +235,18 @@ describe("Process tests", function () {
                 });
             });
 
-            cy.getAll("@containerRequest").then(function ([containerRequest]) {
-                cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time");
-            });
+            cy.getAll("@containerRequest", "@runningContainer").then(function ([containerRequest]) {
+		cy.goToPath(`/processes/${containerRequest.uuid}`);
+		cy.reload();
+		cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time")
+	    }).as("retry1");
 
-            cy.getAll("@containerRequest").then(function ([containerRequest]) {
-                containerCount = 3;
-                cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 2 times");
-            });
+            cy.getAll("@containerRequest", "@runningContainer", "@retry1").then(function ([containerRequest]) {
+		containerCount = 3;
+		cy.goToPath(`/processes/${containerRequest.uuid}`);
+		cy.reload();
+		cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 2 times");
+	    });
         });
 
         it("allows copying processes", function () {

@@ -91,10 +91,11 @@ unit-tests: yarn-install
 
 integration-tests: yarn-install check-arvados-directory
 	yarn run cypress install
+	echo $(INTERACTIVE)
 ifeq ($(SPECFILE), ALL)
-	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
+	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY)
 else
-	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY) -- --spec $(SPECFILE)
+	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY) -- --spec $(SPECFILE)
 endif
 
 integration-tests-in-docker: workbench2-build-image check-arvados-directory

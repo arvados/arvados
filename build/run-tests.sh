@@ -993,7 +993,11 @@ test_services/workbench2_units() {
 }
 
 test_services/workbench2_integration() {
-    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
+    if [[ -n ${interactive} ]]; then
+	INTERACTIVE=-i
+    fi
+    echo make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" INTERACTIVE=$INTERACTIVE ${testargs[services/workbench2]}
+    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" INTERACTIVE=$INTERACTIVE ${testargs[services/workbench2]}
 }
 
 install_deps() {
