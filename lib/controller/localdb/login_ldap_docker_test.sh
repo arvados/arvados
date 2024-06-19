@@ -107,7 +107,7 @@ Clusters:
 EOF
 case "${config_method}" in
     pam)
-        setup_pam_ldap="apt update && DEBIAN_FRONTEND=noninteractive apt install -y ldap-utils libpam-ldap && pam-auth-update --package /usr/share/pam-configs/ldap"
+        setup_pam_ldap="apt update && DEBIAN_FRONTEND=noninteractive apt install -y ldap-utils libpam-ldapd && pam-auth-update --package /usr/share/pam-configs/ldap && (nslcd -d &) && sed -i~ -e 's/files/files ldap/' /etc/nsswitch.conf"
         cat >>"${tmpdir}/zzzzz.yml" <<EOF
     Login:
       PAM:
