@@ -277,7 +277,7 @@ describe('Create workflow tests', function () {
             });
     })
 
-    it.only('handles secret inputs', () => {
+    it('handles secret inputs', () => {
         cy.createProject({
             owningUser: activeUser,
             projectName: 'myProject1',
