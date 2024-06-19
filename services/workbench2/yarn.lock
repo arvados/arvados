@@ -2239,7 +2239,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.1.2, @babel/runtime@npm:^7.2.0, @babel/runtime@npm:^7.8.4, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.1.2, @babel/runtime@npm:^7.8.4, @babel/runtime@npm:^7.9.2":
   version: 7.14.6
   resolution: "@babel/runtime@npm:7.14.6"
   dependencies:
@@ -4576,12 +4576,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-copy-to-clipboard@npm:5.0.0":
-  version: 5.0.0
-  resolution: "@types/react-copy-to-clipboard@npm:5.0.0"
+"@types/react-copy-to-clipboard@npm:^5.0.7":
+  version: 5.0.7
+  resolution: "@types/react-copy-to-clipboard@npm:5.0.7"
   dependencies:
     "@types/react": "*"
-  checksum: 498c9edcda5dbc78c594d3f1565b843a30251d24cc56f4365f90624552acdd03bb3342b2fbcbafdb660a59245368d977d19460679e00288e1327b53c4f1e6bbf
+  checksum: adc2970c8756e648daa06e294c422df3dc076a784344ab2ecb78a17ebd7e8e3dfd7f31e68c24267de4815cdeec573a743d952a308b45b8380f6b7912a9a8b911
   languageName: node
   linkType: hard
 
@@ -4662,15 +4662,6 @@ __metadata:
     "@types/history": "*"
     "@types/react": "*"
   checksum: d9220d9718ca99ba43455f97742403011416a49adc6730b3142901d96a93054ea0cf9ca55954c4667a36834469cde37894d7fd2a2b8016206f995f9570cb8359
-  languageName: node
-  linkType: hard
-
-"@types/react-text-mask@npm:^5.4.3":
-  version: 5.4.11
-  resolution: "@types/react-text-mask@npm:5.4.11"
-  dependencies:
-    "@types/react": "*"
-  checksum: 4defba1467e61b73bfdae74d0b1bea0f27846aabf5283f137fa372ef05bf23accfdf04fffaba33272e9eff5abf00a74863e9c24ca6974c731d73f3fae6efc577
   languageName: node
   linkType: hard
 
@@ -5835,7 +5826,7 @@ __metadata:
     "@types/lodash": 4.14.116
     "@types/node": 15.12.4
     "@types/react": 17.0.11
-    "@types/react-copy-to-clipboard": 5.0.0
+    "@types/react-copy-to-clipboard": ^5.0.7
     "@types/react-dom": 17.0.8
     "@types/react-dropzone": 4.2.2
     "@types/react-highlight-words": 0.12.0
@@ -5898,7 +5889,6 @@ __metadata:
     lodash-es: ^4.17.21
     lodash.mergewith: 4.6.2
     lodash.template: 4.5.0
-    material-ui-pickers: ^2.2.4
     mem: 4.0.0
     mime: ^4.0.3
     mini-css-extract-plugin: ^2.4.5
@@ -5916,7 +5906,7 @@ __metadata:
     query-string: 6.9.0
     react: ^17.0.0
     react-app-polyfill: ^3.0.0
-    react-copy-to-clipboard: 5.0.3
+    react-copy-to-clipboard: ^5.1.0
     react-dev-utils: ^12.0.0
     react-dnd: 5.0.0
     react-dnd-html5-backend: 5.0.1
@@ -6994,13 +6984,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clsx@npm:^1.0.2":
-  version: 1.1.1
-  resolution: "clsx@npm:1.1.1"
-  checksum: ff052650329773b9b245177305fc4c4dc3129f7b2be84af4f58dc5defa99538c61d4207be7419405a5f8f3d92007c954f4daba5a7b74e563d5de71c28c830063
-  languageName: node
-  linkType: hard
-
 "clsx@npm:^2.1.0, clsx@npm:^2.1.1":
   version: 2.1.1
   resolution: "clsx@npm:2.1.1"
@@ -7258,12 +7241,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"copy-to-clipboard@npm:^3":
-  version: 3.3.1
-  resolution: "copy-to-clipboard@npm:3.3.1"
+"copy-to-clipboard@npm:^3.3.1":
+  version: 3.3.3
+  resolution: "copy-to-clipboard@npm:3.3.3"
   dependencies:
     toggle-selection: ^1.0.6
-  checksum: 3c7b1c333dc6a4b2e9905f52e4df6bbd34ff9f9c97ecd3ca55378a6bc1c191bb12a3252e6289c7b436e9188cff0360d393c0161626851d2301607860bbbdcfd5
+  checksum: e0a325e39b7615108e6c1c8ac110ae7b829cdc4ee3278b1df6a0e4228c490442cc86444cd643e2da344fbc424b3aab8909e2fec82f8bc75e7e5b190b7c24eecf
   languageName: node
   linkType: hard
 
@@ -8189,7 +8172,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dom-helpers@npm:^3.3.1, dom-helpers@npm:^3.4.0":
+"dom-helpers@npm:^3.3.1":
   version: 3.4.0
   resolution: "dom-helpers@npm:3.4.0"
   dependencies:
@@ -13203,25 +13186,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"material-ui-pickers@npm:^2.2.4":
-  version: 2.2.4
-  resolution: "material-ui-pickers@npm:2.2.4"
-  dependencies:
-    "@types/react-text-mask": ^5.4.3
-    clsx: ^1.0.2
-    react-event-listener: ^0.6.6
-    react-text-mask: ^5.4.3
-    react-transition-group: ^2.5.3
-    tslib: ^1.9.3
-  peerDependencies:
-    "@material-ui/core": ^3.2.0
-    prop-types: ^15.6.0
-    react: ^16.3.0
-    react-dom: ^16.3.0
-  checksum: be93e30a824c347ede9f82c6adc92748807ebc9665f00ed86b62b580748ca03470823871337d554659d6a6cb6d5898d3636a7fed9e4f2d9cbfa295c196d8c008
-  languageName: node
-  linkType: hard
-
 "mdn-data@npm:2.0.14":
   version: 2.0.14
   resolution: "mdn-data@npm:2.0.14"
@@ -15653,7 +15617,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.5.6, prop-types@npm:^15.8.1":
+"prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -15851,15 +15815,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-copy-to-clipboard@npm:5.0.3":
-  version: 5.0.3
-  resolution: "react-copy-to-clipboard@npm:5.0.3"
+"react-copy-to-clipboard@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "react-copy-to-clipboard@npm:5.1.0"
   dependencies:
-    copy-to-clipboard: ^3
-    prop-types: ^15.5.8
+    copy-to-clipboard: ^3.3.1
+    prop-types: ^15.8.1
   peerDependencies:
-    react: ^15.3.0 || ^16.0.0 || ^17.0.0
-  checksum: b10d846ffa283d3de4cccc8e25927cb32d5ab8bf3d21586e1665459859653583971f7db6594176a807d42bce2a443c2c0a094b1657eb75cf04b95dfb64a22d84
+    react: ^15.3.0 || 16 || 17 || 18
+  checksum: f00a4551b9b63c944a041a6ab46af5ef20ba1106b3bc25173e7ef9bffbfba17a613368682ab8820cfe8d4b3acc5335cd9ce20229145bcc1e6aa8d1db04c512e5
   languageName: node
   linkType: hard
 
@@ -15953,19 +15917,6 @@ __metadata:
   version: 6.0.11
   resolution: "react-error-overlay@npm:6.0.11"
   checksum: ce7b44c38fadba9cedd7c095cf39192e632daeccf1d0747292ed524f17dcb056d16bc197ddee5723f9dd888f0b9b19c3b486c430319e30504289b9296f2d2c42
-  languageName: node
-  linkType: hard
-
-"react-event-listener@npm:^0.6.6":
-  version: 0.6.6
-  resolution: "react-event-listener@npm:0.6.6"
-  dependencies:
-    "@babel/runtime": ^7.2.0
-    prop-types: ^15.6.0
-    warning: ^4.0.1
-  peerDependencies:
-    react: ^16.3.0
-  checksum: 0287e0ae8cbf0a4c03889ffc2b745f5494b3edea0f4667357d709f5646dd78c7289ce305b6f473ec6ac5789f8a937c86b7e543d0249f0bf787bccdb1eab7ecd0
   languageName: node
   linkType: hard
 
@@ -16157,17 +16108,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-text-mask@npm:^5.4.3":
-  version: 5.4.3
-  resolution: "react-text-mask@npm:5.4.3"
-  dependencies:
-    prop-types: ^15.5.6
-  peerDependencies:
-    react: ^0.14.0 || ^15.0.0 || ^16.0.0
-  checksum: ee9c560f47d2f67d0193636eeea36852503d6d7bfd16d75ecb8170256606923d786bbb3511971deedbd01136340acf597fe2b6ba0be3cddb2a17a602767eb7b9
-  languageName: node
-  linkType: hard
-
 "react-transition-group@npm:2.5.0":
   version: 2.5.0
   resolution: "react-transition-group@npm:2.5.0"
@@ -16180,21 +16120,6 @@ __metadata:
     react: ">=15.0.0"
     react-dom: ">=15.0.0"
   checksum: 3ff021611b513475d26da17b3c50b93c59a6f62a6e54719bf5a9b15e400f3c042d67afeb9cfb58080464e79cb5dc89e9514edd2aa1e41557782b733849e97004
-  languageName: node
-  linkType: hard
-
-"react-transition-group@npm:^2.5.3":
-  version: 2.9.0
-  resolution: "react-transition-group@npm:2.9.0"
-  dependencies:
-    dom-helpers: ^3.4.0
-    loose-envify: ^1.4.0
-    prop-types: ^15.6.2
-    react-lifecycles-compat: ^3.0.4
-  peerDependencies:
-    react: ">=15.0.0"
-    react-dom: ">=15.0.0"
-  checksum: d8c9e50aabdc2cfc324e5cdb0ad1c6eecb02e1c0cd007b26d5b30ccf49015e900683dd489348c71fba4055858308d9ba7019e0d37d0e8d37bd46ed098788f670
   languageName: node
   linkType: hard
 
@@ -18618,7 +18543,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.8.0, tslib@npm:^1.8.1, tslib@npm:^1.9.0, tslib@npm:^1.9.3":
+"tslib@npm:^1.8.0, tslib@npm:^1.8.1, tslib@npm:^1.9.0":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd

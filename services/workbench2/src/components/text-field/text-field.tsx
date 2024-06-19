@@ -6,7 +6,7 @@ import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { TextField as MaterialTextField, PropTypes } from '@mui/material';
+import { TextField as MaterialTextField } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import RichTextEditor from 'react-rte';

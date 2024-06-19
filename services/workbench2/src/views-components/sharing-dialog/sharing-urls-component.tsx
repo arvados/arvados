@@ -31,9 +31,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         verticalAlign: 'middle',
     },
     sharingUrlList: {
-        marginTop: '1rem',
+        marginTop: '-0.5rem',
     },
     sharingUrlRow: {
+        marginLeft: theme.spacing(1),
         borderBottom: `1px solid ${theme.palette.grey["300"]}`,
     },
 });
@@ -73,11 +74,13 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
                         </Grid>
                         <Grid item xs />
                         <Grid item>
-                            <span className={props.classes.sharingUrlButton}><Tooltip title='Copy link to clipboard'>
-                                <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
-                                    <CopyIcon />
-                                </CopyToClipboard>
-                            </Tooltip></span>
+                            <span className={props.classes.sharingUrlButton}>
+                                {/* <Tooltip title='Copy link to clipboard'> */}
+                                    <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
+                                        <CopyIcon />
+                                    </CopyToClipboard>
+                                {/* </Tooltip> */}
+                            </span>
                             <span data-cy='remove-url-btn' className={props.classes.sharingUrlButton}><Tooltip title='Remove'>
                                 <IconButton onClick={() => props.onDeleteSharingToken(token.uuid)} size="large">
                                     <CloseIcon />
