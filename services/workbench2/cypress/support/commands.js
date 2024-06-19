@@ -573,3 +573,55 @@ Cypress.Commands.add("waitForDom", () => {
         }
     );
 });
+
+Cypress.Commands.add("setupDockerImage", (image_name) => {
+    // Create a collection that will be used as a docker image for the tests.
+    let activeUser;
+    let adminUser;
+
+        cy.getUser("admin", "Admin", "User", true, true)
+            .as("adminUser")
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+
+        cy.getUser('collectionuser1', 'Collection', 'User', false, true)
+            .as('activeUser').then(function () {
+                activeUser = this.activeUser;
+            });
+
+    cy.getAll('@activeUser', '@adminUser').then(([activeUser, adminUser]) => {
+	cy.createCollection(adminUser.token, {
+            name: "docker_image",
+            manifest_text:
+                ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n",
+        })
+            .as("dockerImage")
+            .then(function (dockerImage) {
+                // Give read permissions to the active user on the docker image.
+                cy.createLink(adminUser.token, {
+                    link_class: "permission",
+                    name: "can_read",
+                    tail_uuid: activeUser.user.uuid,
+                    head_uuid: dockerImage.uuid,
+                })
+                    .as("dockerImagePermission")
+                    .then(function () {
+                        // Set-up docker image collection tags
+                        cy.createLink(activeUser.token, {
+                            link_class: "docker_image_repo+tag",
+                            name: image_name,
+                            head_uuid: dockerImage.uuid,
+                        }).as("dockerImageRepoTag");
+                        cy.createLink(activeUser.token, {
+                            link_class: "docker_image_hash",
+                            name: "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678",
+                            head_uuid: dockerImage.uuid,
+                        }).as("dockerImageHash");
+                    });
+            });
+        return cy.getAll("@dockerImage", "@dockerImageRepoTag", "@dockerImageHash", "@dockerImagePermission").then(function ([dockerImage]) {
+            return dockerImage;
+        });
+    });
+});
