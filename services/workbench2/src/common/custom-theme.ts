@@ -189,7 +189,12 @@ export const themeOptions: ArvadosThemeOptions = {
                     color: 'inherited'
                 },
             }
-        }
+        },
+        MuiLinearProgress: {
+            barColorSecondary: {
+                backgroundColor: red['700']
+            }
+        },
     },
     mixins: {
         toolbar: {
