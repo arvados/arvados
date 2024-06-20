@@ -37,6 +37,12 @@ _SELECT_FAKE_ITEM = {
     'created_at': '2023-08-28T12:34:56.123456Z',
 }
 
+_FAKE_COMPUTED_PERMISSIONS_ITEM = {
+    'user_uuid': 'zzzzz-zyyyz-zzzzzyyyyywwwww',
+    'target_uuid': 'zzzzz-ttttt-xxxxxyyyyyzzzzz',
+    'perm_level': 'can_write',
+}
+
 class KeysetListAllTestCase(unittest.TestCase):
     def test_empty(self):
         ks = KeysetTestHelper([[
@@ -158,20 +164,25 @@ class KeysetListAllTestCase(unittest.TestCase):
         ls = list(arvados.util.keyset_list_all(ks.fn, ascending=False))
         self.assertEqual(ls, [{"created_at": "2", "uuid": "2"}, {"created_at": "1", "uuid": "1"}])
 
-    @parameterized.parameterized.expand(zip(
-        itertools.cycle(_SELECT_FAKE_ITEM),
+    @parameterized.parameterized.expand(
         itertools.chain.from_iterable(
-            itertools.combinations(_SELECT_FAKE_ITEM, count)
-            for count in range(len(_SELECT_FAKE_ITEM) + 1)
+            (zip(
+                itertools.repeat(fake_item),
+                itertools.cycle(fake_item),
+                itertools.chain.from_iterable(
+                    itertools.combinations(fake_item, count)
+                    for count in range(len(fake_item) + 1)
+                ),
+            ) for fake_item in [_SELECT_FAKE_ITEM, _FAKE_COMPUTED_PERMISSIONS_ITEM]),
         ),
-    ))
-    def test_select(self, order_key, select):
+    )
+    def test_select(self, fake_item, order_key, select):
         # keyset_list_all must have both uuid and order_key to function.
         # Test that it selects those fields along with user-specified ones.
         expect_select = {'uuid', order_key, *select}
         item = {
             key: value
-            for key, value in _SELECT_FAKE_ITEM.items()
+            for key, value in fake_item.items()
             if key in expect_select
         }
         list_func = mock.Mock()
