@@ -402,12 +402,12 @@ class Arvados::V1::SchemaController < ApplicationController
     discovery[:resources]['computed_permissions'][:methods].select! do |method|
       method == :list
     end
-    discovery[:resources]['computed_permissions'][:methods][:list][:parameters].select! do |param|
-      ![:cluster_id, :bypass_federation, :offset].include?(param)
+    discovery[:resources]['computed_permissions'][:methods][:list][:parameters].reject! do |param|
+      [:cluster_id, :bypass_federation, :offset].include?(param)
     end
     discovery[:schemas]['ComputedPermission'].delete(:uuidPrefix)
-    discovery[:schemas]['ComputedPermission'][:properties].select! do |prop|
-      ![:uuid, :etag].include?(prop)
+    discovery[:schemas]['ComputedPermission'][:properties].reject! do |prop|
+      [:uuid, :etag].include?(prop)
     end
 
     # The 'replace_files' option is implemented in lib/controller,
