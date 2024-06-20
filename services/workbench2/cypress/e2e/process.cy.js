@@ -118,6 +118,9 @@ describe("Process tests", function () {
 	    // object.
             cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents?*" }, req => {
                 req.on('response', res => {
+		    if (!res.body.items) {
+			return;
+		    }
 		    res.body.items.forEach(item => {
 			item.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
 		    });
@@ -1329,6 +1332,9 @@ describe("Process tests", function () {
                 // Add output uuid and inputs to container request
                 cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                     req.on('response', res => {
+			if (!res.body.mounts) {
+			    return;
+			}
                         res.body.output_uuid = testOutputCollection.uuid;
                         res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                             content: testInputs.map(param => param.input).reduce((acc, val) => Object.assign(acc, val), {}),
@@ -1461,6 +1467,9 @@ describe("Process tests", function () {
             // Add output uuid and inputs to container request
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                 req.on('response', res => {
+		    if (!res.body.mounts) {
+			return;
+		    }
                     res.body.output_uuid = fakeOutputUUID;
                     res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                         content: {},
