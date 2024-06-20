@@ -5,7 +5,6 @@
 import { Resource, ResourceKind } from "./resource";
 import { safeLoad } from 'js-yaml';
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
-import { CwlSecrets } from 'models/process';
 
 export interface WorkflowResource extends Resource {
     kind: ResourceKind.WORKFLOW;
@@ -151,6 +150,11 @@ export const getWorkflow = (workflowDefinition: WorkflowResourceDefinition) => {
         ? mainWorkflow
         : undefined;
 };
+
+export interface CwlSecrets {
+    class: 'http://commonwl.org/cwltool#Secrets';
+    secrets: string[];
+}
 
 export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition) { return undefined; }

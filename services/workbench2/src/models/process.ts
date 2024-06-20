@@ -4,7 +4,7 @@
 
 import { ContainerRequestResource } from "./container-request";
 import { MountType, MountKind } from 'models/mount-types';
-import { WorkflowResource, parseWorkflowDefinition, getWorkflow } from 'models/workflow';
+import { WorkflowResource, parseWorkflowDefinition, getWorkflow, CwlSecrets } from 'models/workflow';
 import { WorkflowInputsData } from './workflow';
 
 export type ProcessResource = ContainerRequestResource;
@@ -12,10 +12,6 @@ export type ProcessResource = ContainerRequestResource;
 export const MOUNT_PATH_CWL_WORKFLOW = '/var/lib/cwl/workflow.json';
 export const MOUNT_PATH_CWL_INPUT = '/var/lib/cwl/cwl.input.json';
 
-export interface CwlSecrets {
-    class: 'http://commonwl.org/cwltool#Secrets';
-    secrets: string[];
-}
 
 export const createWorkflowMounts = (workflow: WorkflowResource, inputs: WorkflowInputsData): { [path: string]: MountType } => {
 

@@ -45,7 +45,9 @@ afterEach(function () {
         return;
     }
     cy.log(`Cleaning ${createdResources.length} previously created resource(s).`);
-    createdResources.forEach(function ({ suffix, uuid }) {
+    // delete them in FIFO order because later created resources may
+    // be linked to the earlier ones.
+    createdResources.reverse().forEach(function ({ suffix, uuid }) {
         // Don't fail when a resource isn't already there, some objects may have
         // been removed, directly or indirectly, from the test that created them.
         cy.deleteResource(systemToken, suffix, uuid, false);
