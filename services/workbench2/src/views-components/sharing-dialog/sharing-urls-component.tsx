@@ -74,18 +74,20 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
                         </Grid>
                         <Grid item xs />
                         <Grid item>
-                            <span className={props.classes.sharingUrlButton}>
-                                {/* <Tooltip title='Copy link to clipboard'> */}
+                            <Tooltip title='Copy link to clipboard'>
+                                <span className={props.classes.sharingUrlButton}>
                                     <CopyToClipboard text={url} onCopy={() => props.onCopy('Sharing URL copied')}>
                                         <CopyIcon />
                                     </CopyToClipboard>
-                                {/* </Tooltip> */}
+                                </span>
+                            </Tooltip>
+                            <span data-cy='remove-url-btn' className={props.classes.sharingUrlButton}>
+                                <Tooltip title='Remove'>
+                                    <IconButton onClick={() => props.onDeleteSharingToken(token.uuid)} size="large">
+                                        <CloseIcon />
+                                    </IconButton>
+                                </Tooltip>
                             </span>
-                            <span data-cy='remove-url-btn' className={props.classes.sharingUrlButton}><Tooltip title='Remove'>
-                                <IconButton onClick={() => props.onDeleteSharingToken(token.uuid)} size="large">
-                                    <CloseIcon />
-                                </IconButton>
-                            </Tooltip></span>
                         </Grid>
                     </Grid>
                 );
