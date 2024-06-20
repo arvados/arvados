@@ -44,8 +44,9 @@ interface NativeSelectFieldProps {
 }
 
 export const NativeSelectField = withStyles(styles)((props: WrappedFieldProps & NativeSelectFieldProps & WithStyles<CssRules> & { items: any[] }) => (
-    <FormControl className={props.classes.formControl}>
+    <FormControl variant="standard" className={props.classes.formControl}>
         <Select
+            variant="standard"
             className={props.classes.selectWrapper}
             native
             value={props.input.value}
@@ -82,10 +83,11 @@ const selectFieldStyles: CustomStyleRulesCallback<SelectFieldCssRules> = (theme:
 });
 export const SelectField = withStyles(selectFieldStyles)((props: WrappedFieldProps & SelectFieldProps & WithStyles<SelectFieldCssRules>) => (
     <FormControl
+        variant="standard"
         error={props.meta.invalid}
         className={props.classes.formControl}>
         <InputLabel>{props.label}</InputLabel>
-        <Select {...props.input}>{props.children}</Select>
+        <Select variant="standard" {...props.input}>{props.children}</Select>
         <FormHelperText>{props.meta.error}</FormHelperText>
     </FormControl>
 ));

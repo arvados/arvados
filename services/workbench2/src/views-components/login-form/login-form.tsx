@@ -129,21 +129,29 @@ export const LoginForm = withStyles(styles)(
                         <div className={classes.wrapper}>
                             <CardContent>
                                 <TextField
+                                    variant="standard"
                                     inputRef={userInput}
                                     disabled={isSubmitting}
-                                    error={error} fullWidth id="username" type="email"
-                                    label="Username" margin="normal"
+                                    error={error}
+                                    fullWidth
+                                    id="username"
+                                    type="email"
+                                    label="Username"
+                                    margin="normal"
                                     onChange={(e) => setUsername(e.target.value)}
-                                    onKeyPress={(e) => handleKeyPress(e)}
-                                />
+                                    onKeyPress={(e) => handleKeyPress(e)} />
                                 <TextField
+                                    variant="standard"
                                     disabled={isSubmitting}
-                                    error={error} fullWidth id="password" type="password"
-                                    label="Password" margin="normal"
+                                    error={error}
+                                    fullWidth
+                                    id="password"
+                                    type="password"
+                                    label="Password"
+                                    margin="normal"
                                     helperText={helperText}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    onKeyPress={(e) => handleKeyPress(e)}
-                                />
+                                    onKeyPress={(e) => handleKeyPress(e)} />
                             </CardContent>
                             <CardActions>
                                 <Button variant="contained" size="large" color="primary"

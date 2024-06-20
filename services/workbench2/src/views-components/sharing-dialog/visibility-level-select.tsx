@@ -24,6 +24,7 @@ const VisibilityLevelSelectStyles: CustomStyleRulesCallback<VisibilityLevelSelec
 export const VisibilityLevelSelect = withStyles(VisibilityLevelSelectStyles)(
     ({ classes, includePublic, ...props }: { includePublic: boolean } & SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
         <Select
+            variant="standard"
             {...props}
             renderValue={renderPermissionItem}
             inputProps={{ classes }}>

@@ -39,9 +39,10 @@ export const WorkflowPresetSelect = withStyles(styles)(
 
             return (
                 <div className={classes.root}>
-                    <FormControl fullWidth>
+                    <FormControl variant="standard" fullWidth>
                         <InputLabel>Preset</InputLabel>
                         <Select
+                            variant="standard"
                             value={selectedPreset.uuid}
                             onChange={(event: any)=>this.handleChange(event)}>
                             <MenuItem value={workflow.uuid}>

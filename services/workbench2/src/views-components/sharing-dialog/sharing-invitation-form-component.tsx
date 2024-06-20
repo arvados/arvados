@@ -55,7 +55,7 @@ const PermissionSelectField = () =>
         parse={parsePermissionLevel} />;
 
 const PermissionSelectComponent = ({ input }: WrappedFieldProps) =>
-    <FormControl fullWidth>
+    <FormControl variant="standard" fullWidth>
         <InputLabel>Authorization</InputLabel>
         <PermissionSelect {...input} />
     </FormControl>;

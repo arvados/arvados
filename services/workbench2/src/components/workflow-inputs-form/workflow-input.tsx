@@ -12,6 +12,7 @@ export interface WorkflowInputProps {
 }
 export const WorkflowInput = ({ input }: WorkflowInputProps) =>
     <TextField
+        variant="standard"
         label={`${input.label || input.id}${required(input)() ? '*' : ''}`}
         name={input.id}
         helperText={input.doc}

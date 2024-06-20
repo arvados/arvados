@@ -41,37 +41,39 @@ export const MultiCheckboxField = (props: WrappedFieldProps & MultiCheckboxField
     if (props.input.value.length === 0 && (props.defaultValues || []).length !== 0) {
         props.input.value = props.defaultValues ? [...props.defaultValues] : [];
     }
-    return <FormControl error={!isValid(props.input.value)}>
-        <FormLabel component='label'>{props.label}</FormLabel>
-        <FormGroup row={props.rowLayout}>
-        { props.items.map((item, idx) =>
-            <FormControlLabel
-                key={`label-${idx}`}
-                control={
-                    <Checkbox
-                        data-cy={`checkbox-${item}`}
-                        key={`control-${idx}`}
-                        name={`${props.input.name}[${idx}]`}
-                        value={item}
-                        checked={
-                            props.input.value.indexOf(item) !== -1 ||
-                            (props.input.value.length === 0 &&
-                                (props.defaultValues || []).indexOf(item) !== -1)
-                        }
-                        onChange={e => {
-                            const newValue = [...props.input.value];
-                            if (e.target.checked) {
-                                newValue.push(item);
-                            } else {
-                                newValue.splice(newValue.indexOf(item), 1);
+    return (
+        <FormControl variant="standard" error={!isValid(props.input.value)}>
+            <FormLabel component='label'>{props.label}</FormLabel>
+            <FormGroup row={props.rowLayout}>
+            { props.items.map((item, idx) =>
+                <FormControlLabel
+                    key={`label-${idx}`}
+                    control={
+                        <Checkbox
+                            data-cy={`checkbox-${item}`}
+                            key={`control-${idx}`}
+                            name={`${props.input.name}[${idx}]`}
+                            value={item}
+                            checked={
+                                props.input.value.indexOf(item) !== -1 ||
+                                (props.input.value.length === 0 &&
+                                    (props.defaultValues || []).indexOf(item) !== -1)
                             }
-                            if (!isValid(newValue)) { return; }
-                            return props.input.onChange(newValue);
-                        }}
-                        disabled={props.meta.submitting}
-                        color="primary" />
-                }
-                label={item} />) }
-        </FormGroup>
-        <FormHelperText>{props.helperText}</FormHelperText>
-    </FormControl> };
+                            onChange={e => {
+                                const newValue = [...props.input.value];
+                                if (e.target.checked) {
+                                    newValue.push(item);
+                                } else {
+                                    newValue.splice(newValue.indexOf(item), 1);
+                                }
+                                if (!isValid(newValue)) { return; }
+                                return props.input.onChange(newValue);
+                            }}
+                            disabled={props.meta.submitting}
+                            color="primary" />
+                    }
+                    label={item} />) }
+            </FormGroup>
+            <FormHelperText>{props.helperText}</FormHelperText>
+        </FormControl>
+    ); };

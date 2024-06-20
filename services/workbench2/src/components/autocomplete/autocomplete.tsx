@@ -58,16 +58,14 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     inputRef = React.createRef<HTMLInputElement>();
 
     render() {
-        return (
-            <>
-                <FormControl fullWidth error={this.props.error}>
-                    {this.renderLabel()}
-                    {this.renderInput()}
-                    {this.renderHelperText()}
-                    {this.renderSuggestions()}
-                </FormControl>
-            </>
-        );
+        return <>
+            <FormControl variant="standard" fullWidth error={this.props.error}>
+                {this.renderLabel()}
+                {this.renderInput()}
+                {this.renderHelperText()}
+                {this.renderSuggestions()}
+            </FormControl>
+        </>;
     }
 
     renderLabel() {

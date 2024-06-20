@@ -37,6 +37,7 @@ export const TextField = withStyles(styles)((props: TextFieldProps & {
     helperText?: string, type?: string,
 }) =>
     <MaterialTextField
+        variant="standard"
         helperText={(props.meta.touched && props.meta.error) || props.helperText}
         className={props.classes.textField}
         label={props.label}
@@ -51,8 +52,7 @@ export const TextField = withStyles(styles)((props: TextFieldProps & {
         margin={props.margin}
         placeholder={props.placeholder}
         type={props.type}
-        {...props.input}
-    />);
+        {...props.input} />);
 
 
 interface RichEditorTextFieldData {
@@ -89,6 +89,7 @@ export const RichEditorTextField = withStyles(styles)(
 export const DateTextField = withStyles(styles)
     ((props: TextFieldProps) =>
         <MaterialTextField
+            variant="standard"
             type="date"
             disabled={props.meta.submitting}
             helperText={props.meta.error}
@@ -99,6 +100,5 @@ export const DateTextField = withStyles(styles)
             }}
             name={props.input.name}
             onChange={props.input.onChange}
-            value={props.input.value}
-        />
+            value={props.input.value} />
     );

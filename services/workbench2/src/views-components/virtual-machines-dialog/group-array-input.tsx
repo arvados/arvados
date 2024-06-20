@@ -58,12 +58,14 @@ export const GroupArrayInput = ({name, input, setPartialGroupInput, hasPartialGr
 }
 
 const GroupArrayInputComponent = (props: GenericInputProps & GroupArrayDataProps) => {
-  return <FormGroup>
-        <FormControl fullWidth error={props.meta.error}>
-          <InputLabel shrink={props.meta.active || props.input.value.length > 0}>{props.commandInput.id}</InputLabel>
-          <StyledInputComponent {...props} />
-        </FormControl>
-    </FormGroup>;
+  return (
+      <FormGroup>
+            <FormControl variant="standard" fullWidth error={props.meta.error}>
+              <InputLabel shrink={props.meta.active || props.input.value.length > 0}>{props.commandInput.id}</InputLabel>
+              <StyledInputComponent {...props} />
+            </FormControl>
+        </FormGroup>
+  );
     };
 
 const StyledInputComponent = withStyles(styles)(

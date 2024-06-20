@@ -46,6 +46,7 @@ export const formatPermissionLevel = (value: PermissionLevel) => {
 
 export const PermissionSelect = (props: SelectProps) =>
     <Select
+        variant="standard"
         {...props}
         disableUnderline
         renderValue={renderPermissionItem}>

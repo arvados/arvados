@@ -36,8 +36,9 @@ type ProcessLogFormProps = ProcessLogFormDataProps & ProcessLogFormActionProps &
 export const ProcessLogForm = withStyles(styles)(
     ({ classes, selectedFilter, onChange, filters }: ProcessLogFormProps) =>
         <form autoComplete="off" data-cy="process-logs-filter">
-            <FormControl className={classes.formControl}>
+            <FormControl variant="standard" className={classes.formControl}>
                 <Select
+                    variant="standard"
                     value={selectedFilter.value}
                     onChange={(ev: any) => onChange({ label: ev.target.innerText as string, value: ev.target.value as string })}
                     input={<Input name="eventType" id="log-label-placeholder" />}

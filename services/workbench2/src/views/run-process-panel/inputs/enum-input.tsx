@@ -45,15 +45,18 @@ const EnumInputComponent = (props: GenericInputProps) =>
 
 const Input = (props: GenericInputProps) => {
     const type = getEnumType(props.commandInput) as CommandInputEnumSchema;
-    return <Select
-        value={props.input.value}
-        onChange={props.input.onChange}
-        disabled={props.commandInput.disabled} >
-        {(isRequiredInput(props.commandInput) ? [] : [<MenuItem key={'_empty'} value={''} />]).concat(type.symbols.map(symbol =>
-            <MenuItem key={symbol} value={extractValue(symbol)}>
-                {extractValue(symbol)}
-            </MenuItem>))}
-    </Select>;
+    return (
+        <Select
+            variant="standard"
+            value={props.input.value}
+            onChange={props.input.onChange}
+            disabled={props.commandInput.disabled}>
+            {(isRequiredInput(props.commandInput) ? [] : [<MenuItem key={'_empty'} value={''} />]).concat(type.symbols.map(symbol =>
+                <MenuItem key={symbol} value={extractValue(symbol)}>
+                    {extractValue(symbol)}
+                </MenuItem>))}
+        </Select>
+    );
 };
 
 /**
