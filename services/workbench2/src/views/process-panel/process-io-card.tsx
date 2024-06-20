@@ -837,12 +837,14 @@ const KeepUrlBase = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
     const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ? (
         <Tooltip title={<>View collection in Workbench<br />{pdhUrl}</>}>
-            <RouterLink
-                to={pdhWbPath}
-                className={classes.keepLink}
-            >
-                {pdhUrl}
-            </RouterLink>
+            <div>
+                <RouterLink
+                    to={pdhWbPath}
+                    className={classes.keepLink}
+                    >
+                    {pdhUrl}
+                </RouterLink>
+            </div>
         </Tooltip>
     ) : (
         <></>
