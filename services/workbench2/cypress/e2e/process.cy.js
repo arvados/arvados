@@ -18,7 +18,7 @@ describe("Process tests", function () {
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser("user", "Active", "User", false, true)
+        cy.getUser("activeuser", "Active", "User", false, true)
             .as("activeUser")
             .then(function () {
                 activeUser = this.activeUser;

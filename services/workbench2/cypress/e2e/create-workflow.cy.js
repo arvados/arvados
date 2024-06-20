@@ -12,7 +12,7 @@ describe('Create workflow tests', function () {
                 adminUser = this.adminUser;
             }
             );
-        cy.getUser('collectionuser1', 'Collection', 'User', false, true)
+        cy.getUser('activeuser', 'Active', 'User', false, true)
             .as('activeUser').then(function () {
                 activeUser = this.activeUser;
             }
