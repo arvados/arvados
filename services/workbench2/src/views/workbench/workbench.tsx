@@ -374,13 +374,11 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                         className={classes.contentWrapper}
                     >
                         <Grid
-                            item
                             xs
                         >
                             {isNotLinking && <MainContentBar />}
                         </Grid>
                         <Grid
-                            item
                             xs
                             className={classes.content}
                         >

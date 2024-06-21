@@ -87,6 +87,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper,
+        overflow: "auto",
     },
     noItemsInfo: {
         textAlign: "center",

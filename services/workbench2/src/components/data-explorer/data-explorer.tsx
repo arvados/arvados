@@ -59,7 +59,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         height: "100%",
         flex: 1,
-        overflowY: "auto",
+        overflowY: "hidden",
     },
     moreOptionsButton: {
         padding: 0,
@@ -88,7 +88,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     dataTable: {
         height: "100%",
-        overflow: "auto",
+        overflowY: "scroll",
     },
     container: {
         height: "100%",
