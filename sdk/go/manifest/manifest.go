@@ -186,14 +186,16 @@ func firstBlock(offsets []uint64, rangeStart uint64) int {
 func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *FileSegment) {
 	// This is what streamName+"/"+fileName will look like:
 	target := fixStreamName(filepath)
+	if !strings.HasPrefix(target, s.StreamName+"/") {
+		return
+	}
+	targetTokName := target[len(s.StreamName)+1:]
 	for _, fTok := range s.FileStreamSegments {
-		wantPos := fTok.SegPos
-		wantLen := fTok.SegLen
-		name := fTok.Name
-
-		if s.StreamName+"/"+name != target {
+		if fTok.Name != targetTokName {
 			continue
 		}
+		wantPos := fTok.SegPos
+		wantLen := fTok.SegLen
 		if wantLen == 0 {
 			ch <- &FileSegment{Locator: "d41d8cd98f00b204e9800998ecf8427e+0", Offset: 0, Len: 0}
 			continue
