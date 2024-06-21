@@ -8,6 +8,7 @@ except ImportError:
     from cgi import escape
 
 import json
+from typing import ItemsView
 import pkg_resources
 
 
@@ -61,6 +62,17 @@ class WebChart(object):
         self.label = label
         self.summarizers = summarizers
 
+    def cardlist(self, items):
+        if not isinstance(items, list):
+            items = [items]
+
+        return "\n".join(
+                """<div class="card">
+          <div class="content">
+          {}
+          </div>
+        </div>""".format(i) for i in items)
+
     def html(self, beforechart='', afterchart=''):
         return '''<!doctype html><html><head>
         <title>{} stats</title>
@@ -77,24 +89,14 @@ class WebChart(object):
             <h1>{}</h1>
           </div>
         </div>
-        <div class="card">
-          <div class="content" id="tophtml">
-          <h2>Summary</h2>
-          {}
-          </div>
-        </div>
+        {}
         <div class="card">
           <div class="content">
             <h2>Graph</h2>
             <div id="chart"></div>
           </div>
         </div>
-        <div class="card">
-          <div class="content" id="bottomhtml">
-          <h2>Metrics</h2>
-          {}
-          </div>
-        </div>
+        {}
         </body>
         </html>
         '''.format(escape(self.label),
@@ -103,8 +105,8 @@ class WebChart(object):
                    self.STYLE,
                    self.headHTML(),
                    escape(self.label),
-                   beforechart,
-                   afterchart)
+                   self.cardlist(beforechart),
+                   self.cardlist(afterchart))
 
     def js(self):
         return 'var chartdata = {};\n{}'.format(
