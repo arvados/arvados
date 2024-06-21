@@ -19,6 +19,7 @@ import { Provider } from "react-redux";
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProcessStatusFilter, buildProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import {act} from "react-dom/test-utils";
+import { updateResources } from 'store/resources/resources-actions';
 
 configure({ adapter: new Adapter() });
 
@@ -61,14 +62,17 @@ describe("<SubprocessProgressBar />", () => {
 
     it("requests subprocess progress stats for stopped processes and displays progress", async () => {
         // when
+        const containerRequest = {
+            uuid: 'zzzzz-xvhdp-000000000000000',
+            containerUuid: 'zzzzz-dz642-000000000000000',
+        };
         const process = {
             container: {
                 state: ContainerState.COMPLETE,
             },
-            containerRequest: {
-                containerUuid: 'zzzzz-dz642-000000000000000',
-            },
+            containerRequest: containerRequest,
         } as Process;
+        await store.dispatch(updateResources([containerRequest, process]));
 
         statusResponse = {
             [ProcessStatusFilter.COMPLETED]: 100,
@@ -124,14 +128,17 @@ describe("<SubprocessProgressBar />", () => {
     });
 
     it("dislays correct progress bar widths with different values", async () => {
+        const containerRequest = {
+            uuid: 'zzzzz-xvhdp-000000000000001',
+            containerUuid: 'zzzzz-dz642-000000000000001',
+        };
         const process = {
             container: {
                 state: ContainerState.COMPLETE,
             },
-            containerRequest: {
-                containerUuid: 'zzzzz-dz642-000000000000001',
-            },
+            containerRequest: containerRequest,
         } as Process;
+        await store.dispatch(updateResources([containerRequest, process]));
 
         statusResponse = {
             [ProcessStatusFilter.COMPLETED]: 50,
