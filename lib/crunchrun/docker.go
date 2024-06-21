@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
 )
@@ -207,11 +206,11 @@ func (e *dockerExecutor) Pid() int {
 }
 
 func (e *dockerExecutor) Start() error {
-	return e.dockerclient.ContainerStart(context.TODO(), e.containerID, dockertypes.ContainerStartOptions{})
+	return e.dockerclient.ContainerStart(context.TODO(), e.containerID, dockercontainer.StartOptions{})
 }
 
 func (e *dockerExecutor) Stop() error {
-	err := e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockertypes.ContainerRemoveOptions{Force: true})
+	err := e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockercontainer.RemoveOptions{Force: true})
 	if err != nil && strings.Contains(err.Error(), "No such container: "+e.containerID) {
 		err = nil
 	}
@@ -277,7 +276,7 @@ func (e *dockerExecutor) Wait(ctx context.Context) (int, error) {
 }
 
 func (e *dockerExecutor) startIO(stdin io.Reader, stdout, stderr io.Writer) error {
-	resp, err := e.dockerclient.ContainerAttach(context.TODO(), e.containerID, dockertypes.ContainerAttachOptions{
+	resp, err := e.dockerclient.ContainerAttach(context.TODO(), e.containerID, dockercontainer.AttachOptions{
 		Stream: true,
 		Stdin:  stdin != nil,
 		Stdout: true,
@@ -340,7 +339,7 @@ func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.Writer, reader io.
 }
 
 func (e *dockerExecutor) Close() {
-	e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockertypes.ContainerRemoveOptions{Force: true})
+	e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockercontainer.RemoveOptions{Force: true})
 }
 
 func (e *dockerExecutor) InjectCommand(ctx context.Context, detachKeys, username string, usingTTY bool, injectcmd []string) (*exec.Cmd, error) {

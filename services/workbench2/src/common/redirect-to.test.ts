@@ -5,7 +5,9 @@
 import { storeRedirects, handleRedirects } from './redirect-to';
 
 describe('redirect-to', () => {
-    const { location } = window;
+    const mockWindow: { location?: any, localStorage?: any} = window
+
+    const { location } = mockWindow;
     const config: any = {
         keepWebServiceUrl: 'http://localhost',
         keepWebServiceInlineUrl: 'http://localhost-inline'
@@ -28,17 +30,17 @@ describe('redirect-to', () => {
     };
 
     afterAll((): void => {
-        window.location = location;
+        mockWindow.location = location;
     });
 
     describe('storeRedirects', () => {
         beforeEach(() => {
-            delete window.location;
-            window.location = {
+            delete mockWindow.location;
+            mockWindow.location = {
                 ...locationTemplate,
                 href: `${location.href}?redirectToDownload=${redirectTo}`,
             } as any;
-            Object.defineProperty(window, 'localStorage', {
+            Object.defineProperty(mockWindow, 'localStorage', {
                 value: {
                     setItem: jest.fn(),
                 },
@@ -51,18 +53,18 @@ describe('redirect-to', () => {
             storeRedirects();
 
             // then
-            expect(window.localStorage.setItem).toHaveBeenCalledWith('redirectToDownload', decodeURIComponent(redirectTo));
+            expect(mockWindow.localStorage.setItem).toHaveBeenCalledWith('redirectToDownload', decodeURIComponent(redirectTo));
         });
     });
 
     describe('handleRedirects', () => {
         beforeEach(() => {
-            delete window.location;
-            window.location = {
+            delete mockWindow.location;
+            mockWindow.location = {
                 ...locationTemplate,
                 href: `${location.href}?redirectToDownload=${redirectTo}`,
             } as any;;
-            Object.defineProperty(window, 'localStorage', {
+            Object.defineProperty(mockWindow, 'localStorage', {
                 value: {
                     getItem: () => redirectTo,
                     removeItem: jest.fn(),
@@ -76,7 +78,7 @@ describe('redirect-to', () => {
             handleRedirects("abcxyz", config);
 
             // then
-            expect(window.location.href).toBe(`${config.keepWebServiceUrl}${redirectTo}?api_token=abcxyz`);
+            expect(mockWindow.location.href).toBe(`${config.keepWebServiceUrl}${redirectTo}?api_token=abcxyz`);
         });
     });
 });

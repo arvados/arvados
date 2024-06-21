@@ -28,7 +28,7 @@ import {
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { toggleTrashed } from "store/trash/trash-actions";
-import { ContextMenuKind } from "views-components/context-menu/context-menu";
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { Dispatch } from "redux";
 import { createTree } from 'models/tree';
 import {

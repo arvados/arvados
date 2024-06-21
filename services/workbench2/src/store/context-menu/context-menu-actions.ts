@@ -4,7 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { ContextMenuPosition } from "./context-menu-reducer";
-import { ContextMenuKind } from "views-components/context-menu/context-menu";
+import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { getResource, getResourceWithEditableStatus } from "../resources/resources";

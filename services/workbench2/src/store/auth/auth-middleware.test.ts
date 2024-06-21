@@ -33,7 +33,9 @@ describe("AuthMiddleware", () => {
 
     it("handles LOGOUT action", () => {
         localStorage.setItem(API_TOKEN_KEY, 'someToken');
-        window.location.assign = jest.fn();
+        Object.defineProperty(window, 'location', {
+            value: { assign: jest.fn(), href: 'http://localhost', protocol: 'http:', host: 'localhost'}
+          });
         const next = jest.fn();
         const middleware = authMiddleware(services)(store)(next);
         middleware(authActions.LOGOUT({deleteLinkData: false, preservePath: false}));

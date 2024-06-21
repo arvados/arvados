@@ -73,7 +73,7 @@ def check_contents(group, wf_uuid):
         raise Exception("Couldn't find collection containing expected "+expect_file)
 
 
-def test_create():
+def check_create():
     group = api.groups().create(body={"group": {"name": "test-19070-project-1", "group_class": "project"}}, ensure_unique_name=True).execute()
     try:
         contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -90,7 +90,7 @@ def test_create():
         api.groups().delete(uuid=group["uuid"]).execute()
 
 
-def test_update():
+def check_update():
     group = api.groups().create(body={"group": {"name": "test-19070-project-2", "group_class": "project"}}, ensure_unique_name=True).execute()
     try:
         contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -132,7 +132,7 @@ def test_update():
         api.groups().delete(uuid=group["uuid"]).execute()
 
 
-def test_execute():
+def check_execute():
     group = api.groups().create(body={"group": {"name": "test-19070-project-3", "group_class": "project"}}, ensure_unique_name=True).execute()
     try:
         contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -193,6 +193,6 @@ def test_execute():
         api.groups().delete(uuid=group["uuid"]).execute()
 
 if __name__ == '__main__':
-    test_create()
-    test_update()
-    test_execute()
+    check_create()
+    check_update()
+    check_execute()

@@ -47,6 +47,7 @@ describe("<DataTable />", () => {
                 onContextMenu={jest.fn()}
                 onSortToggle={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         expect(dataTable.find(TableHead).find(TableCell)).toHaveLength(3);
@@ -71,6 +72,7 @@ describe("<DataTable />", () => {
                 onContextMenu={jest.fn()}
                 onSortToggle={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         expect(dataTable.find(TableHead).find(TableCell).last().text()).toBe("Column 1");
@@ -96,6 +98,7 @@ describe("<DataTable />", () => {
                 onContextMenu={jest.fn()}
                 onSortToggle={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         expect(dataTable.find(TableHead).find(TableCell).last().text()).toBe("Column Header");
@@ -122,6 +125,7 @@ describe("<DataTable />", () => {
                 onContextMenu={jest.fn()}
                 onSortToggle={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         setTimeout(() => {
@@ -155,6 +159,7 @@ describe("<DataTable />", () => {
                 onContextMenu={jest.fn()}
                 onSortToggle={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         setTimeout(() => {
@@ -184,6 +189,7 @@ describe("<DataTable />", () => {
                 onContextMenu={jest.fn()}
                 onSortToggle={onSortToggle}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         expect(dataTable.find(TableSortLabel).prop("active")).toBeTruthy();
@@ -212,6 +218,7 @@ describe("<DataTable />", () => {
                 onSortToggle={jest.fn()}
                 onContextMenu={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         expect(dataTable.find(DataTableFiltersPopover)).toHaveLength(0);
@@ -239,6 +246,7 @@ describe("<DataTable />", () => {
                 onSortToggle={jest.fn()}
                 onContextMenu={jest.fn()}
                 setCheckedListOnStore={jest.fn()}
+                checkedList={{}}
             />
         );
         expect(dataTable.find(DataTableFiltersPopover).prop("filters")).toBe(columns[1].filters);

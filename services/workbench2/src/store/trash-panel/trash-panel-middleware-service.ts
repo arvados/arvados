@@ -16,7 +16,7 @@ import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
-import { ProjectPanelColumnNames } from "views/project-panel/project-panel";
+import { TrashPanelColumnNames } from "views/trash-panel/trash-panel";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
@@ -27,7 +27,7 @@ import { serializeResourceTypeFilters } from 'store//resource-type-filters/resou
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
 import { CollectionResource } from "models/collection";
-import { MultiSelectMenuActionNames } from "views-components/multiselect-toolbar/ms-menu-actions";
+import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -38,7 +38,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
 
-        const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+        const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, TrashPanelColumnNames.TYPE));
 
         const otherFilters = new FilterBuilder()
             .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
@@ -85,7 +85,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             }));
             api.dispatch(couldNotFetchTrashContents());
         }
-        api.dispatch<any>(removeDisabledButton(MultiSelectMenuActionNames.MOVE_TO_TRASH))
+        api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
     }
 }
 

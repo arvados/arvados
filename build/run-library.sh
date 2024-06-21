@@ -111,7 +111,7 @@ handle_ruby_gem() {
         find -maxdepth 1 -name "${gem_name}-*.gem" -delete
 
         # -q appears to be broken in gem version 2.2.2
-        $GEM build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
+        gem build "$gem_name.gemspec" $DASHQ_UNLESS_DEBUG >"$STDOUT_IF_DEBUG" 2>"$STDERR_IF_DEBUG"
     fi
 }
 
@@ -121,8 +121,11 @@ package_workbench2() {
     local src=services/workbench2
     local dst=/var/www/arvados-workbench2/workbench2
     local description="Arvados Workbench 2"
-    local version="$(version_from_git)"
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
+        return 0
+    fi
     cd "$WORKSPACE/$src"
+    local version="$(version_from_git)"
     rm -rf ./build
     NODE_ENV=production yarn install
     VERSION="$version" BUILD_NUMBER="$(default_iteration "$pkgname" "$version" yarn)" GIT_COMMIT="$(git rev-parse HEAD | head -c9)" yarn build
@@ -261,6 +264,13 @@ package_go_binary_worker() {
       switches+=("-a${target_arch}")
       binpath="$GOPATH/bin/linux_${target_arch}/${basename}"
     fi
+
+    case "$package_format" in
+        # As of April 2024 we package identical Go binaries under different
+        # packages and names. This upsets the build id database, so don't
+        # register ourselves there.
+        rpm) switches+=(--rpm-rpmbuild-define="_build_id_links none") ;;
+    esac
 
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
@@ -436,34 +446,30 @@ test_package_presence() {
     # sure it gets picked up by the test and/or upload steps.
     # Get the list of packages from the repos
 
+    local pkg_url
     if [[ "$FORCE_BUILD" == "1" ]]; then
       echo "Package $full_pkgname build forced with --force-build, building"
+      return 0
     elif [[ "$FORMAT" == "deb" ]]; then
-      declare -A dd
-      dd[debian11]=bullseye
-      dd[debian12]=bookworm
-      dd[ubuntu2004]=focal
-      dd[ubuntu2204]=jammy
-      D=${dd[$TARGET]}
+      local codename
+      case "$TARGET" in
+          debian11) codename=bullseye ;;
+          debian12) codename=bookworm ;;
+          ubuntu2004) codename=focal ;;
+          ubuntu2204) codename=jammy ;;
+          ubuntu2404) codename=noble ;;
+          *)
+              echo "FIXME: Don't know deb URL path for $TARGET, building"
+              return 0
+              ;;
+      esac
+      local repo_subdir
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
       else
         repo_subdir=${pkgname:0:1}
       fi
-
-      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/)
-      echo "${repo_pkg_list}" |grep -q ${full_pkgname}
-      if [ $? -eq 0 ] ; then
-        echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/${full_pkgname}
-        return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
-        echo "Package $full_pkgname exists, not rebuilding!"
-        return 1
-      else
-        echo "Package $full_pkgname not found, building"
-        return 0
-      fi
+      pkg_url="http://apt.arvados.org/$codename/pool/main/$repo_subdir/$pkgname/$full_pkgname"
     else
       local rpm_root
       case "$TARGET" in
@@ -473,18 +479,18 @@ test_package_presence() {
           return 0
           ;;
       esac
-      local rpm_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
+      pkg_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
+    fi
 
-      if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$rpm_url"; then
-        echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        return 1
-      elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
-        echo "Package $full_pkgname exists, not rebuilding!"
-        return 1
-      else
-        echo "Package $full_pkgname not found, building"
-        return 0
-      fi
+    if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$pkg_url"; then
+      echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
+      return 1
+    elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
+      echo "Package $full_pkgname exists, not rebuilding!"
+      return 1
+    else
+      echo "Package $full_pkgname not found, building"
+      return 0
     fi
 }
 
@@ -506,8 +512,38 @@ handle_rails_package() {
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
+        # Please make sure you read `bundle help config` carefully before you
+        # modify any of these settings. Some of their names are not intuitive.
+        #
+        # `bundle cache` caches from Git and paths, not just rubygems.org.
         bundle config set cache_all true
-        bundle package
+        # Disallow changes to Gemfile.
+        bundle config set deployment true
+        # Avoid loading system-wide gems (although this seems to not work 100%).
+        bundle config set disable_shared_gems true
+        # `bundle cache` only downloads gems, doesn't install them.
+        # Our Rails postinst script does the install step.
+        bundle config set no_install true
+        # As of April 2024/Bundler 2.4, `bundle cache` seems to skip downloading
+        # gems that are already available system-wide... and then it complains
+        # that your bundle is incomplete. Work around this by fetching gems
+        # manually.
+        # TODO: Once all our supported distros have Ruby 3+, we can modify
+        # the awk script to print "NAME:VERSION" output, and pipe that directly
+        # to `xargs -0r gem fetch` for reduced overhead.
+        mkdir -p vendor/cache
+        awk -- '
+BEGIN { OFS="\0"; ORS="\0"; }
+(/^[A-Z ]*$/) { level1=$0; }
+(/^  [[:alpha:]]+:$/) { level2=substr($0, 3, length($0) - 3); next; }
+(/^ {0,3}[[:alpha:]]/) { level2=""; next; }
+(level1 == "GEM" && level2 == "specs" && NF == 2 && $1 ~ /^[[:alpha:]][-_[:alnum:]]*$/ && $2 ~ /\([[:digit:]]+[-_+.[:alnum:]]*\)$/) {
+    print "--version", substr($2, 2, length($2) - 2), $1;
+}
+' Gemfile.lock | env -C vendor/cache xargs -0r --max-args=3 gem fetch
+        # Despite the bug, we still run `bundle cache` to make sure Bundler is
+        # happy for later steps.
+        bundle cache
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
@@ -566,34 +602,6 @@ handle_api_server () {
   fi
 }
 
-# Usage: handle_cwltest [deb|rpm] [amd64|arm64]
-handle_cwltest () {
-  local package_format="$1"; shift
-  local target_arch="${1:-amd64}"; shift
-
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "python3-cwltest" ]] ; then
-    debug_echo -e "Skipping build of cwltest package."
-    return 0
-  fi
-  cd "$WORKSPACE"
-  if [[ -e "$WORKSPACE/cwltest" ]]; then
-    rm -rf "$WORKSPACE/cwltest"
-  fi
-  git clone https://github.com/common-workflow-language/cwltest.git
-
-  # The subsequent release of cwltest confirms that files exist on disk, since
-  # our files are in Keep, all the tests fail.
-  # We should add [optional] Arvados support to cwltest so it can access
-  # Keep but for the time being just package the last working version.
-  (cd cwltest && git checkout 2.3.20230108193615)
-
-  # signal to our build script that we want a cwltest executable installed in /usr/bin/
-  mkdir cwltest/bin && touch cwltest/bin/cwltest
-  fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
-  cd "$WORKSPACE"
-  rm -rf "$WORKSPACE/cwltest"
-}
-
 # Usage: handle_arvados_src
 handle_arvados_src () {
   if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "arvados-src" ]] ; then
@@ -629,6 +637,13 @@ handle_arvados_src () {
   )
 }
 
+setup_build_virtualenv() {
+    PYTHON_BUILDROOT="$(mktemp --directory --tmpdir pybuild.XXXXXXXX)"
+    "$PYTHON3_EXECUTABLE" -m venv "$PYTHON_BUILDROOT/venv"
+    "$PYTHON_BUILDROOT/venv/bin/pip" install --upgrade build piprepo setuptools wheel
+    mkdir "$PYTHON_BUILDROOT/wheelhouse"
+}
+
 # Build python packages with a virtualenv built-in
 # Usage: fpm_build_virtualenv arvados-python-client sdk/python [deb|rpm] [amd64|arm64]
 fpm_build_virtualenv () {
@@ -638,27 +653,6 @@ fpm_build_virtualenv () {
   local target_arch="${1:-amd64}"; shift
 
   native_arch=$(get_native_arch)
-
-  if [[ "$pkg" != "arvados-docker-cleaner" ]]; then
-    PYTHON_PKG=$PYTHON3_PKG_PREFIX-$pkg
-  else
-    # Exception to our package naming convention
-    PYTHON_PKG=$pkg
-  fi
-
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]]; then
-    # arvados-python-client sdist should always be built if we are building a
-    # python package.
-    if [[ "$ONLY_BUILD" != "python3-arvados-cwl-runner" ]] &&
-       [[ "$ONLY_BUILD" != "python3-arvados-fuse" ]] &&
-       [[ "$ONLY_BUILD" != "python3-crunchstat-summary" ]] &&
-       [[ "$ONLY_BUILD" != "arvados-docker-cleaner" ]] &&
-       [[ "$ONLY_BUILD" != "python3-arvados-user-activity" ]]; then
-      debug_echo -e "Skipping build of $pkg package."
-      return 0
-    fi
-  fi
-
   if [[ -n "$target_arch" ]] && [[ "$native_arch" == "$target_arch" ]]; then
       fpm_build_virtualenv_worker "$pkg" "$pkg_dir" "$package_format" "$native_arch" "$target_arch"
   elif [[ -z "$target_arch" ]]; then
@@ -699,91 +693,106 @@ fpm_build_virtualenv_worker () {
     PYTHON_PKG=$PKG
   fi
 
-  cd $WORKSPACE/$PKG_DIR
-
-  rm -rf dist/*
-  local venv_dir="dist/build/usr/lib/$PYTHON_PKG"
-  echo "Creating virtualenv..."
-  if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
-    printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
-    exit 1
+  # We must always add a wheel to our repository, even if we're not building
+  # this distro package, because it might be a dependency for a later
+  # package we do build.
+  if [[ "$PKG_DIR" =~ ^.=[0-9]+\. ]]; then
+      # Not source to build, but a version to download.
+      # The rest of the function expects a filesystem path, so set one afterwards.
+      "$PYTHON_BUILDROOT/venv/bin/pip" download --dest="$PYTHON_BUILDROOT/wheelhouse" "$PKG$PKG_DIR" \
+          && PKG_DIR="$PYTHON_BUILDROOT/nonexistent"
+  else
+      # Make PKG_DIR absolute.
+      PKG_DIR="$(env -C "$WORKSPACE" readlink -e "$PKG_DIR")"
+      if [[ -e "$PKG_DIR/pyproject.toml" ]]; then
+          "$PYTHON_BUILDROOT/venv/bin/python" -m build --outdir="$PYTHON_BUILDROOT/wheelhouse" "$PKG_DIR"
+      else
+          env -C "$PKG_DIR" "$PYTHON_BUILDROOT/venv/bin/python" setup.py bdist_wheel --dist-dir="$PYTHON_BUILDROOT/wheelhouse"
+      fi
   fi
-
-  local venv_py="$venv_dir/bin/python$PYTHON3_VERSION"
-  if ! "$venv_py" -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel; then
-    printf "Error, unable to upgrade pip, setuptools, and wheel with
-  %s -m pip install --upgrade $DASHQ_UNLESS_DEBUG $CACHE_FLAG pip setuptools wheel
-" "$venv_py"
+  if [[ $? -ne 0 ]]; then
+    printf "Error, unable to download/build wheel for %s @ %s\n" "$PKG" "$PKG_DIR"
     exit 1
-  fi
-
-  # filter a useless warning (when building the cwltest package) from the stderr output
-  if ! "$venv_py" setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
-    echo "Error, unable to run $venv_py setup.py sdist for $PKG"
-    exit 1
-  fi
-
-  if [[ "arvados-python-client" == "$PKG" ]]; then
-    PYSDK_PATH="-f $(pwd)/dist/"
   fi
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
+  elif ! "$PYTHON_BUILDROOT/venv/bin/piprepo" build "$PYTHON_BUILDROOT/wheelhouse"; then
+    printf "Error, unable to update local wheel repository\n"
+    exit 1
   fi
 
-  # Determine the package version from the generated sdist archive
-  if [[ -n "$ARVADOS_BUILDING_VERSION" ]] ; then
-      UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
-      PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
-  else
-      PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
-      UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
+  local venv_dir="$PYTHON_BUILDROOT/$PYTHON_PKG"
+  echo "Creating virtualenv..."
+  if ! "$PYTHON3_EXECUTABLE" -m venv "$venv_dir"; then
+    printf "Error, unable to run\n  %s -m venv %s\n" "$PYTHON3_EXECUTABLE" "$venv_dir"
+    exit 1
+  # We must have the dependency resolver introduced in late 2020 for the rest
+  # of our install process to work.
+  # <https://blog.python.org/2020/11/pip-20-3-release-new-resolver.html>
+  elif ! "$venv_dir/bin/pip" install "pip>=20.3"; then
+    printf "Error, unable to run\n  %s/bin/pip install 'pip>=20.3'\n" "$venv_dir"
+    exit 1
   fi
+
+  local pip_wheel="$(ls --sort=time --reverse "$PYTHON_BUILDROOT/wheelhouse/$(echo "$PKG" | sed s/-/_/g)-"*.whl | tail -n1)"
+  if [[ -z "$pip_wheel" ]]; then
+    printf "Error, unable to find built wheel for $PKG\n"
+    exit 1
+  elif ! "$venv_dir/bin/pip" install $DASHQ_UNLESS_DEBUG $CACHE_FLAG --extra-index-url="file://$PYTHON_BUILDROOT/wheelhouse/simple" "$pip_wheel"; then
+    printf "Error, unable to run
+  %s/bin/pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG --extra-index-url=file://%s %s
+" "$venv_dir" "$PYTHON_BUILDROOT/wheelhouse/simple" "$pip_wheel"
+    exit 1
+  fi
+
+  # Determine the package version from the wheel
+  PYTHON_VERSION="$("$venv_dir/bin/python" "$WORKSPACE/build/pypkg_info.py" metadata "$PKG" Version)"
+  UNFILTERED_PYTHON_VERSION="$(echo "$PYTHON_VERSION" | sed 's/\.dev/~dev/; s/\([0-9]\)rc/\1~rc/')"
 
   # See if we actually need to build this package; does it exist already?
   # We can't do this earlier than here, because we need PYTHON_VERSION.
   if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" python3 "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
     return 0
   fi
-
   echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
-
-  local sdist_path="$(ls dist/*.tar.gz)"
-  if ! "$venv_py" -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG $PYSDK_PATH "$sdist_path"; then
-    printf "Error, unable to run
-  %s -m pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG %s %s
-" "$venv_py" "$PYSDK_PATH" "$sdist_path"
-    exit 1
-  fi
-
-  pushd "$venv_dir" >$STDOUT_IF_DEBUG
 
   # Replace the shebang lines in all python scripts, and handle the activate
   # scripts too. This is a functional replacement of the 237 line
   # virtualenv_tools.py script that doesn't work in python3 without serious
   # patching, minus the parts we don't need (modifying pyc files, etc).
-  local sys_venv_dir="${venv_dir#dist/build/}"
+  local sys_venv_dir="/usr/lib/$PYTHON_PKG"
   local sys_venv_py="$sys_venv_dir/bin/python$PYTHON3_VERSION"
-  for binfile in `ls bin/`; do
-    if file --mime "bin/$binfile" | grep -q binary; then
+  find "$venv_dir/bin" -type f | while read binfile; do
+    if file --mime "$binfile" | grep -q binary; then
       :  # Nothing to do for binary files
-    elif [[ "$binfile" =~ ^activate(.csh|.fish|)$ ]]; then
-      sed -ri "s@VIRTUAL_ENV(=| )\".*\"@VIRTUAL_ENV\\1\"/$sys_venv_dir\"@" "bin/$binfile"
+    elif [[ "$binfile" =~ /activate(.csh|.fish|)$ ]]; then
+      sed -ri "s@VIRTUAL_ENV(=| )\".*\"@VIRTUAL_ENV\\1\"$sys_venv_dir\"@" "$binfile"
     else
       # Replace shebang line
-      sed -ri "1 s@^#\![^[:space:]]+/bin/python[0-9.]*@#\!/$sys_venv_py@" "bin/$binfile"
+      sed -ri "1 s@^#\![^[:space:]]+/bin/python[0-9.]*@#\!$sys_venv_py@" "$binfile"
     fi
   done
 
-  popd >$STDOUT_IF_DEBUG
-  cd dist
-
-  find build -iname '*.py[co]' -delete
-
-  # Finally, generate the package
-  echo "Creating package..."
-
-  declare -a COMMAND_ARR=("fpm" "-s" "dir" "-t" "$package_format")
+  # Using `env -C` sets the directory where the package is built.
+  # Using `fpm --chdir` sets the root directory for source arguments.
+  declare -a COMMAND_ARR=(
+      env -C "$PYTHON_BUILDROOT" fpm
+      --chdir="$venv_dir"
+      --name="$PYTHON_PKG"
+      --version="$UNFILTERED_PYTHON_VERSION"
+      --input-type=dir
+      --output-type="$package_format"
+      --depends="$PYTHON3_PACKAGE"
+      --iteration="$ARVADOS_BUILDING_ITERATION"
+      --replaces="python-$PKG"
+      --url="https://arvados.org"
+  )
+  # Append fpm flags corresponding to Python package metadata.
+  readarray -d "" -O "${#COMMAND_ARR[@]}" -t COMMAND_ARR < \
+            <("$venv_dir/bin/python3" "$WORKSPACE/build/pypkg_info.py" \
+                                      --delimiter=\\0 --format=fpm \
+                                      metadata "$PKG" License Summary)
 
   if [[ -n "$target_arch" ]] && [[ "$target_arch" != "amd64" ]]; then
     COMMAND_ARR+=("-a$target_arch")
@@ -797,32 +806,16 @@ fpm_build_virtualenv_worker () {
     COMMAND_ARR+=('--vendor' "$VENDOR")
   fi
 
-  COMMAND_ARR+=('--url' 'https://arvados.org')
-
-  # Get description
-  DESCRIPTION=`grep '\sdescription' $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
-  COMMAND_ARR+=('--description' "$DESCRIPTION")
-
-  # Get license string
-  LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
-  COMMAND_ARR+=('--license' "$LICENSE_STRING")
-
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
-  COMMAND_ARR+=('-v' $(echo -n "$PYTHON_VERSION" | sed s/.dev/~dev/g | sed s/rc/~rc/g))
-  COMMAND_ARR+=('--iteration' "$ARVADOS_BUILDING_ITERATION")
-  COMMAND_ARR+=('-n' "$PYTHON_PKG")
-  COMMAND_ARR+=('-C' "build")
-
-  systemd_unit="$WORKSPACE/$PKG_DIR/$PKG.service"
+  systemd_unit="$PKG_DIR/$PKG.service"
   if [[ -e "${systemd_unit}" ]]; then
     COMMAND_ARR+=('--after-install' "${WORKSPACE}/build/go-python-package-scripts/postinst")
     COMMAND_ARR+=('--before-remove' "${WORKSPACE}/build/go-python-package-scripts/prerm")
   fi
 
-  COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
   case "$package_format" in
       deb)
           COMMAND_ARR+=(
@@ -845,7 +838,7 @@ fpm_build_virtualenv_worker () {
   declare -a fpm_args=()
   declare -a fpm_depends=()
 
-  fpminfo="$WORKSPACE/$PKG_DIR/fpm-info.sh"
+  fpminfo="$PKG_DIR/fpm-info.sh"
   if [[ -e "$fpminfo" ]]; then
     echo "Loading fpm overrides from $fpminfo"
     if ! source "$fpminfo"; then
@@ -858,37 +851,24 @@ fpm_build_virtualenv_worker () {
     COMMAND_ARR+=('--depends' "$i")
   done
 
-  for i in "${fpm_depends[@]}"; do
-    COMMAND_ARR+=('--replaces' "python-$PKG")
-  done
-
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("$sys_venv_dir/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
 
-  # Make sure to install all our package binaries in /usr/bin. We have to
-  # walk $WORKSPACE/$PKG_DIR/bin rather than $venv_dir/bin to get the list
-  # because the latter also includes scripts installed by all the
-  # dependencies in the virtualenv, which may conflict with other
-  # packages. We have to take the copies of our binaries from the latter
-  # directory, though, because those are the ones we rewrote the shebang
-  # line of, above.
-  if [[ -e "$WORKSPACE/$PKG_DIR/bin" ]]; then
-    for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
-      COMMAND_ARR+=("$sys_venv_dir/bin/$binary=/usr/bin/")
-    done
-  fi
+  while read -d "" binpath; do
+      COMMAND_ARR+=("$binpath=/usr/$binpath")
+  done < <("$venv_dir/bin/python3" "$WORKSPACE/build/pypkg_info.py" --delimiter=\\0 binfiles "$PKG")
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/$venv_dir/bin/cwltool" ]]; then
-    COMMAND_ARR+=("$sys_venv_dir/bin/cwltool=/usr/bin/")
+  if [[ "$PKG" == arvados-cwl-runner ]]; then
+    COMMAND_ARR+=("bin/cwltool=/usr/bin/cwltool")
   fi
 
-  COMMAND_ARR+=(".")
+  COMMAND_ARR+=(".=$sys_venv_dir")
 
   debug_echo -e "\n${COMMAND_ARR[@]}\n"
 
@@ -901,8 +881,8 @@ fpm_build_virtualenv_worker () {
     echo
     echo -e "\n${COMMAND_ARR[@]}\n"
   else
-    echo `ls *$package_format`
-    mv $WORKSPACE/$PKG_DIR/dist/*$package_format $WORKSPACE/packages/$TARGET/
+    ls "$PYTHON_BUILDROOT"/*."$package_format"
+    mv "$PYTHON_BUILDROOT"/*."$package_format" "$WORKSPACE/packages/$TARGET/"
   fi
   echo
 }

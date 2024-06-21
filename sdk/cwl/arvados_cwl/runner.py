@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future import standard_library
-standard_library.install_aliases()
-from future.utils import  viewvalues, viewitems
-from past.builtins import basestring
-
 import os
 import sys
 import re
@@ -35,11 +30,6 @@ from typing import (
     Type,
     Union,
     cast,
-)
-from cwltool.utils import (
-    CWLObjectType,
-    CWLOutputAtomType,
-    CWLOutputType,
 )
 
 import subprocess
@@ -72,6 +62,7 @@ from . import done
 from . context import ArvRuntimeContext
 from .perf import Perf
 
+basestring = (bytes, str)
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
@@ -103,7 +94,7 @@ def find_defaults(d, op):
         if "default" in d:
             op(d)
         else:
-            for i in viewvalues(d):
+            for i in d.values():
                 find_defaults(i, op)
 
 def make_builder(joborder, hints, requirements, runtimeContext, metadata):
@@ -567,7 +558,7 @@ def packed_workflow(arvrunner, tool, merged_map, runtimeContext, git_info):
                   rewrite_out=rewrites,
                   loader=tool.doc_loader)
 
-    rewrite_to_orig = {v: k for k,v in viewitems(rewrites)}
+    rewrite_to_orig = {v: k for k,v in rewrites.items()}
 
     def visit(v, cur_id):
         if isinstance(v, dict):
@@ -933,7 +924,7 @@ class Runner(Process):
             if "cwl.output.json" in outc:
                 with outc.open("cwl.output.json", "rb") as f:
                     if f.size() > 0:
-                        outputs = json.loads(f.read().decode())
+                        outputs = json.loads(str(f.read(), 'utf-8'))
             def keepify(fileobj):
                 path = fileobj["location"]
                 if not path.startswith("keep:"):

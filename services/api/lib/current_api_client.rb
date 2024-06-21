@@ -19,15 +19,6 @@ module CurrentApiClient
     Thread.current[:api_url_base]
   end
 
-  def current_default_owner
-    # owner_uuid for newly created objects
-    ((current_api_client_authorization &&
-      current_api_client_authorization.default_owner_uuid) ||
-     (current_user && current_user.default_owner_uuid) ||
-     (current_user && current_user.uuid) ||
-     nil)
-  end
-
   # Where is the client connecting from?
   def current_api_client_ip_address
     Thread.current[:api_client_ip_address]

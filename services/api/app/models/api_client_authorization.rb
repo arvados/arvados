@@ -19,14 +19,12 @@ class ApiClientAuthorization < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :owner_uuid
-    t.add :user_id
     t.add :api_client_id
     # NB the "api_token" db column is a misnomer in that it's only the
     # "secret" part of a token: a v1 token is just the secret, but a
     # v2 token is "v2/uuid/secret".
     t.add :api_token
     t.add :created_by_ip_address
-    t.add :default_owner_uuid
     t.add :expires_at
     t.add :last_used_at
     t.add :last_used_by_ip_address
@@ -294,6 +292,10 @@ class ApiClientAuthorization < ArvadosModel
         raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
       end
     rescue HTTPClient::BadResponseError => e
+      if e.res.status_code >= 400 && e.res.status_code < 500
+        # Remote cluster does not accept this token.
+        return nil
+      end
       # CurrentApiToken#call and ApplicationController#render_error will
       # propagate the status code from the #http_status method, so define
       # that here.
@@ -399,8 +401,17 @@ class ApiClientAuthorization < ArvadosModel
         end
       rescue ActiveRecord::RecordNotUnique
         Rails.logger.debug("cached remote token #{token_uuid} already exists, retrying...")
-        # Some other request won the race: retry just once before erroring out
-        if (retries += 1) <= 1
+        # Another request won the race (trying to find_or_create the
+        # same token UUID) ...and/or... there is an expired entry with
+        # the same secret but a different UUID (e.g., the token is an
+        # OIDC access token and [a] our database has an expired cached
+        # row that was not used above, and [b] the remote cluster had
+        # deleted its expired cached row so it assigned a new UUID).
+        #
+        # Delete any conflicting row if any. Retry twice (in case we
+        # hit both of those situations at once), then give up.
+        if (retries += 1) <= 2
+          ApiClientAuthorization.where('api_token=? and uuid<>?', stored_secret, token_uuid).delete_all
           retry
         else
           Rails.logger.warn("cannot find or create cached remote token #{token_uuid}")
@@ -408,10 +419,10 @@ class ApiClientAuthorization < ArvadosModel
         end
       end
       auth.update!(user: user,
-                              api_token: stored_secret,
-                              api_client_id: 0,
-                              scopes: scopes,
-                              expires_at: exp)
+                   api_token: stored_secret,
+                   api_client_id: 0,
+                   scopes: scopes,
+                   expires_at: exp)
       Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} and scopes #{scopes} in local db"
       auth.api_token = secret
       return auth

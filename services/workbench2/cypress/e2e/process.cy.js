@@ -89,17 +89,15 @@ describe("Process tests", function () {
         it('shows the appropriate buttons in the toolbar', () => {
 
             const msButtonTooltips = [
-                'API Details',
-                'Add to Favorites',
-                'CANCEL',
-                'Copy and re-run process',
-                'Edit process',
-                'Move to',
+                'View details',
                 'Open in new tab',
                 'Outputs',
+                'API Details',
+                'Edit process',
+                'Copy and re-run process',
+                'CANCEL',
                 'Remove',
-                'Share',
-                'View details',
+                'Add to favorites',
             ];
 
             createContainerRequest(
@@ -116,9 +114,10 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
                 cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-                cy.waitForDom()
-                cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parent().parent().parent().parent().click()
-                cy.waitForDom()
+                cy.waitForDom();
+                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parents('[data-cy=data-table-row]').click()
+                cy.waitForDom();
                 cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
                 for (let i = 0; i < msButtonTooltips.length; i++) {
                     cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
@@ -1279,6 +1278,7 @@ describe("Process tests", function () {
                 .contains(name)
                 .parents("tr")
                 .within($mainRow => {
+                    cy.get($mainRow).scrollIntoView();
                     label && cy.contains(label);
 
                     if (multipleRows) {
@@ -1407,7 +1407,8 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
                         verifyIOParameter("input_file", null, "Label Description", "input1.tar", "00000000000000000000000000000000+01");
                         verifyIOParameter("input_file", null, "Label Description", "input1-2.txt", undefined, true);
                         verifyIOParameter("input_file", null, "Label Description", "input1-3.txt", undefined, true);
@@ -1444,11 +1445,11 @@ describe("Process tests", function () {
                     .parents("[data-cy=process-io-card]")
                     .within(ctx => {
                         cy.get(ctx).scrollIntoView();
-                        cy.get('[data-cy="io-preview-image-toggle"]').click({ waitForAnimations: false });
                         const outPdh = testOutputCollection.portable_data_hash;
 
                         verifyIOParameter("output_file", null, "Label Description", "cat.png", `${outPdh}`);
-                        verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
+                        // Disabled until image preview returns
+                        // verifyIOParameterImage("output_file", `/c=${outPdh}/cat.png`);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "main.dat", `${outPdh}`);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary.dat", undefined, true);
                         verifyIOParameter("output_file_with_secondary", null, "Doc Description", "secondary2.dat", undefined, true);
@@ -1542,19 +1543,23 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Input Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
                         cy.wait(2000);
                         cy.waitForDom();
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+
+                        testInputs.map((input) => {
+                            verifyIOParameter(input.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
                 cy.get("[data-cy=process-io-card] h6")
                     .contains("Output Parameters")
                     .parents("[data-cy=process-io-card]")
-                    .within(() => {
-                        cy.get("tbody tr").each(item => {
-                            cy.wrap(item).contains("No value");
+                    .within((ctx) => {
+                        cy.get(ctx).scrollIntoView();
+
+                        testOutputs.map((output) => {
+                            verifyIOParameter(output.definition.id.split('/').slice(-1)[0], null, null, "No value");
                         });
                     });
             });

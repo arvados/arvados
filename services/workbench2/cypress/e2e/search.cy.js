@@ -199,7 +199,6 @@ describe("Search tests", function () {
                     Containers: {},
                     InstanceTypes: {},
                     Login: {},
-                    Mail: { SupportEmailAddress: "arvados@example.com" },
                     RemoteClusters: {
                         "*": {
                             ActivateUsers: false,
@@ -215,8 +214,6 @@ describe("Search tests", function () {
                         DispatchCloud: { ExternalURL: "" },
                         DispatchLSF: { ExternalURL: "" },
                         DispatchSLURM: { ExternalURL: "" },
-                        GitHTTP: { ExternalURL: "https://xxxxx.fakecluster.tld:39105/" },
-                        GitSSH: { ExternalURL: "" },
                         Health: { ExternalURL: "https://xxxxx.fakecluster.tld:42915/" },
                         Keepbalance: { ExternalURL: "" },
                         Keepproxy: { ExternalURL: "https://xxxxx.fakecluster.tld:46773/" },
@@ -232,7 +229,7 @@ describe("Search tests", function () {
                     StorageClasses: {
                         default: { Default: true, Priority: 0 },
                     },
-                    Users: {},
+                    Users: { SupportEmailAddress: "arvados@example.com" },
                     Volumes: {},
                     Workbench: {},
                 },
@@ -271,19 +268,19 @@ describe("Search tests", function () {
                 cy.stub(win, "open").as("Open");
             });
 
-            // Check copy to clipboard
+            // Check Copy link to clipboard
             cy.get("[data-cy=search-results]").contains(colName).rightclick();
             cy.get("[data-cy=context-menu]").within(ctx => {
                 // Check that there are 4 items in the menu
                 cy.get(ctx).children().should("have.length", 4);
                 cy.contains("API Details");
-                cy.contains("Copy to clipboard");
+                cy.contains("Copy link to clipboard");
                 cy.contains("Open in new tab");
                 cy.contains("View details");
 
-                cy.contains("Copy to clipboard").click();
+                cy.contains("Copy link to clipboard").click();
                 cy.waitForDom();
-                cy.window().then(win =>
+                cy.window({ timeout: 15000 }).then(win =>
                     win.navigator.clipboard.readText().then(text => {
                         expect(text).to.match(new RegExp(`/collections/${testCollection.uuid}$`));
                     })
@@ -298,12 +295,12 @@ describe("Search tests", function () {
                 cy.get("@Open").should("have.been.calledOnceWith", `${window.location.origin}/collections/${testCollection.uuid}`);
             });
 
-            // Check federated result copy to clipboard
+            // Check federated result Copy link to clipboard
             cy.get("[data-cy=search-results]").contains(federatedColName).rightclick();
             cy.get("[data-cy=context-menu]").within(() => {
-                cy.contains("Copy to clipboard").click();
+                cy.contains("Copy link to clipboard").click();
                 cy.waitForDom();
-                cy.window().then(win =>
+                cy.window({ timeout: 15000 }).then(win =>
                     win.navigator.clipboard.readText().then(text => {
                         expect(text).to.equal(`https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
                     })

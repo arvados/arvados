@@ -271,7 +271,7 @@ func (s *genericVolumeSuite) testPutAndTouch(t TB, factory TestableVolumeFactory
 
 	// Make sure v.Mtime() agrees the above Utime really worked.
 	if t0, err := v.Mtime(TestHash); err != nil || t0.IsZero() || !t0.Before(threshold) {
-		t.Errorf("Setting mtime failed: %v, %v", t0, err)
+		t.Errorf("Setting mtime failed: threshold %v, t0 %v, err %v", threshold.UTC(), t0.UTC(), err)
 	}
 
 	// Write the same block again.

@@ -110,7 +110,10 @@ set -x
 # our files are in Keep, all the tests fail.
 # We should add [optional] Arvados support to cwltest so it can access
 # Keep but for the time being just install the last working version.
-/opt/arvados-py/bin/pip install 'cwltest<2.3.20230527113600'
+# This version depends on setuptools, but does not declare that, so we install
+# it ourselves to ensure it's available. That can be removed at the same time
+# we upgrade the cwltest version.
+/opt/arvados-py/bin/pip install 'cwltest<2.3.20230527113600' setuptools
 
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest

@@ -141,15 +141,17 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string, opts in
 		delete(params, attrsKey)
 	}
 
-	if order, ok := params["order"].(string); ok {
+	for _, paramname := range []string{"include", "order"} {
 		// We must accept strings ("foo, bar desc") and arrays
 		// (["foo", "bar desc"]) because RailsAPI does.
 		// Convert to an array here before trying to unmarshal
 		// into options structs.
-		if order == "" {
-			delete(params, "order")
-		} else {
-			params["order"] = strings.Split(order, ",")
+		if val, ok := params[paramname].(string); ok {
+			if val == "" {
+				delete(params, paramname)
+			} else {
+				params[paramname] = strings.Split(val, ",")
+			}
 		}
 	}
 

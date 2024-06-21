@@ -12,6 +12,7 @@ import { DataColumn } from "components/data-table/data-column";
 import { DataColumns, TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
+import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 
 interface Props {
     id: string;
@@ -22,23 +23,20 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, detailsPanel, properties}: RootState, { id }: Props) => {
-    const working = !!progressIndicator.some(p => p.id === id && p.working);
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar}: RootState, { id }: Props) => {
+    const working = !!progressIndicator.some(p => p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
-    const isDetailsResourceChecked = multiselect.checkedList[detailsPanel.resourceUuid]
-    const isOnlyOneSelected = Object.values(multiselect.checkedList).filter(x => x === true).length === 1;
-    const currentItemUuid =
-        currentRoute === '/workflows' ? properties.workflowPanelDetailsUuid : isDetailsResourceChecked && isOnlyOneSelected ? detailsPanel.resourceUuid : multiselect.selectedUuid;
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
-        currentRoute: currentRoute,
         paperKey: currentRoute,
-        currentItemUuid,
+        currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
+        selectedResourceUuid,
         checkedList: multiselect.checkedList,
         working,
+        searchBarValue: searchBar.searchValue,
     };
 };
 
@@ -82,6 +80,10 @@ const mapDispatchToProps = () => {
 
         setCheckedListOnStore: (checkedList: TCheckedList) => {
             dispatch<any>(setCheckedListOnStore(checkedList));
+        },
+
+        setSelectedUuid: (uuid: string | null) => {
+            dispatch<any>(setSelectedResourceUuid(uuid));
         },
 
         onRowClick,

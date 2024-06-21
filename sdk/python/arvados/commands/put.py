@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import division
-from future.utils import listitems, listvalues
-from builtins import str
-from builtins import object
 import argparse
 import arvados
 import arvados.collection
@@ -30,10 +26,12 @@ import threading
 import time
 import traceback
 
+from pathlib import Path
+
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
-from arvados.util import keep_locator_pattern
 
+import arvados.util
 import arvados.commands._util as arv_cmd
 
 api_client = None
@@ -355,7 +353,7 @@ class ArvPutLogFormatter(logging.Formatter):
 
 
 class ResumeCache(object):
-    CACHE_DIR = '.cache/arvados/arv-put'
+    CACHE_DIR = 'arv-put'
 
     def __init__(self, file_spec):
         self.cache_file = open(file_spec, 'a+')
@@ -372,9 +370,14 @@ class ResumeCache(object):
             md5.update(b'-1')
         elif args.filename:
             md5.update(args.filename.encode())
-        return os.path.join(
-            arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700, 'raise'),
-            md5.hexdigest())
+        cache_path = Path(cls.CACHE_DIR)
+        if len(cache_path.parts) == 1:
+            cache_path = arvados.util._BaseDirectories('CACHE').storage_path(cache_path)
+        else:
+            # Note this is a noop if cache_path is absolute, which is what we want.
+            cache_path = Path.home() / cache_path
+            cache_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return str(cache_path / md5.hexdigest())
 
     def _lock_file(self, fileobj):
         try:
@@ -437,7 +440,7 @@ class ResumeCache(object):
 
 
 class ArvPutUploadJob(object):
-    CACHE_DIR = '.cache/arvados/arv-put'
+    CACHE_DIR = 'arv-put'
     EMPTY_STATE = {
         'manifest' : None, # Last saved manifest checkpoint
         'files' : {} # Previous run file list: {path : {size, mtime}}
@@ -696,7 +699,7 @@ class ArvPutUploadJob(object):
         Recursively get the total size of the collection
         """
         size = 0
-        for item in listvalues(collection):
+        for item in collection.values():
             if isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
                 size += self._collection_size(item)
             else:
@@ -863,11 +866,14 @@ class ArvPutUploadJob(object):
         md5.update(b'\0'.join([p.encode() for p in realpaths]))
         if self.filename:
             md5.update(self.filename.encode())
-        cache_filename = md5.hexdigest()
-        cache_filepath = os.path.join(
-            arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
-            cache_filename)
-        return cache_filepath
+        cache_path = Path(self.CACHE_DIR)
+        if len(cache_path.parts) == 1:
+            cache_path = arvados.util._BaseDirectories('CACHE').storage_path(cache_path)
+        else:
+            # Note this is a noop if cache_path is absolute, which is what we want.
+            cache_path = Path.home() / cache_path
+            cache_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return str(cache_path / md5.hexdigest())
 
     def _setup_state(self, update_collection):
         """
@@ -946,7 +952,7 @@ class ArvPutUploadJob(object):
         oldest_exp = None
         oldest_loc = None
         block_found = False
-        for m in keep_locator_pattern.finditer(self._state['manifest']):
+        for m in arvados.util.keep_locator_pattern.finditer(self._state['manifest']):
             loc = m.group(0)
             try:
                 exp = datetime.datetime.utcfromtimestamp(int(loc.split('@')[1], 16))
@@ -978,7 +984,7 @@ class ArvPutUploadJob(object):
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
         file_paths = []
-        for name, item in listitems(col):
+        for name, item in col.items():
             if isinstance(item, arvados.arvfile.ArvadosFile):
                 file_paths.append(os.path.join(path_prefix, name))
             elif isinstance(item, arvados.collection.Subcollection):
@@ -1058,7 +1064,7 @@ class ArvPutUploadJob(object):
                     locators.append(loc)
                 return locators
         elif isinstance(item, arvados.collection.Collection):
-            l = [self._datablocks_on_item(x) for x in listvalues(item)]
+            l = [self._datablocks_on_item(x) for x in item.values()]
             # Fast list flattener method taken from:
             # http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
             return [loc for sublist in l for loc in sublist]

@@ -21,28 +21,34 @@ For projects, @arv-copy@ will copy all the collections workflow definitions owne
 
 For workflow definitions, @arv-copy@ will recursively go through the workflow and copy all associated dependencies (input collections and Docker images).
 
-For example, let's copy from the <a href="https://playground.arvados.org/">Arvados playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster id. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *zzzzz*-4zz18-tci4vn4fa95w0zx, the cluster name is *zzzzz* .
+For example, let's copy from the <a href="https://playground.arvados.org/">Arvados Playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster ID. You can find the cluster ID from the prefix of the UUID of the object you want to copy. For example, in <notextile><code><strong>zzzzz</strong>-4zz18-tci4vn4fa95w0zx</code></notextile>, the cluster name is *zzzzz*.
 
-In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of "settings.conf" in @~/.config/arvados@ you need two configuration files, one for each cluster, with filenames in the format of *ClusterID.conf*.
+In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of creating the default @~/.config/arvados/settings.conf@ you need two configuration files, one for each cluster, with filenames in the format of <notextile><code><strong>ClusterID</strong>.conf</code></notextile>. For this example, follow these steps:
 
-In this example, navigate to the *Current token* page on each of *pirca* and *dstcl* to get the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+{% include 'notebox_begin' %}
+@arv-copy@ searches for configuration files following the XDG Base Directory Specification. This is uncommon, but if you have customized the @XDG_CONFIG_HOME@ environment variable, save both configuration files under @$XDG_CONFIG_HOME/arvados/@ instead of the default @~/.config/arvados/@ shown below.
+{% include 'notebox_end' %}
 
-The config file consists of two lines, one for ARVADOS_API_HOST and one for ARVADOS_API_TOKEN:
-
-<pre>
-ARVADOS_API_HOST=zzzzz.arvadosapi.com
-ARVADOS_API_TOKEN=v2/zzzzz-gj3su-xxxxxxxxxxxxxxx/123456789abcdefghijkl
-</pre>
-
-Copy your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ into the config files as shown below in the shell account from which you are executing the commands.  In our example, you need two files, @~/.config/arvados/pirca.conf@ and @~/.config/arvados/dstcl.conf@.
-
-Now you're ready to copy between *pirca* and *dstcl*!
+# Open the "Arvados Playground Workbench":https://playground.arvados.org.
+# On the system where you'll run @arv-copy@, start a new file named @~/.config/arvados/pirca.conf@ in your editor.
+# In Workbench, open the user menu in the upper right, and select "Get API token."
+# In the Workbench "Get API Token" dialog, under the "API Host" header, copy the value to your clipboard using the button.
+# In your editor, write the text @ARVADOS_API_HOST=@, then paste the "API Host" value you copied in the previous step, and start a new line.
+# In the Workbench "Get API Token" dialog, under the "API Token" header, copy the value to your clipboard using the button.
+# In your editor, write the text @ARVADOS_API_TOKEN=@, then paste the "API Token" value you copied in the previous step, and start a new line.
+# Review your work. In your editor, @pirca.conf@ should look like this, with a different value for @ARVADOS_API_TOKEN@:
+  <pre><code>ARVADOS_API_HOST=pirca.arvadosapi.com
+ARVADOS_API_TOKEN=v2/jutro-gj3su-12345abcde67890/abcdefghijklmnopqrstuvwxyz1234567890
+</code></pre> If it looks right, save and close the file.
+# Open Workbench for your destination cluster *dstcl*.
+# On the system where you'll run @arv-copy@, start a new file named <notextile><code>~/.config/arvados/<b>dstcl</b>.conf</code></notextile> in your editor. Replace *@dstcl@* in the filename with the actual cluster ID of your destination cluster.
+# Repeat steps 3-8 to create a settings file with credentials for *dsctl*.
 
 h3. How to copy a collection
 
-First, determine the uuid or portable data hash of the collection you want to copy from the source cluster. The uuid can be found in the collection display page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
+First, determine the UUID or portable data hash of the collection you want to copy from the source cluster. The UUID can be found in the collection display page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from *pirca* to *dstcl*. We will use the uuid @jutro-4zz18-tv416l321i4r01e@ as an example. You can find this collection on <a href="https://playground.arvados.org/collections/jutro-4zz18-tv416l321i4r01e">playground.arvados.org</a>.
+Now copy the collection from *pirca* to *dstcl*. We will use the UUID @jutro-4zz18-tv416l321i4r01e@ as an example. You can find this collection on <a href="https://playground.arvados.org/collections/jutro-4zz18-tv416l321i4r01e">playground.arvados.org</a>.
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl jutro-4zz18-tv416l321i4r01e</span>
 jutro-4zz18-tv416l321i4r01e: 6.1M / 6.1M 100.0%
@@ -59,7 +65,7 @@ arvados.arv-copy[1234] INFO: Success: created copy with uuid dstcl-4zz18-xxxxxxx
 </code></pre>
 </notextile>
 
-The output of arv-copy displays the uuid of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in an existing project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
+The output of arv-copy displays the UUID of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in an existing project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project UUID.
 
 For example, this will copy the collection to project @dstcl-j7d0g-a894213ukjhal12@ in the destination cluster.
 
@@ -73,9 +79,9 @@ h3. How to copy a workflow
 
 Copying workflows requires @arvados-cwl-runner@ to be available in your @$PATH@.
 
-We will use the uuid @jutro-7fd4e-mkmmq53m1ze6apx@ as an example workflow.
+We will use the UUID @jutro-7fd4e-mkmmq53m1ze6apx@ as an example workflow.
 
-Arv-copy will infer the source cluster is @jutro@ from the object uuid, and destination cluster is @pirca@ from @--project-uuid@.
+Arv-copy will infer the source cluster is @jutro@ from the object UUID, and destination cluster is @pirca@ from @--project-uuid@.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --project-uuid pirca-j7d0g-ecak8knpefz8ere jutro-7fd4e-mkmmq53m1ze6apx</span>
@@ -87,15 +93,15 @@ jutro-4zz18-vvvqlops0a0kpdl: 94M / 94M 100.0%
 </code></pre>
 </notextile>
 
-The name, description, and workflow definition from the original workflow will be used for the destination copy. In addition, any *collections* and *docker images* referenced in the source workflow definition will also be copied to the destination.
+The name, description, and workflow definition from the original workflow will be used for the destination copy. In addition, any *collections* and *Docker images* referenced in the source workflow definition will also be copied to the destination.
 
 If you would like to copy the object without dependencies, you can use the @--no-recursive@ flag.
 
 h3. How to copy a project
 
-We will use the uuid @jutro-j7d0g-xj19djofle3aryq@ as an example project.
+We will use the UUID @jutro-j7d0g-xj19djofle3aryq@ as an example project.
 
-Arv-copy will infer the source cluster is @jutro@ from the source project uuid, and destination cluster is @pirca@ from @--project-uuid@.
+Arv-copy will infer the source cluster is @jutro@ from the source project UUID, and destination cluster is @pirca@ from @--project-uuid@.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --project-uuid pirca-j7d0g-lr8sq3tx3ovn68k jutro-j7d0g-xj19djofle3aryq</span>

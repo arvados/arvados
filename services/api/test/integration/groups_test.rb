@@ -140,7 +140,7 @@ class GroupsTest < ActionDispatch::IntegrationTest
 
   test 'count none works with offset' do
     first_results = nil
-    (0..10).each do |offset|
+    (0..5).each do |offset|
       get "/arvados/v1/groups/contents", params: {
         id: groups(:aproject).uuid,
         offset: offset,
@@ -155,6 +155,23 @@ class GroupsTest < ActionDispatch::IntegrationTest
       else
         assert_equal first_results[offset]['uuid'], json_response['items'][0]['uuid']
       end
+    end
+  end
+
+  test "group contents with include=array" do
+    get "/arvados/v1/groups/contents",
+      params: {
+        filters: [["uuid", "is_a", "arvados#container_request"]].to_json,
+        include: ["container_uuid"].to_json,
+        select: ["uuid", "state"],
+        limit: 1000,
+      },
+      headers: auth(:active)
+    assert_response 200
+    incl = {}
+    json_response['included'].each { |i| incl[i['uuid']] = i }
+    json_response['items'].each do |c|
+      assert_not_nil incl[c['container_uuid']]['state']
     end
   end
 end

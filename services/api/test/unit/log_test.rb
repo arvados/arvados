@@ -32,6 +32,10 @@ class LogTest < ActiveSupport::TestCase
     Log.where(object_uuid: thing.uuid).order("created_at ASC").all
   end
 
+  def clear_logs_about(thing)
+    Log.where(object_uuid: thing.uuid).delete_all
+  end
+
   def assert_logged(thing, event_type)
     logs = get_logs_about(thing)
     assert_equal(@log_count, logs.size, "log count mismatch")
@@ -106,10 +110,11 @@ class LogTest < ActiveSupport::TestCase
 
   test "old_attributes preserves values deep inside a hash" do
     set_user_from_auth :active
-    it = specimens(:owned_by_active_user)
+    it = collections(:collection_owned_by_active)
+    clear_logs_about it
     it.properties = {'foo' => {'bar' => ['baz', 'qux', {'quux' => 'bleat'}]}}
     it.save!
-    @log_count += 1
+    assert_logged it, :update
     it.properties['foo']['bar'][2]['quux'] = 'blert'
     it.save!
     assert_logged it, :update do |props|
@@ -231,6 +236,7 @@ class LogTest < ActiveSupport::TestCase
   test "don't log changes only to Collection.preserve_version" do
     set_user_from_auth :admin_trustedclient
     col = collections(:collection_owned_by_active)
+    clear_logs_about col
     start_log_count = get_logs_about(col).size
     assert_equal false, col.preserve_version
     col.preserve_version = true
@@ -258,27 +264,29 @@ class LogTest < ActiveSupport::TestCase
 
   test "use ownership and permission links to determine which logs a user can see" do
     known_logs = [:noop,
-                  :admin_changes_repository2,
-                  :admin_changes_specimen,
+                  :admin_changes_collection_owned_by_active,
+                  :admin_changes_collection_owned_by_foo,
                   :system_adds_foo_file,
                   :system_adds_baz,
                   :log_owned_by_active,
-                  :crunchstat_for_running_job]
+                  :crunchstat_for_running_container]
 
     c = Log.readable_by(users(:admin)).order("id asc").each.to_a
     assert_log_result c, known_logs, known_logs
 
     c = Log.readable_by(users(:active)).order("id asc").each.to_a
-    assert_log_result c, known_logs, [:admin_changes_repository2, # owned by active
-                                      :system_adds_foo_file,      # readable via link
-                                      :system_adds_baz,           # readable via 'all users' group
-                                      :log_owned_by_active,       # log owned by active
-                                      :crunchstat_for_running_job] # log & job owned by active
+    assert_log_result c, known_logs, [:admin_changes_collection_owned_by_active,
+                                      :system_adds_foo_file,             # readable via link
+                                      :system_adds_baz,                  # readable via 'all users' group
+                                      :log_owned_by_active,              # log owned by active
+                                      :crunchstat_for_running_container] # log & job owned by active
 
     c = Log.readable_by(users(:spectator)).order("id asc").each.to_a
-    assert_log_result c, known_logs, [:noop,                   # object_uuid is spectator
-                                      :admin_changes_specimen, # object_uuid is a specimen owned by spectator
-                                      :system_adds_baz] # readable via 'all users' group
+    assert_log_result c, known_logs, [:noop,                             # object_uuid is spectator
+                                      :system_adds_baz]                  # readable via 'all users' group
+
+    c = Log.readable_by(users(:user_foo_in_sharing_group)).order("id asc").each.to_a
+    assert_log_result c, known_logs, [:admin_changes_collection_owned_by_foo] # collection's parent is readable via role group
   end
 
   def assert_log_result result, known_logs, expected_logs

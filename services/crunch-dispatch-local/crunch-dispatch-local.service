@@ -11,11 +11,8 @@ StartLimitIntervalSec=0
 Type=simple
 EnvironmentFile=-/etc/arvados/crunch-dispatch-local-credentials
 ExecStart=/usr/bin/crunch-dispatch-local -poll-interval=1 -crunch-run-command=/usr/bin/crunch-run
-# Set a reasonable default for the open file limit
-LimitNOFILE=65536
 Restart=always
 RestartSec=1
-LimitNOFILE=1000000
 
 [Install]
 WantedBy=multi-user.target

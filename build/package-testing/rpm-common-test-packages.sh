@@ -30,6 +30,10 @@ diff "$ARV_PACKAGES_DIR/$1".{before,after} >"$ARV_PACKAGES_DIR/$1.diff" || true
 mkdir -p /tmp/opts
 cd /tmp/opts
 
+# Install other packages alongside to test for build id conflicts.
+# This line can be removed after we have test-provision-rocky8, #21426.
+microdnf --assumeyes install arvados-client arvados-server python3-arvados-python-client
+
 rpm2cpio $(ls -t "$ARV_PACKAGES_DIR/$1"-*.rpm | head -n1) | cpio -idm 2>/dev/null
 
 if [[ "$DEBUG" != "0" ]]; then

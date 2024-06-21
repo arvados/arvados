@@ -43,6 +43,14 @@ module Trashable
     true
   end
 
+  def default_delete_after_trash_interval
+    Rails.configuration.Collections.DefaultTrashLifetime
+  end
+
+  def minimum_delete_after_trash_interval
+    Rails.configuration.Collections.BlobSigningTTL
+  end
+
   def default_trash_interval
     if trash_at_changed? && !delete_at_changed?
       # If trash_at is updated without touching delete_at,
@@ -50,7 +58,7 @@ module Trashable
       if trash_at.nil?
         self.delete_at = nil
       else
-        self.delete_at = trash_at + Rails.configuration.Collections.DefaultTrashLifetime.seconds
+        self.delete_at = trash_at + self.default_delete_after_trash_interval
       end
     elsif !trash_at || !delete_at || trash_at > delete_at
       # Not trash, or bogus arguments? Just validate in
@@ -65,7 +73,7 @@ module Trashable
       earliest_delete = [
         @validation_timestamp,
         trash_at_was,
-      ].compact.min + Rails.configuration.Collections.BlobSigningTTL
+      ].compact.min + minimum_delete_after_trash_interval
 
       # The previous value of delete_at is also an upper bound on the
       # longest-lived permission token. For example, if TTL=14,
@@ -95,8 +103,7 @@ module TrashableController
     if !@object.is_trashed
       @object.update!(trash_at: db_current_time)
     end
-    earliest_delete = (@object.trash_at +
-                       Rails.configuration.Collections.BlobSigningTTL)
+    earliest_delete = (@object.trash_at + @object.minimum_delete_after_trash_interval)
     if @object.delete_at > earliest_delete
       @object.update!(delete_at: earliest_delete)
     end
@@ -111,17 +118,22 @@ module TrashableController
   end
 
   def untrash
-    if @object.is_trashed
-      @object.trash_at = nil
-
-      if params[:ensure_unique_name]
-        @object.save_with_unique_name!
-      else
-        @object.save!
-      end
-    else
+    if !@object.is_trashed
       raise ArvadosModel::InvalidStateTransitionError.new("Item is not trashed, cannot untrash")
     end
+
+    if db_current_time >= @object.delete_at
+      raise ArvadosModel::InvalidStateTransitionError.new("delete_at time has already passed, cannot untrash")
+    end
+
+    @object.trash_at = nil
+
+    if params[:ensure_unique_name]
+      @object.save_with_unique_name!
+    else
+      @object.save!
+    end
+
     show
   end
 

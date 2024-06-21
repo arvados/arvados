@@ -75,7 +75,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         res.status = @stub_token_status
         if res.status == 200
           body = {
-            uuid: api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
+            uuid: @stub_token_uuid || api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
             owner_uuid: "#{clusterid}-tpzed-00000000000000z",
             scopes: @stub_token_scopes,
           }
@@ -108,6 +108,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     }
     @stub_token_status = 200
     @stub_token_scopes = ["all"]
+    @stub_token_uuid = nil
     ActionMailer::Base.deliveries = []
   end
 
@@ -239,6 +240,40 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
     assert_equal 'foo', json_response['username']
+  end
+
+  test 'authenticate with remote token with secret part identical to previously cached token' do
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    get '/arvados/v1/api_client_authorizations/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+
+    # Expire the cached token.
+    @cached_token_uuid = json_response['uuid']
+    act_as_system_user do
+      ApiClientAuthorization.where(uuid: @cached_token_uuid).update_all(expires_at: db_current_time() - 1.day)
+    end
+
+    # Now use the same bare token, but set up the remote cluster to
+    # return a different UUID this time.
+    @stub_token_uuid = 'zbbbb-gj3su-123451234512345'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+
+    # Confirm that we actually retrieved the new UUID from the stub
+    # cluster -- otherwise we didn't really test the conflicting-UUID
+    # case.
+    get '/arvados/v1/api_client_authorizations/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal @stub_token_uuid, json_response['uuid']
   end
 
   test 'authenticate with remote token from misbehaving remote cluster' do
@@ -593,15 +628,43 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'zzzzz-tpzed-anonymouspublic', json_response['uuid']
   end
 
-  [401, 403, 422, 500, 502, 503].each do |status|
-    test "propagate #{status} response from getting remote token" do
+  [400, 401, 403, 422, 500, 502, 503].each do |status|
+    test "handle #{status} response when checking remote-provided v2 token" do
       @stub_token_status = status
       get "/arvados/v1/users/#{@stub_content[:uuid]}",
           params: {format: "json"},
           headers: auth(remote: "zbbbb")
-      assert_response status
+      assert_response(status < 500 ? 401 : status)
     end
 
+    test "handle #{status} response when checking remote-provided v2 token at anonymously accessible endpoint" do
+      @stub_token_status = status
+      get "/arvados/v1/keep_services/accessible",
+          params: {format: "json"},
+          headers: auth(remote: "zbbbb")
+      assert_response(status < 500 ? :success : status)
+    end
+
+    test "handle #{status} response when checking token issued by login cluster" do
+      @stub_token_status = status
+      Rails.configuration.Login.LoginCluster = "zbbbb"
+      get "/arvados/v1/users/current",
+          params: {format: "json"},
+          headers: {'HTTP_AUTHORIZATION' => "Bearer badtoken"}
+      assert_response(status < 500 ? 401 : status)
+    end
+
+    test "handle #{status} response when checking token issued by login cluster at anonymously accessible endpoint" do
+      @stub_token_status = status
+      Rails.configuration.Login.LoginCluster = "zbbbb"
+      get "/arvados/v1/keep_services/accessible",
+          params: {format: "json"},
+          headers: {'HTTP_AUTHORIZATION' => "Bearer badtoken"}
+      assert_response(status < 500 ? :success : status)
+    end
+  end
+
+  [401, 403, 422, 500, 502, 503].each do |status|
     test "propagate #{status} response from getting uncached user" do
       @stub_status = status
       get "/arvados/v1/users/#{@stub_content[:uuid]}",

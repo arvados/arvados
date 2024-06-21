@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ResourceKind } from "models/resource";
+import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
 
 export const resourceLabel = (type: string, subtype = '') => {
     switch (type) {
@@ -16,7 +17,10 @@ export const resourceLabel = (type: string, subtype = '') => {
             }
             return "Project";
         case ResourceKind.PROCESS:
-            return "Process";
+            if (subtype === ProcessTypeFilter.MAIN_PROCESS) {
+                return "Workflow Run";
+            }
+            return "Workflow Step";
         case ResourceKind.USER:
             return "User";
         case ResourceKind.GROUP:

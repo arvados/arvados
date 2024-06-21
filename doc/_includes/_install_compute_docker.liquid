@@ -15,7 +15,7 @@ If you are using a distribution in the compute nodes that ships with cgroups v2 
 
 After making changes, reboot the system to make these changes effective.
 
-h3. Alma/CentOS/Red Hat/Rocky
+h3. Red Hat, AlmaLinux, and Rocky Linux
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo grubby --update-kernel=ALL --args='cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0'</span>

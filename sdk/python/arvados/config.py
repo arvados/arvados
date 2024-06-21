@@ -10,18 +10,37 @@
 import os
 import re
 
+from typing import (
+    Callable,
+    Iterable,
+    Union,
+)
+
+from . import util
+
 _settings = None
-if os.environ.get('HOME') is not None:
-    default_config_file = os.environ['HOME'] + '/.config/arvados/settings.conf'
-else:
-    default_config_file = ''
+default_config_file = ''
+""".. WARNING: Deprecated
+   Default configuration initialization now searches for the "default"
+   configuration in several places. This value no longer has any effect.
+"""
 
 KEEP_BLOCK_SIZE = 2**26
 EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
 
-def initialize(config_file=default_config_file):
+def initialize(
+        config_file: Union[
+            str,
+            os.PathLike,
+            Callable[[str], Iterable[os.PathLike]],
+        ]=util._BaseDirectories('CONFIG').search,
+) -> None:
     global _settings
     _settings = {}
+
+    if callable(config_file):
+        search_paths = iter(config_file('settings.conf'))
+        config_file = next(search_paths, '')
 
     # load the specified config file if available
     try:

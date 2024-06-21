@@ -10,10 +10,11 @@ import glob
 import gzip
 import io
 import logging
-import mock
 import os
 import sys
 import unittest
+
+from unittest import mock
 
 from crunchstat_summary.command import UTF8Decode
 from crunchstat_summary import logger, reader

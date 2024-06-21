@@ -24,15 +24,6 @@ At container startup, the target path will have the same directory structure as 
  "kind":"collection",
  "uuid":"..."
 }</code></pre>|
-|Git tree|@git_tree@|@"uuid"@ must be the UUID of an Arvados-hosted git repository.
-@"commit"@ must be a full 40-character commit hash.
-@"path"@, if provided, must be "/".
-At container startup, the target path will have the source tree indicated by the given commit. The @.git@ metadata directory _will not_ be available.|<pre><code>{
- "kind":"git_tree",
- "uuid":"zzzzz-s0uqq-xxxxxxxxxxxxxxx",
- "commit":"f315c59f90934cccae6381e72bba59d27ba42099"
-}
-</code></pre>|
 |Temporary directory|@tmp@|@"capacity"@: capacity (in bytes) of the storage device.
 @"device_type"@ (optional, default "network"): one of @{"ram", "ssd", "disk", "network"}@ indicating the acceptable level of performance. (*note: not yet implemented as of v1.5*)
 At container startup, the target path will be empty. When the container finishes, the content will be discarded. This will be backed by a storage mechanism no slower than the specified type.|<pre><code>{

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Grid, LinearProgress } from '@material-ui/core';
 import { User } from "models/user";
 import { ArvadosTheme } from 'common/custom-theme';
@@ -11,6 +11,7 @@ import { LoginPanel } from 'views/login-panel/login-panel';
 import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
+import { Routes } from 'routes/routes';
 
 type CssRules = 'root';
 
@@ -35,10 +36,12 @@ export interface MainPanelRootDataProps {
     sidePanelIsCollapsed: boolean;
     isTransitioning: boolean;
     currentSideWidth: number;
+    currentRoute: string;
 }
 
 interface MainPanelRootDispatchProps {
-    toggleSidePanel: () => void
+    toggleSidePanel: () => void,
+    setCurrentRouteUuid: (uuid: string | null) => void;
 }
 
 type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
@@ -46,7 +49,19 @@ type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, loading, working, user, buildInfo, uuidPrefix,
         isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
-        sidePanelIsCollapsed, isTransitioning, currentSideWidth}: MainPanelRootProps) =>{
+        sidePanelIsCollapsed, isTransitioning, currentSideWidth, currentRoute, setCurrentRouteUuid}: MainPanelRootProps) =>{
+
+            useEffect(() => {
+                const splitRoute = currentRoute.split('/');
+                const uuid = splitRoute[splitRoute.length - 1];
+                if(Object.values(Routes).includes(`/${uuid}`) === false) {
+                    setCurrentRouteUuid(uuid);
+                } else {
+                    setCurrentRouteUuid(null);
+                }
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [currentRoute]);
+
         return loading
             ? <WorkbenchLoadingScreen />
             : <>

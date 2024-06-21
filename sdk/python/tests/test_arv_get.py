@@ -2,15 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from future.utils import listitems
 import io
 import logging
-import mock
 import os
 import re
 import shutil
 import tempfile
+
+from unittest import mock
 
 import arvados
 import arvados.collection as collection
@@ -51,7 +50,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
                               }):
         api = arvados.api()
         c = collection.Collection(api_client=api)
-        for path, data in listitems(contents):
+        for path, data in contents.items():
             with c.open(path, 'wb') as f:
                 f.write(data)
         c.save_new()

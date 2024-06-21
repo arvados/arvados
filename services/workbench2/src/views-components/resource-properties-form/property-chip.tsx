@@ -43,10 +43,12 @@ export const PropertyChipComponent = connect(mapStateToProps, mapDispatchToProps
     ({ propKey, propValue, vocabulary, className, onCopy, onDelete }: PropertyChipComponentProps) => {
         const label = `${getTagKeyLabel(propKey, vocabulary)}: ${getTagValueLabel(propKey, propValue, vocabulary)}`;
         return (
-            <CopyToClipboard key={propKey} text={label} onCopy={() => onCopy("Copied to clipboard")}>
-                <Chip onDelete={onDelete} key={propKey}
-                    className={className} label={label} />
-            </CopyToClipboard>
+            <span onClick={(ev)=>ev.stopPropagation()}>
+                <CopyToClipboard key={propKey} text={label} onCopy={() => onCopy("Copied to clipboard")}>
+                    <Chip onDelete={onDelete} key={propKey}
+                        className={className} label={label} />
+                </CopyToClipboard>
+            </span>
         );
     }
 );

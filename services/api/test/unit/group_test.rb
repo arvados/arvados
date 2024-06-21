@@ -18,13 +18,13 @@ class GroupTest < ActiveSupport::TestCase
     assert g.save, "active user should be able to modify group #{g.uuid}"
 
     # Use the group as the owner of a new object
-    s = Specimen.
+    s = Collection.
       create(owner_uuid: groups(:bad_group_has_ownership_cycle_b).uuid)
     assert s.valid?, "ownership should pass validation #{s.errors.messages}"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"
 
     # Use the group as the new owner of an existing object
-    s = specimens(:in_aproject)
+    s = collections(:collection_owned_by_active)
     s.owner_uuid = groups(:bad_group_has_ownership_cycle_b).uuid
     assert s.valid?, "ownership should pass validation"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"
@@ -257,10 +257,10 @@ class GroupTest < ActiveSupport::TestCase
 
   def insert_group uuid, owner_uuid, name, group_class
     q = ActiveRecord::Base.connection.exec_query %{
-insert into groups (uuid, owner_uuid, name, group_class, created_at, updated_at)
+insert into groups (uuid, owner_uuid, name, group_class, created_at, updated_at, modified_at)
        values ('#{uuid}', '#{owner_uuid}',
                '#{name}', #{if group_class then "'"+group_class+"'" else 'NULL' end},
-               statement_timestamp(), statement_timestamp())
+               statement_timestamp(), statement_timestamp(), statement_timestamp())
 }
     uuid
   end

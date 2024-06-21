@@ -19,7 +19,7 @@ export const openInNewTabAction = (resource: any) => (dispatch: Dispatch, getSta
 };
 
 export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispatch, getState: () => RootState) => {
-    // Copy to clipboard omits token to avoid accidental sharing
+    // Copy link to clipboard omits token to avoid accidental sharing
 
     let url = getNavUrl(resources[0].uuid, getState().auth, false);
     let wasCopied;

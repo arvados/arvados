@@ -8,7 +8,7 @@ import { RootState } from "store/store";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { GroupClass } from "models/group";
 import { Participant } from "views-components/sharing-dialog/participant-select";
 import { ProjectProperties } from "./project-create-actions";
@@ -56,7 +56,7 @@ export const updateProject =
                 },
                 false
             );
-            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(projectPanelDataActions.REQUEST_ITEMS());
             dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedProject;

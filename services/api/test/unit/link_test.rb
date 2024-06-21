@@ -13,7 +13,7 @@ class LinkTest < ActiveSupport::TestCase
 
   test "cannot delete an object referenced by unwritable links" do
     ob = act_as_user users(:active) do
-      Specimen.create
+      Collection.create
     end
     link = act_as_user users(:admin) do
       Link.create(tail_uuid: users(:active).uuid,

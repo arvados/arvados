@@ -112,11 +112,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     {"mounts" => {"FOO" => {}}},
     {"mounts" => {"FOO" => {"kind" => "tmp", "capacity" => 42.222}}},
     {"command" => ["echo", 55]},
-    {"environment" => {"FOO" => 55}}
+    {"environment" => {"FOO" => 55}},
+    {"output_glob" => [false]},
+    {"output_glob" => [["bad"]]},
+    {"output_glob" => "bad"},
+    {"output_glob" => ["nope", -1]},
   ].each do |value|
     test "Create with invalid #{value}" do
       set_user_from_auth :active
-      assert_raises(ActiveRecord::RecordInvalid) do
+      assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
         cr = create_minimal_req!({state: "Committed",
                priority: 1}.merge(value))
         cr.save!
@@ -127,7 +131,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
-      assert_raises(ActiveRecord::RecordInvalid) do
+      assert_raises(ActiveRecord::RecordInvalid, Serializer::TypeMismatch) do
         cr = ContainerRequest.find_by_uuid cr.uuid
         cr.update!({state: "Committed",
                                priority: 1}.merge(value))

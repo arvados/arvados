@@ -28,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -167,6 +168,20 @@ func (s *IntegrationSuite) TestDefaultStorageClassesOnCollections(c *check.C) {
 	c.Assert(coll.StorageClassesDesired, check.DeepEquals, kc.DefaultStorageClasses)
 }
 
+func (s *IntegrationSuite) createTestCollectionManifest(c *check.C, ac *arvados.Client, kc *keepclient.KeepClient, content string) string {
+	fs, err := (&arvados.Collection{}).FileSystem(ac, kc)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
+	c.Assert(err, check.IsNil)
+	_, err = io.WriteString(f, content)
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	return mtxt
+}
+
 func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	conn1 := s.super.Conn("z1111")
 	rootctx1, _, _ := s.super.RootClients("z1111")
@@ -175,34 +190,70 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 
 	// Create the collection to find its PDH (but don't save it
 	// anywhere yet)
-	var coll1 arvados.Collection
-	fs1, err := coll1.FileSystem(ac1, kc1)
-	c.Assert(err, check.IsNil)
-	f, err := fs1.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
-	c.Assert(err, check.IsNil)
-	_, err = io.WriteString(f, "IntegrationSuite.TestGetCollectionByPDH")
-	c.Assert(err, check.IsNil)
-	err = f.Close()
-	c.Assert(err, check.IsNil)
-	mtxt, err := fs1.MarshalManifest(".")
-	c.Assert(err, check.IsNil)
+	mtxt := s.createTestCollectionManifest(c, ac1, kc1, c.TestName())
 	pdh := arvados.PortableDataHash(mtxt)
 
 	// Looking up the PDH before saving returns 404 if cycle
 	// detection is working.
-	_, err = conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
+	_, err := conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Assert(err, check.ErrorMatches, `.*404 Not Found.*`)
 
 	// Save the collection on cluster z1111.
-	coll1, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
+	_, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"manifest_text": mtxt,
 	}})
 	c.Assert(err, check.IsNil)
 
 	// Retrieve the collection from cluster z3333.
-	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
+	coll2, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
-	c.Check(coll.PortableDataHash, check.Equals, pdh)
+	c.Check(coll2.PortableDataHash, check.Equals, pdh)
+}
+
+func (s *IntegrationSuite) TestFederation_Write1Read2(c *check.C) {
+	s.testFederationCollectionAccess(c, "z1111", "z2222")
+}
+
+func (s *IntegrationSuite) TestFederation_Write2Read1(c *check.C) {
+	s.testFederationCollectionAccess(c, "z2222", "z1111")
+}
+
+func (s *IntegrationSuite) TestFederation_Write2Read3(c *check.C) {
+	s.testFederationCollectionAccess(c, "z2222", "z3333")
+}
+
+func (s *IntegrationSuite) testFederationCollectionAccess(c *check.C, writeCluster, readCluster string) {
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	_, ac1, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+
+	connW := s.super.Conn(writeCluster)
+	userctxW, acW, kcW := s.super.ClientsWithToken(writeCluster, ac1.AuthToken)
+	kcW.DiskCacheSize = keepclient.DiskCacheDisabled
+	connR := s.super.Conn(readCluster)
+	userctxR, acR, kcR := s.super.ClientsWithToken(readCluster, ac1.AuthToken)
+	kcR.DiskCacheSize = keepclient.DiskCacheDisabled
+
+	filedata := fmt.Sprintf("%s: write to %s, read from %s", c.TestName(), writeCluster, readCluster)
+	mtxt := s.createTestCollectionManifest(c, acW, kcW, filedata)
+	collW, err := connW.CollectionCreate(userctxW, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"manifest_text": mtxt,
+	}})
+	c.Assert(err, check.IsNil)
+
+	collR, err := connR.CollectionGet(userctxR, arvados.GetOptions{UUID: collW.UUID})
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	fsR, err := collR.FileSystem(acR, kcR)
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	buf, err := fs.ReadFile(arvados.FS(fsR), "test.txt")
+	if !c.Check(err, check.IsNil) {
+		return
+	}
+	c.Check(string(buf), check.Equals, filedata)
 }
 
 // Tests bug #18004
@@ -553,8 +604,6 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 
 	coll, err := conn1.CollectionCreate(userctx1, arvados.CreateOptions{})
 	c.Check(err, check.IsNil)
-	specimen, err := conn1.SpecimenCreate(userctx1, arvados.CreateOptions{})
-	c.Check(err, check.IsNil)
 
 	tests := []struct {
 		path            string
@@ -567,8 +616,6 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/nonexistant", true, true},
 		{"/arvados/v1/collections/" + coll.UUID, false, false},
 		{"/arvados/v1/collections/" + coll.UUID, true, false},
-		{"/arvados/v1/specimens/" + specimen.UUID, false, false},
-		{"/arvados/v1/specimens/" + specimen.UUID, true, false},
 		// new code path (lib/controller/router etc) - single-cluster request
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", true, true},
@@ -576,8 +623,8 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", true, true},
 		// old code path (proxyRailsAPI) - single-cluster request
-		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", false, true},
-		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", true, true},
+		{"/arvados/v1/containers/z1111-dz642-0123456789abcde", false, true},
+		{"/arvados/v1/containers/z1111-dz642-0123456789abcde", true, true},
 		// old code path (setupProxyRemoteCluster) - federated request
 		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", false, true},
 		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", true, true},
@@ -779,7 +826,6 @@ func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
 // Test for bug #18076
 func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	rootctx1, _, _ := s.super.RootClients("z1111")
-	_, rootclnt3, _ := s.super.RootClients("z3333")
 	conn1 := s.super.Conn("z1111")
 	conn3 := s.super.Conn("z3333")
 
@@ -791,92 +837,69 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
 	}
 
-	for testCaseNr, testCase := range []struct {
-		name           string
-		withRepository bool
-	}{
-		{"User without local repository", false},
-		{"User with local repository", true},
-	} {
-		c.Log(c.TestName() + " " + testCase.name)
-		// Create some users, request them on the federated cluster so they're cached.
-		var users []arvados.User
-		for userNr := 0; userNr < 2; userNr++ {
-			_, _, _, user := s.super.UserClients("z1111",
-				rootctx1,
-				c,
-				conn1,
-				fmt.Sprintf("user%d%d@example.com", testCaseNr, userNr),
-				true)
-			c.Assert(user.Username, check.Not(check.Equals), "")
-			users = append(users, user)
+	// Create some users, request them on the federated cluster so they're cached.
+	var users []arvados.User
+	for userNr := 0; userNr < 2; userNr++ {
+		_, _, _, user := s.super.UserClients("z1111",
+			rootctx1,
+			c,
+			conn1,
+			fmt.Sprintf("user0%d@example.com", userNr),
+			true)
+		c.Assert(user.Username, check.Not(check.Equals), "")
+		users = append(users, user)
 
-			lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
-			c.Assert(err, check.Equals, nil)
-			userFound := false
-			for _, fedUser := range lst.Items {
-				if fedUser.UUID == user.UUID {
-					c.Assert(fedUser.Username, check.Equals, user.Username)
-					userFound = true
-					break
-				}
-			}
-			c.Assert(userFound, check.Equals, true)
-
-			if testCase.withRepository {
-				var repo interface{}
-				err = rootclnt3.RequestAndDecode(
-					&repo, "POST", "arvados/v1/repositories", nil,
-					map[string]interface{}{
-						"repository": map[string]string{
-							"name":       fmt.Sprintf("%s/test", user.Username),
-							"owner_uuid": user.UUID,
-						},
-					},
-				)
-				c.Assert(err, check.IsNil)
-			}
-		}
-
-		// Swap the usernames
-		_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-			UUID: users[0].UUID,
-			Attrs: map[string]interface{}{
-				"username": "",
-			},
-		})
-		c.Assert(err, check.Equals, nil)
-		_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-			UUID: users[1].UUID,
-			Attrs: map[string]interface{}{
-				"username": users[0].Username,
-			},
-		})
-		c.Assert(err, check.Equals, nil)
-		_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-			UUID: users[0].UUID,
-			Attrs: map[string]interface{}{
-				"username": users[1].Username,
-			},
-		})
-		c.Assert(err, check.Equals, nil)
-
-		// Re-request the list on the federated cluster & check for updates
 		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
 		c.Assert(err, check.Equals, nil)
-		var user0Found, user1Found bool
-		for _, user := range lst.Items {
-			if user.UUID == users[0].UUID {
-				user0Found = true
-				c.Assert(user.Username, check.Equals, users[1].Username)
-			} else if user.UUID == users[1].UUID {
-				user1Found = true
-				c.Assert(user.Username, check.Equals, users[0].Username)
+		userFound := false
+		for _, fedUser := range lst.Items {
+			if fedUser.UUID == user.UUID {
+				c.Assert(fedUser.Username, check.Equals, user.Username)
+				userFound = true
+				break
 			}
 		}
-		c.Assert(user0Found, check.Equals, true)
-		c.Assert(user1Found, check.Equals, true)
+		c.Assert(userFound, check.Equals, true)
 	}
+
+	// Swap the usernames
+	_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": "",
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[1].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[0].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[1].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+
+	// Re-request the list on the federated cluster & check for updates
+	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.Equals, nil)
+	var user0Found, user1Found bool
+	for _, user := range lst.Items {
+		if user.UUID == users[0].UUID {
+			user0Found = true
+			c.Assert(user.Username, check.Equals, users[1].Username)
+		} else if user.UUID == users[1].UUID {
+			user1Found = true
+			c.Assert(user.Username, check.Equals, users[0].Username)
+		}
+	}
+	c.Assert(user0Found, check.Equals, true)
+	c.Assert(user1Found, check.Equals, true)
 }
 
 // Test for bug #16263
@@ -1288,10 +1311,12 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		err = ac.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
 		c.Assert(err, check.IsNil)
 		c.Check(allStatus, check.Matches, `Queued, waiting for dispatch\n`+
-			`(Queued, waiting.*\n)*`+
-			`(Locked, waiting for dispatch\n)?`+
-			`(Locked, waiting for new instance to be ready\n)?`+
-			`(Locked, preparing runtime environment\n)?`+
+			// Occasionally the dispatcher will
+			// unlock/retry, and we get state/status from
+			// database/dispatcher via separate API calls,
+			// so we can also see "Queued, preparing
+			// runtime environment".
+			`((Queued|Locked), (waiting .*|preparing runtime environment)\n)*`+
 			`(Running, \n)?`+
 			`Complete, \n`)
 	}

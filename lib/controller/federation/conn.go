@@ -605,26 +605,6 @@ func (conn *Conn) LogDelete(ctx context.Context, options arvados.DeleteOptions) 
 	return conn.chooseBackend(options.UUID).LogDelete(ctx, options)
 }
 
-func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
-	return conn.generated_SpecimenList(ctx, options)
-}
-
-func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
-	return conn.chooseBackend(options.ClusterID).SpecimenCreate(ctx, options)
-}
-
-func (conn *Conn) SpecimenUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Specimen, error) {
-	return conn.chooseBackend(options.UUID).SpecimenUpdate(ctx, options)
-}
-
-func (conn *Conn) SpecimenGet(ctx context.Context, options arvados.GetOptions) (arvados.Specimen, error) {
-	return conn.chooseBackend(options.UUID).SpecimenGet(ctx, options)
-}
-
-func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error) {
-	return conn.chooseBackend(options.UUID).SpecimenDelete(ctx, options)
-}
-
 func (conn *Conn) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
 	return conn.local.SysTrashSweep(ctx, options)
 }

@@ -2,16 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from __future__ import division
 import copy
-from future import standard_library
-from future.utils import native_str
-standard_library.install_aliases()
-from builtins import next
-from builtins import str
-from builtins import range
-from builtins import object
 import collections
 import datetime
 import hashlib
@@ -28,15 +19,11 @@ import ssl
 import sys
 import threading
 import resource
-from . import timer
 import urllib.parse
 import traceback
 import weakref
 
-if sys.version_info >= (3, 0):
-    from io import BytesIO
-else:
-    from cStringIO import StringIO as BytesIO
+from io import BytesIO
 
 import arvados
 import arvados.config as config
@@ -45,10 +32,10 @@ import arvados.retry as retry
 import arvados.util
 import arvados.diskcache
 from arvados._pycurlhelper import PyCurlHelper
+from . import timer
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
-
 
 # Monkey patch TCP constants when not available (apple). Values sourced from:
 # http://www.opensource.apple.com/source/xnu/xnu-2422.115.4/bsd/netinet/tcp.h
@@ -59,7 +46,6 @@ if sys.platform == 'darwin':
         socket.TCP_KEEPINTVL = 0x101
     if not hasattr(socket, 'TCP_KEEPCNT'):
         socket.TCP_KEEPCNT = 0x102
-
 
 class KeepLocator(object):
     EPOCH_DATETIME = datetime.datetime.utcfromtimestamp(0)
@@ -85,7 +71,7 @@ class KeepLocator(object):
 
     def __str__(self):
         return '+'.join(
-            native_str(s)
+            str(s)
             for s in [self.md5sum, self.size,
                       self.permission_hint()] + self.hints
             if s is not None)
@@ -145,44 +131,10 @@ class KeepLocator(object):
         return self.perm_expiry <= as_of_dt
 
 
-class Keep(object):
-    """Simple interface to a global KeepClient object.
-
-    THIS CLASS IS DEPRECATED.  Please instantiate your own KeepClient with your
-    own API client.  The global KeepClient will build an API client from the
-    current Arvados configuration, which may not match the one you built.
-    """
-    _last_key = None
-
-    @classmethod
-    def global_client_object(cls):
-        global global_client_object
-        # Previously, KeepClient would change its behavior at runtime based
-        # on these configuration settings.  We simulate that behavior here
-        # by checking the values and returning a new KeepClient if any of
-        # them have changed.
-        key = (config.get('ARVADOS_API_HOST'),
-               config.get('ARVADOS_API_TOKEN'),
-               config.flag_is_true('ARVADOS_API_HOST_INSECURE'),
-               config.get('ARVADOS_KEEP_PROXY'),
-               os.environ.get('KEEP_LOCAL_STORE'))
-        if (global_client_object is None) or (cls._last_key != key):
-            global_client_object = KeepClient()
-            cls._last_key = key
-        return global_client_object
-
-    @staticmethod
-    def get(locator, **kwargs):
-        return Keep.global_client_object().get(locator, **kwargs)
-
-    @staticmethod
-    def put(data, **kwargs):
-        return Keep.global_client_object().put(data, **kwargs)
-
 class KeepBlockCache(object):
     def __init__(self, cache_max=0, max_slots=0, disk_cache=False, disk_cache_dir=None):
         self.cache_max = cache_max
-        self._cache = []
+        self._cache = collections.OrderedDict()
         self._cache_lock = threading.Lock()
         self._max_slots = max_slots
         self._disk_cache = disk_cache
@@ -190,8 +142,7 @@ class KeepBlockCache(object):
         self._cache_updating = threading.Condition(self._cache_lock)
 
         if self._disk_cache and self._disk_cache_dir is None:
-            self._disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
-            os.makedirs(self._disk_cache_dir, mode=0o700, exist_ok=True)
+            self._disk_cache_dir = str(arvados.util._BaseDirectories('CACHE').storage_path('keep'))
 
         if self._max_slots == 0:
             if self._disk_cache:
@@ -233,10 +184,12 @@ class KeepBlockCache(object):
 
         self.cache_max = max(self.cache_max, 64 * 1024 * 1024)
 
+        self.cache_total = 0
         if self._disk_cache:
             self._cache = arvados.diskcache.DiskCacheSlot.init_cache(self._disk_cache_dir, self._max_slots)
+            for slot in self._cache.values():
+                self.cache_total += slot.size()
             self.cap_cache()
-
 
     class CacheSlot(object):
         __slots__ = ("locator", "ready", "content")
@@ -251,8 +204,11 @@ class KeepBlockCache(object):
             return self.content
 
         def set(self, value):
+            if self.content is not None:
+                return False
             self.content = value
             self.ready.set()
+            return True
 
         def size(self):
             if self.content is None:
@@ -262,42 +218,25 @@ class KeepBlockCache(object):
 
         def evict(self):
             self.content = None
-            return self.gone()
 
-        def gone(self):
-            return (self.content is None)
 
     def _resize_cache(self, cache_max, max_slots):
         # Try and make sure the contents of the cache do not exceed
         # the supplied maximums.
 
-        # Select all slots except those where ready.is_set() and content is
-        # None (that means there was an error reading the block).
-        self._cache = [c for c in self._cache if not (c.ready.is_set() and c.content is None)]
-        sm = sum([slot.size() for slot in self._cache])
-        while len(self._cache) > 0 and (sm > cache_max or len(self._cache) > max_slots):
-            for i in range(len(self._cache)-1, -1, -1):
-                # start from the back, find a slot that is a candidate to evict
-                if self._cache[i].ready.is_set():
-                    sz = self._cache[i].size()
+        if self.cache_total <= cache_max and len(self._cache) <= max_slots:
+            return
 
-                    # If evict returns false it means the
-                    # underlying disk cache couldn't lock the file
-                    # for deletion because another process was using
-                    # it. Don't count it as reducing the amount
-                    # of data in the cache, find something else to
-                    # throw out.
-                    if self._cache[i].evict():
-                        sm -= sz
+        _evict_candidates = collections.deque(self._cache.values())
+        while _evict_candidates and (self.cache_total > cache_max or len(self._cache) > max_slots):
+            slot = _evict_candidates.popleft()
+            if not slot.ready.is_set():
+                continue
 
-                    # check to make sure the underlying data is gone
-                    if self._cache[i].gone():
-                        # either way we forget about it.  either the
-                        # other process will delete it, or if we need
-                        # it again and it is still there, we'll find
-                        # it on disk.
-                        del self._cache[i]
-                    break
+            sz = slot.size()
+            slot.evict()
+            self.cache_total -= sz
+            del self._cache[slot.locator]
 
 
     def cap_cache(self):
@@ -308,19 +247,19 @@ class KeepBlockCache(object):
 
     def _get(self, locator):
         # Test if the locator is already in the cache
-        for i in range(0, len(self._cache)):
-            if self._cache[i].locator == locator:
-                n = self._cache[i]
-                if i != 0:
-                    # move it to the front
-                    del self._cache[i]
-                    self._cache.insert(0, n)
-                return n
+        if locator in self._cache:
+            n = self._cache[locator]
+            if n.ready.is_set() and n.content is None:
+                del self._cache[n.locator]
+                return None
+            self._cache.move_to_end(locator)
+            return n
         if self._disk_cache:
             # see if it exists on disk
             n = arvados.diskcache.DiskCacheSlot.get_from_disk(locator, self._disk_cache_dir)
             if n is not None:
-                self._cache.insert(0, n)
+                self._cache[n.locator] = n
+                self.cache_total += n.size()
                 return n
         return None
 
@@ -350,12 +289,13 @@ class KeepBlockCache(object):
                     n = arvados.diskcache.DiskCacheSlot(locator, self._disk_cache_dir)
                 else:
                     n = KeepBlockCache.CacheSlot(locator)
-                self._cache.insert(0, n)
+                self._cache[n.locator] = n
                 return n, True
 
     def set(self, slot, blob):
         try:
-            slot.set(blob)
+            if slot.set(blob):
+                self.cache_total += slot.size()
             return
         except OSError as e:
             if e.errno == errno.ENOMEM:
@@ -365,7 +305,7 @@ class KeepBlockCache(object):
             elif e.errno == errno.ENOSPC:
                 # Reduce disk max space to current - 256 MiB, cap cache and retry
                 with self._cache_lock:
-                    sm = sum([st.size() for st in self._cache])
+                    sm = sum(st.size() for st in self._cache.values())
                     self.cache_max = max((256 * 1024 * 1024), sm - (256 * 1024 * 1024))
             elif e.errno == errno.ENODEV:
                 _logger.error("Unable to use disk cache: The underlying filesystem does not support memory mapping.")
@@ -383,7 +323,8 @@ class KeepBlockCache(object):
             # exception handler adjusts limits downward in some cases
             # to free up resources, which would make the operation
             # succeed.
-            slot.set(blob)
+            if slot.set(blob):
+                self.cache_total += slot.size()
         except Exception as e:
             # It failed again.  Give up.
             slot.set(None)
@@ -924,7 +865,10 @@ class KeepClient(object):
         self.misses_counter = Counter()
         self._storage_classes_unsupported_warning = False
         self._default_classes = []
-        self.num_prefetch_threads = num_prefetch_threads or 2
+        if num_prefetch_threads is not None:
+            self.num_prefetch_threads = num_prefetch_threads
+        else:
+            self.num_prefetch_threads = 2
         self._prefetch_queue = None
         self._prefetch_threads = None
 
@@ -1188,6 +1132,8 @@ class KeepClient(object):
                         # result, so if it is already in flight return
                         # immediately.  Clear 'slot' to prevent
                         # finally block from calling slot.set()
+                        if slot.ready.is_set():
+                            slot.get()
                         slot = None
                         return None
 
@@ -1425,6 +1371,9 @@ class KeepClient(object):
         downloads (unless the block is evicted from the cache.)  This method
         does not block.
         """
+
+        if self.block_cache.get(locator) is not None:
+            return
 
         self._start_prefetch_threads()
         self._prefetch_queue.put(locator)

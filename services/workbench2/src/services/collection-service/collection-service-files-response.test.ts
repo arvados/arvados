@@ -20,8 +20,7 @@ describe('collection-service-files-response', () => {
             testCases.forEach(([inputURL, inputDisplayName, expectedURL, expectedName]) => {
                 // given
                 const collUUID = 'xxxxx-zzzzz-vvvvvvvvvvvvvvv';
-                const xmlData = `
-                <?xml version="1.0" encoding="UTF-8"?>
+                const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
                 <D:multistatus xmlns:D="DAV:">
                     <D:response>
                         <D:href>/c=xxxxx-zzzzz-vvvvvvvvvvvvvvv/</D:href>

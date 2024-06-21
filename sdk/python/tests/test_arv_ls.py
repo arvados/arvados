@@ -2,14 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import os
 import random
 import sys
-import mock
 import tempfile
+
+from unittest import mock
 
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls
@@ -89,9 +87,8 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
         self.assertEqual(1, error_mock.call_count)
 
     def test_version_argument(self):
-        if sys.version_info >= (3, 0):
-            import warnings
-            warnings.simplefilter("ignore")
+        import warnings
+        warnings.simplefilter("ignore")
         with redirected_streams(stdout=StringIO, stderr=StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_ls(['--version'], None)

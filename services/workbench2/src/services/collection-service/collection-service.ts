@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { CollectionResource, defaultCollectionSelectedFields } from "models/collection";
-import { AxiosInstance } from "axios";
+import { AxiosInstance, AxiosResponse } from "axios";
 import { CollectionFile, CollectionDirectory } from "models/collection-file";
 import { WebDAV } from "common/webdav";
 import { AuthService } from "../auth-service/auth-service";
@@ -19,6 +19,11 @@ export type UploadProgress = (fileId: number, loaded: number, total: number, cur
 type CollectionPartialUpdateOrCreate =
     | (Partial<CollectionResource> & Pick<CollectionResource, "uuid">)
     | (Partial<CollectionResource> & Pick<CollectionResource, "ownerUuid">);
+
+type ReplaceFilesPayload = {
+    collection: Partial<CollectionResource>;
+    replace_files: {[key: string]: string};
+}
 
 export const emptyCollectionPdh = "d41d8cd98f00b204e9800998ecf8427e+0";
 export const SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE = "Source and destination cannot be the same";
@@ -78,7 +83,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     private replaceFiles(data: CollectionPartialUpdateOrCreate, fileMap: {}, showErrors?: boolean) {
-        const payload = {
+        const payload: ReplaceFilesPayload = {
             collection: {
                 preserve_version: true,
                 ...CommonService.mapKeys(snakeCase)(data),
@@ -89,14 +94,14 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         };
         if (data.uuid) {
             return CommonService.defaultResponse(
-                this.serverApi.put<CollectionResource>(`/${this.resourceType}/${data.uuid}`, payload),
+                this.serverApi.put<ReplaceFilesPayload, AxiosResponse<CollectionResource>>(`/${this.resourceType}/${data.uuid}`, payload),
                 this.actions,
                 true, // mapKeys
                 showErrors
             );
         } else {
             return CommonService.defaultResponse(
-                this.serverApi.post<CollectionResource>(`/${this.resourceType}`, payload),
+                this.serverApi.post<ReplaceFilesPayload, AxiosResponse<CollectionResource>>(`/${this.resourceType}`, payload),
                 this.actions,
                 true, // mapKeys
                 showErrors

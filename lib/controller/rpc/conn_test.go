@@ -100,23 +100,24 @@ func (s *RPCSuite) TestCollectionCreate(c *check.C) {
 	c.Check(coll.UUID, check.HasLen, 27)
 }
 
-func (s *RPCSuite) TestSpecimenCRUD(c *check.C) {
+func (s *RPCSuite) TestGroupCRUD(c *check.C) {
 	s.setupConn(c, os.Getenv("ARVADOS_TEST_API_HOST"))
-	sp, err := s.conn.SpecimenCreate(s.ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
-		"owner_uuid": arvadostest.ActiveUserUUID,
-		"properties": map[string]string{"foo": "bar"},
+	sp, err := s.conn.GroupCreate(s.ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"group_class": "project",
+		"owner_uuid":  arvadostest.ActiveUserUUID,
+		"properties":  map[string]string{"foo": "bar"},
 	}})
 	c.Check(err, check.IsNil)
 	c.Check(sp.UUID, check.HasLen, 27)
 	c.Check(sp.Properties, check.HasLen, 1)
 	c.Check(sp.Properties["foo"], check.Equals, "bar")
 
-	spGet, err := s.conn.SpecimenGet(s.ctx, arvados.GetOptions{UUID: sp.UUID})
+	spGet, err := s.conn.GroupGet(s.ctx, arvados.GetOptions{UUID: sp.UUID})
 	c.Check(err, check.IsNil)
 	c.Check(spGet.UUID, check.Equals, sp.UUID)
 	c.Check(spGet.Properties["foo"], check.Equals, "bar")
 
-	spList, err := s.conn.SpecimenList(s.ctx, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", sp.UUID}}})
+	spList, err := s.conn.GroupList(s.ctx, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", sp.UUID}}})
 	c.Check(err, check.IsNil)
 	c.Check(spList.ItemsAvailable, check.Equals, 1)
 	c.Assert(spList.Items, check.HasLen, 1)
@@ -124,12 +125,12 @@ func (s *RPCSuite) TestSpecimenCRUD(c *check.C) {
 	c.Check(spList.Items[0].Properties["foo"], check.Equals, "bar")
 
 	anonCtx := context.WithValue(context.Background(), contextKeyTestTokens, []string{arvadostest.AnonymousToken})
-	spList, err = s.conn.SpecimenList(anonCtx, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", sp.UUID}}})
+	spList, err = s.conn.GroupList(anonCtx, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", sp.UUID}}})
 	c.Check(err, check.IsNil)
 	c.Check(spList.ItemsAvailable, check.Equals, 0)
 	c.Check(spList.Items, check.HasLen, 0)
 
-	spDel, err := s.conn.SpecimenDelete(s.ctx, arvados.DeleteOptions{UUID: sp.UUID})
+	spDel, err := s.conn.GroupDelete(s.ctx, arvados.DeleteOptions{UUID: sp.UUID})
 	c.Check(err, check.IsNil)
 	c.Check(spDel.UUID, check.Equals, sp.UUID)
 }

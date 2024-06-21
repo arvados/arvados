@@ -7,9 +7,6 @@ set -e
 
 . /usr/local/lib/arvbox/common.sh
 
-git config --system "credential.http://$localip:${services[arv-git-httpd]}/.username" none
-git config --system "credential.http://$localip:${services[arv-git-httpd]}/.helper" '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'
-
 /usr/local/lib/arvbox/runsu.sh $0-service
 
 cd /usr/src/arvados/services/login-sync

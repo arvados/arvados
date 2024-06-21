@@ -96,10 +96,10 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                 if (linkUrl[0] === '/') {
                     valueNode = <Link to={linkUrl} className={classes.link}>{uuid}</Link>;
                 } else {
-                    valueNode = <a href={linkUrl} className={classes.link} target='_blank' rel="noopener">{uuid}</a>;
+                    valueNode = <a href={linkUrl} className={classes.link} target='_blank' rel="noopener noreferrer">{uuid}</a>;
                 }
             } else if (link) {
-                valueNode = <a href={link} className={classes.link} target='_blank' rel="noopener">{value}</a>;
+                valueNode = <a href={link} className={classes.link} target='_blank' rel="noopener noreferrer">{value}</a>;
             } else {
                 valueNode = value;
             }
@@ -124,7 +124,7 @@ export const DetailsAttributeComponent = withStyles(styles)(
                 className={classnames([props.classes.value, props.classValue, { [props.classes.lowercaseValue]: props.lowercaseValue }])}>
                 {props.value}
                 {props.children}
-                {(props.linkToUuid || props.copyValue) && props.onCopy && <Tooltip title="Copy to clipboard">
+                {(props.linkToUuid || props.copyValue) && props.onCopy && <Tooltip title="Copy link to clipboard">
                     <span className={props.classes.copyIcon}>
                         <CopyToClipboard text={props.linkToUuid || props.copyValue || ""} onCopy={() => props.onCopy!("Copied")}>
                             <CopyIcon />

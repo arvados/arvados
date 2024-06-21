@@ -10,7 +10,7 @@ import { login, authActions } from 'store/auth/auth-action';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { LoginForm } from 'views-components/login-form/login-form';
-import Axios from 'axios';
+import Axios, { AxiosResponse } from 'axios';
 import { Config } from 'common/config';
 import { sanitizeHTML } from 'common/html-sanitize';
 
@@ -51,11 +51,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+export type PasswordLoginResponse = {
+    uuid?: string;
+    api_token?: string;
+    message?: string;
+};
+
 const doPasswordLogin = (url: string) => (username: string, password: string) => {
     const formData: string[] = [];
     formData.push('username='+encodeURIComponent(username));
     formData.push('password='+encodeURIComponent(password));
-    return Axios.post(`${url}/arvados/v1/users/authenticate`, formData.join('&'), {
+    return Axios.post<string, AxiosResponse<PasswordLoginResponse>>(`${url}/arvados/v1/users/authenticate`, formData.join('&'), {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },

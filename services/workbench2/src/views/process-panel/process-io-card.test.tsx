@@ -11,12 +11,19 @@ import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
 import { ProcessIOCard, ProcessIOCardType } from './process-io-card';
 import { DefaultView } from "components/default-view/default-view";
-import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
+import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
+import { CopyIcon } from 'components/icon/icon';
+import copy from 'copy-to-clipboard';
 
-
+// Mock collection files component since it just needs to exist
 jest.mock('views/process-panel/process-output-collection-files');
+// Mock autosizer for the io panel virtual list
+jest.mock('react-virtualized-auto-sizer', () => ({ children }: any) => children({ height: 600, width: 600 }));
+// Mock copy to clipboard
+jest.mock('copy-to-clipboard');
+
 configure({ adapter: new Adapter() });
 
 describe('renderers', () => {
@@ -89,7 +96,7 @@ describe('renderers', () => {
             expect(panel.find(DefaultView).text()).toEqual('No parameters found');
         });
 
-        it('shows main process with raw', () => {
+        it('shows main process with raw and allows copying json', () => {
             // when
             const raw = {some: 'data'};
             let panel = mount(
@@ -108,12 +115,16 @@ describe('renderers', () => {
             // then
             expect(panel.find(CircularProgress).exists()).toBeFalsy();
             expect(panel.find(Tab).length).toBe(1);
-            expect(panel.find(DefaultCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2));
+            expect(panel.find(DefaultVirtualCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2).replace(/\n/g, ''));
+
+            // when
+            panel.find(CopyIcon).simulate('click');
+            expect(copy).toHaveBeenCalledWith(JSON.stringify(raw, null, 2), undefined);
         });
 
         it('shows main process with params', () => {
             // when
-            const parameters = [{id: 'someId', label: 'someLabel', value: [{display: 'someValue'}]}];
+            const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
             let panel = mount(
                 <Provider store={store}>
                     <MuiThemeProvider theme={CustomTheme}>
@@ -133,6 +144,36 @@ describe('renderers', () => {
             expect(panel.find(TableBody).text()).toContain('someId');
             expect(panel.find(TableBody).text()).toContain('someLabel');
             expect(panel.find(TableBody).text()).toContain('someValue');
+        });
+
+        it('shows main process with output collection', () => {
+            // when
+            const outputCollection = '987654321';
+            const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
+            let panel = mount(
+                <Provider store={store}>
+                    <MuiThemeProvider theme={CustomTheme}>
+                        <ProcessIOCard
+                            label={ProcessIOCardType.OUTPUT}
+                            process={false} // Treat as a main process, no requestingContainerUuid
+                            outputUuid={outputCollection}
+                            params={parameters}
+                            raw={{}}
+                        />
+                    </MuiThemeProvider>
+                </Provider>
+                );
+
+            // then
+            expect(panel.find(CircularProgress).exists()).toBeFalsy();
+            expect(panel.find(Tab).length).toBe(3); // Empty raw is shown if parameters are present
+            expect(panel.find(TableBody).text()).toContain('someId');
+            expect(panel.find(TableBody).text()).toContain('someLabel');
+            expect(panel.find(TableBody).text()).toContain('someValue');
+
+            // Visit output tab
+            panel.find(Tab).at(2).simulate('click');
+            expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
         });
 
         // Subprocess

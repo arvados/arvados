@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
-from builtins import object
 import arvados
 import contextlib
 import errno
@@ -14,7 +9,6 @@ import hashlib
 import http.client
 import httplib2
 import io
-import mock
 import os
 import pycurl
 import queue
@@ -23,11 +17,8 @@ import sys
 import tempfile
 import unittest
 
-if sys.version_info >= (3, 0):
-    from io import StringIO, BytesIO
-else:
-    from cStringIO import StringIO
-    BytesIO = StringIO
+from io import StringIO, BytesIO
+from unittest import mock
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.
@@ -86,13 +77,8 @@ def redirected_streams(stdout=None, stderr=None):
 
 class VersionChecker(object):
     def assertVersionOutput(self, out, err):
-        if sys.version_info >= (3, 0):
-            self.assertEqual(err.getvalue(), '')
-            v = out.getvalue()
-        else:
-            # Python 2 writes version info on stderr.
-            self.assertEqual(out.getvalue(), '')
-            v = err.getvalue()
+        self.assertEqual(err.getvalue(), '')
+        v = out.getvalue()
         self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+(\.dev[0-9]+)?$\n")
 
 
@@ -148,6 +134,7 @@ class FakeCurl(object):
             return self._resp_code
         raise Exception
 
+
 def mock_keep_responses(body, *codes, **headers):
     """Patch pycurl to return fake responses and raise exceptions.
 
@@ -172,21 +159,6 @@ def mock_keep_responses(body, *codes, **headers):
     cm.responses = responses
     return mock.patch('pycurl.Curl', cm)
 
-
-class MockStreamReader(object):
-    def __init__(self, name='.', *data):
-        self._name = name
-        self._data = b''.join([
-            b if isinstance(b, bytes) else b.encode()
-            for b in data])
-        self._data_locators = [str_keep_locator(d) for d in data]
-        self.num_retries = 0
-
-    def name(self):
-        return self._name
-
-    def readfrom(self, start, size, num_retries=None):
-        return self._data[start:start + size]
 
 class ApiClientMock(object):
     def api_client_mock(self):
@@ -271,16 +243,6 @@ class ArvadosBaseTestCase(unittest.TestCase):
         testfile.flush()
         return testfile
 
-if sys.version_info < (3, 0):
-    # There is no assert[Not]Regex that works in both Python 2 and 3,
-    # so we backport Python 3 style to Python 2.
-    def assertRegex(self, *args, **kwargs):
-        return self.assertRegexpMatches(*args, **kwargs)
-    def assertNotRegex(self, *args, **kwargs):
-        return self.assertNotRegexpMatches(*args, **kwargs)
-    unittest.TestCase.assertRegex = assertRegex
-    unittest.TestCase.assertNotRegex = assertNotRegex
-
 def binary_compare(a, b):
     if len(a) != len(b):
         return False
@@ -288,14 +250,6 @@ def binary_compare(a, b):
         if a[i] != b[i]:
             return False
     return True
-
-def make_block_cache(disk_cache):
-    if disk_cache:
-        disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
-        shutil.rmtree(disk_cache_dir, ignore_errors=True)
-    block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache)
-    return block_cache
-
 
 class DiskCacheBase:
     def make_block_cache(self, disk_cache):

@@ -102,7 +102,7 @@ elif [[ ! -d "$WORKSPACE/build/package-build-dockerfiles/$TARGET" ]]; then
 fi
 
 if [[ "$COMMAND" != "" ]]; then
-  COMMAND="/usr/local/rvm/bin/rvm-exec default bash /jenkins/$COMMAND --target $TARGET"
+  COMMAND="bash /jenkins/$COMMAND --target $TARGET"
 fi
 
 STDOUT_IF_DEBUG=/dev/null
@@ -181,13 +181,6 @@ fi
 debug_echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
 debug_echo "Workspace is $WORKSPACE"
 
-if [[ -f /etc/profile.d/rvm.sh ]]; then
-    source /etc/profile.d/rvm.sh
-    GEM="rvm-exec default gem"
-else
-    GEM=gem
-fi
-
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
 # out our git tree here
 chmod o+r "$WORKSPACE" -R
@@ -213,7 +206,7 @@ git config --global --add safe.directory /arvados
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
 
-FPM_GEM_PREFIX=$($GEM environment gemdir)
+FPM_GEM_PREFIX=$(gem environment gemdir)
 
 cd "$WORKSPACE/sdk/ruby" || exit 1
 handle_ruby_gem arvados
@@ -242,8 +235,6 @@ package_go_binary cmd/arvados-server arvados-dispatch-cloud "$FORMAT" "$ARCH" \
     "Arvados cluster cloud dispatch"
 package_go_binary cmd/arvados-server arvados-dispatch-lsf "$FORMAT" "$ARCH" \
     "Dispatch Arvados containers to an LSF cluster"
-package_go_binary cmd/arvados-server arvados-git-httpd "$FORMAT" "$ARCH" \
-    "Provide authenticated http access to Arvados-hosted git repositories"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local "$FORMAT" "$ARCH" \
     "Dispatch Crunch containers on the local system"
 package_go_binary cmd/arvados-server crunch-dispatch-slurm "$FORMAT" "$ARCH" \
@@ -278,26 +269,15 @@ package_go_so lib/pam pam_arvados.so libpam-arvados-go "$FORMAT" "$ARCH" \
 # Python packages
 debug_echo -e "\nPython packages\n"
 
-# The Python SDK - Python3 package
+# Before a Python package can be built, its dependencies must already be built.
+# This list is ordered accordingly.
+setup_build_virtualenv
 fpm_build_virtualenv "arvados-python-client" "sdk/python" "$FORMAT" "$ARCH"
-
-# Arvados cwl runner - Python3 package
-fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"
-
-# The FUSE driver - Python3 package
-fpm_build_virtualenv "arvados-fuse" "services/fuse" "$FORMAT" "$ARCH"
-
-# The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "$FORMAT" "$ARCH"
-
-# The Docker image cleaner
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "$FORMAT" "$ARCH"
-
-# The Arvados user activity tool
+fpm_build_virtualenv "arvados-fuse" "services/fuse" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "$FORMAT" "$ARCH"
-
-# The cwltest package, which lives out of tree
-handle_cwltest "$FORMAT" "$ARCH"
 
 # Workbench2
 package_workbench2

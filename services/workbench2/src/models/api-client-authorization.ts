@@ -16,7 +16,6 @@ export interface ApiClientAuthorization extends Resource {
     createdAt: string;
     updatedAt: string;
     ownerUuid: string;
-    defaultOwnerUuid: string;
     scopes: string[];
 }
 

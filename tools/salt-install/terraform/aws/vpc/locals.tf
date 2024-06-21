@@ -20,6 +20,7 @@ locals {
 
   private_subnet_id = one(aws_subnet.private_subnet[*]) != null ? one(aws_subnet.private_subnet[*]).id : var.private_subnet_id
   public_subnet_id = one(aws_subnet.public_subnet[*]) != null ? one(aws_subnet.public_subnet[*]).id : var.public_subnet_id
+  additional_rds_subnet_id = one(aws_subnet.additional_rds_subnet[*]) != null ? one(aws_subnet.additional_rds_subnet[*]).id : var.additional_rds_subnet_id
 
   public_hosts = var.private_only ? [] : var.user_facing_hosts
   private_hosts = concat(
@@ -38,4 +39,5 @@ locals {
       }
     ]
   ])
+  use_rds = var.use_rds
 }

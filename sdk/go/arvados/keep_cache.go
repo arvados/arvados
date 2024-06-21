@@ -113,7 +113,10 @@ func (cache *DiskCache) setup() {
 	defer sharedCachesLock.Unlock()
 	dir := cache.Dir
 	if sharedCaches[dir] == nil {
+		cache.debugf("initializing sharedCache using %s with max size %d", dir, cache.MaxSize)
 		sharedCaches[dir] = &sharedCache{dir: dir, maxSize: cache.MaxSize}
+	} else {
+		cache.debugf("using existing sharedCache using %s with max size %d (would have initialized with %d)", dir, sharedCaches[dir].maxSize, cache.MaxSize)
 	}
 	cache.sharedCache = sharedCaches[dir]
 }
@@ -623,8 +626,9 @@ func (cache *DiskCache) tidy() {
 			}
 			var stat unix.Statfs_t
 			if nil == unix.Statfs(cache.dir, &stat) {
-				maxsize = int64(stat.Bavail) * stat.Bsize * pct / 100
+				maxsize = int64(stat.Blocks) * stat.Bsize * pct / 100
 				atomic.StoreInt64(&cache.defaultMaxSize, maxsize)
+				cache.debugf("setting cache size %d = blocks %d * bsize %d * pct %d / 100", maxsize, stat.Blocks, stat.Bsize, pct)
 			} else {
 				// In this case we will set
 				// defaultMaxSize below after

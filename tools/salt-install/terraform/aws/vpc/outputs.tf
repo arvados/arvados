@@ -21,6 +21,10 @@ output "arvados_sg_id" {
   value = local.arvados_sg_id
 }
 
+output "additional_rds_subnet_id" {
+  value = local.use_rds ? local.additional_rds_subnet_id : ""
+}
+
 output "eip_id" {
   value = { for k, v in aws_eip.arvados_eip: k => v.id }
 }
@@ -81,4 +85,8 @@ output "domain_name" {
 
 output "custom_tags" {
   value = var.custom_tags
+}
+
+output "use_rds" {
+  value = var.use_rds
 }

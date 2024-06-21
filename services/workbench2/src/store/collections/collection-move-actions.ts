@@ -9,7 +9,7 @@ import { ServiceRepository } from "services/services";
 import { RootState } from "store/store";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
@@ -36,7 +36,7 @@ export const moveCollection =
                 cachedCollection = await services.collectionService.get(resource.uuid);
             }
             const collection = await services.collectionService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
-            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(projectPanelDataActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
             return { ...cachedCollection, ...collection };

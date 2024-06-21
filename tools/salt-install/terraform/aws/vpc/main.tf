@@ -63,6 +63,23 @@ resource "aws_subnet" "private_subnet" {
 }
 
 #
+# Additional subnet on a different AZ is required if RDS is enabled
+#
+resource "aws_subnet" "additional_rds_subnet" {
+  count = (var.additional_rds_subnet_id == "" && local.use_rds) ? 1 : 0
+  vpc_id = local.arvados_vpc_id
+  availability_zone = data.aws_availability_zones.available.names[1]
+  cidr_block = "10.1.3.0/24"
+
+  lifecycle {
+    precondition {
+      condition = (var.vpc_id == "")
+      error_message = "additional_rds_subnet_id should be set if vpc_id is also set"
+    }
+  }
+}
+
+#
 # VPC S3 access
 #
 resource "aws_vpc_endpoint" "s3" {

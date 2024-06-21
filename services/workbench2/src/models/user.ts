@@ -63,5 +63,4 @@ export const getUserClusterID = (user: User): string | undefined => {
 
 export interface UserResource extends Resource, User {
     kind: ResourceKind.USER;
-    defaultOwnerUuid: string;
 }

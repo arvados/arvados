@@ -8,5 +8,6 @@ import { ProcessResource } from "./process";
 import { EmptyResource } from "./empty";
 import { CollectionFile, CollectionDirectory } from 'models/collection-file';
 import { WorkflowResource } from 'models/workflow';
+import { UserResource } from "./user";
 
-export type DetailsResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource | CollectionFile | CollectionDirectory | WorkflowResource;
+export type DetailsResource = ProjectResource | CollectionResource | ProcessResource | EmptyResource | CollectionFile | CollectionDirectory | WorkflowResource | UserResource & {name?: string};

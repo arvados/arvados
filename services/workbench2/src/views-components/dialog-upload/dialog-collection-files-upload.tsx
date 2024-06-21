@@ -7,7 +7,7 @@ import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
 import { FormDialog } from 'components/form-dialog/form-dialog';
-import { require } from 'validators/require';
+import { fieldRequire } from 'validators/require';
 import { FileUploaderField } from 'views-components/file-uploader/file-uploader';
 import { WarningCollection } from 'components/warning-collection/warning-collection';
 import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
@@ -43,6 +43,6 @@ const UploadCollectionFilesFields = () => <>
     <WarningCollection text="Uploading new files will change content address." />
 </>;
 
-const FILES_FIELD_VALIDATION = [require];
+const FILES_FIELD_VALIDATION = [fieldRequire];
 
 

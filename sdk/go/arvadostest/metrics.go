@@ -13,7 +13,7 @@ import (
 
 func GatherMetricsAsString(reg *prometheus.Registry) string {
 	buf := bytes.NewBuffer(nil)
-	enc := expfmt.NewEncoder(buf, expfmt.FmtText)
+	enc := expfmt.NewEncoder(buf, expfmt.NewFormat(expfmt.TypeTextPlain))
 	got, _ := reg.Gather()
 	for _, mf := range got {
 		enc.Encode(mf)

@@ -3,13 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import functools
-import mock
 import sys
 import unittest
 import json
 import logging
 import os
 import threading
+
+from unittest import mock
 
 from cwltool.task_queue import TaskQueue
 

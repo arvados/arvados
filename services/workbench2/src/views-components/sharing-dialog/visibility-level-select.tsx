@@ -17,7 +17,6 @@ type VisibilityLevelSelectClasses = 'root';
 
 const VisibilityLevelSelectStyles: StyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
     root: {
-        marginLeft: theme.spacing.unit,
     }
 });
 export const VisibilityLevelSelect = withStyles(VisibilityLevelSelectStyles)(

@@ -86,7 +86,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 	for iter := 0; iter < 20; iter++ {
 		logBuf.Reset()
 		logger := logrus.New()
-		logger.Out = io.MultiWriter(&logBuf, os.Stderr)
+		logger.Out = io.MultiWriter(&logBuf, ctxlog.LogWriter(c.Log))
 		opts := RunOptions{
 			CommitConfirmedFields: true,
 			Logger:                logger,

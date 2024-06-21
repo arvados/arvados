@@ -49,6 +49,30 @@ class Group < ArvadosModel
     t.add :can_manage
   end
 
+  def default_delete_after_trash_interval
+    if self.group_class == 'role'
+      ActiveSupport::Duration.build(0)
+    else
+      super
+    end
+  end
+
+  def minimum_delete_after_trash_interval
+    if self.group_class == 'role'
+      ActiveSupport::Duration.build(0)
+    else
+      super
+    end
+  end
+
+  def validate_trash_and_delete_timing
+    if self.group_class == 'role' && delete_at && delete_at != trash_at
+      errors.add :delete_at, "must be == trash_at for role groups"
+    else
+      super
+    end
+  end
+
   # check if admins are allowed to make changes to the project, e.g. it
   # isn't trashed or frozen.
   def admin_change_permitted
@@ -171,8 +195,15 @@ with temptable as (select * from project_subtree_with_trash_at($1, LEAST($2, $3)
       [self.uuid,
        TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
        self.trash_at])
+
     if frozen_descendants.any?
       raise ArgumentError.new("cannot trash project containing frozen project #{frozen_descendants[0]["uuid"]}")
+    end
+
+    if self.trash_at and self.group_class == 'role'
+      # if this is a role group that is now in the trash, it loses all
+      # of its outgoing permissions.
+      Link.where(link_class: 'permission', tail_uuid: self.uuid).destroy_all
     end
 
     ActiveRecord::Base.connection.exec_query(%{
@@ -243,6 +274,7 @@ insert into frozen_groups (uuid) select uuid from temptable where is_frozen on c
   end
 
   def clear_permissions_trash_frozen
+    Link.where(link_class: 'permission', tail_uuid: self.uuid).destroy_all
     MaterializedPermission.where(target_uuid: uuid).delete_all
     ActiveRecord::Base.connection.exec_delete(
       "delete from trashed_groups where group_uuid=$1",

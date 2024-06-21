@@ -13,10 +13,15 @@
 # Optional networking options. Set existing resources to be used instead of
 # creating new ones.
 # NOTE: We only support fully managed or fully custom networking, not a mix of both.
+#
 # vpc_id = "vpc-aaaa"
 # sg_id = "sg-bbbb"
 # public_subnet_id = "subnet-cccc"
 # private_subnet_id = "subnet-dddd"
+#
+# RDS related parameters:
+# use_rds = true
+# additional_rds_subnet_id = "subnet-eeee"
 
 # Optional custom tags to add to every resource. Default: {}
 # custom_tags = {

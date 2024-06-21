@@ -7,8 +7,9 @@ package crunchrun
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
+	"io/fs"
 	"os"
+	"sort"
 	"syscall"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -115,9 +116,7 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 	}
 
 	// simulate mounted writable collection
-	bindtmp, err := ioutil.TempDir("", "crunch-run.test.")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(bindtmp)
+	bindtmp := c.MkDir()
 	f, err := os.OpenFile(bindtmp+"/.arvados#collection", os.O_CREATE|os.O_WRONLY, 0644)
 	c.Assert(err, check.IsNil)
 	_, err = io.WriteString(f, `{"manifest_text":". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"}`)
@@ -215,10 +214,327 @@ func (s *copierSuite) TestWritableMountBelow(c *check.C) {
 	})
 }
 
+// Check some glob-matching edge cases. In particular, check that
+// patterns like "foo/**" do not match regular files named "foo"
+// (unless of course they are inside a directory named "foo").
+func (s *copierSuite) TestMatchGlobs(c *check.C) {
+	s.cp.globs = []string{"foo*/**"}
+	c.Check(s.cp.matchGlobs("foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("food", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("food", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("foo/bar", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("food/bar", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo/bar", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("food/bar", true), check.Equals, true)
+
+	s.cp.globs = []string{"ba[!/]/foo*/**"}
+	c.Check(s.cp.matchGlobs("bar/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/food", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("bar/food", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("bar/foo/z\\[", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/food/z\\[", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/foo/z\\[", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("bar/food/z\\[", false), check.Equals, true)
+
+	s.cp.globs = []string{"waz/**/foo*/**"}
+	c.Check(s.cp.matchGlobs("waz/quux/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/food", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("waz/quux/food", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("waz/quux/foo/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/food/foo", true), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/foo/foo", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("waz/quux/food/foo", false), check.Equals, true)
+
+	s.cp.globs = []string{"foo/**/*"}
+	c.Check(s.cp.matchGlobs("foo", false), check.Equals, false)
+	c.Check(s.cp.matchGlobs("foo/bar", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo/bar/baz", false), check.Equals, true)
+	c.Check(s.cp.matchGlobs("foo/bar/baz/waz", false), check.Equals, true)
+}
+
+func (s *copierSuite) TestSubtreeCouldMatch(c *check.C) {
+	for _, trial := range []struct {
+		mount string // relative to output dir
+		glob  string
+		could bool
+	}{
+		{mount: "abc", glob: "*"},
+		{mount: "abc", glob: "abc/*", could: true},
+		{mount: "abc", glob: "a*/**", could: true},
+		{mount: "abc", glob: "**", could: true},
+		{mount: "abc", glob: "*/*", could: true},
+		{mount: "abc", glob: "**/*.txt", could: true},
+		{mount: "abc/def", glob: "*"},
+		{mount: "abc/def", glob: "*/*"},
+		{mount: "abc/def", glob: "*/*.txt"},
+		{mount: "abc/def", glob: "*/*/*", could: true},
+		{mount: "abc/def", glob: "**", could: true},
+		{mount: "abc/def", glob: "**/bar", could: true},
+		{mount: "abc/def", glob: "abc/**", could: true},
+		{mount: "abc/def/ghi", glob: "*c/**/bar", could: true},
+		{mount: "abc/def/ghi", glob: "*c/*f/bar"},
+		{mount: "abc/def/ghi", glob: "abc/d[^/]f/ghi/*", could: true},
+	} {
+		c.Logf("=== %+v", trial)
+		got := (&copier{
+			globs: []string{trial.glob},
+		}).subtreeCouldMatch(trial.mount)
+		c.Check(got, check.Equals, trial.could)
+	}
+}
+
+func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
+	bindtmp := c.MkDir()
+	s.cp.mounts["/ctr/outdir/include/includer"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+	}
+	s.cp.mounts["/ctr/outdir/include/includew"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+		Writable:         true,
+	}
+	s.cp.mounts["/ctr/outdir/exclude/excluder"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+	}
+	s.cp.mounts["/ctr/outdir/exclude/excludew"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+		Writable:         true,
+	}
+	s.cp.mounts["/ctr/outdir/nonexistent/collection"] = arvados.Mount{
+		// As extra assurance, plant a collection that will
+		// fail if copier attempts to load its manifest.  (For
+		// performance reasons it's important that copier
+		// doesn't try to load the manifest before deciding
+		// not to copy the contents.)
+		Kind:             "collection",
+		PortableDataHash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1234",
+	}
+	s.cp.globs = []string{
+		"?ncl*/*r/*",
+		"*/?ncl*/**",
+	}
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/include/includer", 0755), check.IsNil)
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/include/includew", 0755), check.IsNil)
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/exclude/excluder", 0755), check.IsNil)
+	c.Assert(os.MkdirAll(s.cp.hostOutputDir+"/exclude/excludew", 0755), check.IsNil)
+	s.writeFileInOutputDir(c, "include/includew/foo", "foo")
+	s.writeFileInOutputDir(c, "exclude/excludew/foo", "foo")
+	s.cp.bindmounts = map[string]bindmount{
+		"/ctr/outdir/include/includew": bindmount{HostPath: bindtmp, ReadOnly: false},
+	}
+	s.cp.bindmounts = map[string]bindmount{
+		"/ctr/outdir/include/excludew": bindmount{HostPath: bindtmp, ReadOnly: false},
+	}
+
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Check(err, check.IsNil)
+	c.Log(s.log.String())
+
+	// Note it's OK that "/exclude" is not excluded by walkMount:
+	// it is just a local filesystem directory, not a mount point
+	// that's expensive to walk.  In real-life usage, it will be
+	// removed from cp.dirs before any copying happens.
+	c.Check(s.cp.dirs, check.DeepEquals, []string{"/exclude", "/include", "/include/includew"})
+	c.Check(s.cp.files, check.DeepEquals, []filetodo{
+		{src: s.cp.hostOutputDir + "/include/includew/foo", dst: "/include/includew/foo", size: 3},
+	})
+	c.Check(s.cp.manifest, check.Matches, `(?ms).*\./include/includer .*`)
+	c.Check(s.cp.manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
+	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excluder\\".*`)
+	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"nonexistent/collection\\".*`)
+}
+
 func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
 	f, err := os.OpenFile(s.cp.hostOutputDir+"/"+path, os.O_CREATE|os.O_WRONLY, 0644)
 	c.Assert(err, check.IsNil)
 	_, err = io.WriteString(f, data)
 	c.Assert(err, check.IsNil)
 	c.Assert(f.Close(), check.IsNil)
+}
+
+// applyGlobsToFilesAndDirs uses the same glob-matching code as
+// applyGlobsToCollectionFS, so we don't need to test all of the same
+// glob-matching behavior covered in TestApplyGlobsToCollectionFS.  We
+// do need to check that (a) the glob is actually being used to filter
+// out files, and (b) non-matching dirs still included if and only if
+// they are ancestors of matching files.
+func (s *copierSuite) TestApplyGlobsToFilesAndDirs(c *check.C) {
+	dirs := []string{"dir1", "dir1/dir11", "dir1/dir12", "dir2"}
+	files := []string{"dir1/file11", "dir1/dir11/file111", "dir2/file2"}
+	for _, trial := range []struct {
+		globs []string
+		dirs  []string
+		files []string
+	}{
+		{
+			globs: []string{},
+			dirs:  append([]string{}, dirs...),
+			files: append([]string{}, files...),
+		},
+		{
+			globs: []string{"**"},
+			dirs:  append([]string{}, dirs...),
+			files: append([]string{}, files...),
+		},
+		{
+			globs: []string{"**/file111"},
+			dirs:  []string{"dir1", "dir1/dir11"},
+			files: []string{"dir1/dir11/file111"},
+		},
+		{
+			globs: []string{"nothing"},
+			dirs:  nil,
+			files: nil,
+		},
+		{
+			globs: []string{"**/dir12"},
+			dirs:  []string{"dir1", "dir1/dir12"},
+			files: nil,
+		},
+		{
+			globs: []string{"**/file*"},
+			dirs:  []string{"dir1", "dir1/dir11", "dir2"},
+			files: append([]string{}, files...),
+		},
+		{
+			globs: []string{"**/dir1[12]"},
+			dirs:  []string{"dir1", "dir1/dir11", "dir1/dir12"},
+			files: nil,
+		},
+		{
+			globs: []string{"**/dir1[^2]"},
+			dirs:  []string{"dir1", "dir1/dir11"},
+			files: nil,
+		},
+		{
+			globs: []string{"dir1/**"},
+			dirs:  []string{"dir1", "dir1/dir11", "dir1/dir12"},
+			files: []string{"dir1/file11", "dir1/dir11/file111"},
+		},
+	} {
+		c.Logf("=== globs: %q", trial.globs)
+		cp := copier{
+			globs: trial.globs,
+			dirs:  dirs,
+		}
+		for _, path := range files {
+			cp.files = append(cp.files, filetodo{dst: path})
+		}
+		cp.applyGlobsToFilesAndDirs()
+		var gotFiles []string
+		for _, file := range cp.files {
+			gotFiles = append(gotFiles, file.dst)
+		}
+		c.Check(cp.dirs, check.DeepEquals, trial.dirs)
+		c.Check(gotFiles, check.DeepEquals, trial.files)
+	}
+}
+
+func (s *copierSuite) TestApplyGlobsToCollectionFS(c *check.C) {
+	for _, trial := range []struct {
+		globs  []string
+		expect []string
+	}{
+		{
+			globs:  nil,
+			expect: []string{"foo", "bar", "baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"foo"},
+			expect: []string{"foo"},
+		},
+		{
+			globs:  []string{"baz/parent1/item1"},
+			expect: []string{"baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"**"},
+			expect: []string{"foo", "bar", "baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"**/*"},
+			expect: []string{"foo", "bar", "baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"*"},
+			expect: []string{"foo", "bar"},
+		},
+		{
+			globs:  []string{"baz"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"b*/**"},
+			expect: []string{"baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"baz"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"baz/**"},
+			expect: []string{"baz/quux", "baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"baz/*"},
+			expect: []string{"baz/quux"},
+		},
+		{
+			globs:  []string{"baz/**/*uu?"},
+			expect: []string{"baz/quux"},
+		},
+		{
+			globs:  []string{"**/*m1"},
+			expect: []string{"baz/parent1/item1"},
+		},
+		{
+			globs:  []string{"*/*/*/**/*1"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"f*", "**/q*"},
+			expect: []string{"foo", "baz/quux"},
+		},
+		{
+			globs:  []string{"\\"}, // invalid pattern matches nothing
+			expect: nil,
+		},
+		{
+			globs:  []string{"\\", "foo"},
+			expect: []string{"foo"},
+		},
+		{
+			globs:  []string{"foo/**"},
+			expect: nil,
+		},
+		{
+			globs:  []string{"foo*/**"},
+			expect: nil,
+		},
+	} {
+		c.Logf("=== globs: %q", trial.globs)
+		collfs, err := (&arvados.Collection{ManifestText: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:bar 0:0:baz/quux 0:0:baz/parent1/item1\n"}).FileSystem(nil, nil)
+		c.Assert(err, check.IsNil)
+		cp := copier{globs: trial.globs}
+		err = cp.applyGlobsToCollectionFS(collfs)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		var got []string
+		fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
+			if !ent.IsDir() {
+				got = append(got, path)
+			}
+			return nil
+		})
+		sort.Strings(got)
+		sort.Strings(trial.expect)
+		c.Check(got, check.DeepEquals, trial.expect)
+	}
 }

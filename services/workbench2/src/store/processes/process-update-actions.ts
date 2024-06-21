@@ -9,7 +9,7 @@ import { dialogActions } from "store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { getProcess } from "store/processes/process";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
 export interface ProcessUpdateFormDialogData {
@@ -39,7 +39,7 @@ export const updateProcess =
                 name: resource.name,
                 description: resource.description,
             });
-            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(projectPanelDataActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_UPDATE_FORM_NAME }));
             return updatedProcess;
         } catch (e) {

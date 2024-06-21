@@ -392,15 +392,21 @@ This will install and configure Arvados on all the nodes.  It will take a while 
 
 h2(#test-install). Confirm the cluster is working
 
-When everything has finished, you can run the diagnostics.
+When everything has finished, you can run the diagnostics. There's a couple ways of doing this listed below.
 
-Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@.
+h3. Running diagnostics from the same system as the installer
 
-If you are running the diagnostics from one of the Arvados machines inside the private network, you want @-internal-client@ .
+The requirements to run diagnostics are having @arvados-client@ and @docker@ installed. If this is not possible you can run them on your Arvados shell node as explained in the next section.
 
-You are an "external client" if you running the diagnostics from your workstation outside of the private network.
+Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@. If you are running the installer from a host connected to the Arvados private network, use @-internal-client@. Otherwise, use @-external-client@.
 
 <pre><code class="userinput">./installer.sh diagnostics (-internal-client|-external-client)</code></pre>
+
+h3. Running diagnostics from a cluster node
+
+You can run the diagnostics from the cluster's shell node. This has the advantage that you don't need to manage any software on your local system, but might not be a possibility if your Arvados cluster doesn't include a shell node.
+
+<pre><code class="userinput">./installer.sh diagnostics-internal</code></pre>
 
 h3(#debugging). Debugging issues
 

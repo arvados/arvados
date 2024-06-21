@@ -128,14 +128,6 @@ active_userlist:
   expires_at: 2038-01-01 00:00:00
   scopes: ["GET /arvados/v1/users"]
 
-active_specimens:
-  uuid: zzzzz-gj3su-177z32aux8dg2s1
-  api_client: untrusted
-  user: active
-  api_token: activespecimensabcdefghijklmnopqrstuvwxyz123456890
-  expires_at: 2038-01-01 00:00:00
-  scopes: ["GET /arvados/v1/specimens/"]
-
 active_apitokens:
   uuid: zzzzz-gj3su-187z32aux8dg2s1
   api_client: trusted_workbench
@@ -160,14 +152,21 @@ spectator:
   api_token: zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu
   expires_at: 2038-01-01 00:00:00
 
-spectator_specimens:
+foo:
+  uuid: zzzzz-gj3su-fohzae5ib1aseiv
+  api_client: untrusted
+  user: user_foo_in_sharing_group
+  api_token: lokah4xip8ahgee8oof5zitah3ohdai6je9cu1uogh4bai3ohw
+  expires_at: 2038-01-01 00:00:00
+
+foo_collections:
   uuid: zzzzz-gj3su-217z32aux8dg2s1
   api_client: untrusted
-  user: spectator
-  api_token: spectatorspecimensabcdefghijklmnopqrstuvwxyz123245
+  user: user_foo_in_sharing_group
+  api_token: spectatorcollectionscdefghijklmnopqrstuvwxyz123245
   expires_at: 2038-01-01 00:00:00
-  scopes: ["GET /arvados/v1/specimens", "GET /arvados/v1/specimens/",
-           "POST /arvados/v1/specimens"]
+  scopes: ["GET /arvados/v1/collections", "GET /arvados/v1/collections/",
+           "POST /arvados/v1/collections"]
 
 inactive:
   uuid: zzzzz-gj3su-227z32aux8dg2s1

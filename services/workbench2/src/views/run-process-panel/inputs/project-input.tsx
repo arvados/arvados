@@ -21,7 +21,7 @@ import { getUserUuid } from 'common/getuser';
 
 export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
-const require: any = (value?: ProjectResource) => (value === undefined);
+const isUndefined: any = (value?: ProjectResource) => (value === undefined);
 
 export interface ProjectInputProps {
     required: boolean;
@@ -37,7 +37,7 @@ export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
         commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
-        validate={required ? require : undefined}
+        validate={required ? isUndefined : undefined}
         {...{
             options,
             required
@@ -124,6 +124,8 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 flexBasis: `${spacing.unit * 8}vh`,
                 flexShrink: 1,
                 minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
             },
         });
 

@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import functools
-import mock
 import sys
 import unittest
 import json
 import logging
 import os
+
+from unittest import mock
 
 import arvados
 import arvados.keep

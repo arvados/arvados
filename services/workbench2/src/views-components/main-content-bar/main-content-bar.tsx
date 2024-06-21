@@ -34,6 +34,7 @@ interface MainContentBarProps {
     onRefreshPage: () => void;
     onDetailsPanelToggle: () => void;
     buttonVisible: boolean;
+    projectUuid: string;
 }
 
 const isButtonVisible = ({ router }: RootState) => {
@@ -53,13 +54,18 @@ const isButtonVisible = ({ router }: RootState) => {
         Routes.matchFavoritesRoute(pathname);
 };
 
-const mapStateToProps = (state: RootState) => ({
-    buttonVisible: isButtonVisible(state),
-    projectUuid: state.detailsPanel.resourceUuid,
-});
+const mapStateToProps = (state: RootState) => {
+    const currentRoute = state.router.location?.pathname.split('/') || [];
+    const projectUuid = currentRoute[currentRoute.length - 1];
+
+    return {
+        buttonVisible: isButtonVisible(state),
+        projectUuid,
+    }
+};
 
 const mapDispatchToProps = () => (dispatch: Dispatch) => ({
-    onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
+    onDetailsPanelToggle: (uuid: string) => dispatch<any>(toggleDetailsPanel(uuid)),
     onRefreshButtonClick: (id) => {
         dispatch<any>(loadSidePanelTreeProjects(id));
     }
@@ -77,11 +83,11 @@ export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withS
                 }} />
             </Grid>
             <Grid item>
-                {props.buttonVisible && <Tooltip title="Additional Info">
+                {props.buttonVisible && <Tooltip title="Additional Info" disableFocusListener>
                     <IconButton data-cy="additional-info-icon"
                         color="inherit"
                         className={props.classes.infoTooltip}
-                        onClick={props.onDetailsPanelToggle}>
+                        onClick={()=>props.onDetailsPanelToggle(props.projectUuid)}>
                         <DetailsIcon />
                     </IconButton>
                 </Tooltip>}

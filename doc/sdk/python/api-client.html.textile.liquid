@@ -26,7 +26,14 @@ import arvados
 arv_client = arvados.api('v1')
 {% endcodeblock %}
 
-This will connect to the Arvados API server using the @ARVADOS_API_HOST@, @ARVADOS_API_TOKEN@, and @ARVADOS_API_HOST_INSECURE@ settings from environment variables or @~/.config/arvados/settings.conf@. You can alternatively pass these settings as arguments:
+When called this way, the SDK gets Arvados API credentials from the first source it finds in this list:
+
+# The environment variables @ARVADOS_API_HOST@, @ARVADOS_API_TOKEN@, and @ARVADOS_API_HOST_INSECURE@.
+# The @settings.conf@ file under the directories listed in systemd's @CONFIGURATION_DIRECTORY@ environment variable.
+# The @arvados/settings.conf@ file under the directory in the @XDG_CONFIG_HOME@ environment variable. This defaults to @~/.config/arvados/settings.conf@ if @XDG_CONFIG_HOME@ is not set.
+# The @arvados/settings.conf@ file under the directories in the @XDG_CONFIG_DIRS@ environment variable.
+
+You can alternatively pass these settings as arguments:
 
 {% codeblock as python %}
 import arvados

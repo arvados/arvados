@@ -6,7 +6,7 @@ fpm_depends+=(nodejs)
 
 case "$TARGET" in
     debian* | ubuntu*)
-        fpm_depends+=(libcurl3-gnutls python3-distutils)
+        fpm_depends+=(libcurl3-gnutls)
         ;;
 esac
 

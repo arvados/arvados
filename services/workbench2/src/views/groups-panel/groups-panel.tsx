@@ -14,7 +14,7 @@ import { ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { GROUPS_PANEL_ID, openCreateGroupDialog } from 'store/groups-panel/groups-panel-actions';
 import { noop } from 'lodash/fp';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';

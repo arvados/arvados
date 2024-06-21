@@ -43,6 +43,12 @@ export WORKSPACE?=$(shell pwd)
 
 ARVADOS_DIRECTORY?=$(shell env -C $(WORKSPACE) git rev-parse --show-toplevel)
 
+ifndef ci
+	TI=-ti
+else
+	TI=
+endif
+
 .PHONY: help clean* yarn-install test build packages packages-with-version integration-tests-in-docker
 
 help:
@@ -92,7 +98,7 @@ else
 endif
 
 integration-tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti --rm \
+	docker run $(TI) --rm \
 		--env ARVADOS_DIRECTORY=/usr/src/arvados \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
 		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
@@ -102,7 +108,7 @@ integration-tests-in-docker: workbench2-build-image check-arvados-directory
 		make arvados-server-install integration-tests SPECFILE=$(SPECFILE)
 
 unit-tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti --rm \
+	docker run $(TI) --rm \
 		--env ARVADOS_DIRECTORY=/usr/src/arvados \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
 		-v $(WORKSPACE):/usr/src/arvados/services/workbench2 \
@@ -112,7 +118,7 @@ unit-tests-in-docker: workbench2-build-image check-arvados-directory
 		make arvados-server-install unit-tests
 
 tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti --rm \
+	docker run $(TI) --rm \
 		--env ARVADOS_DIRECTORY=/usr/src/arvados \
 		--env GIT_DISCOVERY_ACROSS_FILESYSTEM=1 \
 		--env ci="${ci}" \

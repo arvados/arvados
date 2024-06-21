@@ -11,7 +11,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "servi
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { getProcess } from "store/processes/process";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 
@@ -35,7 +35,7 @@ export const moveProcess = (resource: MoveToFormDialogData) => async (dispatch: 
     try {
         const process = await services.containerRequestService.get(resource.uuid);
         await services.containerRequestService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
-        dispatch(projectPanelActions.REQUEST_ITEMS());
+        dispatch(projectPanelDataActions.REQUEST_ITEMS());
         dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_MOVE_FORM_NAME }));
         return process;
     } catch (e) {

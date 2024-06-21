@@ -13,8 +13,8 @@ class ApplicationControllerTest < ActionController::TestCase
 
   setup do
     # These tests are meant to check behavior in ApplicationController.
-    # We instantiate a small concrete controller for convenience.
-    @controller = Arvados::V1::SpecimensController.new
+    # We instantiate an arbitrary concrete controller.
+    @controller = Arvados::V1::CollectionsController.new
     @start_stamp = now_timestamp
   end
 
@@ -42,13 +42,13 @@ class ApplicationControllerTest < ActionController::TestCase
 
   test "requesting object without read permission returns 404 error" do
     authorize_with :spectator
-    get(:show, params: {id: specimens(:owned_by_active_user).uuid})
+    get(:show, params: {id: collections(:collection_owned_by_active).uuid})
     check_404
   end
 
   test "submitting bad object returns error" do
     authorize_with :spectator
-    post(:create, params: {specimen: {badattr: "badvalue"}})
+    post(:create, params: {collection: {badattr: "badvalue"}})
     assert_response 422
     check_error_token
   end

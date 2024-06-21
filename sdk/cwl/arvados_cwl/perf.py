@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import object
-
 import time
 import uuid
 

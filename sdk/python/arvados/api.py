@@ -159,25 +159,21 @@ def http_cache(data_type: str) -> cache.SafeHTTPCache:
     """Set up an HTTP file cache
 
     This function constructs and returns an `arvados.cache.SafeHTTPCache`
-    backed by the filesystem under `~/.cache/arvados/`, or `None` if the
-    directory cannot be set up. The return value can be passed to
+    backed by the filesystem under a cache directory from the environment, or
+    `None` if the directory cannot be set up. The return value can be passed to
     `httplib2.Http` as the `cache` argument.
 
     Arguments:
 
-    * data_type: str --- The name of the subdirectory under `~/.cache/arvados`
+    * data_type: str --- The name of the subdirectory
       where data is cached.
     """
     try:
-        homedir = pathlib.Path.home()
-    except RuntimeError:
+        path = util._BaseDirectories('CACHE').storage_path(data_type)
+    except (OSError, RuntimeError):
         return None
-    path = pathlib.Path(homedir, '.cache', 'arvados', data_type)
-    try:
-        path.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        return None
-    return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
+    else:
+        return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
         version: str,
@@ -211,8 +207,7 @@ def api_client(
     Keyword-only arguments:
 
     * cache: bool --- If true, loads the API discovery document from, or
-      saves it to, a cache on disk (located at
-      `~/.cache/arvados/discovery`).
+      saves it to, a cache on disk.
 
     * http: httplib2.Http | None --- The HTTP client object the API client
       object will use to make requests.  If not provided, this function will
@@ -496,49 +491,3 @@ def api_from_config(
     docstring for more information about their meaning.
     """
     return api(**api_kwargs_from_config(version, apiconfig, **kwargs))
-
-class OrderedJsonModel(apiclient.model.JsonModel):
-    """Model class for JSON that preserves the contents' order
-
-    .. WARNING:: Deprecated
-       This model is redundant now that Python dictionaries preserve insertion
-       ordering. Code that passes this model to API constructors can remove it.
-
-    In Python versions before 3.6, API clients that cared about preserving the
-    order of fields in API server responses could use this model to do so.
-    Typical usage looked like:
-
-        from arvados.api import OrderedJsonModel
-        client = arvados.api('v1', ..., model=OrderedJsonModel())
-    """
-    @util._deprecated(preferred="the default model and rely on Python's built-in dictionary ordering")
-    def __init__(self, data_wrapper=False):
-        return super().__init__(data_wrapper)
-
-
-RETRY_DELAY_INITIAL = 0
-"""
-.. WARNING:: Deprecated
-   This constant was used by retry code in previous versions of the Arvados SDK.
-   Changing the value has no effect anymore.
-   Prefer passing `num_retries` to an API client constructor instead.
-   Refer to the constructor docstrings for details.
-"""
-
-RETRY_DELAY_BACKOFF = 0
-"""
-.. WARNING:: Deprecated
-   This constant was used by retry code in previous versions of the Arvados SDK.
-   Changing the value has no effect anymore.
-   Prefer passing `num_retries` to an API client constructor instead.
-   Refer to the constructor docstrings for details.
-"""
-
-RETRY_COUNT = 0
-"""
-.. WARNING:: Deprecated
-   This constant was used by retry code in previous versions of the Arvados SDK.
-   Changing the value has no effect anymore.
-   Prefer passing `num_retries` to an API client constructor instead.
-   Refer to the constructor docstrings for details.
-"""

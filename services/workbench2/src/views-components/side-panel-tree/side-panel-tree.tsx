@@ -16,11 +16,15 @@ import { noop } from 'lodash';
 import { ResourceKind } from "models/resource";
 import { IllegalNamingWarning } from "components/warning/warning";
 import { GroupClass } from "models/group";
+import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
     sidePanelProgress?: boolean;
-    isCollapsed?: boolean
+    isCollapsed?: boolean;
+    currentSideWidth?: number;
+    currentRoute?: string;
+    isDetailsPanelTransitioning?: boolean;
     setCurrentSideWidth: (width: number) => void
 }
 
@@ -32,6 +36,8 @@ const mapDispatchToProps = (dispatch: Dispatch, props: SidePanelTreeProps): Side
     },
     toggleItemActive: (_, { id }) => {
         dispatch<any>(activateSidePanelTreeItem(id));
+        const isSidePanelCat = Object.values(SidePanelTreeCategory).includes(id as SidePanelTreeCategory);
+        dispatch<any>(setSelectedResourceUuid(isSidePanelCat ? null : id));
         props.onItemActivation(id);
     },
     toggleItemOpen: (_, { id }) => {

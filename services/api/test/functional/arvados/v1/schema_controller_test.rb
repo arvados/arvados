@@ -60,16 +60,16 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     assert_response :success
     discovery_doc = JSON.parse(@response.body)
     assert_equal('POST',
-                 discovery_doc['resources']['jobs']['methods']['create']['httpMethod'])
+                 discovery_doc['resources']['collections']['methods']['create']['httpMethod'])
   end
 
   test "non-empty disable_api_methods" do
     Rails.configuration.API.DisabledAPIs = ConfigLoader.to_OrderedOptions(
-      {'jobs.create'=>{}, 'pipeline_instances.create'=>{}, 'pipeline_templates.create'=>{}})
+      {'collections.create'=>{}, 'workflows.create'=>{}})
     get :index
     assert_response :success
     discovery_doc = JSON.parse(@response.body)
-    ['jobs', 'pipeline_instances', 'pipeline_templates'].each do |r|
+    ['collections', 'workflows'].each do |r|
       refute_includes(discovery_doc['resources'][r]['methods'].keys(), 'create')
     end
   end
@@ -80,7 +80,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
 
     discovery_doc = JSON.parse(@response.body)
 
-    group_index_params = discovery_doc['resources']['groups']['methods']['index']['parameters']
+    group_index_params = discovery_doc['resources']['groups']['methods']['list']['parameters']
     group_contents_params = discovery_doc['resources']['groups']['methods']['contents']['parameters']
 
     assert_equal group_contents_params.keys.sort, (group_index_params.keys + ['uuid', 'recursive', 'include', 'include_old_versions']).sort
@@ -97,10 +97,10 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
 
     discovery_doc = JSON.parse(@response.body)
 
-    specimens_index_params = discovery_doc['resources']['specimens']['methods']['index']['parameters']  # no changes from super
-    coll_index_params = discovery_doc['resources']['collections']['methods']['index']['parameters']
+    workflows_index_params = discovery_doc['resources']['workflows']['methods']['list']['parameters']  # no changes from super
+    coll_index_params = discovery_doc['resources']['collections']['methods']['list']['parameters']
 
-    assert_equal (specimens_index_params.keys + ['include_trash', 'include_old_versions']).sort, coll_index_params.keys.sort
+    assert_equal (workflows_index_params.keys + ['include_trash', 'include_old_versions']).sort, coll_index_params.keys.sort
 
     include_trash_param = coll_index_params['include_trash']
     assert_equal 'boolean', include_trash_param['type']

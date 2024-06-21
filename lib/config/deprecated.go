@@ -31,6 +31,10 @@ type deprCluster struct {
 		ProviderAppID                 *string
 		ProviderAppSecret             *string
 	}
+	Mail struct {
+		SendUserSetupNotificationEmail *bool
+		SupportEmailAddress            *string
+	}
 }
 
 type deprecatedConfig struct {
@@ -86,6 +90,14 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 		if dst, n := &cluster.API.MaxRequestAmplification, dcluster.RequestLimits.MultiClusterRequestConcurrency; n != nil && *n != *dst {
 			*dst = *n
+		}
+		if dst, addr := &cluster.Users.SupportEmailAddress, dcluster.Mail.SupportEmailAddress; addr != nil {
+			*dst = *addr
+			ldr.Logger.Warnf("using your old config key Mail.SupportEmailAddress -- but you should rename it to Users.SupportEmailAddress")
+		}
+		if dst, b := &cluster.Users.SendUserSetupNotificationEmail, dcluster.Mail.SendUserSetupNotificationEmail; b != nil {
+			*dst = *b
+			ldr.Logger.Warnf("using your old config key Mail.SendUserSetupNotificationEmail -- but you should rename it to Users.SendUserSetupNotificationEmail")
 		}
 
 		// Google* moved to Google.*
@@ -504,56 +516,6 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 				ldr.Logger.Warn("More than 1 anonymous tokens configured, using only the first and discarding the rest.")
 			}
 		}
-	}
-
-	cfg.Clusters[cluster.ClusterID] = *cluster
-	return nil
-}
-
-const defaultGitHttpdConfigPath = "/etc/arvados/git-httpd/git-httpd.yml"
-
-type oldGitHttpdConfig struct {
-	Client          *arvados.Client
-	Listen          *string
-	GitCommand      *string
-	GitoliteHome    *string
-	RepoRoot        *string
-	ManagementToken *string
-}
-
-func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
-	if ldr.GitHttpdPath == "" {
-		return nil
-	}
-	var oc oldGitHttpdConfig
-	err := ldr.loadOldConfigHelper("arvados-git-httpd", ldr.GitHttpdPath, &oc)
-	if os.IsNotExist(err) && ldr.GitHttpdPath == defaultGitHttpdConfigPath {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	cluster, err := cfg.GetCluster("")
-	if err != nil {
-		return err
-	}
-
-	loadOldClientConfig(cluster, oc.Client)
-
-	if oc.Listen != nil {
-		cluster.Services.GitHTTP.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
-	}
-	if oc.ManagementToken != nil {
-		cluster.ManagementToken = *oc.ManagementToken
-	}
-	if oc.GitCommand != nil {
-		cluster.Git.GitCommand = *oc.GitCommand
-	}
-	if oc.GitoliteHome != nil {
-		cluster.Git.GitoliteHome = *oc.GitoliteHome
-	}
-	if oc.RepoRoot != nil {
-		cluster.Git.Repositories = *oc.RepoRoot
 	}
 
 	cfg.Clusters[cluster.ClusterID] = *cluster

@@ -87,12 +87,6 @@ Clusters:
         ExternalURL: "wss://$localip:${services[websockets-ssl]}/websocket"
         InternalURLs:
           "http://localhost:${services[websockets]}": {}
-      GitSSH:
-        ExternalURL: "ssh://git@$localip:"
-      GitHTTP:
-        InternalURLs:
-          "http://localhost:${services[arv-git-httpd]}/": {}
-        ExternalURL: "https://$localip:${services[arv-git-httpd-ssl]}/"
       WebDAV:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
@@ -132,11 +126,6 @@ Clusters:
       AutoAdminFirstUser: true
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
-      AutoSetupNewUsersWithRepository: true
-    Git:
-      GitCommand: /usr/share/gitolite3/gitolite-shell
-      GitoliteHome: $ARVADOS_CONTAINER_PATH/git
-      Repositories: $ARVADOS_CONTAINER_PATH/git/repositories
     Volumes:
       ${uuid_prefix}-nyw5e-000000000000000:
         Driver: Directory

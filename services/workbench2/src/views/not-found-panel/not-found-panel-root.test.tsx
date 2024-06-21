@@ -23,7 +23,7 @@ describe('NotFoundPanelRoot', () => {
                 active: 'active',
             },
             clusterConfig: {
-                Mail: {
+                Users: {
                     SupportEmailAddress: 'support@example.com'
                 }
             } as ClusterConfigJSON,
@@ -48,7 +48,7 @@ describe('NotFoundPanelRoot', () => {
 
     it('should render component without email url when no email', () => {
         // setup
-        props.clusterConfig.Mail.SupportEmailAddress = '';
+        props.clusterConfig.Users.SupportEmailAddress = '';
 
         // when
         const wrapper = mount(

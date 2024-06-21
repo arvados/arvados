@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from future.utils import native_str
-from builtins import range
-from builtins import object
 import argparse
 import arvados
 import daemon
@@ -308,7 +305,7 @@ After this time, the mount will be forcefully unmounted.
         cache.add_argument(
             '--disk-cache-dir',
             metavar="DIRECTORY",
-            help="Filesystem cache location (default `~/.cache/arvados/keep`)",
+            help="Set custom filesystem cache location",
         )
         cache.add_argument(
             '--directory-cache',
@@ -349,7 +346,15 @@ Filesystem character encoding
             metavar='CLASSES',
             help="Comma-separated list of storage classes to request for new collections",
         )
-
+        # This is a hidden argument used by tests.  Normally this
+        # value will be extracted from the cluster config, but mocking
+        # the cluster config under the presence of multiple threads
+        # and processes turned out to be too complicated and brittle.
+        plumbing.add_argument(
+            '--fsns',
+            type=str,
+            default=None,
+            help=argparse.SUPPRESS)
 
 class Mount(object):
     def __init__(self, args, logger=logging.getLogger('arvados.arv-mount')):
@@ -402,7 +407,7 @@ class Mount(object):
         if self.args.replace:
             unmount(path=self.args.mountpoint,
                     timeout=self.args.unmount_timeout)
-        llfuse.init(self.operations, native_str(self.args.mountpoint), self._fuse_options())
+        llfuse.init(self.operations, str(self.args.mountpoint), self._fuse_options())
         if self.daemon:
             daemon.DaemonContext(
                 working_directory=os.path.dirname(self.args.mountpoint),
@@ -482,13 +487,6 @@ class Mount(object):
                                                       disk_cache=self.args.disk_cache,
                                                       disk_cache_dir=self.args.disk_cache_dir)
 
-            # If there's too many prefetch threads and you
-            # max out the CPU, delivering data to the FUSE
-            # layer actually ends up being slower.
-            # Experimentally, capping 7 threads seems to
-            # be a sweet spot.
-            prefetch_threads = min(max((block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
-
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
                 api_params={
@@ -496,7 +494,6 @@ class Mount(object):
                 },
                 keep_params={
                     'block_cache': block_cache,
-                    'num_prefetch_threads': prefetch_threads,
                     'num_retries': self.args.retries,
                 },
                 version='v1',
@@ -514,7 +511,8 @@ class Mount(object):
             api_client=self.api,
             encoding=self.args.encoding,
             inode_cache=InodeCache(cap=self.args.directory_cache),
-            enable_write=self.args.enable_write)
+            enable_write=self.args.enable_write,
+            fsns=self.args.fsns)
 
         if self.args.crunchstat_interval:
             statsthread = threading.Thread(
@@ -603,7 +601,6 @@ class Mount(object):
         e = self.operations.inodes.add_entry(Directory(
             llfuse.ROOT_INODE,
             self.operations.inodes,
-            self.api.config,
             self.args.enable_write,
             self.args.filters,
         ))
@@ -688,8 +685,9 @@ From here, the following directories are available:
 
     def _llfuse_main(self):
         try:
-            llfuse.main()
+            llfuse.main(workers=10)
         except:
             llfuse.close(unmount=False)
             raise
+        self.operations.begin_shutdown()
         llfuse.close()

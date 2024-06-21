@@ -20,7 +20,8 @@ import { MuiThemeProvider } from "@material-ui/core/styles";
 import { CustomTheme } from "common/custom-theme";
 import { fetchConfig } from "common/config";
 import servicesProvider from "common/service-provider";
-import { addMenuActionSet, ContextMenuKind } from "views-components/context-menu/context-menu";
+import { addMenuActionSet } from "views-components/context-menu/context-menu";
+import { ContextMenuKind } from "views-components/context-menu/menu-item-sort";
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
 import {
     filterGroupActionSet,
@@ -76,6 +77,7 @@ import { keepServiceActionSet } from "views-components/context-menu/action-sets/
 import { loadVocabulary } from "store/vocabulary/vocabulary-actions";
 import { virtualMachineActionSet } from "views-components/context-menu/action-sets/virtual-machine-action-set";
 import { userActionSet } from "views-components/context-menu/action-sets/user-action-set";
+import { UserDetailsActionSet } from "views-components/context-menu/action-sets/user-details-action-set";
 import { apiClientAuthorizationActionSet } from "views-components/context-menu/action-sets/api-client-authorization-action-set";
 import { groupActionSet } from "views-components/context-menu/action-sets/group-action-set";
 import { groupMemberActionSet } from "views-components/context-menu/action-sets/group-member-action-set";
@@ -124,6 +126,7 @@ addMenuActionSet(ContextMenuKind.SSH_KEY, sshKeyActionSet);
 addMenuActionSet(ContextMenuKind.VIRTUAL_MACHINE, virtualMachineActionSet);
 addMenuActionSet(ContextMenuKind.KEEP_SERVICE, keepServiceActionSet);
 addMenuActionSet(ContextMenuKind.USER, userActionSet);
+addMenuActionSet(ContextMenuKind.USER_DETAILS, UserDetailsActionSet);
 addMenuActionSet(ContextMenuKind.LINK, linkActionSet);
 addMenuActionSet(ContextMenuKind.API_CLIENT_AUTHORIZATION, apiClientAuthorizationActionSet);
 addMenuActionSet(ContextMenuKind.GROUPS, groupActionSet);

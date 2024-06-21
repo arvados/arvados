@@ -2,18 +2,18 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from builtins import range
 import apiclient
 import arvados
 import arvados_fuse
 import logging
-import mock
 import multiprocessing
 import os
 import re
 import sys
 import time
 import unittest
+
+from unittest import mock
 
 from .integration_test import IntegrationTest
 
@@ -65,8 +65,8 @@ class TokenExpiryTest(IntegrationTest):
 
     @staticmethod
     def _test_refresh_old_manifest(self, zzz):
-        uuid = 'zzzzz-4zz18-op4e2lbej01tcvu'
-        fnm = 'zzzzz-8i9sb-0vsrcqi7whchuil.log.txt'
+        uuid = 'zzzzz-4zz18-logcollection02'
+        fnm = 'crunch-run.txt'
         os.listdir(os.path.join(zzz, uuid))
         for _ in range(8):
             with open(os.path.join(zzz, uuid, fnm)) as f:

@@ -568,7 +568,8 @@ CREATE TABLE public.container_requests (
     runtime_token text,
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
     output_properties jsonb DEFAULT '{}'::jsonb,
-    cumulative_cost double precision DEFAULT 0.0 NOT NULL
+    cumulative_cost double precision DEFAULT 0.0 NOT NULL,
+    output_glob text DEFAULT '[]'::text
 );
 
 
@@ -634,7 +635,8 @@ CREATE TABLE public.containers (
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
     output_properties jsonb DEFAULT '{}'::jsonb,
     cost double precision DEFAULT 0.0 NOT NULL,
-    subrequests_cost double precision DEFAULT 0.0 NOT NULL
+    subrequests_cost double precision DEFAULT 0.0 NOT NULL,
+    output_glob text DEFAULT '[]'::text
 );
 
 
@@ -1852,7 +1854,14 @@ CREATE INDEX collections_search_index ON public.collections USING btree (owner_u
 -- Name: collections_trgm_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX collections_trgm_text_search_idx ON public.collections USING gin (((((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || COALESCE(file_names, ''::text))) public.gin_trgm_ops);
+CREATE INDEX collections_trgm_text_search_idx ON public.collections USING gin (((((((((COALESCE(name, ''::character varying))::text || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || COALESCE(file_names, ''::text))) public.gin_trgm_ops);
+
+
+--
+-- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX container_requests_full_text_search_idx ON public.container_requests USING gin (to_tsvector('english'::regconfig, substr((((((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text) || ' '::text) || COALESCE((output_properties)::text, ''::text)) || ' '::text) || COALESCE(output_glob, ''::text)), 0, 8000)));
 
 
 --
@@ -1873,7 +1882,7 @@ CREATE INDEX container_requests_search_index ON public.container_requests USING 
 -- Name: container_requests_trgm_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX container_requests_trgm_text_search_idx ON public.container_requests USING gin (((((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text) || ' '::text) || COALESCE((output_properties)::text, ''::text))) public.gin_trgm_ops);
+CREATE INDEX container_requests_trgm_text_search_idx ON public.container_requests USING gin (((((((((((((((((((((((((((((COALESCE(name, ''::character varying))::text || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_name, ''::character varying))::text) || ' '::text) || COALESCE((output_properties)::text, ''::text))) public.gin_trgm_ops);
 
 
 --
@@ -1901,7 +1910,7 @@ CREATE INDEX groups_search_index ON public.groups USING btree (uuid, owner_uuid,
 -- Name: groups_trgm_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX groups_trgm_text_search_idx ON public.groups USING gin (((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || (COALESCE(group_class, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text))) public.gin_trgm_ops);
+CREATE INDEX groups_trgm_text_search_idx ON public.groups USING gin (((((((((COALESCE(name, ''::character varying))::text || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || (COALESCE(group_class, ''::character varying))::text) || ' '::text) || COALESCE((properties)::text, ''::text))) public.gin_trgm_ops);
 
 
 --
@@ -2167,7 +2176,7 @@ CREATE INDEX index_containers_on_queued_state ON public.containers USING btree (
 -- Name: index_containers_on_reuse_columns; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_containers_on_reuse_columns ON public.containers USING btree (md5(command), cwd, md5(environment), output_path, container_image, md5(mounts), secret_mounts_md5, md5(runtime_constraints));
+CREATE INDEX index_containers_on_reuse_columns ON public.containers USING btree (md5(command), cwd, md5(environment), output_path, md5(output_glob), container_image, md5(mounts), secret_mounts_md5, md5(runtime_constraints));
 
 
 --
@@ -3091,7 +3100,7 @@ CREATE INDEX workflows_search_idx ON public.workflows USING btree (uuid, owner_u
 -- Name: workflows_trgm_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text))) public.gin_trgm_ops);
+CREATE INDEX workflows_trgm_text_search_idx ON public.workflows USING gin (((((COALESCE(name, ''::character varying))::text || ' '::text) || COALESCE(description, ''::text))) public.gin_trgm_ops);
 
 
 --
@@ -3316,4 +3325,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20230815160000'),
 ('20230821000000'),
 ('20230922000000'),
-('20231013000000');
+('20231013000000'),
+('20240329173437'),
+('20240402162733'),
+('20240604183200');

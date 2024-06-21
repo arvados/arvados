@@ -10,7 +10,7 @@ import {
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
 import { collectionPanelFilesAction } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
-import { ContextMenuKind } from "../context-menu/context-menu";
+import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { openContextMenu, openCollectionFilesContextMenu } from 'store/context-menu/context-menu-actions';
 import { openUploadCollectionFilesDialog } from 'store/collections/collection-upload-actions';
 import { ResourceKind } from "models/resource";

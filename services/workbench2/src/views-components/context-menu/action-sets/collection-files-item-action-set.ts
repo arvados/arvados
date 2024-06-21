@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { FileCopyIcon, FileMoveIcon, RemoveIcon, RenameIcon } from "components/icon/icon";
 import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
 import { openFileRemoveDialog, openRenameFileDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
@@ -20,14 +20,14 @@ import {
 export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
     [
         {
-            name: "Copy item into new collection",
+            name: ContextMenuActionNames.COPY_ITEM_INTO_NEW_COLLECTION,
             icon: FileCopyIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openCollectionPartialCopyToNewCollectionDialog(resources[0]));
             },
         },
         {
-            name: "Copy item into existing collection",
+            name: ContextMenuActionNames.COPY_ITEM_INTO_EXISTING_COLLECTION,
             icon: FileCopyIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openCollectionPartialCopyToExistingCollectionDialog(resources[0]));
@@ -35,12 +35,14 @@ export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
         },
         {
             component: CollectionFileViewerAction,
+            name: ContextMenuActionNames.OPEN_IN_NEW_TAB,
             execute: () => {
                 return;
             },
         },
         {
             component: CollectionCopyToClipboardAction,
+            name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
             execute: () => {
                 return;
             },
@@ -52,6 +54,7 @@ export const readOnlyCollectionFileItemActionSet: ContextMenuActionSet = [
     [
         {
             component: DownloadCollectionFileAction,
+            name: ContextMenuActionNames.DOWNLOAD,
             execute: () => {
                 return;
             },
@@ -63,21 +66,21 @@ export const readOnlyCollectionFileItemActionSet: ContextMenuActionSet = [
 const writableActionSet: ContextMenuActionSet = [
     [
         {
-            name: "Move item into new collection",
+            name: ContextMenuActionNames.MOVE_ITEM_INTO_NEW_COLLECTION,
             icon: FileMoveIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openCollectionPartialMoveToNewCollectionDialog(resources[0]));
             },
         },
         {
-            name: "Move item into existing collection",
+            name: ContextMenuActionNames.MOVE_ITEM_INTO_EXISTING_COLLECTION,
             icon: FileMoveIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openCollectionPartialMoveToExistingCollectionDialog(resources[0]));
             },
         },
         {
-            name: "Rename",
+            name: ContextMenuActionNames.RENAME,
             icon: RenameIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(
@@ -90,7 +93,7 @@ const writableActionSet: ContextMenuActionSet = [
             },
         },
         {
-            name: "Remove",
+            name: ContextMenuActionNames.REMOVE,
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
                 dispatch<any>(openFileRemoveDialog(resources[0].uuid));

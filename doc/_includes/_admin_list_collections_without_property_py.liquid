@@ -8,7 +8,7 @@ import arvados
 import arvados.util as util
 
 filters = [['properties.responsible_person_uuid', 'exists', False]]
-cols = util.list_all(arvados.api().collections().list, filters=filters, select=['uuid', 'name'])
+cols = util.keyset_list_all(arvados.api().collections().list, filters=filters, select=['uuid', 'name'], order='uuid')
 
 print('Found {} collections:'.format(len(cols)))
 for c in cols:

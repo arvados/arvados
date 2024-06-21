@@ -38,7 +38,7 @@ describe('collection-service', () => {
         it('should make a request with default selected fields', async () => {
             serverApi.get = jest.fn(() => Promise.resolve(
                 { data: { items: [{}] } }
-            ));
+            )) as AxiosInstance['post'];
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             await collectionService.get(uuid);
             expect(serverApi.get).toHaveBeenCalledWith(
@@ -53,7 +53,7 @@ describe('collection-service', () => {
         it('should be able to request specific fields', async () => {
             serverApi.get = jest.fn(() => Promise.resolve(
                 { data: { items: [{}] } }
-            ));
+            )) as AxiosInstance['post'];
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             await collectionService.get(uuid, undefined, ['manifestText']);
             expect(serverApi.get).toHaveBeenCalledWith(
@@ -68,7 +68,7 @@ describe('collection-service', () => {
 
     describe('update', () => {
         it('should call put selecting updated fields + others', async () => {
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const data: Partial<CollectionResource> = {
                 name: 'foo',
             };
@@ -129,7 +129,7 @@ describe('collection-service', () => {
     describe('deleteFiles', () => {
         it('should remove no files', async () => {
             // given
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const filePaths: string[] = [];
             const collectionUUID = 'zzzzz-tpzed-5o5tg0l9a57gxxx';
 
@@ -150,7 +150,7 @@ describe('collection-service', () => {
 
         it('should remove only root files', async () => {
             // given
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const filePaths: string[] = ['/root/1', '/root/1/100', '/root/1/100/test.txt', '/root/2', '/root/2/200', '/root/3/300/test.txt'];
             const collectionUUID = 'zzzzz-tpzed-5o5tg0l9a57gxxx';
 
@@ -174,7 +174,7 @@ describe('collection-service', () => {
         });
 
         it('should batch remove files', async () => {
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             // given
             const filePaths: string[] = ['/root/1', '/secondFile', 'barefile.txt'];
             const collectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
@@ -201,7 +201,7 @@ describe('collection-service', () => {
 
     describe('renameFile', () => {
         it('should rename file', async () => {
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const collectionUuid = 'zzzzz-4zz18-ywq0rvhwwhkjnfq';
             const collectionPdh = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
             const oldPath = '/old/path';
@@ -226,7 +226,7 @@ describe('collection-service', () => {
 
     describe('copyFiles', () => {
         it('should batch copy files', async () => {
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const filePaths: string[] = ['/root/1', '/secondFile', 'barefile.txt'];
             const sourcePdh = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
 
@@ -254,7 +254,7 @@ describe('collection-service', () => {
 
         it('should copy files from rooth', async () => {
             // Test copying from root paths
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const filePaths: string[] = ['/'];
             const sourcePdh = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
 
@@ -278,7 +278,7 @@ describe('collection-service', () => {
 
         it('should copy files to root path', async () => {
             // Test copying to root paths
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             const filePaths: string[] = ['/'];
             const sourcePdh = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
 
@@ -303,7 +303,7 @@ describe('collection-service', () => {
 
     describe('moveFiles', () => {
         it('should batch move files', async () => {
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             // given
             const filePaths: string[] = ['/rootFile', '/secondFile', '/subpath/subfile', 'barefile.txt'];
             const srcCollectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
@@ -348,7 +348,7 @@ describe('collection-service', () => {
         });
 
         it('should batch move files within collection', async () => {
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
             // given
             const filePaths: string[] = ['/one', '/two', '/subpath/subfile', 'barefile.txt'];
             const srcCollectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
@@ -433,7 +433,7 @@ describe('collection-service', () => {
             const collectionUuid = 'zzzzz-tpzed-5o5tg0l9a57gxxx';
 
             for (var i = 0; i < directoryNames.length; i++) {
-                serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+                serverApi.put = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
                 // when
                 await collectionService.createDirectory(collectionUuid, directoryNames[i].in);
                 // then

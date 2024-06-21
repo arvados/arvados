@@ -29,6 +29,7 @@ import { SvgIconProps } from "@material-ui/core/SvgIcon";
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
@@ -50,11 +51,13 @@ export interface DataTableDataProps<I> {
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
-    currentItemUuid?: string;
-    currentRoute?: string;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    currentRoute?: string;
+    currentRouteUuid: string;
     checkedList: TCheckedList;
+    selectedResourceUuid: string;
+    setSelectedUuid: (uuid: string | null) => void;
     isNotFound?: boolean;
 }
 
@@ -156,18 +159,34 @@ export const DataTable = withStyles(styles)(
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
+            // If table is initialized loaded but empty
+            // isLoaded won't be set true by componentDidUpdate later
+            // So we set it to true here
+            if (!this.props.working) {
+                this.setState({ isLoaded: true });
+            }
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items, setCheckedListOnStore } = this.props;
+            const { items, currentRouteUuid, setCheckedListOnStore } = this.props;
             const { isSelected } = this.state;
+            const singleSelected = isExactlyOneSelected(this.props.checkedList);
             if (prevProps.items !== items) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items);
                 else setCheckedListOnStore({});
             }
             if (prevProps.currentRoute !== this.props.currentRoute) {
-                this.initializeCheckedList([])
+                this.initializeCheckedList([]);
+            }
+            if (singleSelected && singleSelected !== isExactlyOneSelected(prevProps.checkedList)) {
+                this.props.setSelectedUuid(singleSelected);
+            }
+            if (!singleSelected && !!currentRouteUuid && !this.isAnySelected()) {
+                this.props.setSelectedUuid(currentRouteUuid);
+            }
+            if (!singleSelected && this.isAnySelected()) {
+                this.props.setSelectedUuid(null);
             }
             if(prevProps.working === true && this.props.working === false) {
                 this.setState({ isLoaded: true });
@@ -178,7 +197,7 @@ export const DataTable = withStyles(styles)(
         }
 
         componentWillUnmount(): void {
-            this.initializeCheckedList([])
+            this.initializeCheckedList([]);
         }
 
         checkBoxColumn: DataColumn<any, any> = {
@@ -220,11 +239,12 @@ export const DataTable = withStyles(styles)(
         initializeCheckedList = (uuids: any[]): void => {
             const newCheckedList = { ...this.props.checkedList };
 
-            uuids.forEach(uuid => {
-                if (!newCheckedList.hasOwnProperty(uuid)) {
-                    newCheckedList[uuid] = false;
+            if(Object.keys(newCheckedList).length === 0){
+                for(const uuid of uuids){
+                    newCheckedList[uuid] = false
                 }
-            });
+            }
+
             for (const key in newCheckedList) {
                 if (!uuids.includes(key)) {
                     delete newCheckedList[key];
@@ -297,7 +317,7 @@ export const DataTable = withStyles(styles)(
         render() {
             const { items, classes, columns, isNotFound } = this.props;
             const { isLoaded } = this.state;
-            if (columns[0].name === this.checkBoxColumn.name) columns.shift();
+            if (columns.length && columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
             return (
                 <div className={classes.root}>
@@ -320,17 +340,17 @@ export const DataTable = withStyles(styles)(
             const dirty = columns.some(column => getTreeDirty("")(column.filters));
             if (isNotFound && isLoaded) {
                 return (
-                    <DataTableDefaultView 
-                        icon={this.props.defaultViewIcon} 
-                        messages={["No items found"]} 
+                    <DataTableDefaultView
+                        icon={this.props.defaultViewIcon}
+                        messages={["No items found"]}
                     />
                 );
-            } else 
+            } else
             if (isLoaded === false || working === true) {
                 return (
-                    <DataTableDefaultView 
-                        icon={PendingIcon} 
-                        messages={["Loading data, please wait"]} 
+                    <DataTableDefaultView
+                        icon={PendingIcon}
+                        messages={["Loading data, please wait"]}
                     />
                 );
             } else {
@@ -354,7 +374,7 @@ export const DataTable = withStyles(styles)(
                     key={key || index}
                     className={classes.checkBoxCell}>
                     <div className={classes.checkBoxHead}>
-                        <Tooltip title={this.state.isSelected ? "Deselect All" : "Select All"}>
+                        <Tooltip title={this.state.isSelected ? "Deselect all" : "Select all"}>
                             <input
                                 type="checkbox"
                                 className={classes.checkBox}
@@ -412,7 +432,7 @@ export const DataTable = withStyles(styles)(
         );
 
         renderBodyRow = (item: any, index: number) => {
-            const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
+            const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -421,7 +441,7 @@ export const DataTable = withStyles(styles)(
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={item === currentItemUuid}>
+                    selected={item === selectedResourceUuid}>
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}

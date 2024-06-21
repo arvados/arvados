@@ -1,1 +1,0 @@
-../../../../sdk/python/tests/performance/performance_profiler.py

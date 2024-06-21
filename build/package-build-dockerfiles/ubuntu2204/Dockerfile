@@ -44,35 +44,40 @@ ENV DEBIAN_FRONTEND noninteractive
 
 SHELL ["/bin/bash", "-c"]
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev shared-mime-info equivs
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y \
+    build-essential \
+    curl \
+    equivs \
+    git \
+    libattr1-dev \
+    libcurl4-gnutls-dev \
+    libfuse-dev \
+    libgnutls28-dev \
+    libpam-dev \
+    libpq-dev \
+    pkgconf \
+    python3 \
+    python3-dev \
+    python3-venv \
+    ruby \
+    ruby-dev \
+    shared-mime-info \
+    tzdata \
+    unzip
 
-# Install RVM
-ADD generated/mpapis.asc /tmp/
-ADD generated/pkuczynski.asc /tmp/
-RUN gpg --import --no-tty /tmp/mpapis.asc && \
-    gpg --import --no-tty /tmp/pkuczynski.asc && \
-    curl -L https://get.rvm.io | bash -s stable && \
-    /usr/local/rvm/bin/rvm install 3.2.2 -j $(grep -c processor /proc/cpuinfo) && \
-    /usr/local/rvm/bin/rvm alias create default ruby-3.2.2 && \
-    echo "gem: --no-document" >> ~/.gemrc && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
-    /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.15.1
+RUN echo "gem: --no-document" >> ~/.gemrc && \
+    gem install --conservative --version '>= 2.4.0' bundler && \
+    gem install fpm --version 1.15.1 && \
+    bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 
-RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs 8"
 
-# Preseed the go module cache and the ruby gems, using the currently checked
-# out branch of the source tree. This avoids potential compatibility issues
-# between the version of Ruby and certain gems.
+# Preseed the go module cache.
 RUN git clone git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados && \
     if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
-    cd /tmp/arvados/services/api && \
-    /usr/local/rvm/bin/rvm-exec default bundle install && \
-    cd /tmp/arvados && \
     go mod download
 
-
 ENV WORKSPACE /arvados
-CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "ubuntu2204"]
+CMD ["bash", "/jenkins/run-build-packages.sh", "--target", "ubuntu2204"]

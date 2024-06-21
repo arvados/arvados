@@ -264,26 +264,6 @@ func (as *APIStub) LogDelete(ctx context.Context, options arvados.DeleteOptions)
 	as.appendCall(ctx, as.LogDelete, options)
 	return arvados.Log{}, as.Error
 }
-func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
-	as.appendCall(ctx, as.SpecimenCreate, options)
-	return arvados.Specimen{}, as.Error
-}
-func (as *APIStub) SpecimenUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Specimen, error) {
-	as.appendCall(ctx, as.SpecimenUpdate, options)
-	return arvados.Specimen{}, as.Error
-}
-func (as *APIStub) SpecimenGet(ctx context.Context, options arvados.GetOptions) (arvados.Specimen, error) {
-	as.appendCall(ctx, as.SpecimenGet, options)
-	return arvados.Specimen{}, as.Error
-}
-func (as *APIStub) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
-	as.appendCall(ctx, as.SpecimenList, options)
-	return arvados.SpecimenList{}, as.Error
-}
-func (as *APIStub) SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error) {
-	as.appendCall(ctx, as.SpecimenDelete, options)
-	return arvados.Specimen{}, as.Error
-}
 func (as *APIStub) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
 	as.appendCall(ctx, as.SysTrashSweep, options)
 	return struct{}{}, as.Error

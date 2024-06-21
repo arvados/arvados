@@ -2,12 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import bytes
-
-import unittest
-import mock
 import datetime
 import httplib2
+import unittest
+
+from unittest import mock
 
 from arvados_cwl.util import *
 from arvados.errors import ApiError

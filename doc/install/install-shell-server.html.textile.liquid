@@ -12,7 +12,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Introduction":#introduction
 # "Install Dependencies and SDKs":#dependencies
 # "Install git and curl":#install-packages
-# "Update Git Config":#config-git
 # "Create record for VM":#vm-record
 # "Install arvados-login-sync":#arvados-login-sync
 # "Confirm working installation":#confirm-working
@@ -43,17 +42,6 @@ h2(#dependencies). Install Dependencies and SDKs
 {% assign arvados_component = 'git curl' %}
 
 {% include 'install_packages' %}
-
-h2(#config-git). Update Git Config
-
-Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate to arvados-git-httpd. We use the @--system@ flag so it takes effect for all current and future user accounts. It does not affect git's behavior when connecting to other git servers.
-
-<notextile>
-<pre>
-<code># <span class="userinput">git config --system 'credential.https://git.<b>ClusterID.example.com</b>/.username' none</span></code>
-<code># <span class="userinput">git config --system 'credential.https://git.<b>ClusterID.example.com</b>/.helper' '!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred'</span></code>
-</pre>
-</notextile>
 
 h2(#vm-record). Create record for VM
 

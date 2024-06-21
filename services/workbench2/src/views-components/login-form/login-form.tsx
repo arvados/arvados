@@ -13,6 +13,7 @@ import { DispatchProp } from 'react-redux';
 import { saveApiToken } from 'store/auth/auth-action';
 import { navigateToRootProject } from 'store/navigation/navigation-action';
 import { replace } from 'react-router-redux';
+import { PasswordLoginResponse } from 'views/login-panel/login-panel';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';
 
@@ -46,7 +47,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 });
 
 type LoginFormProps = DispatchProp<any> & WithStyles<CssRules> & {
-    handleSubmit: (username: string, password: string) => AxiosPromise;
+    handleSubmit: (username: string, password: string) => AxiosPromise<PasswordLoginResponse>;
     loginLabel?: string,
 };
 

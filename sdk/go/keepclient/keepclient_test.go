@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -189,8 +188,6 @@ func UploadToStubHelper(c *C, st http.Handler, f func(*KeepClient, string,
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
-	log.Printf("TestUploadToStubKeepServer")
-
 	st := &StubPutHandler{
 		c:                    c,
 		expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",

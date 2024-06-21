@@ -21,8 +21,10 @@ import {
 import { SearchBarView, SearchBarActionProps, SearchBarDataProps } from 'views-components/search-bar/search-bar-view';
 import { SearchBarAdvancedFormData } from 'models/search-bar';
 import { Vocabulary } from 'models/vocabulary';
+import { searchSingleCluster } from 'store/search-results-panel/search-results-middleware-service';
+import { Session } from 'models/session';
 
-const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => {
+const mapStateToProps = ({ searchBar, form , auth }: RootState): SearchBarDataProps => {
     return {
         searchValue: searchBar.searchValue,
         currentView: searchBar.currentView,
@@ -33,7 +35,8 @@ const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => 
         tags: form[SEARCH_BAR_ADVANCED_FORM_NAME],
         saveQuery: form[SEARCH_BAR_ADVANCED_FORM_NAME] &&
             form[SEARCH_BAR_ADVANCED_FORM_NAME].values &&
-            form[SEARCH_BAR_ADVANCED_FORM_NAME].values!.saveQuery
+            form[SEARCH_BAR_ADVANCED_FORM_NAME].values!.saveQuery,
+        sessions: auth.sessions,
     };
 };
 
@@ -51,7 +54,8 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchBarActionProps => ({
     editSavedQuery: (data: SearchBarAdvancedFormData) => dispatch<any>(editSavedQuery(data)),
     moveUp: () => dispatch<any>(moveUp()),
     moveDown: () => dispatch<any>(moveDown()),
-    setAdvancedDataFromSearchValue: (search: string, vocabulary: Vocabulary) => dispatch<any>(setAdvancedDataFromSearchValue(search, vocabulary))
+    setAdvancedDataFromSearchValue: (search: string, vocabulary: Vocabulary) => dispatch<any>(setAdvancedDataFromSearchValue(search, vocabulary)),
+    searchSingleCluster: (session: Session, searchValue: string) => {dispatch<any>(searchSingleCluster(session, searchValue))},
 });
 
 export const SearchBar = connect(mapStateToProps, mapDispatchToProps)(SearchBarView);

@@ -37,7 +37,6 @@ import { ResourceStatus as WorkflowStatus } from "views/workflow-panel/workflow-
 import { getUuidPrefix, openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { getUserFullname, getUserDisplayName, User, UserResource } from "models/user";
-import { toggleIsAdmin } from "store/users/users-actions";
 import { LinkClass, LinkResource } from "models/link";
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from "store/navigation/navigation-action";
 import { withResourceData } from "views-components/data-explorer/with-resources";
@@ -54,7 +53,20 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 import { CopyToClipboardSnackbar } from "components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar";
 import { ProjectResource } from "models/project";
 import { ProcessResource } from "models/process";
+import { ServiceRepository } from "services/services";
+import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
+import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
+
+export const toggleIsAdmin = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+        const data = getResource<UserResource>(uuid)(resources);
+        const isAdmin = data!.isAdmin;
+        const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
+        dispatch<any>(loadUsersPanel());
+        return newActivity;
+    };
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
@@ -90,7 +102,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     );
 };
 
-const FrozenProject = (props: { item: ProjectResource }) => {
+export const FrozenProject = (props: { item: ProjectResource }) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
         if (props.item.frozenByUuid) {
@@ -448,8 +460,6 @@ export const TokenApiClientId = withResourceData("apiClientId", renderCommonData
 export const TokenApiToken = withResourceData("apiToken", renderCommonData);
 
 export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderCommonDate);
-
-export const TokenDefaultOwnerUuid = withResourceData("defaultOwnerUuid", renderCommonData);
 
 export const TokenExpiresAt = withResourceData("expiresAt", renderCommonDate);
 
@@ -1026,7 +1036,18 @@ const renderType = (type: string, subtype: string) => <Typography noWrap>{resour
 
 export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { type: resource ? resource.kind : "", subtype: resource && resource.kind === ResourceKind.GROUP ? resource.groupClass : "" };
+    return {
+        type: resource ? resource.kind : "",
+        subtype: resource
+            ? resource.kind === ResourceKind.GROUP
+                ? resource.groupClass
+                : resource.kind === ResourceKind.PROCESS
+                    ? resource.requestingContainerUuid
+                        ? ProcessTypeFilter.CHILD_PROCESS
+                        : ProcessTypeFilter.MAIN_PROCESS
+                    : ""
+            : ""
+    };
 })((props: { type: string; subtype: string }) => renderType(props.type, props.subtype));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {

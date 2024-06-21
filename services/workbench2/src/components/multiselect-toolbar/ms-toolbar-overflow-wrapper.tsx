@@ -46,9 +46,8 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
     const navRef = useRef<any>(null);
     const [visibilityMap, setVisibilityMap] = useState<Record<string, boolean>>({});
     const [numHidden, setNumHidden] = useState(() => findNumHidden(visibilityMap));
-
     const prevNumHidden = useRef(numHidden);
-
+    
     const handleIntersection = (entries) => {
         const updatedEntries: Record<string, boolean> = {};
         entries.forEach((entry) => {
@@ -127,7 +126,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
                     visibilityMap={visibilityMap}
                     className={classes.overflowStyle}
                 >
-                    {children}
+                    {children.filter((child) => !child.props['data-targetid'].includes("Divider"))}
                 </OverflowMenu>
             )}
         </div>

@@ -19,11 +19,8 @@ Depending on where you are running the installer, you need to provide @-internal
 
 Here is an example of it in action:
 
-<pre>
-root@api:~$ apt-get install arvados-client
-root@api:~$ export ARVADOS_API_HOST=ClusterID.example.com
-root@api:~$ export ARVADOS_API_TOKEN=YourSytemRootTokenHere
-root@api:~$ arvados-client diagnostics -external-client
+<notextile>
+<pre><code>$ <span class="userinput">ARVADOS_API_HOST=ClusterID.example.com ARVADOS_API_TOKEN=YourSystemTokenHere arvados-client diagnostics -external-client</span>
 INFO      10: getting discovery document from https://ClusterID.example.com/discovery/v1/apis/arvados/v1/rest
 INFO      20: getting exported config from https://ClusterID.example.com/arvados/v1/config
 INFO      30: getting current user record
@@ -55,4 +52,5 @@ INFO     160: running a container
 INFO      ... container request submitted, waiting up to 10m for container to run
 INFO    9990: deleting temporary collection
 INFO    --- no errors ---
-</pre>
+</code></pre>
+</notextile>

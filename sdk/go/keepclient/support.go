@@ -12,29 +12,15 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/asyncbuf"
 )
-
-// DebugPrintf emits debug messages. The easiest way to enable
-// keepclient debug messages in your application is to assign
-// log.Printf to DebugPrintf.
-var DebugPrintf = func(string, ...interface{}) {}
-
-func init() {
-	if arvadosclient.StringBool(os.Getenv("ARVADOS_DEBUG")) {
-		DebugPrintf = log.Printf
-	}
-}
 
 type keepService struct {
 	Uuid     string `json:"uuid"`
@@ -70,7 +56,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		DebugPrintf("DEBUG: [%s] Error creating request PUT %v error: %v", reqid, url, err.Error())
+		kc.debugf("[%s] Error creating request: PUT %s error: %s", reqid, url, err)
 		uploadStatusChan <- uploadStatus{err, url, 0, 0, nil, ""}
 		return
 	}
@@ -94,7 +80,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 
 	var resp *http.Response
 	if resp, err = kc.httpClient().Do(req); err != nil {
-		DebugPrintf("DEBUG: [%s] Upload failed %v error: %v", reqid, url, err.Error())
+		kc.debugf("[%s] Upload failed: %s error: %s", reqid, url, err)
 		uploadStatusChan <- uploadStatus{err, url, 0, 0, nil, err.Error()}
 		return
 	}
@@ -106,7 +92,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	scc := resp.Header.Get(XKeepStorageClassesConfirmed)
 	classesStored, err := parseStorageClassesConfirmedHeader(scc)
 	if err != nil {
-		DebugPrintf("DEBUG: [%s] Ignoring invalid %s header %q: %s", reqid, XKeepStorageClassesConfirmed, scc, err)
+		kc.debugf("[%s] Ignoring invalid %s header %q: %s", reqid, XKeepStorageClassesConfirmed, scc, err)
 	}
 
 	defer resp.Body.Close()
@@ -115,16 +101,16 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		DebugPrintf("DEBUG: [%s] Upload %v error: %v response: %v", reqid, url, err2.Error(), response)
+		kc.debugf("[%s] Upload %s error: %s response: %s", reqid, url, err2, response)
 		uploadStatusChan <- uploadStatus{err2, url, resp.StatusCode, rep, classesStored, response}
 	} else if resp.StatusCode == http.StatusOK {
-		DebugPrintf("DEBUG: [%s] Upload %v success", reqid, url)
+		kc.debugf("[%s] Upload %s success", reqid, url)
 		uploadStatusChan <- uploadStatus{nil, url, resp.StatusCode, rep, classesStored, response}
 	} else {
 		if resp.StatusCode >= 300 && response == "" {
 			response = resp.Status
 		}
-		DebugPrintf("DEBUG: [%s] Upload %v error: %v response: %v", reqid, url, resp.StatusCode, response)
+		kc.debugf("[%s] Upload %s status: %d %s", reqid, url, resp.StatusCode, response)
 		uploadStatusChan <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, classesStored, response}
 	}
 }
@@ -255,7 +241,7 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 			for active*replicasPerThread < maxConcurrency {
 				// Start some upload requests
 				if nextServer < len(sv) {
-					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", req.RequestID, req.Hash, sv[nextServer])
+					kc.debugf("[%s] Begin upload %s to %s", req.RequestID, req.Hash, sv[nextServer])
 					go kc.uploadToKeepServer(sv[nextServer], req.Hash, classesTodo, getReader(), uploadStatusChan, req.DataSize, req.RequestID)
 					nextServer++
 					active++
@@ -272,7 +258,7 @@ func (kc *KeepClient) httpBlockWrite(ctx context.Context, req arvados.BlockWrite
 				}
 			}
 
-			DebugPrintf("DEBUG: [%s] Replicas remaining to write: %v active uploads: %v", req.RequestID, replicasTodo, active)
+			kc.debugf("[%s] Replicas remaining to write: %d active uploads: %d", req.RequestID, replicasTodo, active)
 			if active < 1 {
 				break
 			}

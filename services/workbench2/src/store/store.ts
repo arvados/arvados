@@ -19,9 +19,10 @@ import { snackbarReducer } from "./snackbar/snackbar-reducer";
 import { collectionPanelFilesReducer } from "./collection-panel/collection-panel-files/collection-panel-files-reducer";
 import { dataExplorerMiddleware } from "./data-explorer/data-explorer-middleware";
 import { FAVORITE_PANEL_ID } from "./favorite-panel/favorite-panel-action";
-import { PROJECT_PANEL_ID } from "./project-panel/project-panel-action";
 import { WORKFLOW_PROCESSES_PANEL_ID } from "./workflow-panel/workflow-panel-actions";
-import { ProjectPanelMiddlewareService } from "./project-panel/project-panel-middleware-service";
+import { PROJECT_PANEL_DATA_ID, PROJECT_PANEL_RUN_ID } from "./project-panel/project-panel-action-bind";
+import { ProjectPanelDataMiddlewareService } from "./project-panel/project-panel-data-middleware-service";
+import { ProjectPanelRunMiddlewareService } from "./project-panel/project-panel-run-middleware-service";
 import { FavoritePanelMiddlewareService } from "./favorite-panel/favorite-panel-middleware-service";
 import { AllProcessesPanelMiddlewareService } from "./all-processes-panel/all-processes-panel-middleware-service";
 import { WorkflowProcessesMiddlewareService } from "./workflow-panel/workflow-middleware-service";
@@ -81,6 +82,7 @@ import { sidePanelReducer } from "./side-panel/side-panel-reducer";
 import { bannerReducer } from "./banner/banner-reducer";
 import { multiselectReducer } from "./multiselect/multiselect-reducer";
 import { composeWithDevTools } from "redux-devtools-extension";
+import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
 
 declare global {
     interface Window {
@@ -95,7 +97,8 @@ export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
 export function configureStore(history: History, services: ServiceRepository, config: Config): RootStore {
     const rootReducer = createRootReducer(services);
 
-    const projectPanelMiddleware = dataExplorerMiddleware(new ProjectPanelMiddlewareService(services, PROJECT_PANEL_ID));
+    const projectPanelDataMiddleware = dataExplorerMiddleware(new ProjectPanelDataMiddlewareService(services, PROJECT_PANEL_DATA_ID));
+    const projectPanelRunMiddleware = dataExplorerMiddleware(new ProjectPanelRunMiddlewareService(services, PROJECT_PANEL_RUN_ID));
     const favoritePanelMiddleware = dataExplorerMiddleware(new FavoritePanelMiddlewareService(services, FAVORITE_PANEL_ID));
     const allProcessessPanelMiddleware = dataExplorerMiddleware(new AllProcessesPanelMiddlewareService(services, ALL_PROCESSES_PANEL_ID));
     const workflowProcessessPanelMiddleware = dataExplorerMiddleware(new WorkflowProcessesMiddlewareService(services, WORKFLOW_PROCESSES_PANEL_ID));
@@ -137,7 +140,8 @@ export function configureStore(history: History, services: ServiceRepository, co
         thunkMiddleware.withExtraArgument(services),
         authMiddleware(services),
         tooltipsMiddleware(services),
-        projectPanelMiddleware,
+        projectPanelDataMiddleware,
+        projectPanelRunMiddleware,
         favoritePanelMiddleware,
         allProcessessPanelMiddleware,
         trashPanelMiddleware,
@@ -186,6 +190,7 @@ const createRootReducer = (services: ServiceRepository) =>
         properties: propertiesReducer,
         resources: resourcesReducer,
         router: routerReducer,
+        selectedResourceUuid: selectedResourceReducer,
         snackbar: snackbarReducer,
         treePicker: treePickerReducer,
         treePickerSearch: treePickerSearchReducer,

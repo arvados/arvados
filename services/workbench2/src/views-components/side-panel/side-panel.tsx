@@ -45,12 +45,13 @@ const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
 const mapStateToProps = ({ router, sidePanel, detailsPanel }: RootState) => ({
     currentRoute: router.location ? router.location.pathname : '',
     isCollapsed: sidePanel.collapsedState,
+    currentSideWidth: sidePanel.currentSideWidth,
     isDetailsPanelTransitioning: detailsPanel.isTransitioning
 });
 
 export const SidePanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
-        ({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps & { currentRoute: string, isDetailsPanelTransitioning: boolean }) =>{
+        ({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps ) =>{
 
         const splitPaneRef = useRef<any>(null)
 
@@ -59,13 +60,23 @@ export const SidePanel = withStyles(styles)(
 
             if (!splitPane) return;
 
-            const observer = new ResizeObserver((entries)=>{
+            const observerCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
+                //entries[0] targets the left side of the split pane
                 const width = entries[0].contentRect.width
-                props.setCurrentSideWidth(width)
-            })
+                if (width === props.currentSideWidth) return;
+
+                //prevents potential infinite resize triggers
+                window.requestAnimationFrame((): void | undefined => {
+                  if (!Array.isArray(entries) || !entries.length) {
+                      props.setCurrentSideWidth(width)
+                    return;
+                  }
+                });
+              };
+
+            const observer = new ResizeObserver(observerCallback)
 
             observer.observe(splitPane)
-
             return ()=> observer.disconnect()
         }, [props])
 
@@ -73,22 +84,21 @@ export const SidePanel = withStyles(styles)(
                 <Grid item xs>
                         {props.isCollapsed ? 
                             <div ref={splitPaneRef}>
-                        <>
-
-                            <SidePanelToggle />
-                            <SidePanelCollapsed />
-                        </>
-                        </div>
+                                <>
+                                    <SidePanelToggle />
+                                    <SidePanelCollapsed />
+                                </>
+                            </div>
                             :
                             <>
-                        <div ref={splitPaneRef}>
-                            <Grid className={classes.topButtonContainer}>
-                                <SidePanelButton key={props.currentRoute} />
-                                <SidePanelToggle/>
-                            </Grid>
-                            <SidePanelTree {...props} />
-                        </div>
-                        </>
+                                <div ref={splitPaneRef}>
+                                    <Grid className={classes.topButtonContainer}>
+                                        <SidePanelButton key={props.currentRoute} />
+                                        <SidePanelToggle/>
+                                    </Grid>
+                                    <SidePanelTree {...props} />
+                                </div>
+                            </>
                         }
                     </Grid>
         )}

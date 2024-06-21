@@ -3,22 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import absolute_import
 import os
 import sys
 
 from setuptools import setup, find_packages
 
-SETUP_DIR = os.path.dirname(__file__) or '.'
-README = os.path.join(SETUP_DIR, 'README.rst')
-
 import arvados_version
-version = arvados_version.get_version(SETUP_DIR, "arvados_cwl")
-if os.environ.get('ARVADOS_BUILDING_VERSION', False):
-    pysdk_dep = "=={}".format(version)
-else:
-    # On dev releases, arvados-python-client may have a different timestamp
-    pysdk_dep = "<={}".format(version)
+version = arvados_version.get_version()
+README = os.path.join(arvados_version.SETUP_DIR, 'README.rst')
 
 setup(name='arvados-cwl-runner',
       version=version,
@@ -36,14 +28,10 @@ setup(name='arvados-cwl-runner',
       # file to determine what version of cwltool and schema-salad to
       # build.
       install_requires=[
-          'cwltool==3.1.20230601100705',
-          'schema-salad==8.4.20230601112322',
-          'arvados-python-client{}'.format(pysdk_dep),
-          'crunchstat-summary{}'.format(pysdk_dep),
+          *arvados_version.iter_dependencies(version),
+          'cwltool==3.1.20240508115724',
+          'schema-salad==8.5.20240503091721',
           'ciso8601 >= 2.0.0',
-          'networkx < 2.6',
-          'msgpack==1.0.3',
-          'importlib-metadata<5',
           'setuptools>=40.3.0',
       ],
       data_files=[
@@ -54,8 +42,5 @@ setup(name='arvados-cwl-runner',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=[
-          'mock>=1.0,<4',
-      ],
       zip_safe=True,
 )

@@ -4,27 +4,27 @@
 
 import { openKeepServiceAttributesDialog, openKeepServiceRemoveDialog } from 'store/keep-services/keep-services-actions';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
+import { ContextMenuActionSet, ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { AdvancedIcon, RemoveIcon, AttributesIcon } from 'components/icon/icon';
 
 export const keepServiceActionSet: ContextMenuActionSet = [
     [
         {
-            name: 'Attributes',
+            name: ContextMenuActionNames.ATTRIBUTES,
             icon: AttributesIcon,
             execute: (dispatch, resources) => {
                  dispatch<any>(openKeepServiceAttributesDialog(resources[0].uuid));
             },
         },
         {
-            name: 'API Details',
+            name: ContextMenuActionNames.API_DETAILS,
             icon: AdvancedIcon,
             execute: (dispatch, resources) => {
                  dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
         {
-            name: 'Remove',
+            name: ContextMenuActionNames.REMOVE,
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
                  dispatch<any>(openKeepServiceRemoveDialog(resources[0].uuid));

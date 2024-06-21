@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import next
-from builtins import zip
-from builtins import str
-from builtins import range
 import datetime
 import itertools
 import random

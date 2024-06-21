@@ -24,6 +24,7 @@ import { KEY_CODE_DOWN, KEY_CODE_ESC, KEY_CODE_UP, KEY_ENTER } from "common/code
 import { debounce } from "debounce";
 import { Vocabulary } from "models/vocabulary";
 import { connectVocabulary } from "../resource-properties-form/property-field-common";
+import { Session } from "models/session";
 
 type CssRules = "container" | "containerSearchViewOpened" | "input" | "view";
 
@@ -64,6 +65,7 @@ interface SearchBarViewDataProps {
     isPopoverOpen: boolean;
     debounce?: number;
     vocabulary?: Vocabulary;
+    sessions: Session[];
 }
 
 export type SearchBarActionProps = SearchBarViewActionProps &
@@ -81,6 +83,7 @@ interface SearchBarViewActionProps {
     moveUp: () => void;
     moveDown: () => void;
     setAdvancedDataFromSearchValue: (search: string, vocabulary?: Vocabulary) => void;
+    searchSingleCluster: (session: Session, searchValue: string) => any;
 }
 
 type SearchBarViewProps = SearchBarDataProps & SearchBarActionProps & WithStyles<CssRules>;
@@ -137,6 +140,10 @@ export const SearchBarView = compose(
     withStyles(styles)
 )(
     class extends React.Component<SearchBarViewProps> {
+        state={
+            loggedInSessions: [],
+        }
+
         debouncedSearch = debounce(() => {
             this.props.onSearch(this.props.searchValue);
         }, 1000);
@@ -150,6 +157,21 @@ export const SearchBarView = compose(
             this.debouncedSearch.clear();
             this.props.onSubmit(event);
         };
+
+        componentDidMount(): void {
+            this.setState({ loggedInSessions: this.props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive)});
+        }
+
+        componentDidUpdate( prevProps: Readonly<SearchBarViewProps>, prevState: Readonly<{loggedInSessions: Session[]}>, snapshot?: any ): void {
+            if (prevProps.sessions !== this.props.sessions) {
+                this.setState({ loggedInSessions: this.props.sessions.filter((ss) => ss.loggedIn)});
+            }
+            //if a new session is logged in after a search is started, search the new cluster and append those to the results
+            if(prevState.loggedInSessions.length !== this.state.loggedInSessions.length){
+                const newLogin = this.state.loggedInSessions.filter((ss) => !prevState.loggedInSessions.includes(ss));
+                this.props.searchSingleCluster(newLogin[0], this.props.searchValue);
+            }
+        }
 
         componentWillUnmount() {
             this.debouncedSearch.clear();

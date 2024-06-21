@@ -42,8 +42,6 @@ public class User extends Item {
     private Object prefs;
     @JsonProperty("writable_by")
     private List<String> writableBy;
-    @JsonProperty("default_owner_uuid")
-    private Boolean defaultOwnerUuid;
 
     public String getEmail() {
         return this.email;
@@ -87,10 +85,6 @@ public class User extends Item {
 
     public List<String> getWritableBy() {
         return this.writableBy;
-    }
-
-    public Boolean getDefaultOwnerUuid() {
-        return this.defaultOwnerUuid;
     }
 
     public void setEmail(String email) {
@@ -137,11 +131,7 @@ public class User extends Item {
         this.writableBy = writableBy;
     }
 
-    public void setDefaultOwnerUuid(Boolean defaultOwnerUuid) {
-        this.defaultOwnerUuid = defaultOwnerUuid;
-    }
-
     public String toString() {
-        return "User(email=" + this.getEmail() + ", username=" + this.getUsername() + ", fullName=" + this.getFullName() + ", firstName=" + this.getFirstName() + ", lastName=" + this.getLastName() + ", identityUrl=" + this.getIdentityUrl() + ", isActive=" + this.getIsActive() + ", isAdmin=" + this.getIsAdmin() + ", isInvited=" + this.getIsInvited() + ", prefs=" + this.getPrefs() + ", writableBy=" + this.getWritableBy() + ", defaultOwnerUuid=" + this.getDefaultOwnerUuid() + ")";
+        return "User(email=" + this.getEmail() + ", username=" + this.getUsername() + ", fullName=" + this.getFullName() + ", firstName=" + this.getFirstName() + ", lastName=" + this.getLastName() + ", identityUrl=" + this.getIdentityUrl() + ", isActive=" + this.getIsActive() + ", isAdmin=" + this.getIsAdmin() + ", isInvited=" + this.getIsInvited() + ", prefs=" + this.getPrefs() + ", writableBy=" + this.getWritableBy() + ")";
     }
 }

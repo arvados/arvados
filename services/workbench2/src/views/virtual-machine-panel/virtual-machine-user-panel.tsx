@@ -174,7 +174,7 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                         {virtualMachineSendRequest(props)}
                     </div>
                     <div className={props.classes.icon}>
-                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener" className={props.classes.linkIcon}>
+                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener noreferrer" className={props.classes.linkIcon}>
                             <Tooltip title="Access VM using webshell">
                                 <HelpIcon />
                             </Tooltip>
@@ -238,7 +238,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             </TableCell>
                             <TableCell>
                                 {command}
-                                <Tooltip title="Copy to clipboard">
+                                <Tooltip title="Copy link to clipboard">
                                     <span className={props.classes.copyIcon}>
                                         <CopyToClipboard text={command || ""} onCopy={() => props.onCopy!("Copied")}>
                                             <CopyIcon />

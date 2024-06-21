@@ -9,11 +9,8 @@ class UsersTest < ActionDispatch::IntegrationTest
   include UsersTestHelper
 
   test "setup user multiple times" do
-    repo_name = 'usertestrepo'
-
     post "/arvados/v1/users/setup",
       params: {
-        repo_name: repo_name,
         user: {
           uuid: 'zzzzz-tpzed-abcdefghijklmno',
           first_name: "in_create_test_first_name",
@@ -35,10 +32,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # repo link and link add user to 'All users' group
-
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
+    # link to add user to 'All users' group
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -51,7 +45,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     # invoke setup again with the same data
     post "/arvados/v1/users/setup",
       params: {
-        repo_name: repo_name,
         vm_uuid: virtual_machines(:testvm).uuid,
         user: {
           uuid: 'zzzzz-tpzed-abcdefghijklmno',
@@ -66,7 +59,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     # invoke setup on the same user
     post "/arvados/v1/users/setup",
       params: {
-        repo_name: repo_name,
         vm_uuid: virtual_machines(:testvm).uuid,
         uuid: 'zzzzz-tpzed-abcdefghijklmno',
       },
@@ -81,10 +73,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # arvados#user, repo link and link add user to 'All users' group
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
-
+    # arvados#user, and link to add user to 'All users' group
     verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
@@ -119,31 +108,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
-   # invoke setup with a repository
-    post "/arvados/v1/users/setup",
-      params: {
-        repo_name: 'newusertestrepo',
-        uuid: created['uuid']
-      },
-      headers: auth(:admin)
-
-    assert_response :success
-
-    response_items = json_response['items']
-    created = find_obj_in_resp response_items, 'arvados#user', nil
-
-    assert_equal 'foo@example.com', created['email'], 'expected input email'
-
-     # verify links
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
-        'All users', created['uuid'], 'arvados#group', true, 'Group'
-
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'foo/newusertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
-
-    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
-        nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
-
     # invoke setup with a vm_uuid
     post "/arvados/v1/users/setup",
       params: {
@@ -173,7 +137,6 @@ class UsersTest < ActionDispatch::IntegrationTest
   test "setup and unsetup user" do
     post "/arvados/v1/users/setup",
       params: {
-        repo_name: 'newusertestrepo',
         vm_uuid: virtual_machines(:testvm).uuid,
         user: {email: 'foo@example.com'},
       },
@@ -185,13 +148,10 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['uuid'], 'expected uuid for the new user'
     assert_equal created['email'], 'foo@example.com', 'expected given email'
 
-    # four extra links: system_group, login, group, repo and vm
+    # three extra links: system_group, login, group and vm
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
-
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'foo/newusertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         virtual_machines(:testvm).uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
@@ -276,13 +236,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
     assert_equal(users(:project_viewer).uuid, json_response['authorized_user_uuid'])
 
-    get('/arvados/v1/repositories/' + repositories(:foo).uuid,
-      params: {},
-      headers: auth(:active))
-    assert_response(:success)
-    assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
-    assert_equal("#{users(:project_viewer).username}/foo", json_response['name'])
-
     get('/arvados/v1/groups/' + groups(:aproject).uuid,
       params: {},
       headers: auth(:active))
@@ -315,41 +268,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
-  end
-
-  test 'merge with repository name conflict' do
-    post('/arvados/v1/groups',
-      params: {
-        group: {
-          group_class: 'project',
-          name: "active user's stuff",
-        },
-      },
-      headers: auth(:project_viewer))
-    assert_response(:success)
-    project_uuid = json_response['uuid']
-
-    post('/arvados/v1/repositories/',
-         params: { :repository => { :name => "#{users(:project_viewer).username}/foo", :owner_uuid => users(:project_viewer).uuid } },
-         headers: auth(:project_viewer))
-    assert_response(:success)
-
-    post('/arvados/v1/users/merge',
-      params: {
-        new_user_token: api_client_authorizations(:project_viewer_trustedclient).api_token,
-        new_owner_uuid: project_uuid,
-        redirect_to_new_user: true,
-      },
-      headers: auth(:active_trustedclient))
-    assert_response(:success)
-
-    get('/arvados/v1/repositories/' + repositories(:foo).uuid,
-      params: {},
-      headers: auth(:active))
-    assert_response(:success)
-    assert_equal(users(:project_viewer).uuid, json_response['owner_uuid'])
-    assert_equal("#{users(:project_viewer).username}/migratedfoo", json_response['name'])
-
   end
 
   test "cannot set is_active to false directly" do

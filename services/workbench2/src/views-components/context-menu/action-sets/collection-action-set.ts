@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuAction, ContextMenuActionSet } from "../context-menu-action-set";
+import { ContextMenuAction, ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
@@ -36,7 +36,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 const toggleFavoriteAction: ContextMenuAction = {
     component: ToggleFavoriteAction,
-    name: "ToggleFavoriteAction",
+    name: ContextMenuActionNames.ADD_TO_FAVORITES,
     execute: (dispatch, resources) => {
         for (const resource of [...resources]) {
             dispatch<any>(toggleFavorite(resource)).then(() => {
@@ -49,21 +49,21 @@ const commonActionSet: ContextMenuActionSet = [
     [
         {
             icon: OpenIcon,
-            name: "Open in new tab",
+            name: ContextMenuActionNames.OPEN_IN_NEW_TAB,
             execute: (dispatch, resources) => {
                 dispatch<any>(openInNewTabAction(resources[0]));
             },
         },
         {
             icon: Link,
-            name: "Copy to clipboard",
+            name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
             execute: (dispatch, resources) => {
                 dispatch<any>(copyToClipboardAction(resources));
             },
         },
         {
             icon: CopyIcon,
-            name: "Make a copy",
+            name: ContextMenuActionNames.MAKE_A_COPY,
             execute: (dispatch, resources) => {
                 if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
                 else dispatch<any>(openMultiCollectionCopyDialog(resources[0]));
@@ -71,14 +71,14 @@ const commonActionSet: ContextMenuActionSet = [
         },
         {
             icon: DetailsIcon,
-            name: "View details",
+            name: ContextMenuActionNames.VIEW_DETAILS,
             execute: dispatch => {
                 dispatch<any>(toggleDetailsPanel());
             },
         },
         {
             icon: AdvancedIcon,
-            name: "API Details",
+            name: ContextMenuActionNames.API_DETAILS,
             execute: (dispatch, resources) => {
                 dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
@@ -92,7 +92,7 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [
         toggleFavoriteAction,
         {
             icon: FolderSharedIcon,
-            name: "Open with 3rd party client",
+            name: ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
             execute: (dispatch, resources) => {
                 dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
             },
@@ -105,26 +105,26 @@ export const collectionActionSet: ContextMenuActionSet = [
         ...readOnlyCollectionActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             icon: RenameIcon,
-            name: "Edit collection",
+            name: ContextMenuActionNames.EDIT_COLLECTION,
             execute: (dispatch, resources) => {
                 dispatch<any>(openCollectionUpdateDialog(resources[0]));
             },
         },
         {
             icon: ShareIcon,
-            name: "Share",
+            name: ContextMenuActionNames.SHARE,
             execute: (dispatch, resources) => {
                 dispatch<any>(openSharingDialog(resources[0].uuid));
             },
         },
         {
             icon: MoveToIcon,
-            name: "Move to",
+            name: ContextMenuActionNames.MOVE_TO,
             execute: (dispatch, resources) => dispatch<any>(openMoveCollectionDialog(resources[0])),
         },
         {
             component: ToggleTrashAction,
-            name: "ToggleTrashAction",
+            name: ContextMenuActionNames.MOVE_TO_TRASH,
             execute: (dispatch, resources: ContextMenuResource[]) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
@@ -139,7 +139,7 @@ export const collectionAdminActionSet: ContextMenuActionSet = [
         ...collectionActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             component: TogglePublicFavoriteAction,
-            name: "TogglePublicFavoriteAction",
+            name: ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
             execute: (dispatch, resources) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(togglePublicFavorite(resource)).then(() => {
@@ -156,7 +156,7 @@ export const oldCollectionVersionActionSet: ContextMenuActionSet = [
         ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             icon: RestoreVersionIcon,
-            name: "Restore version",
+            name: ContextMenuActionNames.RESTORE_VERSION,
             execute: (dispatch, resources) => {
                 for (const resource of [...resources]) {
                     dispatch<any>(openRestoreCollectionVersionDialog(resource.uuid));

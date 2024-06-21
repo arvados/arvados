@@ -46,7 +46,8 @@ export const SearchInput = (props: SearchInputProps) => {
             setValue("");
             clearTimeout(timeout);
         };
-    }, [props.value, props.label]); // eslint-disable-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.value, props.label]); 
 
     useEffect(() => {
         if (selfClearProp !== props.selfClearProp) {
@@ -54,7 +55,8 @@ export const SearchInput = (props: SearchInputProps) => {
             setSelfClearProp(props.selfClearProp);
             handleChange({ target: { value: "" } } as any);
         }
-    }, [props.selfClearProp]); // eslint-disable-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.selfClearProp]); 
 
     const handleSubmit = (event: React.FormEvent<HTMLElement>) => {
         event.preventDefault();

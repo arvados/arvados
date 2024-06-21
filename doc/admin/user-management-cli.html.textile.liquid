@@ -65,11 +65,9 @@ As an admin, you can create tokens for other users.
  "modified_by_client_uuid":null,
  "modified_by_user_uuid":null,
  "modified_at":null,
- "user_id":3,
  "api_client_id":7,
  "api_token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
  "created_by_ip_address":null,
- "default_owner_uuid":null,
  "expires_at":null,
  "last_used_at":null,
  "last_used_by_ip_address":null,
@@ -141,26 +139,6 @@ read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
 "link_class":"permission",
 "name":"can_login",
 "properties":{"username":"$target_username", "groups": [ "docker" ]}
-}
-EOF
-</pre>
-
-h3. Git repository
-
-Give @$user_uuid@ permission to commit to @$repo_uuid@ as @$repo_username@
-
-<pre>
-user_uuid=xxxxxxxchangeme
-repo_uuid=xxxxxxxchangeme
-repo_username=xxxxxxxchangeme
-
-read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
-{
-"tail_uuid":"$user_uuid",
-"head_uuid":"$repo_uuid",
-"link_class":"permission",
-"name":"can_write",
-"properties":{"username":"$repo_username"}
 }
 EOF
 </pre>

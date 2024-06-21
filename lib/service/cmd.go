@@ -80,9 +80,9 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	loader := config.NewLoader(stdin, log)
 	loader.SetupFlags(flags)
 
-	// prog is [keepstore, keep-web, git-httpd, ...]  but the
+	// prog is [keepstore, keep-web, ...]  but the
 	// legacy config flags are [-legacy-keepstore-config,
-	// -legacy-keepweb-config, -legacy-git-httpd-config, ...]
+	// -legacy-keepweb-config, ...]
 	legacyFlag := "-legacy-" + strings.Replace(prog, "keep-", "keep", 1) + "-config"
 	args = loader.MungeLegacyConfigArgs(log, args, legacyFlag)
 

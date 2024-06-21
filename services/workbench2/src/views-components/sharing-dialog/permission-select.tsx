@@ -47,6 +47,7 @@ export const formatPermissionLevel = (value: PermissionLevel) => {
 export const PermissionSelect = (props: SelectProps) =>
     <Select
         {...props}
+        disableUnderline
         renderValue={renderPermissionItem}>
         <MenuItem value={PermissionSelectValue.READ}>
             {renderPermissionItem(PermissionSelectValue.READ)}

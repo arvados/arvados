@@ -11,6 +11,10 @@ from functools import partial
 from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException
 from arvados.util import portable_data_hash_pattern
+from cwltool.utils import aslist
+from cwltool.builder import substitute
+
+from typing import Sequence, Mapping
 
 def validate_cluster_target(arvrunner, runtimeContext):
     if (runtimeContext.submit_runner_cluster and
@@ -70,10 +74,40 @@ class ArvadosCommandTool(CommandLineTool):
                                    "dockerPull": loadingContext.default_docker_image})
 
         self.arvrunner = arvrunner
+        self.globpatterns = []
+        self._collect_globs(toolpath_object["outputs"])
+
+    def _collect_globs(self, inputschema):
+        if isinstance(inputschema, str):
+            return
+
+        if isinstance(inputschema, Sequence):
+            for i in inputschema:
+                self._collect_globs(i)
+
+        if isinstance(inputschema, Mapping):
+            if "type" in inputschema:
+                self._collect_globs(inputschema["type"])
+                if inputschema["type"] == "record":
+                    for field in inputschema["fields"]:
+                        self._collect_globs(field)
+
+            if "outputBinding" in inputschema and "glob" in inputschema["outputBinding"]:
+                for gb in aslist(inputschema["outputBinding"]["glob"]):
+                    self.globpatterns.append(gb)
+                if "secondaryFiles" in inputschema:
+                    for sf in aslist(inputschema["secondaryFiles"]):
+                        if "$(" in sf["pattern"] or "${" in sf["pattern"]:
+                            self.globpatterns.append("**")
+                        else:
+                            for gb in aslist(inputschema["outputBinding"]["glob"]):
+                                subst = substitute(gb, sf["pattern"])
+                                self.globpatterns.append(subst)
+
 
     def make_job_runner(self, runtimeContext):
         if runtimeContext.work_api == "containers":
-            return partial(ArvadosContainer, self.arvrunner, runtimeContext)
+            return partial(ArvadosContainer, self.arvrunner, runtimeContext, self.globpatterns)
         else:
             raise Exception("Unsupported work_api %s", runtimeContext.work_api)
 

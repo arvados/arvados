@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { CommandInputParameter } from 'models/workflow';
-import { require } from 'validators/require';
+import { fieldRequire } from 'validators/require';
 import { CWLType } from '../../models/workflow';
 
 
@@ -17,5 +17,5 @@ export const required = ({ type }: CommandInputParameter) => {
             }
         }
     }
-    return require;
+    return fieldRequire;
 };

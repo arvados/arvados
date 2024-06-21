@@ -2,12 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import object
-
 import difflib
 import json
 import re
-
 
 class JsonDiffMatcher(object):
     """Raise AssertionError with a readable JSON diff when not __eq__().

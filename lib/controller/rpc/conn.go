@@ -682,41 +682,6 @@ func (conn *Conn) LogDelete(ctx context.Context, options arvados.DeleteOptions) 
 	return resp, err
 }
 
-func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
-	ep := arvados.EndpointSpecimenCreate
-	var resp arvados.Specimen
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
-
-func (conn *Conn) SpecimenUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Specimen, error) {
-	ep := arvados.EndpointSpecimenUpdate
-	var resp arvados.Specimen
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
-
-func (conn *Conn) SpecimenGet(ctx context.Context, options arvados.GetOptions) (arvados.Specimen, error) {
-	ep := arvados.EndpointSpecimenGet
-	var resp arvados.Specimen
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
-
-func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
-	ep := arvados.EndpointSpecimenList
-	var resp arvados.SpecimenList
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
-
-func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Specimen, error) {
-	ep := arvados.EndpointSpecimenDelete
-	var resp arvados.Specimen
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
-
 func (conn *Conn) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
 	ep := arvados.EndpointSysTrashSweep
 	var resp struct{}

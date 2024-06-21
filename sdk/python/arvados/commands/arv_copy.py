@@ -13,17 +13,11 @@
 # --no-recursive is given, arv-copy copies only the single record
 # identified by object-uuid.
 #
-# The user must have files $HOME/.config/arvados/{src}.conf and
-# $HOME/.config/arvados/{dst}.conf with valid login credentials for
-# instances src and dst.  If either of these files is not found,
+# The user must have configuration files {src}.conf and
+# {dst}.conf in a standard configuration directory with valid login credentials
+# for instances src and dst.  If either of these files is not found,
 # arv-copy will issue an error.
 
-from __future__ import division
-from future import standard_library
-from future.utils import listvalues
-standard_library.install_aliases()
-from past.builtins import basestring
-from builtins import object
 import argparse
 import contextlib
 import getpass
@@ -47,7 +41,6 @@ import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 import arvados.http_to_keep
-import ruamel.yaml as yaml
 
 from arvados._version import __version__
 
@@ -93,10 +86,22 @@ def main():
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
         '--src', dest='source_arvados',
-        help='The cluster id of the source Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will be inferred from the UUID of the object being copied.')
+        help="""
+Client configuration location for the source Arvados cluster.
+May be either a configuration file path, or a plain identifier like `foo`
+to search for a configuration file `foo.conf` under a systemd or XDG configuration directory.
+If not provided, will search for a configuration file named after the cluster ID of the source object UUID.
+""",
+    )
     copy_opts.add_argument(
         '--dst', dest='destination_arvados',
-        help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will use ARVADOS_API_HOST from environment.')
+        help="""
+Client configuration location for the destination Arvados cluster.
+May be either a configuration file path, or a plain identifier like `foo`
+to search for a configuration file `foo.conf` under a systemd or XDG configuration directory.
+If not provided, will use the default client configuration from the environment or `settings.conf`.
+""",
+    )
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object, and subprojects. (default)')
@@ -168,7 +173,7 @@ def main():
         exit(1)
 
     # Clean up any outstanding temp git repositories.
-    for d in listvalues(local_repo_dir):
+    for d in local_repo_dir.values():
         shutil.rmtree(d, ignore_errors=True)
 
     if not result:
@@ -204,8 +209,8 @@ def set_src_owner_uuid(resource, uuid, args):
 #     (either local or absolute) to a file with Arvados configuration
 #     settings.
 #
-#     Otherwise, it is presumed to be the name of a file in
-#     $HOME/.config/arvados/instance_name.conf
+#     Otherwise, it is presumed to be the name of a file in a standard
+#     configuration directory.
 #
 def api_for_instance(instance_name, num_retries):
     if not instance_name:
@@ -215,16 +220,22 @@ def api_for_instance(instance_name, num_retries):
     if '/' in instance_name:
         config_file = instance_name
     else:
-        config_file = os.path.join(os.environ['HOME'], '.config', 'arvados', "{}.conf".format(instance_name))
+        dirs = arvados.util._BaseDirectories('CONFIG')
+        config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
     try:
         cfg = arvados.config.load(config_file)
-    except (IOError, OSError) as e:
-        abort(("Could not open config file {}: {}\n" +
+    except OSError as e:
+        if config_file:
+            verb = 'open'
+        else:
+            verb = 'find'
+            config_file = f'{instance_name}.conf'
+        abort(("Could not {} config file {}: {}\n" +
                "You must make sure that your configuration tokens\n" +
                "for Arvados instance {} are in {} and that this\n" +
                "file is readable.").format(
-                   config_file, e, instance_name, config_file))
+                   verb, config_file, e.strerror, instance_name, config_file))
 
     if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
         api_is_insecure = (
@@ -258,10 +269,10 @@ def filter_iter(arg):
     Pass in a filter field that can either be a string or list.
     This will iterate elements as if the field had been written as a list.
     """
-    if isinstance(arg, basestring):
-        return iter((arg,))
+    if isinstance(arg, str):
+        yield arg
     else:
-        return iter(arg)
+        yield from arg
 
 def migrate_repository_filter(repo_filter, src_repository, dst_repository):
     """Update a single repository filter in-place for the destination.
@@ -409,7 +420,7 @@ def copy_collections(obj, src, dst, args):
                 collections_copied[src_id] = dst_col['uuid']
         return collections_copied[src_id]
 
-    if isinstance(obj, basestring):
+    if isinstance(obj, str):
         # Copy any collections identified in this string to dst, replacing
         # them with the dst uuids as necessary.
         obj = arvados.util.portable_data_hash_pattern.sub(copy_collection_fn, obj)
@@ -631,7 +642,7 @@ def copy_collection(obj_uuid, src, dst, args):
                 logger.debug("Getting block %s", word)
                 data = src_keep.get(word)
                 put_queue.put((word, data))
-            except e:
+            except Exception as e:
                 logger.error("Error getting block %s: %s", word, e)
                 transfer_error.append(e)
                 try:
@@ -669,7 +680,7 @@ def copy_collection(obj_uuid, src, dst, args):
                     bytes_written += loc.size
                     if progress_writer:
                         progress_writer.report(obj_uuid, bytes_written, bytes_expected)
-            except e:
+            except Exception as e:
                 logger.error("Error putting block %s (%s bytes): %s", blockhash, loc.size, e)
                 try:
                     # Drain the 'get' queue so we end early
@@ -735,58 +746,6 @@ def copy_collection(obj_uuid, src, dst, args):
 
     c['manifest_text'] = dst_manifest.getvalue()
     return create_collection_from(c, src, dst, args)
-
-def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_http_opt):
-    r = api.repositories().list(
-        filters=[['name', '=', repo_name]]).execute(num_retries=retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify repo {}; {} repos found'
-                        .format(repo_name, r['items_available']))
-
-    https_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https:")]
-    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("http:")]
-    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("http")]
-
-    priority = https_url + other_url + http_url
-
-    for url in priority:
-        if url.startswith("http"):
-            u = urllib.parse.urlsplit(url)
-            baseurl = urllib.parse.urlunsplit((u.scheme, u.netloc, "", "", ""))
-            git_config = ["-c", "credential.%s/.username=none" % baseurl,
-                          "-c", "credential.%s/.helper=!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred" % baseurl]
-        else:
-            git_config = []
-
-        try:
-            logger.debug("trying %s", url)
-            subprocess.run(
-                ['git', *git_config, 'ls-remote', url],
-                check=True,
-                env={
-                    'ARVADOS_API_TOKEN': api.api_token,
-                    'GIT_ASKPASS': '/bin/false',
-                    'HOME': os.environ['HOME'],
-                },
-                stdout=subprocess.DEVNULL,
-            )
-        except subprocess.CalledProcessError:
-            pass
-        else:
-            git_url = url
-            break
-    else:
-        raise Exception('Cannot access git repository, tried {}'
-                        .format(priority))
-
-    if git_url.startswith("http:"):
-        if allow_insecure_http:
-            logger.warning("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
-        else:
-            raise Exception("Refusing to use insecure git url %s, use %s if you really want this." % (git_url, allow_insecure_http_opt))
-
-    return (git_url, git_config)
-
 
 def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     """Copy the docker image identified by docker_image and

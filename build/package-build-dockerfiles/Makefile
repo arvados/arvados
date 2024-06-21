@@ -29,6 +29,11 @@ ubuntu2204/generated: common-generated-all
 	test -d ubuntu2204/generated || mkdir ubuntu2204/generated
 	cp -f -rlt ubuntu2204/generated common-generated/*
 
+all: ubuntu2404/generated
+ubuntu2404/generated: common-generated-all
+	test -d ubuntu2404/generated || mkdir ubuntu2404/generated
+	cp -f -rlt ubuntu2404/generated common-generated/*
+
 GOTARBALL_=DOES_NOT_EXIST
 NODETARBALL_=DOES_NOT_EXIST
 GOVERSION=$(shell grep 'const goversion =' ../../lib/install/deps.go |awk -F'"' '{print $$2}')
@@ -43,22 +48,13 @@ HOSTTYPE=$(shell echo $${HOSTTYPE})
 GOTARBALL=${GOTARBALL_$(HOSTTYPE)}
 NODETARBALL=${NODETARBALL_$(HOSTTYPE)}
 
-RVMKEY1=mpapis.asc
-RVMKEY2=pkuczynski.asc
-
-common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL) common-generated/$(RVMKEY1) common-generated/$(RVMKEY2)
+common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL)
 
 common-generated/$(GOTARBALL): common-generated
 	wget -cqO common-generated/$(GOTARBALL) https://dl.google.com/go/$(GOTARBALL)
 
 common-generated/$(NODETARBALL): common-generated
 	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v12.22.12/$(NODETARBALL)
-
-common-generated/$(RVMKEY1): common-generated
-	wget -cqO common-generated/$(RVMKEY1) https://rvm.io/mpapis.asc
-
-common-generated/$(RVMKEY2): common-generated
-	wget -cqO common-generated/$(RVMKEY2) https://rvm.io/pkuczynski.asc
 
 common-generated:
 	mkdir common-generated

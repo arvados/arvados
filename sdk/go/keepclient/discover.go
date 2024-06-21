@@ -102,7 +102,11 @@ func (ent *cachedSvcList) poll() {
 		var next svcList
 		err := ent.arv.Call("GET", "keep_services", "", "accessible", nil, &next)
 		if err != nil {
-			log.Printf("WARNING: Error retrieving services list: %v (retrying in %v)", err, errDelay)
+			if ent.arv.Logger != nil {
+				ent.arv.Logger.WithError(err).Warnf("error retrieving services list (retrying in %v)", errDelay)
+			} else {
+				log.Printf("WARNING: Error retrieving services list: %s (retrying in %v)", err, errDelay)
+			}
 			timer.Reset(errDelay)
 			continue
 		}

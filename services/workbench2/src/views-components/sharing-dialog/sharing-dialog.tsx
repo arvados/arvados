@@ -15,7 +15,8 @@ import {
     initializeManagementForm
 } from 'store/sharing-dialog/sharing-dialog-actions';
 import { WithDialogProps } from 'store/dialog/with-dialog';
-import SharingDialogComponent, {
+import {
+    SharingDialogComponent,
     SharingDialogDataProps,
     SharingDialogActionProps
 } from './sharing-dialog-component';

@@ -1056,6 +1056,36 @@ runtime_token:
     ram: 123
   mounts: {}
 
+read_foo_write_bar:
+  uuid: zzzzz-xvdhp-readfoowritebar
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Final
+  created_at: 2024-01-11 11:11:11.111111111 Z
+  updated_at: 2024-01-11 11:11:11.111111111 Z
+  modified_at: 2024-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: /
+  mounts:
+    stdin:
+      kind: collection
+      portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+      path: /foo
+    stdout:
+      kind: file
+      path: /mnt/out/bar
+    /mnt/out:
+      kind: tmp
+      capacity: 1000
+  container_uuid: zzzzz-dz642-readfoowritebar
+  log_uuid: zzzzz-4zz18-logcollection01
+  output_uuid: zzzzz-4zz18-ehbhgtheo8909or
+  output_path: test
+  command: ["echo", "-n", "bar"]
+  runtime_constraints:
+    ram: 10000000
+    vcpus: 1
+
 
 # Test Helper trims the rest of the file
 

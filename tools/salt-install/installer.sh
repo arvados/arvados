@@ -269,8 +269,16 @@ terraform)
   logfile=terraform-$(date -Iseconds).log
   (cd terraform/vpc && terraform apply -auto-approve) 2>&1 | tee -a $logfile
   (cd terraform/data-storage && terraform apply -auto-approve) 2>&1 | tee -a $logfile
-  (cd terraform/services && terraform apply -auto-approve) 2>&1 | grep -v letsencrypt_iam_secret_access_key | tee -a $logfile
-  (cd terraform/services && echo -n 'letsencrypt_iam_secret_access_key = ' && terraform output letsencrypt_iam_secret_access_key) 2>&1 | tee -a $logfile
+  (cd terraform/services && \
+    terraform apply -auto-approve) 2>&1 | \
+    grep -v letsencrypt_iam_secret_access_key | \
+    grep -v database_password | \
+    tee -a $logfile
+  (cd terraform/services && \
+    echo -n 'letsencrypt_iam_secret_access_key = ' && \
+    terraform output letsencrypt_iam_secret_access_key && \
+    echo -n 'database_password = ' && \
+    terraform output database_password) 2>&1 | tee -a $logfile
   ;;
 
 terraform-destroy)
@@ -449,14 +457,38 @@ diagnostics)
   arvados-client diagnostics $LOCATION
   ;;
 
+diagnostics-internal)
+  loadconfig
+  set -u
+
+  if [ -z "${ROLE2NODES['shell']:-}" ]; then
+    echo "No node with 'shell' role was found, cannot run diagnostics-internal"
+    exit 1
+  fi
+
+  # Pick the first shell node for test running
+  declare TESTNODE=$(echo ${ROLE2NODES['shell']} | cut -d\, -f1)
+  declare SSH=$(ssh_cmd "$TESTNODE")
+
+  # Run diagnostics
+  echo "Running diagnostics in $TESTNODE..."
+  $SSH $DEPLOY_USER@$TESTNODE bash <<EOF
+  export ARVADOS_API_HOST="${DOMAIN}:${CONTROLLER_EXT_SSL_PORT}"
+  export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
+  sudo --preserve-env=ARVADOS_API_HOST,ARVADOS_API_TOKEN arvados-client diagnostics -internal-client
+EOF
+
+  ;;
+
 *)
   echo "Arvados installer"
   echo ""
-  echo "initialize        initialize the setup directory for configuration"
-  echo "terraform         create cloud resources using terraform"
-  echo "terraform-destroy destroy cloud resources created by terraform"
-  echo "generate-tokens   generate random values for tokens"
-  echo "deploy            deploy the configuration from the setup directory"
-  echo "diagnostics       check your install using diagnostics"
+  echo "initialize             initialize the setup directory for configuration"
+  echo "terraform              create cloud resources using terraform"
+  echo "terraform-destroy      destroy cloud resources created by terraform"
+  echo "generate-tokens        generate random values for tokens"
+  echo "deploy                 deploy the configuration from the setup directory"
+  echo "diagnostics            check your install running diagnostics locally"
+  echo "diagnostics-internal   check your install running diagnostics on a shell node"
   ;;
 esac

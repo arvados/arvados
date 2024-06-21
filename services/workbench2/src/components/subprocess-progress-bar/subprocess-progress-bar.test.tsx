@@ -89,7 +89,7 @@ describe("<SubprocessProgressBar />", () => {
         await act(async () => {
             progressBar = mount(
                 <Provider store={store}>
-                    <SubprocessProgressBar process={process} />
+                    <SubprocessProgressBar parentResource={process} />
                 </Provider>);
         });
         await progressBar.update();
@@ -150,7 +150,7 @@ describe("<SubprocessProgressBar />", () => {
         await act(async () => {
             progressBar = mount(
                 <Provider store={store}>
-                    <SubprocessProgressBar process={process} />
+                    <SubprocessProgressBar parentResource={process} />
                 </Provider>);
         });
         await progressBar.update();

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from "@material-ui/core";
+import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
@@ -16,13 +16,24 @@ import { DataTableFilters } from "components/data-table-filters/data-table-filte
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
+import classNames from "classnames";
 
-type CssRules = "titleWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules = "titleWrapper" | "msToolbarStyles" | "subToolbarWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | 'progressWrapper' | 'progressWrapperNoTitle' | "dataTable" | "container";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
+    },
+    msToolbarStyles: {
+        paddingTop: "0.6rem",
+    },
+    subToolbarWrapper: {
+        height: "48px",
+        paddingTop: 0,
+        marginBottom: "-20px",
+        marginTop: "-10px",
+        flexShrink: 0,
     },
     searchBox: {
         paddingBottom: 0,
@@ -35,11 +46,23 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     footer: {
         overflow: "auto",
     },
+    loadMoreContainer: {
+        minWidth: '8rem',
+    },
     root: {
         height: "100%",
+        flex: 1,
+        overflowY: "auto",
     },
     moreOptionsButton: {
         padding: 0,
+    },
+    numResults: {
+        marginTop: 0,
+        fontSize: "10px",
+        marginLeft: "10px",
+        marginBottom: '-0.5rem',
+        minWidth: '8.5rem',
     },
     title: {
         display: "inline-block",
@@ -55,6 +78,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: "18px",
         flexGrow: 0,
         paddingRight: "10px",
+    },
+    progressWrapper: {
+        margin: "28px 0 0",
+        flexGrow: 1,
+        flexBasis: "100px",
+    },
+    progressWrapperNoTitle: {
+        paddingLeft: "10px",
     },
     dataTable: {
         height: "100%",
@@ -84,7 +115,6 @@ interface DataExplorerDataProps<T> {
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
     working?: boolean;
-    currentRoute?: string;
     hideColumnSelector?: boolean;
     paperProps?: PaperProps;
     actions?: React.ReactNode;
@@ -92,11 +122,15 @@ interface DataExplorerDataProps<T> {
     title?: React.ReactNode;
     progressBar?: React.ReactNode;
     paperKey?: string;
-    currentItemUuid: string;
+    currentRouteUuid: string;
+    selectedResourceUuid: string;
     elementPath?: string;
     isMSToolbarVisible: boolean;
     checkedList: TCheckedList;
     isNotFound: boolean;
+    searchBarValue: string;
+    paperClassName?: string;
+    forceMultiSelectMode?: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -114,18 +148,38 @@ interface DataExplorerActionProps<T> {
     extractKey?: (item: T) => React.Key;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    setSelectedUuid: (uuid: string) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+        state = {
+            hideToolbar: true,
+        };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
+        maxItemsAvailable = 0;
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
+            }
+        }
+
+        componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
+            const { selectedResourceUuid, currentRouteUuid } = this.props;
+            if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
+                this.setState({
+                    hideToolbar: selectedResourceUuid === this.props.currentRouteUuid,
+                })
+            }
+            if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
+                this.maxItemsAvailable = Math.max(this.maxItemsAvailable, this.props.itemsAvailable);
+            }
+            if (this.props.searchBarValue !== prevProps.searchBarValue) {
+                this.maxItemsAvailable = 0;
             }
         }
 
@@ -155,8 +209,7 @@ export const DataExplorer = withStyles(styles)(
                 hideSearchInput,
                 paperKey,
                 fetchMode,
-                currentItemUuid,
-                currentRoute,
+                selectedResourceUuid,
                 title,
                 progressBar,
                 doHidePanel,
@@ -169,10 +222,12 @@ export const DataExplorer = withStyles(styles)(
                 setCheckedListOnStore,
                 checkedList,
                 working,
+                paperClassName,
+                forceMultiSelectMode,
             } = this.props;
             return (
                 <Paper
-                    className={classes.root}
+                    className={classNames(classes.root, paperClassName)}
                     {...paperProps}
                     key={paperKey}
                     data-cy={this.props["data-cy"]}
@@ -183,7 +238,7 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        <div className={classes.titleWrapper} style={currentRoute?.includes('search-results') || !!progressBar ? {marginBottom: '-20px'} : {}}>
+                        <div data-cy="title-wrapper" className={classes.titleWrapper}>
                             {title && (
                                 <Grid
                                     item
@@ -193,8 +248,13 @@ export const DataExplorer = withStyles(styles)(
                                     {title}
                                 </Grid>
                             )}
-                            {!!progressBar && progressBar}
-                            {this.multiSelectToolbarInTitle && <MultiselectToolbar />}
+                            {!!progressBar &&
+                                <div className={classNames({
+                                    [classes.progressWrapper]: true,
+                                    [classes.progressWrapperNoTitle]: !title,
+                                })}>{progressBar}</div>
+                            }
+                            {this.multiSelectToolbarInTitle && !this.state.hideToolbar && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -260,12 +320,17 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle && <MultiselectToolbar />}
+                        {!this.multiSelectToolbarInTitle &&
+                            <div className={classes.subToolbarWrapper}>
+                                {!this.state.hideToolbar && <MultiselectToolbar
+                                    forceMultiSelectMode={forceMultiSelectMode}
+                                />}
+                            </div>
+                        }
                         <Grid
                             item
                             xs="auto"
                             className={classes.dataTable}
-                            style={currentRoute?.includes('search-results')  || !!progressBar ? {marginTop: '-10px'} : {}}
                         >
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
@@ -278,11 +343,13 @@ export const DataExplorer = withStyles(styles)(
                                 extractKey={extractKey}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
-                                currentItemUuid={currentItemUuid}
                                 currentRoute={paperKey}
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
+                                selectedResourceUuid={selectedResourceUuid}
+                                setSelectedUuid={this.props.setSelectedUuid}
+                                currentRouteUuid={this.props.currentRouteUuid}
                                 working={working}
                                 isNotFound={this.props.isNotFound}
                             />
@@ -294,7 +361,7 @@ export const DataExplorer = withStyles(styles)(
                             <Toolbar className={classes.footer}>
                                 {elementPath && (
                                     <Grid container>
-                                        <span data-cy="element-path">{elementPath}</span>
+                                        <span data-cy="element-path">{elementPath.length > 2 ? elementPath : ''}</span>
                                     </Grid>
                                 )}
                                 <Grid
@@ -314,13 +381,21 @@ export const DataExplorer = withStyles(styles)(
                                             component="div"
                                         />
                                     ) : (
-                                        <Button
-                                            variant="text"
-                                            size="medium"
-                                            onClick={this.loadMore}
-                                        >
-                                            Load more
-                                        </Button>
+                                        <Grid className={classes.loadMoreContainer}>
+                                            <Typography  className={classes.numResults}>
+                                                Showing {items.length} / {this.maxItemsAvailable} results
+                                            </Typography>
+                                            <Button
+                                                size="small"
+                                                onClick={this.loadMore}
+                                                variant="contained"
+                                                color="primary"
+                                                style={{width: '100%', margin: '10px'}}
+                                                disabled={working || items.length >= itemsAvailable}
+                                            >
+                                                Load more
+                                            </Button>
+                                        </Grid>
                                     )}
                                 </Grid>
                             </Toolbar>

@@ -15,6 +15,7 @@ import { CollectionResource } from 'models/collection';
 import { extractUuidKind, ResourceKind } from 'models/resource';
 
 export const SLIDE_TIMEOUT = 500;
+export const CLOSE_DRAWER = 'CLOSE_DRAWER'
 
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
@@ -66,20 +67,26 @@ export const refreshCollectionVersionsList = (uuid: string) =>
         );
     };
 
-export const toggleDetailsPanel = () => (dispatch: Dispatch, getState: () => RootState) => {
-    // because of material-ui issue resizing details panel breaks tabs.
-    // triggering window resize event fixes that.
-    setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-    }, SLIDE_TIMEOUT);
-    startDetailsPanelTransition(dispatch)
-    dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
-    if (getState().detailsPanel.isOpened) {
-        dispatch<any>(loadDetailsPanel(getState().detailsPanel.resourceUuid));
+export const toggleDetailsPanel = (uuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
+    const { detailsPanel }= getState()
+    const isTargetUuidNew = uuid !== detailsPanel.resourceUuid
+    if(isTargetUuidNew && uuid !== CLOSE_DRAWER && detailsPanel.isOpened){
+        dispatch<any>(loadDetailsPanel(uuid));
+    } else {
+        // because of material-ui issue resizing details panel breaks tabs.
+        // triggering window resize event fixes that.
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, SLIDE_TIMEOUT);
+        startDetailsPanelTransition(dispatch)
+        dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+        if (getState().detailsPanel.isOpened) {
+            dispatch<any>(loadDetailsPanel(isTargetUuidNew ? uuid : detailsPanel.resourceUuid));
+        }
     }
-};
-
-const startDetailsPanelTransition = (dispatch) => {
+    };
+    
+    const startDetailsPanelTransition = (dispatch) => {
         dispatch(detailsPanelActions.START_TRANSITION())
     setTimeout(() => {
         dispatch(detailsPanelActions.END_TRANSITION())

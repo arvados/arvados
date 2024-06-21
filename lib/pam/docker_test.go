@@ -114,7 +114,7 @@ func (s *DockerSuite) runTestClient(c *check.C, args ...string) (stdout, stderr 
 		"-v", s.tmpdir + "/pam_arvados.so:/usr/lib/pam_arvados.so:ro",
 		"-v", s.tmpdir + "/conffile:/usr/share/pam-configs/arvados:ro",
 		"-v", s.tmpdir + "/testclient:/testclient:ro",
-		"debian:bullseye",
+		"debian:bookworm",
 		"/testclient"}, args...)...)
 	stdout = &bytes.Buffer{}
 	stderr = &bytes.Buffer{}

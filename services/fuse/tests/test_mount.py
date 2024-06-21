@@ -2,35 +2,31 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
-from future.utils import viewitems
-from builtins import str
-from builtins import object
-from pathlib import Path
-from six import assertRegex
 import errno
 import json
 import llfuse
 import logging
-import mock
 import os
 import subprocess
 import time
 import unittest
 import tempfile
-import parameterized
+
+from pathlib import Path
+from unittest import mock
 
 import arvados
 import arvados_fuse as fuse
-from arvados_fuse import fusedir
-from . import run_test_server
+import parameterized
 
+from arvados_fuse import fusedir
+
+from . import run_test_server
 from .integration_test import IntegrationTest
 from .mount_test_base import MountTestBase
 from .test_tmp_collection import storage_classes_desired
 
 logger = logging.getLogger('arvados.arv-mount')
-
 
 class AssertWithTimeout(object):
     """Allow some time for an assertion to pass."""
@@ -63,44 +59,38 @@ class FuseMountTest(MountTestBase):
     def setUp(self):
         super(FuseMountTest, self).setUp()
 
-        cw = arvados.CollectionWriter()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'w') as f:
+            f.write('data 1')
+        with cw.open('thing2.txt', 'w') as f:
+            f.write('data 2')
 
-        cw.start_new_file('thing1.txt')
-        cw.write("data 1")
-        cw.start_new_file('thing2.txt')
-        cw.write("data 2")
+        with cw.open('dir1/thing3.txt', 'w') as f:
+            f.write('data 3')
+        with cw.open('dir1/thing4.txt', 'w') as f:
+            f.write('data 4')
 
-        cw.start_new_stream('dir1')
-        cw.start_new_file('thing3.txt')
-        cw.write("data 3")
-        cw.start_new_file('thing4.txt')
-        cw.write("data 4")
+        with cw.open('dir2/thing5.txt', 'w') as f:
+            f.write('data 5')
+        with cw.open('dir2/thing6.txt', 'w') as f:
+            f.write('data 6')
 
-        cw.start_new_stream('dir2')
-        cw.start_new_file('thing5.txt')
-        cw.write("data 5")
-        cw.start_new_file('thing6.txt')
-        cw.write("data 6")
+        with cw.open('dir2/dir3/thing7.txt', 'w') as f:
+            f.write('data 7')
+        with cw.open('dir2/dir3/thing8.txt', 'w') as f:
+            f.write('data 8')
 
-        cw.start_new_stream('dir2/dir3')
-        cw.start_new_file('thing7.txt')
-        cw.write("data 7")
+        for fnm in ":/.../-/*/ ".split("/"):
+            with cw.open('edgecases/'+fnm, 'w') as f:
+                f.write('x')
 
-        cw.start_new_file('thing8.txt')
-        cw.write("data 8")
+        for fnm in ":/.../-/*/ ".split("/"):
+            with cw.open('edgecases/dirs/'+fnm+'/x/x', 'w') as f:
+                f.write('x')
 
-        cw.start_new_stream('edgecases')
-        for f in ":/.../-/*/ ".split("/"):
-            cw.start_new_file(f)
-            cw.write('x')
-
-        for f in ":/.../-/*/ ".split("/"):
-            cw.start_new_stream('edgecases/dirs/' + f)
-            cw.start_new_file('x/x')
-            cw.write('x')
-
-        self.testcollection = cw.finish()
-        self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
+        self.testcollection = cw.portable_data_hash()
+        self.test_manifest = cw.manifest_text()
+        self.api.collections().create(body={"manifest_text": self.test_manifest}).execute()
 
     def runTest(self):
         self.make_mount(fuse.CollectionDirectory, collection_record=self.testcollection)
@@ -124,7 +114,7 @@ class FuseMountTest(MountTestBase):
                  'dir2/dir3/thing7.txt': 'data 7',
                  'dir2/dir3/thing8.txt': 'data 8'}
 
-        for k, v in viewitems(files):
+        for k, v in files.items():
             with open(os.path.join(self.mounttmp, k), 'rb') as f:
                 self.assertEqual(v, f.read().decode())
 
@@ -140,12 +130,11 @@ class FuseMagicTest(MountTestBase):
         self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
         self.collection_in_filter_group = run_test_server.fixture('collections')['baz_file']['name']
 
-        cw = arvados.CollectionWriter()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'w') as f:
+            f.write('data 1')
 
-        cw.start_new_file('thing1.txt')
-        cw.write("data 1")
-
-        self.testcollection = cw.finish()
+        self.testcollection = cw.portable_data_hash()
         self.test_manifest = cw.manifest_text()
         coll = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
         self.test_manifest_pdh = coll['portable_data_hash']
@@ -189,7 +178,7 @@ class FuseMagicTest(MountTestBase):
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
-        for k, v in viewitems(files):
+        for k, v in files.items():
             with open(os.path.join(self.mounttmp, k), 'rb') as f:
                 self.assertEqual(v, f.read().decode())
 
@@ -312,7 +301,7 @@ class FuseHomeTest(MountTestBase):
             'anonymously_accessible_project']
         found_in = 0
         found_not_in = 0
-        for name, item in viewitems(run_test_server.fixture('collections')):
+        for name, item in run_test_server.fixture('collections').items():
             if 'name' not in item:
                 pass
             elif item['owner_uuid'] == public_project['uuid']:
@@ -451,7 +440,7 @@ class FuseCreateFileTest(MountTestBase):
         self.assertEqual(["file1.txt"], d1)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\. d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:file1\.txt$')
 
 
@@ -494,7 +483,7 @@ class FuseWriteFileTest(MountTestBase):
         self.assertEqual(12, self.operations.read_counter.get())
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
@@ -533,7 +522,7 @@ class FuseUpdateFileTest(MountTestBase):
         self.pool.apply(fuseUpdateFileTestHelper, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\. daaef200ebb921e011e3ae922dd3266b\+11\+A\S+ 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:11:file1\.txt 22:1:file1\.txt$')
 
 
@@ -573,7 +562,7 @@ class FuseMkdirTest(MountTestBase):
         self.pool.apply(fuseMkdirTestHelper, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
@@ -640,13 +629,13 @@ class FuseRmTest(MountTestBase):
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
         self.pool.apply(fuseRmTestHelperDeleteFile, (self.mounttmp,))
 
         # Empty directories are represented by an empty file named "."
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
                                  r'./testdir d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:\\056\n')
 
         self.pool.apply(fuseRmTestHelperRmdir, (self.mounttmp,))
@@ -697,13 +686,13 @@ class FuseMvFileTest(MountTestBase):
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
         self.pool.apply(fuseMvFileTestHelperMoveFile, (self.mounttmp,))
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt\n\./testdir d41d8cd98f00b204e9800998ecf8427e\+0\+A\S+ 0:0:\\056\n')
 
 
@@ -731,7 +720,7 @@ class FuseRenameTest(MountTestBase):
 
         # Starting manifest
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
         d1 = llfuse.listdir(os.path.join(self.mounttmp))
@@ -747,7 +736,7 @@ class FuseRenameTest(MountTestBase):
         self.assertEqual(["file1.txt"], d1)
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
-        assertRegex(self, collection2["manifest_text"],
+        self.assertRegex(collection2["manifest_text"],
             r'\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
 
@@ -818,7 +807,7 @@ def fuseFileConflictTestHelper(mounttmp, uuid, keeptmp, settings):
             with open(os.path.join(mounttmp, "file1.txt"), "r") as f:
                 self.assertEqual(f.read(), "bar")
 
-            assertRegex(self, d1[1],
+            self.assertRegex(d1[1],
                 r'file1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~')
 
             with open(os.path.join(mounttmp, d1[1]), "r") as f:
@@ -923,7 +912,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         collection1.update()
         collection2.update()
 
-        assertRegex(self, collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
+        self.assertRegex(collection1.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
         self.pool.apply(fuseMvFileBetweenCollectionsTest2, (self.mounttmp,
@@ -934,7 +923,7 @@ class FuseMvFileBetweenCollectionsTest(MountTestBase):
         collection2.update()
 
         self.assertEqual(collection1.manifest_text(), "")
-        assertRegex(self, collection2.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file2\.txt$")
+        self.assertRegex(collection2.manifest_text(), r"\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file2\.txt$")
 
         collection1.stop_threads()
         collection2.stop_threads()
@@ -994,7 +983,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         collection1.update()
         collection2.update()
 
-        assertRegex(self, collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
+        self.assertRegex(collection1.manifest_text(), r"\./testdir 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
         self.assertEqual(collection2.manifest_text(), "")
 
         self.pool.apply(fuseMvDirBetweenCollectionsTest2, (self.mounttmp,
@@ -1005,7 +994,7 @@ class FuseMvDirBetweenCollectionsTest(MountTestBase):
         collection2.update()
 
         self.assertEqual(collection1.manifest_text(), "")
-        assertRegex(self, collection2.manifest_text(), r"\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
+        self.assertRegex(collection2.manifest_text(), r"\./testdir2 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$")
 
         collection1.stop_threads()
         collection2.stop_threads()
@@ -1127,7 +1116,7 @@ class MagicDirApiError(FuseMagicTest):
 class SanitizeFilenameTest(MountTestBase):
     def test_sanitize_filename(self):
         pdir = fuse.ProjectDirectory(
-            1, {}, self.api, 0, False, None,
+            1, fuse.Inodes(None), self.api, 0, False, None,
             project_object=self.api.users().current().execute(),
         )
         acceptable = [
@@ -1164,12 +1153,11 @@ class FuseMagicTestPDHOnly(MountTestBase):
     def setUp(self, api=None):
         super(FuseMagicTestPDHOnly, self).setUp(api=api)
 
-        cw = arvados.CollectionWriter()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'w') as f:
+            f.write('data 1')
 
-        cw.start_new_file('thing1.txt')
-        cw.write("data 1")
-
-        self.testcollection = cw.finish()
+        self.testcollection = cw.portable_data_hash()
         self.test_manifest = cw.manifest_text()
         created = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
         self.testcollectionuuid = str(created['uuid'])
@@ -1200,7 +1188,7 @@ class FuseMagicTestPDHOnly(MountTestBase):
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
-        for k, v in viewitems(files):
+        for k, v in files.items():
             with open(os.path.join(self.mounttmp, k), 'rb') as f:
                 self.assertEqual(v, f.read().decode())
 
@@ -1227,23 +1215,22 @@ class SlashSubstitutionTest(IntegrationTest):
     mnt_args = [
         '--read-write',
         '--mount-home', 'zzz',
+        '--fsns', '[SLASH]'
     ]
 
     def setUp(self):
         super(SlashSubstitutionTest, self).setUp()
+
         self.api = arvados.safeapi.ThreadSafeApiCache(
             arvados.config.settings(),
-            version='v1',
+            version='v1'
         )
-        self.api.config = lambda: {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.testcoll = self.api.collections().create(body={"name": "foo/bar/baz"}).execute()
         self.testcolleasy = self.api.collections().create(body={"name": "foo-bar-baz"}).execute()
         self.fusename = 'foo[SLASH]bar[SLASH]baz'
 
     @IntegrationTest.mount(argv=mnt_args)
-    @mock.patch('arvados.util.get_config_once')
-    def test_slash_substitution_before_listing(self, get_config_once):
-        get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
+    def test_slash_substitution_before_listing(self):
         self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
         self.checkContents()
     @staticmethod
@@ -1268,8 +1255,8 @@ class SlashSubstitutionTest(IntegrationTest):
             f.write('foo')
 
     def checkContents(self):
-        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
-        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcolleasy['uuid']).execute()['manifest_text'], ' f561aaf6') # md5(xxx)
+        self.assertRegex(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], r' acbd18db') # md5(foo)
+        self.assertRegex(self.api.collections().get(uuid=self.testcolleasy['uuid']).execute()['manifest_text'], r' f561aaf6') # md5(xxx)
 
     @IntegrationTest.mount(argv=mnt_args)
     @mock.patch('arvados.util.get_config_once')
@@ -1277,7 +1264,7 @@ class SlashSubstitutionTest(IntegrationTest):
         self.testcollconflict = self.api.collections().create(body={"name": self.fusename}).execute()
         get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
-        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcollconflict['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
+        self.assertRegex(self.api.collections().get(uuid=self.testcollconflict['uuid']).execute()['manifest_text'], r' acbd18db') # md5(foo)
         # foo/bar/baz collection unchanged, because it is masked by foo[SLASH]bar[SLASH]baz
         self.assertEqual(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], '')
     @staticmethod

@@ -26,7 +26,7 @@ export const CopyToClipboardAction = (props: { href?: any, download?: any, onCli
                 <Link />
             </ListItemIcon>
             <ListItemText>
-                Copy to clipboard
+                Copy link to clipboard
             </ListItemText>
         </ListItem>
         : null;

@@ -8,7 +8,8 @@ import Adapter from 'enzyme-adapter-react-16';
 import { Provider } from 'react-redux';
 import { combineReducers, createStore } from 'redux';
 
-import SharingDialogComponent, {
+import {
+    SharingDialogComponent,
     SharingDialogComponentProps,
 } from './sharing-dialog-component';
 import {
