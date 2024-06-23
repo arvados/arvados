@@ -6,6 +6,8 @@ package crunchrun
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -14,6 +16,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -283,6 +286,56 @@ func (s *copierSuite) TestSubtreeCouldMatch(c *check.C) {
 			globs: []string{trial.glob},
 		}).subtreeCouldMatch(trial.mount)
 		c.Check(got, check.Equals, trial.could)
+	}
+}
+
+func (s *copierSuite) TestCopyFromLargeCollection_Readonly(c *check.C) {
+	s.testCopyFromLargeCollection(c, false)
+}
+
+func (s *copierSuite) TestCopyFromLargeCollection_Writable(c *check.C) {
+	s.testCopyFromLargeCollection(c, true)
+}
+
+func (s *copierSuite) testCopyFromLargeCollection(c *check.C, writable bool) {
+	bindtmp := c.MkDir()
+	mtxt := arvadostest.FakeManifest(100, 100, 2, 4<<20)
+	pdh := arvados.PortableDataHash(mtxt)
+	json, err := json.Marshal(arvados.Collection{ManifestText: mtxt, PortableDataHash: pdh})
+	c.Assert(err, check.IsNil)
+	err = os.WriteFile(bindtmp+"/.arvados#collection", json, 0644)
+	// This symlink tricks walkHostFS into calling walkMount on
+	// the fakecollection dir. If we did the obvious thing instead
+	// (i.e., mount a collection under the output dir) walkMount
+	// would see that our fakecollection dir is actually a regular
+	// directory, conclude that the mount has been deleted and
+	// replaced by a regular directory tree, and process the tree
+	// as regular files, bypassing the manifest-copying code path
+	// we're trying to test.
+	err = os.Symlink("/fakecollection", s.cp.hostOutputDir+"/fakecollection")
+	c.Assert(err, check.IsNil)
+	s.cp.mounts["/fakecollection"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: pdh,
+		Writable:         writable,
+	}
+	s.cp.bindmounts = map[string]bindmount{
+		"/fakecollection": bindmount{HostPath: bindtmp, ReadOnly: !writable},
+	}
+	s.cp.manifestCache = map[string]*manifest.Manifest{pdh: &manifest.Manifest{Text: mtxt}}
+	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Check(err, check.IsNil)
+	c.Log(s.log.String())
+
+	// Check some files to ensure they were copied properly.
+	fs, err := (&arvados.Collection{ManifestText: s.cp.manifest}).FileSystem(s.cp.client, s.cp.keepClient)
+	c.Assert(err, check.IsNil)
+	for i := 0; i < 100; i += 13 {
+		for j := 0; j < 100; j += 17 {
+			fnm := fmt.Sprintf("/fakecollection/dir%d/dir%d/file%d", i, j, j)
+			_, err := fs.Stat(fnm)
+			c.Assert(err, check.IsNil, check.Commentf("%s", fnm))
+		}
 	}
 }
 

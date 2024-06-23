@@ -5,15 +5,12 @@
 package manifest
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"reflect"
 	"regexp"
 	"runtime"
 	"testing"
-	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/blockdigest"
@@ -380,39 +377,8 @@ func TestNormalizeManifest(t *testing.T) {
 }
 
 func (s *suite) TestExtractFromLargeManifest(c *C) {
-	m := Manifest{Text: s.generateManifest(c, 200, 200, 2, 4<<20)}
+	m := Manifest{Text: arvadostest.FakeManifest(200, 200, 2, 4<<20)}
 	fmt.Println(m.Extract("./dir77/file88", "./extracted").Text)
-}
-func (s *suite) generateManifest(c *C, dirCount, filesPerDir, blocksPerFile, interleaveChunk int) string {
-	c.Logf("%s building manifest with dirCount=%d filesPerDir=%d blocksPerFile=%d", time.Now(), dirCount, filesPerDir, blocksPerFile)
-	const blksize = 1 << 26
-	mb := bytes.NewBuffer(make([]byte, 0, 40000000))
-	blkid := 0
-	for i := 0; i < dirCount; i++ {
-		fmt.Fprintf(mb, "./dir%d", i)
-		for j := 0; j < filesPerDir; j++ {
-			for k := 0; k < blocksPerFile; k++ {
-				blkid++
-				fmt.Fprintf(mb, " %032x+%d+A%040x@%08x", blkid, blksize, blkid, blkid)
-			}
-		}
-		for j := 0; j < filesPerDir; j++ {
-			if interleaveChunk == 0 {
-				fmt.Fprintf(mb, " %d:%d:dir%d/file%d", (filesPerDir-j-1)*blocksPerFile*blksize, blocksPerFile*blksize, j, j)
-				continue
-			}
-			for todo := int64(blocksPerFile) * int64(blksize); todo > 0; todo -= int64(interleaveChunk) {
-				size := int64(interleaveChunk)
-				if size > todo {
-					size = todo
-				}
-				offset := rand.Int63n(int64(blocksPerFile)*int64(blksize)*int64(filesPerDir) - size)
-				fmt.Fprintf(mb, " %d:%d:dir%d/file%d", offset, size, j, j)
-			}
-		}
-		mb.Write([]byte{'\n'})
-	}
-	return mb.String()
 }
 
 func TestFirstBlock(t *testing.T) {
