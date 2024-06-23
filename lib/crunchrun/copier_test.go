@@ -15,8 +15,9 @@ import (
 	"syscall"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -31,8 +32,15 @@ type copierSuite struct {
 func (s *copierSuite) SetUpTest(c *check.C) {
 	tmpdir := c.MkDir()
 	s.log = bytes.Buffer{}
+
+	cl, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.IsNil)
+	kc, err := keepclient.MakeKeepClient(cl)
+	c.Assert(err, check.IsNil)
+
 	s.cp = copier{
 		client:        arvados.NewClientFromEnv(),
+		keepClient:    kc,
 		hostOutputDir: tmpdir,
 		ctrOutputDir:  "/ctr/outdir",
 		mounts: map[string]arvados.Mount{
@@ -322,7 +330,7 @@ func (s *copierSuite) testCopyFromLargeCollection(c *check.C, writable bool) {
 	s.cp.bindmounts = map[string]bindmount{
 		"/fakecollection": bindmount{HostPath: bindtmp, ReadOnly: !writable},
 	}
-	s.cp.manifestCache = map[string]*manifest.Manifest{pdh: &manifest.Manifest{Text: mtxt}}
+	s.cp.manifestCache = map[string]string{pdh: mtxt}
 	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Check(err, check.IsNil)
 	c.Log(s.log.String())

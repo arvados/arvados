@@ -17,7 +17,6 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"github.com/bmatcuk/doublestar/v4"
 )
 
@@ -66,7 +65,7 @@ type copier struct {
 	files    []filetodo
 	manifest string
 
-	manifestCache map[string]*manifest.Manifest
+	manifestCache map[string]string
 }
 
 // Copy copies data as needed, and returns a new manifest.
@@ -370,7 +369,10 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 		if err != nil {
 			return err
 		}
-		cp.manifest += mft.Extract(srcRelPath, dest).Text
+		err = cp.copyFromCollection(dest, &arvados.Collection{ManifestText: mft}, srcRelPath)
+		if err != nil {
+			return err
+		}
 	default:
 		cp.logger.Printf("copying %q", outputRelPath)
 		hostRoot, err := cp.hostRoot(srcRoot)
@@ -387,12 +389,48 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 		if err != nil {
 			return err
 		}
-		mft := manifest.Manifest{Text: coll.ManifestText}
-		cp.manifest += mft.Extract(srcRelPath, dest).Text
+		err = cp.copyFromCollection(dest, &coll, srcRelPath)
+		if err != nil {
+			return err
+		}
 	}
 	if walkMountsBelow {
 		return cp.walkMountsBelow(dest, src)
 	}
+	return nil
+}
+
+func (cp *copier) copyFromCollection(dest string, coll *arvados.Collection, srcRelPath string) error {
+	tmpfs, err := coll.FileSystem(cp.client, cp.keepClient)
+	if err != nil {
+		return err
+	}
+	snap, err := arvados.Snapshot(tmpfs, srcRelPath)
+	if err != nil {
+		return err
+	}
+	tmpfs, err = (&arvados.Collection{}).FileSystem(cp.client, cp.keepClient)
+	if err != nil {
+		return err
+	}
+	// Create ancestors of dest, if necessary.
+	for i, c := range dest {
+		if i > 0 && c == '/' {
+			err = tmpfs.Mkdir(dest[:i], 0777)
+			if err != nil && !os.IsExist(err) {
+				return err
+			}
+		}
+	}
+	err = arvados.Splice(tmpfs, dest, snap)
+	if err != nil {
+		return err
+	}
+	mtxt, err := tmpfs.MarshalManifest(".")
+	if err != nil {
+		return err
+	}
+	cp.manifest += mtxt
 	return nil
 }
 
@@ -550,20 +588,18 @@ func (cp *copier) copyRegularFiles(m arvados.Mount) bool {
 	return m.Kind == "text" || m.Kind == "json" || (m.Kind == "collection" && m.Writable)
 }
 
-func (cp *copier) getManifest(pdh string) (*manifest.Manifest, error) {
+func (cp *copier) getManifest(pdh string) (string, error) {
 	if mft, ok := cp.manifestCache[pdh]; ok {
 		return mft, nil
 	}
 	var coll arvados.Collection
 	err := cp.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+pdh, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving collection record for %q: %s", pdh, err)
+		return "", fmt.Errorf("error retrieving collection record for %q: %s", pdh, err)
 	}
-	mft := &manifest.Manifest{Text: coll.ManifestText}
 	if cp.manifestCache == nil {
-		cp.manifestCache = map[string]*manifest.Manifest{pdh: mft}
-	} else {
-		cp.manifestCache[pdh] = mft
+		cp.manifestCache = make(map[string]string)
 	}
-	return mft, nil
+	cp.manifestCache[pdh] = coll.ManifestText
+	return coll.ManifestText, nil
 }
