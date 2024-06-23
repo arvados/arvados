@@ -37,6 +37,8 @@ func (s *copierSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	kc, err := keepclient.MakeKeepClient(cl)
 	c.Assert(err, check.IsNil)
+	collfs, err := (&arvados.Collection{}).FileSystem(arvados.NewClientFromEnv(), kc)
+	c.Assert(err, check.IsNil)
 
 	s.cp = copier{
 		client:        arvados.NewClientFromEnv(),
@@ -50,6 +52,7 @@ func (s *copierSuite) SetUpTest(c *check.C) {
 			"/secret_text": {Kind: "text", Content: "xyzzy"},
 		},
 		logger: &logrus.Logger{Out: &s.log, Formatter: &logrus.TextFormatter{}, Level: logrus.InfoLevel},
+		staged: collfs,
 	}
 }
 
@@ -148,7 +151,16 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 
 	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Check(err, check.IsNil)
-	c.Check(s.cp.manifest, check.Matches, `(?ms)\./l_dir acbd\S+ 0:3:foo\n\. acbd\S+ 0:3:l_file\n\. 37b5\S+ 0:3:l_file_w\n`)
+	s.checkStagedFile(c, "l_dir/foo", 3)
+	s.checkStagedFile(c, "l_file", 3)
+	s.checkStagedFile(c, "l_file_w", 3)
+}
+
+func (s *copierSuite) checkStagedFile(c *check.C, path string, size int64) {
+	fi, err := s.cp.staged.Stat(path)
+	if c.Check(err, check.IsNil) {
+		c.Check(fi.Size(), check.Equals, size)
+	}
 }
 
 func (s *copierSuite) TestSymlink(c *check.C) {
@@ -336,12 +348,10 @@ func (s *copierSuite) testCopyFromLargeCollection(c *check.C, writable bool) {
 	c.Log(s.log.String())
 
 	// Check some files to ensure they were copied properly.
-	fs, err := (&arvados.Collection{ManifestText: s.cp.manifest}).FileSystem(s.cp.client, s.cp.keepClient)
-	c.Assert(err, check.IsNil)
 	for i := 0; i < 100; i += 13 {
 		for j := 0; j < 100; j += 17 {
 			fnm := fmt.Sprintf("/fakecollection/dir%d/dir%d/file%d", i, j, j)
-			_, err := fs.Stat(fnm)
+			_, err := s.cp.staged.Stat(fnm)
 			c.Assert(err, check.IsNil, check.Commentf("%s", fnm))
 		}
 	}
@@ -405,8 +415,10 @@ func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 	c.Check(s.cp.files, check.DeepEquals, []filetodo{
 		{src: s.cp.hostOutputDir + "/include/includew/foo", dst: "/include/includew/foo", size: 3},
 	})
-	c.Check(s.cp.manifest, check.Matches, `(?ms).*\./include/includer .*`)
-	c.Check(s.cp.manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
+	manifest, err := s.cp.staged.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	c.Check(manifest, check.Matches, `(?ms).*\./include/includer .*`)
+	c.Check(manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
 	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excluder\\".*`)
 	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"nonexistent/collection\\".*`)
 }
@@ -420,7 +432,7 @@ func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
 }
 
 // applyGlobsToFilesAndDirs uses the same glob-matching code as
-// applyGlobsToCollectionFS, so we don't need to test all of the same
+// applyGlobsToStaged, so we don't need to test all of the same
 // glob-matching behavior covered in TestApplyGlobsToCollectionFS.  We
 // do need to check that (a) the glob is actually being used to filter
 // out files, and (b) non-matching dirs still included if and only if
@@ -582,8 +594,8 @@ func (s *copierSuite) TestApplyGlobsToCollectionFS(c *check.C) {
 		c.Logf("=== globs: %q", trial.globs)
 		collfs, err := (&arvados.Collection{ManifestText: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:bar 0:0:baz/quux 0:0:baz/parent1/item1\n"}).FileSystem(nil, nil)
 		c.Assert(err, check.IsNil)
-		cp := copier{globs: trial.globs}
-		err = cp.applyGlobsToCollectionFS(collfs)
+		cp := copier{globs: trial.globs, staged: collfs}
+		err = cp.applyGlobsToStaged()
 		if !c.Check(err, check.IsNil) {
 			continue
 		}
