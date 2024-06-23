@@ -9,6 +9,7 @@
 package manifest
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"path"
@@ -454,13 +455,13 @@ func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string 
 	}
 	sort.Strings(sortedstreams)
 
-	manifest := ""
+	var manifest bytes.Buffer
 	for _, k := range sortedstreams {
 		if strings.HasPrefix(k, prefix) || k == srcpath {
-			manifest += m[k].normalizedText(relocate + k[len(srcpath):])
+			manifest.WriteString(m[k].normalizedText(relocate + k[len(srcpath):]))
 		}
 	}
-	return manifest
+	return manifest.String()
 }
 
 // Extract extracts some or all of the manifest and returns the extracted
