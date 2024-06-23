@@ -142,9 +142,29 @@ class SysControllerTest < ActionController::TestCase
   end
 
   test "trash_sweep - delete unused uuid_locks" do
-    uuid = "zzzzz-zzzzz-deleteuuidlocks"
-    ActiveRecord::Base.connection.exec_query("INSERT INTO uuid_locks (uuid) VALUES ($1)", "", [uuid])
+    uuid_active = "zzzzz-zzzzz-uuidlockstest11"
+    uuid_inactive = "zzzzz-zzzzz-uuidlockstest00"
+
+    ready = Queue.new
+    insertsql = "INSERT INTO uuid_locks (uuid) VALUES ($1) ON CONFLICT (uuid) do UPDATE SET n = uuid_locks.n+1"
+    url = ENV["DATABASE_URL"].sub(/\?.*/, '')
+    Thread.new do
+      conn = PG::Connection.new(url)
+      conn.exec_params(insertsql, [uuid_active])
+      conn.exec_params(insertsql, [uuid_inactive])
+      conn.transaction do |conn|
+        conn.exec_params(insertsql, [uuid_active])
+        ready << true
+        # If we keep this transaction open while trash_sweep runs, the
+        # uuid_active row shouldn't get deleted.
+        sleep 10
+      rescue
+        ready << false
+      end
+    end
+    assert_equal true, ready.pop
+    authorize_with :admin
     post :trash_sweep
-    assert_equal [[uuid]], ActiveRecord::Base.connection.exec_query("SELECT uuid FROM uuid_locks", "", []).rows
+    assert_equal [[uuid_active]], ActiveRecord::Base.connection.exec_query("SELECT uuid FROM uuid_locks ORDER BY uuid", "", []).rows
   end
 end
