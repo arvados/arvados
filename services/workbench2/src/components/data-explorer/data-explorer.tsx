@@ -29,7 +29,24 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 
-type CssRules = "titleWrapper" | "msToolbarStyles" | "subpanelToolbarStyles" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | "dataTable" | "container";
+type CssRules =
+    | 'titleWrapper'
+    | 'msToolbarStyles'
+    | 'subpanelToolbarStyles'
+    | 'searchBox'
+    | 'headerMenu'
+    | 'toolbar'
+    | 'footer'
+    | 'loadMoreContainer'
+    | 'numResults'
+    | 'root'
+    | 'moreOptionsButton'
+    | 'title'
+    | 'subProcessTitle'
+    | 'dataTable'
+    | 'container'
+    | 'paginationLabel'
+    | 'paginationRoot';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
@@ -97,6 +114,15 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: "auto",
         flexBasis: "initial",
         flexGrow: 0,
+    },
+    paginationLabel: {
+        margin: 0,
+        padding: 0,
+        fontSize: '0.75rem',
+    },
+    paginationRoot: {
+        fontSize: '0.75rem',
+        color: theme.palette.grey["600"],
     },
 });
 
@@ -362,6 +388,11 @@ export const DataExplorer = withStyles(styles)(
                                             // Disable next button on empty lists since that's not default behavior
                                             nextIconButtonProps={itemsAvailable > 0 ? {} : { disabled: true }}
                                             component="div"
+                                            classes={{ 
+                                                root: classes.paginationRoot,
+                                                selectLabel: classes.paginationLabel, 
+                                                displayedRows: classes.paginationLabel,
+                                            }}
                                         />
                                     ) : (
                                         <Grid className={classes.loadMoreContainer}>
