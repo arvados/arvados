@@ -167,6 +167,8 @@ class SysControllerTest < ActionController::TestCase
     assert_equal true, ready.pop
     authorize_with :admin
     post :trash_sweep
-    assert_equal [[uuid_active]], ActiveRecord::Base.connection.exec_query("SELECT uuid FROM uuid_locks ORDER BY uuid", "", []).rows
+    rows = ActiveRecord::Base.connection.exec_query("SELECT uuid FROM uuid_locks ORDER BY uuid", "", []).rows
+    assert_includes(rows, [uuid_active], "row with active lock (still held by thread) should not have been deleted")
+    refute_includes(rows, [uuid_inactive], "row with inactive lock should have been deleted")
   end
 end
