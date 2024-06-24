@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
 )
 
 // ErrNoManifest indicates the given collection has no manifest
@@ -26,14 +25,6 @@ func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, fi
 		return nil, ErrNoManifest
 	}
 	fs, err := (&arvados.Collection{ManifestText: mText}).FileSystem(nil, kc)
-	if err != nil {
-		return nil, err
-	}
-	return fs.OpenFile(filename, os.O_RDONLY, 0)
-}
-
-func (kc *KeepClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
-	fs, err := (&arvados.Collection{ManifestText: m.Text}).FileSystem(nil, kc)
 	if err != nil {
 		return nil, err
 	}

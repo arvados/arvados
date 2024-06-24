@@ -5,6 +5,7 @@
 package deduplicationreport
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -13,7 +14,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 
 	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
@@ -91,10 +92,11 @@ Options:
 
 func blockList(collection arvados.Collection) (blocks map[string]int) {
 	blocks = make(map[string]int)
-	m := manifest.Manifest{Text: collection.ManifestText}
-	blockChannel := m.BlockIterWithDuplicates()
-	for b := range blockChannel {
-		blocks[b.Digest.String()] = b.Size
+	for _, token := range bytes.Split([]byte(collection.ManifestText), []byte{' '}) {
+		if blockdigest.IsBlockLocator(string(token)) {
+			loc, _ := blockdigest.ParseBlockLocator(string(token))
+			blocks[loc.Digest.String()] = loc.Size
+		}
 	}
 	return
 }
