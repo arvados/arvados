@@ -6,10 +6,10 @@ import React, { useEffect, useState } from "react";
 import { StyleRulesCallback, Tooltip, WithStyles, withStyles } from "@material-ui/core";
 import { CProgressStacked, CProgress } from '@coreui/react';
 import { useAsyncInterval } from "common/use-async-interval";
-import { Process } from "store/processes/process";
+import { Process, isProcessRunning } from "store/processes/process";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
-import { fetchProcessProgressBarStatus } from "store/subprocess-panel/subprocess-panel-actions";
+import { fetchProcessProgressBarStatus, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
 import { ProcessStatusFilter, serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
 import { ProjectResource } from "models/project";
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
@@ -40,7 +40,7 @@ export interface ProgressBarDataProps {
 }
 
 export interface ProgressBarActionProps {
-    fetchProcessProgressBarStatus: (parentResource: Process | ProjectResource, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
+    fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
 }
 
 type ProgressBarProps = ProgressBarDataProps & ProgressBarActionProps & WithStyles<CssRules>;
@@ -54,7 +54,7 @@ export type ProgressBarCounts = {
 
 export type ProgressBarStatus = {
     counts: ProgressBarCounts;
-    isRunning: boolean;
+    shouldPollProject: boolean;
 };
 
 const mapStateToProps = (state: RootState, props: ProgressBarDataProps) => {
@@ -70,8 +70,8 @@ const mapStateToProps = (state: RootState, props: ProgressBarDataProps) => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
-    fetchProcessProgressBarStatus: (parentResource: Process | ProjectResource, typeFilter?: string) => {
-        return dispatch<any>(fetchProcessProgressBarStatus(parentResource, typeFilter));
+    fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => {
+        return dispatch<any>(fetchProcessProgressBarStatus(parentResourceUuid, typeFilter));
     },
 });
 
@@ -79,31 +79,54 @@ export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps
     ({ parentResource, typeFilter, classes, fetchProcessProgressBarStatus }: ProgressBarProps) => {
 
         const [progressCounts, setProgressData] = useState<ProgressBarCounts | undefined>(undefined);
-        const [isRunning, setIsRunning] = useState<boolean>(false);
+        const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
+        const shouldPollProcess = isProcess(parentResource) ? isProcessRunning(parentResource) : false;
 
+        // Should polling be active based on container status
+        // or result of aggregated project process contents
+        const shouldPoll = shouldPollProject || shouldPollProcess;
+
+        const parentUuid = parentResource
+            ? isProcess(parentResource)
+                ? parentResource.containerRequest.uuid
+                : parentResource.uuid
+            : "";
+
+        // Runs periodically whenever polling should be happeing
+        // Either when the workflow is running (shouldPollProcess) or when the
+        //   project contains steps in an active state (shouldPollProject)
         useAsyncInterval(async () => {
-            if (parentResource) {
-                fetchProcessProgressBarStatus(parentResource, typeFilter)
+            if (parentUuid) {
+                fetchProcessProgressBarStatus(parentUuid, typeFilter)
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
-                            setIsRunning(result.isRunning);
+                            setShouldPollProject(result.shouldPollProject);
                         }
                     });
             }
-        }, isRunning ? 5000 : null);
+        }, shouldPoll ? 5000 : null);
 
+        // Runs fetch on first load for processes and projects, except when
+        //   process is running since polling will be enabled by shouldPoll.
+        // Project polling starts false so this is still needed for project
+        //   initial load to set shouldPollProject and kick off shouldPoll
+        // Watches shouldPollProcess but not shouldPollProject
+        //   * This runs a final fetch when process ends & is updated through
+        //     websocket / store
+        //   * We ignore shouldPollProject entirely since it changes to false
+        //     as a result of a fetch so the data is already up to date
         useEffect(() => {
-            if (!isRunning && parentResource) {
-                fetchProcessProgressBarStatus(parentResource, typeFilter)
+            if (!shouldPollProcess && parentUuid) {
+                fetchProcessProgressBarStatus(parentUuid, typeFilter)
                     .then(result => {
                         if (result) {
                             setProgressData(result.counts);
-                            setIsRunning(result.isRunning);
+                            setShouldPollProject(result.shouldPollProject);
                         }
                     });
             }
-        }, [fetchProcessProgressBarStatus, isRunning, parentResource, typeFilter]);
+        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter]);
 
         let tooltip = "";
         if (progressCounts) {

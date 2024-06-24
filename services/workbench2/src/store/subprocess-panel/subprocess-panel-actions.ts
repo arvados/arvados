@@ -9,8 +9,11 @@ import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-actio
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { ProgressBarStatus, ProgressBarCounts } from 'components/subprocess-progress-bar/subprocess-progress-bar';
 import { ProcessStatusFilter, buildProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
-import { Process, isProcessRunning } from 'store/processes/process';
+import { Process } from 'store/processes/process';
 import { ProjectResource } from 'models/project';
+import { getResource } from 'store/resources/resources';
+import { ContainerRequestResource } from 'models/container-request';
+import { Resource } from 'models/resource';
 
 export const SUBPROCESS_PANEL_ID = "subprocessPanel";
 export const SUBPROCESS_ATTRIBUTES_DIALOG = 'subprocessAttributesDialog';
@@ -50,12 +53,29 @@ type ProgressBarStatusPair = {
     processStatus: ProcessStatusFilter;
 };
 
-const isProcess = (resource: Process | ProjectResource | undefined): resource is Process => {
+/**
+ * Type guard to distinguish Processes from other Resources
+ * @param resource The item to check
+ * @returns if the resource is a Process
+ */
+export const isProcess = <T extends Resource>(resource: T | Process | undefined): resource is Process => {
     return !!resource && 'containerRequest' in resource;
 };
 
-export const fetchProcessProgressBarStatus = (parentResource: Process | ProjectResource, typeFilter?: string) =>
+/**
+ * Type guard to distinguish ContainerRequestResources from Resources
+ * @param resource The item to check
+ * @returns if the resource is a ContainerRequestResource
+ */
+const isContainerRequest = <T extends Resource>(resource: T | ContainerRequestResource | undefined): resource is ContainerRequestResource => {
+    return !!resource && 'containerUuid' in resource;
+};
+
+export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFilter?: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProgressBarStatus | undefined> => {
+        const resources = getState().resources;
+        const parentResource = getResource<ProjectResource | ContainerRequestResource>(parentResourceUuid)(resources);
+
         const requestContainerStatusCount = async (fb: FilterBuilder) => {
             return await services.containerRequestService.list({
                 limit: 0,
@@ -64,18 +84,21 @@ export const fetchProcessProgressBarStatus = (parentResource: Process | ProjectR
             });
         }
 
-        let baseFilter = "";
-        if (isProcess(parentResource)) {
-            baseFilter = new FilterBuilder().addEqual('requesting_container_uuid', parentResource.containerRequest.containerUuid).getFilters();
-        } else {
+        let baseFilter: string = "";
+        if (isContainerRequest(parentResource) && parentResource.containerUuid) {
+            // Prevent CR without containerUuid from generating baseFilter
+            baseFilter = new FilterBuilder().addEqual('requesting_container_uuid', parentResource.containerUuid).getFilters();
+        } else if (parentResource && !isContainerRequest(parentResource)) {
+            // isCR type narrowing needed since CR without container may fall through
             baseFilter = new FilterBuilder().addEqual('owner_uuid', parentResource.uuid).getFilters();
         }
 
-        if (typeFilter) {
-            baseFilter = joinFilters(baseFilter, typeFilter);
-        }
+        if (parentResource && baseFilter) {
+            // Add type filters from consumers that want to sync progress stats with filters
+            if (typeFilter) {
+                baseFilter = joinFilters(baseFilter, typeFilter);
+            }
 
-        if (baseFilter) {
             try {
                 // Create return object
                 let result: ProgressBarCounts = {
@@ -103,17 +126,23 @@ export const fetchProcessProgressBarStatus = (parentResource: Process | ProjectR
                     result[singleResult.status] += singleResult.count;
                 });
 
-                let isRunning = result[ProcessStatusFilter.RUNNING] + result[ProcessStatusFilter.QUEUED] > 0;
+                // CR polling is handled in progress bar based on store updates
+                // This bool triggers polling without causing a final fetch when disabled
+                // The shouldPoll logic here differs slightly from shouldPollProcess:
+                //   * Process gets websocket updates through the store so using isProcessRunning
+                //     ignores Queued
+                //   * In projects, we get no websocket updates on CR state changes so we treat
+                //     Queued processes as running in order to let polling keep us up to date
+                //     when anything transitions to Running. This also means that a project with
+                //     CRs in a stopped state won't start polling if CRs are started elsewhere
+                const shouldPollProject = isContainerRequest(parentResource)
+                    ? false
+                    : (result[ProcessStatusFilter.RUNNING] + result[ProcessStatusFilter.QUEUED]) > 0;
 
-                if (isProcess(parentResource)) {
-                    isRunning = isProcessRunning(parentResource);
-                }
-
-                return {counts: result, isRunning};
+                return {counts: result, shouldPollProject};
             } catch (e) {
                 return undefined;
             }
-        } else {
-            return undefined;
         }
+        return undefined;
     };
