@@ -159,7 +159,9 @@ class SysControllerTest < ActionController::TestCase
         # uuid_active row shouldn't get deleted.
         sleep 10
       rescue
+        # Unblock main thread
         ready << false
+        raise
       end
     end
     assert_equal true, ready.pop
