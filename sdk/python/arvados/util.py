@@ -16,6 +16,7 @@ import hashlib
 import httplib2
 import itertools
 import logging
+import operator
 import os
 import random
 import re
@@ -35,6 +36,7 @@ from typing import (
     Iterator,
     Mapping,
     Optional,
+    Sequence,
     TypeVar,
     Union,
 )
@@ -325,6 +327,7 @@ def keyset_list_all(
         order_key: str="created_at",
         num_retries: int=0,
         ascending: bool=True,
+        key_fields: Sequence[str]=('uuid',),
         **kwargs: Any,
 ) -> Iterator[Dict[str, Any]]:
     """Iterate all Arvados resources from an API list call
@@ -355,9 +358,17 @@ def keyset_list_all(
       all fields will be sorted in `'asc'` (ascending) order. Otherwise, all
       fields will be sorted in `'desc'` (descending) order.
 
+    * key_fields: Sequence[str] --- One or two fields that constitute a
+      unique key for returned items.  Normally this should be the
+      default value `('uuid',)`, unless `fn` returns
+      computed_permissions records, in which case it should be
+      `('user_uuid', 'target_uuid')`.  If two fields are given, one of
+      them must be equal to `order_key`.
+
     Additional keyword arguments will be passed directly to `fn` for each API
     call. Note that this function sets `count`, `limit`, and `order` as part of
     its work.
+
     """
     pagesize = 1000
     kwargs["limit"] = pagesize
@@ -366,18 +377,26 @@ def keyset_list_all(
     kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
     other_filters = kwargs.get("filters", [])
 
+    tiebreak_keys = set(key_fields) - {order_key}
+    if len(tiebreak_keys) == 0:
+        tiebreak_key = 'uuid'
+    elif len(tiebreak_keys) == 1:
+        tiebreak_key = tiebreak_keys.pop()
+    else:
+        raise arvados.errors.ArgumentError(
+            "key_fields can have at most one entry that is not order_key")
+
     try:
         select = set(kwargs['select'])
     except KeyError:
         pass
     else:
-        select.add(order_key)
-        select.add('uuid')
-        kwargs['select'] = list(select)
+        kwargs['select'] = list(select | set(key_fields) | {order_key})
 
     nextpage = []
     tot = 0
     expect_full_page = True
+    key_getter = operator.itemgetter(*key_fields)
     seen_prevpage = set()
     seen_thispage = set()
     lastitem = None
@@ -402,27 +421,14 @@ def keyset_list_all(
             # In cases where there's more than one record with the
             # same order key, the result could include records we
             # already saw in the last page.  Skip them.
-            seen_key = None
-            if "uuid" in i:
-                seen_key = i["uuid"]
-            elif "user_uuid" in i and "target_uuid" in i:
-                # If we are looking at computed_permissions, there is
-                # no uuid field. The primary key is a tuple.
-                seen_key = (i["user_uuid"], i["target_uuid"])
+            seen_key = key_getter(i)
             if seen_key in seen_prevpage:
                 continue
-            if seen_key is not None:
-                seen_thispage.add(seen_key)
+            seen_thispage.add(seen_key)
             yield i
 
         firstitem = items["items"][0]
         lastitem = items["items"][-1]
-
-        tiebreak_key = "uuid"
-        if "uuid" not in lastitem and "target_uuid" in lastitem:
-            # Special case for computed_permissions, where items do
-            # not have a uuid.
-            tiebreak_key = "target_uuid"
 
         if firstitem[order_key] == lastitem[order_key]:
             # Got a page where every item has the same order key.
@@ -440,6 +446,42 @@ def keyset_list_all(
             if tiebreak_key == "uuid":
                 nextpage += [[tiebreak_key, "!=", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = False
+
+def iter_computed_permissions(
+        fn: Callable[..., 'arvados.api_resources.ArvadosAPIRequest'],
+        order_key: str='user_uuid',
+        num_retries: int=0,
+        ascending: bool=True,
+        key_fields: Sequence[str]=('user_uuid', 'target_uuid'),
+        **kwargs: Any,
+) -> Iterator[Dict[str, Any]]:
+    """Iterate all `computed_permission` resources
+
+    This method is the same as `keyset_list_all`, except that its
+    default arguments are suitable for the computed_permissions API.
+
+    Arguments:
+
+    * fn: Callable[..., arvados.api_resources.ArvadosAPIRequest] ---
+      see `keyset_list_all`.  Typically
+      `arv.computed_permissions().list`.
+
+    * order_key: str --- see `keyset_list_all`.  Default
+      `'user_uuid'`.
+
+    * num_retries: int --- see `keyset_list_all`.
+
+    * ascending: bool --- see `keyset_list_all`.
+
+    * key_fields: Sequence[str] --- see `keyset_list_all`. Default
+      `('user_uuid', 'target_uuid')`.
+
+    """
+    return keyset_list_all(
+        fn,
+        order_key='user_uuid',
+        key_fields=('user_uuid', 'target_uuid'),
+        **kwargs)
 
 def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
     """Return the path of the best available source of CA certificates

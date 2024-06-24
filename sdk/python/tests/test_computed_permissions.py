@@ -22,8 +22,15 @@ class ComputedPermissionTest(run_test_server.TestCaseWithServers):
         run_test_server.authorize_with('admin')
         api_client = arvados.api('v1')
         seen = {}
-        for item in arvados.util.keyset_list_all(api_client.computed_permissions().list, order_key='user_uuid'):
-            import sys
-            print(f"{item['user_uuid']} {item['target_uuid']}", file=sys.stderr)
+        for item in arvados.util.keyset_list_all(api_client.computed_permissions().list, order_key='user_uuid', key_fields=('user_uuid', 'target_uuid')):
+            assert (item['user_uuid'], item['target_uuid']) not in seen
+            seen[(item['user_uuid'], item['target_uuid'])] = True
+
+    def test_iter_computed_permissions(self):
+        run_test_server.authorize_with('admin')
+        api_client = arvados.api('v1')
+        seen = {}
+        for item in arvados.util.iter_computed_permissions(api_client.computed_permissions().list):
+            assert item['perm_level']
             assert (item['user_uuid'], item['target_uuid']) not in seen
             seen[(item['user_uuid'], item['target_uuid'])] = True

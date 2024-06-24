@@ -168,18 +168,25 @@ class KeysetListAllTestCase(unittest.TestCase):
         itertools.chain.from_iterable(
             (zip(
                 itertools.repeat(fake_item),
+                itertools.repeat(key_fields),
                 itertools.cycle(fake_item),
                 itertools.chain.from_iterable(
                     itertools.combinations(fake_item, count)
                     for count in range(len(fake_item) + 1)
                 ),
-            ) for fake_item in [_SELECT_FAKE_ITEM, _FAKE_COMPUTED_PERMISSIONS_ITEM]),
+            ) for (fake_item, key_fields) in [
+                (_SELECT_FAKE_ITEM, ('uuid',)),
+                (_FAKE_COMPUTED_PERMISSIONS_ITEM, ('user_uuid', 'target_uuid')),
+            ]),
         ),
     )
-    def test_select(self, fake_item, order_key, select):
+    def test_select(self, fake_item, key_fields, order_key, select):
         # keyset_list_all must have both uuid and order_key to function.
         # Test that it selects those fields along with user-specified ones.
-        expect_select = {'uuid', order_key, *select}
+        if order_key == 'perm_level':
+            # not possible: there is no correct value for key_fields
+            return
+        expect_select = {*key_fields, order_key, *select}
         item = {
             key: value
             for key, value in fake_item.items()
@@ -194,7 +201,7 @@ class KeysetListAllTestCase(unittest.TestCase):
             ],
         )
         list_func.reset_mock()
-        actual = list(arvados.util.keyset_list_all(list_func, order_key, select=list(select)))
+        actual = list(arvados.util.keyset_list_all(list_func, order_key, select=list(select), key_fields=key_fields))
         self.assertEqual(actual, [item])
         calls = list_func.call_args_list
         self.assertTrue(len(calls) >= 2, "list_func() not called enough to exhaust items")
