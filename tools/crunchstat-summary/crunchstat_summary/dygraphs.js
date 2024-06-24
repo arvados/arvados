@@ -21,6 +21,9 @@ window.onload = function() {
             // finally, strip trailing zeroes: 1d0m0s -> 1d
             return ret.replace(/(\D)(0\D)*$/, '$1')
         },
+        date: function(s) {
+	    return new Date(s).toLocaleString();
+        },
     }
     var ticker = {
         time: function(min, max, pixels, opts, dg) {
@@ -34,7 +37,7 @@ window.onload = function() {
             }
             var ticks = []
             for (var i=Math.ceil(min/interval)*interval; i<=max; i+=interval) {
-                ticks.push({v: i, label: fmt.time(i)})
+                ticks.push({v: i, label: fmt.date(i)})
             }
             return ticks
         },
@@ -57,9 +60,11 @@ window.onload = function() {
             }
             chart.options.axes = {
                 x: {
-                    axisLabelFormatter: fmt.time,
-                    valueFormatter: fmt.time,
+                    axisLabelFormatter: fmt.date,
+                    valueFormatter: fmt.date,
                     ticker: ticker.time,
+		    axisLabelWidth: 200,
+		    pixelsPerLabel: 100
                 },
                 y: {
                     axisLabelFormatter: fmt.iso,
