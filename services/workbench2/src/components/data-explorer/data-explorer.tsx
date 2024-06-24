@@ -59,7 +59,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         height: "100%",
         flex: 1,
-        overflowY: "hidden",
+        overflowY: "auto",
     },
     moreOptionsButton: {
         padding: 0,
@@ -88,7 +88,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     dataTable: {
         height: "100%",
-        overflowY: "scroll",
+        overflowY: "auto",
     },
     container: {
         height: "100%",
@@ -312,7 +312,6 @@ export const DataExplorer = withStyles(styles)(
                         {!this.multiSelectToolbarInTitle && <MultiselectToolbar isSubPanel={true} injectedStyles={classes.subpanelToolbarStyles}/>}
                         <Grid
                             item
-                            xs="auto"
                             className={classes.dataTable}
                             style={currentRoute?.includes('search-results')  || !!progressBar ? {marginTop: '-10px'} : {}}
                         >
