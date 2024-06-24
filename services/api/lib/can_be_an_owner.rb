@@ -30,6 +30,7 @@ module CanBeAnOwner
                       'repositories',
                       'specimens',
                       'traits',
+                      'uuid_locks',
                     ])
       klass = t.classify.constantize
       next unless klass and 'owner_uuid'.in?(klass.columns.collect(&:name))

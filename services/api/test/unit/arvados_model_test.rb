@@ -130,6 +130,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
       'ar_internal_metadata',
       'permission_refresh_lock',
       'schema_migrations',
+      'uuid_locks',
       # tables that may still exist in the database even though model
       # classes have been deleted:
       'humans',
