@@ -5,6 +5,7 @@
 import arvados
 import arvados.util
 from . import run_test_server
+from .test_util import KeysetTestHelper
 
 class ComputedPermissionTest(run_test_server.TestCaseWithServers):
     def test_computed_permission(self):
@@ -34,3 +35,44 @@ class ComputedPermissionTest(run_test_server.TestCaseWithServers):
             assert item['perm_level']
             assert (item['user_uuid'], item['target_uuid']) not in seen
             seen[(item['user_uuid'], item['target_uuid'])] = True
+
+    def test_iter_computed_permissions_defaults(self):
+        ks = KeysetTestHelper([[
+            {"limit": 1000, "count": "none", "order": ["user_uuid asc", "target_uuid asc"], "filters": []},
+            {"items": [{"user_uuid": "u", "target_uuid": "t"}]}
+        ], [
+            {"limit": 1000, "count": "none", "order": ["user_uuid asc", "target_uuid asc"], "filters": [['user_uuid', '=', 'u'], ['target_uuid', '>', 't']]},
+            {"items": []},
+        ], [
+            {"limit": 1000, "count": "none", "order": ["user_uuid asc", "target_uuid asc"], "filters": [['user_uuid', '>', 'u']]},
+            {"items": []},
+        ]])
+        ls = list(arvados.util.iter_computed_permissions(ks.fn))
+        assert ls == ks.expect[0][1]['items']
+
+    def test_iter_computed_permissions_order_key(self):
+        ks = KeysetTestHelper([[
+            {"limit": 1000, "count": "none", "order": ["target_uuid desc", "user_uuid desc"], "filters": []},
+            {"items": [{"user_uuid": "u", "target_uuid": "t"}]}
+        ], [
+            {"limit": 1000, "count": "none", "order": ["target_uuid desc", "user_uuid desc"], "filters": [['target_uuid', '=', 't'], ['user_uuid', '<', 'u']]},
+            {"items": []},
+        ], [
+            {"limit": 1000, "count": "none", "order": ["target_uuid desc", "user_uuid desc"], "filters": [['target_uuid', '<', 't']]},
+            {"items": []},
+        ]])
+        ls = list(arvados.util.iter_computed_permissions(ks.fn, order_key='target_uuid', ascending=False))
+        assert ls == ks.expect[0][1]['items']
+
+    def test_iter_computed_permissions_num_retries(self):
+        ks = KeysetTestHelper([[
+            {"limit": 1000, "count": "none", "order": ["user_uuid asc", "target_uuid asc"], "filters": []},
+            {"items": []}
+        ]], expect_num_retries=33)
+        assert list(arvados.util.iter_computed_permissions(ks.fn, num_retries=33)) == []
+
+    def test_iter_computed_permissions_invalid_key_fields(self):
+        ks = KeysetTestHelper([])
+        with self.assertRaises(arvados.errors.ArgumentError) as exc:
+            _ = list(arvados.util.iter_computed_permissions(ks.fn, key_fields=['target_uuid', 'perm_level']))
+        assert exc.exception.args[0] == 'key_fields can have at most one entry that is not order_key'

@@ -18,9 +18,10 @@ import arvados.util
 
 
 class KeysetTestHelper:
-    def __init__(self, expect):
+    def __init__(self, expect, expect_num_retries=0):
         self.n = 0
         self.expect = expect
+        self.expect_num_retries = expect_num_retries
 
     def fn(self, **kwargs):
         if self.expect[self.n][0] != kwargs:
@@ -28,6 +29,8 @@ class KeysetTestHelper:
         return self
 
     def execute(self, num_retries):
+        if num_retries != self.expect_num_retries:
+            raise Exception(f"KeysetTestHelper called with num_retries={num_retries} but expected {expect_num_retries}")
         self.n += 1
         return self.expect[self.n-1][1]
 
