@@ -348,6 +348,10 @@ func (s *copierSuite) testCopyFromLargeCollection(c *check.C, writable bool) {
 	c.Log(s.log.String())
 
 	// Check some files to ensure they were copied properly.
+	// Specifically, arbitrarily check every 17th file in every
+	// 13th dir.  (This is better than checking all of the files
+	// only in that it's less likely to show up as a distracting
+	// signal in CPU profiling.)
 	for i := 0; i < 100; i += 13 {
 		for j := 0; j < 100; j += 17 {
 			fnm := fmt.Sprintf("/fakecollection/dir%d/dir%d/file%d", i, j, j)
