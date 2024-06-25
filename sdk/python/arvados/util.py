@@ -370,13 +370,6 @@ def keyset_list_all(
     its work.
 
     """
-    pagesize = 1000
-    kwargs["limit"] = pagesize
-    kwargs["count"] = 'none'
-    asc = "asc" if ascending else "desc"
-    kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
-    other_filters = kwargs.get("filters", [])
-
     tiebreak_keys = set(key_fields) - {order_key}
     if len(tiebreak_keys) == 0:
         tiebreak_key = 'uuid'
@@ -385,6 +378,13 @@ def keyset_list_all(
     else:
         raise arvados.errors.ArgumentError(
             "key_fields can have at most one entry that is not order_key")
+
+    pagesize = 1000
+    kwargs["limit"] = pagesize
+    kwargs["count"] = 'none'
+    asc = "asc" if ascending else "desc"
+    kwargs["order"] = [f"{order_key} {asc}", f"{tiebreak_key} {asc}"]
+    other_filters = kwargs.get("filters", [])
 
     try:
         select = set(kwargs['select'])
