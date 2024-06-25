@@ -386,12 +386,8 @@ def keyset_list_all(
     kwargs["order"] = [f"{order_key} {asc}", f"{tiebreak_key} {asc}"]
     other_filters = kwargs.get("filters", [])
 
-    try:
-        select = set(kwargs['select'])
-    except KeyError:
-        pass
-    else:
-        kwargs['select'] = list(select | set(key_fields) | {order_key})
+    if 'select' in kwargs:
+        kwargs['select'] = list({*kwargs['select'], *key_fields, order_key})
 
     nextpage = []
     tot = 0
