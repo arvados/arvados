@@ -32,11 +32,11 @@ from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
+    Container,
     Dict,
     Iterator,
     Mapping,
     Optional,
-    Sequence,
     TypeVar,
     Union,
 )
@@ -327,7 +327,7 @@ def keyset_list_all(
         order_key: str="created_at",
         num_retries: int=0,
         ascending: bool=True,
-        key_fields: Sequence[str]=('uuid',),
+        key_fields: Container[str]=('uuid',),
         **kwargs: Any,
 ) -> Iterator[Dict[str, Any]]:
     """Iterate all Arvados resources from an API list call
@@ -358,8 +358,8 @@ def keyset_list_all(
       all fields will be sorted in `'asc'` (ascending) order. Otherwise, all
       fields will be sorted in `'desc'` (descending) order.
 
-    * key_fields: Sequence[str] --- One or two fields that constitute a
-      unique key for returned items.  Normally this should be the
+    * key_fields: Container[str] --- One or two fields that constitute
+      a unique key for returned items.  Normally this should be the
       default value `('uuid',)`, unless `fn` returns
       computed_permissions records, in which case it should be
       `('user_uuid', 'target_uuid')`.  If two fields are given, one of
@@ -452,7 +452,7 @@ def iter_computed_permissions(
         order_key: str='user_uuid',
         num_retries: int=0,
         ascending: bool=True,
-        key_fields: Sequence[str]=('user_uuid', 'target_uuid'),
+        key_fields: Container[str]=('user_uuid', 'target_uuid'),
         **kwargs: Any,
 ) -> Iterator[Dict[str, Any]]:
     """Iterate all `computed_permission` resources
@@ -473,7 +473,7 @@ def iter_computed_permissions(
 
     * ascending: bool --- see `keyset_list_all`.
 
-    * key_fields: Sequence[str] --- see `keyset_list_all`. Default
+    * key_fields: Container[str] --- see `keyset_list_all`. Default
       `('user_uuid', 'target_uuid')`.
 
     """
