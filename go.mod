@@ -52,7 +52,7 @@ require (
 	golang.org/x/sys v0.20.0
 	google.golang.org/api v0.181.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	gopkg.in/square/go-jose.v2 v2.6.0
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 	rsc.io/getopt v0.0.0-20170811000552-20be20937449
 )
 

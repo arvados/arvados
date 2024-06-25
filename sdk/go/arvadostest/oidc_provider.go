@@ -17,8 +17,8 @@ import (
 	"time"
 
 	"gopkg.in/check.v1"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
+	"gopkg.in/go-jose/go-jose.v2"
+	"gopkg.in/go-jose/go-jose.v2/jwt"
 )
 
 type OIDCProvider struct {
