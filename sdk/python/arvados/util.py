@@ -459,8 +459,10 @@ def iter_computed_permissions(
     Arguments:
 
     * fn: Callable[..., arvados.api_resources.ArvadosAPIRequest] ---
-      see `keyset_list_all`.  Typically
-      `arv.computed_permissions().list`.
+      see `keyset_list_all`.  Typically this is an instance of
+      `arvados.api_resources.ComputedPermissions.list`.  Given an
+      Arvados API client named `arv`, typical usage is
+      `iter_computed_permissions(arv.computed_permissions().list)`.
 
     * order_key: str --- see `keyset_list_all`.  Default
       `'user_uuid'`.
