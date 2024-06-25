@@ -8,16 +8,16 @@ import sys
 
 import arvados
 import arvados.util
-import datetime
 import ciso8601
 import csv
 import os
 import logging
 import re
 
-from arvados_cluster_activity.report import ClusterActivityReport
+from arvados_cluster_activity.report import ClusterActivityReport, aws_monthly_cost
+from arvados_cluster_activity.prometheus import get_metric_usage
 
-from datetime import timedelta, timezone
+from datetime import timedelta, timezone, datetime
 import base64
 
 prometheus_support = True
@@ -59,20 +59,20 @@ def parse_arguments(arguments):
 
     if args.end:
         try:
-            to = datetime.datetime.strptime(args.end,"%Y-%m-%d")
+            to = datetime.strptime(args.end,"%Y-%m-%d")
         except:
             arg_parser.print_help()
             print("\nError: end date must be in YYYY-MM-DD format")
             exit(1)
     else:
-        to = datetime.datetime.now(timezone.utc)
+        to = datetime.now(timezone.utc)
 
     if args.days:
-        since = to - datetime.timedelta(days=args.days)
+        since = to - timedelta(days=args.days)
 
     if args.start:
         try:
-            since = datetime.datetime.strptime(args.start,"%Y-%m-%d")
+            since = datetime.strptime(args.start,"%Y-%m-%d")
         except:
             arg_parser.print_help()
             print("\nError: start date must be in YYYY-MM-DD format")
@@ -114,12 +114,7 @@ def data_usage(prom, timestamp, cluster, label):
     my_metric_object = MetricsList(metric_data)[0]
     dedup_ratio = my_metric_object.metric_values.iloc[0]["y"]
 
-    value_gb = value / (1024*1024*1024)
-    first_50tb = min(1024*50, value_gb)
-    next_450tb = max(min(1024*450, value_gb-1024*50), 0)
-    over_500tb = max(value_gb-1024*500, 0)
-
-    monthly_cost = (first_50tb * 0.023) + (next_450tb * 0.022) + (over_500tb * 0.021)
+    monthly_cost = aws_monthly_cost(value)
 
     for scale in ["KiB", "MiB", "GiB", "TiB", "PiB"]:
         summary_value = summary_value / 1024
@@ -131,53 +126,21 @@ def data_usage(prom, timestamp, cluster, label):
             break
 
 
-
-
-def container_usage(prom, start_time, end_time, metric, label, fn=None):
-    from prometheus_api_client.utils import parse_datetime
-    from prometheus_api_client import PrometheusConnect, MetricsList, Metric
-    import pandas
-
-    start = start_time
-    chunk_size = timedelta(days=1)
+def print_container_usage(prom, start_time, end_time, metric, label, fn=None):
     cumulative = 0
 
-    while start < end_time:
-        if start + chunk_size > end_time:
-            chunk_size = end_time - start
-
-        metric_data = prom.custom_query_range(metric,
-                                              start_time=start,
-                                              end_time=(start + chunk_size),
-                                              step=15
-                                              )
-
-        if len(metric_data) == 0:
-            break
-
-        if "__name__" not in metric_data[0]["metric"]:
-            metric_data[0]["metric"]["__name__"] = metric
-
-        metric_object_list = MetricsList(metric_data)
-        my_metric_object = metric_object_list[0] # one of the metrics from the list
-
-        series = my_metric_object.metric_values.set_index(pandas.DatetimeIndex(my_metric_object.metric_values['ds']))
-
-        # Resample to 1 minute increments, fill in missing values
-        rs = series.resample("min").mean(1).ffill()
-
+    for rs in get_metric_usage(prom, start_time, end_time, metric):
         # Calculate the sum of values
         #print(rs.sum()["y"])
         cumulative += rs.sum()["y"]
-
-        start += chunk_size
 
     if fn is not None:
         cumulative = fn(cumulative)
 
     print(label % cumulative)
 
-def report_from_prometheus(cluster, since, to):
+
+def get_prometheus_client():
     from prometheus_api_client import PrometheusConnect
 
     prom_host = os.environ.get("PROMETHEUS_HOST")
@@ -194,6 +157,10 @@ def report_from_prometheus(cluster, since, to):
 
     prom = PrometheusConnect(url=prom_host, headers=headers)
 
+    return prom
+
+def report_from_prometheus(prom, cluster, since, to):
+
     print(cluster, "between", since, "and", to, "timespan", (to-since))
 
     try:
@@ -206,8 +173,8 @@ def report_from_prometheus(cluster, since, to):
     except:
         logging.exception("Failed to get end value")
 
-    container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
-    container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
+    print_container_usage(prom, since, to, "arvados_dispatchcloud_containers_running{cluster='%s'}" % cluster, '%.1f container hours', lambda x: x/60)
+    print_container_usage(prom, since, to, "sum(arvados_dispatchcloud_instances_price{cluster='%s'})" % cluster, '$%.2f spent on compute', lambda x: x/60)
     print()
 
 
@@ -219,16 +186,18 @@ def main(arguments=None):
 
     logging.getLogger().setLevel(logging.INFO)
 
+    prom = None
     if prometheus_support:
         if "PROMETHEUS_HOST" in os.environ:
+            prom = get_prometheus_client()
             if args.cluster:
-                report_from_prometheus(args.cluster, since, to)
+                report_from_prometheus(prom, args.cluster, since, to)
             else:
                 logging.warn("--cluster not provided, not collecting activity from Prometheus")
         else:
             logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
 
-    reporter = ClusterActivityReport()
+    reporter = ClusterActivityReport(prom)
 
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
@@ -238,7 +207,7 @@ def main(arguments=None):
 
     if args.html_report_file:
         with open(args.html_report_file, "wt") as f:
-            f.write(ClusterActivityReport().html_report(since, to, args.exclude))
+            f.write(reporter.html_report(since, to, args.exclude))
 
 if __name__ == "__main__":
     main()

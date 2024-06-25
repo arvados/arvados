@@ -24,7 +24,8 @@ class DygraphsChart(crunchstat_summary.webchart.WebChart):
                 'legend': 'always',
                 'connectSeparatedPoints': True,
                 'labels': ['elapsed'] +  stats[1],
-                'title': '{}: {}'.format(label, stats[0]),
+                'includeZero': True,
+                'title': '{}: {}'.format(label, stats[0]) if label else stats[0],
             },
         }
 

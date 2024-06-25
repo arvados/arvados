@@ -11,13 +11,15 @@ import csv
 import math
 import collections
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import pkg_resources
 
 from dataclasses import dataclass
 
 import crunchstat_summary.dygraphs
 from crunchstat_summary.summarizer import Task
+
+from arvados_cluster_activity.prometheus import get_metric_usage
 
 @dataclass
 class WorkflowRunSummary:
@@ -32,11 +34,12 @@ class ProjectSummary:
     users: set
     uuid: str
     runs: dict[str, WorkflowRunSummary]
+    earliest: datetime = datetime(year=9999, month=1, day=1)
+    latest: datetime = datetime(year=1900, month=1, day=1)
     name: str = ""
     cost: float = 0
     count: int = 0
     hours: float = 0
-
 
 class Summarizer:
     label: str
@@ -50,6 +53,16 @@ def date_export(item):
     if isinstance(item, datetime):
         return """@new Date("{}")@""".format(item.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
+def aws_monthly_cost(value):
+    value_gb = value / (1024*1024*1024)
+    first_50tb = min(1024*50, value_gb)
+    next_450tb = max(min(1024*450, value_gb-1024*50), 0)
+    over_500tb = max(value_gb-1024*500, 0)
+
+    monthly_cost = (first_50tb * 0.023) + (next_450tb * 0.022) + (over_500tb * 0.021)
+    return monthly_cost
+
+
 class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
     def sections(self):
         return [
@@ -57,8 +70,8 @@ class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
                 'label': s.long_label(),
                 'charts': [
                     self.chartdata(s.label, s.tasks, stat)
-                    for stat in (('Compute', ['hours']),
-                                 ('Disk', ['GiB']),
+                    for stat in (('Concurrent containers', ['containers']),
+                                 ('Storage', ['used']),
                                  )
                     ],
             }
@@ -73,7 +86,6 @@ class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
         data = []
         nulls = []
         # uuid is category for crunch2
-        print(tasks, stats)
         for uuid, task in tasks.items():
             # All stats in a category are assumed to have the same time base and same number of samples
             category = stats[0]
@@ -115,43 +127,90 @@ def hours_to_runtime_str(frac_hours):
     return "%i:%02i:%02i" % (hours, minutes, seconds)
 
 
-def csv_dateformat(date):
-    dt = ciso8601.parse_datetime(date)
-    return dt.strftime("%Y-%m-%d %H:%M%S")
+def csv_dateformat(datestr):
+    dt = ciso8601.parse_datetime(datestr)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class ClusterActivityReport(object):
-    def __init__(self, label=None, threads=1, **kwargs):
-        self.label = "Cluster report"
+    def __init__(self, prom_client, label=None, threads=1, **kwargs):
         self.threadcount = threads
         self.arv_client = arvados.api()
+        self.prom_client = prom_client
+        self.cluster = self.arv_client.config()["ClusterID"]
 
         self.active_users = set()
         self.project_summary = {}
         self.total_hours = 0
         self.total_cost = 0
+        self.total_workflows = 0
+        self.summarizers = []
+        self.storage_cost = 0
 
     def run(self):
         pass
 
+    def collect_graph(self, since, to, label, taskname, legend, metric, resampleTo, extra=None):
+        if not self.prom_client:
+            return
+
+        s1 = Summarizer()
+        s1.label = label
+        s1.tasks = collections.defaultdict(Task)
+        task = s1.tasks[taskname]
+
+        for series in get_metric_usage(self.prom_client, since, to, metric % self.cluster, resampleTo=resampleTo):
+            for t in series.itertuples():
+                task.series[taskname, legend].append(t)
+                if extra:
+                    extra(t)
+
+        self.summarizers.append(s1)
+
+    def collect_storage_cost(self, t):
+        self.storage_cost += aws_monthly_cost(t.y) / (30*24)
+
     def html_report(self, since, to, exclude):
+
+        self.label = "Cluster report for %s from %s to %s" % (self.cluster, since.date(), to.date())
 
         for row in self.report_from_api(since, to, True, exclude):
             pass
+
+        self.collect_graph(since, to, "", "Concurrent containers", "containers",
+                           "arvados_dispatchcloud_containers_running{cluster='%s'}", resampleTo="5min")
+
+        self.collect_graph(since, to, "", "Storage", "used",
+                           "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
 
         tophtml = ""
         bottomhtml = ""
         label = self.label
 
-        tophtml = """<h2>Summary</h2>
-        <p>Total user accounts: {total_users}</p>
+        tophtml = []
+
+        tophtml.append("""<h2>Lifetime cluster status as of {now}</h2>
+        <p>Total users: {total_users}</p>
+        <p>Total projects: {total_projects}</p>
+        """.format(now=date.today(), total_users=self.total_users, total_projects=self.total_projects))
+
+        tophtml.append("""<h2>Activity and cost in the period {since} to {to}</h2>
+        <p>Reporting period length: {reporting_days} days</p>
         <p>Active users: {active_users}</p>
-        <p>Aggregate compute hours: {total_hours}</p>
-        <p>Aggregate compute cost: ${total_cost}</p>
+        <p>Active projects: {active_projects}</p>
+        <p>Workflow runs: {total_workflows}</p>
+        <p>Hours of compute used: {total_hours}</p>
+        <p>Approximate compute cost: ${total_cost}</p>
+        <p>Approximate storage cost: ${storage_cost}</p>
         """.format(active_users=len(self.active_users),
                    total_users=self.total_users,
                    total_hours=round(self.total_hours, 1),
-                   total_cost=round(self.total_cost, 2))
+                   total_cost=round(self.total_cost, 2),
+                   total_workflows=self.total_workflows,
+                   active_projects=len(self.project_summary),
+                   since=since.date(), to=to.date(),
+                   reporting_days=(to - since).days,
+                   storage_cost=round(self.storage_cost, 2)))
 
         bottomhtml = []
 
@@ -165,6 +224,7 @@ class ClusterActivityReport(object):
             bottomhtml.append(
                 """<h2>{name}</h2>
                 <p>Users: {users}</p>
+                <p>Active between {earliest} and {latest}</p>
                 <p>{wfsum}</p>
                 <p>Compute hours: {hours}</p>
                 <p>Compute cost: ${cost}</p>
@@ -172,23 +232,12 @@ class ClusterActivityReport(object):
                            users=", ".join(prj.users),
                            cost=round(prj.cost, 2),
                            hours=round(prj.hours, 1),
-                           wfsum="</p><p>".join(wfsum))
+                           wfsum="</p><p>".join(wfsum),
+                           earliest=prj.earliest.date(),
+                           latest=prj.latest.date())
             )
 
-
-        summarizers = []
-        s1 = Summarizer()
-        s1.label = "Compute"
-        s1.tasks = collections.defaultdict(Task)
-
-        task = s1.tasks["Compute"]
-        task.series["Compute", "hours"].append((datetime.now() + timedelta(minutes=0), 1))
-        task.series["Compute", "hours"].append((datetime.today() + timedelta(minutes=2), 2))
-        task.series["Compute", "hours"].append((datetime.today() + timedelta(minutes=4), 1))
-
-        summarizers.append(s1)
-
-        return WEBCHART_CLASS(label, summarizers).html(tophtml, bottomhtml)
+        return WEBCHART_CLASS(label, self.summarizers).html(tophtml, bottomhtml)
 
     def flush_containers(self, pending, include_steps, exclude):
         containers = {}
@@ -305,6 +354,7 @@ class ClusterActivityReport(object):
                 "UserUUID": container_request["modified_by_user_uuid"],
                 "Submitted": csv_dateformat(container_request["created_at"]),
                 "Started": csv_dateformat(containers[container_request["container_uuid"]]["started_at"]),
+                "Finished": csv_dateformat(containers[container_request["container_uuid"]]["finished_at"]),
                 "Runtime": runtime_str(container_request, containers),
                 "Cost": round(containers[container_request["container_uuid"]]["cost"] if include_steps else container_request["cumulative_cost"], 3),
                 "CumulativeCost": round(container_request["cumulative_cost"], 3)
@@ -327,6 +377,7 @@ class ClusterActivityReport(object):
                         "UserUUID": container_request["modified_by_user_uuid"],
                         "Submitted": csv_dateformat(child_cr["created_at"]),
                         "Started": csv_dateformat(containers[child_cr["container_uuid"]]["started_at"]),
+                        "Finished": csv_dateformat(containers[child_cr["container_uuid"]]["finished_at"]),
                         "Runtime": runtime_str(child_cr, containers),
                         "Cost": round(containers[child_cr["container_uuid"]]["cost"], 3),
                         "CumulativeCost": round(containers[child_cr["container_uuid"]]["cost"], 3),
@@ -348,6 +399,15 @@ class ClusterActivityReport(object):
         hrs = runtime_in_hours(row["Runtime"])
         prj.hours += hrs
 
+        started = datetime.strptime(row["Started"], "%Y-%m-%d %H:%M:%S")
+        finished = datetime.strptime(row["Finished"], "%Y-%m-%d %H:%M:%S")
+
+        if started < prj.earliest:
+            prj.earliest = started
+
+        if finished > prj.latest:
+            prj.latest = finished
+
         if row["Step"] == "workflow runner":
             prj.runs.setdefault(row["Workflow"], WorkflowRunSummary(name=row["Workflow"],
                                                                     uuid=row["WorkflowUUID"]))
@@ -355,6 +415,7 @@ class ClusterActivityReport(object):
             prj.runs[wfuuid].count += 1
             prj.runs[wfuuid].cost += row["CumulativeCost"]
             prj.runs[wfuuid].hours += hrs
+            self.total_workflows += 1
 
         self.total_hours += hrs
         self.total_cost += cost
@@ -392,6 +453,9 @@ class ClusterActivityReport(object):
 
         userinfo = self.arv_client.users().list(filters=[["is_active", "=", True]], limit=0).execute()
         self.total_users = userinfo["items_available"]
+
+        groupinfo = self.arv_client.groups().list(filters=[["group_class", "=", "project"]], limit=0).execute()
+        self.total_projects = groupinfo["items_available"]
 
     def csv_report(self, since, to, out, include_steps, columns, exclude):
         if columns:
