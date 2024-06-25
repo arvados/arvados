@@ -146,6 +146,7 @@ export type TCheckedList = Record<string, boolean>;
 type DataTableState = {
     isSelected: boolean;
     isLoaded: boolean;
+    includeCheckboxColumn: boolean;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -155,6 +156,7 @@ export const DataTable = withStyles(styles)(
         state: DataTableState = {
             isSelected: false,
             isLoaded: false,
+            includeCheckboxColumn: true,
         };
 
         componentDidMount(): void {
@@ -162,9 +164,8 @@ export const DataTable = withStyles(styles)(
             // If table is initialized loaded but empty
             // isLoaded won't be set true by componentDidUpdate later
             // So we set it to true here
-            if (!this.props.working) {
-                this.setState({ isLoaded: true });
-            }
+            if (!this.props.working) this.setState({ isLoaded: true });
+            this.setState({ includeCheckboxColumn: !this.isPathDisallowed(this.props.currentRoute ||'') })
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
@@ -198,6 +199,11 @@ export const DataTable = withStyles(styles)(
 
         componentWillUnmount(): void {
             this.initializeCheckedList([]);
+        }
+
+        disallowedPaths = ["/group/"];
+        isPathDisallowed = (location: string): boolean => {
+            return this.disallowedPaths.some(path => location.includes(path))
         }
 
         checkBoxColumn: DataColumn<any, any> = {
@@ -318,7 +324,7 @@ export const DataTable = withStyles(styles)(
             const { items, classes, columns, isNotFound } = this.props;
             const { isLoaded } = this.state;
             if (columns.length && columns[0].name === this.checkBoxColumn.name) columns.shift();
-            columns.unshift(this.checkBoxColumn);
+            if (this.state.includeCheckboxColumn) columns.unshift(this.checkBoxColumn);
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
@@ -433,6 +439,7 @@ export const DataTable = withStyles(styles)(
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
+            const { includeCheckboxColumn } = this.state;
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -448,7 +455,7 @@ export const DataTable = withStyles(styles)(
                             className={
                                 currentRoute === "/workflows"
                                     ? classes.tableCellWorkflows
-                                    : index === 0
+                                    : index === 0 && includeCheckboxColumn
                                     ? classes.checkBoxCell
                                     : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ""}`
                             }>
