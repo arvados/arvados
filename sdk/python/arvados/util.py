@@ -478,9 +478,11 @@ def iter_computed_permissions(
 
     """
     return keyset_list_all(
-        fn,
-        order_key='user_uuid',
-        key_fields=('user_uuid', 'target_uuid'),
+        fn=fn,
+        order_key=order_key,
+        num_retries=num_retries,
+        ascending=ascending,
+        key_fields=key_fields,
         **kwargs)
 
 def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
