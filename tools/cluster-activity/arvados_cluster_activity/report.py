@@ -41,6 +41,7 @@ class ProjectSummary:
     count: int = 0
     hours: float = 0
 
+@dataclass
 class Summarizer:
     label: str
     tasks: collections.defaultdict[str, Task]
@@ -70,8 +71,8 @@ class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
                 'label': s.long_label(),
                 'charts': [
                     self.chartdata(s.label, s.tasks, stat)
-                    for stat in (('Concurrent containers', ['containers']),
-                                 ('Storage', ['used']),
+                    for stat in (('Concurrent running containers', ['containers']),
+                                 ('Data under management', ['managed','actual storage used']),
                                  )
                     ],
             }
@@ -150,13 +151,10 @@ class ClusterActivityReport(object):
     def run(self):
         pass
 
-    def collect_graph(self, since, to, label, taskname, legend, metric, resampleTo, extra=None):
+    def collect_graph(self, s1, since, to, taskname, legend, metric, resampleTo, extra=None):
         if not self.prom_client:
             return
 
-        s1 = Summarizer()
-        s1.label = label
-        s1.tasks = collections.defaultdict(Task)
         task = s1.tasks[taskname]
 
         for series in get_metric_usage(self.prom_client, since, to, metric % self.cluster, resampleTo=resampleTo):
@@ -164,8 +162,6 @@ class ClusterActivityReport(object):
                 task.series[taskname, legend].append(t)
                 if extra:
                     extra(t)
-
-        self.summarizers.append(s1)
 
     def collect_storage_cost(self, t):
         self.storage_cost += aws_monthly_cost(t.y) / (30*24)
@@ -177,11 +173,18 @@ class ClusterActivityReport(object):
         for row in self.report_from_api(since, to, True, exclude):
             pass
 
-        self.collect_graph(since, to, "", "Concurrent containers", "containers",
+        s1 = Summarizer(label="", tasks=collections.defaultdict(Task))
+        self.collect_graph(s1, since, to, "Concurrent running containers", "containers",
                            "arvados_dispatchcloud_containers_running{cluster='%s'}", resampleTo="5min")
 
-        self.collect_graph(since, to, "", "Storage", "used",
+        s2 = Summarizer(label="", tasks=collections.defaultdict(Task))
+        self.collect_graph(s2, since, to, "Data under management", "managed",
+                           "arvados_keep_collection_bytes{cluster='%s'}", resampleTo="60min")
+
+        self.collect_graph(s2, since, to, "Data under management", "actual storage used",
                            "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
+
+        self.summarizers = [s1, s2]
 
         tophtml = ""
         bottomhtml = ""
