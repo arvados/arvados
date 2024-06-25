@@ -168,27 +168,19 @@ class KeysetListAllTestCase(unittest.TestCase):
         self.assertEqual(ls, [{"created_at": "2", "uuid": "2"}, {"created_at": "1", "uuid": "1"}])
 
     @parameterized.parameterized.expand(
-        itertools.chain.from_iterable(
-            (zip(
-                itertools.repeat(fake_item),
-                itertools.repeat(key_fields),
-                itertools.cycle(fake_item),
-                itertools.chain.from_iterable(
-                    itertools.combinations(fake_item, count)
-                    for count in range(len(fake_item) + 1)
-                ),
-            ) for (fake_item, key_fields) in [
-                (_SELECT_FAKE_ITEM, ('uuid',)),
-                (_FAKE_COMPUTED_PERMISSIONS_ITEM, ('user_uuid', 'target_uuid')),
-            ]),
-        ),
+        (fake_item, key_fields, order_key, select)
+        for (fake_item, key_fields) in [
+            (_SELECT_FAKE_ITEM, ('uuid',)),
+            (_FAKE_COMPUTED_PERMISSIONS_ITEM, ('user_uuid', 'target_uuid')),
+        ]
+        for order_key in fake_item
+        if order_key != 'perm_level'
+        for count in range(len(fake_item) + 1)
+        for select in itertools.combinations(fake_item, count)
     )
     def test_select(self, fake_item, key_fields, order_key, select):
         # keyset_list_all must have both uuid and order_key to function.
         # Test that it selects those fields along with user-specified ones.
-        if order_key == 'perm_level':
-            # not possible: there is no correct value for key_fields
-            return
         expect_select = {*key_fields, order_key, *select}
         item = {
             key: value
