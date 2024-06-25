@@ -7,6 +7,8 @@ window.onload = function() {
     var fmt = {
         iso: function(y) {
             var s='';
+            if (y > 1000000000000000) { y=y/1000000000000000; s='P'; }
+            if (y > 1000000000000) { y=y/1000000000000; s='T'; }
             if (y > 1000000000) { y=y/1000000000; s='G'; }
             else if (y > 1000000) { y=y/1000000; s='M'; }
             else if (y > 1000) { y=y/1000; s='K'; }
@@ -28,7 +30,7 @@ window.onload = function() {
     var ticker = {
         time: function(min, max, pixels, opts, dg) {
             var max_ticks = Math.floor(pixels / opts('pixelsPerLabel'))
-            var natural = [1, 5, 10, 30, 60,
+            var natural = [/*1, 5, 10, 30,*/ 60,
                            120, 300, 600, 1800, 3600,
                            7200, 14400, 43200, 86400]
             var interval = natural.shift()
@@ -37,7 +39,7 @@ window.onload = function() {
             }
             var ticks = []
             for (var i=Math.ceil(min/interval)*interval; i<=max; i+=interval) {
-                ticks.push({v: i, label: fmt.date(i)})
+                ticks.push({v: i, label: opts('axisLabelFormatter')(i)})
             }
             return ticks
         },
@@ -54,7 +56,7 @@ window.onload = function() {
             var id = 'chart-'+section_idx+'-'+chart_idx;
             var div = document.createElement('div');
             div.setAttribute('id', id);
-            div.setAttribute('style', 'width: 100%; height: 150px');
+            div.setAttribute('style', 'width: 100%; height: 300px');
             chartDiv.appendChild(div);
             chart.options.valueFormatter = function(y) {
             }
@@ -72,7 +74,7 @@ window.onload = function() {
                 },
             }
             var div2 = document.createElement('div');
-            div2.setAttribute('style', 'width: 150px; height: 150px');
+            div2.setAttribute('style', 'width: 150px; height: 300px');
             chart.options.labelsDiv = div2;
             chart.options.labelsSeparateLines = true;
 
