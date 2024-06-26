@@ -321,16 +321,6 @@ func (s *replaceFilesSuite) TestCollectionReplaceFiles(c *check.C) {
 		c.Logf("badrepl %#v\n... got err: %s", badrepl, err)
 		c.Check(err, check.NotNil)
 	}
-
-	// Check conflicting replace_files and manifest_text
-	_, err = s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
-		UUID:         dst.UUID,
-		ReplaceFiles: map[string]string{"/": ""},
-		Attrs: map[string]interface{}{
-			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:z\n",
-		}})
-	c.Logf("replace_files+manifest_text\n... got err: %s", err)
-	c.Check(err, check.ErrorMatches, "ambiguous request: both.*replace_files.*manifest_text.*")
 }
 
 func (s *replaceFilesSuite) TestMultipleRename(c *check.C) {
@@ -385,6 +375,39 @@ func (s *replaceFilesSuite) TestConcurrentCopyFromPDH(c *check.C) {
 	final, err := s.localdb.CollectionGet(s.userctx, arvados.GetOptions{UUID: s.tmp.UUID})
 	c.Assert(err, check.IsNil)
 	s.expectFiles(c, final, expectFiles...)
+}
+
+func (s *replaceFilesSuite) TestConcurrentCopyFromProvidedManifestText(c *check.C) {
+	blockLocator := strings.Split(s.tmp.ManifestText, " ")[1]
+	var wg sync.WaitGroup
+	expectFileSizes := make(map[string]int64)
+	for i := 0; i < 10; i++ {
+		fnm := fmt.Sprintf("upload%d.txt", i)
+		expectFileSizes[fnm] = 2
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ctx, txFinish := ctrlctx.New(s.ctx, s.dbConnector.GetDB)
+			defer txFinish(new(error))
+			userctx := ctrlctx.NewWithToken(ctx, s.cluster, arvadostest.ActiveTokenV2)
+			_, err := s.localdb.CollectionUpdate(userctx, arvados.UpdateOptions{
+				UUID: s.tmp.UUID,
+				Attrs: map[string]interface{}{
+					"manifest_text": ". " + blockLocator + " 0:2:" + fnm + "\n",
+				},
+				ReplaceFiles: map[string]string{
+					"/" + fnm:  "manifest_text/" + fnm,
+					"/foo.txt": "",
+				}})
+			c.Check(err, check.IsNil)
+		}()
+	}
+	wg.Wait()
+	// After N concurrent/overlapping requests to add different
+	// files, we should see all N files.
+	final, err := s.localdb.CollectionGet(s.userctx, arvados.GetOptions{UUID: s.tmp.UUID})
+	c.Assert(err, check.IsNil)
+	s.expectFileSizes(c, final, expectFileSizes)
 }
 
 func (s *replaceFilesSuite) TestConcurrentRename(c *check.C) {
