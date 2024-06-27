@@ -163,7 +163,7 @@ export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition
     const inputs = wf.inputs;
     if (wf.hints) {
         const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
-        if (secrets && secrets.secrets) {
+        if (secrets?.secrets) {
             inputs.forEach((param) => {
                 param.secret = secrets.secrets.includes(param.id);
             });

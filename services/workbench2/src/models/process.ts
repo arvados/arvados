@@ -44,9 +44,9 @@ export const createWorkflowSecretMounts = (workflow: WorkflowResource, inputs: W
     const secret_mounts: {[path: string]: MountType} = {};
 
     const wf = getWorkflow(wfdef);
-    if (wf && wf.hints) {
+    if (wf?.hints) {
         const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
-        if (secrets && secrets.secrets) {
+        if (secrets?.secrets) {
             let secretCount = 0;
             secrets.secrets.forEach((paramId) => {
                 const param = paramId.split("/").pop();
