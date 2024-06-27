@@ -1671,7 +1671,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
         # shrank the cache in response to ENOSPC
-        self.assertTrue(cache_max_before > block_cache.cache_max)
+        self.assertGreater(cache_max_before, block_cache.cache_max)
 
 
     def test_disk_cache_retry_write_error2(self):
@@ -1702,4 +1702,4 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
         # shrank the cache in response to ENOMEM
-        self.assertTrue(slots_before > block_cache._max_slots)
+        self.assertGreater(slots_before, block_cache._max_slots)
