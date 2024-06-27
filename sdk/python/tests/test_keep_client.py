@@ -1647,9 +1647,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             else:
                 return realmmap(*args, **kwargs)
 
-        with patch('mmap.mmap') as mockmmap:
-            mockmmap.side_effect = sideeffect_mmap
-
+        with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
             cache_max_before = block_cache.cache_max
 
             with tutil.mock_keep_responses(self.data, 200) as mock:
@@ -1679,9 +1677,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             else:
                 return realmmap(*args, **kwargs)
 
-        with patch('mmap.mmap') as mockmmap:
-            mockmmap.side_effect = sideeffect_mmap
-
+        with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
             slots_before = block_cache._max_slots
 
             with tutil.mock_keep_responses(self.data, 200) as mock:
