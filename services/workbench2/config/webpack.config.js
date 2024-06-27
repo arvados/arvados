@@ -4,6 +4,10 @@
 
 'use strict';
 
+// Do this as the first thing so that any code reading it knows the right env.
+process.env.BABEL_ENV = 'development';
+process.env.NODE_ENV = 'development';
+
 const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
@@ -92,6 +96,7 @@ const hasJsxRuntime = (() => {
 // This is the production and development configuration.
 // It is focused on developer experience, fast rebuilds, and a minimal bundle.
 module.exports = function (webpackEnv) {
+  const isEnvTest = webpackEnv === 'test';
   const isEnvDevelopment = webpackEnv === 'development';
   const isEnvProduction = webpackEnv === 'production';
 
@@ -228,8 +233,8 @@ module.exports = function (webpackEnv) {
             path
               .relative(paths.appSrc, info.absoluteResourcePath)
               .replace(/\\/g, '/')
-        : isEnvDevelopment &&
-          (info => path.resolve(info.absoluteResourcePath).replace(/\\/g, '/')),
+        : isEnvDevelopment || isEnvTest ?
+          (info => path.resolve(info.absoluteResourcePath).replace(/\\/g, '/')) : ()=>null,
     },
     cache: {
       type: 'filesystem',
