@@ -410,6 +410,31 @@ func (s *replaceFilesSuite) TestConcurrentCopyFromProvidedManifestText(c *check.
 	s.expectFileSizes(c, final, expectFileSizes)
 }
 
+func (s *replaceFilesSuite) TestUnusedManifestText_Create(c *check.C) {
+	blockLocator := strings.Split(s.tmp.ManifestText, " ")[1]
+	_, err := s.localdb.CollectionCreate(s.userctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"manifest_text": ". " + blockLocator + " 0:3:foo\n",
+		},
+		ReplaceFiles: map[string]string{
+			"/foo.txt": "",
+		}})
+	c.Check(err, check.ErrorMatches, `.*manifest_text.*would not be used.*`)
+}
+
+func (s *replaceFilesSuite) TestUnusedManifestText_Update(c *check.C) {
+	blockLocator := strings.Split(s.tmp.ManifestText, " ")[1]
+	_, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+		UUID: s.tmp.UUID,
+		Attrs: map[string]interface{}{
+			"manifest_text": ". " + blockLocator + " 0:3:foo\n",
+		},
+		ReplaceFiles: map[string]string{
+			"/foo.txt": "",
+		}})
+	c.Check(err, check.ErrorMatches, `.*manifest_text.*would not be used.*`)
+}
+
 func (s *replaceFilesSuite) TestConcurrentRename(c *check.C) {
 	var wg sync.WaitGroup
 	var renamed atomic.Int32

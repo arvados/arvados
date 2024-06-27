@@ -153,7 +153,20 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 	if len(replaceFiles) == 0 {
 		return attrs, nil
 	}
+
 	providedManifestText, _ := attrs["manifest_text"].(string)
+	if providedManifestText != "" {
+		used := false
+		for _, src := range replaceFiles {
+			if strings.HasPrefix(src, "manifest_text/") {
+				used = true
+				break
+			}
+		}
+		if !used {
+			return nil, httpserver.Errorf(http.StatusBadRequest, "invalid request: attrs['manifest_text'] was provided, but would not be used because it is not referenced by any 'replace_files' entry")
+		}
+	}
 
 	// Load the current collection (if any) and set up an
 	// in-memory filesystem.

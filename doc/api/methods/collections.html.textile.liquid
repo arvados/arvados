@@ -166,6 +166,17 @@ A target path with a non-empty source cannot be the ancestor of another target p
 }
 </pre></notextile>
 
+It is an error to supply a non-empty @manifest_text@ that is unused, i.e., the @replace_files@ argument does not contain any values beginning with @"manifest_text/"@. For example, the following request is invalid:
+
+<notextile><pre>
+"replace_files": {
+  "/foo": "current/bar"
+},
+"collection": {
+  "manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
