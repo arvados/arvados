@@ -67,12 +67,17 @@ Once @delete_at@ is past, the collection and all of its previous versions will b
 
 h3(#replace_files). Using "replace_files" to create/update collections
 
-The @replace_files@ option can be used with the "create":#create and "update":#update APIs to efficiently copy individual files and directory trees from other collections, and copy/rename/delete items within an existing collection, without transferring any file data.
+The @replace_files@ option can be used with the "create":#create and "update":#update APIs to efficiently and atomically copy individual files and directory trees from other collections, copy/rename/delete items within an existing collection, and add new items to a collection.
 
 @replace_files@ keys indicate target paths in the new collection, and values specify sources that should be copied to the target paths.
 * Each target path must be an absolute canonical path beginning with @/@. It must not contain @.@ or @..@ components, consecutive @/@ characters, or a trailing @/@ after the final component.
-* Each source must be either an empty string (signifying that the target path is to be deleted), or @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection.
-* In an @update@ request, sources may reference the current portable data hash of the collection being updated.
+* Each source must be one of the following:
+** an empty string (signifying that the target path is to be deleted),
+** @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection,
+** @manifest_text/path@ where @/path@ is an existing file or directory in a collection supplied in the @manifest_text@ attribute in the request, or
+** @current/path@ where @/path@ is an existing file or directory in the collection being updated.
+
+In an @update@ request, sources may reference the current portable data hash of the collection being updated. However, note that in many cases it is more appropriate to use a @current/path@ source instead, to ensure the latest content is used even if the collection has been updated since the PDH was last retrieved.
 
 Example: delete @foo.txt@ from a collection
 
@@ -82,16 +87,59 @@ Example: delete @foo.txt@ from a collection
 }
 </pre></notextile>
 
-Example: rename @foo.txt@ to @bar.txt@ in a collection with portable data hash @fa7aeb5140e2848d39b416daeef4ffc5+45@
+Example: rename @foo.txt@ to @bar.txt@
 
 <notextile><pre>
 "replace_files": {
   "/foo.txt": "",
-  "/bar.txt": "fa7aeb5140e2848d39b416daeef4ffc5+45/foo.txt"
+  "/bar.txt": "current/foo.txt"
 }
 </pre></notextile>
 
-Example: delete current contents, then add content from multiple collections
+Example: swap files @foo@ and @bar@
+
+<notextile><pre>
+"replace_files": {
+  "/foo": "current/bar",
+  "/bar": "current/foo"
+}
+</pre></notextile>
+
+Example: add a file to an existing collection
+
+<notextile><pre>
+"replace_files": {
+  "/new_directory/new_file.txt": "manifest_text/new_file.txt"
+},
+"collection": {
+  "manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
+Example: replace current content with new content (note this is equivalent to omitting the @replace_files@ argument)
+
+<notextile><pre>
+"replace_files": {
+  "/": "manifest_text/"
+},
+"collection": {
+  "manifest_text": "./new_directory acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
+Example: rename an existing file and replace it with new content, all in a single atomic operation
+
+<notextile><pre>
+"replace_files": {
+  "/current_file.txt": "manifest_text/new_file.txt",
+  "/old_file.txt": "current/current_file.txt"
+},
+"collection": {
+  "manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
+Example: delete current content, then add content from multiple collections
 
 <notextile><pre>
 "replace_files": {
