@@ -162,7 +162,9 @@ class JSONArgumentTestCase(unittest.TestCase):
                 finally:
                     os.chmod(bad_file.fileno(), 0o600)
         else:
-            ctx = contextlib.nullcontext
+            @contextlib.contextmanager
+            def ctx():
+                yield
         with self.assertRaisesRegex(ValueError, rf'^error reading JSON file path {str(path)!r}: '), ctx():
             self.parser(str(path))
 
