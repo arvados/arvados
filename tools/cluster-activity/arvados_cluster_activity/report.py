@@ -173,10 +173,12 @@ class ClusterActivityReport(object):
         for row in self.report_from_api(since, to, True, exclude):
             pass
 
+        logging.info("Getting container hours time series")
         s1 = Summarizer(label="", tasks=collections.defaultdict(Task))
         self.collect_graph(s1, since, to, "Concurrent running containers", "containers",
                            "arvados_dispatchcloud_containers_running{cluster='%s'}", resampleTo="5min")
 
+        logging.info("Getting data usage time series")
         s2 = Summarizer(label="", tasks=collections.defaultdict(Task))
         self.collect_graph(s2, since, to, "Data under management", "managed",
                            "arvados_keep_collection_bytes{cluster='%s'}", resampleTo="60min")
