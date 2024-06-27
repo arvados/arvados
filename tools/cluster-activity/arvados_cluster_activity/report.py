@@ -19,7 +19,7 @@ from dataclasses import dataclass
 import crunchstat_summary.dygraphs
 from crunchstat_summary.summarizer import Task
 
-from arvados_cluster_activity.prometheus import get_metric_usage
+from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
 
 @dataclass
 class WorkflowRunSummary:
@@ -64,6 +64,18 @@ def aws_monthly_cost(value):
     return monthly_cost
 
 
+def format_with_suffix_base2(summary_value):
+    for scale in ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]:
+        summary_value = summary_value / 1024
+        if summary_value < 1024:
+            return "%.3f %s" % (summary_value, scale)
+
+def format_with_suffix_base10(summary_value):
+    for scale in ["KB", "MB", "GB", "TB", "PB", "EB"]:
+        summary_value = summary_value / 1000
+        if summary_value < 1000:
+            return "%.3f %s" % (summary_value, scale)
+
 class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
     def sections(self):
         return [
@@ -72,7 +84,7 @@ class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
                 'charts': [
                     self.chartdata(s.label, s.tasks, stat)
                     for stat in (('Concurrent running containers', ['containers']),
-                                 ('Data under management', ['managed','actual storage used']),
+                                 ('Data under management', ['actual storage used']),
                                  )
                     ],
             }
@@ -186,6 +198,13 @@ class ClusterActivityReport(object):
         self.collect_graph(s2, since, to, "Data under management", "actual storage used",
                            "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
 
+        managed_data_now = s2.tasks["Data under management"].series["Data under management","managed"][-1]
+        storage_used_now = s2.tasks["Data under management"].series["Data under management","actual storage used"][-1]
+
+        storage_cost = aws_monthly_cost(storage_used_now.y)
+        dedup_ratio = managed_data_now.y/storage_used_now.y
+        dedup_savings = aws_monthly_cost(managed_data_now.y) - storage_cost
+
         self.summarizers = [s1, s2]
 
         tophtml = ""
@@ -194,19 +213,35 @@ class ClusterActivityReport(object):
 
         tophtml = []
 
-        tophtml.append("""<h2>Lifetime cluster status as of {now}</h2>
-        <p>Total users: {total_users}</p>
-        <p>Total projects: {total_projects}</p>
-        """.format(now=date.today(), total_users=self.total_users, total_projects=self.total_projects))
+        if to.date() == date.today():
+            tophtml.append("""<h2>Cluster status as of {now}</h2>
+            <table class='aggtable'><tbody>
+            <tr><td>Total users</td><td>{total_users}</td></tr>
+            <tr><td>Total projects</td><td>{total_projects}</td></tr>
+            <tr><td>Total data under management</td><td>{managed_data_now}</td></tr>
+            <tr><td>Total storage usage</td><td>{storage_used_now}</td></tr>
+            <tr><td>Deduplication ratio</td><td>{dedup_ratio}</td></tr>
+            <tr><td>Approximate monthly storage cost</td><td>${storage_cost}</td></tr>
+            <tr><td>Monthly savings from storage deduplication</td><td>${dedup_savings}</td></tr>
+            </tbody></table>
+            """.format(now=date.today(),
+                       total_users=self.total_users,
+                       total_projects=self.total_projects,
+                       managed_data_now=format_with_suffix_base10(managed_data_now.y),
+                       storage_used_now=format_with_suffix_base10(storage_used_now.y),
+                       dedup_savings=round(dedup_savings, 2),
+                       storage_cost=round(storage_cost, 2),
+                       dedup_ratio=round(dedup_ratio, 3)))
 
-        tophtml.append("""<h2>Activity and cost in the period {since} to {to}</h2>
-        <p>Reporting period length: {reporting_days} days</p>
-        <p>Active users: {active_users}</p>
-        <p>Active projects: {active_projects}</p>
-        <p>Workflow runs: {total_workflows}</p>
-        <p>Hours of compute used: {total_hours}</p>
-        <p>Approximate compute cost: ${total_cost}</p>
-        <p>Approximate storage cost: ${storage_cost}</p>
+        tophtml.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
+        <table class='aggtable'><tbody>
+        <tr><td>Active users</td><td>{active_users}</td></tr>
+        <tr><td>Active projects</td><td>{active_projects}</td></tr>
+        <tr><td>Workflow runs</td><td>{total_workflows}</td></tr>
+        <tr><td>Compute used</td><td>{total_hours} hours</td></tr>
+        <tr><td>Compute cost</td><td>${total_cost}</td></tr>
+        <tr><td>Storage cost</td><td>${storage_cost}</td></tr>
+        </tbody></table>
         """.format(active_users=len(self.active_users),
                    total_users=self.total_users,
                    total_hours=round(self.total_hours, 1),
@@ -221,25 +256,37 @@ class ClusterActivityReport(object):
 
         for k, prj in sorted(self.project_summary.items(), key=lambda x: x[1].cost, reverse=True):
             wfsum = []
-            for k2, r in sorted(prj.runs.items(), key=lambda x: x[1].cost, reverse=True):
+            for k2, r in sorted(prj.runs.items(), key=lambda x: x[1].count, reverse=True):
                 wfsum.append( """
-                {name} -- count {count} -- average runtime {runtime} -- average cost per run ${cost}
+                <tr><td>{count}</td> <td>{name}</td>  <td>{runtime}</td> <td>${cost}</td></tr>
                 """.format(name=r.name, count=r.count, runtime=hours_to_runtime_str(r.hours/r.count), cost=round(r.cost/r.count, 2)))
+
+            if prj.earliest.date() == prj.latest.date():
+                activityspan = "{}".format(prj.earliest.date())
+            else:
+                activityspan = "{} to {}".format(prj.earliest.date(), prj.latest.date())
 
             bottomhtml.append(
                 """<h2>{name}</h2>
-                <p>Users: {users}</p>
-                <p>Active between {earliest} and {latest}</p>
-                <p>{wfsum}</p>
-                <p>Compute hours: {hours}</p>
-                <p>Compute cost: ${cost}</p>
+                <table class='aggtable'><tbody>
+                <tr><td>User{userplural}</td><td>{users}</td></tr>
+                <tr><td>Active</td><td>{activity}</td></tr>
+                <tr><td>Compute usage</td><td>{hours} hours</td></tr>
+                <tr><td>Compute cost</td><td>${cost}</td></tr>
+                </tbody></table>
+                <table class='aggtable'><tbody>
+                <tr><th>Workflow run count</th> <th>Workflow name</th> <th>Avg runtime</th> <th>Avg cost per run</th></tr>
+                {wfsum}
+                </tbody></table>
                 """.format(name=prj.name,
                            users=", ".join(prj.users),
                            cost=round(prj.cost, 2),
                            hours=round(prj.hours, 1),
                            wfsum="</p><p>".join(wfsum),
                            earliest=prj.earliest.date(),
-                           latest=prj.latest.date())
+                           latest=prj.latest.date(),
+                           activity=activityspan,
+                           userplural='s' if len(prj.users) > 1 else '')
             )
 
         return WEBCHART_CLASS(label, self.summarizers).html(tophtml, bottomhtml)

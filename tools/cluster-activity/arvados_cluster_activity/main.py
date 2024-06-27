@@ -14,8 +14,8 @@ import os
 import logging
 import re
 
-from arvados_cluster_activity.report import ClusterActivityReport, aws_monthly_cost
-from arvados_cluster_activity.prometheus import get_metric_usage
+from arvados_cluster_activity.report import ClusterActivityReport, aws_monthly_cost, format_with_suffix_base2
+from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
 
 from datetime import timedelta, timezone, datetime
 import base64
@@ -88,43 +88,17 @@ def parse_arguments(arguments):
 
     return args, since, to
 
-def data_usage(prom, timestamp, cluster, label):
-    from prometheus_api_client import PrometheusConnect, MetricsList, Metric
+def print_data_usage(prom, timestamp, cluster, label):
+    value, dedup_ratio = get_data_usage(prom, timestamp, cluster)
 
-    metric_data = prom.get_current_metric_value(metric_name='arvados_keep_total_bytes',
-                                                label_config={"cluster": cluster},
-                                                params={"time": timestamp.timestamp()})
-
-    metric_object_list = MetricsList(metric_data)
-
-    if len(metric_data) == 0:
+    if value is None:
         return
-
-    my_metric_object = metric_object_list[0] # one of the metrics from the list
-    value = my_metric_object.metric_values.iloc[0]["y"]
-    summary_value = value
-
-    metric_data = prom.get_current_metric_value(metric_name='arvados_keep_dedup_byte_ratio',
-                                                label_config={"cluster": cluster},
-                                                params={"time": timestamp.timestamp()})
-
-    if len(metric_data) == 0:
-        return
-
-    my_metric_object = MetricsList(metric_data)[0]
-    dedup_ratio = my_metric_object.metric_values.iloc[0]["y"]
 
     monthly_cost = aws_monthly_cost(value)
-
-    for scale in ["KiB", "MiB", "GiB", "TiB", "PiB"]:
-        summary_value = summary_value / 1024
-        if summary_value < 1024:
-            print(label,
-                  "%.3f %s apparent," % (summary_value*dedup_ratio, scale),
-                  "%.3f %s actually stored," % (summary_value, scale),
-                  "$%.2f monthly S3 storage cost" % monthly_cost)
-            break
-
+    print(label,
+          "%s apparent," % (format_with_suffix_base2(summary_value*dedup_ratio)),
+          "%s actually stored," % (format_with_suffix_base2(summary_value)),
+          "$%.2f monthly S3 storage cost" % monthly_cost)
 
 def print_container_usage(prom, start_time, end_time, metric, label, fn=None):
     cumulative = 0
