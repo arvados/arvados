@@ -162,12 +162,12 @@ export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition
     if (!wf) { return undefined; }
     const inputs = wf.inputs;
     if (wf.hints) {
-	const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
-	if (secrets && secrets.secrets) {
-	    inputs.forEach((param) => {
-		param.secret = secrets.secrets.includes(param.id);
-	    });
-	}
+        const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
+        if (secrets && secrets.secrets) {
+            inputs.forEach((param) => {
+                param.secret = secrets.secrets.includes(param.id);
+            });
+        }
     }
 
     return inputs;

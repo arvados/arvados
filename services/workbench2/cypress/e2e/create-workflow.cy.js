@@ -284,7 +284,7 @@ describe('Create workflow tests', function () {
             addToFavorites: true
         });
 
-	cy.setupDockerImage("arvados/jobs").as("dockerImg");
+        cy.setupDockerImage("arvados/jobs").as("dockerImg");
 
         cy.getAll('@myProject1').then(function ([myProject1]) {
                 cy.readFile('cypress/fixtures/workflow_with_secret_input.yaml').then(workflow => {
@@ -309,28 +309,28 @@ describe('Create workflow tests', function () {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
 
-			var foo = cy.get('label').contains('foo').parent('div').find('input');
-			foo.type("secret_value_xyz");
-			foo.should('have.attr', 'type').and('equal', 'password');
+                        var foo = cy.get('label').contains('foo').parent('div').find('input');
+                        foo.type("secret_value_xyz");
+                        foo.should('have.attr', 'type').and('equal', 'password');
 
-			var bar = cy.get('label').contains('bar').parent('div').find('input');
-			bar.type("exposed_value_xyz");
-			bar.should('have.attr', 'type').and('equal', 'text');
-		    });
-	    cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
+                        var bar = cy.get('label').contains('bar').parent('div').find('input');
+                        bar.type("exposed_value_xyz");
+                        bar.should('have.attr', 'type').and('equal', 'text');
+                    });
+            cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
 
-	    cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
-	    cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
-	    cy.get('[data-cy=process-io-card]').should('not.contain', 'secret_value_xyz');
+            cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
+            cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
+            cy.get('[data-cy=process-io-card]').should('not.contain', 'secret_value_xyz');
 
-	    cy.url().then((url) => {
-		let uuid = url.split('/').pop();
-		cy.getResource(activeUser.token, "container_requests", uuid).then((res) => {
-		    expect(res.mounts["/var/lib/cwl/cwl.input.json"].content.bar).to.equal('exposed_value_xyz');
-		    expect(res.mounts["/var/lib/cwl/cwl.input.json"].content.foo).to.deep.equal({$include: '/secrets/s0'});
-		});
-	    });
+            cy.url().then((url) => {
+                let uuid = url.split('/').pop();
+                cy.getResource(activeUser.token, "container_requests", uuid).then((res) => {
+                    expect(res.mounts["/var/lib/cwl/cwl.input.json"].content.bar).to.equal('exposed_value_xyz');
+                    expect(res.mounts["/var/lib/cwl/cwl.input.json"].content.foo).to.deep.equal({$include: '/secrets/s0'});
+                });
+            });
 
-	});
+        });
     });
 })

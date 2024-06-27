@@ -111,19 +111,19 @@ describe("Process tests", function () {
             });
 
             // Fake submitted by another user to test "runtime user" field.
-	    //
-	    // Need to override both group contents and direct get,
-	    // because it displays the the cached value from
-	    // 'contents' for a few moments while requesting the full
-	    // object.
+            //
+            // Need to override both group contents and direct get,
+            // because it displays the the cached value from
+            // 'contents' for a few moments while requesting the full
+            // object.
             cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents?*" }, req => {
                 req.on('response', res => {
-		    if (!res.body.items) {
-			return;
-		    }
-		    res.body.items.forEach(item => {
-			item.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
-		    });
+                    if (!res.body.items) {
+                        return;
+                    }
+                    res.body.items.forEach(item => {
+                        item.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
+                    });
                 });
             });
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
@@ -204,17 +204,17 @@ describe("Process tests", function () {
             });
 
             cy.getAll("@containerRequest", "@runningContainer").then(function ([containerRequest]) {
-		cy.goToPath(`/processes/${containerRequest.uuid}`);
-		cy.reload();
-		cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time")
-	    }).as("retry1");
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.reload();
+                cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time")
+            }).as("retry1");
 
             cy.getAll("@containerRequest", "@runningContainer", "@retry1").then(function ([containerRequest]) {
-		containerCount = 3;
-		cy.goToPath(`/processes/${containerRequest.uuid}`);
-		cy.reload();
-		cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 2 times");
-	    });
+                containerCount = 3;
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.reload();
+                cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 2 times");
+            });
         });
 
         it("allows copying processes", function () {
@@ -1332,9 +1332,9 @@ describe("Process tests", function () {
                 // Add output uuid and inputs to container request
                 cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                     req.on('response', res => {
-			if (!res.body.mounts) {
-			    return;
-			}
+                        if (!res.body.mounts) {
+                            return;
+                        }
                         res.body.output_uuid = testOutputCollection.uuid;
                         res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                             content: testInputs.map(param => param.input).reduce((acc, val) => Object.assign(acc, val), {}),
@@ -1467,9 +1467,9 @@ describe("Process tests", function () {
             // Add output uuid and inputs to container request
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                 req.on('response', res => {
-		    if (!res.body.mounts) {
-			return;
-		    }
+                    if (!res.body.mounts) {
+                        return;
+                    }
                     res.body.output_uuid = fakeOutputUUID;
                     res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                         content: {},

@@ -47,21 +47,21 @@ export const createWorkflowSecretMounts = (workflow: WorkflowResource, inputs: W
     if (wf && wf.hints) {
         const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
         if (secrets && secrets.secrets) {
-	    let secretCount = 0;
-	    secrets.secrets.forEach((paramId) => {
-		const param = paramId.split("/").pop();
-		if (!param || !inputs[param]) {
-		    return;
-		}
-		const value: string = inputs[param] as string;
-		const mnt = "/secrets/s"+secretCount;
-		secret_mounts[mnt] = {
+            let secretCount = 0;
+            secrets.secrets.forEach((paramId) => {
+                const param = paramId.split("/").pop();
+                if (!param || !inputs[param]) {
+                    return;
+                }
+                const value: string = inputs[param] as string;
+                const mnt = "/secrets/s"+secretCount;
+                secret_mounts[mnt] = {
                     "kind": MountKind.TEXT,
                     "content": value
-		}
-		inputs[param] = {"$include": mnt}
-		secretCount++;
-	    });
+                }
+                inputs[param] = {"$include": mnt}
+                secretCount++;
+            });
         }
     }
     return secret_mounts;
