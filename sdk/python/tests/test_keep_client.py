@@ -1632,9 +1632,12 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
                 keep_client.get(self.locator)
 
     def test_disk_cache_retry_write_error(self):
-        block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
-                                                  disk_cache_dir=self.disk_cache_dir)
-
+        cache_max_before = 512 * 1024 * 1024
+        block_cache = arvados.keep.KeepBlockCache(
+            cache_max=cache_max_before,
+            disk_cache=True,
+            disk_cache_dir=self.disk_cache_dir,
+        )
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
         called = False
@@ -1648,8 +1651,6 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
                 return realmmap(*args, **kwargs)
 
         with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
-            cache_max_before = block_cache.cache_max
-
             with tutil.mock_keep_responses(self.data, 200) as mock:
                 self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
 
