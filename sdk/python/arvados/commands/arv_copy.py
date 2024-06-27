@@ -342,8 +342,12 @@ def copy_workflow(wf_uuid, src, dst, args):
                "ARVADOS_API_TOKEN": src.api_token,
                "PATH": os.environ["PATH"]}
         try:
-            result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
-                                    capture_output=True, env=env)
+            result = subprocess.run(
+                ["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
+                env=env,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            )
         except FileNotFoundError:
             no_arv_copy = True
         else:
