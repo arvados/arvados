@@ -17,6 +17,8 @@ import re
 from arvados_cluster_activity.report import ClusterActivityReport, aws_monthly_cost, format_with_suffix_base2
 from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
 
+from arvados_cluster_activity._version import __version__
+
 from datetime import timedelta, timezone, datetime
 import base64
 
@@ -35,6 +37,9 @@ def parse_arguments(arguments):
     arg_parser.add_argument('--exclude', type=str, help="Exclude workflows containing this substring (may be a regular expression)")
 
     arg_parser.add_argument('--html-report-file', type=str, help='Export HTML report to specified file')
+    arg_parser.add_argument(
+        '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+        help='Print version and exit.')
 
     if prometheus_support:
         arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
@@ -82,6 +87,8 @@ def parse_arguments(arguments):
     if prometheus_support and args.prometheus_auth:
         with open(args.prometheus_auth, "rt") as f:
             for line in f:
+                if line.startswith("export "):
+                   line = line[7:]
                 sp = line.strip().split("=")
                 if sp[0].startswith("PROMETHEUS_"):
                     os.environ[sp[0]] = sp[1]
@@ -96,8 +103,8 @@ def print_data_usage(prom, timestamp, cluster, label):
 
     monthly_cost = aws_monthly_cost(value)
     print(label,
-          "%s apparent," % (format_with_suffix_base2(summary_value*dedup_ratio)),
-          "%s actually stored," % (format_with_suffix_base2(summary_value)),
+          "%s apparent," % (format_with_suffix_base2(value*dedup_ratio)),
+          "%s actually stored," % (format_with_suffix_base2(value)),
           "$%.2f monthly S3 storage cost" % monthly_cost)
 
 def print_container_usage(prom, start_time, end_time, metric, label, fn=None):
@@ -138,12 +145,12 @@ def report_from_prometheus(prom, cluster, since, to):
     print(cluster, "between", since, "and", to, "timespan", (to-since))
 
     try:
-        data_usage(prom, since, cluster, "at start:")
+        print_data_usage(prom, since, cluster, "at start:")
     except:
         logging.exception("Failed to get start value")
 
     try:
-        data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
+        print_data_usage(prom, to - timedelta(minutes=240), cluster, "current :")
     except:
         logging.exception("Failed to get end value")
 
