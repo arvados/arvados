@@ -45,6 +45,8 @@ class CreateSuperUserTokenTest < ActiveSupport::TestCase
   end
 
   test "create superuser token, expire it, and create again" do
+    ApiClientAuthorization.where(user_id: system_user.id).delete_all
+
     # Create a token with some string
     token1 = create_superuser_token 'atesttoken'
     assert_not_nil token1

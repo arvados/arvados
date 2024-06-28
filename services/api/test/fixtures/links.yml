@@ -6,7 +6,6 @@ user_agreement_required:
   uuid: zzzzz-o0j2j-j2qe76q7s3c8aro
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T19:52:21Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2013-12-26T19:52:21Z
   updated_at: 2013-12-26T19:52:21Z
@@ -20,7 +19,6 @@ user_agreement_readable:
   uuid: zzzzz-o0j2j-qpf60gg4fwjlmex
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -34,7 +32,6 @@ all_users_can_read_anonymous_group:
   uuid: zzzzz-o0j2j-0lhbqyjab4g0bwp
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2015-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-01-24 20:42:26 -0800
   updated_at: 2015-01-24 20:42:26 -0800
@@ -48,7 +45,6 @@ active_user_member_of_all_users_group:
   uuid: zzzzz-o0j2j-ctbysaduejxfrs5
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -62,7 +58,6 @@ active_user_can_manage_group:
   uuid: zzzzz-o0j2j-3sa30nd3bqn1msh
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03 15:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-02-03 15:42:26 -0800
   updated_at: 2014-02-03 15:42:26 -0800
@@ -76,7 +71,6 @@ user_agreement_signed_by_active:
   uuid: zzzzz-o0j2j-4x85a69tqlrud1z
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T20:52:21Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
@@ -90,7 +84,6 @@ user_agreement_signed_by_inactive:
   uuid: zzzzz-o0j2j-lh7er2o3k6bmetw
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T20:52:21Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
@@ -104,7 +97,6 @@ spectator_user_member_of_all_users_group:
   uuid: zzzzz-o0j2j-0s8ql1redzf8kvn
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -118,7 +110,6 @@ inactive_user_member_of_all_users_group:
   uuid: zzzzz-o0j2j-osckxpy5hl5fjk5
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T20:52:21Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
@@ -132,7 +123,6 @@ inactive_signed_ua_user_member_of_all_users_group:
   uuid: zzzzz-o0j2j-qkhyjcr6tidk652
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T20:52:21Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
@@ -146,7 +136,6 @@ foo_file_readable_by_active:
   uuid: zzzzz-o0j2j-dp1d8395ldqw22r
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -160,7 +149,6 @@ foo_file_readable_by_federated_active:
   uuid: zzzzz-o0j2j-dp1d8395ldqw23r
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -174,7 +162,6 @@ foo_file_readable_by_active_duplicate_permission:
   uuid: zzzzz-o0j2j-2qlmhgothiur55r
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-000000000000000
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -188,7 +175,6 @@ foo_file_readable_by_active_redundant_permission_via_private_group:
   uuid: zzzzz-o0j2j-5s8ry7sn6bwxb7w
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-000000000000000
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -202,7 +188,6 @@ foo_file_readable_by_project_viewer:
   uuid: zzzzz-o0j2j-fp1d8395ldqw22p
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -216,7 +201,6 @@ bar_file_readable_by_active:
   uuid: zzzzz-o0j2j-8hppiuduf8eqdng
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -230,7 +214,6 @@ bar_file_readable_by_spectator:
   uuid: zzzzz-o0j2j-0mhldkqozsltcli
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -244,7 +227,6 @@ baz_file_publicly_readable:
   uuid: zzzzz-o0j2j-132ne3lk954vtoc
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -258,7 +240,6 @@ miniadmin_user_is_a_testusergroup_admin:
   uuid: zzzzz-o0j2j-38vvkciz7qc12j9
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-04-01 13:53:33 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-04-01 13:53:33 -0400
   updated_at: 2014-04-01 13:53:33 -0400
@@ -272,7 +253,6 @@ rominiadmin_user_is_a_testusergroup_admin:
   uuid: zzzzz-o0j2j-6b0hz5hr107mc90
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-04-01 13:53:33 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-04-01 13:53:33 -0400
   updated_at: 2014-04-01 13:53:33 -0400
@@ -286,7 +266,6 @@ testusergroup_can_manage_active_user:
   uuid: zzzzz-o0j2j-2vaqhxz6hsf4k1d
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-04-01 13:56:10 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-04-01 13:56:10 -0400
   updated_at: 2014-04-01 13:56:10 -0400
@@ -300,7 +279,6 @@ test_timestamps:
   uuid: zzzzz-o0j2j-4abnk2w5t86x4uc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-15 13:17:14 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-15 13:17:14 -0400
   updated_at: 2014-04-15 13:17:14 -0400
@@ -315,7 +293,6 @@ admin_can_write_aproject:
   uuid: zzzzz-o0j2j-adminmgsproject
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -329,7 +306,6 @@ project_viewer_member_of_all_users_group:
   uuid: zzzzz-o0j2j-cdnq6627g0h0r2x
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2015-07-28T21:34:41.361747000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2015-07-28T21:34:41.361747000Z
   updated_at: 2015-07-28T21:34:41.361747000Z
@@ -343,7 +319,6 @@ project_viewer_can_read_project:
   uuid: zzzzz-o0j2j-projviewerreadp
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -357,7 +332,6 @@ subproject_admin_can_manage_subproject:
   uuid: zzzzz-o0j2j-subprojadminlnk
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-10-15 10:00:00 -0000
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-10-15 10:00:00 -0000
   updated_at: 2014-10-15 10:00:00 -0000
@@ -371,7 +345,6 @@ foo_collection_tag:
   uuid: zzzzz-o0j2j-eedahfaho8aphiv
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -385,7 +358,6 @@ active_user_can_manage_bad_group_cx2al9cqkmsf1hs:
   uuid: zzzzz-o0j2j-ezv55ahzc9lvjwe
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-05-03 18:50:08 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-05-03 18:50:08 -0400
   updated_at: 2014-05-03 18:50:08 -0400
@@ -399,7 +371,6 @@ multilevel_collection_1_readable_by_active:
   uuid: zzzzz-o0j2j-dp1d8395ldqw22j
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -422,7 +393,6 @@ has_symbol_keys_in_database_somehow:
   uuid: zzzzz-o0j2j-enl1wg58310loc6
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-05-28 16:24:02.314722162 Z
-  modified_by_client_uuid:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-05-28 16:24:02.314484982 Z
   tail_uuid: ~
@@ -445,7 +415,6 @@ bug2931_link_with_null_head_uuid:
   uuid: zzzzz-o0j2j-uru66qok2wruasb
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-05-30 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-05-30 14:30:00.184019565 Z
   updated_at: 2014-05-30 14:30:00.183829316 Z
@@ -459,7 +428,6 @@ anonymous_group_can_read_anonymously_accessible_project:
   uuid: zzzzz-o0j2j-15gpzezqjg4bc4z
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-05-30 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-05-30 14:30:00.184019565 Z
   updated_at: 2014-05-30 14:30:00.183829316 Z
@@ -473,7 +441,6 @@ anonymous_user_can_read_anonymously_accessible_project:
   uuid: zzzzz-o0j2j-82nbli3jptwksj1
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-05-30 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-05-30 14:30:00.184019565 Z
   updated_at: 2014-05-30 14:30:00.183829316 Z
@@ -487,7 +454,6 @@ user_agreement_readable_by_anonymously_accessible_project:
   uuid: zzzzz-o0j2j-o5ds5gvhkztdc8h
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   created_at: 2014-06-13 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-06-13 20:42:26 -0800
   updated_at: 2014-06-13 20:42:26 -0800
@@ -498,7 +464,6 @@ active_user_permission_to_docker_image_collection:
   uuid: zzzzz-o0j2j-dp1d8395ldqw33s
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -512,7 +477,6 @@ active_user_permission_to_unlinked_docker_image_collection:
   uuid: zzzzz-o0j2j-g5i0sa8cr3b1psf
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -526,7 +490,6 @@ crt_user_permission_to_unlinked_docker_image_collection:
   uuid: zzzzz-o0j2j-20zvdi9b4odcfz3
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -540,7 +503,6 @@ docker_image_collection_hash:
   uuid: zzzzz-o0j2j-dockercollhasha
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-06-11 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-11 14:30:00.184019565 Z
   updated_at: 2014-06-11 14:30:00.183829316 Z
@@ -555,7 +517,6 @@ docker_image_collection_tag:
   uuid: zzzzz-o0j2j-dockercolltagbb
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-06-11 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-11 14:30:00.184019565 Z
   updated_at: 2014-06-11 14:30:00.183829316 Z
@@ -570,7 +531,6 @@ docker_image_collection_tag2:
   uuid: zzzzz-o0j2j-dockercolltagbc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-06-11 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-11 14:30:00.184019565 Z
   updated_at: 2014-06-11 14:30:00.183829316 Z
@@ -585,7 +545,6 @@ docker_image_collection_hextag:
   uuid: zzzzz-o0j2j-2591ao7zubhaoxh
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2017-02-13 21:41:06.769936997 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2017-02-13 21:41:06.769422000 Z
   tail_uuid: ~
@@ -599,7 +558,6 @@ docker_1_12_image_hash:
   uuid: zzzzz-o0j2j-f58l58fn65n8v6k
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2017-02-13 21:35:12.602828136 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2017-02-13 21:35:12.602309000 Z
   tail_uuid: ~
@@ -613,7 +571,6 @@ docker_1_12_image_tag:
   uuid: zzzzz-o0j2j-dybsy0m3u96jkbv
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2017-02-13 21:37:47.441406362 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2017-02-13 21:37:47.440882000 Z
   tail_uuid: ~
@@ -627,7 +584,6 @@ docker_1_12_image_hextag:
   uuid: zzzzz-o0j2j-06hzef4u1hbk1g5
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2017-02-13 21:37:47.441406362 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2017-02-13 21:37:47.440882000 Z
   tail_uuid: ~
@@ -645,7 +601,6 @@ ancient_docker_image_collection_hash:
   uuid: zzzzz-o0j2j-dockercollhashz
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-06-12 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-12 14:30:00.184019565 Z
   updated_at: 2014-06-12 14:30:00.183829316 Z
@@ -660,7 +615,6 @@ ancient_docker_image_collection_tag:
   uuid: zzzzz-o0j2j-dockercolltagzz
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-06-12 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-12 14:30:00.184019565 Z
   updated_at: 2014-06-12 14:30:00.183829316 Z
@@ -675,7 +629,6 @@ docker_image_tag_like_hash:
   uuid: zzzzz-o0j2j-dockerhashtagaa
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-06-11 14:30:00.184389725 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-11 14:30:00.184019565 Z
   updated_at: 2014-06-11 14:30:00.183829316 Z
@@ -690,7 +643,6 @@ baz_collection_name_in_asubproject:
   uuid: zzzzz-o0j2j-bazprojectname2
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -706,7 +658,6 @@ empty_collection_name_in_active_user_home_project:
   uuid: zzzzz-o0j2j-i3n6m552x6tmoi4
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-08-06 22:11:51.242392533 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-08-06 22:11:51.242150425 Z
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -720,7 +671,6 @@ active_user_can_read_activeandfriends:
   uuid: zzzzz-o0j2j-8184f5vk8c851ts
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-08-22 14:03:46.321059945 Z
-  modified_by_client_uuid:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-08-22 14:03:46.320865926 Z
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -734,7 +684,6 @@ active_user_joined_activeandfriends:
   uuid: zzzzz-o0j2j-t63rdd7vupqvnco
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-08-22 14:03:28.835064240 Z
-  modified_by_client_uuid:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-08-22 14:03:28.834849409 Z
   tail_uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
@@ -748,7 +697,6 @@ future_project_can_read_activeandfriends:
   uuid: zzzzz-o0j2j-bkdtnddpmwxqiza
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-08-22 14:04:18.811622057 Z
-  modified_by_client_uuid:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-08-22 14:04:18.811463859 Z
   tail_uuid: zzzzz-tpzed-futureprojview2
@@ -762,7 +710,6 @@ future_project_user_joined_activeandfriends:
   uuid: zzzzz-o0j2j-ksl8bo92eokv332
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-08-22 14:04:24.182103355 Z
-  modified_by_client_uuid:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-08-22 14:04:24.181939129 Z
   tail_uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
@@ -776,7 +723,6 @@ auto_setup_vm_login_username_can_login_to_test_vm:
   uuid: zzzzz-o0j2j-i3n6m98766tmoi4
   owner_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
   created_at: 2014-08-06 22:11:51.242392533 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
   modified_at: 2014-08-06 22:11:51.242150425 Z
   tail_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
@@ -790,7 +736,6 @@ admin_can_login_to_testvm2:
   uuid: zzzzz-o0j2j-peek9mecohgh3ai
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   created_at: 2014-08-06 22:11:51.242392533 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-08-06 22:11:51.242150425 Z
   tail_uuid: zzzzz-tpzed-d9tiejq69daie8f
@@ -805,7 +750,6 @@ active_can_login_to_testvm2:
   uuid: zzzzz-o0j2j-rah2ya1ohx9xaev
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   created_at: 2014-08-06 22:11:51.242392533 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-08-06 22:11:51.242150425 Z
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -820,7 +764,6 @@ spectator_login_link_for_testvm2_without_username:
   uuid: zzzzz-o0j2j-aem0eilie1jigh9
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   created_at: 2014-08-06 22:11:51.242392533 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-08-06 22:11:51.242150425 Z
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
@@ -865,7 +808,6 @@ user1-with-load_member_of_all_users_group:
   uuid: zzzzz-o0j2j-user1-with-load
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -879,7 +821,6 @@ empty_collection_name_in_fuse_user_home_project:
   uuid: zzzzz-o0j2j-hw3mcg3c8pwo6ar
   owner_uuid: zzzzz-tpzed-0fusedrivertest
   created_at: 2014-08-06 22:11:51.242392533 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-0fusedrivertest
   modified_at: 2014-08-06 22:11:51.242150425 Z
   tail_uuid: zzzzz-tpzed-0fusedrivertest
@@ -893,7 +834,6 @@ star_project_for_active_user:
   uuid: zzzzz-o0j2j-starredbyactive
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -915,7 +855,6 @@ star_shared_project_for_project_viewer:
   uuid: zzzzz-o0j2j-starredbyviewer
   owner_uuid: zzzzz-tpzed-projectviewer1a
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -929,7 +868,6 @@ tagged_collection_readable_by_spectator:
   uuid: zzzzz-o0j2j-readacl4tagcoll
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -943,7 +881,6 @@ active_manages_viewing_group:
   uuid: zzzzz-o0j2j-activemanagesvi
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -957,7 +894,6 @@ public_favorites_permission_link:
   uuid: zzzzz-o0j2j-testpublicfavor
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
@@ -971,7 +907,6 @@ future_project_user_member_of_all_users_group:
   uuid: zzzzz-o0j2j-cdnq6627g0h0r2a
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2015-07-28T21:34:41.361747000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2015-07-28T21:34:41.361747000Z
   updated_at: 2015-07-28T21:34:41.361747000Z
@@ -985,7 +920,6 @@ foo_file_readable_by_soon_to_be_trashed_role:
   uuid: zzzzz-o0j2j-5s8ry7sn7bwxb7w
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-01-24 20:42:26 -0800
-  modified_by_client_uuid: zzzzz-ozdt8-000000000000000
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800

@@ -5,6 +5,12 @@
 require 'test_helper'
 
 class Arvados::V1::ContainersControllerTest < ActionController::TestCase
+  setup do
+    act_as_system_user do
+      @dispatch2 = ApiClientAuthorization.create!(user_id: system_user.id)
+    end
+  end
+
   test 'create' do
     authorize_with :system_user
     post :create, params: {
@@ -19,14 +25,14 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
 
   [Container::Queued, Container::Complete].each do |state|
     test "cannot get auth in #{state} state" do
-      authorize_with :dispatch1
+      authorize_with :system_user
       get :auth, params: {id: containers(:queued).uuid}
       assert_response 403
     end
   end
 
   test 'cannot get auth with wrong token' do
-    authorize_with :dispatch1
+    authorize_with_token @dispatch2.token
     c = containers(:queued)
     assert c.lock, show_errors(c)
 
@@ -36,7 +42,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'get auth' do
-    authorize_with :dispatch1
+    authorize_with :system_user
     c = containers(:queued)
     assert c.lock, show_errors(c)
     get :auth, params: {id: c.uuid}
@@ -46,7 +52,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'no auth or secret_mounts in container response' do
-    authorize_with :dispatch1
+    authorize_with :system_user
     c = containers(:queued)
     assert c.lock, show_errors(c)
     get :show, params: {id: c.uuid}
@@ -56,7 +62,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test "lock container" do
-    authorize_with :dispatch1
+    authorize_with :system_user
     uuid = containers(:queued).uuid
     post :lock, params: {id: uuid}
     assert_response :success
@@ -75,7 +81,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test "unlock container" do
-    authorize_with :dispatch1
+    authorize_with :system_user
     uuid = containers(:locked).uuid
     post :unlock, params: {id: uuid}
     assert_response :success
@@ -94,7 +100,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test "unlock container locked by different dispatcher" do
-    authorize_with :dispatch2
+    authorize_with_token @dispatch2.token
     uuid = containers(:locked).uuid
     post :unlock, params: {id: uuid}
     assert_response 403
@@ -108,7 +114,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     [:running, :unlock, 422, 'Running'],
   ].each do |fixture, action, response, state|
     test "state transitions from #{fixture} to #{action}" do
-      authorize_with :dispatch1
+      authorize_with :system_user
       uuid = containers(fixture).uuid
       post action, params: {id: uuid}
       assert_response response
@@ -124,7 +130,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'no container associated with token' do
-    authorize_with :dispatch1
+    authorize_with :system_user
     get :current
     assert_response 404
   end
@@ -141,7 +147,11 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     [false, :active],
   ].each do |expect_success, auth|
     test "get secret_mounts with #{auth} token" do
-      authorize_with auth
+      if auth == :dispatch2
+        authorize_with_token @dispatch2.token
+      else
+        authorize_with auth
+      end
       get :secret_mounts, params: {id: containers(:running).uuid}
       if expect_success
         assert_response :success
@@ -153,7 +163,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'get runtime_token auth' do
-    authorize_with :dispatch2
+    authorize_with :system_user
     c = containers(:runtime_token)
     get :auth, params: {id: c.uuid}
     assert_response :success
@@ -170,21 +180,21 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'update runtime_status, runtime_status is toplevel key' do
-    authorize_with :dispatch1
+    authorize_with :system_user
     c = containers(:running)
     patch :update, params: {id: containers(:running).uuid, runtime_status: {activity: "foo", activityDetail: "bar"}}
     assert_response :success
   end
 
   test 'update runtime_status, container is toplevel key' do
-    authorize_with :dispatch1
+    authorize_with :system_user
     c = containers(:running)
     patch :update, params: {id: containers(:running).uuid, container: {runtime_status: {activity: "foo", activityDetail: "bar"}}}
     assert_response :success
   end
 
   test 'update state, state is toplevel key' do
-    authorize_with :dispatch1
+    authorize_with :system_user
     c = containers(:running)
     patch :update, params: {id: containers(:running).uuid, state: "Complete", runtime_status: {activity: "finishing"}}
     assert_response :success

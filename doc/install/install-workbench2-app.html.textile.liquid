@@ -86,20 +86,3 @@ Workbench2 will load, if available, a vocabulary definition which lists availabl
 h2(#confirm-working). Confirm working installation
 
 Visit @https://workbench2.ClusterID.example.com@ in a browser.  You should be able to log in using the login method you configured in the previous step.  If @Users.AutoAdminFirstUser@ is true, you will be an admin user.
-
-h2(#trusted_client). Trusted client flag
-
-Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
-
-In the <strong>API server</strong> project root, start the Rails console.  {% include 'install_rails_command' %}
-
-At the console, enter the following commands to locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
-
-<notextile><pre><code>irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
-=&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
-irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
-=&gt; true
-irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update!(is_trusted: true) end</span>
-=&gt; true
-</code></pre>
-</notextile>

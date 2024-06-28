@@ -46,8 +46,6 @@ class LogTest < ActiveSupport::TestCase
                  "log is not owned by current user")
     assert_equal(current_user.andand.uuid, log.modified_by_user_uuid,
                  "log is not 'modified by' current user")
-    assert_equal(current_api_client.andand.uuid, log.modified_by_client_uuid,
-                 "log is not 'modified by' current client")
     assert_equal(thing.uuid, log.object_uuid, "log UUID mismatch")
     assert_equal(event_type.to_s, log.event_type, "log event type mismatch")
     time_method, old_props_test, new_props_test = EVENT_TEST_METHODS[event_type]
@@ -134,21 +132,6 @@ class LogTest < ActiveSupport::TestCase
       assert_equal(orig_etag, props['old_etag'], "destroyed auth etag mismatch")
       assert_equal(orig_attrs, props['old_attributes'],
                    "destroyed auth attributes mismatch")
-    end
-  end
-
-  test "saving an unchanged client still makes a log" do
-    set_user_from_auth :admin_trustedclient
-    client = api_clients(:untrusted)
-    client.is_trusted = client.is_trusted
-    client.save!
-    assert_logged(client, :update) do |props|
-      ['old', 'new'].each do |age|
-        assert_equal(client.etag, props["#{age}_etag"],
-                     "unchanged client #{age} etag mismatch")
-        assert_equal(client.attributes, props["#{age}_attributes"],
-                     "unchanged client #{age} attributes mismatch")
-      end
     end
   end
 
@@ -252,7 +235,6 @@ class LogTest < ActiveSupport::TestCase
     set_user_from_auth :admin_trustedclient
     auth = ApiClientAuthorization.new
     auth.user = users(:spectator)
-    auth.api_client = api_clients(:untrusted)
     auth.save!
     assert_logged_with_clean_properties(auth, :create, 'api_token')
     auth.expires_at = Time.now

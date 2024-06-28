@@ -14,19 +14,16 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   def with_container_auth(ctr)
     auth_was = Thread.current[:api_client_authorization]
-    client_was = Thread.current[:api_client]
     token_was = Thread.current[:token]
     user_was = Thread.current[:user]
     auth = ApiClientAuthorization.find_by_uuid(ctr.auth_uuid)
     Thread.current[:api_client_authorization] = auth
-    Thread.current[:api_client] = auth.api_client
     Thread.current[:token] = auth.token
     Thread.current[:user] = auth.user
     begin
       yield
     ensure
       Thread.current[:api_client_authorization] = auth_was
-      Thread.current[:api_client] = client_was
       Thread.current[:token] = token_was
       Thread.current[:user] = user_was
     end

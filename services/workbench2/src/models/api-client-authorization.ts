@@ -7,7 +7,6 @@ import { Resource } from 'models/resource';
 export interface ApiClientAuthorization extends Resource {
     uuid: string;
     apiToken: string;
-    apiClientId: number;
     userId: number;
     createdByIpAddress: string;
     lastUsedByIpAddress: string;

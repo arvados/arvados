@@ -17,23 +17,11 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     assert_response 401
   end
 
-  test "should not get index from untrusted client" do
-    authorize_with :active
-    get :index
-    assert_response 403
-  end
-
   test "create system auth" do
     authorize_with :admin_trustedclient
     post :create_system_auth, params: {scopes: '["test"]'}
     assert_response :success
     assert_not_nil JSON.parse(@response.body)['uuid']
-  end
-
-  test "prohibit create system auth with token from non-trusted client" do
-    authorize_with :admin
-    post :create_system_auth, params: {scopes: '["test"]'}
-    assert_response 403
   end
 
   test "prohibit create system auth by non-admin" do
@@ -93,43 +81,39 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
   [# anyone can look up the token they're currently using
    [:admin, :admin, 200, 200, 1],
    [:active, :active, 200, 200, 1],
-   # cannot look up other tokens (even for same user) if not trustedclient
-   [:admin, :active, 403, 403],
-   [:admin, :admin_vm, 403, 403],
-   [:active, :admin, 403, 403],
-   # cannot look up other tokens for other users, regardless of trustedclient
+   # cannot look up other tokens for other users
    [:admin_trustedclient, :active, 404, 200, 0],
    [:active_trustedclient, :admin, 404, 200, 0],
-  ].each do |user, token, expect_get_response, expect_list_response, expect_list_items|
-    test "using '#{user}', get '#{token}' by uuid" do
-      authorize_with user
+  ].each do |auth_token, target_token, expect_get_response, expect_list_response, expect_list_items|
+    test "using '#{auth_token}', get '#{target_token}' by uuid" do
+      authorize_with auth_token
       get :show, params: {
-        id: api_client_authorizations(token).uuid,
+        id: api_client_authorizations(target_token).uuid,
       }
       assert_response expect_get_response
     end
 
-    test "using '#{user}', update '#{token}' by uuid" do
-      authorize_with user
+    test "using '#{auth_token}', update '#{target_token}' by uuid" do
+      authorize_with auth_token
       put :update, params: {
-        id: api_client_authorizations(token).uuid,
+        id: api_client_authorizations(target_token).uuid,
         api_client_authorization: {},
       }
       assert_response expect_get_response
     end
 
-    test "using '#{user}', delete '#{token}' by uuid" do
-      authorize_with user
+    test "using '#{auth_token}', delete '#{target_token}' by uuid" do
+      authorize_with auth_token
       post :destroy, params: {
-        id: api_client_authorizations(token).uuid,
+        id: api_client_authorizations(target_token).uuid,
       }
       assert_response expect_get_response
     end
 
-    test "using '#{user}', list '#{token}' by uuid" do
-      authorize_with user
+    test "using '#{auth_token}', list '#{target_token}' by uuid" do
+      authorize_with auth_token
       get :index, params: {
-        filters: [['uuid','=',api_client_authorizations(token).uuid]],
+        filters: [['uuid','=',api_client_authorizations(target_token).uuid]],
       }
       assert_response expect_list_response
       if expect_list_items
@@ -139,10 +123,10 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     end
 
     if expect_list_items
-      test "using '#{user}', list '#{token}' by uuid with offset" do
-        authorize_with user
+      test "using '#{auth_token}', list '#{target_token}' by uuid with offset" do
+        authorize_with auth_token
         get :index, params: {
-          filters: [['uuid','=',api_client_authorizations(token).uuid]],
+          filters: [['uuid','=',api_client_authorizations(target_token).uuid]],
           offset: expect_list_items,
         }
         assert_response expect_list_response
@@ -151,10 +135,10 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
       end
     end
 
-    test "using '#{user}', list '#{token}' by token" do
-      authorize_with user
+    test "using '#{auth_token}', list '#{target_token}' by token" do
+      authorize_with auth_token
       get :index, params: {
-        filters: [['api_token','=',api_client_authorizations(token).api_token]],
+        filters: [['api_token','=',api_client_authorizations(target_token).api_token]],
       }
       assert_response expect_list_response
       if expect_list_items

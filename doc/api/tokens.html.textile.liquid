@@ -53,18 +53,6 @@ h2. Creating tokens via the API
 
 The browser login method above issues a new token.  Using that token, it is possible to make API calls to create additional tokens.  To do so, use the @create@ method of the "API client authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html resource.
 
-h2. Trusted API clients
-
-The "api_clients":{{site.baseurl}}/api/methods/api_clients.html resource determines if web applications that have gone through the browser login flow may create or list API tokens.
-
-After the user has authenticated, but before an authorization token is issued and browser redirect sent (sending the browser back to the @return_to@ login page bearing @api_token@), the server strips the path and query portion from @return_to@ to get @url_prefix@.  The @url_prefix@ is used to find or create an ApiClient object.  The newly issued API client authorization (API token) is associated with this ApiClient object.
-
-API clients may be marked as "trusted" by making an API call to create or update an "api_clients":{{site.baseurl}}/api/methods/api_clients.html resource and set the @is_trusted@ flag to @true@. An authorization token associated with a "trusted" client is permitted to list authorization tokens on "API client authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html .
-
-A authorization token which is not associated with a trusted client may only use the @current@ method to query its own api_client_authorization object.  The "untrusted" token is forbidden performing any other operations on API client authorizations, such as listing other authorizations or creating new authorizations.
-
-Authorization tokens which are not issued via the browser login flow (created directly via the API) inherit the api client of the token used to create them.  They will always be "trusted" because untrusted API clients cannot create tokens.
-
 h2(#scopes). Scopes
 
 Scopes can restrict a token so it may only access certain resources.  This is in addition to normal permission checks for the user associated with the token.

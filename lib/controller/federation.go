@@ -203,10 +203,10 @@ func (h *Handler) createAPItoken(req *http.Request, userUUID string, scopes []st
 		`INSERT INTO api_client_authorizations
 (uuid, api_token, expires_at, scopes,
 user_id,
-api_client_id, created_at, updated_at)
+created_at, updated_at)
 VALUES ($1, $2, CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '2 weeks', $3,
 (SELECT id FROM users WHERE users.uuid=$4 LIMIT 1),
-0, CURRENT_TIMESTAMP AT TIME ZONE 'UTC', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')`,
+CURRENT_TIMESTAMP AT TIME ZONE 'UTC', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')`,
 		uuid, token, string(scopesjson), userUUID)
 
 	if err != nil {

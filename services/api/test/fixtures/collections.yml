@@ -8,7 +8,6 @@ user_agreement:
   portable_data_hash: b519d9cb706a29fc7ea24dbea2f05851+93
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T19:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2013-12-26T19:22:54Z
   updated_at: 2013-12-26T19:22:54Z
@@ -21,7 +20,6 @@ collection_owned_by_active:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T18:22:54Z
   updated_at: 2014-02-03T18:22:54Z
@@ -35,7 +33,6 @@ collection_owned_by_active_with_file_stats:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -51,7 +48,6 @@ collection_owned_by_active_past_version_1:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T18:22:54Z
   updated_at: 2014-02-03T18:22:54Z
@@ -65,7 +61,6 @@ foo_file:
   portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2015-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-03T17:22:54Z
   updated_at: 2015-02-03T17:22:54Z
@@ -78,7 +73,6 @@ bar_file:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2015-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-03T17:22:54Z
   updated_at: 2015-02-03T17:22:54Z
@@ -91,7 +85,6 @@ baz_file:
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -104,7 +97,6 @@ w_a_z_file:
   portable_data_hash: 44a8da9ec82098323895cd14e178386f+56
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-09T10:53:38Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-09T10:55:38Z
   updated_at: 2015-02-09T10:55:38Z
@@ -118,7 +110,6 @@ w_a_z_file_version_1:
   portable_data_hash: ba4ba4c7b99a58806b1ed70ea1263afe+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-09T10:53:38Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-09T10:55:38Z
   updated_at: 2015-02-09T10:55:38Z
@@ -132,7 +123,6 @@ multilevel_collection_1:
   portable_data_hash: f9ddda46bb293b6847da984e3aa735db+290
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -146,7 +136,6 @@ multilevel_collection_2:
   portable_data_hash: 8591cc5caeca80fc62fd529ba1d63bf3+118
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -160,7 +149,6 @@ docker_image:
   portable_data_hash: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-06-11T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-06-11T17:22:54Z
   updated_at: 2014-06-11T17:22:54Z
@@ -174,7 +162,6 @@ docker_image_1_12:
   portable_data_hash: d740a57097711e08eb9b2a93518f20ab+174
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2016-10-19 08:50:45.653552268 Z
-  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2016-10-19 08:50:45.652930000 Z
   updated_at: 2016-10-19 08:50:45.652930000 Z
@@ -189,7 +176,6 @@ unlinked_docker_image:
   portable_data_hash: 9ae44d5792468c58bcf85ce7353c7027+124
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-06-11T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-06-11T17:22:54Z
   updated_at: 2014-06-11T17:22:54Z
@@ -202,7 +188,6 @@ empty:
   portable_data_hash: d41d8cd98f00b204e9800998ecf8427e+0
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-06-11T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-06-11T17:22:54Z
   updated_at: 2014-06-11T17:22:54Z
@@ -224,7 +209,6 @@ fuse_filters_test_foo:
   uuid: zzzzz-4zz18-4e2kjqv891jl3p3
   current_version_uuid: zzzzz-4zz18-4e2kjqv891jl3p3
   portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   owner_uuid: zzzzz-tpzed-fusefiltertest1
   created_at: 2024-02-09T12:01:00Z
@@ -239,7 +223,6 @@ fuse_filters_test_bar:
   uuid: zzzzz-4zz18-qpxqtq2wbjnu630
   current_version_uuid: zzzzz-4zz18-qpxqtq2wbjnu630
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   owner_uuid: zzzzz-tpzed-fusefiltertest1
   created_at: 2024-02-09T12:02:00Z
@@ -254,7 +237,6 @@ fuse_filters_test_baz:
   uuid: zzzzz-4zz18-ls97ezovrkkpfxz
   current_version_uuid: zzzzz-4zz18-ls97ezovrkkpfxz
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   owner_uuid: zzzzz-tpzed-fusefiltertest1
   created_at: 2024-02-09T12:03:00Z
@@ -314,7 +296,6 @@ baz_file_in_asubproject:
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -327,7 +308,6 @@ collection_to_move_around_in_aproject:
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -342,7 +322,6 @@ expired_collection:
   portable_data_hash: 0b21a217243bfce5617fb9224b95bcb9+49
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -359,7 +338,6 @@ expired_collection_past_version:
   portable_data_hash: 0b21a217243bfce5617fb9224b95bcb9+49
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:12:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:17:54Z
   updated_at: 2014-02-03T17:17:54Z
@@ -376,7 +354,6 @@ trashed_on_next_sweep:
   portable_data_hash: 0b21a217243bfce5617fb9224b95bcb9+49
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2016-12-07T22:01:00.123456Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2016-12-27T22:01:30.123456Z
   updated_at: 2016-12-27T22:01:30.123456Z
@@ -394,7 +371,6 @@ deleted_on_next_sweep:
   portable_data_hash: 0b21a217243bfce5617fb9224b95bcb9+49
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2016-12-07T22:01:00.234567Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2016-12-27T22:01:30.234567Z
   updated_at: 2016-12-27T22:01:30.234567Z
@@ -410,7 +386,6 @@ collection_expires_in_future:
   portable_data_hash: 0b21a217243bfce5617fb9224b95bcb9+49
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -425,7 +400,6 @@ unique_expired_collection:
   portable_data_hash: 4ad199f90029935844dc3f098f4fca2a+49
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -441,7 +415,6 @@ unique_expired_collection2:
   portable_data_hash: 64a2bed1ef0f40fe3a7d39bcf2584cb8+50
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -457,7 +430,6 @@ collection_in_home_project_with_same_name_as_in_aproject:
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -470,7 +442,6 @@ collection_in_aproject_with_same_name_as_in_home_project:
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -505,7 +476,6 @@ collection_with_files_in_subdir:
   portable_data_hash: 7eb64275355980ebc93411b44050c137+281
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -547,7 +517,6 @@ collection_1_owned_by_fuse:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-0fusedrivertest
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -560,7 +529,6 @@ collection_2_owned_by_fuse:
   portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   owner_uuid: zzzzz-tpzed-0fusedrivertest
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -573,7 +541,6 @@ collection_in_fuse_project:
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-j7d0g-0000ownedbyfuse
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -619,7 +586,6 @@ collection_with_unique_words_to_test_full_text_search:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -723,7 +689,6 @@ collection_with_empty_properties:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -737,7 +702,6 @@ collection_with_one_property:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -753,7 +717,6 @@ collection_with_repeated_filenames_and_contents_in_two_dirs_1:
   portable_data_hash: ce437b12aa73ab34f7af5227f556c9e6+142
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -766,7 +729,6 @@ collection_with_repeated_filenames_and_contents_in_two_dirs_2:
   portable_data_hash: f3a67fad3a19c31c658982fb8158fa58+144
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -779,7 +741,6 @@ foo_and_bar_files_in_dir:
   portable_data_hash: 870369fc72738603c2fad16664e50e2d+58
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -792,7 +753,6 @@ multi_level_to_combine:
   portable_data_hash: 7a6ef4c162a5c6413070a8bd0bffc818+150
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -806,7 +766,6 @@ collection_with_several_supported_file_types:
   portable_data_hash: 020d82cf7dedb70fd2b7788b5d0634da+269
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -819,7 +778,6 @@ collection_with_several_unsupported_file_types:
   portable_data_hash: 71ac42f87464ee5f9fd396d560d400c3+59
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -832,7 +790,6 @@ collection_not_readable_by_active:
   portable_data_hash: b9e51a238ce08a698e7d7f8f101aee18+55
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -845,7 +802,6 @@ collection_to_remove_and_rename_files:
   portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -858,7 +814,6 @@ collection_with_tags_owned_by_active:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -874,7 +829,6 @@ trashed_collection_to_test_name_conflict_on_untrash:
   portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -890,7 +844,6 @@ same_name_as_trashed_coll_to_test_name_conflict_on_untrash:
   portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -903,7 +856,6 @@ collection_in_trashed_subproject:
   portable_data_hash: 21aed8fd508bd6263704b673455949ba+57
   owner_uuid: zzzzz-j7d0g-trashedproject2
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
@@ -916,7 +868,6 @@ collection_with_prop1_value1:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -931,7 +882,6 @@ collection_with_prop1_value2:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -946,7 +896,6 @@ collection_with_prop1_value3:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -961,7 +910,6 @@ collection_with_prop1_other1:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -976,7 +924,6 @@ collection_with_prop2_1:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -991,7 +938,6 @@ collection_with_prop2_5:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -1006,7 +952,6 @@ collection_with_list_prop_odd:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -1021,7 +966,6 @@ collection_with_list_prop_even:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -1036,7 +980,6 @@ collection_with_listprop_elem1:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -1051,7 +994,6 @@ collection_with_uri_prop:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2015-02-13T17:22:54Z
   updated_at: 2015-02-13T17:22:54Z
@@ -1066,7 +1008,6 @@ container_log_collection:
   portable_data_hash: b1e66f713c04d28ddbaced89096f4838+210
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2020-10-29T00:51:44.075594000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-10-29T00:51:44.072109000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1078,7 +1019,6 @@ log_collection:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-10-29T00:51:44.075594000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-10-29T00:51:44.072109000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1090,7 +1030,6 @@ log_collection2:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-10-29T00:51:44.075594000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-10-29T00:51:44.072109000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1102,7 +1041,6 @@ diagnostics_request_container_log_collection:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-11-02T00:20:44.007557000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-11-02T00:20:44.005381000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1114,7 +1052,6 @@ hasher1_log_collection:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-11-02T00:16:55.272606000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-11-02T00:16:55.267006000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1126,7 +1063,6 @@ hasher2_log_collection:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-11-02T00:20:23.547251000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-11-02T00:20:23.545275000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1138,7 +1074,6 @@ hasher3_log_collection:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-11-02T00:20:38.789204000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-11-02T00:20:38.787329000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
@@ -1150,7 +1085,6 @@ diagnostics_request_container_log_collection2:
   portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2020-11-03T16:17:53.351593000Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2020-11-03T16:17:53.346969000Z
   manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"

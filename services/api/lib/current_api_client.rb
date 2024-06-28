@@ -7,10 +7,6 @@ module CurrentApiClient
     Thread.current[:user]
   end
 
-  def current_api_client
-    Thread.current[:api_client]
-  end
-
   def current_api_client_authorization
     Thread.current[:api_client_authorization]
   end
@@ -204,26 +200,6 @@ module CurrentApiClient
     end
   end
 
-  def anonymous_user_token_api_client
-    $anonymous_user_token_api_client = check_cache($anonymous_user_token_api_client) do
-      act_as_system_user do
-        ActiveRecord::Base.transaction do
-          ApiClient.find_or_create_by!(is_trusted: false, url_prefix: "", name: "AnonymousUserToken")
-        end
-      end
-    end
-  end
-
-  def system_root_token_api_client
-    $system_root_token_api_client = check_cache($system_root_token_api_client) do
-      act_as_system_user do
-        ActiveRecord::Base.transaction do
-          ApiClient.find_or_create_by!(is_trusted: true, url_prefix: "", name: "SystemRootToken")
-        end
-      end
-    end
-  end
-
   def empty_collection_pdh
     'd41d8cd98f00b204e9800998ecf8427e+0'
   end
@@ -278,8 +254,6 @@ module CurrentApiClient
     $anonymous_user = nil
     $public_project_group = nil
     $public_project_group_read_permission = nil
-    $anonymous_user_token_api_client = nil
-    $system_root_token_api_client = nil
     $empty_collection = nil
   end
   module_function :reset_system_globals

@@ -6,28 +6,24 @@
 
 system_user:
   uuid: zzzzz-gj3su-017z32aux8dg2s1
-  api_client: untrusted
   user: system_user
   api_token: systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy
   expires_at: 2038-01-01 00:00:00
 
 admin:
   uuid: zzzzz-gj3su-027z32aux8dg2s1
-  api_client: untrusted
   user: admin
   api_token: 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h
   expires_at: 2038-01-01 00:00:00
 
 admin_trustedclient:
   uuid: zzzzz-gj3su-037z32aux8dg2s1
-  api_client: trusted_workbench
   user: admin
   api_token: 1a9ffdcga2o7cw8q12dndskomgs1ygli3ns9k2o9hgzgmktc78
   expires_at: 2038-01-01 00:00:00
 
 data_manager:
   uuid: zzzzz-gj3su-047z32aux8dg2s1
-  api_client: untrusted
   user: system_user
   api_token: 320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1
   expires_at: 2038-01-01 00:00:00
@@ -40,35 +36,30 @@ data_manager:
 
 miniadmin:
   uuid: zzzzz-gj3su-057z32aux8dg2s1
-  api_client: untrusted
   user: miniadmin
   api_token: 2zb2y9pw3e70270te7oe3ewaantea3adyxjascvkz0zob7q7xb
   expires_at: 2038-01-01 00:00:00
 
 rominiadmin:
   uuid: zzzzz-gj3su-067z32aux8dg2s1
-  api_client: untrusted
   user: rominiadmin
   api_token: 5tsb2pc3zlatn1ortl98s2tqsehpby88wmmnzmpsjmzwa6payh
   expires_at: 2038-01-01 00:00:00
 
 active:
   uuid: zzzzz-gj3su-077z32aux8dg2s1
-  api_client: untrusted
   user: active
   api_token: 3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi
   expires_at: 2038-01-01 00:00:00
 
 active_trustedclient:
   uuid: zzzzz-gj3su-087z32aux8dg2s1
-  api_client: trusted_workbench
   user: active
   api_token: 27bnddk6x2nmq00a1e3gq43n9tsl5v87a3faqar2ijj8tud5en
   expires_at: 2038-01-01 00:00:00
 
 active_noscope:
   uuid: zzzzz-gj3su-097z32aux8dg2s1
-  api_client: untrusted
   user: active
   api_token: activenoscopeabcdefghijklmnopqrstuvwxyz12345678901
   expires_at: 2038-01-01 00:00:00
@@ -76,28 +67,24 @@ active_noscope:
 
 project_viewer:
   uuid: zzzzz-gj3su-107z32aux8dg2s1
-  api_client: untrusted
   user: project_viewer
   api_token: projectviewertoken1234567890abcdefghijklmnopqrstuv
   expires_at: 2038-01-01 00:00:00
 
 project_viewer_trustedclient:
   uuid: zzzzz-gj3su-117z32aux8dg2s1
-  api_client: trusted_workbench
   user: project_viewer
   api_token: projectviewertrustedtoken1234567890abcdefghijklmno
   expires_at: 2038-01-01 00:00:00
 
 subproject_admin:
   uuid: zzzzz-gj3su-127z32aux8dg2s1
-  api_client: untrusted
   user: subproject_admin
   api_token: subprojectadmintoken1234567890abcdefghijklmnopqrst
   expires_at: 2038-01-01 00:00:00
 
 admin_vm:
   uuid: zzzzz-gj3su-137z32aux8dg2s1
-  api_client: untrusted
   user: admin
   api_token: adminvirtualmachineabcdefghijklmnopqrstuvwxyz12345
   expires_at: 2038-01-01 00:00:00
@@ -106,7 +93,6 @@ admin_vm:
 
 admin_noscope:
   uuid: zzzzz-gj3su-147z32aux8dg2s1
-  api_client: untrusted
   user: admin
   api_token: adminnoscopeabcdefghijklmnopqrstuvwxyz123456789012
   expires_at: 2038-01-01 00:00:00
@@ -114,7 +100,6 @@ admin_noscope:
 
 active_all_collections:
   uuid: zzzzz-gj3su-157z32aux8dg2s1
-  api_client: untrusted
   user: active
   api_token: activecollectionsabcdefghijklmnopqrstuvwxyz1234567
   expires_at: 2038-01-01 00:00:00
@@ -122,7 +107,6 @@ active_all_collections:
 
 active_userlist:
   uuid: zzzzz-gj3su-167z32aux8dg2s1
-  api_client: untrusted
   user: active
   api_token: activeuserlistabcdefghijklmnopqrstuvwxyz1234568900
   expires_at: 2038-01-01 00:00:00
@@ -130,7 +114,6 @@ active_userlist:
 
 active_apitokens:
   uuid: zzzzz-gj3su-187z32aux8dg2s1
-  api_client: trusted_workbench
   user: active
   api_token: activeapitokensabcdefghijklmnopqrstuvwxyz123456789
   expires_at: 2038-01-01 00:00:00
@@ -139,7 +122,6 @@ active_apitokens:
 
 active_readonly:
   uuid: zzzzz-gj3su-197z32aux8dg2s1
-  api_client: untrusted
   user: active
   api_token: activereadonlyabcdefghijklmnopqrstuvwxyz1234568790
   expires_at: 2038-01-01 00:00:00
@@ -147,21 +129,18 @@ active_readonly:
 
 spectator:
   uuid: zzzzz-gj3su-207z32aux8dg2s1
-  api_client: untrusted
   user: spectator
   api_token: zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu
   expires_at: 2038-01-01 00:00:00
 
 foo:
   uuid: zzzzz-gj3su-fohzae5ib1aseiv
-  api_client: untrusted
   user: user_foo_in_sharing_group
   api_token: lokah4xip8ahgee8oof5zitah3ohdai6je9cu1uogh4bai3ohw
   expires_at: 2038-01-01 00:00:00
 
 foo_collections:
   uuid: zzzzz-gj3su-217z32aux8dg2s1
-  api_client: untrusted
   user: user_foo_in_sharing_group
   api_token: spectatorcollectionscdefghijklmnopqrstuvwxyz123245
   expires_at: 2038-01-01 00:00:00
@@ -170,56 +149,48 @@ foo_collections:
 
 inactive:
   uuid: zzzzz-gj3su-227z32aux8dg2s1
-  api_client: untrusted
   user: inactive
   api_token: 5s29oj2hzmcmpq80hx9cta0rl5wuf3xfd6r7disusaptz7h9m0
   expires_at: 2038-01-01 00:00:00
 
 inactive_uninvited:
   uuid: zzzzz-gj3su-237z32aux8dg2s1
-  api_client: untrusted
   user: inactive_uninvited
   api_token: 62mhllc0otp78v08e3rpa3nsmf8q8ogk47f7u5z4erp5gpj9al
   expires_at: 2038-01-01 00:00:00
 
 inactive_uninvited_trustedclient:
   uuid: zzzzz-gj3su-228z32aux8dg2s1
-  api_client: trusted_workbench
   user: inactive_uninvited
   api_token: 7s29oj2hzmcmpq80hx9cta0rl5wuf3xfd6r7disusaptz7h9m0
   expires_at: 2038-01-01 00:00:00
 
 inactive_but_signed_user_agreement:
   uuid: zzzzz-gj3su-247z32aux8dg2s1
-  api_client: untrusted
   user: inactive_but_signed_user_agreement
   api_token: 64k3bzw37iwpdlexczj02rw3m333rrb8ydvn2qq99ohv68so5k
   expires_at: 2038-01-01 00:00:00
 
 expired:
   uuid: zzzzz-gj3su-257z32aux8dg2s1
-  api_client: untrusted
   user: active
   api_token: 2ym314ysp27sk7h943q6vtc378srb06se3pq6ghurylyf3pdmx
   expires_at: 1970-01-01 00:00:00
 
 expired_trustedclient:
   uuid: zzzzz-gj3su-267z32aux8dg2s1
-  api_client: trusted_workbench
   user: active
   api_token: 5hpni7izokzcatku2896xxwqdbt5ptomn04r6auc7fohnli82v
   expires_at: 1970-01-01 00:00:00
 
 valid_token_deleted_user:
   uuid: zzzzz-gj3su-277z32aux8dg2s1
-  api_client: trusted_workbench
   user_id: 1234567
   api_token: tewfa58099sndckyqhlgd37za6e47o6h03r9l1vpll23hudm8b
   expires_at: 2038-01-01 00:00:00
 
 anonymous:
   uuid: zzzzz-gj3su-287z32aux8dg2s1
-  api_client: untrusted
   user: anonymous
   api_token: 4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi
   expires_at: 2038-01-01 00:00:00
@@ -227,119 +198,90 @@ anonymous:
 
 job_reader:
   uuid: zzzzz-gj3su-297z32aux8dg2s1
-  api_client: untrusted
   user: job_reader
   api_token: e99512cdc0f3415c2428b9758f33bdfb07bc3561b00e86e7e6
   expires_at: 2038-01-01 00:00:00
 
 job_reader2:
   uuid: zzzzz-gj3su-jobreader2auth1
-  api_client: untrusted
   user: job_reader2
   api_token: jobreader2415c2428b9758f33bdfb07bc3561b0jobreader2
   expires_at: 2038-01-01 00:00:00
 
 active_no_prefs:
   uuid: zzzzz-gj3su-307z32aux8dg2s1
-  api_client: untrusted
   user: active_no_prefs
   api_token: 3kg612cdc0f3415c2428b9758f33bdfb07bc3561b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
 active_no_prefs_profile_no_getting_started_shown:
   uuid: zzzzz-gj3su-317z32aux8dg2s1
-  api_client: untrusted
   user: active_no_prefs_profile_no_getting_started_shown
   api_token: 3kg612cdc0f3415c242856758f33bdfb07bc3561b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
 active_no_prefs_profile_with_getting_started_shown:
   uuid: zzzzz-gj3su-327z32aux8dg2s1
-  api_client: untrusted
   user: active_no_prefs_profile_with_getting_started_shown
   api_token: 3kg612cdc0f3415c245786758f33bdfb07babcd1b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
 active_with_prefs_profile_no_getting_started_shown:
   uuid: zzzzz-gj3su-337z32aux8dg2s1
-  api_client: untrusted
   user: active_with_prefs_profile_no_getting_started_shown
   api_token: 3kg612cdc0f3415c245786758f33bdfb07befgh1b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
 user_foo_in_sharing_group:
   uuid: zzzzz-gj3su-347z32aux8dg2s1
-  api_client: untrusted
   user: user_foo_in_sharing_group
   api_token: 2p1pou8p4ls208mcbedeewlotghppenobcyrmyhq8pyf51xd8u
   expires_at: 2038-01-01 00:00:00
 
 user_bar_in_sharing_group:
   uuid: zzzzz-gj3su-62hryf5fht531mz
-  api_client: untrusted
   user: user_bar_in_sharing_group
   api_token: 5vy55akwq85vghh80wc2cuxl4p8psay73lkpqf5c2cxvp6rmm6
   expires_at: 2038-01-01 00:00:00
 
 user1_with_load:
   uuid: zzzzz-gj3su-357z32aux8dg2s1
-  api_client: untrusted
   user: user1_with_load
   api_token: 1234k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi
   expires_at: 2038-01-01 00:00:00
 
 fuse:
   uuid: zzzzz-gj3su-367z32aux8dg2s1
-  api_client: untrusted
   user: fuse
   api_token: 4nagbkv8eap0uok7pxm72nossq5asihls3yn5p4xmvqx5t5e7p
   expires_at: 2038-01-01 00:00:00
 
-dispatch1:
-  uuid: zzzzz-gj3su-k9dvestay1plssr
-  api_client: untrusted
-  user: system_user
-  api_token: kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw
-  expires_at: 2038-01-01 00:00:00
-
-dispatch2:
-  uuid: zzzzz-gj3su-jrriu629zljsnuf
-  api_client: untrusted
-  user: system_user
-  api_token: pbe3v4v5oag83tjwxjh0a551j44xdu8t7ol5ljw3ixsq8oh50q
-  expires_at: 2038-01-01 00:00:00
-
 running_container_auth:
   uuid: zzzzz-gj3su-077z32aux8dg2s2
-  api_client: untrusted
   user: active
   api_token: it2gl94mgu3rbn5s2d06vzh73ns1y6cthct0tvg82qdlsxvbwk
   expires_at: 2038-01-01 00:00:00
 
 running_container_with_logs_auth:
   uuid: zzzzz-gj3su-n4xycwjpvvi776n
-  api_client: untrusted
   user: active
   api_token: mkpdp5jbytt471lw9so1by2t5ylciojdur845rfn4dtm0etl33
   expires_at: 2038-01-01 00:00:00
 
 running_to_be_deleted_container_auth:
   uuid: zzzzz-gj3su-ty6lvu9d7u7c2sq
-  api_client: untrusted
   user: active
   api_token: ge1pez7dkk7nqntwcsj922g2b7a2t27xz6nsx39r15kbcqmp55
   expires_at: 2038-01-01 00:00:00
 
 permission_perftest:
   uuid: zzzzz-gj3su-077z32anoj93boo
-  api_client: untrusted
   user: permission_perftest
   api_token: 3kg6k6lzmp9kjabonentustoecn5bahbt2fod9zru30k1jqdmi
   expires_at: 2038-01-01 00:00:00
 
 foo_collection_sharing_token:
   uuid: zzzzz-gj3su-gf02tdm4g1z3e3u
-  api_client: untrusted
   user: active
   api_token: iknqgmunrhgsyfok8uzjlwun9iscwm3xacmzmg65fa1j1lpdss
   expires_at: 2038-01-01 00:00:00
@@ -350,21 +292,18 @@ foo_collection_sharing_token:
 
 container_runtime_token:
   uuid: zzzzz-gj3su-2nj68s291f50gd9
-  api_client: untrusted
   user: container_runtime_token_user
   api_token: 2d19ue6ofx26o3mm7fs9u6t7hov9um0v92dzwk1o2xed3abprw
   expires_at: 2038-01-01 00:00:00
 
 crt_user:
   uuid: zzzzz-gj3su-3r47qqy5ja5d54v
-  api_client: untrusted
   user: container_runtime_token_user
   api_token: 13z1tz9deoryml3twep0vsahi4862097pe5lsmesugnkgpgpwk
   expires_at: 2038-01-01 00:00:00
 
 runtime_token_limited_scope:
   uuid: zzzzz-gj3su-2fljvypjrr4yr9m
-  api_client: untrusted
   user: container_runtime_token_user
   api_token: 1fwc3be1m13qkypix2gd01i4bq5ju483zjfc0cf4babjseirbm
   expires_at: 2038-01-01 00:00:00

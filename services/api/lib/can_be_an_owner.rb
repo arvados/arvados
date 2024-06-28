@@ -15,9 +15,13 @@ module CanBeAnOwner
     ActiveRecord::Base.connection.tables.each do |t|
       next if t == base.table_name
       next if t.in?([
-                      'schema_migrations',
-                      'permission_refresh_lock',
+                      # in-use tables that should be skipped
                       'ar_internal_metadata',
+                      'permission_refresh_lock',
+                      'schema_migrations',
+                      'uuid_locks',
+                      # obsolete tables from removed APIs
+                      'api_clients',
                       'commit_ancestors',
                       'commits',
                       'humans',
@@ -31,7 +35,6 @@ module CanBeAnOwner
                       'repositories',
                       'specimens',
                       'traits',
-                      'uuid_locks',
                     ])
       klass = t.classify.constantize
       next unless klass and 'owner_uuid'.in?(klass.columns.collect(&:name))

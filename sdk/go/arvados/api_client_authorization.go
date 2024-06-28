@@ -9,7 +9,6 @@ import "time"
 // APIClientAuthorization is an arvados#apiClientAuthorization resource.
 type APIClientAuthorization struct {
 	UUID                 string    `json:"uuid"`
-	APIClientID          int       `json:"api_client_id"`
 	APIToken             string    `json:"api_token"`
 	CreatedAt            time.Time `json:"created_at"`
 	CreatedByIPAddress   string    `json:"created_by_ip_address"`

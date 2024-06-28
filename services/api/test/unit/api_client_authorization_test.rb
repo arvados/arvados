@@ -11,7 +11,6 @@ class ApiClientAuthorizationTest < ActiveSupport::TestCase
     test "ApiClientAuthorization can be created then deleted by #{token}" do
       set_user_from_auth token
       x = ApiClientAuthorization.create!(user_id: current_user.id,
-                                         api_client_id: 0,
                                          scopes: [])
       newtoken = x.api_token
       assert x.destroy, "Failed to destroy new ApiClientAuth"
@@ -28,7 +27,6 @@ class ApiClientAuthorizationTest < ActiveSupport::TestCase
     auth = ApiClientAuthorization.validate(token: "xxxSystemRootTokenxxx")
     assert_equal "xxxSystemRootTokenxxx", auth.api_token
     assert_equal User.find_by_uuid(system_user_uuid).id, auth.user_id
-    assert auth.api_client.is_trusted
 
     # now change the token and try to use the old one first
     Rails.configuration.SystemRootToken = "newxxxSystemRootTokenxxx"

@@ -583,14 +583,13 @@ const userApiResponse = (apiResponse: UserResource): JSX.Element => {
 
 const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization): JSX.Element => {
     const {
-        uuid, ownerUuid, apiToken, apiClientId, createdByIpAddress, lastUsedByIpAddress,
+        uuid, ownerUuid, apiToken, createdByIpAddress, lastUsedByIpAddress,
         lastUsedAt, expiresAt, scopes, updatedAt, createdAt
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "api_token": "${stringify(apiToken)}",
-"api_client_id": "${stringify(apiClientId)}",
 "created_by_ip_address": "${stringify(createdByIpAddress)}",
 "last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
 "last_used_at": "${stringify(lastUsedAt)}",
