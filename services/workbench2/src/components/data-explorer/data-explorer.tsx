@@ -254,7 +254,7 @@ export const DataExplorer = withStyles(styles)(
                                     [classes.progressWrapperNoTitle]: !title,
                                 })}>{progressBar}</div>
                             }
-                            {this.multiSelectToolbarInTitle && !this.state.hideToolbar && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
+                            {(this.multiSelectToolbarInTitle && !this.state.hideToolbar || forceMultiSelectMode) && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}

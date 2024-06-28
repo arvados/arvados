@@ -163,6 +163,7 @@ export const PublicFavoritePanel = withStyles(styles)(
         class extends React.Component<FavoritePanelProps> {
             render() {
                 return <div className={this.props.classes.root}><DataExplorer
+                    forceMultiSelectMode={true} 
                     id={PUBLIC_FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}

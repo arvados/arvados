@@ -179,6 +179,7 @@ export const FavoritePanel = withStyles(styles)(
 
             render() {
                 return <div className={this.props.classes.root}><DataExplorer
+                    forceMultiSelectMode={true} 
                     id={FAVORITE_PANEL_ID}
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
