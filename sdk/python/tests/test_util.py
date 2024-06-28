@@ -24,13 +24,11 @@ class KeysetTestHelper:
         self.expect_num_retries = expect_num_retries
 
     def fn(self, **kwargs):
-        if self.expect[self.n][0] != kwargs:
-            raise Exception("Didn't match %s != %s" % (self.expect[self.n][0], kwargs))
+        assert kwargs == self.expect[self.n][0]
         return self
 
     def execute(self, num_retries):
-        if num_retries != self.expect_num_retries:
-            raise Exception(f"KeysetTestHelper called with num_retries={num_retries} but expected {expect_num_retries}")
+        assert num_retries == self.expect_num_retries
         self.n += 1
         return self.expect[self.n-1][1]
 
