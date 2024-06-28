@@ -642,7 +642,7 @@ def copy_collection(obj_uuid, src, dst, args):
                 logger.debug("Getting block %s", word)
                 data = src_keep.get(word)
                 put_queue.put((word, data))
-            except e:
+            except Exception as e:
                 logger.error("Error getting block %s: %s", word, e)
                 transfer_error.append(e)
                 try:
@@ -680,7 +680,7 @@ def copy_collection(obj_uuid, src, dst, args):
                     bytes_written += loc.size
                     if progress_writer:
                         progress_writer.report(obj_uuid, bytes_written, bytes_expected)
-            except e:
+            except Exception as e:
                 logger.error("Error putting block %s (%s bytes): %s", blockhash, loc.size, e)
                 try:
                     # Drain the 'get' queue so we end early

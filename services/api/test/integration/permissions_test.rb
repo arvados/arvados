@@ -273,6 +273,119 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response 404
   end
 
+  test "adding can_read links from group to collection, user to group, then trash group" do
+    # try to read collection as spectator
+    get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
+      params: {:format => :json},
+      headers: auth(:spectator)
+    assert_response 404
+
+    # add permission for group to read collection
+    post "/arvados/v1/links",
+      params: {
+        :format => :json,
+        :link => {
+          tail_uuid: groups(:private_role).uuid,
+          link_class: 'permission',
+          name: 'can_read',
+          head_uuid: collections(:foo_file).uuid,
+          properties: {}
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+
+    # try to read collection as spectator
+    get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
+      params: {:format => :json},
+      headers: auth(:spectator)
+    assert_response 404
+
+    # add permission for spectator to read group
+    post "/arvados/v1/links",
+      params: {
+        :format => :json,
+        :link => {
+          tail_uuid: users(:spectator).uuid,
+          link_class: 'permission',
+          name: 'can_read',
+          head_uuid: groups(:private_role).uuid,
+          properties: {}
+        }
+      },
+      headers: auth(:admin)
+    u = json_response['uuid']
+    assert_response :success
+
+    # try to read collection as spectator
+    get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
+      params: {:format => :json},
+      headers: auth(:spectator)
+    assert_response :success
+
+    # put the group in the trash, this should keep the group members
+    # but delete the permissions.
+    post "/arvados/v1/groups/#{groups(:private_role).uuid}/trash",
+      params: {:format => :json},
+      headers: auth(:admin)
+    assert_response :success
+
+    # try to read collection as spectator, should fail now
+    get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
+      params: {:format => :json},
+      headers: auth(:spectator)
+    assert_response 404
+
+    # should not be able to grant permission to a trashed group
+    post "/arvados/v1/links",
+      params: {
+        :format => :json,
+        :link => {
+          tail_uuid: groups(:private_role).uuid,
+          link_class: 'permission',
+          name: 'can_read',
+          head_uuid: collections(:foo_file).uuid,
+          properties: {}
+        }
+      },
+      headers: auth(:admin)
+    assert_response 422
+
+    # can't take group out of the trash
+    post "/arvados/v1/groups/#{groups(:private_role).uuid}/untrash",
+      params: {:format => :json},
+      headers: auth(:admin)
+    assert_response 422
+
+    # when a role group is untrashed the permissions don't
+    # automatically come back
+    get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
+      params: {:format => :json},
+      headers: auth(:spectator)
+    assert_response 404
+
+    # can't add permission for group to read collection either
+    post "/arvados/v1/links",
+      params: {
+        :format => :json,
+        :link => {
+          tail_uuid: groups(:private_role).uuid,
+          link_class: 'permission',
+          name: 'can_read',
+          head_uuid: collections(:foo_file).uuid,
+          properties: {}
+        }
+      },
+      headers: auth(:admin)
+    assert_response 422
+
+    # still can't read foo file
+    get "/arvados/v1/collections/#{collections(:foo_file).uuid}",
+      params: {:format => :json},
+      headers: auth(:spectator)
+    assert_response 404
+  end
+
   test "read-only group-admin cannot modify administered user" do
     put "/arvados/v1/users/#{users(:active).uuid}",
       params: {

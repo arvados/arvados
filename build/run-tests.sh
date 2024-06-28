@@ -113,7 +113,6 @@ sdk/go/dispatch
 sdk/go/keepclient
 sdk/go/health
 sdk/go/httpserver
-sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/asyncbuf
 sdk/go/stats

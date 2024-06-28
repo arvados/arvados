@@ -1389,6 +1389,16 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: uuid_locks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.uuid_locks (
+    uuid character varying NOT NULL,
+    n integer DEFAULT 0 NOT NULL
+);
+
+
+--
 -- Name: virtual_machines; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2852,6 +2862,13 @@ CREATE UNIQUE INDEX index_users_on_uuid ON public.users USING btree (uuid);
 
 
 --
+-- Name: index_uuid_locks_on_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_uuid_locks_on_uuid ON public.uuid_locks USING btree (uuid);
+
+
+--
 -- Name: index_virtual_machines_on_created_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3328,4 +3345,5 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20231013000000'),
 ('20240329173437'),
 ('20240402162733'),
-('20240604183200');
+('20240604183200'),
+('20240618121312');

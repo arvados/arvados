@@ -17,7 +17,6 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"github.com/bmatcuk/doublestar/v4"
 )
 
@@ -42,8 +41,8 @@ type filetodo struct {
 // copied from the local filesystem.
 //
 // Symlinks to mounted collections, and any collections mounted under
-// ctrOutputDir, are copied by transforming the relevant parts of the
-// existing manifests, without moving any data around.
+// ctrOutputDir, are copied by reference, without moving any data
+// around.
 //
 // Symlinks to other parts of the container's filesystem result in
 // errors.
@@ -62,37 +61,40 @@ type copier struct {
 	secretMounts  map[string]arvados.Mount
 	logger        printfer
 
-	dirs     []string
-	files    []filetodo
-	manifest string
+	dirs   []string
+	files  []filetodo
+	staged arvados.CollectionFileSystem
 
-	manifestCache map[string]*manifest.Manifest
+	manifestCache map[string]string
 }
 
 // Copy copies data as needed, and returns a new manifest.
+//
+// Copy should not be called more than once.
 func (cp *copier) Copy() (string, error) {
-	err := cp.walkMount("", cp.ctrOutputDir, limitFollowSymlinks, true)
-	if err != nil {
-		return "", fmt.Errorf("error scanning files to copy to output: %v", err)
-	}
-	collfs, err := (&arvados.Collection{ManifestText: cp.manifest}).FileSystem(cp.client, cp.keepClient)
+	var err error
+	cp.staged, err = (&arvados.Collection{}).FileSystem(cp.client, cp.keepClient)
 	if err != nil {
 		return "", fmt.Errorf("error creating Collection.FileSystem: %v", err)
 	}
+	err = cp.walkMount("", cp.ctrOutputDir, limitFollowSymlinks, true)
+	if err != nil {
+		return "", fmt.Errorf("error scanning files to copy to output: %v", err)
+	}
 
-	// Remove files/dirs that don't match globs (the ones that
-	// were added during cp.walkMount() by copying subtree
-	// manifests into cp.manifest).
-	err = cp.applyGlobsToCollectionFS(collfs)
+	// Remove files/dirs that don't match globs (the files/dirs
+	// that were added during cp.walkMount() by copying subtree
+	// manifests into cp.staged).
+	err = cp.applyGlobsToStaged()
 	if err != nil {
 		return "", fmt.Errorf("error while removing non-matching files from output collection: %w", err)
 	}
-	// Remove files/dirs that don't match globs (the ones that are
-	// stored on the local filesystem and would need to be copied
-	// in copyFile() below).
+	// Remove files/dirs that don't match globs (the files/dirs
+	// that are stored on the local filesystem and would need to
+	// be copied in copyFile() below).
 	cp.applyGlobsToFilesAndDirs()
 	for _, d := range cp.dirs {
-		err = collfs.Mkdir(d, 0777)
+		err = cp.staged.Mkdir(d, 0777)
 		if err != nil && err != os.ErrExist {
 			return "", fmt.Errorf("error making directory %q in output collection: %v", d, err)
 		}
@@ -107,20 +109,20 @@ func (cp *copier) Copy() (string, error) {
 		// open so f's data can be packed with it).
 		dir, _ := filepath.Split(f.dst)
 		if dir != lastparentdir || unflushed > keepclient.BLOCKSIZE {
-			if err := collfs.Flush("/"+lastparentdir, dir != lastparentdir); err != nil {
+			if err := cp.staged.Flush("/"+lastparentdir, dir != lastparentdir); err != nil {
 				return "", fmt.Errorf("error flushing output collection file data: %v", err)
 			}
 			unflushed = 0
 		}
 		lastparentdir = dir
 
-		n, err := cp.copyFile(collfs, f)
+		n, err := cp.copyFile(cp.staged, f)
 		if err != nil {
 			return "", fmt.Errorf("error copying file %q into output collection: %v", f, err)
 		}
 		unflushed += n
 	}
-	return collfs.MarshalManifest(".")
+	return cp.staged.MarshalManifest(".")
 }
 
 func (cp *copier) matchGlobs(path string, isDir bool) bool {
@@ -211,15 +213,15 @@ func (cp *copier) applyGlobsToFilesAndDirs() {
 	cp.files = keepfiles
 }
 
-// Delete files in collfs that do not match cp.globs.  Also delete
+// Delete files in cp.staged that do not match cp.globs.  Also delete
 // directories that are empty (after deleting non-matching files) and
 // do not match cp.globs themselves.
-func (cp *copier) applyGlobsToCollectionFS(collfs arvados.CollectionFileSystem) error {
+func (cp *copier) applyGlobsToStaged() error {
 	if len(cp.globs) == 0 {
 		return nil
 	}
 	include := make(map[string]bool)
-	err := fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
+	err := fs.WalkDir(arvados.FS(cp.staged), "", func(path string, ent fs.DirEntry, err error) error {
 		if cp.matchGlobs(path, ent.IsDir()) {
 			for i, c := range path {
 				if i > 0 && c == '/' {
@@ -233,12 +235,12 @@ func (cp *copier) applyGlobsToCollectionFS(collfs arvados.CollectionFileSystem) 
 	if err != nil {
 		return err
 	}
-	err = fs.WalkDir(arvados.FS(collfs), "", func(path string, ent fs.DirEntry, err error) error {
+	err = fs.WalkDir(arvados.FS(cp.staged), "", func(path string, ent fs.DirEntry, err error) error {
 		if err != nil || path == "" {
 			return err
 		}
 		if !include[path] {
-			err := collfs.RemoveAll(path)
+			err := cp.staged.RemoveAll(path)
 			if err != nil {
 				return err
 			}
@@ -307,7 +309,7 @@ func (cp *copier) copyFile(fs arvados.CollectionFileSystem, f filetodo) (int64, 
 	return n, dst.Close()
 }
 
-// Append to cp.manifest, cp.files, and cp.dirs so as to copy src (an
+// Add to cp.staged, cp.files, and cp.dirs so as to copy src (an
 // absolute path in the container's filesystem) to dest (an absolute
 // path in the output collection, or "" for output root).
 //
@@ -370,7 +372,10 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 		if err != nil {
 			return err
 		}
-		cp.manifest += mft.Extract(srcRelPath, dest).Text
+		err = cp.copyFromCollection(dest, &arvados.Collection{ManifestText: mft}, srcRelPath)
+		if err != nil {
+			return err
+		}
 	default:
 		cp.logger.Printf("copying %q", outputRelPath)
 		hostRoot, err := cp.hostRoot(srcRoot)
@@ -387,13 +392,36 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 		if err != nil {
 			return err
 		}
-		mft := manifest.Manifest{Text: coll.ManifestText}
-		cp.manifest += mft.Extract(srcRelPath, dest).Text
+		err = cp.copyFromCollection(dest, &coll, srcRelPath)
+		if err != nil {
+			return err
+		}
 	}
 	if walkMountsBelow {
 		return cp.walkMountsBelow(dest, src)
 	}
 	return nil
+}
+
+func (cp *copier) copyFromCollection(dest string, coll *arvados.Collection, srcRelPath string) error {
+	tmpfs, err := coll.FileSystem(cp.client, cp.keepClient)
+	if err != nil {
+		return err
+	}
+	snap, err := arvados.Snapshot(tmpfs, srcRelPath)
+	if err != nil {
+		return err
+	}
+	// Create ancestors of dest, if necessary.
+	for i, c := range dest {
+		if i > 0 && c == '/' {
+			err = cp.staged.Mkdir(dest[:i], 0777)
+			if err != nil && !os.IsExist(err) {
+				return err
+			}
+		}
+	}
+	return arvados.Splice(cp.staged, dest, snap)
 }
 
 func (cp *copier) walkMountsBelow(dest, src string) error {
@@ -550,20 +578,18 @@ func (cp *copier) copyRegularFiles(m arvados.Mount) bool {
 	return m.Kind == "text" || m.Kind == "json" || (m.Kind == "collection" && m.Writable)
 }
 
-func (cp *copier) getManifest(pdh string) (*manifest.Manifest, error) {
+func (cp *copier) getManifest(pdh string) (string, error) {
 	if mft, ok := cp.manifestCache[pdh]; ok {
 		return mft, nil
 	}
 	var coll arvados.Collection
 	err := cp.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+pdh, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving collection record for %q: %s", pdh, err)
+		return "", fmt.Errorf("error retrieving collection record for %q: %s", pdh, err)
 	}
-	mft := &manifest.Manifest{Text: coll.ManifestText}
 	if cp.manifestCache == nil {
-		cp.manifestCache = map[string]*manifest.Manifest{pdh: mft}
-	} else {
-		cp.manifestCache[pdh] = mft
+		cp.manifestCache = make(map[string]string)
 	}
-	return mft, nil
+	cp.manifestCache[pdh] = coll.ManifestText
+	return coll.ManifestText, nil
 }
