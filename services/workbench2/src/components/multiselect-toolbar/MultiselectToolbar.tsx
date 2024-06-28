@@ -86,16 +86,14 @@ type IconProps = {
     publicFavorites: PublicFavoritesState;
 }
 
-const disallowedPaths = [
-    "/favorites",
-    "/public-favorites",
-    "/trash",
-    "/group",
-]
+//this will expand in the future
+const pathsWithDetailsCard = [
+    "/projects"
+];
 
-const isPathDisallowed = (location: string): boolean => {
-    return disallowedPaths.some(path => location.includes(path))
-}
+const doesPathShowDetailsCard = (location: string): boolean => {
+    return pathsWithDetailsCard.some(path => location.includes(path))
+};
 
 export const MultiselectToolbar = connect(
     mapStateToProps,
@@ -103,7 +101,8 @@ export const MultiselectToolbar = connect(
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
-        const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
+        const selectedUuids = selectedToArray(checkedList);
+        const selectedResourceUuid = doesPathShowDetailsCard(location) ? props.selectedResourceUuid : selectedUuids[0];
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
