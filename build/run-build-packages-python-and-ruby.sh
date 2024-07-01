@@ -205,6 +205,7 @@ if [ $PYTHON -eq 1 ]; then
   python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
   python_wrapper crunchstat_summary "$WORKSPACE/tools/crunchstat-summary"
   python_wrapper arvados-user-activity "$WORKSPACE/tools/user-activity"
+  python_wrapper arvados-cluster-activity "$WORKSPACE/tools/cluster-activity"
 
   if [ $((${#failures[@]} - $GEM_BUILD_FAILURES)) -ne 0 ]; then
     PYTHON_BUILD_FAILURES=$((${#failures[@]} - $GEM_BUILD_FAILURES))
