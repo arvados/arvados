@@ -73,11 +73,11 @@ The @replace_files@ option can be used with the "create":#create and "update":#u
 * Each target path must be an absolute canonical path beginning with @/@. It must not contain @.@ or @..@ components, consecutive @/@ characters, or a trailing @/@ after the final component.
 * Each source must be one of the following:
 ** an empty string (signifying that the target path is to be deleted),
-** @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection,
-** @manifest_text/path@ where @/path@ is an existing file or directory in a collection supplied in the @manifest_text@ attribute in the request, or
-** @current/path@ where @/path@ is an existing file or directory in the collection being updated.
+** @<PDH>/<path>@ where @<PDH>@ is the portable data hash of a collection on the cluster and @<path>@ is a file or directory in that collection,
+** @manifest_text/<path>@ where @<path>@ is an existing file or directory in a collection supplied in the @manifest_text@ attribute in the request, or
+** @current/<path>@ where @<path>@ is an existing file or directory in the collection being updated.
 
-In an @update@ request, sources may reference the current portable data hash of the collection being updated. However, in many cases it is more appropriate to use a @current/path@ source instead, to ensure the latest content is used even if the collection has been updated since the PDH was last retrieved.
+In an @update@ request, sources may reference the current portable data hash of the collection being updated. However, in many cases it is more appropriate to use a @current/<path>@ source instead, to ensure the latest content is used even if the collection has been updated since the PDH was last retrieved.
 
 Example: delete @foo.txt@ from a collection
 
