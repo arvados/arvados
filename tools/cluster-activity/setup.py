@@ -16,7 +16,7 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvados_cluster_activity")
 
-setup(name='arvados-user-activity',
+setup(name='arvados-cluster-activity',
       version=version,
       description='Summarize cluster activity from Arvados audit logs and Prometheus metrics',
       author='Arvados',
