@@ -992,7 +992,17 @@ test_services/workbench2_units() {
 }
 
 test_services/workbench2_integration() {
-    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
+    INTERACTIVE=
+    FAIL_FAST_ENABLED=false
+    if [[ -n ${interactive} ]]; then
+	INTERACTIVE=-i
+	FAIL_FAST_ENABLED=true
+    fi
+    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" \
+						WORKSPACE="$(pwd)" \
+						INTERACTIVE=$INTERACTIVE \
+						CYPRESS_FAIL_FAST_ENABLED=$FAIL_FAST_ENABLED \
+						${testargs[services/workbench2]}
 }
 
 install_deps() {
