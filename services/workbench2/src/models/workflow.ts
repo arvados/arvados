@@ -103,6 +103,10 @@ export interface Directory {
     basename?: string;
 }
 
+export interface SecretInclude {
+    $include: string;
+}
+
 export interface GenericCommandInputParameter<Type, Value> {
     id: string;
     label?: string;
@@ -130,10 +134,8 @@ export type IntArrayCommandInputParameter = GenericArrayCommandInputParameter<CW
 export type FloatArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FLOAT, string>;
 export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FILE, File>;
 export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
+export type SecretCommandInputParameter = GenericArrayCommandInputParameter<CWLType.STRING, SecretInclude>;
 
-type SecretInclude = {
-    $include: string;
-}
 
 export type WorkflowInputsData = {
     [key: string]: boolean | number | string | File | Directory | SecretInclude;
@@ -232,8 +234,11 @@ export const getEnumType = (input: GenericCommandInputParameter<any, any>) => {
     return null;
 };
 
+export const isSecret = (input: GenericCommandInputParameter<any, any>) =>
+    (typeof input.value === 'object') && input.value.$include?.startsWith("/secrets/");
+
 export const stringifyInputType = ({ type }: CommandInputParameter) => {
-    if (typeof type === 'string') {
+	if (typeof type === 'string') {
         return type;
     } else if (type instanceof Array) {
         return type.join(' | ');

@@ -43,6 +43,7 @@ import {
     IntCommandInputParameter,
     isArrayOfType,
     isPrimitiveOfType,
+    isSecret,
     StringArrayCommandInputParameter,
     StringCommandInputParameter,
     getEnumType,
@@ -689,7 +690,7 @@ type FileWithSecondaryFiles = {
 
 export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string): ProcessIOValue[] => {
     switch (true) {
-        case (typeof input.value === 'object') && input.value.$include?.startsWith("/secrets/"):
+        case isSecret(input):
             return [{ display: <SecretValue /> }];
 
         case isPrimitiveOfType(input, CWLType.BOOLEAN):

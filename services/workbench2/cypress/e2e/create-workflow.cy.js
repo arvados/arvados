@@ -320,7 +320,7 @@ describe('Create workflow tests', function () {
             cy.get('[data-cy=new-process-panel]').contains('Run workflow').click();
 
             cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
-            cy.get('[data-cy=process-io-card]').should('contain', 'exposed_value_xyz');
+            cy.get('[data-cy=process-io-card]').should('contain', 'Cannot display secret');
             cy.get('[data-cy=process-io-card]').should('not.contain', 'secret_value_xyz');
 
             cy.url().then((url) => {
