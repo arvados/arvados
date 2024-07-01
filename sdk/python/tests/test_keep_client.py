@@ -1632,9 +1632,12 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
                 keep_client.get(self.locator)
 
     def test_disk_cache_retry_write_error(self):
-        block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
-                                                  disk_cache_dir=self.disk_cache_dir)
-
+        cache_max_before = 512 * 1024 * 1024
+        block_cache = arvados.keep.KeepBlockCache(
+            cache_max=cache_max_before,
+            disk_cache=True,
+            disk_cache_dir=self.disk_cache_dir,
+        )
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
         called = False
@@ -1647,11 +1650,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             else:
                 return realmmap(*args, **kwargs)
 
-        with patch('mmap.mmap') as mockmmap:
-            mockmmap.side_effect = sideeffect_mmap
-
-            cache_max_before = block_cache.cache_max
-
+        with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
             with tutil.mock_keep_responses(self.data, 200) as mock:
                 self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
 
@@ -1661,7 +1660,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
         # shrank the cache in response to ENOSPC
-        self.assertTrue(cache_max_before > block_cache.cache_max)
+        self.assertGreater(cache_max_before, block_cache.cache_max)
 
     def test_disk_cache_retry_write_error2(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
@@ -1679,9 +1678,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             else:
                 return realmmap(*args, **kwargs)
 
-        with patch('mmap.mmap') as mockmmap:
-            mockmmap.side_effect = sideeffect_mmap
-
+        with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
             slots_before = block_cache._max_slots
 
             with tutil.mock_keep_responses(self.data, 200) as mock:
@@ -1693,4 +1690,4 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
         # shrank the cache in response to ENOMEM
-        self.assertTrue(slots_before > block_cache._max_slots)
+        self.assertGreater(slots_before, block_cache._max_slots)

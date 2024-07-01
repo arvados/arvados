@@ -540,7 +540,12 @@ The 'jobs' API is no longer supported.
             try:
                 filepath = uri_file_path(tool.tool["id"])
                 cwd = os.path.dirname(filepath)
-                subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["git", "log", "--format=%H", "-n1", "HEAD"],
+                    cwd=cwd,
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                )
                 in_a_git_repo = True
             except Exception as e:
                 pass
@@ -548,25 +553,32 @@ The 'jobs' API is no longer supported.
         gitproperties = {}
 
         if in_a_git_repo:
-            git_commit = subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_date = subprocess.run(["git", "log", "--format=%cD", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_committer = subprocess.run(["git", "log", "--format=%cn <%ce>", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_origin = subprocess.run(["git", "remote", "get-url", "origin"], cwd=cwd, capture_output=True, text=True).stdout
-            git_status = subprocess.run(["git", "status", "--untracked-files=no", "--porcelain"], cwd=cwd, capture_output=True, text=True).stdout
-            git_describe = subprocess.run(["git", "describe", "--always", "--tags"], cwd=cwd, capture_output=True, text=True).stdout
-            git_toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, capture_output=True, text=True).stdout
+            def git_output(cmd):
+                return subprocess.run(
+                    cmd,
+                    cwd=cwd,
+                    stdout=subprocess.PIPE,
+                    universal_newlines=True,
+                ).stdout.strip()
+            git_commit = git_output(["git", "log", "--format=%H", "-n1", "HEAD"])
+            git_date = git_output(["git", "log", "--format=%cD", "-n1", "HEAD"])
+            git_committer = git_output(["git", "log", "--format=%cn <%ce>", "-n1", "HEAD"])
+            git_branch = git_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            git_origin = git_output(["git", "remote", "get-url", "origin"])
+            git_status = git_output(["git", "status", "--untracked-files=no", "--porcelain"])
+            git_describe = git_output(["git", "describe", "--always", "--tags"])
+            git_toplevel = git_output(["git", "rev-parse", "--show-toplevel"])
             git_path = filepath[len(git_toplevel):]
 
             gitproperties = {
-                "http://arvados.org/cwl#gitCommit": git_commit.strip(),
-                "http://arvados.org/cwl#gitDate": git_date.strip(),
-                "http://arvados.org/cwl#gitCommitter": git_committer.strip(),
-                "http://arvados.org/cwl#gitBranch": git_branch.strip(),
-                "http://arvados.org/cwl#gitOrigin": git_origin.strip(),
-                "http://arvados.org/cwl#gitStatus": git_status.strip(),
-                "http://arvados.org/cwl#gitDescribe": git_describe.strip(),
-                "http://arvados.org/cwl#gitPath": git_path.strip(),
+                "http://arvados.org/cwl#gitCommit": git_commit,
+                "http://arvados.org/cwl#gitDate": git_date,
+                "http://arvados.org/cwl#gitCommitter": git_committer,
+                "http://arvados.org/cwl#gitBranch": git_branch,
+                "http://arvados.org/cwl#gitOrigin": git_origin,
+                "http://arvados.org/cwl#gitStatus": git_status,
+                "http://arvados.org/cwl#gitDescribe": git_describe,
+                "http://arvados.org/cwl#gitPath": git_path,
             }
         else:
             for g in ("http://arvados.org/cwl#gitCommit",
