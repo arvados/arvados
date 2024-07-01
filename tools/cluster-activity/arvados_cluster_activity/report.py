@@ -40,6 +40,8 @@ class ProjectSummary:
     cost: float = 0
     count: int = 0
     hours: float = 0
+    activityspan: str = ""
+    tablerow: str = ""
 
 @dataclass
 class Summarizer:
@@ -213,80 +215,119 @@ class ClusterActivityReport(object):
 
         tophtml = []
 
+        workbench = self.arv_client.config()["Services"]["Workbench2"]["ExternalURL"]
+        if workbench.endswith("/"):
+            workbench = workbench[:-1]
+
         if to.date() == date.today():
             tophtml.append("""<h2>Cluster status as of {now}</h2>
             <table class='aggtable'><tbody>
-            <tr><td>Total users</td><td>{total_users}</td></tr>
+            <tr><td><a href="{workbench}/users">Total users</a></td><td>{total_users}</td></tr>
             <tr><td>Total projects</td><td>{total_projects}</td></tr>
             <tr><td>Total data under management</td><td>{managed_data_now}</td></tr>
             <tr><td>Total storage usage</td><td>{storage_used_now}</td></tr>
-            <tr><td>Deduplication ratio</td><td>{dedup_ratio}</td></tr>
-            <tr><td>Approximate monthly storage cost</td><td>${storage_cost}</td></tr>
-            <tr><td>Monthly savings from storage deduplication</td><td>${dedup_savings}</td></tr>
+            <tr><td>Deduplication ratio</td><td>{dedup_ratio:.1f}</td></tr>
+            <tr><td>Approximate monthly storage cost</td><td>${storage_cost:,.2f}</td></tr>
+            <tr><td>Monthly savings from storage deduplication</td><td>${dedup_savings:,.2f}</td></tr>
             </tbody></table>
             """.format(now=date.today(),
                        total_users=self.total_users,
                        total_projects=self.total_projects,
                        managed_data_now=format_with_suffix_base10(managed_data_now.y),
                        storage_used_now=format_with_suffix_base10(storage_used_now.y),
-                       dedup_savings=round(dedup_savings, 2),
-                       storage_cost=round(storage_cost, 2),
-                       dedup_ratio=round(dedup_ratio, 3)))
+                       dedup_savings=dedup_savings,
+                       storage_cost=storage_cost,
+                       dedup_ratio=dedup_ratio,
+                           workbench=workbench))
 
         tophtml.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
         <table class='aggtable'><tbody>
         <tr><td>Active users</td><td>{active_users}</td></tr>
-        <tr><td>Active projects</td><td>{active_projects}</td></tr>
-        <tr><td>Workflow runs</td><td>{total_workflows}</td></tr>
-        <tr><td>Compute used</td><td>{total_hours} hours</td></tr>
-        <tr><td>Compute cost</td><td>${total_cost}</td></tr>
-        <tr><td>Storage cost</td><td>${storage_cost}</td></tr>
+        <tr><td><a href="#Active_Projects">Active projects</a></td><td>{active_projects}</td></tr>
+        <tr><td>Workflow runs</td><td>{total_workflows:,}</td></tr>
+        <tr><td>Compute used</td><td>{total_hours:,.1f} hours</td></tr>
+        <tr><td>Compute cost</td><td>${total_cost:,.2f}</td></tr>
+        <tr><td>Storage cost</td><td>${storage_cost:,.2f}</td></tr>
         </tbody></table>
         """.format(active_users=len(self.active_users),
                    total_users=self.total_users,
-                   total_hours=round(self.total_hours, 1),
-                   total_cost=round(self.total_cost, 2),
+                   total_hours=self.total_hours,
+                   total_cost=self.total_cost,
                    total_workflows=self.total_workflows,
                    active_projects=len(self.project_summary),
                    since=since.date(), to=to.date(),
                    reporting_days=(to - since).days,
-                   storage_cost=round(self.storage_cost, 2)))
+                   storage_cost=self.storage_cost))
 
         bottomhtml = []
 
-        for k, prj in sorted(self.project_summary.items(), key=lambda x: x[1].cost, reverse=True):
+        projectlist = sorted(self.project_summary.items(), key=lambda x: x[1].cost, reverse=True)
+
+        for k, prj in projectlist:
+            if prj.earliest.date() == prj.latest.date():
+                prj.activityspan = "{}".format(prj.earliest.date())
+            else:
+                prj.activityspan = "{} to {}".format(prj.earliest.date(), prj.latest.date())
+
+            prj.tablerow = """<td>{users}</td> <td>{active}</td> <td>{hours:,.1f}</td> <td>${cost:,.2f}</td>""".format(
+                name=prj.name,
+                active=prj.activityspan,
+                cost=prj.cost,
+                hours=prj.hours,
+                users=", ".join(prj.users),
+            )
+
+        bottomhtml.append(
+            """
+            <a id="Active_Projects"><h2>Active Projects</h2></a>
+            <table>
+            <thead><tr><th>Project</th> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
+            <tbody><tr>{projects}</tr></tbody>
+            </table>
+            """.format(projects="</tr>\n<tr>".join("""<td><a href="#{name}">{name}</a></td>{rest}""".format(name=prj.name, rest=prj.tablerow) for k, prj in projectlist)))
+
+        for k, prj in projectlist:
             wfsum = []
             for k2, r in sorted(prj.runs.items(), key=lambda x: x[1].count, reverse=True):
-                wfsum.append( """
-                <tr><td>{count}</td> <td>{name}</td>  <td>{runtime}</td> <td>${cost}</td></tr>
-                """.format(name=r.name, count=r.count, runtime=hours_to_runtime_str(r.hours/r.count), cost=round(r.cost/r.count, 2)))
+                wfsum.append("""
+                <tr><td>{count}</td> <td>{workflowlink}</td>  <td>{runtime}</td> <td>${cost:,.2f}</td></tr>
+                """.format(
+                    count=r.count,
+                    runtime=hours_to_runtime_str(r.hours/r.count),
+                    cost=r.cost/r.count,
+                    workflowlink="""<a href="{workbench}/workflows/{uuid}">{name}</a>""".format(workbench=workbench,uuid=r.uuid,name=r.name)
+                    if r.uuid != "none" else r.name))
 
-            if prj.earliest.date() == prj.latest.date():
-                activityspan = "{}".format(prj.earliest.date())
-            else:
-                activityspan = "{} to {}".format(prj.earliest.date(), prj.latest.date())
+                # <table>
+                # <thead><tr><th>Users</th> <th>Active</th> <th>Compute usage</th> <th>Compute cost</th> </tr></thead>
+                # <tbody><tr>{projectrow}</tr></tbody>
+                # </table>
+
 
             bottomhtml.append(
-                """<h2>{name}</h2>
-                <table class='aggtable'><tbody>
-                <tr><td>User{userplural}</td><td>{users}</td></tr>
-                <tr><td>Active</td><td>{activity}</td></tr>
-                <tr><td>Compute usage</td><td>{hours} hours</td></tr>
-                <tr><td>Compute cost</td><td>${cost}</td></tr>
-                </tbody></table>
-                <table class='aggtable'><tbody>
-                <tr><th>Workflow run count</th> <th>Workflow name</th> <th>Avg runtime</th> <th>Avg cost per run</th></tr>
+                """<a id="{name}"></a><a href="{workbench}/projects/{uuid}"><h2>{name}</h2></a>
+
+                <table>
+                <tbody><tr>{projectrow}</tr></tbody>
+                </table>
+
+                <table class='aggtable'>
+                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Avg runtime</th> <th>Avg cost per run</th></tr></thead>
+                <tbody>
                 {wfsum}
                 </tbody></table>
                 """.format(name=prj.name,
                            users=", ".join(prj.users),
-                           cost=round(prj.cost, 2),
-                           hours=round(prj.hours, 1),
-                           wfsum="</p><p>".join(wfsum),
+                           cost=prj.cost,
+                           hours=prj.hours,
+                           wfsum=" ".join(wfsum),
                            earliest=prj.earliest.date(),
                            latest=prj.latest.date(),
-                           activity=activityspan,
-                           userplural='s' if len(prj.users) > 1 else '')
+                           activity=prj.activityspan,
+                           userplural='s' if len(prj.users) > 1 else '',
+                           projectrow=prj.tablerow,
+                           workbench=workbench,
+                           uuid=prj.uuid)
             )
 
         return WEBCHART_CLASS(label, self.summarizers).html(tophtml, bottomhtml)
