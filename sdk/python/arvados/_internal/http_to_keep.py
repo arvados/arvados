@@ -253,7 +253,7 @@ def check_cached_url(api, project_uuid, url, etags,
 
     logger.info("Checking Keep for %s", url)
 
-    varying_params = [s.strip() for s in varying_url_params.split(",")]
+    varying_params = arvados.util.csv_to_list(varying_url_params)
 
     parsed = urllib.parse.urlparse(url)
     query = [q for q in urllib.parse.parse_qsl(parsed.query)
