@@ -9,38 +9,39 @@ describe('<LoginPanel />', () => {
         it('should return false if no config specified', () => {
             // given
             const config = null;
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
-
+  
         it('should return false if no config.clusterConfig specified', () => {
             // given
             const config = {};
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
+  
         });
-
+  
         it('should return false if no config.clusterConfig.Login specified', () => {
             // given
             const config = {
                 clusterConfig: {},
             };
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
-
+  
         it('should return false if no config.clusterConfig.Login.LDAP and config.clusterConfig.Login.PAM specified', () => {
             // given
             const config = {
@@ -48,14 +49,14 @@ describe('<LoginPanel />', () => {
                     Login: {}
                 },
             };
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
-
+  
         it('should return false if config.clusterConfig.Login.LDAP.Enable and config.clusterConfig.Login.PAM.Enable not specified', () => {
             // given
             const config = {
@@ -66,14 +67,14 @@ describe('<LoginPanel />', () => {
                     },
                 },
             };
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
-
+  
         it('should return value from config.clusterConfig.Login.LDAP.Enable', () => {
             // given
             const config = {
@@ -86,14 +87,14 @@ describe('<LoginPanel />', () => {
                     },
                 },
             };
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeTruthy();
+            expect(!!result).to.equal(true);
         });
-
+  
         it('should return value from config.clusterConfig.Login.PAM.Enable', () => {
             // given
             const config = {
@@ -106,14 +107,15 @@ describe('<LoginPanel />', () => {
                     },
                 },
             };
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeTruthy();
+            expect(!!result).to.equal(true);
+  
         });
-
+  
         it('should return false for not specified config option config.clusterConfig.Login.NOT_EXISTING.Enable', () => {
             // given
             const config = {
@@ -125,12 +127,13 @@ describe('<LoginPanel />', () => {
                     },
                 },
             };
-
+  
             // when
             const result = requirePasswordLogin(config);
-
+  
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
+  
         });
     });
-});
+  });
