@@ -493,10 +493,10 @@ func (s *replaceFilesSuite) expectFiles(c *check.C, coll arvados.Collection, exp
 	s.expectFileSizes(c, coll, expectSizes)
 }
 
-// expectFiles checks coll's directory structure against the given map
-// of path->size.  An expected path with a trailing slash indicates an
-// empty directory.  An expect size of -1 indicates the expected file
-// size does not need to be checked.
+// expectFileSizes checks coll's directory structure against the given
+// map of path->size.  An expected path with a trailing slash
+// indicates an empty directory.  An expected size of -1 indicates the
+// file size does not need to be checked.
 func (s *replaceFilesSuite) expectFileSizes(c *check.C, coll arvados.Collection, expected map[string]int64) {
 	cfs, err := coll.FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
@@ -531,6 +531,10 @@ func (s *replaceFilesSuite) expectFileSizes(c *check.C, coll arvados.Collection,
 			path = trimmed
 		}
 		if expected[path] == -1 {
+			// Path is expected to exist, and -1 means we
+			// aren't supposed to check the size.  Change
+			// "found size" to -1 as well, so this entry
+			// will pass the DeepEquals check below.
 			found[path] = -1
 		}
 	}
