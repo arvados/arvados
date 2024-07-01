@@ -278,6 +278,7 @@ fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-fuse" "services/fuse" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "$FORMAT" "$ARCH"
+fpm_build_virtualenv "arvados-cluster-activity" "tools/cluster-activity" "$FORMAT" "$ARCH"
 
 # Workbench2
 package_workbench2
