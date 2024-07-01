@@ -59,6 +59,7 @@ export interface DataTableDataProps<I> {
     selectedResourceUuid: string;
     setSelectedUuid: (uuid: string | null) => void;
     isNotFound?: boolean;
+    disallowMultiselect: (path: string) => boolean;
 }
 
 type CssRules =
@@ -160,12 +161,13 @@ export const DataTable = withStyles(styles)(
         };
 
         componentDidMount(): void {
+            const { working, currentRoute, disallowMultiselect } = this.props;
             this.initializeCheckedList([]);
             // If table is initialized loaded but empty
             // isLoaded won't be set true by componentDidUpdate later
             // So we set it to true here
-            if (!this.props.working) this.setState({ isLoaded: true });
-            this.setState({ includeCheckboxColumn: !this.isPathDisallowed(this.props.currentRoute ||'') })
+            if (!working) this.setState({ isLoaded: true });
+            this.setState({ includeCheckboxColumn: !disallowMultiselect(currentRoute ||'') })
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
@@ -199,11 +201,6 @@ export const DataTable = withStyles(styles)(
 
         componentWillUnmount(): void {
             this.initializeCheckedList([]);
-        }
-
-        disallowedPaths = ["/group/"];
-        isPathDisallowed = (location: string): boolean => {
-            return this.disallowedPaths.some(path => location.includes(path))
         }
 
         checkBoxColumn: DataColumn<any, any> = {

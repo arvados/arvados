@@ -95,6 +95,12 @@ const doesPathShowDetailsCard = (location: string): boolean => {
     return pathsWithDetailsCard.some(path => location.includes(path))
 };
 
+const disallowedPaths = ["/group/", "/search-results"];
+
+export const disallowMultiselect = (location: string): boolean => {
+    return disallowedPaths.some(path => location.includes(path))
+};
+
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
@@ -122,7 +128,7 @@ export const MultiselectToolbar = connect(
 
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
-        return (
+        return !disallowMultiselect(location) ? 
             <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
@@ -189,7 +195,7 @@ export const MultiselectToolbar = connect(
                     )}
                 </Toolbar>
             </React.Fragment>
-        )
+        : null
     })
 );
 

@@ -47,8 +47,6 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (resourceUuid: string) => {
-        dispatch<any>(toggleOne(resourceUuid))
-        dispatch<any>(deselectAllOthers(resourceUuid))
         dispatch<any>(loadDetailsPanel(resourceUuid));
     },
     onItemDoubleClick: uuid => {

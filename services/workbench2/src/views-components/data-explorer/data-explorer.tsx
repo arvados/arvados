@@ -13,7 +13,7 @@ import { DataColumns, TCheckedList } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
-
+import { disallowMultiselect } from "components/multiselect-toolbar/MultiselectToolbar";
 interface Props {
     id: string;
     onRowClick: (item: any) => void;
@@ -30,7 +30,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
     const isMSToolbarVisible = multiselect.isVisible;
     return {
         ...dataExplorerState,
-        paperKey: currentRoute,
+        currentRoute: currentRoute,
         currentRouteUuid: properties.currentRouteUuid,
         isMSToolbarVisible,
         selectedResourceUuid,
@@ -91,6 +91,8 @@ const mapDispatchToProps = () => {
         onRowDoubleClick,
 
         onContextMenu,
+
+        disallowMultiselect,
     });
 };
 

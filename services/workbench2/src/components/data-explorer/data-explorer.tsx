@@ -121,7 +121,7 @@ interface DataExplorerDataProps<T> {
     hideSearchInput?: boolean;
     title?: React.ReactNode;
     progressBar?: React.ReactNode;
-    paperKey?: string;
+    currentRoute?: string;
     currentRouteUuid: string;
     selectedResourceUuid: string;
     elementPath?: string;
@@ -149,6 +149,7 @@ interface DataExplorerActionProps<T> {
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     setSelectedUuid: (uuid: string) => void;
+    disallowMultiselect: (path: string) => boolean;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -207,7 +208,7 @@ export const DataExplorer = withStyles(styles)(
                 actions,
                 paperProps,
                 hideSearchInput,
-                paperKey,
+                currentRoute,
                 fetchMode,
                 selectedResourceUuid,
                 title,
@@ -229,7 +230,7 @@ export const DataExplorer = withStyles(styles)(
                 <Paper
                     className={classNames(classes.root, paperClassName)}
                     {...paperProps}
-                    key={paperKey}
+                    key={currentRoute}
                     data-cy={this.props["data-cy"]}
                 >
                     <Grid
@@ -343,7 +344,7 @@ export const DataExplorer = withStyles(styles)(
                                 extractKey={extractKey}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
-                                currentRoute={paperKey}
+                                currentRoute={currentRoute}
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
@@ -352,6 +353,7 @@ export const DataExplorer = withStyles(styles)(
                                 currentRouteUuid={this.props.currentRouteUuid}
                                 working={working}
                                 isNotFound={this.props.isNotFound}
+                                disallowMultiselect={this.props.disallowMultiselect}
                             />
                         </Grid>
                         <Grid
