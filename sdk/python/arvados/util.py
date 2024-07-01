@@ -16,6 +16,7 @@ import hashlib
 import httplib2
 import itertools
 import logging
+import operator
 import os
 import random
 import re
@@ -31,6 +32,7 @@ from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
+    Container,
     Dict,
     Iterator,
     Mapping,
@@ -325,6 +327,7 @@ def keyset_list_all(
         order_key: str="created_at",
         num_retries: int=0,
         ascending: bool=True,
+        key_fields: Container[str]=('uuid',),
         **kwargs: Any,
 ) -> Iterator[Dict[str, Any]]:
     """Iterate all Arvados resources from an API list call
@@ -355,29 +358,41 @@ def keyset_list_all(
       all fields will be sorted in `'asc'` (ascending) order. Otherwise, all
       fields will be sorted in `'desc'` (descending) order.
 
+    * key_fields: Container[str] --- One or two fields that constitute
+      a unique key for returned items.  Normally this should be the
+      default value `('uuid',)`, unless `fn` returns
+      computed_permissions records, in which case it should be
+      `('user_uuid', 'target_uuid')`.  If two fields are given, one of
+      them must be equal to `order_key`.
+
     Additional keyword arguments will be passed directly to `fn` for each API
     call. Note that this function sets `count`, `limit`, and `order` as part of
     its work.
+
     """
+    tiebreak_keys = set(key_fields) - {order_key}
+    if len(tiebreak_keys) == 0:
+        tiebreak_key = 'uuid'
+    elif len(tiebreak_keys) == 1:
+        tiebreak_key = tiebreak_keys.pop()
+    else:
+        raise arvados.errors.ArgumentError(
+            "key_fields can have at most one entry that is not order_key")
+
     pagesize = 1000
     kwargs["limit"] = pagesize
     kwargs["count"] = 'none'
     asc = "asc" if ascending else "desc"
-    kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
+    kwargs["order"] = [f"{order_key} {asc}", f"{tiebreak_key} {asc}"]
     other_filters = kwargs.get("filters", [])
 
-    try:
-        select = set(kwargs['select'])
-    except KeyError:
-        pass
-    else:
-        select.add(order_key)
-        select.add('uuid')
-        kwargs['select'] = list(select)
+    if 'select' in kwargs:
+        kwargs['select'] = list({*kwargs['select'], *key_fields, order_key})
 
     nextpage = []
     tot = 0
     expect_full_page = True
+    key_getter = operator.itemgetter(*key_fields)
     seen_prevpage = set()
     seen_thispage = set()
     lastitem = None
@@ -402,9 +417,10 @@ def keyset_list_all(
             # In cases where there's more than one record with the
             # same order key, the result could include records we
             # already saw in the last page.  Skip them.
-            if i["uuid"] in seen_prevpage:
+            seen_key = key_getter(i)
+            if seen_key in seen_prevpage:
                 continue
-            seen_thispage.add(i["uuid"])
+            seen_thispage.add(seen_key)
             yield i
 
         firstitem = items["items"][0]
@@ -412,8 +428,8 @@ def keyset_list_all(
 
         if firstitem[order_key] == lastitem[order_key]:
             # Got a page where every item has the same order key.
-            # Switch to using uuid for paging.
-            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">" if ascending else "<", lastitem["uuid"]]]
+            # Switch to using tiebreak key for paging.
+            nextpage = [[order_key, "=", lastitem[order_key]], [tiebreak_key, ">" if ascending else "<", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = True
         else:
             # Start from the last order key seen, but skip the last
@@ -422,8 +438,50 @@ def keyset_list_all(
             # still likely we'll end up retrieving duplicate rows.
             # That's handled by tracking the "seen" rows for each page
             # so they can be skipped if they show up on the next page.
-            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
+            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]]]
+            if tiebreak_key == "uuid":
+                nextpage += [[tiebreak_key, "!=", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = False
+
+def iter_computed_permissions(
+        fn: Callable[..., 'arvados.api_resources.ArvadosAPIRequest'],
+        order_key: str='user_uuid',
+        num_retries: int=0,
+        ascending: bool=True,
+        key_fields: Container[str]=('user_uuid', 'target_uuid'),
+        **kwargs: Any,
+) -> Iterator[Dict[str, Any]]:
+    """Iterate all `computed_permission` resources
+
+    This method is the same as `keyset_list_all`, except that its
+    default arguments are suitable for the computed_permissions API.
+
+    Arguments:
+
+    * fn: Callable[..., arvados.api_resources.ArvadosAPIRequest] ---
+      see `keyset_list_all`.  Typically this is an instance of
+      `arvados.api_resources.ComputedPermissions.list`.  Given an
+      Arvados API client named `arv`, typical usage is
+      `iter_computed_permissions(arv.computed_permissions().list)`.
+
+    * order_key: str --- see `keyset_list_all`.  Default
+      `'user_uuid'`.
+
+    * num_retries: int --- see `keyset_list_all`.
+
+    * ascending: bool --- see `keyset_list_all`.
+
+    * key_fields: Container[str] --- see `keyset_list_all`. Default
+      `('user_uuid', 'target_uuid')`.
+
+    """
+    return keyset_list_all(
+        fn=fn,
+        order_key=order_key,
+        num_retries=num_retries,
+        ascending=ascending,
+        key_fields=key_fields,
+        **kwargs)
 
 def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
     """Return the path of the best available source of CA certificates

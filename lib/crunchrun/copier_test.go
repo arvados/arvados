@@ -6,6 +6,8 @@ package crunchrun
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -13,7 +15,9 @@ import (
 	"syscall"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -28,8 +32,17 @@ type copierSuite struct {
 func (s *copierSuite) SetUpTest(c *check.C) {
 	tmpdir := c.MkDir()
 	s.log = bytes.Buffer{}
+
+	cl, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.IsNil)
+	kc, err := keepclient.MakeKeepClient(cl)
+	c.Assert(err, check.IsNil)
+	collfs, err := (&arvados.Collection{}).FileSystem(arvados.NewClientFromEnv(), kc)
+	c.Assert(err, check.IsNil)
+
 	s.cp = copier{
 		client:        arvados.NewClientFromEnv(),
+		keepClient:    kc,
 		hostOutputDir: tmpdir,
 		ctrOutputDir:  "/ctr/outdir",
 		mounts: map[string]arvados.Mount{
@@ -39,6 +52,7 @@ func (s *copierSuite) SetUpTest(c *check.C) {
 			"/secret_text": {Kind: "text", Content: "xyzzy"},
 		},
 		logger: &logrus.Logger{Out: &s.log, Formatter: &logrus.TextFormatter{}, Level: logrus.InfoLevel},
+		staged: collfs,
 	}
 }
 
@@ -137,7 +151,16 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 
 	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Check(err, check.IsNil)
-	c.Check(s.cp.manifest, check.Matches, `(?ms)\./l_dir acbd\S+ 0:3:foo\n\. acbd\S+ 0:3:l_file\n\. 37b5\S+ 0:3:l_file_w\n`)
+	s.checkStagedFile(c, "l_dir/foo", 3)
+	s.checkStagedFile(c, "l_file", 3)
+	s.checkStagedFile(c, "l_file_w", 3)
+}
+
+func (s *copierSuite) checkStagedFile(c *check.C, path string, size int64) {
+	fi, err := s.cp.staged.Stat(path)
+	if c.Check(err, check.IsNil) {
+		c.Check(fi.Size(), check.Equals, size)
+	}
 }
 
 func (s *copierSuite) TestSymlink(c *check.C) {
@@ -286,6 +309,58 @@ func (s *copierSuite) TestSubtreeCouldMatch(c *check.C) {
 	}
 }
 
+func (s *copierSuite) TestCopyFromLargeCollection_Readonly(c *check.C) {
+	s.testCopyFromLargeCollection(c, false)
+}
+
+func (s *copierSuite) TestCopyFromLargeCollection_Writable(c *check.C) {
+	s.testCopyFromLargeCollection(c, true)
+}
+
+func (s *copierSuite) testCopyFromLargeCollection(c *check.C, writable bool) {
+	bindtmp := c.MkDir()
+	mtxt := arvadostest.FakeManifest(100, 100, 2, 4<<20)
+	pdh := arvados.PortableDataHash(mtxt)
+	json, err := json.Marshal(arvados.Collection{ManifestText: mtxt, PortableDataHash: pdh})
+	c.Assert(err, check.IsNil)
+	err = os.WriteFile(bindtmp+"/.arvados#collection", json, 0644)
+	// This symlink tricks walkHostFS into calling walkMount on
+	// the fakecollection dir. If we did the obvious thing instead
+	// (i.e., mount a collection under the output dir) walkMount
+	// would see that our fakecollection dir is actually a regular
+	// directory, conclude that the mount has been deleted and
+	// replaced by a regular directory tree, and process the tree
+	// as regular files, bypassing the manifest-copying code path
+	// we're trying to test.
+	err = os.Symlink("/fakecollection", s.cp.hostOutputDir+"/fakecollection")
+	c.Assert(err, check.IsNil)
+	s.cp.mounts["/fakecollection"] = arvados.Mount{
+		Kind:             "collection",
+		PortableDataHash: pdh,
+		Writable:         writable,
+	}
+	s.cp.bindmounts = map[string]bindmount{
+		"/fakecollection": bindmount{HostPath: bindtmp, ReadOnly: !writable},
+	}
+	s.cp.manifestCache = map[string]string{pdh: mtxt}
+	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Check(err, check.IsNil)
+	c.Log(s.log.String())
+
+	// Check some files to ensure they were copied properly.
+	// Specifically, arbitrarily check every 17th file in every
+	// 13th dir.  (This is better than checking all of the files
+	// only in that it's less likely to show up as a distracting
+	// signal in CPU profiling.)
+	for i := 0; i < 100; i += 13 {
+		for j := 0; j < 100; j += 17 {
+			fnm := fmt.Sprintf("/fakecollection/dir%d/dir%d/file%d", i, j, j)
+			_, err := s.cp.staged.Stat(fnm)
+			c.Assert(err, check.IsNil, check.Commentf("%s", fnm))
+		}
+	}
+}
+
 func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 	bindtmp := c.MkDir()
 	s.cp.mounts["/ctr/outdir/include/includer"] = arvados.Mount{
@@ -344,8 +419,10 @@ func (s *copierSuite) TestMountBelowExcludedByGlob(c *check.C) {
 	c.Check(s.cp.files, check.DeepEquals, []filetodo{
 		{src: s.cp.hostOutputDir + "/include/includew/foo", dst: "/include/includew/foo", size: 3},
 	})
-	c.Check(s.cp.manifest, check.Matches, `(?ms).*\./include/includer .*`)
-	c.Check(s.cp.manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
+	manifest, err := s.cp.staged.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	c.Check(manifest, check.Matches, `(?ms).*\./include/includer .*`)
+	c.Check(manifest, check.Not(check.Matches), `(?ms).*exclude.*`)
 	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"exclude/excluder\\".*`)
 	c.Check(s.log.String(), check.Matches, `(?ms).*not copying \\"nonexistent/collection\\".*`)
 }
@@ -359,7 +436,7 @@ func (s *copierSuite) writeFileInOutputDir(c *check.C, path, data string) {
 }
 
 // applyGlobsToFilesAndDirs uses the same glob-matching code as
-// applyGlobsToCollectionFS, so we don't need to test all of the same
+// applyGlobsToStaged, so we don't need to test all of the same
 // glob-matching behavior covered in TestApplyGlobsToCollectionFS.  We
 // do need to check that (a) the glob is actually being used to filter
 // out files, and (b) non-matching dirs still included if and only if
@@ -521,8 +598,8 @@ func (s *copierSuite) TestApplyGlobsToCollectionFS(c *check.C) {
 		c.Logf("=== globs: %q", trial.globs)
 		collfs, err := (&arvados.Collection{ManifestText: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo 0:0:bar 0:0:baz/quux 0:0:baz/parent1/item1\n"}).FileSystem(nil, nil)
 		c.Assert(err, check.IsNil)
-		cp := copier{globs: trial.globs}
-		err = cp.applyGlobsToCollectionFS(collfs)
+		cp := copier{globs: trial.globs, staged: collfs}
+		err = cp.applyGlobsToStaged()
 		if !c.Check(err, check.IsNil) {
 			continue
 		}

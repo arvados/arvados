@@ -32,3 +32,15 @@ type LinkList struct {
 	Offset         int    `json:"offset"`
 	Limit          int    `json:"limit"`
 }
+
+type ComputedPermission struct {
+	UserUUID   string `json:"user_uuid"`
+	TargetUUID string `json:"target_uuid"`
+	PermLevel  string `json:"perm_level"`
+}
+
+type ComputedPermissionList struct {
+	Items          []ComputedPermission `json:"items"`
+	ItemsAvailable int                  `json:"items_available"`
+	Limit          int                  `json:"limit"`
+}
