@@ -29,6 +29,7 @@ import arvados.config
 import arvados.logging
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
+from arvados.util import csv_to_list
 import arvados.commands._util as arv_cmd
 
 from .perf import Perf
@@ -183,9 +184,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of the CWL standards.", default=False)
-    parser.add_argument('--storage-classes', default="default",
+    parser.add_argument('--storage-classes', default="",
                         help="Specify comma separated list of storage classes to be used when saving final workflow output to Keep.")
-    parser.add_argument('--intermediate-storage-classes', default="default",
+    parser.add_argument('--intermediate-storage-classes', default="",
                         help="Specify comma separated list of storage classes to be used when saving intermediate workflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
@@ -338,6 +339,12 @@ def main(args=sys.argv[1:],
         job_order_object = ({}, "")
 
     add_arv_hints()
+
+    # Validate and clean-up the input arguments that take a value of
+    # comma-separated strings.
+    arvargs.varying_url_params = ",".join(csv_to_list(arvargs.varying_url_params))
+    arvargs.storage_classes = csv_to_list(arvargs.storage_classes)
+    arvargs.intermediate_storage_classes = csv_to_list(arvargs.intermediate_storage_classes)
 
     for key, val in cwltool.argparser.get_default_args().items():
         if not hasattr(arvargs, key):
