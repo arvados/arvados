@@ -116,6 +116,8 @@ document.addEventListener('click', function (e) {
                         return 1;
                     }
                 }
+                if (x[0] === '$') { x = x.slice(1); }
+                if (y[0] === '$') { y = y.slice(1); }
                 var temp = +x - +y;
                 var bool = isNaN(temp) ? x.localeCompare(y) : temp;
                 return reverse_1 ? -bool : bool;
@@ -250,6 +252,9 @@ def format_with_suffix_base10(summary_value):
         if summary_value < 1000:
             return "%.3f %s" % (summary_value, scale)
 
+containers_category = 'Concurrent running containers'
+storage_category = 'Storage Usage'
+
 class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
     def sections(self):
         return [
@@ -257,8 +262,8 @@ class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
                 'label': s.long_label(),
                 'charts': [
                     self.chartdata(s.label, s.tasks, stat)
-                    for stat in (('Concurrent running containers', ['containers']),
-                                 ('Data under management', ['actual storage used']),
+                    for stat in ((containers_category, ['containers']),
+                                 (storage_category, ['storage used']),
                                  )
                     ],
             }
@@ -361,19 +366,19 @@ class ClusterActivityReport(object):
 
         logging.info("Getting container hours time series")
         s1 = Summarizer(label="", tasks=collections.defaultdict(Task))
-        self.collect_graph(s1, since, to, "Concurrent running containers", "containers",
+        self.collect_graph(s1, since, to, containers_category, "containers",
                            "arvados_dispatchcloud_containers_running{cluster='%s'}", resampleTo="5min")
 
         logging.info("Getting data usage time series")
         s2 = Summarizer(label="", tasks=collections.defaultdict(Task))
-        self.collect_graph(s2, since, to, "Data under management", "managed",
+        self.collect_graph(s2, since, to, storage_category, "managed",
                            "arvados_keep_collection_bytes{cluster='%s'}", resampleTo="60min")
 
-        self.collect_graph(s2, since, to, "Data under management", "actual storage used",
+        self.collect_graph(s2, since, to, storage_category, "storage used",
                            "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
 
-        managed_data_now = s2.tasks["Data under management"].series["Data under management","managed"][-1]
-        storage_used_now = s2.tasks["Data under management"].series["Data under management","actual storage used"][-1]
+        managed_data_now = s2.tasks[storage_category].series[storage_category,"managed"][-1]
+        storage_used_now = s2.tasks[storage_category].series[storage_category,"storage used"][-1]
 
         storage_cost = aws_monthly_cost(storage_used_now.y)
         dedup_ratio = managed_data_now.y/storage_used_now.y
@@ -466,11 +471,12 @@ class ClusterActivityReport(object):
             wfsum = []
             for k2, r in sorted(prj.runs.items(), key=lambda x: x[1].count, reverse=True):
                 wfsum.append("""
-                <tr><td>{count}</td> <td>{workflowlink}</td>  <td>{runtime}</td> <td>${cost:,.2f}</td></tr>
+                <tr><td>{count}</td> <td>{workflowlink}</td>  <td>{runtime}</td> <td>${cost:,.2f}</td> <td>${totalcost:,.2f}</td></tr>
                 """.format(
                     count=r.count,
                     runtime=hours_to_runtime_str(r.hours/r.count),
                     cost=r.cost/r.count,
+                    totalcost=r.cost,
                     workflowlink="""<a href="{workbench}/workflows/{uuid}">{name}</a>""".format(workbench=workbench,uuid=r.uuid,name=r.name)
                     if r.uuid != "none" else r.name))
 
@@ -488,7 +494,7 @@ class ClusterActivityReport(object):
                 </table>
 
                 <table class='sortable'>
-                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Avg runtime</th> <th>Avg cost per run</th></tr></thead>
+                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Mean runtime</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
                 <tbody>
                 {wfsum}
                 </tbody></table>
