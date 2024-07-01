@@ -65,7 +65,7 @@ When @trash_at@ is set, @delete_at@ will also be set.  Normally @delete_at = tra
 
 Once @delete_at@ is past, the collection and all of its previous versions will be deleted permanently and can no longer be untrashed.
 
-h3(#replace_files). Using "replace_files" to create/update collections
+h3(#replace_files). Using "replace_files" to create or update a collection
 
 The @replace_files@ option can be used with the "create":#create and "update":#update APIs to efficiently and atomically copy individual files and directory trees from other collections, copy/rename/delete items within an existing collection, and add new items to a collection.
 
@@ -79,7 +79,9 @@ The @replace_files@ option can be used with the "create":#create and "update":#u
 
 In an @update@ request, sources may reference the current portable data hash of the collection being updated. However, in many cases it is more appropriate to use a @current/<path>@ source instead, to ensure the latest content is used even if the collection has been updated since the PDH was last retrieved.
 
-Example: delete @foo.txt@ from a collection
+h4(#replace_files-delete). Delete a file
+
+Delete @foo.txt@.
 
 <notextile><pre>
 "replace_files": {
@@ -87,7 +89,9 @@ Example: delete @foo.txt@ from a collection
 }
 </pre></notextile>
 
-Example: rename @foo.txt@ to @bar.txt@
+h4(#replace_files-rename). Rename a file
+
+Rename @foo.txt@ to @bar.txt@.
 
 <notextile><pre>
 "replace_files": {
@@ -96,7 +100,9 @@ Example: rename @foo.txt@ to @bar.txt@
 }
 </pre></notextile>
 
-Example: swap files @foo@ and @bar@
+h4(#replace_files-swap). Swap files
+
+Swap contents of files @foo@ and @bar@.
 
 <notextile><pre>
 "replace_files": {
@@ -105,7 +111,7 @@ Example: swap files @foo@ and @bar@
 }
 </pre></notextile>
 
-Example: add a file to an existing collection
+h4(#replace_files-add). Add a file
 
 <notextile><pre>
 "replace_files": {
@@ -116,7 +122,9 @@ Example: add a file to an existing collection
 }
 </pre></notextile>
 
-Example: replace current content with new content (note this is equivalent to omitting the @replace_files@ argument)
+h4(#replace_files-replace). Replace all content with new content
+
+Note this is equivalent to omitting the @replace_files@ argument.
 
 <notextile><pre>
 "replace_files": {
@@ -127,7 +135,9 @@ Example: replace current content with new content (note this is equivalent to om
 }
 </pre></notextile>
 
-Example: rename an existing file and replace it with new content, all in a single atomic operation
+h4(#replace_files-rename-and-replace). Atomic rename and replace
+
+Rename @current_file.txt@ to @old_file.txt@ and replace @current_file.txt@ with new content, all in a single atomic operation.
 
 <notextile><pre>
 "replace_files": {
@@ -139,7 +149,9 @@ Example: rename an existing file and replace it with new content, all in a singl
 }
 </pre></notextile>
 
-Example: delete current content, then add content from multiple collections
+h4(#replace_files-combine). Combine collections
+
+Delete all current content, then copy content from other collections into new subdirectories.
 
 <notextile><pre>
 "replace_files": {
@@ -149,13 +161,17 @@ Example: delete current content, then add content from multiple collections
 }
 </pre></notextile>
 
-Example: replace entire collection with a copy of a subdirectory from another collection
+h4(#replace_files-extract-subdirectory). Extract a subdirectory
+
+Replace all current content with a copy of a subdirectory from another collection.
 
 <notextile><pre>
 "replace_files": {
   "/": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/subdir"
 }
 </pre></notextile>
+
+h4(#replace_files-usage-restrictions). Usage restrictions
 
 A target path with a non-empty source cannot be the ancestor of another target path in the same request. For example, the following request is invalid:
 
