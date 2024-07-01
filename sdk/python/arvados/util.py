@@ -406,3 +406,32 @@ def csv_to_list(text: str) -> list[str]:
         if key:
             words[key] = None
     return list(words)
+
+def storage_classes_from_config(config: dict[str, Any], default_only: bool = True, fallback: str = "default") -> list[str]:
+    """Convenience function for getting the list of storage classes from the
+    API client config dict.
+
+    If `default_only` is True, only output those storage classes configured
+    with `Default` property.
+
+    If no configured storage classes (subject to the `default_only` option) can
+    be found, a fallback value as specified by the `fallback` parameter is used
+    as the sole element in the returned list. By convention, the value of the
+    fallback storage class is the string `"default"`.
+
+    This falling-back behavior is suppressed by setting `fallback` to an empty
+    string, in which case the output will be an empty list.
+
+    Arguments:
+
+        * config: dict[str, Any] -- API client config dictionary
+        * default_only: bool -- whether only the default storage classes should appear in the output; default: True
+        * fallback: str -- name of fallback storage class; default: `"default"`
+    """
+    storage_classes = []
+    for key, value in config.get("StorageClasses", {}).items():
+        if not default_only or value.get("Default") is True:
+            storage_classes.append(key)
+    if fallback and not storage_classes:
+        return [fallback]
+    return storage_classes
