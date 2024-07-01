@@ -24,6 +24,7 @@ module CanBeAnOwner
                       'jobs',
                       'job_tasks',
                       'keep_disks',
+                      'materialized_permissions',
                       'nodes',
                       'pipeline_instances',
                       'pipeline_templates',

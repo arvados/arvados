@@ -1049,6 +1049,70 @@
         }
       }
     },
+    "computed_permissions": {
+      "methods": {
+        "list": {
+          "id": "arvados.computed_permissions.list",
+          "path": "computed_permissions",
+          "httpMethod": "GET",
+          "description": "List ComputedPermissions.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ComputedPermissions. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#computedPermissionList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "parameters": {
+            "filters": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "where": {
+              "type": "object",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "order": {
+              "type": "array",
+              "required": false,
+              "description": "",
+              "location": "query"
+            },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
+            "distinct": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "",
+              "location": "query"
+            },
+            "limit": {
+              "type": "integer",
+              "required": false,
+              "default": "100",
+              "description": "",
+              "location": "query"
+            },
+            "count": {
+              "type": "string",
+              "required": false,
+              "default": "exact",
+              "description": "",
+              "location": "query"
+            }
+          },
+          "response": {
+            "$ref": "ComputedPermissionList"
+          },
+          "scopes": [
+            "https://api.arvados.org/auth/arvados",
+            "https://api.arvados.org/auth/arvados.readonly"
+          ]
+        }
+      }
+    },
     "containers": {
       "methods": {
         "get": {
@@ -4215,6 +4279,57 @@
           "type": "integer"
         },
         "file_size_total": {
+          "type": "integer"
+        }
+      }
+    },
+    "ComputedPermissionList": {
+      "id": "ComputedPermissionList",
+      "description": "ComputedPermission list",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Object type. Always arvados#computedPermissionList.",
+          "default": "arvados#computedPermissionList"
+        },
+        "etag": {
+          "type": "string",
+          "description": "List version."
+        },
+        "items": {
+          "type": "array",
+          "description": "The list of ComputedPermissions.",
+          "items": {
+            "$ref": "ComputedPermission"
+          }
+        },
+        "next_link": {
+          "type": "string",
+          "description": "A link to the next page of ComputedPermissions."
+        },
+        "next_page_token": {
+          "type": "string",
+          "description": "The page token for the next page of ComputedPermissions."
+        },
+        "selfLink": {
+          "type": "string",
+          "description": "A link back to this list."
+        }
+      }
+    },
+    "ComputedPermission": {
+      "id": "ComputedPermission",
+      "description": "ComputedPermission",
+      "type": "object",
+      "properties": {
+        "user_uuid": {
+          "type": "string"
+        },
+        "target_uuid": {
+          "type": "string"
+        },
+        "perm_level": {
           "type": "integer"
         }
       }
