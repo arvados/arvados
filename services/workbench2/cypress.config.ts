@@ -11,6 +11,9 @@ export default defineConfig({
   downloadsFolder: "cypress/downloads",
   videoCompression: false,
 
+  // projectId is for use with Cypress Cloud/CI, which we are currently not using
+  // projectId: "pzrqer",
+
   e2e: {
     // We've imported your old cypress plugins here.
     // You may want to clean this up later by importing these.

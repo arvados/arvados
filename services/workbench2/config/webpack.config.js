@@ -753,6 +753,7 @@ module.exports = function (webpackEnv) {
                 'react/react-in-jsx-scope': 'error',
               }),
             },
+            ignorePatterns: ['**/*.cy.js'],
           },
         }),
     ].filter(Boolean),

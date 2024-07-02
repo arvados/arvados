@@ -13,25 +13,25 @@ describe('rsa-key-validator', () => {
     describe('rsaKeyValidation', () => {
         it('should accept keys with comment', () => {
             // then
-            expect(isRsaKey(rsaKey + " firstlast@example.com")).toBeUndefined();
+            expect(isRsaKey(rsaKey + " firstlast@example.com")).to.be.undefined;
         });
 
         it('should accept keys without comment', () => {
             // then
-            expect(isRsaKey(rsaKey)).toBeUndefined();
+            expect(isRsaKey(rsaKey)).to.be.undefined;
         });
 
         it('should reject keys with trailing whitespace', () => {
             // then
-            expect(isRsaKey(rsaKey + " ")).toBe(ERROR_MESSAGE);
-            expect(isRsaKey(rsaKey + "\n")).toBe(ERROR_MESSAGE);
-            expect(isRsaKey(rsaKey + "\r\n")).toBe(ERROR_MESSAGE);
-            expect(isRsaKey(rsaKey + "\t")).toBe(ERROR_MESSAGE);
+            expect(isRsaKey(rsaKey + " ")).to.equal(ERROR_MESSAGE);
+            expect(isRsaKey(rsaKey + "\n")).to.equal(ERROR_MESSAGE);
+            expect(isRsaKey(rsaKey + "\r\n")).to.equal(ERROR_MESSAGE);
+            expect(isRsaKey(rsaKey + "\t")).to.equal(ERROR_MESSAGE);
         });
 
         it('should reject invalid keys', () => {
             // then
-            expect(isRsaKey(badKey)).toBe(ERROR_MESSAGE);
+            expect(isRsaKey(badKey)).to.equal(ERROR_MESSAGE);
         });
 
     });
