@@ -612,7 +612,7 @@ class ClusterActivityReport(object):
                 continue
 
             template_uuid = container_request["properties"].get("template_uuid", "none")
-            workflowname = container_request["name"] if template_uuid == "none" else workflows.get(template_uuid, "workflow missing")
+            workflowname = container_request["name"] if template_uuid == "none" else workflows.get(template_uuid, template_uuid)
 
             if exclude and re.search(exclude, workflowname, flags=re.IGNORECASE):
                 continue
