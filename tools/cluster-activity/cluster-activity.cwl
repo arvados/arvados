@@ -15,6 +15,7 @@ inputs:
   prometheus_apikey: string?
   prometheus_user: string?
   prometheus_password: string?
+  exclude: string?
 
 requirements:
   DockerRequirement:
@@ -42,6 +43,7 @@ arguments:
   - arv-cluster-activity
   - {prefix: '--prometheus-auth', valueFrom: prometheus.env}
   - {prefix: '--days', valueFrom: $(inputs.reporting_days)}
+  - {prefix: '--exclude', valueFrom: $(inputs.exclude)}
   - {prefix: '--html-report-file', valueFrom: report.html}
 
 outputs:
