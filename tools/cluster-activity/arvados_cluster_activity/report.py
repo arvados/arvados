@@ -116,8 +116,9 @@ document.addEventListener('click', function (e) {
                         return 1;
                     }
                 }
-                if (x[0] === '$') { x = x.slice(1); }
-                if (y[0] === '$') { y = y.slice(1); }
+                // Before comparing, clean up formatted numbers that may have a leading dollar sign and/or commas.
+                x = x.replace("$", "").replace(",", "");
+                y = y.replace("$", "").replace(",", "");
                 var temp = +x - +y;
                 var bool = isNaN(temp) ? x.localeCompare(y) : temp;
                 return reverse_1 ? -bool : bool;
