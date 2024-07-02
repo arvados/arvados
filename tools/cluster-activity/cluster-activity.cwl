@@ -12,7 +12,9 @@ $namespaces:
 inputs:
   reporting_days: int
   prometheus_host: string
-  prometheus_apikey: string
+  prometheus_apikey: string?
+  prometheus_user: string?
+  prometheus_password: string?
 
 requirements:
   DockerRequirement:
@@ -24,12 +26,14 @@ requirements:
         entry: |
           PROMETHEUS_HOST=$(inputs.prometheus_host)
           PROMETHEUS_APIKEY=$(inputs.prometheus_apikey)
+          PROMETHEUS_USER=$(inputs.prometheus_user)
+          PROMETHEUS_PASSWORD=$(inputs.prometheus_password)
 
   arv:APIRequirement: {}
 
 hints:
   cwltool:Secrets:
-    secrets: [prometheus_apikey]
+    secrets: [prometheus_apikey, prometheus_password]
 
 arguments:
   - arv-cluster-activity
