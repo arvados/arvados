@@ -14,6 +14,7 @@ import okhttp3.RequestBody;
 import org.arvados.client.api.model.Group;
 import org.arvados.client.api.model.GroupList;
 import org.arvados.client.api.model.argument.ContentsGroup;
+import org.arvados.client.api.model.argument.ListArgument;
 import org.arvados.client.api.model.argument.UntrashGroup;
 import org.arvados.client.config.ConfigProvider;
 import org.slf4j.Logger;
@@ -33,6 +34,15 @@ public class GroupsApiClient extends BaseStandardApiClient<Group, GroupList> {
         addQueryParameters(urlBuilder, contentsGroup);
         HttpUrl url = urlBuilder.build();
         Request request = getRequestBuilder().url(url).build();
+        return callForList(request);
+    }
+
+    public GroupList contents(ListArgument listArguments) {
+        this.log.debug("Get {} contents", this.getType().getSimpleName());
+        HttpUrl.Builder urlBuilder = this.getUrlBuilder().addPathSegment("contents");
+        this.addQueryParameters(urlBuilder, listArguments);
+        HttpUrl url = urlBuilder.build();
+        Request request = this.getRequestBuilder().url(url).build();
         return callForList(request);
     }
 
