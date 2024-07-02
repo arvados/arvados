@@ -31,6 +31,9 @@ requirements:
 
   arv:APIRequirement: {}
 
+  ResourceRequirement:
+    ramMin: 768
+
 hints:
   cwltool:Secrets:
     secrets: [prometheus_apikey, prometheus_password]
