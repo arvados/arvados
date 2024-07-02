@@ -361,7 +361,7 @@ class ClusterActivityReport(object):
 
         self.label = "Cluster report for %s from %s to %s" % (self.cluster, since.date(), to.date())
 
-        for row in self.report_from_api(since, to, True, exclude):
+        for row in self.report_from_api(since, to, False, exclude):
             pass
 
         logging.info("Getting container hours time series")
