@@ -126,45 +126,28 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   test "search index exists on models that go into projects" do
-    all_tables =  ActiveRecord::Base.connection.tables - [
-      'ar_internal_metadata',
-      'permission_refresh_lock',
-      'schema_migrations',
-      # tables that may still exist in the database even though model
-      # classes have been deleted:
-      'humans',
-      'jobs',
-      'job_tasks',
-      'keep_disks',
-      'nodes',
-      'pipeline_instances',
-      'pipeline_templates',
-      'repositories',
-      'specimens',
-      'traits',
-    ]
+    ActiveRecord::Base.descendants.each do |model_class|
+      next if model_class.abstract_class?
+      next if !model_class.respond_to?('searchable_columns')
 
-    all_tables.each do |table|
-      table_class = table.classify.constantize
-      if table_class.respond_to?('searchable_columns')
-        search_index_columns = table_class.searchable_columns('ilike')
-        # Disappointing, but text columns aren't indexed yet.
-        search_index_columns -= table_class.columns.select { |c|
-          c.type == :text or c.name == 'description' or c.name == 'file_names'
-        }.collect(&:name)
+      search_index_columns = model_class.searchable_columns('ilike')
+      # Disappointing, but text columns aren't indexed yet.
+      search_index_columns -= model_class.columns.select { |c|
+        c.type == :text or c.name == 'description' or c.name == 'file_names'
+      }.collect(&:name)
+      next if search_index_columns.empty?
 
-        indexes = ActiveRecord::Base.connection.indexes(table)
-        search_index_by_columns = indexes.select do |index|
-          # After rails 5.0 upgrade, AR::Base.connection.indexes() started to include
-          # GIN indexes, with its 'columns' attribute being a String like
-          # 'to_tsvector(...)'
-          index.columns.is_a?(Array) ? index.columns.sort == search_index_columns.sort : false
-        end
-        search_index_by_name = indexes.select do |index|
-          index.name == "#{table}_search_index"
-        end
-        assert !search_index_by_columns.empty?, "#{table} has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
+      indexes = ActiveRecord::Base.connection.indexes(model_class.table_name)
+      search_index_by_columns = indexes.select do |index|
+        # After rails 5.0 upgrade, AR::Base.connection.indexes() started to include
+        # GIN indexes, with its 'columns' attribute being a String like
+        # 'to_tsvector(...)'
+        index.columns.is_a?(Array) ? index.columns.sort == search_index_columns.sort : false
       end
+      search_index_by_name = indexes.select do |index|
+        index.name == "#{model_class.table_name}_search_index"
+      end
+      assert !search_index_by_columns.empty?, "#{model_class.table_name} (#{model_class.to_s}) has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
     end
   end
 

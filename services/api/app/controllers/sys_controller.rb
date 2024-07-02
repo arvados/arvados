@@ -39,6 +39,9 @@ class SysController < ApplicationController
 
       # Sweep expired tokens
       ActiveRecord::Base.connection.execute("DELETE from api_client_authorizations where expires_at <= statement_timestamp()")
+
+      # Sweep unused uuid_locks entries
+      ActiveRecord::Base.connection.execute("DELETE FROM uuid_locks WHERE uuid IN (SELECT uuid FROM uuid_locks FOR UPDATE SKIP LOCKED)")
     end
     head :no_content
   end

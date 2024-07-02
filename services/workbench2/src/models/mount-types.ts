@@ -8,7 +8,8 @@ export enum MountKind {
     TEMPORARY_DIRECTORY = 'tmp',
     KEEP = 'keep',
     MOUNTED_FILE = 'file',
-    JSON = 'json'
+    JSON = 'json',
+    TEXT = 'text'
 }
 
 export type MountType =
@@ -17,7 +18,8 @@ export type MountType =
     TemporaryDirectoryMount |
     KeepMount |
     JSONMount |
-    FileMount;
+    FileMount |
+    TextMount;
 
 export interface CollectionMount {
     kind: MountKind.COLLECTION;
@@ -54,6 +56,11 @@ export interface KeepMount {
 export interface JSONMount {
     kind: MountKind.JSON;
     content: any;
+}
+
+export interface TextMount {
+    kind: MountKind.TEXT;
+    content: string;
 }
 
 export interface FileMount {

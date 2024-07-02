@@ -115,7 +115,7 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 				slice[i] = item
 			}
 		}
-		if opts.Count == "none" {
+		if opts.Count == "none" || req.URL.Path == "/arvados/v1/computed_permissions" {
 			delete(tmp, "items_available")
 		}
 	} else {

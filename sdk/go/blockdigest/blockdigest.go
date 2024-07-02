@@ -65,29 +65,24 @@ func IsBlockLocator(s string) bool {
 	return LocatorPattern.MatchString(s)
 }
 
-func ParseBlockLocator(s string) (b BlockLocator, err error) {
+func ParseBlockLocator(s string) (BlockLocator, error) {
 	if !LocatorPattern.MatchString(s) {
-		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern "+
-			"\"%s\".",
-			s,
-			LocatorPattern.String())
-	} else {
-		tokens := strings.Split(s, "+")
-		var blockSize int64
-		var blockDigest BlockDigest
-		// We expect both of the following to succeed since LocatorPattern
-		// restricts the strings appropriately.
-		blockDigest, err = FromString(tokens[0])
-		if err != nil {
-			return
-		}
-		blockSize, err = strconv.ParseInt(tokens[1], 10, 0)
-		if err != nil {
-			return
-		}
-		b.Digest = blockDigest
-		b.Size = int(blockSize)
-		b.Hints = tokens[2:]
+		return BlockLocator{}, fmt.Errorf("String %q does not match block locator pattern %q.", s, LocatorPattern.String())
 	}
-	return
+	tokens := strings.Split(s, "+")
+	// We expect both of the following to succeed since
+	// LocatorPattern restricts the strings appropriately.
+	blockDigest, err := FromString(tokens[0])
+	if err != nil {
+		return BlockLocator{}, err
+	}
+	blockSize, err := strconv.ParseInt(tokens[1], 10, 0)
+	if err != nil {
+		return BlockLocator{}, err
+	}
+	return BlockLocator{
+		Digest: blockDigest,
+		Size:   int(blockSize),
+		Hints:  tokens[2:],
+	}, nil
 }

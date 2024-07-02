@@ -123,6 +123,8 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
                 dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs));
+	} catch (e) {
+	    console.log("Error setting breadcrumbs "+e);
         } finally {
             dispatch(progressIndicatorActions.STOP_WORKING(uuid + "-breadcrumbs"));
         }
@@ -238,7 +240,7 @@ export const setProcessBreadcrumbs = (processUuid: string) =>
         const { resources } = getState();
         const process = getProcess(processUuid)(resources);
         if (process) {
-            dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
+	    dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
         }
     };
 
@@ -280,7 +282,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
             const userProfileBreadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
                 { label: user ? `${user.firstName} ${user.lastName}` : userUuid, uuid: userUuid },
-            ];    
+            ];
             dispatch(setBreadcrumbs(userProfileBreadcrumbs));
         } catch (e) {
             const breadcrumbs: Breadcrumb[] = [

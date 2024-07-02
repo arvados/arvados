@@ -623,6 +623,22 @@ func (s *RouterIntegrationSuite) TestCORS(c *check.C) {
 	}
 }
 
+func (s *RouterIntegrationSuite) TestComputedPermissionList(c *check.C) {
+	token := arvadostest.AdminToken
+
+	jresp := map[string]interface{}{}
+	_, rr := doRequest(c, s.rtr, token, "GET", `/arvados/v1/computed_permissions?filters=[["user_uuid","=","`+arvadostest.ActiveUserUUID+`"],["target_uuid","=","`+arvadostest.AProjectUUID+`"]]&select=["perm_level"]`, true, nil, nil, jresp)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["items_available"], check.IsNil)
+	if c.Check(jresp["items"], check.HasLen, 1) {
+		item := jresp["items"].([]interface{})[0].(map[string]interface{})
+		c.Check(item, check.DeepEquals, map[string]interface{}{
+			"kind":       "arvados#computedPermission",
+			"perm_level": "can_manage",
+		})
+	}
+}
+
 func doRequest(c *check.C, rtr http.Handler, token, method, path string, auth bool, hdrs http.Header, body io.Reader, jresp map[string]interface{}) (*http.Request, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(method, path, body)
 	for k, v := range hdrs {

@@ -1,0 +1,43 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "computed_permissions"
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/computed_permissions@
+
+h2. Resource
+
+Computed permissions are entries from the internal cache of the highest permission level each user has on each permission target.
+
+Each entry has the following attributes:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|user_uuid|string|An individual user.|
+|target_uuid|string|An object (role group, project group, collection, etc.) on which the user has implicit or explicit permission.|
+|perm_level|string|@can_read@, @can_write@, or @can_manage@|
+
+There is only one row for a given (@user_uuid@, @target_uuid@) pair.
+
+Computed permissions cannot be created or updated directly. To change permissions, use "groups":groups.html and "links":links.html APIs as described in the "permission model":../permission-model.html.
+
+h2. Method
+
+h3. list
+
+@GET /arvados/v1/computed_permissions@
+
+List computed permissions.
+
+The computed permissions API accepts the arguments described in the "common resource list method":{{site.baseurl}}/api/methods.html#index with the following exceptions:
+* It is an error to supply a non-zero @offset@ argument.
+* The default value for @order@ is @["user_uuid", "target_uuid"]@.
+* The default value for @count@ is @"none"@ and no other values are accepted.

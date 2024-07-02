@@ -41,7 +41,7 @@ while getopts "ia:w:" o; do
     case "${o}" in
         i)
             # Interactive mode
-            CYPRESS_MODE="open"
+            CYPRESS_MODE="open --e2e"
             ;;
         a)
             ARVADOS_DIR=${OPTARG}

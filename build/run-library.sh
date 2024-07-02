@@ -473,7 +473,7 @@ test_package_presence() {
     else
       local rpm_root
       case "$TARGET" in
-        rocky8) rpm_root="CentOS/8/dev" ;;
+        rocky8) rpm_root="RHEL/8/dev" ;;
         *)
           echo "FIXME: Don't know RPM URL path for $TARGET, building"
           return 0

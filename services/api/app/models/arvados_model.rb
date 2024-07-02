@@ -170,10 +170,6 @@ class ArvadosModel < ApplicationRecord
     end.map(&:name)
   end
 
-  def self.attribute_column attr
-    self.columns.select { |col| col.name == attr.to_s }.first
-  end
-
   def self.attributes_required_columns
     # This method returns a hash.  Each key is the name of an API attribute,
     # and it's mapped to a list of database columns that must be fetched
@@ -563,18 +559,6 @@ class ArvadosModel < ApplicationRecord
       "coalesce(#{column}#{cast},'')"
     end
     "to_tsvector('english', substr(#{parts.join(" || ' ' || ")}, 0, 8000))"
-  end
-
-  def self.apply_filters query, filters
-    ft = record_filters filters, self
-    if not ft[:cond_out].any?
-      return query
-    end
-    ft[:joins].each do |t|
-      query = query.joins(t)
-    end
-    query.where('(' + ft[:cond_out].join(') AND (') + ')',
-                          *ft[:param_out])
   end
 
   @_add_uuid_to_name = false

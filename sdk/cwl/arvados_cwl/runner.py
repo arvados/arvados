@@ -48,6 +48,7 @@ from cwltool.update import INTERNAL_VERSION
 from cwltool.builder import Builder
 import schema_salad.validate as validate
 import schema_salad.ref_resolver
+from cwltool.secrets import SecretStore
 
 import arvados.collection
 import arvados.util
@@ -975,3 +976,9 @@ def print_keep_deps(arvRunner, runtimeContext, merged_map, tool):
 
     json.dump(sorted(references), arvRunner.stdout)
     print(file=arvRunner.stdout)
+
+class ArvSecretStore(SecretStore):
+    def add(self, value):
+        if value is None:
+            return None
+        return super().add(value)

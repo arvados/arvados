@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/ctrlctx"
@@ -244,6 +245,52 @@ func (s *CollectionSuite) expectFiles(c *check.C, coll arvados.Collection, expec
 	sort.Strings(found)
 	sort.Strings(expected)
 	c.Check(found, check.DeepEquals, expected)
+}
+
+// Until #21701 it's hard to test from the outside whether the
+// uuid_lock mechanism is effectively serializing concurrent
+// replace_files updates to a single collection.  For now, we're
+// really just checking that it doesn't cause updates to deadlock or
+// anything like that.
+func (s *CollectionSuite) TestCollectionUpdateLock(c *check.C) {
+	adminctx := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AdminToken)
+	foo, err := s.localdb.railsProxy.CollectionCreate(adminctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	dst, err := s.localdb.CollectionCreate(s.userctx, arvados.CreateOptions{
+		ReplaceFiles: map[string]string{
+			"/foo.txt": foo.PortableDataHash + "/foo.txt",
+		},
+		Attrs: map[string]interface{}{
+			"owner_uuid": arvadostest.ActiveUserUUID,
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "foo.txt")
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		name1, name2 := "a", "b"
+		if i&1 == 1 {
+			name1, name2 = "b", "a"
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			upd, err := s.localdb.CollectionUpdate(s.userctx, arvados.UpdateOptions{
+				UUID: dst.UUID,
+				ReplaceFiles: map[string]string{
+					"/" + name1: foo.PortableDataHash + "/foo.txt",
+					"/" + name2: "",
+					"/foo.txt":  "",
+				}})
+			c.Assert(err, check.IsNil)
+			s.expectFiles(c, upd, name1)
+		}()
+	}
+	wg.Wait()
 }
 
 func (s *CollectionSuite) TestSignatures(c *check.C) {

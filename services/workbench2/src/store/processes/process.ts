@@ -30,6 +30,11 @@ export enum ProcessStatus {
     CANCELLING = 'Cancelling',
 }
 
+/**
+ * Gets a process from the store using container request uuid
+ * @param uuid container request associated with process
+ * @returns a Process object with containerRequest and optional container or undefined
+ */
 export const getProcess = (uuid: string) => (resources: ResourcesState): Process | undefined => {
     if (extractUuidKind(uuid) === ResourceKind.CONTAINER_REQUEST) {
         const containerRequest = getResource<ContainerRequestResource>(uuid)(resources);

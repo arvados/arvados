@@ -169,7 +169,7 @@ func (s *integrationSuite) TestRunTrivialContainerWithDocker(c *C) {
 func (s *integrationSuite) TestRunTrivialContainerWithSingularity(c *C) {
 	s.engine = "singularity"
 	s.testRunTrivialContainer(c)
-	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*Using container runtime: singularity.* version 3\.\d+.*`)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*Using container runtime: singularity.* version [34]\.\d+.*`)
 }
 
 func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {

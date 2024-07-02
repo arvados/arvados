@@ -10,6 +10,7 @@ jest.mock("../navigation/navigation-action", () => ({
 
 jest.mock("models/process", () => ({
     createWorkflowMounts: jest.fn(),
+    createWorkflowSecretMounts: jest.fn(),
 }));
 
 jest.mock("redux-form", () => ({
@@ -105,8 +106,10 @@ describe("run-process-panel-actions", () => {
             expect(services.containerRequestService.create).toHaveBeenCalledWith({
                 command: [
                     "arvados-cwl-runner",
-                    "--api=containers",
                     "--local",
+                    "--api=containers",
+                    "--no-log-timestamps",
+                    "--disable-color",
                     "--project-uuid=zzzzz-tpzed-yid70bw31f51234",
                     "/var/lib/cwl/workflow.json#main",
                     "/var/lib/cwl/cwl.input.json",
@@ -115,6 +118,7 @@ describe("run-process-panel-actions", () => {
                 cwd: "/var/spool/cwl",
                 description: "basicFormTestDescription",
                 mounts: undefined,
+                secret_mounts: undefined,
                 name: "basicFormTestName",
                 outputName: "Output from basicFormTestName",
                 outputPath: "/var/spool/cwl",

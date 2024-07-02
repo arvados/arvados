@@ -25,6 +25,7 @@ import { resourceIsFrozen } from "common/frozen-resources";
 import { ProjectResource } from "models/project";
 import { getProcess } from "store/processes/process";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { selectOne, deselectAllOthers } from "store/multiselect/multiselect-actions";
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition; resource: ContextMenuResource }>(),
@@ -56,6 +57,8 @@ export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.n
 
 export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: ContextMenuResource) => (dispatch: Dispatch) => {
     event.preventDefault();
+    dispatch<any>(selectOne(resource.uuid));
+    dispatch<any>(deselectAllOthers(resource.uuid));
     const { left, top } = event.currentTarget.getBoundingClientRect();
     dispatch(
         contextMenuActions.OPEN_CONTEXT_MENU({

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -96,6 +97,10 @@ func (conn *Conn) CollectionUpdate(ctx context.Context, opts arvados.UpdateOptio
 		// them.
 		opts.Select = append([]string{"is_trashed", "trash_at"}, opts.Select...)
 	}
+	err = conn.lockUUID(ctx, opts.UUID)
+	if err != nil {
+		return arvados.Collection{}, err
+	}
 	if opts.Attrs, err = conn.applyReplaceFilesOption(ctx, opts.UUID, opts.Attrs, opts.ReplaceFiles); err != nil {
 		return arvados.Collection{}, err
 	}
@@ -124,6 +129,18 @@ func (conn *Conn) signCollection(ctx context.Context, coll *arvados.Collection) 
 		exp = *coll.TrashAt
 	}
 	coll.ManifestText = arvados.SignManifest(coll.ManifestText, token, exp, ttl, []byte(conn.cluster.Collections.BlobSigningKey))
+}
+
+func (conn *Conn) lockUUID(ctx context.Context, uuid string) error {
+	tx, err := ctrlctx.CurrentTx(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `insert into uuid_locks (uuid) values ($1) on conflict (uuid) do update set n=uuid_locks.n+1`, uuid)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // If replaceFiles is non-empty, populate attrs["manifest_text"] by

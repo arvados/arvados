@@ -100,8 +100,8 @@ def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
         self._last_request_time = time.time()
         try:
             response, body = self.orig_http_request(uri, method, headers=headers, **kwargs)
-        except ssl.SSLCertVerificationError as e:
-            raise ssl.SSLCertVerificationError(e.args[0], "Could not connect to %s\n%s\nPossible causes: remote SSL/TLS certificate expired, or was issued by an untrusted certificate authority." % (uri, e)) from None
+        except ssl.CertificateError as e:
+            raise ssl.CertificateError(e.args[0], "Could not connect to %s\n%s\nPossible causes: remote SSL/TLS certificate expired, or was issued by an untrusted certificate authority." % (uri, e)) from None
         # googleapiclient only retries 403, 429, and 5xx status codes.
         # If we got another 4xx status that we want to retry, convert it into
         # 5xx so googleapiclient handles it the way we want.

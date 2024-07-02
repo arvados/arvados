@@ -185,6 +185,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointComputedPermissionList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ComputedPermissionList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
 			arvados.EndpointContainerCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

@@ -408,6 +408,10 @@ func (conn *Conn) CollectionUntrash(ctx context.Context, options arvados.Untrash
 	return conn.chooseBackend(options.UUID).CollectionUntrash(ctx, options)
 }
 
+func (conn *Conn) ComputedPermissionList(ctx context.Context, options arvados.ListOptions) (arvados.ComputedPermissionList, error) {
+	return conn.local.ComputedPermissionList(ctx, options)
+}
+
 func (conn *Conn) ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
 	return conn.generated_ContainerList(ctx, options)
 }

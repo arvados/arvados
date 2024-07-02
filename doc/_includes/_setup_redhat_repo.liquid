@@ -24,9 +24,9 @@ Set up the Arvados package repository
 <pre><code># <span class="userinput">tee /etc/yum.repos.d/arvados.repo &gt;/dev/null &lt;&lt;'EOF'
 [arvados]
 name=Arvados
-baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+baseurl=http://rpm.arvados.org/RHEL/$releasever/os/$basearch/
 gpgcheck=1
-gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+gpgkey=http://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
 EOF</span>
 {%- if modules_to_enable != nil %}
 # <span class="userinput">dnf module enable {{ modules_to_enable }}</span>

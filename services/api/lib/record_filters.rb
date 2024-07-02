@@ -293,4 +293,19 @@ module RecordFilters
     {:cond_out => conds_out, :param_out => param_out, :joins => joins}
   end
 
+  def apply_filters query, filters
+    ft = record_filters filters, self
+    if not ft[:cond_out].any?
+      return query
+    end
+    ft[:joins].each do |t|
+      query = query.joins(t)
+    end
+    query.where('(' + ft[:cond_out].join(') AND (') + ')',
+                          *ft[:param_out])
+  end
+
+  def attribute_column attr
+    self.columns.select { |col| col.name == attr.to_s }.first
+  end
 end

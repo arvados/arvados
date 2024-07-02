@@ -40,7 +40,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"golang.org/x/sys/unix"
 )
 
@@ -76,7 +75,6 @@ var ErrCancelled = errors.New("Cancelled")
 type IKeepClient interface {
 	BlockWrite(context.Context, arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error)
 	ReadAt(locator string, p []byte, off int) (int, error)
-	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	LocalLocator(locator string) (string, error)
 	SetStorageClasses(sc []string)
 }

@@ -37,4 +37,5 @@ const Input = (props: GenericInputProps) =>
         fullWidth
         error={props.meta.touched && !!props.meta.error}
         disabled={props.commandInput.disabled}
+	type={props.commandInput.secret ? 'password' : 'text'}
         {...props.input} />;

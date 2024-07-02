@@ -33,7 +33,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/mux v1.8.0
-	github.com/hashicorp/go-retryablehttp v0.7.6
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/yamux v0.1.1
 	github.com/jmcvetta/randutil v0.0.0-20150817122601-2bb1b664bcff
@@ -52,7 +52,7 @@ require (
 	golang.org/x/sys v0.20.0
 	google.golang.org/api v0.181.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	gopkg.in/square/go-jose.v2 v2.6.0
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 	rsc.io/getopt v0.0.0-20170811000552-20be20937449
 )
 

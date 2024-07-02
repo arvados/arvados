@@ -50,8 +50,8 @@ export const copyToClipboardMenuAction = {
 export const viewDetailsAction = {
     icon: DetailsIcon,
     name: ContextMenuActionNames.VIEW_DETAILS,
-    execute: dispatch => {
-        dispatch(toggleDetailsPanel());
+    execute: (dispatch, resources) => {
+        dispatch(toggleDetailsPanel(resources[0].uuid));
     },
 };
 

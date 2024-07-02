@@ -320,6 +320,25 @@ public class ArvadosFacade {
         return createdProject;
     }
 
+
+    /**
+     * Creates new project that will be a subproject of "home" for the specified owner.
+     *
+     * @param ownerUuid uuid of owner for subproject
+     * @param projectName name for the newly created subproject
+     * @return Group object containing information about created project
+     * (mapped from JSON returned from server after creating the project)
+     */
+    public Group createNewSubProject(String ownerUuid, String projectName) {
+        Group project = new Group();
+        project.setName(projectName);
+        project.setGroupClass(PROJECT);
+        project.setOwnerUuid(ownerUuid);
+        Group createdProject = groupsApiClient.create(project);
+        this.log.debug("Project " + createdProject.getName() + " created with UUID: " + createdProject.getUuid());
+        return createdProject;
+    }
+
     /**
      * Deletes collection with specified uuid.
      *

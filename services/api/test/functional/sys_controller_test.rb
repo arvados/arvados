@@ -141,4 +141,34 @@ class SysControllerTest < ActionController::TestCase
     assert_equal cr_nr_was-1, ContainerRequest.all.length
   end
 
+  test "trash_sweep - delete unused uuid_locks" do
+    uuid_active = "zzzzz-zzzzz-uuidlockstest11"
+    uuid_inactive = "zzzzz-zzzzz-uuidlockstest00"
+
+    ready = Queue.new
+    insertsql = "INSERT INTO uuid_locks (uuid) VALUES ($1) ON CONFLICT (uuid) do UPDATE SET n = uuid_locks.n+1"
+    url = ENV["DATABASE_URL"].sub(/\?.*/, '')
+    Thread.new do
+      conn = PG::Connection.new(url)
+      conn.exec_params(insertsql, [uuid_active])
+      conn.exec_params(insertsql, [uuid_inactive])
+      conn.transaction do |conn|
+        conn.exec_params(insertsql, [uuid_active])
+        ready << true
+        # If we keep this transaction open while trash_sweep runs, the
+        # uuid_active row shouldn't get deleted.
+        sleep 10
+      rescue
+        # Unblock main thread
+        ready << false
+        raise
+      end
+    end
+    assert_equal true, ready.pop
+    authorize_with :admin
+    post :trash_sweep
+    rows = ActiveRecord::Base.connection.exec_query("SELECT uuid FROM uuid_locks ORDER BY uuid", "", []).rows
+    assert_includes(rows, [uuid_active], "row with active lock (still held by thread) should not have been deleted")
+    refute_includes(rows, [uuid_inactive], "row with inactive lock should have been deleted")
+  end
 end
