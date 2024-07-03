@@ -28,7 +28,7 @@ describe('renderers', () => {
 
         it('shows main process input loading when raw or params null', () => {
             // when
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -50,7 +50,7 @@ describe('renderers', () => {
             });
 
             // when
-            panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -74,7 +74,7 @@ describe('renderers', () => {
 
         it('shows main process empty params and raw', () => {
             // when
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -102,7 +102,7 @@ describe('renderers', () => {
         it('shows main process with raw', () => {
             // when
             const raw = {some: 'data'};
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -130,7 +130,7 @@ describe('renderers', () => {
         it('shows main process with params', () => {
             // when
             const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -162,7 +162,7 @@ describe('renderers', () => {
             const outputCollection = '987654321';
             const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
 
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -200,7 +200,7 @@ describe('renderers', () => {
         it('shows subprocess loading', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -226,7 +226,7 @@ describe('renderers', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             const sampleMount = {path: '/', pdh: 'abcdef12abcdef12abcdef12abcdef12+0'};
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <MemoryRouter>
                         <StyledEngineProvider injectFirst>
@@ -258,7 +258,7 @@ describe('renderers', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             const outputCollection = '123456789';
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -286,7 +286,7 @@ describe('renderers', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             const outputCollection = '123456789';
-            let panel = cy.mount(
+            cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>

@@ -3,25 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { mount, configure } from 'enzyme';
-import Adapter from "enzyme-adapter-react-16";
-import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
-import { StyledComponentProps } from '@mui/styles';
-import { ClusterConfigJSON } from 'common/config';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material';
 import { CustomTheme } from 'common/custom-theme';
-import { NotFoundPanelRoot, NotFoundPanelRootDataProps, CssRules } from './not-found-panel-root';
-
-
-declare module '@mui/styles/defaultTheme' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
-}
-
-
-configure({ adapter: new Adapter() });
+import { NotFoundPanelRoot } from './not-found-panel-root';
 
 describe('NotFoundPanelRoot', () => {
-    let props: NotFoundPanelRootDataProps & StyledComponentProps<CssRules>;
+    let props;
 
     beforeEach(() => {
         props = {
@@ -34,7 +21,7 @@ describe('NotFoundPanelRoot', () => {
                 Mail: {
                     SupportEmailAddress: 'support@example.com'
                 }
-            } as ClusterConfigJSON,
+            },
             location: null,
         };
     });
@@ -44,7 +31,7 @@ describe('NotFoundPanelRoot', () => {
         const expectedMessage = "The page you requested was not found";
 
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <NotFoundPanelRoot {...props} />
@@ -53,7 +40,7 @@ describe('NotFoundPanelRoot', () => {
             );
 
         // then
-        expect(wrapper.find('p').text()).toContain(expectedMessage);
+        cy.get('p').contains(expectedMessage);
     });
 
     it('should render component without email url when no email', () => {
@@ -61,7 +48,7 @@ describe('NotFoundPanelRoot', () => {
         props.clusterConfig.Mail.SupportEmailAddress = '';
 
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <NotFoundPanelRoot {...props} />
@@ -70,7 +57,7 @@ describe('NotFoundPanelRoot', () => {
             );
 
         // then
-        expect(wrapper.find('a').length).toBe(0);
+        cy.get('a').should('not.exist');
     });
 
     it('should render component with additional message and email url', () => {
@@ -81,10 +68,10 @@ describe('NotFoundPanelRoot', () => {
         // setup
         props.location = {
             pathname,
-        } as any;
+        };
 
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <NotFoundPanelRoot {...props} />
@@ -93,9 +80,9 @@ describe('NotFoundPanelRoot', () => {
             );
 
         // then
-        expect(wrapper.find('p').first().text()).toContain(hash);
+        cy.get('p').eq(0).contains(hash);
 
         // and
-        expect(wrapper.find('a').length).toBe(1);
+        cy.get('a').should('have.length', 1);
     });
 });
