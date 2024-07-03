@@ -142,6 +142,10 @@ def get_prometheus_client():
 
 def report_from_prometheus(prom, cluster, since, to):
 
+    if not cluster:
+        arv_client = arvados.api()
+        cluster = arv_client.config()["ClusterID"]
+
     print(cluster, "between", since, "and", to, "timespan", (to-since))
 
     try:
@@ -171,10 +175,7 @@ def main(arguments=None):
     if prometheus_support:
         if "PROMETHEUS_HOST" in os.environ:
             prom = get_prometheus_client()
-            if args.cluster:
-                report_from_prometheus(prom, args.cluster, since, to)
-            else:
-                logging.warn("--cluster not provided, not collecting activity from Prometheus")
+            report_from_prometheus(prom, args.cluster, since, to)
         else:
             logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
 
