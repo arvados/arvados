@@ -16,7 +16,7 @@ inputs:
   prometheus_user: string?
   prometheus_password: string?
   exclude: string?
-  include_workflow_steps: boolean
+  include_workflow_steps: boolean?
 
 requirements:
   DockerRequirement:
