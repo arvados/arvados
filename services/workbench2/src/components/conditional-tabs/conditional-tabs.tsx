@@ -40,7 +40,7 @@ export const ConditionalTabs = (props: Omit<TabsProps, 'value' | 'onChange'> & C
             {...props}
             value={tabState}
             onChange={handleTabChange} >
-            {visibleTabs.map(tab => <Tab key={tab.label} label={tab.label} />)}
+            {visibleTabs.map(tab => <Tab key={tab.label} label={tab.label} data-cy='conditional-tab' />)}
         </Tabs>
 
         {visibleTabs.map((tab, i) => (

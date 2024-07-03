@@ -369,7 +369,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <CircularProgress />
+                                    <CircularProgress data-cy="process-io-circular-progress" />
                                 </Grid>
                             )}
                             {/* Once loaded, either raw or params may still be empty
@@ -424,7 +424,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <CircularProgress />
+                                    <CircularProgress data-cy="subprocess-circular-progress"/>
                                 </Grid>
                             ) : !subProcessLoading && (hasInputMounts || hasOutputCollecton || isRawLoaded) ? (
                                 <ConditionalTabs
@@ -659,7 +659,7 @@ const ProcessOutputCollection = withStyles(styles)(connect(null, mapNavigateToPr
     <div className={classes.tableWrapper} hidden={hidden}>
         <>
             {outputUuid && (
-                <Typography className={classes.collectionLink}>
+                <Typography className={classes.collectionLink} data-cy="output-uuid-display">
                     Output Collection:{" "}
                     <MuiLink
                         className={classes.keepLink}

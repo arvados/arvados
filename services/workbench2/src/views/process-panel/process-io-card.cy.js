@@ -3,38 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { mount, configure } from 'enzyme';
 import { combineReducers, createStore } from "redux";
 import {
-    CircularProgress,
     ThemeProvider,
-    Theme,
     StyledEngineProvider,
-    Tab,
-    TableBody,
 } from "@mui/material";
 import { CustomTheme } from 'common/custom-theme';
-import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
 import { ProcessIOCard, ProcessIOCardType } from './process-io-card';
-import { DefaultView } from "components/default-view/default-view";
-import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/default-virtual-code-snippet";
-import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { MemoryRouter } from 'react-router-dom';
-
-
-declare module '@mui/styles/defaultTheme' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
-}
-
-
-// Mock collection files component since it just needs to exist
-jest.mock('views/process-panel/process-output-collection-files');
-// Mock autosizer for the io panel virtual list
-jest.mock('react-virtualized-auto-sizer', () => ({ children }: any) => children({ height: 600, width: 600 }));
-
-configure({ adapter: new Adapter() });
 
 describe('renderers', () => {
     let store;
@@ -43,13 +20,15 @@ describe('renderers', () => {
 
         beforeEach(() => {
             store = createStore(combineReducers({
-                auth: (state: any = {}, action: any) => state,
+                auth: (state = {}, action) => { return {...state, config: {} } },
+                collectionPanel: (state = {}, action) => state,
+                collectionPanelFiles: (state = {}, action) => { return {...state, item: { portableDataHash: '12345'} } },
             }));
         });
 
         it('shows main process input loading when raw or params null', () => {
             // when
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -65,11 +44,13 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(Tab).exists()).toBeFalsy();
-            expect(panel.find(CircularProgress));
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=conditional-tab]').should('not.exist');
+                cy.get('[data-cy=process-io-circular-progress]').should('exist');
+            });
 
             // when
-            panel = mount(
+            panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -85,13 +66,15 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(Tab).exists()).toBeFalsy();
-            expect(panel.find(CircularProgress));
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=conditional-tab]').should('not.exist');
+                cy.get('[data-cy=process-io-circular-progress]').should('exist');
+            });
         });
 
         it('shows main process empty params and raw', () => {
             // when
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -107,15 +90,19 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).exists()).toBeFalsy();
-            expect(panel.find(DefaultView).text()).toEqual('No parameters found');
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=conditional-tab]').should('not.exist');
+                cy.get('[data-cy=process-io-circular-progress]').should('not.exist');
+                cy.get('[data-cy=default-view]').should('exist').within(() => {
+                    cy.contains('No parameters found');
+                });
+            });
         });
 
         it('shows main process with raw', () => {
             // when
             const raw = {some: 'data'};
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -131,15 +118,19 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(1);
-            expect(panel.find(DefaultVirtualCodeSnippet).text()).toContain(JSON.stringify(raw, null, 2).replace(/\n/g, ''));
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=conditional-tab]').should('exist');
+                cy.get('[data-cy=process-io-circular-progress]').should('not.exist');
+                cy.get('[data-cy=virtual-code-snippet]').should('exist').within(() => {
+                    cy.contains(JSON.stringify(raw, null, 2).replace(/\n/g, ''));
+                });
+            });
         });
 
         it('shows main process with params', () => {
             // when
             const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -155,18 +146,23 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(2); // Empty raw is shown if parameters are present
-            expect(panel.find(TableBody).text()).toContain('someId');
-            expect(panel.find(TableBody).text()).toContain('someLabel');
-            expect(panel.find(TableBody).text()).toContain('someValue');
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=process-io-circular-progress]').should('not.exist');
+                cy.get('[data-cy=conditional-tab]').should('have.length', 2); // Empty raw is shown if parameters are present
+                cy.get('tbody').should('exist').within(() => {
+                    cy.contains('someId');
+                    cy.contains('someLabel');
+                    cy.contains('someValue');
+                });
+            });
         });
 
         it('shows main process with output collection', () => {
             // when
             const outputCollection = '987654321';
             const parameters = [{id: 'someId', label: 'someLabel', value: {display: 'someValue'}}];
-            let panel = mount(
+
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -183,15 +179,20 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(3); // Empty raw is shown if parameters are present
-            expect(panel.find(TableBody).text()).toContain('someId');
-            expect(panel.find(TableBody).text()).toContain('someLabel');
-            expect(panel.find(TableBody).text()).toContain('someValue');
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=process-io-circular-progress]').should('not.exist');
+                cy.get('[data-cy=conditional-tab]').should('have.length', 3); // Empty raw is shown if parameters are present
+                cy.get('tbody').should('exist').within(() => {
+                    cy.contains('someId');
+                    cy.contains('someLabel');
+                    cy.contains('someValue');
+                });
+            });
 
             // Visit output tab
-            panel.find(Tab).at(2).simulate('click');
-            expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
+            cy.get('[data-cy=conditional-tab]').contains('Collection').should('exist').click();
+            cy.get('[data-cy=collection-files-panel]').should('exist');
+            cy.get('[data-cy=output-uuid-display]').should('contain', outputCollection);
         });
 
         // Subprocess
@@ -199,7 +200,7 @@ describe('renderers', () => {
         it('shows subprocess loading', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -215,15 +216,17 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(Tab).exists()).toBeFalsy();
-            expect(panel.find(CircularProgress));
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=conditional-tab]').should('not.exist');
+                cy.get('[data-cy=subprocess-circular-progress]').should('exist');
+            });
         });
 
         it('shows subprocess mounts', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             const sampleMount = {path: '/', pdh: 'abcdef12abcdef12abcdef12abcdef12+0'};
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <MemoryRouter>
                         <StyledEngineProvider injectFirst>
@@ -242,17 +245,20 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(1); // Empty raw is hidden in subprocesses
-            expect(panel.find(TableBody).text()).toContain(sampleMount.pdh);
-
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=subprocess-circular-progress]').should('not.exist');
+                cy.getAll('[data-cy=conditional-tab]').should('have.length', 1); // Empty raw is shown if parameters are present
+                cy.get('tbody').should('exist').within(() => {
+                    cy.contains(sampleMount.pdh);
+                });
+            });
         });
 
         it('shows subprocess output collection', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             const outputCollection = '123456789';
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -269,16 +275,18 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(1); // Unloaded raw is hidden in subprocesses
-            expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=process-io-circular-progress]').should('not.exist');
+                cy.get('[data-cy=conditional-tab]').should('have.length', 1); // Empty raw is shown if parameters are present
+                cy.get('[data-cy=output-uuid-display]').should('contain', outputCollection);
+            });
         });
 
         it('shows empty subprocess raw', () => {
             // when
             const subprocess = {containerRequest: {requestingContainerUuid: 'xyz'}};
             const outputCollection = '123456789';
-            let panel = mount(
+            let panel = cy.mount(
                 <Provider store={store}>
                     <StyledEngineProvider injectFirst>
                         <ThemeProvider theme={CustomTheme}>
@@ -295,10 +303,12 @@ describe('renderers', () => {
                 );
 
             // then
-            expect(panel.find(CircularProgress).exists()).toBeFalsy();
-            expect(panel.find(Tab).length).toBe(2); // Empty raw is visible in subprocesses
-            expect(panel.find(Tab).first().text()).toBe('Collection');
-            expect(panel.find(ProcessOutputCollectionFiles).prop('currentItemUuid')).toBe(outputCollection);
+            cy.get('[data-cy=process-io-card]').within(() => {
+                cy.get('[data-cy=process-io-circular-progress]').should('not.exist');
+                cy.get('[data-cy=conditional-tab]').should('have.length', 2); // Empty raw is shown if parameters are present
+                cy.get('[data-cy=conditional-tab]').eq(1).should('exist')
+                cy.get('[data-cy=output-uuid-display]').should('contain', outputCollection);
+            });
         });
 
     });

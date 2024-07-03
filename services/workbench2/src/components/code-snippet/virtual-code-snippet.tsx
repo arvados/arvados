@@ -60,6 +60,7 @@ export const VirtualCodeSnippet = withStyles(styles)(connect(mapStateToProps)(
 
         return <Typography
             component="div"
+            data-cy="virtual-code-snippet"
             className={classNames([classes.root, className])}>
             <Typography className={classNames(classes.content, apiResponse ? classes.space : className)} component="pre">
                 <AutoSizer>
