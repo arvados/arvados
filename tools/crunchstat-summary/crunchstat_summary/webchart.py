@@ -74,39 +74,46 @@ class WebChart(object):
         </div>""".format(i) for i in items)
 
     def html(self, beforechart='', afterchart=''):
+        graph_card = ""
+
+        if self.summarizers:
+            graph_card = """
+            <div class="card">
+              <div class="content">
+                <h2>Graph</h2>
+                <div id="chart"></div>
+              </div>
+            </div>
+            """
+
         return '''<!doctype html><html><head>
-        <title>{} stats</title>
-        <script type="text/javascript" src="{}"></script>
-        <script type="text/javascript">{}</script>
+        <title>{label} stats</title>
+        <script type="text/javascript" src="{jslib}"></script>
+        <script type="text/javascript">{ourjs}</script>
         <style>
-        {}
+        {style}
         </style>
-        {}
+        {header}
         </head>
         <body>
         <div class="card">
           <div class="content">
-            <h1>{}</h1>
+            <h1>{label}</h1>
           </div>
         </div>
-        {}
-        <div class="card">
-          <div class="content">
-            <h2>Graph</h2>
-            <div id="chart"></div>
-          </div>
-        </div>
-        {}
+        {beforegraph}
+        {graph}
+        {aftergraph}
         </body>
         </html>
-        '''.format(escape(self.label),
-                   self.JSLIB,
-                   self.js(),
-                   self.STYLE,
-                   self.headHTML(),
-                   escape(self.label),
-                   self.cardlist(beforechart),
-                   self.cardlist(afterchart))
+        '''.format(label=escape(self.label),
+                   jslib=self.JSLIB,
+                   ourjs=self.js(),
+                   style=self.STYLE,
+                   header=self.headHTML(),
+                   beforegraph=self.cardlist(beforechart),
+                   graph=graph_card,
+                   aftergraph=self.cardlist(afterchart))
 
     def js(self):
         return 'var chartdata = {};\n{}'.format(
