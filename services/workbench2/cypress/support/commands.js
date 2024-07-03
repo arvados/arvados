@@ -131,29 +131,7 @@ Cypress.Commands.add("getUser", (username, first_name = "", last_name = "", is_a
                             .its("body")
                             .as("theUser")
                             .then(function () {
-                                cy.doRequest("GET", "/arvados/v1/api_clients", null, {
-                                    filters: `[["is_trusted", "=", false]]`,
-                                    order: `["created_at desc"]`,
-                                })
-                                    .its("body.items")
-                                    .as("apiClients")
-                                    .then(function () {
-                                        if (this.apiClients.length > 0) {
-                                            cy.doRequest("PUT", `/arvados/v1/api_clients/${this.apiClients[0].uuid}`, {
-                                                api_client: {
-                                                    is_trusted: true,
-                                                },
-                                            })
-                                                .its("body")
-                                                .as("updatedApiClient")
-                                                .then(function () {
-                                                    assert(this.updatedApiClient.is_trusted);
-                                                });
-                                        }
-                                    })
-                                    .then(function () {
-                                        return { user: this.theUser, token: this.userToken };
-                                    });
+                                return { user: this.theUser, token: this.userToken };
                             });
                     });
             })
