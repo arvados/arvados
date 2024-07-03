@@ -273,14 +273,23 @@ class ClusterActivityReport(object):
         self.collect_graph(s2, since, to, storage_category, "storage used",
                            "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
 
-        managed_data_now = s2.tasks[storage_category].series[storage_category,"managed"][-1]
-        storage_used_now = s2.tasks[storage_category].series[storage_category,"storage used"][-1]
+        managed_data_now = None
+        storage_used_now = None
 
-        storage_cost = aws_monthly_cost(storage_used_now.y)
-        dedup_ratio = managed_data_now.y/storage_used_now.y
-        dedup_savings = aws_monthly_cost(managed_data_now.y) - storage_cost
+        if len(s2.tasks[storage_category].series[storage_category,"managed"]) > 0:
+            managed_data_now = s2.tasks[storage_category].series[storage_category,"managed"][-1]
+        if len(s2.tasks[storage_category].series[storage_category,"storage used"]) > 0:
+            storage_used_now = s2.tasks[storage_category].series[storage_category,"storage used"][-1]
 
-        self.summarizers = [s1, s2]
+        if managed_data_now and storage_used_now:
+            storage_cost = aws_monthly_cost(storage_used_now.y)
+            dedup_ratio = managed_data_now.y/storage_used_now.y
+            dedup_savings = aws_monthly_cost(managed_data_now.y) - storage_cost
+
+        if self.prom_client:
+            self.summarizers = [s1, s2]
+        else:
+            self.summarizers = []
 
         tophtml = ""
         bottomhtml = ""
@@ -293,25 +302,34 @@ class ClusterActivityReport(object):
             workbench = workbench[:-1]
 
         if to.date() == date.today():
-            tophtml.append("""<h2>Cluster status as of {now}</h2>
-            <table class='aggtable'><tbody>
-            <tr><td><a href="{workbench}/users">Total users</a></td><td>{total_users}</td></tr>
-            <tr><td>Total projects</td><td>{total_projects}</td></tr>
+
+            data_rows = ""
+            if managed_data_now and storage_used_now:
+                data_rows = """
             <tr><td>Total data under management</td><td>{managed_data_now}</td></tr>
             <tr><td>Total storage usage</td><td>{storage_used_now}</td></tr>
             <tr><td>Deduplication ratio</td><td>{dedup_ratio:.1f}</td></tr>
             <tr><td>Approximate monthly storage cost</td><td>${storage_cost:,.2f}</td></tr>
             <tr><td>Monthly savings from storage deduplication</td><td>${dedup_savings:,.2f}</td></tr>
-            </tbody></table>
-            """.format(now=date.today(),
-                       total_users=self.total_users,
-                       total_projects=self.total_projects,
+                """.format(
                        managed_data_now=format_with_suffix_base10(managed_data_now.y),
                        storage_used_now=format_with_suffix_base10(storage_used_now.y),
                        dedup_savings=dedup_savings,
                        storage_cost=storage_cost,
                        dedup_ratio=dedup_ratio,
-                           workbench=workbench))
+                )
+
+            tophtml.append("""<h2>Cluster status as of {now}</h2>
+            <table class='aggtable'><tbody>
+            <tr><td><a href="{workbench}/users">Total users</a></td><td>{total_users}</td></tr>
+            <tr><td>Total projects</td><td>{total_projects}</td></tr>
+            {data_rows}
+            </tbody></table>
+            """.format(now=date.today(),
+                       total_users=self.total_users,
+                       total_projects=self.total_projects,
+                       workbench=workbench,
+                       data_rows=data_rows))
 
         tophtml.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
         <table class='aggtable'><tbody>
