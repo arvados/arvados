@@ -19,7 +19,7 @@ class WebChart(object):
     chartdata() method.
     """
     JSLIB = None
-    JSASSET = None
+    JSASSETS = None
 
     STYLE = '''
         body {

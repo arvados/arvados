@@ -23,6 +23,17 @@ window.onload = function() {
             // finally, strip trailing zeroes: 1d0m0s -> 1d
             return ret.replace(/(\D)(0\D)*$/, '$1')
         },
+        date: function(s, opts, sth, dg, idk, excludeHour) {
+            var date = new Date(s);
+            var options = {month: 'numeric', day: 'numeric'};
+            if (!excludeHour) {
+                options.hour = 'numeric';
+                options.minute = 'numeric';
+                options.hour12 = false;
+            }
+            var r = new Intl.DateTimeFormat(undefined, options).format(date);
+            return r;
+        },
     }
     var ticker = {
         time: function(min, max, pixels, opts, dg) {
@@ -30,13 +41,24 @@ window.onload = function() {
             var natural = [1, 5, 10, 30, 60,
                            120, 300, 600, 1800, 3600,
                            7200, 14400, 43200, 86400]
-            var interval = natural.shift()
+            var interval = natural.shift()*1000
             while (max>min && (max-min)/interval > max_ticks) {
-                interval = (natural.shift()) || (interval * 2)
+                interval = (natural.shift()*1000) || (interval * 2)
             }
             var ticks = []
-            for (var i=Math.ceil(min/interval)*interval; i<=max; i+=interval) {
-                ticks.push({v: i, label: fmt.time(i)})
+            var excludeHour = false;
+            var date = new Date(min);
+            // need to take the seconds since midnight and then round off to the nearest interval.
+            var millisecondsSinceMidnight = (date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds()) * 1000;
+            if (interval >= 86400000) {
+                excludeHour = true;
+            } else {
+                var roundedOff = Math.ceil(millisecondsSinceMidnight/interval)*interval;
+                min = (min - millisecondsSinceMidnight) + roundedOff;
+            }
+            //for (var i=Math.ceil(min/interval)*interval; i<=max; i+=interval) {
+            for (var i=min; i<=max; i+=interval) {
+                ticks.push({v: i, label: opts('axisLabelFormatter')(i, opts, "", false, false, excludeHour)})
             }
             return ticks
         },
@@ -53,15 +75,17 @@ window.onload = function() {
             var id = 'chart-'+section_idx+'-'+chart_idx;
             var div = document.createElement('div');
             div.setAttribute('id', id);
-            div.setAttribute('style', 'width: 100%; height: 150px');
+            div.setAttribute('style', 'width: 100%; height: 250px');
             chartDiv.appendChild(div);
             chart.options.valueFormatter = function(y) {
             }
             chart.options.axes = {
                 x: {
-                    axisLabelFormatter: fmt.time,
-                    valueFormatter: fmt.time,
+                    axisLabelFormatter: fmt.date,
+                    valueFormatter: fmt.date,
                     ticker: ticker.time,
+                    axisLabelWidth: 60,
+                    pixelsPerLabel: 20,
                 },
                 y: {
                     axisLabelFormatter: fmt.iso,
@@ -69,7 +93,7 @@ window.onload = function() {
                 },
             }
             var div2 = document.createElement('div');
-            div2.setAttribute('style', 'width: 150px; height: 150px');
+            div2.setAttribute('style', 'width: 150px; height: 250px');
             chart.options.labelsDiv = div2;
             chart.options.labelsSeparateLines = true;
 
