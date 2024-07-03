@@ -188,7 +188,7 @@ def main(arguments=None):
 
     if args.html_report_file:
         with open(args.html_report_file, "wt") as f:
-            f.write(reporter.html_report(since, to, args.exclude))
+            f.write(reporter.html_report(since, to, args.exclude, args.include_workflow_steps))
 
 if __name__ == "__main__":
     main()

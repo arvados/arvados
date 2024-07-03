@@ -339,6 +339,7 @@ class ClusterActivityReport(object):
         self.total_workflows = 0
         self.summarizers = []
         self.storage_cost = 0
+        self.summary_fetched = False
 
     def run(self):
         pass
@@ -358,17 +359,30 @@ class ClusterActivityReport(object):
     def collect_storage_cost(self, t):
         self.storage_cost += aws_monthly_cost(t.y) / (30*24)
 
-    def html_report(self, since, to, exclude):
+    def html_report(self, since, to, exclude, include_workflow_steps):
 
         self.label = "Cluster report for %s from %s to %s" % (self.cluster, since.date(), to.date())
 
-        for row in self.report_from_api(since, to, False, exclude):
-            pass
+        # If we already produced a CSV report we have summary stats
+        # and don't need to fetch everything all over again.
+        if not self.summary_fetched:
+            for row in self.report_from_api(since, to, include_workflow_steps, exclude):
+                pass
+
+        container_cumulative_hours = 0
+        def collect_container_hours(t):
+            nonlocal container_cumulative_hours
+            # resampled to 5 minute increments but we want
+            # a sum of hours
+            container_cumulative_hours += t.y / 12
 
         logging.info("Getting container hours time series")
         s1 = Summarizer(label="", tasks=collections.defaultdict(Task))
         self.collect_graph(s1, since, to, containers_category, "containers",
-                           "arvados_dispatchcloud_containers_running{cluster='%s'}", resampleTo="5min")
+                           "arvados_dispatchcloud_containers_running{cluster='%s'}",
+                           resampleTo="5min",
+                           extra=collect_container_hours
+                           )
 
         logging.info("Getting data usage time series")
         s2 = Summarizer(label="", tasks=collections.defaultdict(Task))
@@ -429,6 +443,7 @@ class ClusterActivityReport(object):
         </tbody></table>
         """.format(active_users=len(self.active_users),
                    total_users=self.total_users,
+                   #total_hours=container_cumulative_hours,
                    total_hours=self.total_hours,
                    total_cost=self.total_cost,
                    total_workflows=self.total_workflows,
@@ -747,3 +762,5 @@ class ClusterActivityReport(object):
 
         for row in self.report_from_api(since, to, include_steps, exclude):
             csvwriter.writerow(row)
+
+        self.summary_fetched = True
