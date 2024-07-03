@@ -3,27 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { mount, configure } from "enzyme";
-import Adapter from 'enzyme-adapter-react-16';
-
-
-configure({ adapter: new Adapter() });
 
 describe("<SearchBarView />", () => {
-
-    jest.useFakeTimers();
-
-    let onSearch: () => void;
+    let onSearch;
 
     beforeEach(() => {
-        onSearch = jest.fn();
+        onSearch = cy.stub();
     });
 
     describe("on input value change", () => {
         // TODO fix tests and delete beneath one
         it("fix tests", () => {
             const test = 1;
-            expect(test).toBe(1);
+            expect(test).to.equal(1);
         });
         // it("calls onSearch after default timeout", () => {
         //     const searchBar = mount(<SearchBarView onSearch={onSearch} value="current value" {...mockSearchProps()} />);
