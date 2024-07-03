@@ -10,7 +10,9 @@ $namespaces:
   cwltool: "http://commonwl.org/cwltool#"
 
 inputs:
-  reporting_days: int
+  reporting_days: int?
+  reporting_start: string?
+  reporting_end: string?
   prometheus_host: string
   prometheus_apikey: string?
   prometheus_user: string?
@@ -44,6 +46,8 @@ arguments:
   - arv-cluster-activity
   - {prefix: '--prometheus-auth', valueFrom: prometheus.env}
   - {prefix: '--days', valueFrom: $(inputs.reporting_days)}
+  - {prefix: '--start', valueFrom: $(inputs.reporting_start)}
+  - {prefix: '--end', valueFrom: $(inputs.reporting_end)}
   - {prefix: '--exclude', valueFrom: $(inputs.exclude)}
   - {prefix: '--html-report-file', valueFrom: report.html}
   - {prefix: '--cost-report-file', valueFrom: cost.csv}
