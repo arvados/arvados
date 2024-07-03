@@ -22,8 +22,6 @@ from arvados_cluster_activity._version import __version__
 from datetime import timedelta, timezone, datetime
 import base64
 
-prometheus_support = True
-
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC) (or use --days)')
@@ -41,9 +39,8 @@ def parse_arguments(arguments):
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
         help='Print version and exit.')
 
-    if prometheus_support:
-        arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
-        arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
+    arg_parser.add_argument('--cluster', type=str, help='Cluster to query for prometheus stats')
+    arg_parser.add_argument('--prometheus-auth', type=str, help='Authorization file with prometheus info')
 
     args = arg_parser.parse_args(arguments)
 
@@ -84,7 +81,7 @@ def parse_arguments(arguments):
             exit(1)
 
 
-    if prometheus_support and args.prometheus_auth:
+    if args.prometheus_auth:
         with open(args.prometheus_auth, "rt") as f:
             for line in f:
                 if line.startswith("export "):
@@ -172,12 +169,10 @@ def main(arguments=None):
     logging.getLogger().setLevel(logging.INFO)
 
     prom = None
-    if prometheus_support:
-        if "PROMETHEUS_HOST" in os.environ:
-            prom = get_prometheus_client()
-            report_from_prometheus(prom, args.cluster, since, to)
-        else:
-            logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
+    if "PROMETHEUS_HOST" in os.environ:
+        prom = get_prometheus_client()
+    else:
+        logging.warn("PROMETHEUS_HOST not found, not collecting activity from Prometheus")
 
     reporter = ClusterActivityReport(prom)
 
@@ -185,11 +180,16 @@ def main(arguments=None):
         with open(args.cost_report_file, "wt") as f:
             reporter.csv_report(since, to, f, args.include_workflow_steps, args.columns, args.exclude)
     else:
-        logging.warn("--cost-report-file not provided, not writing cost report")
+        logging.info("Use --cost-report-file to get a CSV file of workflow runs")
 
     if args.html_report_file:
         with open(args.html_report_file, "wt") as f:
             f.write(reporter.html_report(since, to, args.exclude, args.include_workflow_steps))
+    else:
+        logging.info("Use --html_report_file to get HTML report of cluster usage")
+
+    if not args.cost_report_file and not args.html_report_file:
+        report_from_prometheus(prom, args.cluster, since, to)
 
 if __name__ == "__main__":
     main()
