@@ -256,6 +256,12 @@ fuse:
   api_token: 4nagbkv8eap0uok7pxm72nossq5asihls3yn5p4xmvqx5t5e7p
   expires_at: 2038-01-01 00:00:00
 
+dispatch2:
+  uuid: zzzzz-gj3su-jrriu629zljsnuf
+  user: system_user
+  api_token: pbe3v4v5oag83tjwxjh0a551j44xdu8t7ol5ljw3ixsq8oh50q
+  expires_at: 2038-01-01 00:00:00
+
 running_container_auth:
   uuid: zzzzz-gj3su-077z32aux8dg2s2
   user: active

@@ -5,12 +5,6 @@
 require 'test_helper'
 
 class Arvados::V1::ContainersControllerTest < ActionController::TestCase
-  setup do
-    act_as_system_user do
-      @dispatch2 = ApiClientAuthorization.create!(user_id: system_user.id)
-    end
-  end
-
   test 'create' do
     authorize_with :system_user
     post :create, params: {
@@ -32,7 +26,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'cannot get auth with wrong token' do
-    authorize_with_token @dispatch2.token
+    authorize_with :dispatch2
     c = containers(:queued)
     assert c.lock, show_errors(c)
 
@@ -100,7 +94,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test "unlock container locked by different dispatcher" do
-    authorize_with_token @dispatch2.token
+    authorize_with :dispatch2
     uuid = containers(:locked).uuid
     post :unlock, params: {id: uuid}
     assert_response 403
@@ -147,11 +141,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     [false, :active],
   ].each do |expect_success, auth|
     test "get secret_mounts with #{auth} token" do
-      if auth == :dispatch2
-        authorize_with_token @dispatch2.token
-      else
-        authorize_with auth
-      end
+      authorize_with auth
       get :secret_mounts, params: {id: containers(:running).uuid}
       if expect_success
         assert_response :success
@@ -163,7 +153,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'get runtime_token auth' do
-    authorize_with :admin
+    authorize_with :dispatch2
     c = containers(:runtime_token)
     get :auth, params: {id: c.uuid}
     assert_response :success
