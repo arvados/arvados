@@ -163,7 +163,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   test 'get runtime_token auth' do
-    authorize_with :system_user
+    authorize_with :admin
     c = containers(:runtime_token)
     get :auth, params: {id: c.uuid}
     assert_response :success

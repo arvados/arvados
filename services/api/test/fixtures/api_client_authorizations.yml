@@ -5,7 +5,7 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
 system_user:
-  uuid: zzzzz-gj3su-017z32aux8dg2s1
+  uuid: zzzzz-gj3su-000000000000000
   user: system_user
   api_token: systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy
   expires_at: 2038-01-01 00:00:00
