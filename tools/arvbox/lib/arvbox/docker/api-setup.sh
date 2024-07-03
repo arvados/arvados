@@ -59,8 +59,7 @@ if ! test -f $ARVADOS_CONTAINER_PATH/api_database_setup ; then
 fi
 
 if ! test -s $ARVADOS_CONTAINER_PATH/superuser_token ; then
-    superuser_tok=$(flock $GEMLOCK bin/bundle exec ./script/create_superuser_token.rb)
-    echo "$superuser_tok" > $ARVADOS_CONTAINER_PATH/superuser_token
+    cp -p $ARVADOS_CONTAINER_PATH/system_root_token $ARVADOS_CONTAINER_PATH/superuser_token
 fi
 
 rm -rf tmp

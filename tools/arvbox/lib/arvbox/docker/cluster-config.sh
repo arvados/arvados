@@ -156,7 +156,7 @@ chmod og-rw \
       $ARVADOS_CONTAINER_PATH/management_token \
       $ARVADOS_CONTAINER_PATH/system_root_token \
       $ARVADOS_CONTAINER_PATH/api_database_pw \
-      $ARVADOS_CONTAINER_PATH/superuser_token \
+      $ARVADOS_CONTAINER_PATH/superuser_token
 set -e
 
 mkdir -p $ARVADOS_CONTAINER_PATH/run_tests
