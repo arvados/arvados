@@ -6,26 +6,19 @@
 // from jest when running tests. As we're not testing copy-to-clipboard, it's
 // safe to just mock it.
 // https://github.com/nkbt/react-copy-to-clipboard/issues/106#issuecomment-605227151
-jest.mock('copy-to-clipboard', () => {
-  return jest.fn();
-});
+// jest.mock('copy-to-clipboard', () => {
+//   return jest.fn();
+// });
 
 import React from 'react';
-import { Button } from '@mui/material';
-import { mount, configure } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-16';
-import CopyToClipboard from 'react-copy-to-clipboard';
 import { TokenDialogComponent } from './token-dialog';
-import { combineReducers, createStore } from 'redux';
-import { Provider } from 'react-redux';
-
-configure({ adapter: new Adapter() });
-
-jest.mock('toggle-selection', () => () => () => null);
+import { ThemeProvider } from "@mui/material";
+import { CustomTheme } from 'common/custom-theme';
+import { combineReducers, createStore } from "redux";
+import { Provider } from "react-redux";
 
 describe('<CurrentTokenDialog />', () => {
   let props;
-  let wrapper;
   let store;
 
   beforeEach(() => {
@@ -34,7 +27,7 @@ describe('<CurrentTokenDialog />', () => {
       token: 'xxxtokenxxx',
       apiHost: 'example.com',
       open: true,
-      dispatch: jest.fn(),
+      dispatch: cy.spy().as('dispatch'),
     };
 
     const initialAuthState = {
@@ -44,64 +37,68 @@ describe('<CurrentTokenDialog />', () => {
     };
 
     store = createStore(combineReducers({
-      auth: (state: any = initialAuthState, action: any) => state,
+      auth: (state = initialAuthState, action) => state,
     }));
   });
 
   describe('Get API Token dialog', () => {
     beforeEach(() => {
-      wrapper = mount(
+      cy.mount(
         <Provider store={store}>
-          <TokenDialogComponent {...props} />
-        </Provider>
-      );
+          <ThemeProvider theme={CustomTheme}>
+            <TokenDialogComponent {...props} />
+          </ThemeProvider>
+        </Provider>);
     });
 
     it('should include API host and token', () => {
-      expect(wrapper.html()).toContain('export ARVADOS_API_HOST=example.com');
-      expect(wrapper.html()).toContain('export ARVADOS_API_TOKEN=xxxtokenxxx');
+      cy.get('pre').contains('export ARVADOS_API_HOST=example.com');
+      cy.get('pre').contains('export ARVADOS_API_TOKEN=xxxtokenxxx');
     });
 
     it('should show the token expiration if present', () => {
-      expect(props.tokenExpiration).toBeUndefined();
-      expect(wrapper.html()).toContain('This token does not have an expiration date');
+      expect(props.tokenExpiration).to.be.undefined;
+      cy.get('[data-cy=details-attribute-value]').contains('This token does not have an expiration date');
 
       const someDate = '2140-01-01T00:00:00.000Z'
       props.tokenExpiration = new Date(someDate);
-      wrapper = mount(
+      cy.mount(
         <Provider store={store}>
-          <TokenDialogComponent {...props} />
+          <ThemeProvider theme={CustomTheme}>
+            <TokenDialogComponent {...props} />
+          </ThemeProvider>
         </Provider>);
-      expect(wrapper.html()).toContain(props.tokenExpiration.toLocaleString());
+      cy.get('[data-cy=details-attribute-value]').contains(props.tokenExpiration.toLocaleString());
     });
 
     it('should show a create new token button when allowed', () => {
-      expect(props.canCreateNewTokens).toBeFalsy();
-      expect(wrapper.html()).not.toContain('GET NEW TOKEN');
+      expect(!!props.canCreateNewTokens).to.equal(false);
+      cy.contains('GET NEW TOKEN').should('not.exist');
 
       props.canCreateNewTokens = true;
-      wrapper = mount(
+      cy.mount(
         <Provider store={store}>
-          <TokenDialogComponent {...props} />
+          <ThemeProvider theme={CustomTheme}>
+            <TokenDialogComponent {...props} />
+          </ThemeProvider>
         </Provider>);
-      expect(wrapper.html()).toContain('GET NEW TOKEN');
+      cy.contains('GET NEW TOKEN').should('exist');
     });
   });
 
   describe('Copy link to clipboard button', () => {
     beforeEach(() => {
-      wrapper = mount(
+      cy.mount(
         <Provider store={store}>
-          <TokenDialogComponent {...props} />
+          <ThemeProvider theme={CustomTheme}>
+            <TokenDialogComponent {...props} />
+          </ThemeProvider>
         </Provider>);
     });
 
     it('should copy API TOKEN to the clipboard', () => {
-      // when
-      wrapper.find(CopyToClipboard).find(Button).simulate('click');
-
-      // and
-      expect(props.dispatch).toHaveBeenCalledWith({
+      cy.get('button').contains('Copy').click();
+      cy.get('@dispatch').should('be.calledWith', {
         payload: {
           hideDuration: 2000,
           kind: 1,

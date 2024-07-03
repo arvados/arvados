@@ -123,6 +123,7 @@ export const DetailsAttributeComponent = withStyles(styles)(
             <Typography
                 onClick={props.onValueClick}
                 component="div"
+                data-cy="details-attribute-value"
                 className={classnames([props.classes.value, props.classValue, { [props.classes.lowercaseValue]: props.lowercaseValue }])}>
                 {props.value}
                 {props.children}
