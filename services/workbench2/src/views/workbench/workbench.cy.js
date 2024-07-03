@@ -9,26 +9,16 @@ import { Provider } from "react-redux";
 import { configureStore } from "store/store";
 import { createBrowserHistory } from "history";
 import { ConnectedRouter } from "react-router-redux";
-import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
 import { CustomTheme } from 'common/custom-theme';
 import { createServices } from "services/services";
-import 'jest-localstorage-mock';
-
-
-declare module '@mui/styles/defaultTheme' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
-}
-
-
-jest.mock('views-components/baner/banner', () => ({ Banner: () => 'Banner' }))
 
 const history = createBrowserHistory();
 
 it('renders without crashing', () => {
     const div = document.createElement('div');
     const services = createServices("/arvados/v1");
-	services.authService.getUuid = jest.fn().mockReturnValueOnce('test');
+	services.authService.getUuid = cy.stub().returns('test');
     const store = configureStore(createBrowserHistory(), services);
     ReactDOM.render(
         <StyledEngineProvider injectFirst>
