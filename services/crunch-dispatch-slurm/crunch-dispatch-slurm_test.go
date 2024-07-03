@@ -48,7 +48,7 @@ type IntegrationSuite struct {
 func (s *IntegrationSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
 	arvadostest.ResetDB(c)
-	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
+	os.Setenv("ARVADOS_API_TOKEN", arvadostest.SystemRootToken)
 	s.disp = Dispatcher{}
 	s.disp.cluster = &arvados.Cluster{}
 	s.disp.setup()
@@ -249,7 +249,7 @@ func (s *StubbedSuite) SetUpTest(c *C) {
 
 func (s *StubbedSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
-	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
+	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"zzzzz-gj3su-000000000000000"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
 	s.testWithServerStub(c, apiStubResponses, "echo", "error getting count of containers")

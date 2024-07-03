@@ -21,7 +21,7 @@ type suite struct{}
 func (s *suite) TestTrackContainer(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
-	arv.ApiToken = arvadostest.Dispatch1Token
+	arv.ApiToken = arvadostest.SystemRootToken
 
 	done := make(chan bool, 1)
 	time.AfterFunc(10*time.Second, func() { done <- false })

@@ -44,9 +44,6 @@ const (
 	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
 	FooAndBarFilesInDirPDH  = "870369fc72738603c2fad16664e50e2d+58"
 
-	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
-	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
-
 	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
 	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
 
