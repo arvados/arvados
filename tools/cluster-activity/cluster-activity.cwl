@@ -16,6 +16,7 @@ inputs:
   prometheus_user: string?
   prometheus_password: string?
   exclude: string?
+  include_workflow_steps: boolean
 
 requirements:
   DockerRequirement:
@@ -45,6 +46,8 @@ arguments:
   - {prefix: '--days', valueFrom: $(inputs.reporting_days)}
   - {prefix: '--exclude', valueFrom: $(inputs.exclude)}
   - {prefix: '--html-report-file', valueFrom: report.html}
+  - {prefix: '--cost-report-file', valueFrom: cost.csv}
+  - {prefix: '--include-workflow-steps', valueFrom: $(inputs.include_workflow_steps)}
 
 outputs:
   report:
