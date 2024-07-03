@@ -3,18 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { configure, mount } from "enzyme";
 import { InstanceTypesPanel, calculateKeepBufferOverhead, discountRamByPercent } from './instance-types-panel';
-import Adapter from "enzyme-adapter-react-16";
+import {
+    ThemeProvider,
+    StyledEngineProvider,
+} from "@mui/material";
+import { CustomTheme } from 'common/custom-theme';
 import { combineReducers, createStore } from "redux";
 import { Provider } from "react-redux";
 import { formatFileSize, formatCWLResourceSize } from 'common/formatters';
 
-configure({ adapter: new Adapter() });
-
 describe('<InstanceTypesPanel />', () => {
-
-    // let props;
     let store;
 
     const initialAuthState = {
@@ -51,34 +50,37 @@ describe('<InstanceTypesPanel />', () => {
     }
 
     beforeEach(() => {
-
         store = createStore(combineReducers({
-            auth: (state: any = initialAuthState, action: any) => state,
+            auth: (state = initialAuthState, action) => state,
         }));
     });
 
     it('renders instance types', () => {
         // when
-        const panel = mount(
+        cy.mount(
             <Provider store={store}>
-                <InstanceTypesPanel />
+                <StyledEngineProvider injectFirst>
+                    <ThemeProvider theme={CustomTheme}>
+                        <InstanceTypesPanel />
+                    </ThemeProvider>
+                </StyledEngineProvider>
             </Provider>);
 
         // then
         Object.keys(initialAuthState.config.clusterConfig.InstanceTypes).forEach((instanceKey) => {
             const instanceType = initialAuthState.config.clusterConfig.InstanceTypes[instanceKey];
-            const item = panel.find(`Grid[data-cy="${instanceKey}"]`)
+            cy.get(`[data-cy="${instanceKey}"]`).as('item');
 
-            expect(item.find('h6').text()).toContain(instanceKey);
-            expect(item.text()).toContain(`Provider type${instanceType.ProviderType}`);
-            expect(item.text()).toContain(`Price$${instanceType.Price}`);
-            expect(item.text()).toContain(`Cores${instanceType.VCPUs}`);
-            expect(item.text()).toContain(`Preemptible${instanceType.Preemptible.toString()}`);
-            expect(item.text()).toContain(`Max disk request${formatCWLResourceSize(instanceType.IncludedScratch)} (${formatFileSize(instanceType.IncludedScratch)})`);
+            cy.get('@item').find('h6').contains(instanceKey);
+            cy.get('@item').contains(`Provider type${instanceType.ProviderType}`);
+            cy.get('@item').contains(`Price$${instanceType.Price}`);
+            cy.get('@item').contains(`Cores${instanceType.VCPUs}`);
+            cy.get('@item').contains(`Preemptible${instanceType.Preemptible.toString()}`);
+            cy.get('@item').contains(`Max disk request${formatCWLResourceSize(instanceType.IncludedScratch)} (${formatFileSize(instanceType.IncludedScratch)})`);
             if (instanceType.CUDA && instanceType.CUDA.DeviceCount > 0) {
-                expect(item.text()).toContain(`CUDA GPUs${instanceType.CUDA.DeviceCount}`);
-                expect(item.text()).toContain(`Hardware capability${instanceType.CUDA.HardwareCapability}`);
-                expect(item.text()).toContain(`Driver version${instanceType.CUDA.DriverVersion}`);
+                cy.get('@item').contains(`CUDA GPUs${instanceType.CUDA.DeviceCount}`);
+                cy.get('@item').contains(`Hardware capability${instanceType.CUDA.HardwareCapability}`);
+                cy.get('@item').contains(`Driver version${instanceType.CUDA.DriverVersion}`);
             }
         });
     });
@@ -93,7 +95,7 @@ describe('calculateKeepBufferOverhead', () => {
         ];
 
         for (const {input, output} of testCases) {
-            expect(calculateKeepBufferOverhead(input)).toBe(output);
+            expect(calculateKeepBufferOverhead(input)).to.equal(output);
         }
     });
 });
@@ -106,7 +108,7 @@ describe('discountRamByPercent', () => {
         ];
 
         for (const {input, output} of testCases) {
-            expect(discountRamByPercent(input)).toBe(output);
+            expect(discountRamByPercent(input)).to.equal(output);
         }
     });
 });
