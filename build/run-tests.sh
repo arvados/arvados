@@ -249,6 +249,8 @@ sanity_checks() {
     docker --version || echo "No docker client. Try: arvados-server install"
     echo -n 'docker server: '
     docker info --format='{{.ServerVersion}}' || echo "No docker server. Try: arvados-server install"
+    echo -n 's3cmd: '
+    s3cmd --version || echo "No s3cmd. Try: apt-get install s3cmd"
 
     if [[ "$NEED_SDK_R" = true ]]; then
       # R SDK stuff
