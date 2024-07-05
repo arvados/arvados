@@ -3,6 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { defineConfig } from "cypress";
+import baseWebpackConfig from "./config/webpack.config";
+import path from "path";
+
+const webpackConfig = baseWebpackConfig("development");
 
 export default defineConfig({
   chromeWebSecurity: false,
@@ -31,7 +35,17 @@ export default defineConfig({
     devServer: {
       framework: "react",
       bundler: "webpack",
-      webpackConfig: require("./config/webpack.config"),
+      webpackConfig: {
+        ...webpackConfig,
+        resolve: {
+          ...webpackConfig.resolve,
+          alias: {
+            ...webpackConfig.resolve.alias,
+            // redirect imported modules to the mock files for the cypress tests
+            "common/service-provider": path.resolve("src/cypress/mocks/common/service-provider.ts"),
+          },
+        },
+      },
     },
   },
 });
