@@ -1077,6 +1077,7 @@ export const ProcessStatus = compose(
 )((props: { process?: Process; theme: ArvadosTheme }) =>
     props.process ? (
         <Chip
+            data-cy="process-status-chip"
             label={getProcessStatus(props.process)}
             style={{
                 height: props.theme.spacing(3),

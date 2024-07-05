@@ -3,9 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { mount, configure } from 'enzyme';
 import { GroupMembersCount, ProcessStatus, ResourceFileSize } from './renderers';
-import Adapter from "enzyme-adapter-react-16";
 import { Provider } from 'react-redux';
 import configureMockStore from 'redux-mock-store'
 import { ResourceKind } from '../../models/resource';
@@ -14,23 +12,12 @@ import { ContainerState as C } from '../../models/container';
 import { ProcessStatus as PS } from '../../store/processes/process';
 import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
 import { CustomTheme } from 'common/custom-theme';
-import { InlinePulser} from 'components/loading/inline-pulser';
-import { ErrorIcon } from "components/icon/icon";
-
-
-declare module '@mui/styles/defaultTheme' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
-}
-
 
 const middlewares = [];
 const mockStore = configureMockStore(middlewares);
 
-configure({ adapter: new Adapter() });
-
 describe('renderers', () => {
-    let props: any = null;
+    let props = null;
 
     describe('ProcessStatus', () => {
         props = {
@@ -46,9 +33,7 @@ describe('renderers', () => {
                         grey600: 'rgb(128, 128, 128)',
                     }
                 },
-                spacing: {
-                    unit: 8,
-                },
+                spacing: (value) => value * 8,
                 palette: {
                     common: {
                         white: 'rgb(255, 255, 255)',
@@ -89,15 +74,16 @@ describe('renderers', () => {
                     }
                 });
 
-                const wrapper = mount(<Provider store={store}>
-                    <ProcessStatus {...props} />
-                </Provider>);
+                cy.mount(
+                    <Provider store={store}>
+                        <ThemeProvider theme={CustomTheme}>
+                            <ProcessStatus {...props} />
+                        </ThemeProvider>
+                    </Provider>);
 
-                expect(wrapper.text()).toEqual(eLabel);
-                expect(getComputedStyle(wrapper.getDOMNode())
-                    .getPropertyValue('color')).toEqual(tColor);
-                expect(getComputedStyle(wrapper.getDOMNode())
-                    .getPropertyValue('background-color')).toEqual(eColor);
+                cy.get('span').should('have.text', eLabel);
+                cy.get('span').should('have.css', 'color', tColor);
+                cy.get('[data-cy=process-status-chip]').should('have.css', 'background-color', eColor);
             });
         })
     });
@@ -121,12 +107,12 @@ describe('renderers', () => {
             });
 
             // when
-            const wrapper = mount(<Provider store={store}>
+            cy.mount(<Provider store={store}>
                 <ResourceFileSize {...props}></ResourceFileSize>
             </Provider>);
 
             // then
-            expect(wrapper.text()).toContain('100 B');
+            cy.get('p').should('have.text', '100 B');
         });
 
         it('should render 0 B as file size', () => {
@@ -134,12 +120,12 @@ describe('renderers', () => {
             const store = mockStore({ resources: {} });
 
             // when
-            const wrapper = mount(<Provider store={store}>
+            cy.mount(<Provider store={store}>
                 <ResourceFileSize {...props}></ResourceFileSize>
             </Provider>);
 
             // then
-            expect(wrapper.text()).toContain('0 B');
+            cy.get('p').should('have.text', '0 B');
         });
 
         it('should render empty string for non collection resource', () => {
@@ -148,28 +134,34 @@ describe('renderers', () => {
                 resources: {
                     [props.uuid]: {
                         kind: ResourceKind.PROJECT,
+                        fileSizeTotal: 100,
                     }
                 }
             });
             const store2 = mockStore({
                 resources: {
                     [props.uuid]: {
-                        kind: ResourceKind.PROJECT,
+                        kind: ResourceKind.PROCESS,
+                        fileSizeTotal: 200,
                     }
                 }
             });
 
             // when
-            const wrapper1 = mount(<Provider store={store1}>
-                <ResourceFileSize {...props}></ResourceFileSize>
-            </Provider>);
-            const wrapper2 = mount(<Provider store={store2}>
+            cy.mount(<Provider store={store1}>
                 <ResourceFileSize {...props}></ResourceFileSize>
             </Provider>);
 
             // then
-            expect(wrapper1.text()).toContain('');
-            expect(wrapper2.text()).toContain('');
+            cy.get('p').should('have.text', '-');
+            
+            // when
+            cy.mount(<Provider store={store2}>
+                <ResourceFileSize {...props}></ResourceFileSize>
+            </Provider>);
+
+            // then
+            cy.get('p').should('have.text', '-');
         });
     });
 
@@ -211,7 +203,7 @@ describe('renderers', () => {
                 [props.uuid]: fakeGroup,
             }});
 
-            const wrapper = mount(<Provider store={store}>
+            const wrapper = cy.mount(<Provider store={store}>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={CustomTheme}>
                         <GroupMembersCount {...props} />
@@ -219,7 +211,7 @@ describe('renderers', () => {
                 </StyledEngineProvider>
             </Provider>);
 
-            expect(wrapper.find(InlinePulser)).toHaveLength(1);
+            cy.get('[data-testid=three-dots-svg]').should('exist');
         });
 
         it('shows group count when memberCount present', () => {
@@ -231,7 +223,7 @@ describe('renderers', () => {
                 }
             }});
 
-            const wrapper = mount(<Provider store={store}>
+            cy.mount(<Provider store={store}>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={CustomTheme}>
                         <GroupMembersCount {...props} />
@@ -239,7 +231,7 @@ describe('renderers', () => {
                 </StyledEngineProvider>
             </Provider>);
 
-            expect(wrapper.text()).toBe("765");
+            cy.get('p').should('have.text', '765');
         });
 
         it('shows group count error icon when memberCount is null', () => {
@@ -251,7 +243,7 @@ describe('renderers', () => {
                 }
             }});
 
-            const wrapper = mount(<Provider store={store}>
+            cy.mount(<Provider store={store}>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={CustomTheme}>
                         <GroupMembersCount {...props} />
@@ -259,7 +251,7 @@ describe('renderers', () => {
                 </StyledEngineProvider>
             </Provider>);
 
-            expect(wrapper.find(ErrorIcon)).toHaveLength(1);
+            cy.get('[data-testid=ErrorRoundedIcon]').should('exist');
         });
 
     });
