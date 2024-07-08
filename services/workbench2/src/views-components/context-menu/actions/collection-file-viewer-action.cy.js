@@ -3,19 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { mount, configure } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-16';
 import configureMockStore from 'redux-mock-store'
 import { Provider } from 'react-redux';
 import { CollectionFileViewerAction } from './collection-file-viewer-action';
 import { ContextMenuKind } from '../menu-item-sort';
-import { createTree, initTreeNode, setNode, getNodeValue } from "models/tree";
+import { createTree, initTreeNode, setNode } from "models/tree";
 import { getInlineFileUrl, sanitizeToken } from "./helpers";
 
 const middlewares = [];
 const mockStore = configureMockStore(middlewares);
-
-configure({ adapter: new Adapter() });
 
 describe('CollectionFileViewerAction', () => {
     let defaultStore;
@@ -60,15 +56,15 @@ describe('CollectionFileViewerAction', () => {
         const store = mockStore(defaultStore);
 
         // when
-        const wrapper = mount(<Provider store={store}>
+        cy.mount(<Provider store={store}>
             <CollectionFileViewerAction />
         </Provider>);
 
-        // then
-        expect(wrapper).not.toBeUndefined();
+        // ensure cy.mount has been successful
+        cy.get('[data-cy-root').should('exist');
 
         // and
-        expect(wrapper.find("a")).toHaveLength(0);
+        cy.get('[data-cy=open-in-new-tab]').should('have.length', 0);
     });
 
     it('should show open in new tab when TrustAllContent=true', () => {
@@ -78,19 +74,19 @@ describe('CollectionFileViewerAction', () => {
         const store = mockStore(initialState);
 
         // when
-        const wrapper = mount(<Provider store={store}>
+        cy.mount(<Provider store={store}>
             <CollectionFileViewerAction />
         </Provider>);
 
         // then
-        expect(wrapper).not.toBeUndefined();
+        cy.get('[data-cy=open-in-new-tab]').should('exist');
 
         // and
-        expect(wrapper.find("a").prop("href"))
-            .toEqual(sanitizeToken(getInlineFileUrl(fileUrl,
-                initialState.auth.config.keepWebServiceUrl,
-                initialState.auth.config.keepWebInlineServiceUrl))
-            );
+        cy.get('[data-cy=open-in-new-tab]').should(
+            'have.attr',
+            'href',
+            sanitizeToken(getInlineFileUrl(fileUrl, initialState.auth.config.keepWebServiceUrl, initialState.auth.config.keepWebInlineServiceUrl))
+        );
     });
 
     it('should show open in new tab when inline url is secure', () => {
@@ -100,18 +96,14 @@ describe('CollectionFileViewerAction', () => {
         const store = mockStore(initialState);
 
         // when
-        const wrapper = mount(<Provider store={store}>
+        cy.mount(<Provider store={store}>
             <CollectionFileViewerAction />
         </Provider>);
 
         // then
-        expect(wrapper).not.toBeUndefined();
+        cy.get('[data-cy=open-in-new-tab]').should('exist');
 
         // and
-        expect(wrapper.find("a").prop("href"))
-            .toEqual(sanitizeToken(getInlineFileUrl(fileUrl,
-                initialState.auth.config.keepWebServiceUrl,
-                initialState.auth.config.keepWebInlineServiceUrl))
-            );
+        sanitizeToken(getInlineFileUrl(fileUrl, initialState.auth.config.keepWebServiceUrl, initialState.auth.config.keepWebInlineServiceUrl))
     });
 });
