@@ -3,14 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-// import { shallow, configure } from 'enzyme';
-import { ListItem } from "@mui/material";
-// import Adapter from 'enzyme-adapter-react-16';
 import { CopyToClipboardAction } from './copy-to-clipboard-action';
-
-// configure({ adapter: new Adapter() });
-
-// jest.mock('copy-to-clipboard', () => jest.fn());
 
 describe('CopyToClipboardAction', () => {
     let props;
