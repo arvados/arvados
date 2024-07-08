@@ -3,16 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import Adapter from 'enzyme-adapter-react-16';
-import {configure, shallow } from 'enzyme';
-
 import { AccountMenuComponent } from './account-menu';
-
-configure({ adapter: new Adapter() });
 
 describe('<AccountMenu />', () => {
     let props;
-    let wrapper;
 
     beforeEach(() => {
       props = {
@@ -31,18 +25,19 @@ describe('<AccountMenu />', () => {
         currentRoute: '',
         workbenchURL: '',
         localCluser: 'zzzzz',
-        dispatch: jest.fn(),
+        dispatch: cy.stub().as('dispatch'),
       };
     });
 
     describe('Logout Menu Item', () => {
         beforeEach(() => {
-            wrapper = shallow(<AccountMenuComponent {...props} />).dive();
+            cy.mount(<AccountMenuComponent {...props} />);
         });
 
         it('should dispatch a logout action when clicked', () => {
-            wrapper.find('[data-cy="logout-menuitem"]').simulate('click');
-            expect(props.dispatch).toHaveBeenCalledWith({
+            cy.get('button').should('exist').click();
+            cy.get('[data-cy="logout-menuitem"]').click();
+            cy.get('@dispatch').should('have.been.calledWith', {
                 payload: {deleteLinkData: true, preservePath: false},
                 type: 'LOGOUT',
             });
