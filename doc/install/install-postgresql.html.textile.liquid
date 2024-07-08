@@ -12,31 +12,14 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 Arvados requires at least version *9.4* of PostgreSQL. We recommend using version 10 or newer.
 
 * "AWS":#aws
-* "CentOS 7":#centos7
-* "Alma/CentOS/Red Hat/Rocky 8":#rh8
+* "Alma/Red Hat/Rocky 8":#rh8
 * "Debian or Ubuntu":#debian
 
 h3(#aws). AWS
 
 When deploying on AWS, Arvados can use an Aurora RDS PostgreSQL database. Aurora Serverless is not recommended.
 
-h3(#centos7). CentOS 7
-{% assign rh_version = "7" %}
-{% include 'note_python_sc' %}
-
-# Install PostgreSQL
-  <notextile><pre># <span class="userinput">yum install rh-postgresql12 rh-postgresql12-postgresql-contrib</span>
-~$ <span class="userinput">scl enable rh-postgresql12 bash</span></pre></notextile>
-# Initialize the database
-  <notextile><pre># <span class="userinput">postgresql-setup initdb</span></pre></notextile>
-# Configure the database to accept password connections from localhost
-  <notextile><pre><code># <span class="userinput">sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
-# Configure the database to accept password connections from the local network (replace @10.9.8.0/24@ with your private network mask)
-  <notextile><pre><code># <span class="userinput">echo 'host all all 10.9.8.0/24 md5' | tee -a /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
-# Configure the database to launch at boot and start now
-  <notextile><pre># <span class="userinput">systemctl enable --now rh-postgresql12-postgresql</span></pre></notextile>
-
-h3(#rh8). Alma/CentOS/Red Hat/Rocky 8
+h3(#rh8). Alma/Red Hat/Rocky 8
 
 {% comment %}
 The default version on RH8 is PostgreSQL 10. You can install up to PostgreSQL 13.
