@@ -15,7 +15,7 @@ describe('<SidePanelButton />', () => {
             const result = isProjectTrashed(proj, resources);
 
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
 
         it('should return false if parent project is undefined', () => {
@@ -27,7 +27,7 @@ describe('<SidePanelButton />', () => {
             const result = isProjectTrashed(proj, resources);
 
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
 
         it('should return false for owner', () => {
@@ -41,7 +41,7 @@ describe('<SidePanelButton />', () => {
             const result = isProjectTrashed(proj, resources);
 
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
 
         it('should return true for trashed', () => {
@@ -55,7 +55,7 @@ describe('<SidePanelButton />', () => {
             const result = isProjectTrashed(proj, resources);
 
             // then
-            expect(result).toBeTruthy();
+            expect(!!result).to.equal(true);
         });
 
         it('should return false for undefined parent projects', () => {
@@ -69,7 +69,7 @@ describe('<SidePanelButton />', () => {
             const result = isProjectTrashed(proj, resources);
 
             // then
-            expect(result).toBeFalsy();
+            expect(!!result).to.equal(false);
         });
     });
 });
