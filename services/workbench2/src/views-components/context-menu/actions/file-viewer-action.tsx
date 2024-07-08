@@ -13,6 +13,7 @@ export const FileViewerAction = (props: any) => {
             href={props.href}
             target="_blank"
             rel="noopener noreferrer"
+            data-cy="open-in-new-tab"
             onClick={props.onClick}>
             <ListItem button>
                 <ListItemIcon>

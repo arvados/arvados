@@ -3,31 +3,32 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { shallow, configure } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-16';
 import { FileViewerAction } from './file-viewer-action';
-
-configure({ adapter: new Adapter() });
+import { ThemeProvider } from '@mui/material';
+import { CustomTheme } from 'common/custom-theme';
 
 describe('FileViewerAction', () => {
     let props;
 
     beforeEach(() => {
         props = {
-            onClick: jest.fn(),
+            onClick: cy.stub().as('onClick'),
             href: 'https://collections.example.com/c=zzzzz-4zz18-k0hamvtwyit6q56/t=xxxxxxx/LIMS/1.html',
         };
     });
 
     it('should render properly and handle click', () => {
         // when
-        const wrapper = shallow(<FileViewerAction {...props} />);
-        wrapper.find('a').simulate('click');
-
+        cy.mount(
+            <ThemeProvider theme={CustomTheme}>
+                <FileViewerAction {...props} />
+            </ThemeProvider>);
+        
         // then
-        expect(wrapper).not.toBeUndefined();
+        cy.get('[data-cy=open-in-new-tab]').should('exist');
+        cy.get('[data-cy=open-in-new-tab]').click();
 
         // and
-        expect(props.onClick).toHaveBeenCalled();
+        cy.get('@onClick').should('have.been.called');
     });
 });
