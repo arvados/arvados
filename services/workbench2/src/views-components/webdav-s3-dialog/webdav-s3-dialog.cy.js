@@ -3,28 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { mount, configure } from 'enzyme';
-import Adapter from "enzyme-adapter-react-16";
-import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material';
-import { WithStyles } from '@mui/styles';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material';
 import { CustomTheme } from 'common/custom-theme';
-import { WebDavS3InfoDialog, CssRules } from './webdav-s3-dialog';
-import { WithDialogProps } from 'store/dialog/with-dialog';
-import { WebDavS3InfoDialogData, COLLECTION_WEBDAV_S3_DIALOG_NAME } from 'store/collections/collection-info-actions';
+import { WebDavS3InfoDialog } from './webdav-s3-dialog';
+import { COLLECTION_WEBDAV_S3_DIALOG_NAME } from 'store/collections/collection-info-actions';
 import { Provider } from "react-redux";
 import { createStore, combineReducers } from 'redux';
 
-
-declare module '@mui/styles/defaultTheme' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
-}
-
-
-configure({ adapter: new Adapter() });
-
 describe('WebDavS3InfoDialog', () => {
-    let props: WithDialogProps<WebDavS3InfoDialogData> & WithStyles<CssRules>;
+    let props;
     let store;
 
     beforeEach(() => {
@@ -39,7 +26,7 @@ describe('WebDavS3InfoDialog', () => {
                     localCluster: "zzzzz",
                     username: "bobby",
                     activeTab: 0,
-                    setActiveTab: (event: any, tabNr: number) => { }
+                    setActiveTab: (event, tabNr) => { }
                 }
             }
         };
@@ -49,8 +36,8 @@ describe('WebDavS3InfoDialog', () => {
             sessions: {},
         };
         store = createStore(combineReducers({
-            dialog: (state: any = initialDialogState, action: any) => state,
-            auth: (state: any = initialAuthState, action: any) => state,
+            dialog: (state = initialDialogState, action) => state,
+            auth: (state = initialAuthState, action) => state,
         }));
 
         props = {
@@ -63,7 +50,7 @@ describe('WebDavS3InfoDialog', () => {
     it('render cyberduck tab', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 0;
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <Provider store={store}>
@@ -74,13 +61,13 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("davs://bobby@download.example.com/c=zzzzz-4zz18-b1f8tbldjrm8885");
+        cy.contains("davs://bobby@download.example.com/c=zzzzz-4zz18-b1f8tbldjrm8885").should('exist');
     });
 
     it('render win/mac tab', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 1;
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <Provider store={store}>
@@ -91,13 +78,13 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("https://download.example.com/c=zzzzz-4zz18-b1f8tbldjrm8885");
+        cy.contains("https://download.example.com/c=zzzzz-4zz18-b1f8tbldjrm8885").should('exist');
     });
 
     it('render s3 tab with federated token', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 2;
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <Provider store={store}>
@@ -108,14 +95,14 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("Secret Keyv2_zzzzb-jjjjj-123123_xxxtokenxxx");
+        cy.contains("Secret Keyv2_zzzzb-jjjjj-123123_xxxtokenxxx").should('exist');
     });
 
     it('render s3 tab with local token', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 2;
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.token = "v2/zzzzz-jjjjj-123123/xxxtokenxxx";
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <Provider store={store}>
@@ -126,14 +113,14 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("Access Keyzzzzz-jjjjj-123123Secret Keyxxxtokenxxx");
+        cy.contains("Access Keyzzzzz-jjjjj-123123Secret Keyxxxtokenxxx").should('exist');
     });
 
     it('render cyberduck tab with wildcard DNS', () => {
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.activeTab = 0;
         store.getState().dialog[COLLECTION_WEBDAV_S3_DIALOG_NAME].data.collectionsUrl = "https://*.collections.example.com";
         // when
-        const wrapper = mount(
+        cy.mount(
             <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={CustomTheme}>
                     <Provider store={store}>
@@ -144,7 +131,7 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("davs://bobby@zzzzz-4zz18-b1f8tbldjrm8885.collections.example.com");
+        cy.contains("davs://bobby@zzzzz-4zz18-b1f8tbldjrm8885.collections.example.com").should('exist');
     });
 
 });
