@@ -15,7 +15,7 @@ On any host where you install Arvados software, you'll need to add the Arvados p
 * "Debian and Ubuntu":#debian
 
 <notextile>
-<a id="centos7" style="display: none;"></a>
+<a id="redhat" style="display: none;"></a>
 </notextile>
 
 h3(#redhat). AlmaLinux, CentOS, RHEL, and Rocky Linux
@@ -33,9 +33,9 @@ To install them with dnf or yum, save this configuration block in @/etc/yum.repo
 <notextile>
 <pre><code>[arvados]
 name=Arvados
-baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+baseurl=http://rpm.arvados.org/RHEL/$releasever/os/$basearch/
 gpgcheck=1
-gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+gpgkey=http://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
 </code></pre>
 </notextile>
 
