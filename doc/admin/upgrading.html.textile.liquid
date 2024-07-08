@@ -30,7 +30,7 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
-"previous: Upgrading to 2.7.1":#v2_7_1
+"previous: Upgrading to 2.7.4":#v2_7_4
 
 h3. Debian 10, Ubuntu 18.04, and CentOS are no longer supported
 
@@ -110,10 +110,6 @@ h3. WebDAV service uses @/var/cache@ for file content
 @keep-web@ now stores copies of recently accessed data blocks in @/var/cache/arvados/keep@ instead of in memory. That directory will be created automatically. The default cache size is 10% of the filesystem size. Use the new @Collections.WebDAVCache.DiskCacheSize@ config to specify a different percentage or an absolute size.
 
 If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
-
-h3. Check MaxGatewayTunnels config
-
-If you use the LSF or Slurm dispatcher, ensure the new @API.MaxGatewayTunnels@ config entry is high enough to support the size of your cluster. See "LSF docs":{{site.baseurl}}/install/crunch2-lsf/install-dispatch.html#MaxGatewayTunnels or "Slurm docs":{{site.baseurl}}/install/crunch2-slurm/install-dispatch.html#MaxGatewayTunnels for details.
 
 h2(#v2_7_4). v2.7.4 (2024-07-08)
 
