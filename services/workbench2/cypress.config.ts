@@ -42,7 +42,7 @@ export default defineConfig({
           alias: {
             ...webpackConfig.resolve.alias,
             // redirect imported modules to the mock files for the cypress tests
-            "common/service-provider": path.resolve("src/cypress/mocks/common/service-provider.ts"),
+            "common/service-provider": path.resolve("src/cypress/mocks/service-provider.ts"),
           },
         },
       },
