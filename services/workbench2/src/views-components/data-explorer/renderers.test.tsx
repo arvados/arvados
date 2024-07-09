@@ -185,7 +185,6 @@ describe('renderers', () => {
                 "isTrashed": false,
                 "kind": ResourceKind.GROUP,
                 "modifiedAt": "2020-09-24T22:52:57.545669000Z",
-                "modifiedByClientUuid": null,
                 "modifiedByUserUuid": "zzzzz-tpzed-000000000000000",
                 "name": "System group",
                 "ownerUuid": "zzzzz-tpzed-000000000000000",

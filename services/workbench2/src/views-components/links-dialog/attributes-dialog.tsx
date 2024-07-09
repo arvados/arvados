@@ -57,8 +57,6 @@ export const AttributesLinkDialog = compose(
                         <Grid item xs={7}>{data.link.modifiedAt}</Grid>
                         <Grid item xs={5}>Modified by user uuid</Grid>
                         <Grid item xs={7}>{data.link.modifiedByUserUuid}</Grid>
-                        <Grid item xs={5}>Modified by client uuid</Grid>
-                        <Grid item xs={7}>{data.link.modifiedByClientUuid}</Grid>
                     </Grid>}
                 </DialogContent>
                 <DialogActions>

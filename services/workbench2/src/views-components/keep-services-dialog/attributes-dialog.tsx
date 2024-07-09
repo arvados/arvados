@@ -57,8 +57,6 @@ export const AttributesKeepServiceDialog = compose(
                         <Grid item xs={7}>{data.keepService.modifiedAt}</Grid>
                         <Grid item xs={5}>Modified by user uuid</Grid>
                         <Grid item xs={7}>{data.keepService.modifiedByUserUuid}</Grid>
-                        <Grid item xs={5}>Modified by client uuid</Grid>
-                        <Grid item xs={7}>{data.keepService.modifiedByClientUuid}</Grid>
                     </Grid>}
                 </DialogContent>
                 <DialogActions>

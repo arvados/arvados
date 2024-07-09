@@ -101,7 +101,6 @@ const containerFieldsNoMounts = [
     "locked_by_uuid",
     "log",
     "modified_at",
-    "modified_by_client_uuid",
     "modified_by_user_uuid",
     "output_path",
     "output_properties",
