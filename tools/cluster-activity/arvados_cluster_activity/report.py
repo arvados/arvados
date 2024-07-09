@@ -65,7 +65,20 @@ sortablecss = """
   content: "▴";
 }
 
-/*# sourceMappingURL=sortable.css.map */
+table.aggtable td:nth-child(2) {
+  text-align: right;
+}
+
+table.active-projects td:nth-child(4),
+table.active-projects td:nth-child(5) {
+  text-align: right;
+}
+
+table.project td:nth-child(3),
+table.project td:nth-child(4),
+table.project td:nth-child(5) {
+  text-align: right;
+}
 """
 
 @dataclass
@@ -325,6 +338,7 @@ class ClusterActivityReport(object):
             <tr><td>Total projects</td><td>{total_projects}</td></tr>
             {data_rows}
             </tbody></table>
+            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
             """.format(now=date.today(),
                        total_users=self.total_users,
                        total_projects=self.total_projects,
@@ -340,6 +354,7 @@ class ClusterActivityReport(object):
         <tr><td>Compute cost</td><td>${total_cost:,.2f}</td></tr>
         <tr><td>Storage cost</td><td>${storage_cost:,.2f}</td></tr>
         </tbody></table>
+        <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
         """.format(active_users=len(self.active_users),
                    total_users=self.total_users,
                    #total_hours=container_cumulative_hours,
@@ -372,10 +387,11 @@ class ClusterActivityReport(object):
         bottomhtml.append(
             """
             <a id="Active_Projects"><h2>Active Projects</h2></a>
-            <table class='sortable'>
+            <table class='sortable active-projects'>
             <thead><tr><th>Project</th> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
             <tbody><tr>{projects}</tr></tbody>
             </table>
+            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
             """.format(projects="</tr>\n<tr>".join("""<td><a href="#{name}">{name}</a></td>{rest}""".format(name=prj.name, rest=prj.tablerow) for k, prj in projectlist)))
 
         for k, prj in projectlist:
@@ -404,7 +420,7 @@ class ClusterActivityReport(object):
                 <tbody><tr>{projectrow}</tr></tbody>
                 </table>
 
-                <table class='sortable'>
+                <table class='sortable project'>
                 <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Mean runtime</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
                 <tbody>
                 {wfsum}
@@ -422,6 +438,66 @@ class ClusterActivityReport(object):
                            workbench=workbench,
                            uuid=prj.uuid)
             )
+
+        bottomhtml.append("""
+        <h2 id="prices">Note on usage and cost calculations</h2>
+
+        <div style="max-width: 60em">
+
+        <p>The numbers presented in this report are estimates and will
+        not perfectly match your cloud bill.  Nevertheless this report
+        should be useful for identifying your main cost drivers.</p>
+
+        <h3>Storage</h3>
+
+        <p>"Total data under management" is what you get if you add up
+        the data represented by all collections as presented in
+        Workbench.</p>
+
+        <p>"Total storage usage" is the actual underlying storage
+        usage, accounting for data deduplication.</p>
+
+        <p>"Monthly savings from storage deduplication" is the
+        estimated cost difference between "storage usage" and "data
+        under management" as a way of comparing with other
+        technologies that do not support data deduplication.</p>
+
+        <p>Storage costs are based on AWS "S3 Standard"
+        described on the <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 pricing</a> page:</p>
+
+        <ul>
+        <li>$0.023 per GB / Month for the first 50 TB</li>
+        <li>$0.022 per GB / Month for the next 450 TB</li>
+        <li>$0.021 per GB / Month over 500 TB</li>
+        </ul>
+
+        <h3>Compute</h3>
+
+        <p>"Compute usage" are instance-hours used in running
+        workflows.  Because multiple steps may run in parallel on
+        multiple instances, a workflow that completes in four hours
+        but runs parallel steps on five instances, would be reported
+        as using 20 instance hours.</p>
+
+        <p>"Runtime" is the actual wall clock time that it took to
+        complete a workflow.  This does not include time spent in the
+        queue for the workflow itself, but does include queuing time
+        of individual workflow steps.</p>
+
+        <p>Computational costs are derived from Arvados cost
+        calculations of container runs.  For on-demand instances, this
+        uses the prices from the InstanceTypes section of the Arvado
+        config file, set by the system administrator.  For spot
+        instances, this uses current spot prices retrieved on the fly
+        the AWS API.</p>
+
+        <p>Be aware that the cost calculations are only for the time
+        the container is running and only do not take into account the
+        overhead of launching instances or idle time between scheduled
+        tasks or prior to automatic shutdown.</p>
+
+        </div>
+        """)
 
         return WEBCHART_CLASS(label, self.summarizers).html(tophtml, bottomhtml)
 

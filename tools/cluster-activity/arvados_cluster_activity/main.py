@@ -186,7 +186,7 @@ def main(arguments=None):
         with open(args.html_report_file, "wt") as f:
             f.write(reporter.html_report(since, to, args.exclude, args.include_workflow_steps))
     else:
-        logging.info("Use --html_report_file to get HTML report of cluster usage")
+        logging.info("Use --html-report-file to get HTML report of cluster usage")
 
     if not args.cost_report_file and not args.html_report_file:
         report_from_prometheus(prom, args.cluster, since, to)
