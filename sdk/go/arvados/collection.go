@@ -31,7 +31,6 @@ type Collection struct {
 	Name                      string                 `json:"name"`
 	CreatedAt                 time.Time              `json:"created_at"`
 	ModifiedAt                time.Time              `json:"modified_at"`
-	ModifiedByClientUUID      string                 `json:"modified_by_client_uuid"`
 	ModifiedByUserUUID        string                 `json:"modified_by_user_uuid"`
 	PortableDataHash          string                 `json:"portable_data_hash"`
 	ReplicationConfirmed      *int                   `json:"replication_confirmed"`
