@@ -29,6 +29,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
             'canManage',
             'createdAt',
             'modifiedAt',
+            'modifiedByClientUuid',
             'modifiedByUserUuid'
         ]));
     }

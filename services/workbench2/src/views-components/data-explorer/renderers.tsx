@@ -455,6 +455,8 @@ const renderCommonDate = (date: string) => <Typography noWrap>{formatDate(date)}
 export const CommonUuid = withResourceData("uuid", renderCommonData);
 
 // Api Client Authorizations
+export const TokenApiClientId = withResourceData("apiClientId", renderCommonData);
+
 export const TokenApiToken = withResourceData("apiToken", renderCommonData);
 
 export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderCommonDate);

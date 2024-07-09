@@ -58,6 +58,7 @@ describe('workflow-panel-actions', () => {
             kind: ResourceKind.WORKFLOW,
             ownerUuid: "",
             createdAt: "",
+            modifiedByClientUuid: "",
             modifiedByUserUuid: "",
             modifiedAt: "",
             href: "",

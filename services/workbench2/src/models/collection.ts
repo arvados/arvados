@@ -54,6 +54,7 @@ export const defaultCollectionSelectedFields = [
     'uuid',
     'ownerUuid',
     'createdAt',
+    'modifiedByClientUuid',
     'modifiedByUserUuid',
     'modifiedAt',
     'href',

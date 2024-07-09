@@ -217,6 +217,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                     definition: "",
                     ownerUuid: "",
                     createdAt: "",
+                    modifiedByClientUuid: "",
                     modifiedByUserUuid: "",
                     modifiedAt: "",
                     href: "",

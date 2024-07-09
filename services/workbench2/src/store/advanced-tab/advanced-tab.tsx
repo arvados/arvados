@@ -395,7 +395,7 @@ const stringifyObject = (item: any) =>
     JSON.stringify(item, null, 2) || 'null';
 
 const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
         containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, containerCount,
         useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl, outputGlob } = apiResponse;
     const response = `
@@ -403,6 +403,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
 "modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "name": ${stringify(name)},
 "description": ${stringify(description)},
@@ -434,13 +435,14 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX
 };
 
 const collectionApiResponse = (apiResponse: CollectionResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
         replicationConfirmedAt, replicationConfirmed, deleteAt, trashAt, isTrashed, storageClassesDesired,
         storageClassesConfirmed, storageClassesConfirmedAt, currentVersionUuid, version, preserveVersion, fileCount, fileSizeTotal } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "portable_data_hash": ${stringify(portableDataHash)},
@@ -466,13 +468,14 @@ const collectionApiResponse = (apiResponse: CollectionResource): JSX.Element => 
 };
 
 const groupRequestApiResponse = (apiResponse: ProjectResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name,
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name,
         description, groupClass, trashAt, isTrashed, deleteAt, properties,
         canWrite, canManage } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "name": ${stringify(name)},
@@ -489,10 +492,11 @@ const groupRequestApiResponse = (apiResponse: ProjectResource): JSX.Element => {
 };
 
 const repositoryApiResponse = (apiResponse: RepositoryResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, cloneUrls } = apiResponse;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, cloneUrls } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "name": ${stringify(name)},
@@ -503,11 +507,12 @@ const repositoryApiResponse = (apiResponse: RepositoryResource): JSX.Element => 
 };
 
 const sshKeyApiResponse = (apiResponse: SshKeyResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, authorizedUserUuid, expiresAt } = apiResponse;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, authorizedUserUuid, expiresAt } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "authorized_user_uuid": "${authorizedUserUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "name": ${stringify(name)},
@@ -517,11 +522,12 @@ const sshKeyApiResponse = (apiResponse: SshKeyResource): JSX.Element => {
 };
 
 const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource): JSX.Element => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, hostname } = apiResponse;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, hostname } = apiResponse;
     const response = `
 "hostname": ${stringify(hostname)},
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "modified_at": ${stringify(modifiedAt)},
@@ -533,11 +539,12 @@ const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource): JSX.El
 const keepServiceApiResponse = (apiResponse: KeepServiceResource): JSX.Element => {
     const {
         uuid, readOnly, serviceHost, servicePort, serviceSslFlag, serviceType,
-        ownerUuid, createdAt, modifiedAt, modifiedByUserUuid
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "service_host": "${serviceHost}",
@@ -552,13 +559,14 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource): JSX.Element =
 
 const userApiResponse = (apiResponse: UserResource): JSX.Element => {
     const {
-        uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid,
+        uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
         email, firstName, lastName, username, isActive, isAdmin, prefs,
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "created_at": "${createdAt}",
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "modified_at": ${stringify(modifiedAt)},
 "email": "${email}",
@@ -575,13 +583,14 @@ const userApiResponse = (apiResponse: UserResource): JSX.Element => {
 
 const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization): JSX.Element => {
     const {
-        uuid, ownerUuid, apiToken, createdByIpAddress, lastUsedByIpAddress,
+        uuid, ownerUuid, apiToken, apiClientId, createdByIpAddress, lastUsedByIpAddress,
         lastUsedAt, expiresAt, scopes, updatedAt, createdAt
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
 "owner_uuid": "${ownerUuid}",
 "api_token": "${stringify(apiToken)}",
+"api_client_id": "${stringify(apiClientId)}",
 "created_by_ip_address": "${stringify(createdByIpAddress)}",
 "last_used_by_ip_address": "${stringify(lastUsedByIpAddress)}",
 "last_used_at": "${stringify(lastUsedAt)}",
@@ -596,7 +605,7 @@ const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization):
 const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
     const {
         uuid, name, headUuid, properties, headKind, tailUuid, tailKind, linkClass,
-        ownerUuid, createdAt, modifiedAt, modifiedByUserUuid
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -609,6 +618,7 @@ const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
 "owner_uuid": "${ownerUuid}",
 "created_at": "${stringify(createdAt)}",
 "modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "properties": "${JSON.stringify(properties, null, 2)}"`;
 
@@ -619,7 +629,7 @@ const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
 const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
     const {
         uuid, name,
-        ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, description
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, description
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -627,6 +637,7 @@ const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
 "owner_uuid": "${ownerUuid}",
 "created_at": "${stringify(createdAt)}",
 "modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)}
 "description": ${stringify(description)}`;
 

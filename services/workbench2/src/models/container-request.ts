@@ -64,6 +64,7 @@ export const containerRequestFieldsNoMounts = [
     "kind",
     "log_uuid",
     "modified_at",
+    "modified_by_client_uuid",
     "modified_by_user_uuid",
     "name",
     "output_name",

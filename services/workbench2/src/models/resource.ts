@@ -6,6 +6,7 @@ export interface Resource {
     uuid: string;
     ownerUuid: string;
     createdAt: string;
+    modifiedByClientUuid: string;
     modifiedByUserUuid: string;
     modifiedAt: string;
     href: string;
