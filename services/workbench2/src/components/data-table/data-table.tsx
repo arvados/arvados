@@ -161,6 +161,9 @@ export const DataTable = withStyles(styles)(
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
+            if((this.props.items.length > 0) && !this.state.isLoaded) {
+                this.setState({ isLoaded: true });
+            }
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
@@ -318,7 +321,7 @@ export const DataTable = withStyles(styles)(
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
-                        <Table>
+                        <Table data-cy="data-table">
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>

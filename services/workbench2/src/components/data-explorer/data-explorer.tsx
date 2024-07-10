@@ -379,6 +379,7 @@ export const DataExplorer = withStyles(styles)(
                                 >
                                     {fetchMode === DataTableFetchMode.PAGINATED ? (
                                         <TablePagination
+                                        data-cy="table-pagination"
                                             count={itemsAvailable}
                                             rowsPerPage={rowsPerPage}
                                             rowsPerPageOptions={rowsPerPageOptions}

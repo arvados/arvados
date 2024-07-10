@@ -352,6 +352,7 @@ export const Tree = withStyles(styles)(
                 }
                 return <div key={`item/${level}/${it.id}`}>
                     <ListItem button className={listItem}
+                        data-cy="tree-li"
                         style={{
                             paddingLeft: (level + 1) * levelIndentation,
                             paddingRight: itemRightPadding,

@@ -49,6 +49,7 @@ export const ColumnSelector = withStyles(styles)(
                                 button
                                 key={index}
                                 className={classes.listItem}
+                                data-cy={'column-selector-li'}
                                 onClick={() => onColumnToggle(column)}>
                                 <Checkbox
                                     disableRipple
@@ -69,6 +70,6 @@ export const ColumnSelector = withStyles(styles)(
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>
     <Tooltip disableFocusListener title="Select columns">
         <IconButton {...props} size="large">
-            <MenuIcon aria-label="Select columns" />
+            <MenuIcon aria-label="Select columns" data-cy="column-selector-button" />
         </IconButton>
     </Tooltip>;
