@@ -37,6 +37,7 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
                     title={title}
                     disableFocusListener>
                     <IconButton
+                        data-cy="dropdown-menu-button"
                         aria-owns={anchorEl ? id : undefined}
                         aria-haspopup="true"
                         color="inherit"
