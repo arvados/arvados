@@ -3,35 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { configure, mount } from "enzyme";
-import { ServiceRepository, createServices } from "services/services";
+import { createServices } from "services/services";
 import { configureStore } from "store/store";
 import { createBrowserHistory } from "history";
 import { mockConfig } from 'common/config';
-import { ApiActions } from "services/api/api-actions";
 import Axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { Process } from "store/processes/process";
 import { ContainerState } from "models/container";
-import Adapter from "enzyme-adapter-react-16";
 import { SubprocessProgressBar } from "./subprocess-progress-bar";
 import { Provider } from "react-redux";
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProcessStatusFilter, buildProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
-import {act} from "react-dom/test-utils";
-
-configure({ adapter: new Adapter() });
 
 describe("<SubprocessProgressBar />", () => {
     const axiosInst = Axios.create({ headers: {} });
-    const axiosMock = new MockAdapter(axiosInst);
 
     let store;
-    let services: ServiceRepository;
-    const config: any = {};
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => { },
-        errorFn: (id: string, message: string) => { }
+    let services;
+    const config = {};
+    const actions = {
+        progressFn: (id, working) => { },
+        errorFn: (id, message) => { }
     };
     let statusResponse = {
         [ProcessStatusFilter.COMPLETED]: 0,
@@ -40,7 +31,7 @@ describe("<SubprocessProgressBar />", () => {
         [ProcessStatusFilter.QUEUED]: 0,
     };
 
-    const createMockListFunc = (uuid: string) => jest.fn(async (args) => {
+    const createMockListFunc = (uuid) => (async (args) => {
         const baseFilter = new FilterBuilder().addEqual('requesting_container_uuid', uuid).getFilters();
 
         const filterResponses = Object.keys(statusResponse)
@@ -68,7 +59,7 @@ describe("<SubprocessProgressBar />", () => {
             containerRequest: {
                 containerUuid: 'zzzzz-dz642-000000000000000',
             },
-        } as Process;
+        };
 
         statusResponse = {
             [ProcessStatusFilter.COMPLETED]: 100,
@@ -85,14 +76,10 @@ describe("<SubprocessProgressBar />", () => {
 
         services.containerRequestService.list = createMockListFunc(process.containerRequest.containerUuid);
 
-        let progressBar;
-        await act(async () => {
-            progressBar = mount(
-                <Provider store={store}>
-                    <SubprocessProgressBar process={process} />
-                </Provider>);
-        });
-        await progressBar.update();
+        cy.mount(
+            <Provider store={store}>
+                <SubprocessProgressBar process={process} />
+            </Provider>);
 
         // expects 6 subprocess status list requests
         const expectedFilters = [
@@ -112,14 +99,16 @@ describe("<SubprocessProgressBar />", () => {
             ).getFilters()
         );
 
+        cy.spy(services.containerRequestService, 'list').as('list');
+        
         expectedFilters.forEach((filter) => {
-            expect(services.containerRequestService.list).toHaveBeenCalledWith({limit: 0, offset: 0, filters: filter});
+            cy.get('@list').should('have.been.calledWith', {limit: 0, offset: 0, filters: filter});
         });
 
         // Verify progress bar with correct degment widths
         ['10%', '20%', '30%', '40%'].forEach((value, i) => {
-            const styles = progressBar.find('.progress').at(i).props().style;
-            expect(styles).toHaveProperty('width', value);
+            cy.get('div[class=progress]').eq(i).should('have.attr', 'style').and('include', `width: ${value};`);
+
         });
     });
 
@@ -131,7 +120,7 @@ describe("<SubprocessProgressBar />", () => {
             containerRequest: {
                 containerUuid: 'zzzzz-dz642-000000000000001',
             },
-        } as Process;
+        };
 
         statusResponse = {
             [ProcessStatusFilter.COMPLETED]: 50,
@@ -146,19 +135,14 @@ describe("<SubprocessProgressBar />", () => {
 
         services.containerRequestService.list = createMockListFunc(process.containerRequest.containerUuid);
 
-        let progressBar;
-        await act(async () => {
-            progressBar = mount(
-                <Provider store={store}>
-                    <SubprocessProgressBar process={process} />
-                </Provider>);
-        });
-        await progressBar.update();
+        cy.mount(
+            <Provider store={store}>
+                <SubprocessProgressBar process={process} />
+            </Provider>);
 
         // Verify progress bar with correct degment widths
         ['10%', '11%', '12%', '67%'].forEach((value, i) => {
-            const styles = progressBar.find('.progress').at(i).props().style;
-            expect(styles).toHaveProperty('width', value);
+            cy.get('div[class=progress]').eq(i).should('have.attr', 'style').and('include', `width: ${value};`);
         });
     });
 
