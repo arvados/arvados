@@ -3,14 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { configure, mount } from "enzyme";
 import { FileThumbnail } from "./file-thumbnail";
 import { CollectionFileType } from '../../models/collection-file';
-import Adapter from 'enzyme-adapter-react-16';
 import { Provider } from "react-redux";
 import { combineReducers, createStore } from "redux";
-
-configure({ adapter: new Adapter() });
+import { ThemeProvider } from "@mui/material";
+import { CustomTheme } from "common/custom-theme";
 
 let store;
 
@@ -25,7 +23,7 @@ describe("<FileThumbnail />", () => {
             }
         }
         store = createStore(combineReducers({
-            auth: (state: any = initialAuthState, action: any) => state,
+            auth: (state= initialAuthState, action) => state,
         }));
 
         file = {
@@ -37,7 +35,12 @@ describe("<FileThumbnail />", () => {
     });
 
     it("renders file thumbnail with proper src", () => {
-        const fileThumbnail = mount(<Provider store={store}><FileThumbnail file={file} /></Provider>);
-        expect(fileThumbnail.html()).toBe('<img class="Component-thumbnail-1" alt="test-image.jpg" src="http://zzzzz-4zz18-0123456789abcde.collections.example.com/test-image.jpg?api_token=v2/zzzzz-gj3su-0123456789abcde/xxxxxxtokenxxxxx">');
+        cy.mount(
+            <Provider store={store}>
+              <ThemeProvider theme={CustomTheme}>
+                <FileThumbnail file={file} />
+              </ThemeProvider>
+            </Provider>);
+        cy.get('img').should('have.attr', 'src', 'http://zzzzz-4zz18-0123456789abcde.collections.example.com/test-image.jpg?api_token=v2/zzzzz-gj3su-0123456789abcde/xxxxxxtokenxxxxx');
     });
 });
