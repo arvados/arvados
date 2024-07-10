@@ -3,13 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { mount, configure } from "enzyme";
-import Adapter from "enzyme-adapter-react-16";
 import { ContextMenu } from "./context-menu";
-import { ListItem } from "@mui/material";
 import { ShareIcon } from "../icon/icon";
-
-configure({ adapter: new Adapter() });
 
 describe("<ContextMenu />", () => {
     const items = [[{
@@ -24,14 +19,14 @@ describe("<ContextMenu />", () => {
     }]];
 
     it("calls onItemClick with clicked action", () => {
-        const onItemClick = jest.fn();
-        const contextMenu = mount(<ContextMenu
+        const onItemClick = cy.spy().as("onItemClick")
+        cy.mount(<ContextMenu
             anchorEl={document.createElement("div")}
             open={true}
-            onClose={jest.fn()}
+            onClose={cy.stub()}
             onItemClick={onItemClick}
             items={items} />);
-        contextMenu.find(ListItem).at(2).simulate("click");
-        expect(onItemClick).toHaveBeenCalledWith(items[1][0]);
+        cy.get('div[role=button]').eq(2).click();
+        cy.get('@onItemClick').should('have.been.calledWith', items[1][0]);
     });
 });
