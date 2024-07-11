@@ -676,6 +676,9 @@ var dirListingTemplate = `<!DOCTYPE HTML>
     .footer p {
       font-size: 82%;
     }
+    hr {
+      border: 1px solid #808080;
+    }
     ul {
       padding: 0;
     }
@@ -691,9 +694,9 @@ var dirListingTemplate = `<!DOCTYPE HTML>
 
 <P>This collection of data files is being shared with you through
 Arvados.  You can download individual files listed below.  To download
-the entire directory tree with wget, try:</P>
+the entire directory tree with <CODE>wget</CODE>, try:</P>
 
-<PRE>$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} https://{{ .Request.Host }}{{ .Request.URL.Path }}</PRE>
+<PRE id="wget-example">$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} {{ .QuotedUrlForWget }}</PRE>
 
 <H2>File Listing</H2>
 
@@ -701,9 +704,9 @@ the entire directory tree with wget, try:</P>
 <UL>
 {{range .Files}}
 {{if .IsDir }}
-  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{print "./" .Name}}/">{{.Name}}/</A></LI>
+  <LI>{{" " | printf "%15s  " | nbsp}}<A class="item" href="{{ .Href }}/">{{ .Name }}/</A></LI>
 {{else}}
-  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{print "./" .Name}}">{{.Name}}</A></LI>
+  <LI>{{.Size | printf "%15d  " | nbsp}}<A class="item" href="{{ .Href }}">{{ .Name }}</A></LI>
 {{end}}
 {{end}}
 </UL>
@@ -711,7 +714,7 @@ the entire directory tree with wget, try:</P>
 <P>(No files; this collection is empty.)</P>
 {{end}}
 
-<HR noshade>
+<HR>
 <DIV class="footer">
   <P>
     About Arvados:
@@ -722,12 +725,50 @@ the entire directory tree with wget, try:</P>
 </DIV>
 
 </BODY>
+</HTML>
 `
 
 type fileListEnt struct {
 	Name  string
+	Href  string
 	Size  int64
 	IsDir bool
+}
+
+
+// NOTE for URL encoding of paths
+// The href value of the links in the HTML listing page should be in the
+// "escaped" (percent-encoded) form so that a user agent that follows the href
+// (e.g. browser) can request the correct path. url.PathEscape applies to one
+// segment (directory level) and it will encode the slash, so we encode one
+// level at a time.  The templating engine takes care of translating the
+// encoded path into valid HTML.
+
+func relativeHref(path string) string {
+	components := strings.Split(path, "/")
+	for i, text := range components {
+		components[i] = url.PathEscape(text)
+	}
+	return "./" + strings.Join(components, "/")
+}
+
+// NOTE for the example "wget" command generated on the listing page
+// We want to put the URL argument in single-quotes to avoid any execution by
+// the shell when pasted into it.
+// The single-quote is not a special character for paths, so it may stay
+// not-encoded if the resulting string is still valid.
+// A simple and interoperable way is to do a string replacement on the encoded
+// form.
+
+func makeQuotedUrlForWget(r *http.Request) string {
+	var scheme string
+	if r.TLS != nil {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+	p := r.URL.EscapedPath()
+	return fmt.Sprintf("'%s://%s%s'", scheme, r.Host, strings.Replace(p, "'", "%27", -1))
 }
 
 func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collectionName string, fs http.FileSystem, base string, recurse bool) {
@@ -756,8 +797,10 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 					return err
 				}
 			} else {
+				listingName := path + ent.Name()
 				files = append(files, fileListEnt{
-					Name:  path + ent.Name(),
+					Name:  listingName,
+					Href:  relativeHref(listingName),
 					Size:  ent.Size(),
 					IsDir: ent.IsDir(),
 				})
@@ -785,10 +828,11 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 	})
 	w.WriteHeader(http.StatusOK)
 	tmpl.Execute(w, map[string]interface{}{
-		"CollectionName": collectionName,
-		"Files":          files,
-		"Request":        r,
-		"StripParts":     strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
+		"CollectionName":   collectionName,
+		"Files":            files,
+		"Request":          r,
+		"StripParts":       strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
+		"QuotedUrlForWget": makeQuotedUrlForWget(r),
 	})
 }
 
