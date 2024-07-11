@@ -3,17 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { mount, configure } from "enzyme";
-import Adapter from "enzyme-adapter-react-16";
-import { ColumnSelector, ColumnSelectorTrigger } from "./column-selector";
-import { ListItem, Checkbox } from "@mui/material";
-import { DataColumns } from "../data-table/data-table";
-
-configure({ adapter: new Adapter() });
+import { ColumnSelector } from "./column-selector";
 
 describe("<ColumnSelector />", () => {
     it("shows only configurable columns", () => {
-        const columns: DataColumns<void> = [
+        const columns = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -33,13 +27,13 @@ describe("<ColumnSelector />", () => {
                 configurable: false
             }
         ];
-        const columnsConfigurator = mount(<ColumnSelector columns={columns} onColumnToggle={jest.fn()} />);
-        columnsConfigurator.find(ColumnSelectorTrigger).simulate("click");
-        expect(columnsConfigurator.find(ListItem)).toHaveLength(2);
+        cy.mount(<ColumnSelector columns={columns} onColumnToggle={cy.stub()} />);
+        cy.get('button[aria-label="Select columns"]').click();
+        cy.get('[data-cy=column-selector-li]').should('have.length', 2);
     });
 
     it("renders checked checkboxes next to selected columns", () => {
-        const columns: DataColumns<void> = [
+        const columns = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -59,15 +53,16 @@ describe("<ColumnSelector />", () => {
                 configurable: true
             }
         ];
-        const columnsConfigurator = mount(<ColumnSelector columns={columns} onColumnToggle={jest.fn()} />);
-        columnsConfigurator.find(ColumnSelectorTrigger).simulate("click");
-        expect(columnsConfigurator.find(Checkbox).at(0).prop("checked")).toBe(true);
-        expect(columnsConfigurator.find(Checkbox).at(1).prop("checked")).toBe(false);
-        expect(columnsConfigurator.find(Checkbox).at(2).prop("checked")).toBe(true);
+        cy.mount(<ColumnSelector columns={columns} onColumnToggle={cy.stub()} />);
+        cy.get('button[aria-label="Select columns"]').click();
+        cy.get('input[type=checkbox]').should('have.length', 3);
+        cy.get('input[type=checkbox]').eq(0).should('be.checked');
+        cy.get('input[type=checkbox]').eq(1).should('not.be.checked');
+        cy.get('input[type=checkbox]').eq(2).should('be.checked');
     });
 
     it("calls onColumnToggle with clicked column", () => {
-        const columns: DataColumns<void> = [
+        const columns = [
             {
                 name: "Column 1",
                 render: () => <span />,
@@ -75,10 +70,10 @@ describe("<ColumnSelector />", () => {
                 configurable: true
             }
         ];
-        const onColumnToggle = jest.fn();
-        const columnsConfigurator = mount(<ColumnSelector columns={columns} onColumnToggle={onColumnToggle} />);
-        columnsConfigurator.find(ColumnSelectorTrigger).simulate("click");
-        columnsConfigurator.find(ListItem).simulate("click");
-        expect(onColumnToggle).toHaveBeenCalledWith(columns[0]);
+        const onColumnToggle = cy.spy().as("onColumnToggle");
+        cy.mount(<ColumnSelector columns={columns} onColumnToggle={onColumnToggle} />);
+        cy.get('button[aria-label="Select columns"]').click();
+        cy.get('[data-cy=column-selector-li]').click();
+        cy.get('@onColumnToggle').should('have.been.calledWith', columns[0]);
     });
 });
