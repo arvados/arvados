@@ -261,6 +261,7 @@ export const DataTable = withStyles(styles)(
 
         isAnySelected = (): boolean => {
             const { checkedList } = this.props;
+            if (!checkedList) return false;
             if (!Object.keys(checkedList).length) return false;
             for (const key in checkedList) {
                 if (checkedList[key] === true) return true;
@@ -420,6 +421,7 @@ export const DataTable = withStyles(styles)(
 
         ArrowIcon = ({ className, ...props }: SvgIconProps) => (
             <IconButton
+                data-cy="sort-button"
                 component="span"
                 className={this.props.classes.arrowButton}
                 tabIndex={-1}
@@ -448,6 +450,7 @@ export const DataTable = withStyles(styles)(
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}
+                            data-cy={column.key || index}
                             className={
                                 currentRoute === "/workflows"
                                     ? classes.tableCellWorkflows
