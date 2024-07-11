@@ -10,81 +10,82 @@ import { SortDirection } from "../../components/data-table/data-column";
 
 describe('data-explorer-reducer', () => {
     it('should set columns', () => {
-        const columns: DataColumns<any, any> = [{
+        const columns = [{
             name: "Column 1",
             filters: [],
-            render: jest.fn(),
+            render: cy.stub(),
             selected: true,
             configurable: true,
             sort: {direction: SortDirection.NONE, field: "name"}
         }];
         const state = dataExplorerReducer(undefined,
             dataExplorerActions.SET_COLUMNS({ id: "Data explorer", columns }));
-        expect(state["Data explorer"].columns).toEqual(columns);
+        expect(state["Data explorer"].columns).to.equal(columns);
     });
 
     it('should toggle sorting', () => {
-        const columns: DataColumns<any, any> = [{
+        const columns = [{
             name: "Column 1",
             filters: [],
-            render: jest.fn(),
+            render: cy.stub(),
             selected: true,
             sort: {direction: SortDirection.ASC, field: "name"},
             configurable: true
         }, {
             name: "Column 2",
             filters: [],
-            render: jest.fn(),
+            render: cy.stub(),
             selected: true,
             configurable: true,
             sort: {direction: SortDirection.NONE, field: "name"},
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.TOGGLE_SORT({ id: "Data explorer", columnName: "Column 2" }));
-        expect(state["Data explorer"].columns[0].sort.direction).toEqual("none");
-        expect(state["Data explorer"].columns[1].sort.direction).toEqual("asc");
+        expect(state["Data explorer"].columns[0].sort.direction).to.equal("none");
+        expect(state["Data explorer"].columns[1].sort.direction).to.equal("asc");
     });
 
     it('should set filters', () => {
-        const columns: DataColumns<any, any> = [{
+        const columns = [{
             name: "Column 1",
             filters: [],
-            render: jest.fn(),
+            render: cy.stub(),
             selected: true,
             configurable: true,
             sort: {direction: SortDirection.NONE, field: "name"}
         }];
 
-        const filters: DataTableFilterItem[] = [{
+        const filters = [{
             name: "Filter 1",
             selected: true
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.SET_FILTERS({ id: "Data explorer", columnName: "Column 1", filters }));
-        expect(state["Data explorer"].columns[0].filters).toEqual(filters);
+        expect(state["Data explorer"].columns[0].filters).to.equal(filters);
     });
 
     it('should set items', () => {
+        const items = ["Item 1", "Item 2"];
         const state = dataExplorerReducer({},
             dataExplorerActions.SET_ITEMS({
                 id: "Data explorer",
-                items: ["Item 1", "Item 2"],
+                items: items,
                 page: 0,
                 rowsPerPage: 10,
                 itemsAvailable: 100
             }));
-        expect(state["Data explorer"].items).toEqual(["Item 1", "Item 2"]);
+        expect(state["Data explorer"].items).to.equal(items);
     });
 
     it('should set page', () => {
         const state = dataExplorerReducer({},
             dataExplorerActions.SET_PAGE({ id: "Data explorer", page: 2 }));
-        expect(state["Data explorer"].page).toEqual(2);
+        expect(state["Data explorer"].page).to.equal(2);
     });
 
     it('should set rows per page', () => {
         const state = dataExplorerReducer({},
             dataExplorerActions.SET_ROWS_PER_PAGE({ id: "Data explorer", rowsPerPage: 5 }));
-        expect(state["Data explorer"].rowsPerPage).toEqual(5);
+        expect(state["Data explorer"].rowsPerPage).to.equal(5);
     });
 });
