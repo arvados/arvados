@@ -29,6 +29,7 @@ export class Popover extends React.Component<PopoverProps> {
             <>
                 <Trigger onClick={this.handleTriggerClick} />
                 <MaterialPopover
+                    data-cy="popover"
                     anchorEl={this.state.anchorEl}
                     open={Boolean(this.state.anchorEl)}
                     onClose={this.handleClose}
