@@ -28,11 +28,11 @@ import time
 from collections import deque
 from stat import *
 
+from .api import ThreadSafeAPIClient
 from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock
 from .keep import KeepLocator, KeepClient
 from ._normalize_stream import normalize_stream, escape
 from ._ranges import Range, LocatorAndRange
-from .safeapi import ThreadSafeApiCache
 import arvados.config as config
 import arvados.errors as errors
 import arvados.util
@@ -1060,7 +1060,7 @@ class Collection(RichCollectionBase):
           settings from `apiconfig` (see below). If your client instantiates
           many Collection objects, you can help limit memory utilization by
           calling `arvados.api.api` to construct an
-          `arvados.safeapi.ThreadSafeApiCache`, and use that as the `api_client`
+          `arvados.api.ThreadSafeAPIClient`, and use that as the `api_client`
           for every Collection.
 
         * keep_client: arvados.keep.KeepClient | None --- The Keep client
@@ -1112,8 +1112,8 @@ class Collection(RichCollectionBase):
         self._api_client = api_client
         self._keep_client = keep_client
 
-        # Use the keep client from ThreadSafeApiCache
-        if self._keep_client is None and isinstance(self._api_client, ThreadSafeApiCache):
+        # Use the keep client from ThreadSafeAPIClient
+        if self._keep_client is None and isinstance(self._api_client, ThreadSafeAPIClient):
             self._keep_client = self._api_client.keep
 
         self._block_manager = block_manager
@@ -1263,7 +1263,7 @@ class Collection(RichCollectionBase):
     @synchronized
     def _my_api(self):
         if self._api_client is None:
-            self._api_client = ThreadSafeApiCache(self._config, version='v1')
+            self._api_client = ThreadSafeAPIClient(self._config, version='v1')
             if self._keep_client is None:
                 self._keep_client = self._api_client.keep
         return self._api_client
