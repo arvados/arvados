@@ -46,6 +46,11 @@ if ! test -s $ARVADOS_CONTAINER_PATH/vm-uuid ; then
 fi
 vm_uuid=$(cat $ARVADOS_CONTAINER_PATH/vm-uuid)
 
+if ! test -s $ARVADOS_CONTAINER_PATH/banner-uuid ; then
+    echo $uuid_prefix-4zz18-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > $ARVADOS_CONTAINER_PATH/banner-uuid
+fi
+banner_uuid=$(cat $ARVADOS_CONTAINER_PATH/banner-uuid)
+
 if ! test -f $ARVADOS_CONTAINER_PATH/api_database_pw ; then
     ruby -e 'puts rand(2**128).to_s(36)' > $ARVADOS_CONTAINER_PATH/api_database_pw
 fi
@@ -77,7 +82,7 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[api]}": {}
       Workbench1:
-        ExternalURL: "https://$localip:${services[workbench]}"
+        ExternalURL: "https://$localip:${services[workbench2-ssl]}"
       Workbench2:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
       Keepproxy:
@@ -141,6 +146,7 @@ Clusters:
     Workbench:
       SecretKeyBase: $workbench_secret_key_base
       ArvadosDocsite: http://$localip:${services[doc]}/
+      BannerUUID: ${banner_uuid}
     Git:
       GitCommand: /usr/share/gitolite3/gitolite-shell
       GitoliteHome: $ARVADOS_CONTAINER_PATH/git

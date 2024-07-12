@@ -61,6 +61,10 @@ if test $vm_ok = 0 ; then
     waiting="$waiting vm"
 fi
 
+if ! [[ -f /tmp/banner-ready ]] ; then
+    waiting="$waiting banner"
+fi
+
 if ! [[ -z "$waiting" ]] ; then
     if ps x | grep -v grep | grep "bundle install" > /dev/null; then
         gemcount=$(ls /var/lib/arvados/lib/ruby/gems/*/gems /var/lib/arvados-arvbox/.gem/ruby/*/gems 2>/dev/null | wc -l)
