@@ -32,7 +32,7 @@ import arvados.retry as retry
 import arvados.util
 
 from arvados._internal import diskcache, Timer
-from arvados._pycurlhelper import PyCurlHelper
+from ._internal.pycurl import PyCurlHelper
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
