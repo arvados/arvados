@@ -155,7 +155,7 @@ def _new_http_error(cls, *args, **kwargs):
         errors.ApiError, *args, **kwargs)
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
-def http_cache(data_type: str) -> cache.SafeHTTPCache:
+def http_cache(data_type: str) -> Optional[SafeHTTPCache]:
     """Set up an HTTP file cache
 
     This function constructs and returns an `arvados.cache.SafeHTTPCache`
