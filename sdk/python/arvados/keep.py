@@ -27,12 +27,11 @@ from io import BytesIO
 
 import arvados
 import arvados.config as config
-import arvados.diskcache
 import arvados.errors
 import arvados.retry as retry
 import arvados.util
 
-from arvados._internal import Timer
+from arvados._internal import diskcache, Timer
 from arvados._pycurlhelper import PyCurlHelper
 
 _logger = logging.getLogger('arvados.keep')
@@ -171,7 +170,7 @@ class KeepBlockCache(object):
             if self._disk_cache:
                 fs = os.statvfs(self._disk_cache_dir)
                 # Calculation of available space incorporates existing cache usage
-                existing_usage = arvados.diskcache.DiskCacheSlot.cache_usage(self._disk_cache_dir)
+                existing_usage = diskcache.DiskCacheSlot.cache_usage(self._disk_cache_dir)
                 avail = (fs.f_bavail * fs.f_bsize + existing_usage) / 4
                 maxdisk = int((fs.f_blocks * fs.f_bsize) * 0.10)
                 # pick smallest of:
@@ -187,7 +186,7 @@ class KeepBlockCache(object):
 
         self.cache_total = 0
         if self._disk_cache:
-            self._cache = arvados.diskcache.DiskCacheSlot.init_cache(self._disk_cache_dir, self._max_slots)
+            self._cache = diskcache.DiskCacheSlot.init_cache(self._disk_cache_dir, self._max_slots)
             for slot in self._cache.values():
                 self.cache_total += slot.size()
             self.cap_cache()
@@ -257,7 +256,7 @@ class KeepBlockCache(object):
             return n
         if self._disk_cache:
             # see if it exists on disk
-            n = arvados.diskcache.DiskCacheSlot.get_from_disk(locator, self._disk_cache_dir)
+            n = diskcache.DiskCacheSlot.get_from_disk(locator, self._disk_cache_dir)
             if n is not None:
                 self._cache[n.locator] = n
                 self.cache_total += n.size()
@@ -287,7 +286,7 @@ class KeepBlockCache(object):
                     self._resize_cache(self.cache_max, self._max_slots-1)
 
                 if self._disk_cache:
-                    n = arvados.diskcache.DiskCacheSlot(locator, self._disk_cache_dir)
+                    n = diskcache.DiskCacheSlot(locator, self._disk_cache_dir)
                 else:
                     n = KeepBlockCache.CacheSlot(locator)
                 self._cache[n.locator] = n
