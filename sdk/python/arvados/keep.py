@@ -27,12 +27,13 @@ from io import BytesIO
 
 import arvados
 import arvados.config as config
+import arvados.diskcache
 import arvados.errors
 import arvados.retry as retry
 import arvados.util
-import arvados.diskcache
+
+from arvados._internal import Timer
 from arvados._pycurlhelper import PyCurlHelper
-from . import timer
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
@@ -418,7 +419,7 @@ class KeepClient(object):
             curl = self._get_user_agent()
             ok = None
             try:
-                with timer.Timer() as t:
+                with Timer() as t:
                     self._headers = {}
                     response_body = BytesIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
@@ -513,7 +514,7 @@ class KeepClient(object):
             curl = self._get_user_agent()
             ok = None
             try:
-                with timer.Timer() as t:
+                with Timer() as t:
                     self._headers = {}
                     body_reader = BytesIO(body)
                     response_body = BytesIO()
