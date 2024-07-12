@@ -41,7 +41,7 @@ import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 
-from arvados._internal import http_to_keep
+from arvados._internal import basedirs, http_to_keep
 from arvados._version import __version__
 
 COMMIT_HASH_RE = re.compile(r'^[0-9a-f]{1,40}$')
@@ -220,7 +220,7 @@ def api_for_instance(instance_name, num_retries):
     if '/' in instance_name:
         config_file = instance_name
     else:
-        dirs = arvados.util._BaseDirectories('CONFIG')
+        dirs = basedirs.BaseDirectories('CONFIG')
         config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
     try:

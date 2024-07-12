@@ -43,6 +43,7 @@ from . import errors
 from . import keep
 from . import retry
 from . import util
+from ._internal import basedirs
 from .logging import GoogleHTTPClientFilter, log_handler
 
 _logger = logging.getLogger('arvados.api')
@@ -302,7 +303,7 @@ def http_cache(data_type: str) -> Optional[SafeHTTPCache]:
       where data is cached.
     """
     try:
-        path = util._BaseDirectories('CACHE').storage_path(data_type)
+        path = basedirs.BaseDirectories('CACHE').storage_path(data_type)
     except (OSError, RuntimeError):
         return None
     else:

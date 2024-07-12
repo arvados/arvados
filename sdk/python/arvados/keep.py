@@ -31,7 +31,7 @@ import arvados.errors
 import arvados.retry as retry
 import arvados.util
 
-from arvados._internal import diskcache, Timer
+from ._internal import basedirs, diskcache, Timer
 from ._internal.pycurl import PyCurlHelper
 
 _logger = logging.getLogger('arvados.keep')
@@ -142,7 +142,7 @@ class KeepBlockCache(object):
         self._cache_updating = threading.Condition(self._cache_lock)
 
         if self._disk_cache and self._disk_cache_dir is None:
-            self._disk_cache_dir = str(arvados.util._BaseDirectories('CACHE').storage_path('keep'))
+            self._disk_cache_dir = str(basedirs.BaseDirectories('CACHE').storage_path('keep'))
 
         if self._max_slots == 0:
             if self._disk_cache:

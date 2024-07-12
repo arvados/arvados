@@ -17,6 +17,7 @@ from typing import (
 )
 
 from . import util
+from ._internal import basedirs
 
 _settings = None
 default_config_file = ''
@@ -33,7 +34,7 @@ def initialize(
             str,
             os.PathLike,
             Callable[[str], Iterable[os.PathLike]],
-        ]=util._BaseDirectories('CONFIG').search,
+        ]=basedirs.BaseDirectories('CONFIG').search,
 ) -> None:
     global _settings
     _settings = {}

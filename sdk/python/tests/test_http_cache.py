@@ -17,11 +17,12 @@ from unittest import mock
 import arvados
 import arvados.cache
 import arvados.util
+from arvados._internal import basedirs
+
 from . import run_test_server
 
 def _random(n):
     return bytearray(random.getrandbits(8) for _ in range(n))
-
 
 class CacheTestThread(threading.Thread):
     def __init__(self, dir):
@@ -54,7 +55,7 @@ class TestAPIHTTPCache:
             path = tmp_path / subdir
             path.mkdir(mode=mode)
             return path
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', storage_path)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'storage_path', storage_path)
         actual = arvados.http_cache(data_type)
         assert str(actual) == str(tmp_path / data_type)
 
@@ -62,7 +63,7 @@ class TestAPIHTTPCache:
     def test_unwritable_storage(self, monkeypatch, error):
         def fail(self, subdir='.', mode=0o700):
             raise error()
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', fail)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'storage_path', fail)
         actual = arvados.http_cache('unwritable')
         assert actual is None
 

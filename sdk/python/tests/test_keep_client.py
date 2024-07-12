@@ -27,6 +27,7 @@ import pycurl
 import arvados
 import arvados.retry
 import arvados.util
+
 from . import arvados_testutil as tutil
 from . import keepstub
 from . import run_test_server
@@ -1460,7 +1461,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
     def tearDown(self):
         shutil.rmtree(self.disk_cache_dir)
 
-    @mock.patch('arvados.util._BaseDirectories.storage_path')
+    @mock.patch('arvados._internal.basedirs.BaseDirectories.storage_path')
     def test_default_disk_cache_dir(self, storage_path):
         expected = Path(self.disk_cache_dir)
         storage_path.return_value = expected

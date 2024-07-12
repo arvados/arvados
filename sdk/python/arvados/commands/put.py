@@ -28,11 +28,12 @@ import traceback
 
 from pathlib import Path
 
-from apiclient import errors as apiclient_errors
-from arvados._version import __version__
-
 import arvados.util
 import arvados.commands._util as arv_cmd
+
+from apiclient import errors as apiclient_errors
+from arvados._internal import basedirs
+from arvados._version import __version__
 
 api_client = None
 
@@ -372,7 +373,7 @@ class ResumeCache(object):
             md5.update(args.filename.encode())
         cache_path = Path(cls.CACHE_DIR)
         if len(cache_path.parts) == 1:
-            cache_path = arvados.util._BaseDirectories('CACHE').storage_path(cache_path)
+            cache_path = basedirs.BaseDirectories('CACHE').storage_path(cache_path)
         else:
             # Note this is a noop if cache_path is absolute, which is what we want.
             cache_path = Path.home() / cache_path
@@ -868,7 +869,7 @@ class ArvPutUploadJob(object):
             md5.update(self.filename.encode())
         cache_path = Path(self.CACHE_DIR)
         if len(cache_path.parts) == 1:
-            cache_path = arvados.util._BaseDirectories('CACHE').storage_path(cache_path)
+            cache_path = basedirs.BaseDirectories('CACHE').storage_path(cache_path)
         else:
             # Note this is a noop if cache_path is absolute, which is what we want.
             cache_path = Path.home() / cache_path
