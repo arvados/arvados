@@ -457,8 +457,11 @@ read -rd $'\000' banner <<EOF
 EOF
 set -e
 
-if ! arv-get ${ARVADOS_BANNER_UUID}/banner.html ; then
+if ! arv collection get --uuid ${ARVADOS_BANNER_UUID} ; then
     arv collection create --collection "$banner"
+fi
+
+if ! arv-get ${ARVADOS_BANNER_UUID}/banner.html ; then
     arv-put --update-collection ${ARVADOS_BANNER_UUID} /tmp/banner.html
 fi
 
