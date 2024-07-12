@@ -19,7 +19,7 @@ import arvados.collection
 import arvados.keep
 import pycurl
 
-from arvados.http_to_keep import http_to_keep
+from arvados._internal import http_to_keep
 
 # Turns out there was already "FakeCurl" that serves the same purpose, but
 # I wrote this before I knew that.  Whoops.
@@ -92,7 +92,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 15)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt",
                              'zzzzz-4zz18-zzzzzzzzzzzzzz3', 'http://example.com/file1.txt',
                              datetime.datetime(2018, 5, 15, 0, 0)))
@@ -143,7 +143,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 16)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt",
                              'zzzzz-4zz18-zzzzzzzzzzzzzz3', 'http://example.com/file1.txt',
                              datetime.datetime(2018, 5, 16, 0, 0)))
@@ -184,7 +184,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 16)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt", 'zzzzz-4zz18-zzzzzzzzzzzzzz3',
                              'http://example.com/file1.txt', datetime.datetime(2018, 5, 16, 0, 0)))
 
@@ -224,7 +224,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999997+99", "file1.txt",
                              'zzzzz-4zz18-zzzzzzzzzzzzzz4',
                              'http://example.com/file1.txt', datetime.datetime(2018, 5, 17, 0, 0)))
@@ -281,7 +281,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt",
                              'zzzzz-4zz18-zzzzzzzzzzzzzz3', 'http://example.com/file1.txt',
                              datetime.datetime(2018, 5, 17, 0, 0)))
@@ -320,7 +320,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 15)
 
-        r = http_to_keep(api, None, "http://example.com/download?fn=/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/download?fn=/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt",
                              'zzzzz-4zz18-zzzzzzzzzzzzzz3',
                              'http://example.com/download?fn=/file1.txt',
@@ -377,7 +377,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt",
                              'zzzzz-4zz18-zzzzzzzzzzzzzz3', 'http://example.com/file1.txt',
                              datetime.datetime(2018, 5, 17, 0, 0)))
@@ -428,7 +428,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow, prefer_cached_downloads=True)
+        r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow, prefer_cached_downloads=True)
         self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt", 'zzzzz-4zz18-zzzzzzzzzzzzzz3',
                              'http://example.com/file1.txt', datetime.datetime(2018, 5, 17, 0, 0)))
 
@@ -475,8 +475,8 @@ class TestHttpToKeep(unittest.TestCase):
             utcnow = mock.MagicMock()
             utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-            r = http_to_keep(api, None, "http://example.com/file1.txt?KeyId=123&Signature=456&Expires=789",
-                                              utcnow=utcnow, varying_url_params="KeyId,Signature,Expires")
+            r = http_to_keep.http_to_keep(api, None, "http://example.com/file1.txt?KeyId=123&Signature=456&Expires=789",
+                                          utcnow=utcnow, varying_url_params="KeyId,Signature,Expires")
             self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt", 'zzzzz-4zz18-zzzzzzzzzzzzzz3',
                                  'http://example.com/file1.txt', datetime.datetime(2018, 5, 17, 0, 0)))
 
