@@ -435,13 +435,14 @@ You are currently on the Arvados Workbench, an web application for interactively
 	<section style="display: flex; flex-direction: row;">
 		<p class="c3"><span class="c9"><a class="c4" href="https://www.curii.com/offerings.html" target="_blank"> Enterprise Level
 				Support</a> </span>
-	<span class="c5"> Curii Corporation</a></span><span class="c5">provides managed installations as well as
+	<span class="c5"> Curii Corporation</a></span> <span class="c5">provides managed installations as well as
 			commercial support. </span></p>
 	</section>
 
 	<br>
 	<br>
-	<p class="c3"><span class="c15">Note:</span><span class="c19">&nbsp;Arvbox is not recommended for production use.</span><span class="c10 c18 c29">.</span></p>
+	<p class="c3"><span class="c15">Note:</span><span class="c19">&nbsp;Using Arvbox to run Arvados is not recommended or supported for production use.
+        For production use, Curii can help you.  You can also <a href="https://doc.arvados.org/install/index.html">install it yourself</a>. </span></p>
 
 </body>
 
