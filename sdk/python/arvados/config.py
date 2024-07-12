@@ -21,7 +21,8 @@ from ._internal import basedirs
 
 _settings = None
 default_config_file = ''
-""".. WARNING: Deprecated
+"""
+.. WARNING:: Deprecated
    Default configuration initialization now searches for the "default"
    configuration in several places. This value no longer has any effect.
 """
