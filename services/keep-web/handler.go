@@ -513,14 +513,27 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				redirkey = "redirectToDownload"
 			}
 			callback := "/c=" + collectionID + "/" + strings.Join(targetPath, "/")
-			// target.RawQuery = url.Values{redirkey:
-			// {target}}.Encode() would be the obvious
-			// thing to do here, but wb2 doesn't decode
-			// this as a query param -- it takes
-			// everything after "${redirkey}=" as the
-			// target URL. If we encode "/" as "%2F" etc.,
-			// the redirect won't work.
-			target.RawQuery = redirkey + "=" + callback
+			query := url.Values{redirkey: {callback}}
+			queryString := query.Encode()
+			// Note: Encode (and QueryEscape function) turns space
+			// into plus sign (+) rather than %20 (the plus sign
+			// becomes %2B); that is the rule for web forms data
+			// sent in URL query part via GET, but we're not
+			// emulating forms here. Client JS APIs
+			// (URLSearchParam#get, decodeURIComponent) will
+			// decode %20, but while the former also expects the
+			// form-specific encoding, the latter doesn't.
+			// Encode() almost encodes everything; RFC3986 sec. 3.4
+			// says "it is sometimes better for usability" to not
+			// encode / and ? when passing URI reference in query.
+			// This is also legal according to WHATWG URL spec and
+			// can be desirable for debugging webapp.
+			// We can let slash / appear in the encoded query, and
+			// equality-sign = too, but exempting ? is not very
+			// useful.
+			// Plus-sign, hash, and ampersand are never exempt.
+			r := strings.NewReplacer("+", "%20", "%2F", "/", "%3D", "=")
+			target.RawQuery = r.Replace(queryString)
 			w.Header().Add("Location", target.String())
 			w.WriteHeader(http.StatusSeeOther)
 			return

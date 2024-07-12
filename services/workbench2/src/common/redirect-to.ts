@@ -9,26 +9,27 @@ export const REDIRECT_TO_DOWNLOAD_KEY = 'redirectToDownload';
 export const REDIRECT_TO_PREVIEW_KEY = 'redirectToPreview';
 export const REDIRECT_TO_KEY = 'redirectTo';
 
-const getRedirectKeyFromUrl = (href: string): string | null => {
+const getRedirectKeyFromUrl = (href: string): string => {
+    let params = new URL(href).searchParams;
     switch (true) {
-        case href.indexOf(REDIRECT_TO_DOWNLOAD_KEY) > -1:
+        case params.has(REDIRECT_TO_DOWNLOAD_KEY):
             return REDIRECT_TO_DOWNLOAD_KEY;
-        case href.indexOf(REDIRECT_TO_PREVIEW_KEY) > -1:
+        case params.has(REDIRECT_TO_PREVIEW_KEY):
             return REDIRECT_TO_PREVIEW_KEY;
-        case href.indexOf(`${REDIRECT_TO_KEY}=`) > -1:
+        case params.has(REDIRECT_TO_KEY):
             return REDIRECT_TO_KEY;
         default:
-            return null;
+            return "";
     }
 }
 
-const getRedirectKeyFromStorage = (localStorage: Storage): string | null => {
+const getRedirectKeyFromStorage = (localStorage: Storage): string => {
     if (localStorage.getItem(REDIRECT_TO_DOWNLOAD_KEY)) {
         return REDIRECT_TO_DOWNLOAD_KEY;
     } else if (localStorage.getItem(REDIRECT_TO_PREVIEW_KEY)) {
         return REDIRECT_TO_PREVIEW_KEY;
     }
-    return null;
+    return "";
 }
 
 export const storeRedirects = () => {
@@ -39,7 +40,8 @@ export const storeRedirects = () => {
     const redirectStoreKey = redirectKey === REDIRECT_TO_KEY ? REDIRECT_TO_PREVIEW_KEY : redirectKey;
 
     if (localStorage && redirectKey && redirectStoreKey) {
-        localStorage.setItem(redirectStoreKey, decodeURIComponent(href.split(`${redirectKey}=`)[1]));
+        let params = new URL(href).searchParams;
+        localStorage.setItem(redirectStoreKey, params.get(redirectKey) || "");
     }
 };
 
@@ -53,12 +55,19 @@ export const handleRedirects = (token: string, config: Config) => {
         redirectKey && localStorage.removeItem(redirectKey);
 
         if (redirectKey && redirectPath) {
-            const sep = redirectPath.indexOf("?") > -1 ? "&" : "?";
-            let redirectUrl = `${keepWebServiceUrl}${redirectPath}${sep}api_token=${token}`;
+	    let redirectUrl = new URL(keepWebServiceUrl);
+	    // encodeURI will not touch characters such as # ? that may be
+	    // delimiter in overall URL syntax
+	    // Setting pathname attribute will in effect encode # and ?
+	    // while leaving others minimally disturbed (useful for debugging
+	    // and avoids excessive percent-encoding)
+	    redirectUrl.pathname = encodeURI(redirectPath);
+	    redirectUrl.searchParams.set("api_token", token);
+            let u = redirectUrl.href;
             if (redirectKey === REDIRECT_TO_PREVIEW_KEY) {
-                redirectUrl = getInlineFileUrl(redirectUrl, keepWebServiceUrl, keepWebInlineServiceUrl);
+                u = getInlineFileUrl(u, keepWebServiceUrl, keepWebInlineServiceUrl);
             }
-            window.location.href = redirectUrl;
+            window.location.href = u;
         }
     }
 };
