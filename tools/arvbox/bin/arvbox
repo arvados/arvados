@@ -133,18 +133,21 @@ wait_for_arvbox() {
     echo
 
     if [[ "$(listusers)" =~ ^\{\} ]] ; then
-        echo "No users defined, use 'arvbox adduser' to add user logins"
+        echo "NOTE: No users defined, use 'arvbox adduser' to add user logins"
     else
         echo "Use 'arvbox listusers' to see user logins"
     fi
     echo
 
-    echo "When connecting to Workbench for the first time, if you get an error saying"
-    echo "  'your connection is not private' or 'potential security risk'"
-    echo "then you will need to install the private root certificate that was generated"
-    echo "for this arvbox instance.  Use 'arvbox root-cert' to get the certificate file"
-    echo "and then import it into your browser's certificate storage."
-    echo "See https://doc.arvados.org/v2.7/install/arvbox.html#root-cert for details"
+    echo "NOTE: Arvbox uses a self-signed certificate for its HTTPS endpoint."
+    echo "When connecting to Workbench for the first time, you will likely get an error titled:"
+    echo "    'Your connection is not private' or 'Potential security risk'"
+    echo "This mean you need to install the private root certificate that was generated for"
+    echo "this arvbox instance.  To get the certificate file use"
+    echo "    $0 root-cert"
+    echo "and then import it into the certificate store for your browser and operating system."
+    echo "For more information see:"
+    echo "    https://doc.arvados.org/v2.7/install/arvbox.html#root-cert"
 }
 
 docker_run_dev() {
