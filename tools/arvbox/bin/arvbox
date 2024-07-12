@@ -124,11 +124,27 @@ wait_for_arvbox() {
     done < $FF
     rm $FF
     echo
+
     if test -n "$localip" ; then
         echo "export ARVADOS_API_HOST=$localip:8000"
     else
         echo "export ARVADOS_API_HOST=$(gethost):8000"
     fi
+    echo
+
+    if [[ "$(listusers)" =~ ^\{\} ]] ; then
+        echo "No users defined, use 'arvbox adduser' to add user logins"
+    else
+        echo "Use 'arvbox listusers' to see user logins"
+    fi
+    echo
+
+    echo "When connecting to Workbench for the first time, if you get an error saying"
+    echo "  'your connection is not private' or 'potential security risk'"
+    echo "then you will need to install the private root certificate that was generated"
+    echo "for this arvbox instance.  Use 'arvbox root-cert' to get the certificate file"
+    echo "and then import it into your browser's certificate storage."
+    echo "See https://doc.arvados.org/v2.7/install/arvbox.html#root-cert for details"
 }
 
 docker_run_dev() {
@@ -320,13 +336,9 @@ run() {
                    arvados/arvbox-dev$TAG
             updateconf
             wait_for_arvbox
+	    echo
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
             echo "The Arvados testing root certificate is $VAR_DATA/root-cert.pem"
-            if [[ "$(listusers)" =~ ^\{\} ]] ; then
-                echo "No users defined, use 'arvbox adduser' to add user logins"
-            else
-                echo "Use 'arvbox listusers' to see user logins"
-            fi
         else
             echo "Unknown configuration '$CONFIG'"
         fi

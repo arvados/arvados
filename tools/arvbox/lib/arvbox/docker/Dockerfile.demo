@@ -39,7 +39,6 @@ RUN /usr/local/lib/arvbox/createusers.sh
 RUN sudo -u arvbox /var/lib/arvbox/service/api/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/workbench2/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keep-web/run-service --only-deps
-RUN sudo -u arvbox /var/lib/arvbox/service/workbench/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/doc/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/vm/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keepproxy/run-service --only-deps

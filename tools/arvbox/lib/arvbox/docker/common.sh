@@ -35,7 +35,6 @@ server_cert_key=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.key
 
 declare -A services
 services=(
-  [workbench]=3001
   [workbench2]=3000
   [workbench2-ssl]=443
   [api]=8004
