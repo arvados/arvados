@@ -10,6 +10,8 @@ client constructors are `api` and `api_from_config`.
 """
 
 import collections
+import errno
+import hashlib
 import httplib2
 import json
 import logging
@@ -19,6 +21,7 @@ import re
 import socket
 import ssl
 import sys
+import tempfile
 import threading
 import time
 import types
@@ -39,7 +42,6 @@ from . import config
 from . import errors
 from . import retry
 from . import util
-from . import cache
 from .logging import GoogleHTTPClientFilter, log_handler
 
 _logger = logging.getLogger('arvados.api')
@@ -155,10 +157,81 @@ def _new_http_error(cls, *args, **kwargs):
         errors.ApiError, *args, **kwargs)
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
+class SafeHTTPCache(object):
+    """Thread-safe replacement for `httplib2.FileCache`
+
+    `arvados.api.http_cache` is the preferred way to construct this object.
+    Refer to that function's docstring for details.
+    """
+
+    def __init__(self, path=None, max_age=None):
+        self._dir = path
+        if max_age is not None:
+            try:
+                self._clean(threshold=time.time() - max_age)
+            except:
+                pass
+
+    def _clean(self, threshold=0):
+        for ent in os.listdir(self._dir):
+            fnm = os.path.join(self._dir, ent)
+            if os.path.isdir(fnm) or not fnm.endswith('.tmp'):
+                continue
+            stat = os.lstat(fnm)
+            if stat.st_mtime < threshold:
+                try:
+                    os.unlink(fnm)
+                except OSError as err:
+                    if err.errno != errno.ENOENT:
+                        raise
+
+    def __str__(self):
+        return self._dir
+
+    def _filename(self, url):
+        return os.path.join(self._dir, hashlib.md5(url.encode('utf-8')).hexdigest()+'.tmp')
+
+    def get(self, url):
+        filename = self._filename(url)
+        try:
+            with open(filename, 'rb') as f:
+                return f.read()
+        except (IOError, OSError):
+            return None
+
+    def set(self, url, content):
+        try:
+            fd, tempname = tempfile.mkstemp(dir=self._dir)
+        except:
+            return None
+        try:
+            try:
+                f = os.fdopen(fd, 'wb')
+            except:
+                os.close(fd)
+                raise
+            try:
+                f.write(content)
+            finally:
+                f.close()
+            os.rename(tempname, self._filename(url))
+            tempname = None
+        finally:
+            if tempname:
+                os.unlink(tempname)
+
+    def delete(self, url):
+        try:
+            os.unlink(self._filename(url))
+        except OSError as err:
+            if err.errno != errno.ENOENT:
+                raise
+
+
 def http_cache(data_type: str) -> Optional[SafeHTTPCache]:
     """Set up an HTTP file cache
 
-    This function constructs and returns an `arvados.cache.SafeHTTPCache`
+    This function constructs and returns an `arvados.api.SafeHTTPCache`
     backed by the filesystem under a cache directory from the environment, or
     `None` if the directory cannot be set up. The return value can be passed to
     `httplib2.Http` as the `cache` argument.
@@ -173,7 +246,7 @@ def http_cache(data_type: str) -> Optional[SafeHTTPCache]:
     except (OSError, RuntimeError):
         return None
     else:
-        return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
+        return SafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
         version: str,

@@ -34,6 +34,11 @@ from .arvfile import StreamFileReader
 from .logging import log_format, log_date_format, log_handler
 from .retry import RetryLoop
 
+# Backwards compatibility shims: these modules used to get pulled in after
+# `import arvados` with previous versions of the SDK. We must keep the names
+# accessible even though there's no longer any functional need for them.
+from . import cache
+
 # Previous versions of the PySDK used to say `from .api import api`.  This
 # made it convenient to call the API client constructor, but difficult to
 # access the rest of the `arvados.api` module. The magic below fixes that
