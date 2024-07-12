@@ -10,10 +10,11 @@ import unittest
 from unittest import mock
 
 import arvados
-from arvados._ranges import Range
-from arvados.keep import KeepLocator
-from arvados.collection import Collection
+
+from arvados._internal.streams import Range
 from arvados.arvfile import ArvadosFile, ArvadosFileReader
+from arvados.collection import Collection
+from arvados.keep import KeepLocator
 
 from . import arvados_testutil as tutil
 from .test_stream import StreamFileReaderTestMixin, StreamRetryTestMixin

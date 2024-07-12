@@ -14,20 +14,16 @@ import tempfile
 import time
 import unittest
 
-import parameterized
-from unittest import mock
-
-from . import run_test_server
-from arvados._ranges import Range, LocatorAndRange, locators_and_ranges
-
 import arvados
 import arvados.keep
+import parameterized
 
+from arvados._internal.streams import Range, LocatorAndRange, locators_and_ranges
 from arvados.collection import Collection, CollectionReader
-from arvados._ranges import Range, LocatorAndRange
 
 from . import arvados_testutil as tutil
 from . import run_test_server
+from unittest import mock
 
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
