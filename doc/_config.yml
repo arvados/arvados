@@ -191,7 +191,6 @@ navbar:
       - admin/spot-instances.html.textile.liquid
       - admin/cloudtest.html.textile.liquid
     - Other:
-      - install/migrate-docker19.html.textile.liquid
       - admin/upgrade-crunch2.html.textile.liquid
   installguide:
     - Overview:

@@ -774,7 +774,6 @@ rsync -a --delete-after "$tmp/build/" "$dst/"
 			{"lib/python/bin/arv-get"},
 			{"lib/python/bin/arv-keepdocker"},
 			{"lib/python/bin/arv-ls"},
-			{"lib/python/bin/arv-migrate-docker19"},
 			{"lib/python/bin/arv-normalize"},
 			{"lib/python/bin/arv-put"},
 			{"lib/python/bin/arv-ws"},
