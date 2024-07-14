@@ -30,15 +30,13 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
-"previous: Upgrading to 2.7.1":#v2_7_1
+"previous: Upgrading to 2.7.4":#v2_7_4
 
-h3. Debian 10, Ubuntu 18.04, and CentOS are no longer supported
+h3. Debian 10 and Ubuntu 18.04 are no longer supported
 
-Arvados 3.0 no longer supports some of the older distributions supported by Arvados 2.7: Debian 10 "buster," Ubuntu 18.04 "bionic," and CentOS 7 and 8. If you are running Arvados on any of these distributions, you must first upgrade to a supported distribution before you upgrade to Arvados 3.0.
+Arvados 3.0 no longer supports some of the older distributions supported by Arvados 2.7: Debian 10 "buster" and Ubuntu 18.04 "bionic." If you are running Arvados on any of these distributions, you must first upgrade to a supported distribution before you upgrade to Arvados 3.0.
 
-Arvados 2.7 supports Debian 11 "bullseye" and Ubuntu 20.04 "focal." If you are running Debian or Ubuntu, You can upgrade to one of those releases, then proceed to upgrade Arvados to 3.0.
-
-If you are running CentOS, Arvados 2.7 supports Red Hat Enterprise Linux 8, AlmaLinux 8, and Rocky Linux 8. Please plan a migration to one of these related distributions. Then you can upgrade to Arvados 3.0.
+Arvados 2.7 supports Debian 11 "bullseye" and Ubuntu 20.04 "focal." You can upgrade your Arvados cluster to one of those releases, then proceed to upgrade Arvados to 3.0.
 
 h3. RVM is no longer supported
 
@@ -111,13 +109,43 @@ h3. WebDAV service uses @/var/cache@ for file content
 
 If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
 
+h2(#v2_7_4). v2.7.4 (2024-07-08)
+
+"previous: Upgrading to 2.7.3":#v2_7_3
+
+Starting from 2.7.4, Arvados no longer supports CentOS.  CentOS users should migrate to an Arvados-supported version of Red Hat Enterprise Linux (RHEL), Rocky Linux or AlmaLinux.
+
+There are no other configuration changes requiring administrator attention in this release.
+
+h2(#v2_7_3). v2.7.3 (2024-05-24)
+
+"previous: Upgrading to 2.7.2":#v2_7_2
+
+There are no configuration changes requiring administrator attention in this release.
+
+h2(#v2_7_2). v2.7.2 (2024-04-09)
+
+"previous: Upgrading to 2.7.1":#v2_7_1
+
 h3. Check MaxGatewayTunnels config
 
 If you use the LSF or Slurm dispatcher, ensure the new @API.MaxGatewayTunnels@ config entry is high enough to support the size of your cluster. See "LSF docs":{{site.baseurl}}/install/crunch2-lsf/install-dispatch.html#MaxGatewayTunnels or "Slurm docs":{{site.baseurl}}/install/crunch2-slurm/install-dispatch.html#MaxGatewayTunnels for details.
 
-h2(#2_7_1). v2.7.1 (2023-12-12)
+h3. New LSF dispatcher config items MaxRunTimeOverhead and MaxRunTimeDefault
+
+Now supports configuration parameter @Containers.LSF.MaxRunTimeDefault@ as the default value for @max_run_time@ for containers that do not specify a time limit (using CWL @ToolTimeLimit@).
+
+Now supports configuration parameter @Containers.LSF.MaxRunTimeOverhead@ so that when @scheduling_constraints.max_run_time@ or @MaxRunTimeDefault@ are non-zero, this adds time to account for crunch-run startup/shutdown overhead.
+
+h2(#v2_7_1). v2.7.1 (2023-12-12)
 
 "previous: Upgrading to 2.7.0":#v2_7_0
+
+h3. Separate configs for MaxConcurrentRequests and MaxConcurrentRailsRequests
+
+The default configuration value @API.MaxConcurrentRequests@ (the number of concurrent requests that will be processed by a single instance of an arvados service process) is raised from 8 to 64.
+
+A new configuration key @API.MaxConcurrentRailsRequests@ (default 8) limits the number of concurrent requests processed by a RailsAPI service process.
 
 h3. Remove Workbench1 packages after upgrading the salt installer
 

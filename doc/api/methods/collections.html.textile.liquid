@@ -65,16 +65,23 @@ When @trash_at@ is set, @delete_at@ will also be set.  Normally @delete_at = tra
 
 Once @delete_at@ is past, the collection and all of its previous versions will be deleted permanently and can no longer be untrashed.
 
-h3(#replace_files). Using "replace_files" to create/update collections
+h3(#replace_files). Using "replace_files" to create or update a collection
 
-The @replace_files@ option can be used with the "create":#create and "update":#update APIs to efficiently copy individual files and directory trees from other collections, and copy/rename/delete items within an existing collection, without transferring any file data.
+The @replace_files@ option can be used with the "create":#create and "update":#update APIs to efficiently and atomically copy individual files and directory trees from other collections, copy/rename/delete items within an existing collection, and add new items to a collection.
 
 @replace_files@ keys indicate target paths in the new collection, and values specify sources that should be copied to the target paths.
 * Each target path must be an absolute canonical path beginning with @/@. It must not contain @.@ or @..@ components, consecutive @/@ characters, or a trailing @/@ after the final component.
-* Each source must be either an empty string (signifying that the target path is to be deleted), or @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection.
-* In an @update@ request, sources may reference the current portable data hash of the collection being updated.
+* Each source must be one of the following:
+** an empty string (signifying that the target path is to be deleted),
+** @<PDH>/<path>@ where @<PDH>@ is the portable data hash of a collection on the cluster and @<path>@ is a file or directory in that collection,
+** @manifest_text/<path>@ where @<path>@ is an existing file or directory in a collection supplied in the @manifest_text@ attribute in the request, or
+** @current/<path>@ where @<path>@ is an existing file or directory in the collection being updated.
 
-Example: delete @foo.txt@ from a collection
+In an @update@ request, sources may reference the current portable data hash of the collection being updated. However, in many cases it is more appropriate to use a @current/<path>@ source instead, to ensure the latest content is used even if the collection has been updated since the PDH was last retrieved.
+
+h4(#replace_files-delete). Delete a file
+
+Delete @foo.txt@.
 
 <notextile><pre>
 "replace_files": {
@@ -82,16 +89,69 @@ Example: delete @foo.txt@ from a collection
 }
 </pre></notextile>
 
-Example: rename @foo.txt@ to @bar.txt@ in a collection with portable data hash @fa7aeb5140e2848d39b416daeef4ffc5+45@
+h4(#replace_files-rename). Rename a file
+
+Rename @foo.txt@ to @bar.txt@.
 
 <notextile><pre>
 "replace_files": {
   "/foo.txt": "",
-  "/bar.txt": "fa7aeb5140e2848d39b416daeef4ffc5+45/foo.txt"
+  "/bar.txt": "current/foo.txt"
 }
 </pre></notextile>
 
-Example: delete current contents, then add content from multiple collections
+h4(#replace_files-swap). Swap files
+
+Swap contents of files @foo@ and @bar@.
+
+<notextile><pre>
+"replace_files": {
+  "/foo": "current/bar",
+  "/bar": "current/foo"
+}
+</pre></notextile>
+
+h4(#replace_files-add). Add a file
+
+<notextile><pre>
+"replace_files": {
+  "/new_directory/new_file.txt": "manifest_text/new_file.txt"
+},
+"collection": {
+  "manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
+h4(#replace_files-replace). Replace all content with new content
+
+Note this is equivalent to omitting the @replace_files@ argument.
+
+<notextile><pre>
+"replace_files": {
+  "/": "manifest_text/"
+},
+"collection": {
+  "manifest_text": "./new_directory acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
+h4(#replace_files-rename-and-replace). Atomic rename and replace
+
+Rename @current_file.txt@ to @old_file.txt@ and replace @current_file.txt@ with new content, all in a single atomic operation.
+
+<notextile><pre>
+"replace_files": {
+  "/current_file.txt": "manifest_text/new_file.txt",
+  "/old_file.txt": "current/current_file.txt"
+},
+"collection": {
+  "manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
+}
+</pre></notextile>
+
+h4(#replace_files-combine). Combine collections
+
+Delete all current content, then copy content from other collections into new subdirectories.
 
 <notextile><pre>
 "replace_files": {
@@ -101,7 +161,9 @@ Example: delete current contents, then add content from multiple collections
 }
 </pre></notextile>
 
-Example: replace entire collection with a copy of a subdirectory from another collection
+h4(#replace_files-extract-subdirectory). Extract a subdirectory
+
+Replace all current content with a copy of a subdirectory from another collection.
 
 <notextile><pre>
 "replace_files": {
@@ -109,12 +171,25 @@ Example: replace entire collection with a copy of a subdirectory from another co
 }
 </pre></notextile>
 
+h4(#replace_files-usage-restrictions). Usage restrictions
+
 A target path with a non-empty source cannot be the ancestor of another target path in the same request. For example, the following request is invalid:
 
 <notextile><pre>
 "replace_files": {
   "/foo": "fa7aeb5140e2848d39b416daeef4ffc5+45/",
   "/foo/this_will_return_an_error": ""
+}
+</pre></notextile>
+
+It is an error to supply a non-empty @manifest_text@ that is unused, i.e., the @replace_files@ argument does not contain any values beginning with @"manifest_text/"@. For example, the following request is invalid:
+
+<notextile><pre>
+"replace_files": {
+  "/foo": "current/bar"
+},
+"collection": {
+  "manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3+A82740cd577ff5745925af5780de5992cbb25d937@668efec4 0:3:new_file.txt\n"
 }
 </pre></notextile>
 

@@ -128,7 +128,7 @@ func (rtr *router) handleBlockWrite(w http.ResponseWriter, req *http.Request) {
 	for k, n := range resp.StorageClasses {
 		if n > 0 {
 			if scc != "" {
-				scc += "; "
+				scc += ", "
 			}
 			scc += fmt.Sprintf("%s=%d", k, n)
 		}
