@@ -161,6 +161,14 @@ module LoadParam
       end
     end
 
+    if @select
+      # The modified_by_client_uuid field is no longer offered. For
+      # the sake of compatibility with workbench2, ignore it when a
+      # client asks for it explicitly (rather than returning an
+      # "invalid field" error).
+      @select -= ['modified_by_client_uuid']
+    end
+
     if @select && @orders
       # Any ordering columns must be selected when doing select,
       # otherwise it is an SQL error, so filter out invaliding orderings.
