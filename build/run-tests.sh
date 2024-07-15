@@ -385,7 +385,6 @@ start_services() {
     if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
         return 0
     fi
-    . "$VENV3DIR/bin/activate"
     echo 'Starting API, controller, keepproxy, keep-web, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
         mkdir -p "$WORKSPACE/services/api/log"
@@ -419,7 +418,6 @@ start_services() {
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
         && fail=0
-    deactivate
     if [[ $fail != 0 ]]; then
         unset ARVADOS_TEST_API_HOST
     fi
@@ -431,7 +429,6 @@ stop_services() {
         return
     fi
     unset ARVADOS_TEST_API_HOST ARVADOS_TEST_PROXY_SERVICES
-    . "$VENV3DIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python3 sdk/python/tests/run_test_server.py stop_nginx \
         && python3 sdk/python/tests/run_test_server.py stop_ws \
@@ -440,7 +437,6 @@ stop_services() {
         && python3 sdk/python/tests/run_test_server.py stop_controller \
         && python3 sdk/python/tests/run_test_server.py stop \
         && all_services_stopped=1
-    deactivate
     unset ARVADOS_CONFIG
 }
 
@@ -494,13 +490,20 @@ gem_uninstall_if_exists() {
 }
 
 setup_virtualenv() {
-    local venvdest="$1"; shift
-    if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip3" ]]; then
-        python3 -m venv "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
-    elif [[ -n "$short" ]]; then
-        return
+    if [[ -z "${VENV3DIR:-}" ]]; then
+        fatal "setup_virtualenv called before \$VENV3DIR was set"
+    elif ! [[ -e "$VENV3DIR/bin/activate" ]]; then
+        python3 -m venv "$VENV3DIR" || fatal "virtualenv creation failed"
+        # Configure pip options we always want to use.
+        "$VENV3DIR/bin/pip" config --quiet --site set global.disable-pip-version-check true
+        "$VENV3DIR/bin/pip" config --quiet --site set global.no-input true
+        "$VENV3DIR/bin/pip" config --quiet --site set global.no-python-version-warning true
+        "$VENV3DIR/bin/pip" config --quiet --site set install.progress-bar off
+        # If we didn't have a virtualenv before, we couldn't have started any
+        # services. Set the flag used by stop_services to indicate that.
+        all_services_stopped=1
     fi
-    "$venvdest/bin/pip3" install --no-cache-dir 'setuptools>=68' 'pip>=20'
+    . "$VENV3DIR/bin/activate" || fatal "virtualenv activation failed"
 }
 
 initialize() {
@@ -512,10 +515,7 @@ initialize() {
     sanity_checks
 
     echo "WORKSPACE=$WORKSPACE"
-
-    # Clean up .pyc files that may exist in the workspace
     cd "$WORKSPACE"
-    find -name '*.pyc' -delete
 
     if [[ -z "$temp" ]]; then
         temp="$(mktemp -d)"
@@ -550,6 +550,7 @@ initialize() {
     unset http_proxy https_proxy no_proxy
 
     setup_ruby_environment
+    setup_virtualenv
 
     echo "PATH is $PATH"
 }
@@ -557,21 +558,16 @@ initialize() {
 install_env() {
     go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed"
-
-    setup_virtualenv "$VENV3DIR"
-    . "$VENV3DIR/bin/activate"
-
     # parameterized and pytest are direct dependencies of Python tests.
     # PyYAML is a test requirement used by run_test_server.py and needed for
     # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
+    # pip >= 20.3 is necessary for modern dependency resolution.
+    # setuptools is our chosen Python build tool.
     # wheel modernizes the venv (as of early 2024) and makes it more closely
     # match our package build environment.
-    # We run `setup.py build` first to generate _version.py.
-    pip install parameterized pytest PyYAML pdoc wheel \
-        && env -C "$WORKSPACE/sdk/python" python3 setup.py build \
-        && pip install "$WORKSPACE/sdk/python" \
-        || fatal "installing Python SDK and related dependencies failed"
+    pip install parameterized pdoc "pip>=20.3" pytest PyYAML setuptools wheel ||
+        fatal "virtualenv package installs failed"
 }
 
 retry() {
@@ -659,11 +655,7 @@ do_test_once() {
     timer_reset
 
     result=
-    if which deactivate >/dev/null; then deactivate; fi
-    if ! . "$VENV3DIR/bin/activate"
-    then
-        result=1
-    elif [[ "$2" == "go" ]]
+    if [[ "$2" == "go" ]]
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
@@ -700,11 +692,6 @@ do_test_once() {
         cd "$WORKSPACE/$1" && pip install . && while :
         do
             tries=$((${tries}+1))
-            # $3 can name a path directory for us to use, including trailing
-            # slash; e.g., the bin/ subdirectory of a virtualenv.
-            if [[ -e "${3}activate" ]]; then
-                . "${3}activate"
-            fi
             python3 -m pytest ${testargs[$1]}
             result=$?
             # pytest uses exit code 2 to mean "test collection failed."
@@ -734,16 +721,8 @@ check_arvados_config() {
         return
     fi
     if [[ -z "$ARVADOS_CONFIG" ]] ; then
-        # Create config file.  The run_test_server script requires PyYAML,
-        # so virtualenv needs to be active.  Downstream steps like
-        # workbench install which require a valid config.yml.
-        if [[ ! -s "$VENV3DIR/bin/activate" ]] ; then
-            install_env
-        fi
-        . "$VENV3DIR/bin/activate"
         cd "$WORKSPACE"
         eval $(python3 sdk/python/tests/run_test_server.py setup_config)
-        deactivate
     fi
 }
 
@@ -760,31 +739,12 @@ do_install_once() {
     timer_reset
 
     result=
-    if which deactivate >/dev/null; then deactivate; fi
-    if [[ "$1" != "env" ]] && ! . "$VENV3DIR/bin/activate"; then
-        result=1
-    elif [[ "$2" == "go" ]]
+    if [[ "$2" == "go" ]]
     then
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
-        # $3 can name a path directory for us to use, including trailing
-        # slash; e.g., the bin/ subdirectory of a virtualenv.
-
-        # Need to change to a different directory after creating
-        # the source dist package to avoid a pip bug.
-        # see https://arvados.org/issues/5766 for details.
-
-        # Also need to install twice, because if it believes the package is
-        # already installed, pip it won't install it.  So the first "pip
-        # install" ensures that the dependencies are met, the second "pip
-        # install" ensures that we've actually installed the local package
-        # we just built.
-        cd "$WORKSPACE/$1" \
-            && "${3}python3" setup.py sdist rotate --keep=1 --match .tar.gz \
-            && cd "$WORKSPACE" \
-            && "${3}pip3" install --no-cache-dir "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip3" install --no-cache-dir --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+        pip install "$WORKSPACE/$1"
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -1004,15 +964,18 @@ test_services/workbench2_integration() {
 install_deps() {
     # Install parts needed by test suites
     do_install env
+    # Many other components rely on PySDK's run_test_server.py, which relies on
+    # the SDK itself, so install that first.
+    do_install sdk/python pip
+    # lib/controller integration tests depend on arv-mount to run containers.
+    do_install services/fuse pip
+    # sdk/cwl depends on crunchstat-summary.
+    do_install tools/crunchstat-summary pip
     do_install cmd/arvados-server go
-    do_install tools/crunchstat-summary pip "${VENV3DIR}/bin/"
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install sdk/cli
     do_install services/api
-    # lib/controller integration tests depend on arv-mount to run
-    # containers.
-    do_install services/fuse pip "${VENV3DIR}/bin/"
     do_install services/keepproxy go
     do_install services/keep-web go
 }
@@ -1029,7 +992,7 @@ install_all() {
     if [[ -z ${skip[python3]} ]]; then
         for pkg_dir in "${pythonstuff[@]}"
         do
-            do_install "$pkg_dir" pip "$VENV3DIR/bin/"
+            do_install "$pkg_dir" pip
         done
     fi
     for pkg_dir in "${gostuff[@]}"
@@ -1056,7 +1019,7 @@ test_all() {
     if [[ -z ${skip[python3]} ]]; then
         for pkg_dir in "${pythonstuff[@]}"
         do
-            do_test "$pkg_dir" pip "$VENV3DIR/bin/"
+            do_test "$pkg_dir" pip
         done
     fi
     for pkg_dir in "${gostuff[@]}"
@@ -1097,7 +1060,7 @@ for g in "${gostuff[@]}"; do
     testfuncargs[$g]="$g go"
 done
 for p in "${pythonstuff[@]}"; do
-    testfuncargs[$p]="$p pip $VENV3DIR/bin/"
+    testfuncargs[$p]="$p pip"
 done
 
 testfuncargs["sdk/cli"]="sdk/cli"
@@ -1111,13 +1074,13 @@ else
     skip=()
     only=()
     only_install=""
-    if [[ -e "$VENV3DIR/bin/activate" ]]; then stop_services; fi
+    stop_services
     setnextcmd() {
         if [[ "$TERM" = dumb ]]; then
             # assume emacs, or something, is offering a history buffer
             # and pre-populating the command will only cause trouble
             nextcmd=
-        elif [[ ! -e "$VENV3DIR/bin/activate" ]]; then
+        elif [[ ! -e "$GOPATH/bin/arvados-server" ]]; then
             nextcmd="install deps"
         else
             nextcmd=""
@@ -1125,7 +1088,6 @@ else
     }
     echo
     help_interactive
-    nextcmd="install deps"
     setnextcmd
     HISTFILE="$WORKSPACE/tmp/.history"
     history -r
