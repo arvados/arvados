@@ -651,6 +651,13 @@ go_ldflags() {
 do_test_once() {
     unset result
 
+    if [[ "$2" == pip ]]; then
+        # We need to install the module before testing to ensure all the
+        # dependencies are satisfied. We need to do this before we start
+        # the test header+timer.
+        do_install_once "$1" "$2" || return
+    fi
+
     title "test $1"
     timer_reset
 
@@ -689,10 +696,10 @@ do_test_once() {
     elif [[ "$2" == "pip" ]]
     then
         tries=0
-        cd "$WORKSPACE/$1" && pip install . && while :
+        while :
         do
             tries=$((${tries}+1))
-            python3 -m pytest ${testargs[$1]}
+            env -C "$WORKSPACE/$1" python3 -m pytest ${testargs[$1]}
             result=$?
             # pytest uses exit code 2 to mean "test collection failed."
             # See discussion in FUSE's IntegrationTest and MountTestBase.
@@ -744,7 +751,9 @@ do_install_once() {
         go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
-        pip install "$WORKSPACE/$1"
+        # Generate _version.py before installing.
+        python3 "$WORKSPACE/$1/arvados_version.py" >/dev/null &&
+            pip install "$WORKSPACE/$1"
     elif [[ "$2" != "" ]]
     then
         "install_$2"
