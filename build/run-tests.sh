@@ -89,7 +89,6 @@ lib/service
 services/api
 services/dockercleaner
 services/fuse
-services/fuse:py3
 services/health
 services/keep-web
 services/keepproxy
@@ -102,8 +101,8 @@ services/workbench2_units
 services/workbench2_integration
 services/ws
 sdk/cli
+sdk/cwl
 sdk/python
-sdk/python:py3
 sdk/ruby-google-api-client
 sdk/ruby
 sdk/go/arvados
@@ -117,12 +116,10 @@ sdk/go/blockdigest
 sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
-sdk/cwl:py3
 sdk/R
 sdk/java-v2
 tools/sync-groups
 tools/crunchstat-summary
-tools/crunchstat-summary:py3
 tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
@@ -137,7 +134,6 @@ unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 # accident.
 GITDIR=
 GOPATH=
-VENVDIR=
 VENV3DIR=
 PYTHONPATH=
 GEMHOME=
@@ -292,10 +288,10 @@ do
             exit 1
             ;;
         --skip)
-            skip[$1]=1; shift
+            skip["${1%:py3}"]=1; shift
             ;;
         --only)
-            only[$1]=1; skip[$1]=""; shift
+            only["${1%:py3}"]=1; skip["${1%:py3}"]=""; shift
             ;;
         --short)
             short=1
@@ -325,7 +321,7 @@ do
         *_test=*)
             suite="${arg%%_test=*}"
             args="${arg#*=}"
-            testargs["$suite"]="$args"
+            testargs["${suite%:py3}"]="$args"
             ;;
         *=*)
             eval export $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
@@ -900,11 +896,11 @@ pythonstuff=(
     # The ordering of sdk/python, tools/crunchstat-summary, and
     # sdk/cwl here is significant. See
     # https://dev.arvados.org/issues/19744#note-26
-    sdk/python:py3
-    tools/crunchstat-summary:py3
-    sdk/cwl:py3
-    services/dockercleaner:py3
-    services/fuse:py3
+    sdk/python
+    tools/crunchstat-summary
+    sdk/cwl
+    services/dockercleaner
+    services/fuse
 )
 
 declare -a gostuff
@@ -1029,16 +1025,16 @@ install_all() {
     do_install sdk/R
     do_install sdk/cli
     do_install services/login-sync
-    for p in "${pythonstuff[@]}"
+    local pkg_dir
+    if [[ -z ${skip[python3]} ]]; then
+        for pkg_dir in "${pythonstuff[@]}"
+        do
+            do_install "$pkg_dir" pip "$VENV3DIR/bin/"
+        done
+    fi
+    for pkg_dir in "${gostuff[@]}"
     do
-       dir=${p%:py3}
-       if [[ -z ${skip[python3]} ]]; then
-           do_install ${dir} pip "$VENV3DIR/bin/"
-       fi
-    done
-    for g in "${gostuff[@]}"
-    do
-        do_install "$g" go
+        do_install "$pkg_dir" go
     done
     do_install services/api
     do_install services/workbench2
@@ -1056,17 +1052,16 @@ test_all() {
     do_test sdk/cli
     do_test services/login-sync
     do_test sdk/java-v2
-    for p in "${pythonstuff[@]}"
+    local pkg_dir
+    if [[ -z ${skip[python3]} ]]; then
+        for pkg_dir in "${pythonstuff[@]}"
+        do
+            do_test "$pkg_dir" pip "$VENV3DIR/bin/"
+        done
+    fi
+    for pkg_dir in "${gostuff[@]}"
     do
-        dir=${p%:py3}
-        if [[ -z ${skip[python3]} ]]; then
-            do_test ${dir} pip "$VENV3DIR/bin/"
-        fi
-    done
-
-    for g in "${gostuff[@]}"
-    do
-        do_test "$g" go
+        do_test "$pkg_dir" go
     done
     do_test services/workbench2_units
     do_test services/workbench2_integration
@@ -1085,7 +1080,6 @@ help_interactive() {
     echo "TARGET                 (short for 'test DIR')"
     echo "test TARGET"
     echo "10 test TARGET         (run test 10 times)"
-    echo "test TARGET:py3        (test with python3)"
     echo "test TARGET -check.vv  (pass arguments to test)"
     echo "install TARGET"
     echo "install env            (go/python libs)"
@@ -1103,8 +1097,7 @@ for g in "${gostuff[@]}"; do
     testfuncargs[$g]="$g go"
 done
 for p in "${pythonstuff[@]}"; do
-    dir=${p%:py3}
-    testfuncargs[$dir:py3]="$dir pip $VENV3DIR/bin/"
+    testfuncargs[$p]="$p pip $VENV3DIR/bin/"
 done
 
 testfuncargs["sdk/cli"]="sdk/cli"
@@ -1147,6 +1140,8 @@ else
         read verb target opts <<<"${nextcmd}"
         target="${target%/}"
         target="${target/\/:/:}"
+        # Remove old Python version suffix for backwards compatibility
+        target="${target%:py3}"
         case "${verb}" in
             "exit" | "quit")
                 exit_cleanly
@@ -1163,8 +1158,7 @@ else
                         ${verb}_${target}
                         ;;
                     *)
-                        argstarget=${target%:py3}
-                        testargs["$argstarget"]="${opts}"
+                        testargs["$target"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         while [ $count -gt 0 ]; do
