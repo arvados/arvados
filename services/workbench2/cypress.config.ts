@@ -5,6 +5,12 @@
 import { defineConfig } from "cypress";
 import baseWebpackConfig from "./config/webpack.config";
 import path from "path";
+import EventEmitter from "events";
+
+// Increase the default max listeners to avoid warnings
+// this doesn't matter when running the entire suite,
+// but necessary when running a single test repeatedly
+EventEmitter.defaultMaxListeners = 100;
 
 const webpackConfig = baseWebpackConfig("development");
 
