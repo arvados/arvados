@@ -11,10 +11,10 @@ describe('WebDAV', () => {
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('PROPFIND', 'http://foo.com/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Basic');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'PROPFIND', 'http://foo.com/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Authorization', 'Basic');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('allows to modify defaults after instantiation', async () => {
@@ -24,10 +24,10 @@ describe('WebDAV', () => {
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('PROPFIND', 'http://foo.com/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Basic');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'PROPFIND', 'http://foo.com/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Authorization', 'Basic');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('PROPFIND', async () => {
@@ -36,9 +36,9 @@ describe('WebDAV', () => {
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('PROPFIND', 'foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'PROPFIND', 'foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('PUT', async () => {
@@ -48,10 +48,10 @@ describe('WebDAV', () => {
         progress();
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('PUT', 'foo');
-        expect(send).toHaveBeenCalledWith('Test data');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'PUT', 'foo');
+        cy.get('@send').should('have.been.calledWith', 'Test data');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('COPY', async () => {
@@ -60,10 +60,10 @@ describe('WebDAV', () => {
         const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'COPY', 'http://base/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Destination', 'http://base/foo-copy');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('COPY - adds baseURL with trailing slash to Destination header', async () => {
@@ -72,10 +72,10 @@ describe('WebDAV', () => {
         const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'COPY', 'http://base/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Destination', 'http://base/foo-copy');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('COPY - adds baseURL without trailing slash to Destination header', async () => {
@@ -84,10 +84,10 @@ describe('WebDAV', () => {
         const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'COPY', 'http://base/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Destination', 'http://base/foo-copy');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('MOVE', async () => {
@@ -96,10 +96,10 @@ describe('WebDAV', () => {
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'MOVE', 'http://base/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Destination', 'http://base/foo-moved');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('MOVE - adds baseURL with trailing slash to Destination header', async () => {
@@ -108,10 +108,10 @@ describe('WebDAV', () => {
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'MOVE', 'http://base/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Destination', 'http://base/foo-moved');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('MOVE - adds baseURL without trailing slash to Destination header', async () => {
@@ -120,10 +120,10 @@ describe('WebDAV', () => {
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'MOVE', 'http://base/foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Destination', 'http://base/foo-moved');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 
     it('DELETE', async () => {
@@ -132,16 +132,16 @@ describe('WebDAV', () => {
         const promise = webdav.delete('foo');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('DELETE', 'foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
-        expect(request).toBeInstanceOf(XMLHttpRequest);
+        cy.get('@open').should('have.been.calledWith', 'DELETE', 'foo');
+        cy.get('@setRequestHeader').should('have.been.calledWith', 'Cache-Control', 'no-cache');
+        expect(request).to.be.instanceOf(XMLHttpRequest);
     });
 });
 
 const mockCreateRequest = () => {
-    const send = jest.fn();
-    const open = jest.fn();
-    const setRequestHeader = jest.fn();
+    const send = cy.stub().as('send');
+    const open = cy.stub().as('open');
+    const setRequestHeader = cy.stub().as('setRequestHeader');
     const request = new XMLHttpRequest();
     request.send = send;
     request.open = open;
