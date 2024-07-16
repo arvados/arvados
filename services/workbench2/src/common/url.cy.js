@@ -15,7 +15,7 @@ describe('url', () => {
             const result = customDecodeURI(path);
 
             // then
-            expect(result).toEqual(expectedResult);
+            expect(result).to.equal(expectedResult);
         });
 
         it('ignores non parsable URI and return its original form', () => {
@@ -26,7 +26,7 @@ describe('url', () => {
             const result = customDecodeURI(path);
 
             // then
-            expect(result).toEqual(path);
+            expect(result).to.equal(path);
         });
     });
 
@@ -40,7 +40,7 @@ describe('url', () => {
             const result = customEncodeURI(path);
 
             // then
-            expect(result).toEqual(expectedResult);
+            expect(result).to.equal(expectedResult);
         });
 
         it('ignores non encodable URI and return its original form', () => {
@@ -48,10 +48,10 @@ describe('url', () => {
             const path = 22;
 
             // when
-            const result = customEncodeURI(path as any);
+            const result = customEncodeURI(path);
 
             // then
-            expect(result).toEqual(path);
+            expect(result).to.equal(path);
         });
     });
 });
