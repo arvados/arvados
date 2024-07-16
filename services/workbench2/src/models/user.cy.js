@@ -2,17 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { User, getUserDisplayName } from './user';
+import { getUserDisplayName } from './user';
 
 describe('User', () => {
     it('gets the user display name', () => {
-        type UserCase = {
-            caseName: string;
-            withEmail?: boolean;
-            user: User;
-            expect: string;
-        };
-        const testCases: UserCase[] = [
+        const testCases = [
             {
                 caseName: 'Full data available',
                 user: {
@@ -128,7 +122,7 @@ describe('User', () => {
         ];
         testCases.forEach(c => {
             const dispName = getUserDisplayName(c.user, c.withEmail);
-            expect(dispName).toEqual(c.expect);
+            expect(dispName).to.equal(c.expect);
         })
     });
 });
