@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as Vocabulary from './vocabulary';
+import { isEqual } from 'lodash';
 
 describe('Vocabulary', () => {
-    let vocabulary: Vocabulary.Vocabulary;
+    let vocabulary;
 
     beforeEach(() => {
         vocabulary = {
@@ -68,42 +69,42 @@ describe('Vocabulary', () => {
     it('returns the list of tag keys', () => {
         const tagKeys = Vocabulary.getTags(vocabulary);
         // Alphabetically ordered by label
-        expect(tagKeys).toEqual([
+        expect(isEqual(tagKeys, [
             {id: "IDKEYANIMALS", label: "Animal"},
             {id: "IDKEYANIMALS", label: "Beast"},
             {id: "IDKEYANIMALS", label: "Creature"},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT"},
             {id: "IDKEYSIZES", label: "Sizes"},
             {id: "automation", label: "automation"},
-        ]);
+        ])).to.equal(true);
     });
 
     it('returns the list of preferred tag keys', () => {
         const preferredTagKeys = Vocabulary.getPreferredTags(vocabulary);
         // Alphabetically ordered by label
-        expect(preferredTagKeys).toEqual([
+        expect(isEqual(preferredTagKeys, [
             {id: "IDKEYANIMALS", label: "Animal", synonyms: []},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT", synonyms: []},
             {id: "IDKEYSIZES", label: "Sizes", synonyms: []},
             {id: "automation", label: "automation", synonyms: []},
-        ]);
+        ])).to.equal(true);
     });
 
     it('returns the list of preferred tag keys with matching synonyms', () => {
         const preferredTagKeys = Vocabulary.getPreferredTags(vocabulary, 'creat');
         // Alphabetically ordered by label
-        expect(preferredTagKeys).toEqual([
+        expect(isEqual(preferredTagKeys, [
             {id: "IDKEYANIMALS", label: "Animal", synonyms: ["Creature"]},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT", synonyms: []},
             {id: "IDKEYSIZES", label: "Sizes", synonyms: []},
             {id: "automation", label: "automation", synonyms: []},
-        ]);
+        ])).to.equal(true);
     });
 
     it('returns the tag values for a given key', () => {
         const tagValues = Vocabulary.getTagValues('IDKEYSIZES', vocabulary);
         // Alphabetically ordered by label
-        expect(tagValues).toEqual([
+        expect(isEqual(tagValues, [
             {id: "IDVALSIZES4", label: "IDVALSIZES4"},
             {id: "IDVALSIZES3", label: "L"},
             {id: "IDVALSIZES3", label: "Large"},
@@ -112,46 +113,46 @@ describe('Vocabulary', () => {
             {id: "IDVALSIZES2", label: "Medium"},
             {id: "IDVALSIZES1", label: "S"},
             {id: "IDVALSIZES1", label: "Small"},
-        ]);
+        ])).to.equal(true);
         // Let's try a key that doesn't have any labels
         const tagValues2 = Vocabulary.getTagValues('automation', vocabulary);
-        expect(tagValues2).toEqual([
+        expect(isEqual(tagValues2, [
             {id: "results", label: "results"},
             {id: "upload", label: "upload"},
-        ]);
+        ])).to.equal(true);
     });
 
     it('returns the preferred tag values for a given key', () => {
         const preferredTagValues = Vocabulary.getPreferredTagValues('IDKEYSIZES', vocabulary);
         // Alphabetically ordered by label
-        expect(preferredTagValues).toEqual([
+        expect(isEqual(preferredTagValues, [
             {id: "IDVALSIZES4", label: "IDVALSIZES4", synonyms: []},
             {id: "IDVALSIZES3", label: "Large", synonyms: []},
             {id: "IDVALSIZES2", label: "Medium", synonyms: []},
             {id: "IDVALSIZES1", label: "Small", synonyms: []},
-        ]);
+        ])).to.equal(true);
         // Let's try a key that doesn't have any labels
         const preferredTagValues2 = Vocabulary.getPreferredTagValues('automation', vocabulary);
-        expect(preferredTagValues2).toEqual([
+        expect(isEqual(preferredTagValues2, [
             {id: "results", label: "results", synonyms: []},
             {id: "upload", label: "upload", synonyms: []},
-        ]);
+        ])).to.equal(true);
     });
 
     it('returns the preferred tag values with matching synonyms for a given key', () => {
         const preferredTagValues = Vocabulary.getPreferredTagValues('IDKEYSIZES', vocabulary, 'litt');
         // Alphabetically ordered by label
-        expect(preferredTagValues).toEqual([
+        expect(isEqual(preferredTagValues, [
             {id: "IDVALSIZES4", label: "IDVALSIZES4", synonyms: []},
             {id: "IDVALSIZES3", label: "Large", synonyms: []},
             {id: "IDVALSIZES2", label: "Medium", synonyms: []},
             {id: "IDVALSIZES1", label: "Small", synonyms: ["Little"]},
-        ])
+        ])).to.equal(true);
     });
 
     it('returns an empty list of values for an non-existent key', () => {
         const tagValues = Vocabulary.getTagValues('IDNONSENSE', vocabulary);
-        expect(tagValues).toEqual([]);
+        expect(isEqual(tagValues, [])).to.equal(true);
     });
 
     it('returns a key id for a given key label', () => {
@@ -166,7 +167,7 @@ describe('Vocabulary', () => {
         ]
         testCases.forEach(tc => {
             const tagValueID = Vocabulary.getTagKeyID(tc.keyLabel, vocabulary);
-            expect(tagValueID).toEqual(tc.expected);
+            expect(tagValueID).to.equal(tc.expected);
         });
     });
 
@@ -181,7 +182,7 @@ describe('Vocabulary', () => {
         ]
         testCases.forEach(tc => {
             const tagValueID = Vocabulary.getTagKeyLabel(tc.keyID, vocabulary);
-            expect(tagValueID).toEqual(tc.expected);
+            expect(tagValueID).to.equal(tc.expected);
         });
     });
 
@@ -199,7 +200,7 @@ describe('Vocabulary', () => {
         ]
         testCases.forEach(tc => {
             const tagValueID = Vocabulary.getTagValueID(tc.keyID, tc.valueLabel, vocabulary);
-            expect(tagValueID).toEqual(tc.expected);
+            expect(tagValueID).to.equal(tc.expected);
         });
     });
 
@@ -216,7 +217,7 @@ describe('Vocabulary', () => {
         ]
         testCases.forEach(tc => {
             const tagValueLabel = Vocabulary.getTagValueLabel(tc.keyId, tc.valueId, vocabulary);
-            expect(tagValueLabel).toEqual(tc.expected);
+            expect(tagValueLabel).to.equal(tc.expected);
         });
     });
 });
