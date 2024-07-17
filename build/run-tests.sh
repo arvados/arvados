@@ -504,6 +504,19 @@ setup_virtualenv() {
         all_services_stopped=1
     fi
     . "$VENV3DIR/bin/activate" || fatal "virtualenv activation failed"
+    # pip >= 20.3 is necessary for modern dependency resolution.
+    # setuptools is our chosen Python build tool.
+    # wheel modernizes the venv (as of early 2024) and makes it more closely
+    # match our package build environment.
+    # We must have these in place *before* we install the PySDK below.
+    pip install "pip>=20.3" setuptools wheel ||
+        fatal "failed to install build packages in virtualenv"
+    # run-tests.sh uses run_test_server.py from the Python SDK.
+    # This requires both the Python SDK itself and PyYAML.
+    # Hence we must install these dependencies this early for the rest of the
+    # script to work.
+    pip install PyYAML || fatal "failed to install PyYAML in virtualenv"
+    do_install_once sdk/python pip || fatal "failed to install PySDK in virtualenv"
 }
 
 initialize() {
@@ -559,15 +572,9 @@ install_env() {
     go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed"
     # parameterized and pytest are direct dependencies of Python tests.
-    # PyYAML is a test requirement used by run_test_server.py and needed for
-    # other, non-Python tests.
     # pdoc is needed to build PySDK documentation.
-    # pip >= 20.3 is necessary for modern dependency resolution.
-    # setuptools is our chosen Python build tool.
-    # wheel modernizes the venv (as of early 2024) and makes it more closely
-    # match our package build environment.
-    pip install parameterized pdoc "pip>=20.3" pytest PyYAML setuptools wheel ||
-        fatal "virtualenv package installs failed"
+    pip install parameterized pdoc pytest ||
+        fatal "failed to install test+documentation packages in virtualenv"
 }
 
 retry() {
