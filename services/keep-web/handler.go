@@ -739,17 +739,12 @@ type fileListEnt struct {
 // NOTE for URL encoding of paths
 // The href value of the links in the HTML listing page should be in the
 // "escaped" (percent-encoded) form so that a user agent that follows the href
-// (e.g. browser) can request the correct path. url.PathEscape applies to one
-// segment (directory level) and it will encode the slash, so we encode one
-// level at a time.  The templating engine takes care of translating the
-// encoded path into valid HTML.
+// (e.g. browser) can request the correct path. The templating engine takes
+// care of translating the encoded path into valid HTML.
 
 func relativeHref(path string) string {
-	components := strings.Split(path, "/")
-	for i, text := range components {
-		components[i] = url.PathEscape(text)
-	}
-	return "./" + strings.Join(components, "/")
+	u := &url.URL{Path: path}
+	return "./" + u.EscapedPath()
 }
 
 // NOTE for the example "wget" command generated on the listing page
