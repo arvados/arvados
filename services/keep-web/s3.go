@@ -31,9 +31,10 @@ import (
 )
 
 const (
-	s3MaxKeys       = 1000
-	s3SignAlgorithm = "AWS4-HMAC-SHA256"
-	s3MaxClockSkew  = 5 * time.Minute
+	s3MaxKeys                 = 1000
+	s3SignAlgorithm           = "AWS4-HMAC-SHA256"
+	s3MaxClockSkew            = 5 * time.Minute
+	s3SecretCacheTidyDuration = time.Minute
 )
 
 type commonPrefix struct {
@@ -91,6 +92,31 @@ type s3Key struct {
 		ID          string
 		DisplayName string
 	}
+}
+
+type cachedS3Secret struct {
+	auth   *arvados.APIClientAuthorization
+	expiry time.Time
+}
+
+func NewCachedS3Secret(auth *arvados.APIClientAuthorization, maxExpiry time.Time) *cachedS3Secret {
+	var expiry time.Time
+	if auth.ExpiresAt.IsZero() || maxExpiry.Before(auth.ExpiresAt) {
+		expiry = maxExpiry
+	} else {
+		expiry = auth.ExpiresAt
+	}
+	return &cachedS3Secret{
+		auth:   auth,
+		expiry: expiry,
+	}
+}
+
+func (cs *cachedS3Secret) IsValidAt(t time.Time) bool {
+	return cs.auth != nil &&
+		!cs.expiry.IsZero() &&
+		!t.IsZero() &&
+		t.Before(cs.expiry)
 }
 
 func hmacstring(msg string, key []byte) []byte {
@@ -217,6 +243,33 @@ func unescapeKey(key string) string {
 	}
 }
 
+func (h *handler) updateS3SecretCache(aca *arvados.APIClientAuthorization, key string) {
+	now := time.Now()
+	ttlExpiry := now.Add(h.Cluster.Collections.WebDAVCache.TTL.Duration())
+	cachedSecret := NewCachedS3Secret(aca, ttlExpiry)
+
+	h.s3SecretCacheMtx.Lock()
+	defer h.s3SecretCacheMtx.Unlock()
+
+	if h.s3SecretCache == nil {
+		h.s3SecretCache = make(map[string]*cachedS3Secret)
+	}
+	h.s3SecretCache[key] = cachedSecret
+	h.s3SecretCache[cachedSecret.auth.UUID] = cachedSecret
+	h.s3SecretCache[cachedSecret.auth.APIToken] = cachedSecret
+	h.s3SecretCache[cachedSecret.auth.TokenV2()] = cachedSecret
+
+	if h.s3SecretCacheNextTidy.After(now) {
+		return
+	}
+	for key, entry := range h.s3SecretCache {
+		if entry.expiry.Before(now) {
+			delete(h.s3SecretCache, key)
+		}
+	}
+	h.s3SecretCacheNextTidy = now.Add(s3SecretCacheTidyDuration)
+}
+
 // checks3signature verifies the given S3 V4 signature and returns the
 // Arvados token that corresponds to the given accessKey. An error is
 // returned if accessKey is not a valid token UUID or the signature
@@ -242,29 +295,38 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 		}
 	}
 
-	client := (&arvados.Client{
-		APIHost:  h.Cluster.Services.Controller.ExternalURL.Host,
-		Insecure: h.Cluster.TLS.Insecure,
-	}).WithRequestID(r.Header.Get("X-Request-Id"))
+	keyIsUUID := len(key) == 27 && key[5:12] == "-gj3su-"
+	unescapedKey := unescapeKey(key)
+	cached := h.s3SecretCache[unescapedKey]
+	usedCache := cached != nil && cached.IsValidAt(time.Now())
 	var aca arvados.APIClientAuthorization
+	if usedCache {
+		aca = *cached.auth
+	} else {
+		var acaAuth, acaPath string
+		if keyIsUUID {
+			acaAuth = h.Cluster.SystemRootToken
+			acaPath = key
+		} else {
+			acaAuth = unescapedKey
+			acaPath = "current"
+		}
+		client := (&arvados.Client{
+			APIHost:  h.Cluster.Services.Controller.ExternalURL.Host,
+			Insecure: h.Cluster.TLS.Insecure,
+		}).WithRequestID(r.Header.Get("X-Request-Id"))
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+acaAuth)
+		err := client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+acaPath, nil, nil)
+		if err != nil {
+			ctxlog.FromContext(r.Context()).WithError(err).WithField("UUID", key).Info("token lookup failed")
+			return "", errors.New("invalid access key")
+		}
+	}
 	var secret string
-	var err error
-	if len(key) == 27 && key[5:12] == "-gj3su-" {
-		// Access key is the UUID of an Arvados token, secret
-		// key is the secret part.
-		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Cluster.SystemRootToken)
-		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+key, nil, nil)
+	if keyIsUUID {
 		secret = aca.APIToken
 	} else {
-		// Access key and secret key are both an entire
-		// Arvados token or OIDC access token.
-		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+unescapeKey(key))
-		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/current", nil, nil)
 		secret = key
-	}
-	if err != nil {
-		ctxlog.FromContext(r.Context()).WithError(err).WithField("UUID", key).Info("token lookup failed")
-		return "", errors.New("invalid access key")
 	}
 	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, r)
 	if err != nil {
@@ -275,6 +337,9 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 		return "", err
 	} else if expect != signature {
 		return "", fmt.Errorf("signature does not match (scope %q signedHeaders %q stringToSign %q)", scope, signedHeaders, stringToSign)
+	}
+	if !usedCache {
+		h.updateS3SecretCache(&aca, unescapedKey)
 	}
 	return aca.TokenV2(), nil
 }
