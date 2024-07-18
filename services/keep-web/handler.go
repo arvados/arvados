@@ -39,6 +39,10 @@ type handler struct {
 	lockMtx    sync.Mutex
 	lock       map[string]*sync.RWMutex
 	lockTidied time.Time
+
+	s3SecretCache         map[string]*cachedS3Secret
+	s3SecretCacheMtx      sync.Mutex
+	s3SecretCacheNextTidy time.Time
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
