@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionFile } from 'models/collection-file';
 import { getFileFullPath, extractFilesData } from './collection-service-files-response';
 
 describe('collection-service-files-response', () => {
@@ -78,7 +77,16 @@ describe('collection-service-files-response', () => {
                 const result = extractFilesData(xmlDoc);
 
                 // then
-                expect(result).toEqual([{ id: `${collUUID}/${expectedName}`, name: expectedName, path: "", size: 3, type: "file", url: `/c=${collUUID}/${expectedURL}` }]);
+                expect(result).to.deep.equal([
+                    { 
+                        id: `${collUUID}/${expectedName}`, 
+                        name: expectedName, 
+                        path: "", 
+                        size: 3, 
+                        type: "file", 
+                        url: `/c=${collUUID}/${expectedURL}`
+                    }
+                ]);
             });
         });
     });
@@ -89,13 +97,13 @@ describe('collection-service-files-response', () => {
             const file = {
                 name: '#test',
                 path: 'http://localhost',
-            } as CollectionFile;
+            };
 
             // when
             const result = getFileFullPath(file);
 
             // then
-            expect(result).toBe('http://localhost/#test');
+            expect(result).to.equal('http://localhost/#test');
         });
 
     });
