@@ -2,23 +2,24 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
 import { ProjectService } from "./project-service";
 import { FilterBuilder } from "services/api/filter-builder";
-import { ApiActions } from "services/api/api-actions";
 
 describe("CommonResourceService", () => {
     const axiosInstance = axios.create();
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => {},
-        errorFn: (id: string, message: string) => {}
+    const actions = {
+        progressFn: (id, working) => {},
+        errorFn: (id, message) => {}
     };
 
     it(`#create has groupClass set to "project"`, async () => {
-        axiosInstance.post = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
+        axiosInstance.post = cy.stub().returns(Promise.resolve({ data: {} })).as("post");
         const projectService = new ProjectService(axiosInstance, actions);
-        const resource = await projectService.create({ name: "nameValue" });
-        expect(axiosInstance.post).toHaveBeenCalledWith("/groups", {
+
+        await projectService.create({ name: "nameValue" });
+
+        cy.get("@post").should("be.calledWith", "/groups", {
             group: {
                 name: "nameValue",
                 group_class: "project"
@@ -27,13 +28,15 @@ describe("CommonResourceService", () => {
     });
 
     it("#list has groupClass filter set by default", async () => {
-        axiosInstance.get = jest.fn(() => Promise.resolve({ data: {} })) as AxiosInstance['post'];
+        axiosInstance.get = cy.stub().returns(Promise.resolve({ data: {} })).as("get");
         const projectService = new ProjectService(axiosInstance, actions);
-        const resource = await projectService.list();
-        expect(axiosInstance.get).toHaveBeenCalledWith("/groups", {
+
+        await projectService.list();
+
+        cy.get("@get").should("be.calledWith", "/groups", {
             params: {
                 filters: "[" + new FilterBuilder()
-                    .addIn("group_class", ["project", "filter"])
+                    .addEqual("group_class", "project")
                     .getFilters() + "]",
                 order: undefined
             }
