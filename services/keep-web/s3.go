@@ -301,9 +301,9 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	cached := h.s3SecretCache[unescapedKey]
 	h.s3SecretCacheMtx.Unlock()
 	usedCache := cached != nil && cached.IsValidAt(time.Now())
-	var aca arvados.APIClientAuthorization
+	var aca *arvados.APIClientAuthorization
 	if usedCache {
-		aca = *cached.auth
+		aca = cached.auth
 	} else {
 		var acaAuth, acaPath string
 		if keyIsUUID {
@@ -318,7 +318,8 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 			Insecure: h.Cluster.TLS.Insecure,
 		}).WithRequestID(r.Header.Get("X-Request-Id"))
 		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+acaAuth)
-		err := client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+acaPath, nil, nil)
+		aca = new(arvados.APIClientAuthorization)
+		err := client.RequestAndDecodeContext(ctx, aca, "GET", "arvados/v1/api_client_authorizations/"+acaPath, nil, nil)
 		if err != nil {
 			ctxlog.FromContext(r.Context()).WithError(err).WithField("UUID", key).Info("token lookup failed")
 			return "", errors.New("invalid access key")
@@ -341,7 +342,7 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 		return "", fmt.Errorf("signature does not match (scope %q signedHeaders %q stringToSign %q)", scope, signedHeaders, stringToSign)
 	}
 	if !usedCache {
-		h.updateS3SecretCache(&aca, unescapedKey)
+		h.updateS3SecretCache(aca, unescapedKey)
 	}
 	return aca.TokenV2(), nil
 }
