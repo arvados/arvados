@@ -34,7 +34,7 @@ const (
 	s3MaxKeys                 = 1000
 	s3SignAlgorithm           = "AWS4-HMAC-SHA256"
 	s3MaxClockSkew            = 5 * time.Minute
-	s3SecretCacheTidyDuration = time.Minute
+	s3SecretCacheTidyInterval = time.Minute
 )
 
 type commonPrefix struct {
@@ -267,7 +267,7 @@ func (h *handler) updateS3SecretCache(aca *arvados.APIClientAuthorization, key s
 			delete(h.s3SecretCache, key)
 		}
 	}
-	h.s3SecretCacheNextTidy = now.Add(s3SecretCacheTidyDuration)
+	h.s3SecretCacheNextTidy = now.Add(s3SecretCacheTidyInterval)
 }
 
 // checks3signature verifies the given S3 V4 signature and returns the

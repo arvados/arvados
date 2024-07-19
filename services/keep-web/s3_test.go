@@ -342,7 +342,7 @@ func (s *IntegrationSuite) TestS3SecretCacheUsed(c *check.C) {
 func (s *IntegrationSuite) TestS3SecretCacheCleanup(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
-	td := -2 * s3SecretCacheTidyDuration
+	td := -2 * s3SecretCacheTidyInterval
 	startTidied := time.Now().Add(td)
 	s.handler.s3SecretCacheNextTidy = startTidied
 	s.handler.s3SecretCache = make(map[string]*cachedS3Secret)
