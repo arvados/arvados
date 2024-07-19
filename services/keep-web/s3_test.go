@@ -50,21 +50,21 @@ func (s *CachedS3SecretSuite) activeACA(expiresAt time.Time) *arvados.APIClientA
 func (s *CachedS3SecretSuite) TestNewCachedS3SecretExpiresBeforeTTL(c *check.C) {
 	expected := time.Unix(1<<29, 0)
 	aca := s.activeACA(expected)
-	actual := NewCachedS3Secret(aca, time.Unix(1<<30, 0))
+	actual := newCachedS3Secret(aca, time.Unix(1<<30, 0))
 	c.Check(actual.expiry, check.Equals, expected)
 }
 
 func (s *CachedS3SecretSuite) TestNewCachedS3SecretExpiresAfterTTL(c *check.C) {
 	expected := time.Unix(1<<29, 0)
 	aca := s.activeACA(time.Unix(1<<30, 0))
-	actual := NewCachedS3Secret(aca, expected)
+	actual := newCachedS3Secret(aca, expected)
 	c.Check(actual.expiry, check.Equals, expected)
 }
 
 func (s *CachedS3SecretSuite) TestNewCachedS3SecretWithoutExpiry(c *check.C) {
 	expected := time.Unix(1<<29, 0)
 	aca := s.activeACA(time.Time{})
-	actual := NewCachedS3Secret(aca, expected)
+	actual := newCachedS3Secret(aca, expected)
 	c.Check(actual.expiry, check.Equals, expected)
 }
 
@@ -77,40 +77,40 @@ func (s *CachedS3SecretSuite) cachedSecretWithExpiry(expiry time.Time) *cachedS3
 
 func (s *CachedS3SecretSuite) TestIsValidAtEmpty(c *check.C) {
 	cache := &cachedS3Secret{}
-	c.Check(cache.IsValidAt(time.Unix(0, 0)), check.Equals, false)
-	c.Check(cache.IsValidAt(time.Unix(1<<31, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(0, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(1<<31, 0)), check.Equals, false)
 }
 
 func (s *CachedS3SecretSuite) TestIsValidAtNoAuth(c *check.C) {
 	cache := &cachedS3Secret{expiry: time.Unix(3, 0)}
-	c.Check(cache.IsValidAt(time.Unix(2, 0)), check.Equals, false)
-	c.Check(cache.IsValidAt(time.Unix(4, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(2, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(4, 0)), check.Equals, false)
 }
 
 func (s *CachedS3SecretSuite) TestIsValidAtNoExpiry(c *check.C) {
 	cache := &cachedS3Secret{auth: s.activeACA(time.Unix(3, 0))}
-	c.Check(cache.IsValidAt(time.Unix(2, 0)), check.Equals, false)
-	c.Check(cache.IsValidAt(time.Unix(4, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(2, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(4, 0)), check.Equals, false)
 }
 
 func (s *CachedS3SecretSuite) TestIsValidAtTimeAfterExpiry(c *check.C) {
 	expiry := time.Unix(10, 0)
 	cache := s.cachedSecretWithExpiry(expiry)
-	c.Check(cache.IsValidAt(expiry), check.Equals, false)
-	c.Check(cache.IsValidAt(time.Unix(1<<25, 0)), check.Equals, false)
-	c.Check(cache.IsValidAt(time.Unix(1<<30, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(expiry), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(1<<25, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(1<<30, 0)), check.Equals, false)
 }
 
 func (s *CachedS3SecretSuite) TestIsValidAtTimeBeforeExpiry(c *check.C) {
 	cache := s.cachedSecretWithExpiry(time.Unix(1<<30, 0))
-	c.Check(cache.IsValidAt(time.Unix(1<<25, 0)), check.Equals, true)
-	c.Check(cache.IsValidAt(time.Unix(1<<27, 0)), check.Equals, true)
-	c.Check(cache.IsValidAt(time.Unix(1<<29, 0)), check.Equals, true)
+	c.Check(cache.isValidAt(time.Unix(1<<25, 0)), check.Equals, true)
+	c.Check(cache.isValidAt(time.Unix(1<<27, 0)), check.Equals, true)
+	c.Check(cache.isValidAt(time.Unix(1<<29, 0)), check.Equals, true)
 }
 
 func (s *CachedS3SecretSuite) TestIsValidAtZeroTime(c *check.C) {
 	cache := s.cachedSecretWithExpiry(time.Unix(10, 0))
-	c.Check(cache.IsValidAt(time.Time{}), check.Equals, false)
+	c.Check(cache.isValidAt(time.Time{}), check.Equals, false)
 }
 
 type s3stage struct {

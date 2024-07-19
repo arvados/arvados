@@ -99,7 +99,7 @@ type cachedS3Secret struct {
 	expiry time.Time
 }
 
-func NewCachedS3Secret(auth *arvados.APIClientAuthorization, maxExpiry time.Time) *cachedS3Secret {
+func newCachedS3Secret(auth *arvados.APIClientAuthorization, maxExpiry time.Time) *cachedS3Secret {
 	var expiry time.Time
 	if auth.ExpiresAt.IsZero() || maxExpiry.Before(auth.ExpiresAt) {
 		expiry = maxExpiry
@@ -112,7 +112,7 @@ func NewCachedS3Secret(auth *arvados.APIClientAuthorization, maxExpiry time.Time
 	}
 }
 
-func (cs *cachedS3Secret) IsValidAt(t time.Time) bool {
+func (cs *cachedS3Secret) isValidAt(t time.Time) bool {
 	return cs.auth != nil &&
 		!cs.expiry.IsZero() &&
 		!t.IsZero() &&
@@ -246,7 +246,7 @@ func unescapeKey(key string) string {
 func (h *handler) updateS3SecretCache(aca *arvados.APIClientAuthorization, key string) {
 	now := time.Now()
 	ttlExpiry := now.Add(h.Cluster.Collections.WebDAVCache.TTL.Duration())
-	cachedSecret := NewCachedS3Secret(aca, ttlExpiry)
+	cachedSecret := newCachedS3Secret(aca, ttlExpiry)
 
 	h.s3SecretCacheMtx.Lock()
 	defer h.s3SecretCacheMtx.Unlock()
@@ -300,7 +300,7 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	h.s3SecretCacheMtx.Lock()
 	cached := h.s3SecretCache[unescapedKey]
 	h.s3SecretCacheMtx.Unlock()
-	usedCache := cached != nil && cached.IsValidAt(time.Now())
+	usedCache := cached != nil && cached.isValidAt(time.Now())
 	var aca *arvados.APIClientAuthorization
 	if usedCache {
 		aca = cached.auth
