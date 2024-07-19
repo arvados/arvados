@@ -3,12 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { collectionActionSet, readOnlyCollectionActionSet } from "./collection-action-set";
-
-const containsActionSubSet = (mainSet, subSet) => {
-    const mainNames = mainSet.map(action => action.name)
-    const subNames = subSet.map(action => action.name)
-    return subNames.every(name => mainNames.includes(name));
-}
+import { containsActionSubSet } from "../../../cypress/utils/contains-action-subset";
 
 describe('collection-action-set', () => {
     const flattCollectionActionSet = collectionActionSet.reduce((prev, next) => prev.concat(next), []);
