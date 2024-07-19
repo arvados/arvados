@@ -294,10 +294,12 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 			signature = split[1]
 		}
 	}
-
 	keyIsUUID := len(key) == 27 && key[5:12] == "-gj3su-"
 	unescapedKey := unescapeKey(key)
+
+	h.s3SecretCacheMtx.Lock()
 	cached := h.s3SecretCache[unescapedKey]
+	h.s3SecretCacheMtx.Unlock()
 	usedCache := cached != nil && cached.IsValidAt(time.Now())
 	var aca arvados.APIClientAuthorization
 	if usedCache {
