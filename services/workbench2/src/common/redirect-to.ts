@@ -55,19 +55,21 @@ export const handleRedirects = (token: string, config: Config) => {
         redirectKey && localStorage.removeItem(redirectKey);
 
         if (redirectKey && redirectPath) {
-	    let redirectUrl = new URL(keepWebServiceUrl);
-	    // encodeURI will not touch characters such as # ? that may be
-	    // delimiter in overall URL syntax
-	    // Setting pathname attribute will in effect encode # and ?
-	    // while leaving others minimally disturbed (useful for debugging
-	    // and avoids excessive percent-encoding)
-	    redirectUrl.pathname = encodeURI(redirectPath);
-	    redirectUrl.searchParams.set("api_token", token);
+            let redirectUrl = new URL(keepWebServiceUrl);
+            // encodeURI will not touch characters such as # ? that may be
+            // delimiter in overall URL syntax
+            // Setting pathname attribute will in effect encode # and ?
+            // while leaving others minimally disturbed (useful for debugging
+            // and avoids excessive percent-encoding)
+            redirectUrl.pathname = encodeURI(redirectPath);
+            redirectUrl.searchParams.set("api_token", token);
             let u = redirectUrl.href;
             if (redirectKey === REDIRECT_TO_PREVIEW_KEY) {
                 u = getInlineFileUrl(u, keepWebServiceUrl, keepWebInlineServiceUrl);
             }
-            window.location.href = u;
+            if (u) {
+                window.location.href = u;
+            }
         }
     }
 };
