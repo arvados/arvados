@@ -21,7 +21,7 @@ describe("buildProcessStatusFilters", () => {
         it(`can filter "${status}" processes`, () => {
             const filters = buildProcessStatusFilters(new FilterBuilder(), status);
             expect(filters.getFilters())
-                .toEqual(expected);
+                .to.equal(expected);
         })
     });
 });
@@ -31,14 +31,14 @@ describe("serializeResourceTypeFilters", () => {
         const filters = getInitialResourceTypeFilters();
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}","${ResourceKind.WORKFLOW}","${ResourceKind.PROCESS}"]],["collections.properties.type","not in",["log","intermediate"]],["container_requests.requesting_container_uuid","=",null]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}","${ResourceKind.WORKFLOW}","${ResourceKind.PROCESS}"]],["collections.properties.type","not in",["log","intermediate"]],["container_requests.requesting_container_uuid","=",null]`);
     });
 
     it("should serialize all but collection filters", () => {
         const filters = deselectNode(ObjectTypeFilter.COLLECTION, true)(getInitialResourceTypeFilters());
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.WORKFLOW}","${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","=",null]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.WORKFLOW}","${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","=",null]`);
     });
 
     it("should serialize output collections and projects", () => {
@@ -53,7 +53,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}"]],["collections.properties.type","in",["output"]]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}"]],["collections.properties.type","in",["output"]]`);
     });
 
     it("should serialize output collections and projects", () => {
@@ -68,7 +68,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}"]],["collections.properties.type","in",["output"]]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}"]],["collections.properties.type","in",["output"]]`);
     });
 
     it("should serialize general collections", () => {
@@ -82,7 +82,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.COLLECTION}"]],["collections.properties.type","not in",["output","log","intermediate"]]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.COLLECTION}"]],["collections.properties.type","not in",["output","log","intermediate"]]`);
     });
 
     it("should serialize only main processes", () => {
@@ -96,7 +96,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","=",null]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","=",null]`);
     });
 
     it("should serialize only child processes", () => {
@@ -112,7 +112,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","!=",null]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","!=",null]`);
     });
 
     it("should serialize all project types", () => {
@@ -125,7 +125,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.GROUP}"]]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.GROUP}"]]`);
     });
 
     it("should serialize filter groups", () => {
@@ -139,7 +139,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.GROUP}"]],["groups.group_class","=","filter"]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.GROUP}"]],["groups.group_class","=","filter"]`);
     });
 
     it("should serialize projects (normal)", () => {
@@ -153,7 +153,7 @@ describe("serializeResourceTypeFilters", () => {
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
-            .toEqual(`["uuid","is_a",["${ResourceKind.GROUP}"]],["groups.group_class","=","project"]`);
+            .to.equal(`["uuid","is_a",["${ResourceKind.GROUP}"]],["groups.group_class","=","project"]`);
     });
 
 });
