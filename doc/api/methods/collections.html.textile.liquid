@@ -193,6 +193,10 @@ It is an error to supply a non-empty @manifest_text@ that is unused, i.e., the @
 }
 </pre></notextile>
 
+Collections on other clusters in a federation cannot be used as sources. Each source must exist on the current cluster and be readable by the current user.
+
+Similarly, if @manifest_text@ is provided, it must only reference data blocks that are stored on the current cluster. This API does not copy data from other clusters in a federation.
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
