@@ -6,7 +6,7 @@ import { FilterBuilder } from "./filter-builder";
 
 describe("FilterBuilder", () => {
 
-    let filters: FilterBuilder;
+    let filters;
 
     beforeEach(() => {
         filters = new FilterBuilder();
@@ -15,61 +15,61 @@ describe("FilterBuilder", () => {
     it("should add 'equal' rule (string)", () => {
         expect(
             filters.addEqual("etag", "etagValue").getFilters()
-        ).toEqual(`["etag","=","etagValue"]`);
+        ).to.equal(`["etag","=","etagValue"]`);
     });
 
     it("should add 'equal' rule (boolean)", () => {
         expect(
             filters.addEqual("is_trashed", true).getFilters()
-        ).toEqual(`["is_trashed","=",true]`);
+        ).to.equal(`["is_trashed","=",true]`);
     });
 
     it("should add 'like' rule", () => {
         expect(
             filters.addLike("etag", "etagValue").getFilters()
-        ).toEqual(`["etag","like","%etagValue%"]`);
+        ).to.equal(`["etag","like","%etagValue%"]`);
     });
 
     it("should add 'ilike' rule", () => {
         expect(
             filters.addILike("etag", "etagValue").getFilters()
-        ).toEqual(`["etag","ilike","%etagValue%"]`);
+        ).to.equal(`["etag","ilike","%etagValue%"]`);
     });
 
     it("should add 'contains' rule", () => {
         expect(
             filters.addContains("properties.someProp", "someValue").getFilters()
-        ).toEqual(`["properties.someProp","contains","someValue"]`);
+        ).to.equal(`["properties.someProp","contains","someValue"]`);
     });
 
     it("should add 'is_a' rule", () => {
         expect(
             filters.addIsA("etag", "etagValue").getFilters()
-        ).toEqual(`["etag","is_a","etagValue"]`);
+        ).to.equal(`["etag","is_a","etagValue"]`);
     });
 
     it("should add 'is_a' rule for set", () => {
         expect(
             filters.addIsA("etag", ["etagValue1", "etagValue2"]).getFilters()
-        ).toEqual(`["etag","is_a",["etagValue1","etagValue2"]]`);
+        ).to.equal(`["etag","is_a",["etagValue1","etagValue2"]]`);
     });
 
     it("should add 'in' rule", () => {
         expect(
             filters.addIn("etag", "etagValue").getFilters()
-        ).toEqual(`["etag","in","etagValue"]`);
+        ).to.equal(`["etag","in","etagValue"]`);
     });
 
     it("should add 'in' rule for set", () => {
         expect(
             filters.addIn("etag", ["etagValue1", "etagValue2"]).getFilters()
-        ).toEqual(`["etag","in",["etagValue1","etagValue2"]]`);
+        ).to.equal(`["etag","in",["etagValue1","etagValue2"]]`);
     });
 
     it("should add 'not in' rule for set", () => {
         expect(
             filters.addNotIn("etag", ["etagValue1", "etagValue2"]).getFilters()
-        ).toEqual(`["etag","not in",["etagValue1","etagValue2"]]`);
+        ).to.equal(`["etag","not in",["etagValue1","etagValue2"]]`);
     });
 
     it("should add multiple rules", () => {
@@ -78,14 +78,14 @@ describe("FilterBuilder", () => {
                 .addIn("etag", ["etagValue1", "etagValue2"])
                 .addEqual("href", "hrefValue")
                 .getFilters()
-        ).toEqual(`["etag","in",["etagValue1","etagValue2"]],["href","=","hrefValue"]`);
+        ).to.equal(`["etag","in",["etagValue1","etagValue2"]],["href","=","hrefValue"]`);
     });
 
     it("should add attribute prefix", () => {
         expect(new FilterBuilder()
             .addIn("etag", ["etagValue1", "etagValue2"], "myPrefix")
             .getFilters())
-            .toEqual(`["myPrefix.etag","in",["etagValue1","etagValue2"]]`);
+            .to.equal(`["myPrefix.etag","in",["etagValue1","etagValue2"]]`);
     });
 
     it('should add full text search', () => {
@@ -93,6 +93,6 @@ describe("FilterBuilder", () => {
             new FilterBuilder()
                 .addFullTextSearch('my custom search')
                 .getFilters()
-        ).toEqual(`["any","ilike","%my%"],["any","ilike","%custom%"],["any","ilike","%search%"]`);
+        ).to.equal(`["any","ilike","%my%"],["any","ilike","%custom%"],["any","ilike","%search%"]`);
     });
 });
