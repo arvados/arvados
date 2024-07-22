@@ -3,28 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { LogService } from "./log-service";
-import { ApiActions } from "services/api/api-actions";
 import axios from "axios";
-import { WebDAVRequestConfig } from "common/webdav";
 import { LogEventType } from "models/log";
 
 describe("LogService", () => {
 
-    let apiWebdavClient: any;
+    let apiWebdavClient;
     const axiosInstance = axios.create();
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => {},
-        errorFn: (id: string, message: string) => {}
+    const actions = {
+        progressFn: (id, working) => {},
+        errorFn: (id, message) => {}
     };
 
     beforeEach(() => {
         apiWebdavClient = {
-            delete: jest.fn(),
-            upload: jest.fn(),
-            mkdir: jest.fn(),
-            get: jest.fn(),
-            propfind: jest.fn(),
-        } as any;
+            delete: cy.stub(),
+            upload: cy.stub(),
+            mkdir: cy.stub(),
+            get: () => {},
+            propfind: () => {},
+        };
     });
 
     it("lists log files using propfind on live logs api endpoint", async () => {
@@ -107,16 +105,16 @@ describe("LogService", () => {
                     </D:response>
             </D:multistatus>`;
         const xmlDoc = (new DOMParser()).parseFromString(xmlData, "text/xml");
-        apiWebdavClient.propfind = jest.fn().mockReturnValue(Promise.resolve({responseXML: xmlDoc}));
+        apiWebdavClient.propfind = cy.stub().returns(Promise.resolve({responseXML: xmlDoc}));
 
         // when
         const logs = await logService.listLogFiles(containerRequest);
 
         // then
-        expect(apiWebdavClient.propfind).toHaveBeenCalledWith(`container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}`);
-        expect(logs.length).toEqual(1);
-        expect(logs[0]).toHaveProperty('name', 'stdout.txt');
-        expect(logs[0]).toHaveProperty('type', 'file');
+        expect(apiWebdavClient.propfind).to.be.calledWith(`container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}`);
+        expect(logs.length).to.equal(1);
+        expect(logs[0].name).to.equal('stdout.txt');
+        expect(logs[0].type).to.equal('file');
     });
 
     it("requests log file contents with correct range request", async () => {
@@ -126,43 +124,43 @@ describe("LogService", () => {
         const containerRequest = {uuid: 'zzzzz-xvhdp-000000000000000', containerUuid: 'zzzzz-dz642-000000000000000'};
         const fileRecord = {name: `stdout.txt`};
         const fileContents = `Line 1\nLine 2\nLine 3`;
-        apiWebdavClient.get = jest.fn().mockImplementation((path: string, options: WebDAVRequestConfig) => {
-            const matches = /bytes=([0-9]+)-([0-9]+)/.exec(options.headers?.Range || '');
-            if (matches?.length === 3) {
-                return Promise.resolve({responseText: fileContents.substring(Number(matches[1]), Number(matches[2]) + 1)})
-            }
-            return Promise.reject();
-        });
+        cy.stub(apiWebdavClient, 'get', (path, options) => {
+                const matches = /bytes=([0-9]+)-([0-9]+)/.exec(options.headers?.Range || '');
+                if (matches?.length === 3) {
+                    return Promise.resolve({responseText: fileContents.substring(Number(matches[1]), Number(matches[2]) + 1)})
+                }
+                return Promise.reject();
+            })
 
         // when
         let result = await logService.getLogFileContents(containerRequest, fileRecord, 0, 3);
         // then
-        expect(apiWebdavClient.get).toHaveBeenCalledWith(
+        expect(apiWebdavClient.get).to.be.calledWith(
             `container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}/${fileRecord.name}`,
             {headers: {Range: `bytes=0-3`}}
         );
-        expect(result.logType).toEqual(LogEventType.STDOUT);
-        expect(result.contents).toEqual(['Line']);
+        expect(result.logType).to.equal(LogEventType.STDOUT);
+        expect(result.contents).to.deep.equal(['Line']);
 
         // when
         result = await logService.getLogFileContents(containerRequest, fileRecord, 0, 10);
         // then
-        expect(apiWebdavClient.get).toHaveBeenCalledWith(
+        expect(apiWebdavClient.get).to.be.calledWith(
             `container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}/${fileRecord.name}`,
             {headers: {Range: `bytes=0-10`}}
         );
-        expect(result.logType).toEqual(LogEventType.STDOUT);
-        expect(result.contents).toEqual(['Line 1', 'Line']);
+        expect(result.logType).to.equal(LogEventType.STDOUT);
+        expect(result.contents).to.deep.equal(['Line 1', 'Line']);
 
         // when
         result = await logService.getLogFileContents(containerRequest, fileRecord, 6, 14);
         // then
-        expect(apiWebdavClient.get).toHaveBeenCalledWith(
+        expect(apiWebdavClient.get).to.be.calledWith(
             `container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}/${fileRecord.name}`,
             {headers: {Range: `bytes=6-14`}}
         );
-        expect(result.logType).toEqual(LogEventType.STDOUT);
-        expect(result.contents).toEqual(['', 'Line 2', 'L']);
+        expect(result.logType).to.equal(LogEventType.STDOUT);
+        expect(result.contents).to.deep.equal(['', 'Line 2', 'L']);
     });
 
 });
