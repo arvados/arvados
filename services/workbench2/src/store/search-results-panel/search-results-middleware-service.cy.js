@@ -12,7 +12,7 @@ describe('search-results-middleware', () => {
             const query = 'Search term is:pastVersion';
             const apiRev = 20201013;
             const params = getParams(dataExplorer, query, apiRev);
-            expect(params.includeOldVersions).toBe(true);
+            expect(params.includeOldVersions).to.equal(true);
         });
 
         it('should not use include_old_versions=true when not asked', () => {
@@ -20,7 +20,7 @@ describe('search-results-middleware', () => {
             const query = 'Search term';
             const apiRev = 20201013;
             const params = getParams(dataExplorer, query, apiRev);
-            expect(params.includeOldVersions).toBe(false);
+            expect(params.includeOldVersions).to.equal(false);
         });
     })
 })
