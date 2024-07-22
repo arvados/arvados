@@ -10,6 +10,6 @@ describe("OrderBuilder", () => {
             .addAsc("kind")
             .addDesc("createdAt")
             .getOrder();
-        expect(order).toEqual("kind asc,created_at desc");
+        expect(order).to.equal("kind asc,created_at desc");
     });
 });
