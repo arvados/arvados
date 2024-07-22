@@ -2,35 +2,35 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
 import { ApiClientAuthorizationService } from "./api-client-authorization-service";
 
 
 describe('ApiClientAuthorizationService', () => {
-    let apiClientAuthorizationService: ApiClientAuthorizationService;
-    let serverApi: AxiosInstance;
+    let apiClientAuthorizationService;
+    let serverApi;
     let actions;
 
     beforeEach(() => {
         serverApi = axios.create();
         actions = {
-            progressFn: jest.fn(),
-        } as any;
+            progressFn: cy.stub(),
+        };
         apiClientAuthorizationService = new ApiClientAuthorizationService(serverApi, actions);
     });
 
     describe('createCollectionSharingToken', () => {
         it('should return error on invalid collection uuid', () => {
-            expect(() => apiClientAuthorizationService.createCollectionSharingToken("foo", undefined)).toThrowError("UUID foo is not a collection");
+            expect(() => apiClientAuthorizationService.createCollectionSharingToken("foo", undefined)).to.throw("UUID foo is not a collection");
         });
 
         it('should make a create request with proper scopes and no expiration date', async () => {
-            serverApi.post = jest.fn(() => Promise.resolve(
+            serverApi.post = cy.stub().returns(Promise.resolve(
                 { data: { uuid: 'zzzzz-4zz18-0123456789abcde' } }
-            )) as AxiosInstance['post'];
+            ));
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             await apiClientAuthorizationService.createCollectionSharingToken(uuid, undefined);
-            expect(serverApi.post).toHaveBeenCalledWith(
+            expect(serverApi.post).to.be.calledWith(
                 '/api_client_authorizations', {
                     scopes: [
                         `GET /arvados/v1/collections/${uuid}`,
@@ -42,13 +42,13 @@ describe('ApiClientAuthorizationService', () => {
         });
 
         it('should make a create request with proper scopes and expiration date', async () => {
-            serverApi.post = jest.fn(() => Promise.resolve(
+            serverApi.post = cy.stub().returns(Promise.resolve(
                 { data: { uuid: 'zzzzz-4zz18-0123456789abcde' } }
-            ))  as AxiosInstance['post'];
+            ));
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             const expDate = new Date(2022, 8, 28, 12, 0, 0);
             await apiClientAuthorizationService.createCollectionSharingToken(uuid, expDate);
-            expect(serverApi.post).toHaveBeenCalledWith(
+            expect(serverApi.post).to.be.calledWith(
                 '/api_client_authorizations', {
                     scopes: [
                         `GET /arvados/v1/collections/${uuid}`,
@@ -63,16 +63,16 @@ describe('ApiClientAuthorizationService', () => {
 
     describe('listCollectionSharingToken', () => {
         it('should return error on invalid collection uuid', () => {
-            expect(() => apiClientAuthorizationService.listCollectionSharingTokens("foo")).toThrowError("UUID foo is not a collection");
+            expect(() => apiClientAuthorizationService.listCollectionSharingTokens("foo")).to.throw("UUID foo is not a collection");
         });
 
         it('should make a list request with proper scopes', async () => {
-            serverApi.get = jest.fn(() => Promise.resolve(
+            serverApi.get = cy.stub().returns(Promise.resolve(
                 { data: { items: [{}] } }
-            ))  as AxiosInstance['post'];
+            ));
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             await apiClientAuthorizationService.listCollectionSharingTokens(uuid);
-            expect(serverApi.get).toHaveBeenCalledWith(
+            expect(serverApi.get).to.be.calledWith(
                 `/api_client_authorizations`, {params: {
                     filters: JSON.stringify([["scopes","=",[
                         `GET /arvados/v1/collections/${uuid}`,
