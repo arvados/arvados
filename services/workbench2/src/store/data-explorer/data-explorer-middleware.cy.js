@@ -4,13 +4,9 @@
 
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 import { dataExplorerMiddleware } from "./data-explorer-middleware";
-import { MiddlewareAPI } from "redux";
-import { DataColumns } from "components/data-table/data-table";
 import { dataExplorerActions } from "./data-explorer-action";
 import { SortDirection } from "components/data-table/data-column";
 import { createTree } from 'models/tree';
-import { DataTableFilterItem } from "components/data-table-filters/data-table-filters-tree";
-
 
 describe("DataExplorerMiddleware", () => {
 
@@ -22,24 +18,24 @@ describe("DataExplorerMiddleware", () => {
                 selected: true,
                 configurable: false,
                 sortDirection: SortDirection.NONE,
-                filters: createTree<DataTableFilterItem>(),
-                render: jest.fn()
+                filters: createTree(),
+                render: cy.stub()
             }],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_PAGE({ id: "OtherId", page: 0 }));
         middleware(dataExplorerActions.SET_PAGE({ id: "ServiceId", page: 0 }));
         middleware(dataExplorerActions.SET_PAGE({ id: "OtherId", page: 0 }));
-        expect(api.dispatch).toHaveBeenCalledWith(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId", criteriaChanged: false }));
-        expect(api.dispatch).toHaveBeenCalledTimes(1);
+        expect(api.dispatch).to.be.calledWithMatch(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId", criteriaChanged: false }));
+        expect(api.dispatch).to.be.calledOnce;
     });
 
     it("handles REQUEST_ITEMS action", () => {
@@ -50,160 +46,156 @@ describe("DataExplorerMiddleware", () => {
                 selected: true,
                 configurable: false,
                 sortDirection: SortDirection.NONE,
-                filters: createTree<DataTableFilterItem>(),
-                render: jest.fn()
+                filters: createTree(),
+                render: cy.stub()
             }],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.REQUEST_ITEMS({ id: "ServiceId" }));
-        expect(api.dispatch).toHaveBeenCalledTimes(1);
+        expect(api.dispatch).to.be.calledOnce;
     });
 
     it("handles SET_PAGE action", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_PAGE({ id: service.getId(), page: 0 }));
-        expect(api.dispatch).toHaveBeenCalledTimes(1);
+        expect(api.dispatch).to.be.calledOnce;
     });
 
     it("handles SET_ROWS_PER_PAGE action", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.getId(), rowsPerPage: 0 }));
-        expect(api.dispatch).toHaveBeenCalledTimes(1);
+        expect(api.dispatch).to.be.calledOnce;
     });
 
     it("handles SET_FILTERS action", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: createTree() }));
-        expect(api.dispatch).toHaveBeenCalledTimes(2);
+        expect(api.dispatch).to.be.calledTwice;
     });
 
     it("handles SET_ROWS_PER_PAGE action", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_ROWS_PER_PAGE({ id: service.getId(), rowsPerPage: 0 }));
-        expect(api.dispatch).toHaveBeenCalledTimes(1);
+        expect(api.dispatch).to.be.calledOnce;
     });
 
     it("handles TOGGLE_SORT action", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.TOGGLE_SORT({ id: service.getId(), columnName: "" }));
-        expect(api.dispatch).toHaveBeenCalledTimes(1);
+        expect(api.dispatch).to.be.calledOnce;
     });
 
     it("handles SET_SEARCH_VALUE action", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
-        expect(api.dispatch).toHaveBeenCalledTimes(2);
+        expect(api.dispatch).to.be.calledTwice;
     });
 
     it("forwards other actions", () => {
         const config = {
             id: "ServiceId",
             columns: [],
-            requestItems: jest.fn(),
-            setApi: jest.fn()
+            requestItems: cy.stub(),
+            setApi: cy.stub()
         };
         const service = new ServiceMock(config);
         const api = {
-            getState: jest.fn(),
-            dispatch: jest.fn()
+            getState: cy.stub(),
+            dispatch: cy.stub()
         };
-        const next = jest.fn();
+        const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_COLUMNS({ id: service.getId(), columns: [] }));
         middleware(dataExplorerActions.SET_ITEMS({ id: service.getId(), items: [], rowsPerPage: 0, itemsAvailable: 0, page: 0 }));
         middleware(dataExplorerActions.TOGGLE_COLUMN({ id: service.getId(), columnName: "" }));
-        expect(api.dispatch).toHaveBeenCalledTimes(0);
-        expect(next).toHaveBeenCalledTimes(3);
+        expect(api.dispatch).to.not.be.called;
+        expect(next).to.be.calledThrice;
     });
 
 });
 
 class ServiceMock extends DataExplorerMiddlewareService {
-    constructor(private config: {
-        id: string,
-        columns: DataColumns<any, any>,
-        requestItems: (api: MiddlewareAPI) => Promise<void>
-    }) {
+    constructor(config) {
         super(config.id);
     }
 
@@ -211,7 +203,7 @@ class ServiceMock extends DataExplorerMiddlewareService {
         return this.config.columns;
     }
 
-    requestItems(api: MiddlewareAPI): Promise<void> {
+    requestItems(api) {
         this.config.requestItems(api);
         return Promise.resolve();
     }
