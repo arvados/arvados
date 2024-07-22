@@ -88,7 +88,7 @@ export const VirtualMachineAdminPanel = compose(
                 const { virtualMachines } = this.props;
                 return (
                     <Grid container spacing={16}>
-                        {virtualMachines.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
+                        {virtualMachines.items.length > 0 && <CardContentWithVirtualMachines {...this.props} />}
                     </Grid>
                 );
             }

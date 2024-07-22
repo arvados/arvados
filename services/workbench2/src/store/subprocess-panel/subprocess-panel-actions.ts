@@ -118,6 +118,7 @@ export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFi
                         const { barStatus, processStatus } = statusPair;
                         const filter = buildProcessStatusFilters(new FilterBuilder(baseFilter), processStatus);
                         const count = (await requestContainerStatusCount(filter)).itemsAvailable;
+                        if (count === undefined) return Promise.reject();
                         return {status: barStatus, count};
                     });
 

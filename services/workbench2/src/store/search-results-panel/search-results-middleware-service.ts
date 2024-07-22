@@ -80,7 +80,8 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
                     numberOfResolvedResponses++;
-                    totalNumItemsAvailable += response.itemsAvailable;
+                    // Used to determine if all results are empty, so items.length works as well as itemsAvailable
+                    totalNumItemsAvailable += response.items.length;
                     if (numberOfResolvedResponses === numberOfSessions) {
                         api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
                         if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true }))

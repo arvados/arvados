@@ -81,7 +81,7 @@ export const dataExplorerReducer = (
                     return {
                         ...explorer,
                         items,
-                        itemsAvailable,
+                        itemsAvailable: itemsAvailable || explorer.itemsAvailable,
                         page: updatedPage,
                         rowsPerPage,
                     }
@@ -91,14 +91,19 @@ export const dataExplorerReducer = (
             })
         ),
 
+        SET_ITEMS_AVAILABLE: ({ id, itemsAvailable }) =>
+            update(state, id, (explorer) => ({
+                 ...explorer, itemsAvailable
+            })),
+
         RESET_ITEMS_AVAILABLE: ({ id }) =>
             update(state, id, (explorer) => ({ ...explorer, itemsAvailable: 0 })),
 
         APPEND_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
             update(state, id, (explorer) => ({
                 ...explorer,
-                items: state[id].items.concat(items),
-                itemsAvailable: state[id].itemsAvailable + itemsAvailable,
+                items: explorer.items.concat(items),
+                itemsAvailable: explorer.itemsAvailable + (itemsAvailable || 0),
                 page,
                 rowsPerPage,
             })),

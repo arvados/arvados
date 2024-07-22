@@ -28,6 +28,7 @@ export interface ContentsArguments {
     includeTrash?: boolean;
     excludeHomeProject?: boolean;
     select?: string[];
+    count?: 'exact' | 'none';
 }
 
 export interface SharedArguments extends ListArguments {
