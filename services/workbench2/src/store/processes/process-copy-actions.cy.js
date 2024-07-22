@@ -3,17 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { configure } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-16';
 import { copyProcess } from './process-copy-actions';
 import { CommonService } from 'services/common-service/common-service';
-import { snakeCase } from 'lodash';
-
-configure({ adapter: new Adapter() });
 
 describe('ProcessCopyAction', () => {
-    // let props;
-    let dispatch: any, getState: any, services: any;
+    let dispatch, getState, services;
 
     let sampleFailedProcess = {
         command: [
@@ -246,8 +240,8 @@ describe('ProcessCopyAction', () => {
         "/var/lib/cwl/workflow.json#main",
         "/var/lib/cwl/cwl.input.json",
         ],
-        container_count_max: 10,
-        container_image: "arvados/jobs",
+        containerCountMax: 10,
+        containerImage: "arvados/jobs",
         cwd: "/var/spool/cwl",
         description: "test decsription",
         environment: {},
@@ -422,18 +416,18 @@ describe('ProcessCopyAction', () => {
         },
         },
         name: "newname.cwl",
-        output_name: "Output from revsort.cwl",
-        output_path: "/var/spool/cwl",
-        output_properties: { key: "val" },
-        output_storage_classes: ["default"],
-        output_ttl: 999999,
-        owner_uuid: "zzzzz-j7d0g-000000000000000",
+        outputName: "Output from revsort.cwl",
+        outputPath: "/var/spool/cwl",
+        outputProperties: { key: "val" },
+        outputStorageClasses: ["default"],
+        outputTtl: 999999,
+        ownerUuid: "zzzzz-j7d0g-000000000000000",
         priority: 500,
         properties: {
         template_uuid: "zzzzz-7fd4e-7xsza0vgfe785cy",
         workflowName: "revsort.cwl",
         },
-        runtime_constraints: {
+        runtimeConstraints: {
         API: true,
         cuda: {
             device_count: 0,
@@ -445,21 +439,21 @@ describe('ProcessCopyAction', () => {
         ram: 1342177280,
         vcpus: 1,
         },
-        scheduling_parameters: {
+        schedulingParameters: {
         max_run_time: 0,
         partitions: [],
         preemptible: false,
         },
         state: "Uncommitted",
-        use_existing: false,
+        useExisting: false,
     };
 
     beforeEach(() => {
-        dispatch = jest.fn();
+        dispatch = cy.stub();
         services = {
             containerRequestService: {
-                get: jest.fn().mockImplementation(async () => (CommonService.mapResponseKeys({data: sampleFailedProcess}))),
-                create: jest.fn().mockImplementation(async (data) => (CommonService.mapKeys(snakeCase)(data))),
+                get: cy.stub().returns(CommonService.mapResponseKeys({data: sampleFailedProcess})).as("get"),
+                create: cy.spy(),
             },
         };
         getState = () => ({
@@ -476,8 +470,7 @@ describe('ProcessCopyAction', () => {
         })(dispatch, getState, services);
 
         // then
-        expect(services.containerRequestService.get).toHaveBeenCalledWith("zzzzz-xvhdp-111111111111111");
-        expect(newprocess).toEqual(expectedContainerRequest);
-
+        cy.get("@get").should("be.calledWith", "zzzzz-xvhdp-111111111111111");
+        expect(services.containerRequestService.create).to.have.been.calledWithMatch(expectedContainerRequest);
     });
 });
