@@ -419,7 +419,6 @@ type apiStubServer struct {
 	intercept func(http.ResponseWriter, *http.Request) bool
 
 	container arvados.Container
-	logs      map[string]string
 }
 
 func apiStub() (*arvados.Client, *apiStubServer) {
@@ -436,19 +435,6 @@ func apiStub() (*arvados.Client, *apiStubServer) {
 
 func (apistub *apiStubServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if apistub.intercept != nil && apistub.intercept(w, r) {
-		return
-	}
-	if r.Method == "POST" && r.URL.Path == "/arvados/v1/logs" {
-		var body struct {
-			Log struct {
-				EventType  string `json:"event_type"`
-				Properties struct {
-					Text string
-				}
-			}
-		}
-		json.NewDecoder(r.Body).Decode(&body)
-		apistub.logs[body.Log.EventType] += body.Log.Properties.Text
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/arvados/v1/collections/"+hwPDH {
