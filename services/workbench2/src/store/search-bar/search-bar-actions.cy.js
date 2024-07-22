@@ -9,7 +9,7 @@ describe('search-bar-actions', () => {
     describe('getAdvancedDataFromQuery', () => {
         it('should correctly build advanced data record from query #1', () => {
             const r = getAdvancedDataFromQuery('val0 has:"file size":"100mb" val2 has:"user":"daniel" is:starred val2 val0');
-            expect(r).toEqual({
+            expect(r).to.deep.equal({
                 searchValue: 'val0 val2',
                 type: undefined,
                 cluster: undefined,
@@ -32,7 +32,7 @@ describe('search-bar-actions', () => {
 
         it('should correctly build advanced data record from query #2', () => {
             const r = getAdvancedDataFromQuery('document from:2017-08-01 pdf has:"filesize":"101mb" is:trashed type:arvados#collection cluster:c97qx is:pastVersion');
-            expect(r).toEqual({
+            expect(r).to.deep.equal({
                 searchValue: 'document pdf',
                 type: ResourceKind.COLLECTION,
                 cluster: 'c97qx',
@@ -70,7 +70,7 @@ describe('search-bar-actions', () => {
                 saveQuery: false,
                 queryName: ''
             });
-            expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:trashed from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
+            expect(q).to.equal('document pdf type:arvados#collection cluster:c97qx is:trashed from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
         });
 
         it('should build query from advanced data #2', () => {
@@ -91,7 +91,7 @@ describe('search-bar-actions', () => {
                 saveQuery: false,
                 queryName: ''
             });
-            expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:pastVersion from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
+            expect(q).to.equal('document pdf type:arvados#collection cluster:c97qx is:pastVersion from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
         });
 
         it('should add has:"key":"value" expression to query from same property key', () => {
@@ -121,7 +121,7 @@ describe('search-bar-actions', () => {
                 ],
             };
             const q = getQueryFromAdvancedData(currData, prevData);
-            expect(q).toBe('document pdf has:"file size":"101mb" has:"Species":"Canine" has:"Species":"Human"');
+            expect(q).to.equal('document pdf has:"file size":"101mb" has:"Species":"Canine" has:"Species":"Human"');
         });
 
         it('should add has:"keyID":"valueID" expression to query when necessary', () => {
@@ -149,7 +149,7 @@ describe('search-bar-actions', () => {
                 ],
             };
             const q = getQueryFromAdvancedData(currData, prevData);
-            expect(q).toBe('document pdf has:"file size":"101mb" has:"IDTAGSPECIES":"IDVALHUMAN"');
+            expect(q).to.equal('document pdf has:"file size":"101mb" has:"IDTAGSPECIES":"IDVALHUMAN"');
         });
 
         it('should remove has:"key":"value" expression from query', () => {
@@ -179,7 +179,7 @@ describe('search-bar-actions', () => {
                 ],
             };
             const q = getQueryFromAdvancedData(currData, prevData);
-            expect(q).toBe('document pdf has:"file size":"101mb" has:"Species":"Canine"');
+            expect(q).to.equal('document pdf has:"file size":"101mb" has:"Species":"Canine"');
         });
     });
 });
