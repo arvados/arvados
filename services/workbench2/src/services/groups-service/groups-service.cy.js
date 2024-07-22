@@ -5,15 +5,14 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { GroupsService } from "./groups-service";
-import { ApiActions } from "services/api/api-actions";
 
 describe("GroupsService", () => {
 
     const axiosMock = new MockAdapter(axios);
 
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => {},
-        errorFn: (id: string, message: string) => {}
+    const actions = {
+        progressFn: (id, working) => {},
+        errorFn: (id, message) => {}
     };
 
     beforeEach(() => {
@@ -35,14 +34,15 @@ describe("GroupsService", () => {
 
         const groupsService = new GroupsService(axios, actions);
         const resource = await groupsService.contents("1", { limit: 10, offset: 1 });
-        expect(resource).toEqual({
+        expect(resource).to.deep.equal({
             kind: "kind",
             offset: 2,
             limit: 10,
             items: [{
                 modifiedAt: "now"
             }],
-            itemsAvailable: 20
+            itemsAvailable: 20,
+            clusterId: undefined
         });
     });
 });
