@@ -38,6 +38,10 @@ requirements:
   ResourceRequirement:
     ramMin: 768
 
+  EnvVarRequirement:
+    envDef:
+      REQUESTS_CA_BUNDLE: /etc/arvados/ca-certificates.crt
+
 hints:
   cwltool:Secrets:
     secrets: [prometheus_apikey, prometheus_password]
