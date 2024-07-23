@@ -13,6 +13,10 @@ import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupPermissionsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
 import { ResourceKind } from 'models/resource';
+import { ListArguments, ListResults } from "services/common-service/common-service";
+import { ProjectResource } from "models/project";
+import { CollectionResource } from "models/collection";
+import { UserResource } from "models/user";
 
 export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -35,35 +39,38 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
                     items: permissionsOut.items.map(item => item.uuid),
                 }));
 
-                const usersOut = await this.services.userService.list({
-                    filters: new FilterBuilder()
-                        .addIn('uuid', permissionsOut.items
-                            .filter((item) => item.headKind === ResourceKind.USER)
-                            .map(item => item.headUuid))
-                        .getFilters(),
-                    count: "none"
-                });
-                api.dispatch(updateResources(usersOut.items));
+                const userUuids = permissionsOut.items
+                    .filter((item) => item.headKind === ResourceKind.USER)
+                    .map(item => item.headUuid);
+                if (userUuids.length) {
+                    this.services.userService
+                        .list(getMetadataParams(dataExplorer, userUuids))
+                        .then((usersOut: ListResults<UserResource>) => (
+                            api.dispatch(updateResources(usersOut.items))
+                        ));
+                }
 
-                const collectionsOut = await this.services.collectionService.list({
-                    filters: new FilterBuilder()
-                        .addIn('uuid', permissionsOut.items
-                            .filter((item) => item.headKind === ResourceKind.COLLECTION)
-                            .map(item => item.headUuid))
-                        .getFilters(),
-                    count: "none"
-                });
-                api.dispatch(updateResources(collectionsOut.items));
+                const collectionUuids = permissionsOut.items
+                    .filter((item) => item.headKind === ResourceKind.COLLECTION)
+                    .map(item => item.headUuid);
+                if (collectionUuids.length) {
+                    this.services.collectionService
+                        .list(getMetadataParams(dataExplorer, collectionUuids))
+                        .then((collectionsOut: ListResults<CollectionResource>) => (
+                            api.dispatch(updateResources(collectionsOut.items))
+                        ));
+                }
 
-                const projectsOut = await this.services.projectService.list({
-                    filters: new FilterBuilder()
-                        .addIn('uuid', permissionsOut.items
-                            .filter((item) => item.headKind === ResourceKind.PROJECT)
-                            .map(item => item.headUuid))
-                        .getFilters(),
-                    count: "none"
-                });
-                api.dispatch(updateResources(projectsOut.items));
+                const projectUuids = permissionsOut.items
+                    .filter((item) => item.headKind === ResourceKind.PROJECT)
+                    .map(item => item.headUuid);
+                if (projectUuids.length) {
+                    this.services.projectService
+                        .list(getMetadataParams(dataExplorer, projectUuids))
+                        .then((projectsOut: ListResults<ProjectResource>) => (
+                            api.dispatch(updateResources(projectsOut.items))
+                        ));
+                }
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
             }
@@ -76,13 +83,19 @@ export const getParams = (dataExplorer: DataExplorer, groupUuid: string) => ({
     filters: getFilters(groupUuid),
 });
 
+export const getMetadataParams = (dataExplorer: DataExplorer, uuids: string[]): ListArguments => ({
+    limit: dataExplorer.rowsPerPage,
+    filters: new FilterBuilder()
+        .addIn('uuid', uuids)
+        .getFilters(),
+    count: 'none',
+});
+
 export const getFilters = (groupUuid: string) => {
-    const filters = new FilterBuilder()
+    return new FilterBuilder()
         .addEqual('tail_uuid', groupUuid)
         .addEqual('link_class', LinkClass.PERMISSION)
         .getFilters();
-
-    return filters;
 };
 
 const couldNotFetchGroupDetailsContents = () =>
