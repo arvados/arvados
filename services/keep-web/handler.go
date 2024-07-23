@@ -756,8 +756,8 @@ func relativeHref(path string) string {
 // form.
 
 func makeQuotedUrlForWget(r *http.Request) string {
-	var scheme string
-	if r.TLS != nil {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "https" || r.TLS != nil {
 		scheme = "https"
 	} else {
 		scheme = "http"
