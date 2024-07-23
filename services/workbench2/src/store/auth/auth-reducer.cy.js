@@ -2,22 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { authReducer, AuthState } from "./auth-reducer";
-import { AuthAction, authActions } from "./auth-action";
-
-import 'jest-localstorage-mock';
+import { authReducer } from "./auth-reducer";
+import { authActions } from "./auth-action";
 import { createServices } from "services/services";
 import { mockConfig } from 'common/config';
-import { ApiActions } from "services/api/api-actions";
 
 describe('auth-reducer', () => {
-    let reducer: (state: AuthState | undefined, action: AuthAction) => any;
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => { },
-        errorFn: (id: string, message: string) => { }
+    let reducer;
+    const actions = {
+        progressFn: (id, working) => { },
+        errorFn: (id, message) => { }
     };
 
-    beforeAll(() => {
+    before(() => {
         localStorage.clear();
         reducer = authReducer(createServices(mockConfig({}), actions));
     });
@@ -38,12 +35,16 @@ describe('auth-reducer', () => {
             canManage: false,
         };
         const state = reducer(initialState, authActions.INIT_USER({ user, token: "token" }));
-        expect(state).toEqual({
+        expect(state).to.deep.equal({
             apiToken: "token",
+            apiTokenExpiration: undefined,
+            apiTokenLocation: undefined,
             config: mockConfig({}),
             user,
             sshKeys: [],
             sessions: [],
+            extraApiToken: undefined,
+            extraApiTokenExpiration: undefined,
             homeCluster: "zzzzz",
             localCluster: "",
             loginCluster: "",
@@ -70,7 +71,7 @@ describe('auth-reducer', () => {
         };
 
         const state = reducer(initialState, authActions.USER_DETAILS_SUCCESS(user));
-        expect(state).toEqual({
+        expect(state).to.deep.equal({
             apiToken: undefined,
             apiTokenExpiration: undefined,
             apiTokenLocation: undefined,
