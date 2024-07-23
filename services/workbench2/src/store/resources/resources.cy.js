@@ -87,7 +87,7 @@ describe('resources', () => {
             const result = getResourceWithEditableStatus(id, userUuid)(resourcesState);
 
             // then
-            expect(result!.isEditable).toBeTruthy();
+            expect(result.isEditable).to.be.true;
         });
 
         it('should return editable project resource', () => {
@@ -99,7 +99,7 @@ describe('resources', () => {
             const result = getResourceWithEditableStatus(id, userUuid)(resourcesState);
 
             // then
-            expect(result!.isEditable).toBeTruthy();
+            expect(result.isEditable).to.be.true;
         });
 
         it('should return editable collection resource', () => {
@@ -111,7 +111,7 @@ describe('resources', () => {
             const result = getResourceWithEditableStatus(id, userUuid)(resourcesState);
 
             // then
-            expect(result!.isEditable).toBeTruthy();
+            expect(result.isEditable).to.be.true;
         });
 
         it('should return not editable project resource', () => {
@@ -123,7 +123,7 @@ describe('resources', () => {
             const result = getResourceWithEditableStatus(id, userUuid)(resourcesState);
 
             // then
-            expect(result!.isEditable).toBeFalsy();
+            expect(result.isEditable).to.be.false;
         });
 
         it('should return not editable collection resource', () => {
@@ -135,7 +135,7 @@ describe('resources', () => {
             const result = getResourceWithEditableStatus(id, userUuid)(resourcesState);
 
             // then
-            expect(result!.isEditable).toBeFalsy();
+            expect(result.isEditable).to.be.false;
         });
     });
 });
