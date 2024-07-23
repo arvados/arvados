@@ -9,11 +9,11 @@ describe('link-account-panel-reducer', () => {
     const initialState = undefined;
 
     it('handles initial link account state', () => {
-        const targetUser = { } as any;
+        const targetUser = {};
         targetUser.username = "targetUser";
 
         const state = linkAccountPanelReducer(initialState, linkAccountPanelActions.LINK_INIT({targetUser}));
-        expect(state).toEqual({
+        expect(state).to.deep.equal({
             targetUser,
             isProcessing: false,
             selectedCluster: undefined,
@@ -27,11 +27,11 @@ describe('link-account-panel-reducer', () => {
     });
 
     it('handles loaded link account state', () => {
-        const targetUser = { } as any;
+        const targetUser = {};
         targetUser.username = "targetUser";
         const targetUserToken = "targettoken";
 
-        const userToLink = { } as any;
+        const userToLink = {};
         userToLink.username = "userToLink";
         const userToLinkToken = "usertoken";
 
@@ -39,7 +39,7 @@ describe('link-account-panel-reducer', () => {
 
         const state = linkAccountPanelReducer(initialState, linkAccountPanelActions.LINK_LOAD({
             originatingUser, targetUser, targetUserToken, userToLink, userToLinkToken}));
-        expect(state).toEqual({
+        expect(state).to.deep.equal({
             targetUser,
             targetUserToken,
             isProcessing: false,
@@ -53,17 +53,17 @@ describe('link-account-panel-reducer', () => {
     });
 
     it('handles loaded invalid account state', () => {
-        const targetUser = { } as any;
+        const targetUser = {};
         targetUser.username = "targetUser";
 
-        const userToLink = { } as any;
+        const userToLink = {};
         userToLink.username = "userToLink";
 
         const originatingUser = OriginatingUser.TARGET_USER;
         const error = LinkAccountPanelError.NON_ADMIN;
 
         const state = linkAccountPanelReducer(initialState, linkAccountPanelActions.LINK_INVALID({targetUser, userToLink, originatingUser, error}));
-        expect(state).toEqual({
+        expect(state).to.deep.equal({
             targetUser,
             targetUserToken: undefined,
             isProcessing: false,
