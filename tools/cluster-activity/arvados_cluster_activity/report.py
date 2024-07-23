@@ -13,6 +13,8 @@ import collections
 import json
 from datetime import date, datetime, timedelta
 import pkg_resources
+from typing import List
+import statistics
 
 from dataclasses import dataclass
 
@@ -72,22 +74,47 @@ table.aggtable td:nth-child(2) {
 table.active-projects td:nth-child(4),
 table.active-projects td:nth-child(5) {
   text-align: right;
+  padding-right: 6em;
+}
+
+table.single-project td:nth-child(3),
+table.single-project td:nth-child(4) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.active-projects th:nth-child(4),
+table.active-projects th:nth-child(5) {
+  text-align: left;
 }
 
 table.project td:nth-child(3),
 table.project td:nth-child(4),
-table.project td:nth-child(5) {
+table.project td:nth-child(5),
+table.project td:nth-child(6),
+table.project td:nth-child(7) {
   text-align: right;
+  padding-right: 6em;
 }
+
+table.project th:nth-child(3),
+table.project th:nth-child(4),
+table.project th:nth-child(5),
+table.project th:nth-child(6),
+table.project th:nth-child(7) {
+  text-align: left;
+}
+
 """
 
 @dataclass
 class WorkflowRunSummary:
     name: str
     uuid: str
+    cost: List[float]
+    hours: List[float]
     count: int = 0
-    cost: float = 0
-    hours: float = 0
+
 
 @dataclass
 class ProjectSummary:
@@ -316,14 +343,23 @@ class ClusterActivityReport(object):
 
         if to.date() == date.today():
 
+            # The deduplication ratio overstates things a bit, you can
+            # have collections which reference a small slice of a large
+            # block, and this messes up the intuitive value of this ratio
+            # and exagerates the effect.
+            #
+            # So for now, as much fun as this is, I'm excluding it from
+            # the report.
+            #
+            # <tr><th>Monthly savings from storage deduplication</th> <td>${dedup_savings:,.2f}</td></tr>
+
             data_rows = ""
             if managed_data_now and storage_used_now:
                 data_rows = """
-            <tr><td>Total data under management</td><td>{managed_data_now}</td></tr>
-            <tr><td>Total storage usage</td><td>{storage_used_now}</td></tr>
-            <tr><td>Deduplication ratio</td><td>{dedup_ratio:.1f}</td></tr>
-            <tr><td>Approximate monthly storage cost</td><td>${storage_cost:,.2f}</td></tr>
-            <tr><td>Monthly savings from storage deduplication</td><td>${dedup_savings:,.2f}</td></tr>
+            <tr><th>Total data under management</th> <td>{managed_data_now}</td></tr>
+            <tr><th>Total storage usage</th> <td>{storage_used_now}</td></tr>
+            <tr><th>Deduplication ratio</th> <td>{dedup_ratio:.1f}</td></tr>
+            <tr><th>Approximate monthly storage cost</th> <td>${storage_cost:,.2f}</td></tr>
                 """.format(
                        managed_data_now=format_with_suffix_base10(managed_data_now.y),
                        storage_used_now=format_with_suffix_base10(storage_used_now.y),
@@ -334,8 +370,8 @@ class ClusterActivityReport(object):
 
             tophtml.append("""<h2>Cluster status as of {now}</h2>
             <table class='aggtable'><tbody>
-            <tr><td><a href="{workbench}/users">Total users</a></td><td>{total_users}</td></tr>
-            <tr><td>Total projects</td><td>{total_projects}</td></tr>
+            <tr><th><a href="{workbench}/users">Total users</a></th><td>{total_users}</td></tr>
+            <tr><th>Total projects</th><td>{total_projects}</td></tr>
             {data_rows}
             </tbody></table>
             <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
@@ -347,12 +383,12 @@ class ClusterActivityReport(object):
 
         tophtml.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
         <table class='aggtable'><tbody>
-        <tr><td>Active users</td><td>{active_users}</td></tr>
-        <tr><td><a href="#Active_Projects">Active projects</a></td><td>{active_projects}</td></tr>
-        <tr><td>Workflow runs</td><td>{total_workflows:,}</td></tr>
-        <tr><td>Compute used</td><td>{total_hours:,.1f} hours</td></tr>
-        <tr><td>Compute cost</td><td>${total_cost:,.2f}</td></tr>
-        <tr><td>Storage cost</td><td>${storage_cost:,.2f}</td></tr>
+        <tr><th>Active users</th> <td>{active_users}</td></tr>
+        <tr><th><a href="#Active_Projects">Active projects</a></th> <td>{active_projects}</td></tr>
+        <tr><th>Workflow runs</th> <td>{total_workflows:,}</td></tr>
+        <tr><th>Compute used</th> <td>{total_hours:,.1f} hours</td></tr>
+        <tr><th>Compute cost</th> <td>${total_cost:,.2f}</td></tr>
+        <tr><th>Storage cost</th> <td>${storage_cost:,.2f}</td></tr>
         </tbody></table>
         <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
         """.format(active_users=len(self.active_users),
@@ -398,12 +434,14 @@ class ClusterActivityReport(object):
             wfsum = []
             for k2, r in sorted(prj.runs.items(), key=lambda x: x[1].count, reverse=True):
                 wfsum.append("""
-                <tr><td>{count}</td> <td>{workflowlink}</td>  <td>{runtime}</td> <td>${cost:,.2f}</td> <td>${totalcost:,.2f}</td></tr>
+                <tr><td>{count}</td> <td>{workflowlink}</td> <td>{median_runtime}</td> <td>{mean_runtime}</td> <td>${median_cost:,.2f}</td> <td>${mean_cost:,.2f}</td> <td>${totalcost:,.2f}</td></tr>
                 """.format(
                     count=r.count,
-                    runtime=hours_to_runtime_str(r.hours/r.count),
-                    cost=r.cost/r.count,
-                    totalcost=r.cost,
+                    mean_runtime=hours_to_runtime_str(statistics.mean(r.hours)),
+                    median_runtime=hours_to_runtime_str(statistics.median(r.hours)),
+                    mean_cost=statistics.mean(r.cost),
+                    median_cost=statistics.median(r.cost),
+                    totalcost=sum(r.cost),
                     workflowlink="""<a href="{workbench}/workflows/{uuid}">{name}</a>""".format(workbench=workbench,uuid=r.uuid,name=r.name)
                     if r.uuid != "none" else r.name))
 
@@ -416,12 +454,13 @@ class ClusterActivityReport(object):
             bottomhtml.append(
                 """<a id="{name}"></a><a href="{workbench}/projects/{uuid}"><h2>{name}</h2></a>
 
-                <table>
+                <table class='sortable single-project'>
+                <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
                 <tbody><tr>{projectrow}</tr></tbody>
                 </table>
 
                 <table class='sortable project'>
-                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Mean runtime</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
+                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Median runtime</th> <th>Mean runtime</th> <th>Median cost per run</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
                 <tbody>
                 {wfsum}
                 </tbody></table>
@@ -439,6 +478,20 @@ class ClusterActivityReport(object):
                            uuid=prj.uuid)
             )
 
+        # The deduplication ratio overstates things a bit, you can
+        # have collections which reference a small slice of a large
+        # block, and this messes up the intuitive value of this ratio
+        # and exagerates the effect.
+        #
+        # So for now, as much fun as this is, I'm excluding it from
+        # the report.
+        #
+        # <p>"Monthly savings from storage deduplication" is the
+        # estimated cost difference between "storage usage" and "data
+        # under management" as a way of comparing with other
+        # technologies that do not support data deduplication.</p>
+
+
         bottomhtml.append("""
         <h2 id="prices">Note on usage and cost calculations</h2>
 
@@ -451,16 +504,11 @@ class ClusterActivityReport(object):
         <h3>Storage</h3>
 
         <p>"Total data under management" is what you get if you add up
-        the data represented by all collections as presented in
-        Workbench.</p>
+        all blocks referenced by all collections in Workbench, without
+        considering deduplication.</p>
 
         <p>"Total storage usage" is the actual underlying storage
         usage, accounting for data deduplication.</p>
-
-        <p>"Monthly savings from storage deduplication" is the
-        estimated cost difference between "storage usage" and "data
-        under management" as a way of comparing with other
-        technologies that do not support data deduplication.</p>
 
         <p>Storage costs are based on AWS "S3 Standard"
         described on the <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 pricing</a> page:</p>
@@ -470,6 +518,12 @@ class ClusterActivityReport(object):
         <li>$0.022 per GB / Month for the next 450 TB</li>
         <li>$0.021 per GB / Month over 500 TB</li>
         </ul>
+
+        <p>Finally, this only the base storage cost, and does not
+        include any fees associated with S3 API usage.  However, there
+        are generally no ingress/egress fees if your Arvados instance
+        and S3 bucket are in the same region, which is the normal
+        recommended configuration.</p>
 
         <h3>Compute</h3>
 
@@ -672,11 +726,12 @@ class ClusterActivityReport(object):
 
         if row["Step"] == "workflow runner":
             prj.runs.setdefault(row["Workflow"], WorkflowRunSummary(name=row["Workflow"],
-                                                                    uuid=row["WorkflowUUID"]))
+                                                                    uuid=row["WorkflowUUID"],
+                                                                    cost=[], hours=[]))
             wfuuid = row["Workflow"]
             prj.runs[wfuuid].count += 1
-            prj.runs[wfuuid].cost += row["CumulativeCost"]
-            prj.runs[wfuuid].hours += hrs
+            prj.runs[wfuuid].cost.append(row["CumulativeCost"])
+            prj.runs[wfuuid].hours.append(hrs)
             self.total_workflows += 1
 
         self.total_hours += hrs
