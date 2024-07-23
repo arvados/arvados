@@ -4,13 +4,12 @@
 
 import { collectionPanelFilesReducer } from "./collection-panel-files-reducer";
 import { collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { CollectionFile, CollectionDirectory, createCollectionFile, createCollectionDirectory } from "models/collection-file";
+import { createCollectionFile, createCollectionDirectory } from "models/collection-file";
 import { createTree, setNode, getNodeValue, mapTreeValues, TreeNodeStatus } from "models/tree";
-import { CollectionPanelFile, CollectionPanelDirectory } from "./collection-panel-files-state";
 
 describe('CollectionPanelFilesReducer', () => {
 
-    const files: Array<CollectionFile | CollectionDirectory> = [
+    const files = [
         createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', path: '' }),
         createCollectionDirectory({ id: 'Directory 2', name: 'Directory 2', path: 'Directory 1' }),
         createCollectionDirectory({ id: 'Directory 3', name: 'Directory 3', path: '' }),
@@ -31,14 +30,14 @@ describe('CollectionPanelFilesReducer', () => {
         selected: false,
         expanded: false,
         status: TreeNodeStatus.INITIAL,
-    })(tree), createTree<CollectionFile | CollectionDirectory>());
+    })(tree), createTree());
 
     const collectionPanelFilesTree = collectionPanelFilesReducer(
-        createTree<CollectionPanelFile | CollectionPanelDirectory>(),
+        createTree(),
         collectionPanelFilesAction.SET_COLLECTION_FILES(collectionFilesTree));
 
     it('SET_COLLECTION_FILES', () => {
-        expect(getNodeValue('Directory 1')(collectionPanelFilesTree)).toEqual({
+        expect(getNodeValue('Directory 1')(collectionPanelFilesTree)).to.deep.equal({
             ...createCollectionDirectory({ id: 'Directory 1', name: 'Directory 1', path: '' }),
             collapsed: true,
             selected: false
@@ -50,8 +49,8 @@ describe('CollectionPanelFilesReducer', () => {
             collectionPanelFilesTree,
             collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_COLLAPSE({ id: 'Directory 3' }));
 
-        const value = getNodeValue('Directory 3')(newTree)! as CollectionPanelDirectory;
-        expect(value.collapsed).toBe(false);
+        const value = getNodeValue('Directory 3')(newTree);
+        expect(value.collapsed).to.equal(false);
     });
 
     it('TOGGLE_COLLECTION_FILE_SELECTION', () => {
@@ -60,7 +59,7 @@ describe('CollectionPanelFilesReducer', () => {
             collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: 'Directory 3' }));
 
         const value = getNodeValue('Directory 3')(newTree);
-        expect(value!.selected).toBe(true);
+        expect(value.selected).to.equal(true);
     });
 
     it('TOGGLE_COLLECTION_FILE_SELECTION ancestors', () => {
@@ -69,15 +68,15 @@ describe('CollectionPanelFilesReducer', () => {
             collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: 'Directory 2' }));
 
         const value = getNodeValue('Directory 1')(newTree);
-        expect(value!.selected).toBe(true);
+        expect(value.selected).to.equal(true);
     });
 
     it('TOGGLE_COLLECTION_FILE_SELECTION descendants', () => {
         const newTree = collectionPanelFilesReducer(
             collectionPanelFilesTree,
             collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: 'Directory 2' }));
-        expect(getNodeValue('file1.txt')(newTree)!.selected).toBe(true);
-        expect(getNodeValue('file2.txt')(newTree)!.selected).toBe(true);
+        expect(getNodeValue('file1.txt')(newTree).selected).to.equal(true);
+        expect(getNodeValue('file2.txt')(newTree).selected).to.equal(true);
     });
 
     it('TOGGLE_COLLECTION_FILE_SELECTION unselect ancestors', () => {
@@ -89,7 +88,7 @@ describe('CollectionPanelFilesReducer', () => {
                 tree,
                 collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: 'file1.txt' })));
 
-        expect(getNodeValue('Directory 2')(newTree)!.selected).toBe(false);
+        expect(getNodeValue('Directory 2')(newTree).selected).to.equal(false);
     });
 
     it('SELECT_ALL_COLLECTION_FILES', () => {
@@ -97,8 +96,8 @@ describe('CollectionPanelFilesReducer', () => {
             collectionPanelFilesTree,
             collectionPanelFilesAction.SELECT_ALL_COLLECTION_FILES());
 
-        mapTreeValues((v: CollectionPanelFile | CollectionPanelDirectory) => {
-            expect(v.selected).toEqual(true);
+        mapTreeValues((v) => {
+            expect(v.selected).to.equal(true);
             return v;
         })(newTree);
     });
@@ -112,8 +111,8 @@ describe('CollectionPanelFilesReducer', () => {
                 tree,
                 collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES()));
 
-        mapTreeValues((v: CollectionPanelFile | CollectionPanelDirectory) => {
-            expect(v.selected).toEqual(false);
+        mapTreeValues((v) => {
+            expect(v.selected).to.equal(false);
             return v;
         })(newTree);
     });
