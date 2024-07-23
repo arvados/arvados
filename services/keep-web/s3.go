@@ -717,6 +717,9 @@ func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path st
 		switch src := fi.Sys().(type) {
 		case *arvados.Collection:
 			props = src.Properties
+			if src.PortableDataHash != "" {
+				header.Set("Etag", fmt.Sprintf(`"%s"`, src.PortableDataHash))
+			}
 		case *arvados.Group:
 			props = src.Properties
 		default:

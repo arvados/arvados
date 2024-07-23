@@ -774,6 +774,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		body           string
 		responseCode   int
 		responseRegexp []string
+		checkEtag      bool
 	}{
 		{
 			url:            "https://" + stage.collbucket.Name + ".example.com/",
@@ -798,6 +799,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			method:         "GET",
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`⛵\n`},
+			checkEtag:      true,
 		},
 		{
 			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/beep",
@@ -810,6 +812,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			method:         "GET",
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`boop`},
+			checkEtag:      true,
 		},
 		{
 			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
@@ -827,6 +830,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			method:         "GET",
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`boop`},
+			checkEtag:      true,
 		},
 	} {
 		url, err := url.Parse(trial.url)
@@ -842,6 +846,9 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		c.Assert(err, check.IsNil)
 		for _, re := range trial.responseRegexp {
 			c.Check(string(body), check.Matches, re)
+		}
+		if trial.checkEtag {
+			c.Check(resp.Header.Get("Etag"), check.Matches, `"[\da-f]{32}\+\d+"`)
 		}
 	}
 }
@@ -1482,6 +1489,16 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	// started catching the NoSuchKey error code and replacing it
 	// with "Source object '%s' does not exist.".
 	c.Check(string(buf), check.Matches, `(?ms).*(NoSuchKey|Source object.*does not exist).*\n`)
+
+	tmpfile = c.MkDir() + "/foo"
+	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.URL[7:], "--host-bucket="+s.testServer.URL[7:], "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo", tmpfile)
+	buf, err = cmd.CombinedOutput()
+	c.Logf("%s", buf)
+	if c.Check(err, check.IsNil) {
+		checkcontent, err := os.ReadFile(tmpfile)
+		c.Check(err, check.IsNil)
+		c.Check(string(checkcontent), check.Equals, "foo")
+	}
 }
 
 func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {
