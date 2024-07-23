@@ -43,14 +43,15 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
     }
 
     getParams(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): ListArguments | null {
-        const filters = this.getFilters(api, dataExplorer)
+        const filters = this.getFilters(api, dataExplorer);
         if (filters === null) {
             return null;
         }
         return {
             ...dataExplorerToListParams(dataExplorer),
+            filters,
             order: getOrder<ProcessResource>(dataExplorer),
-            filters
+            select: containerRequestFieldsNoMounts,
         };
     }
 
@@ -64,11 +65,7 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
             const params = this.getParams(api, dataExplorer);
 
             if (params !== null) {
-                const containerRequests = await this.services.containerRequestService.list(
-                    {
-                        ...this.getParams(api, dataExplorer),
-                        select: containerRequestFieldsNoMounts
-                    });
+                const containerRequests = await this.services.containerRequestService.list(params);
                 api.dispatch(updateResources(containerRequests.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
                 api.dispatch(this.actions.SET_ITEMS({
@@ -83,12 +80,12 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
                     items: [],
                 }));
             }
-            if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
         } catch {
             api.dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: 'Could not fetch process list.',
                 kind: SnackbarKind.ERROR
             }));
+        } finally {
             if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
         }
     }
