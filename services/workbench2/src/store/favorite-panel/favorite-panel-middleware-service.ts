@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService } from "store/data-explorer/data-explorer-middleware-service";
+import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
 import { FavoritePanelColumnNames } from "views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
 import { getUserUuid } from "common/getuser";
@@ -15,7 +15,7 @@ import { Dispatch, MiddlewareAPI } from "redux";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
-import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "store/project-panel/project-panel-run-middleware-service";
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
@@ -28,65 +28,67 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         super(id);
     }
 
+    getTypeFilters(dataExplorer: DataExplorer) {
+        const columns = dataExplorer.columns as DataColumns<string, GroupContentsResource>;
+        return serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
+    }
+
+    getLinkFilters(dataExplorer: DataExplorer, uuid: string): string {
+        return new FilterBuilder()
+            .addEqual("link_class", LinkClass.STAR)
+            .addEqual('tail_uuid', uuid)
+            .addEqual('tail_kind', ResourceKind.USER)
+            .addIsA("head_uuid", this.getTypeFilters(dataExplorer))
+            .getFilters();
+    }
+
+    getResourceFilters(dataExplorer: DataExplorer, uuids: string[]): string {
+        return new FilterBuilder()
+            .addIn("uuid", uuids)
+            .addILike("name", dataExplorer.searchValue)
+            .addIsA("uuid", this.getTypeFilters(dataExplorer))
+            .getFilters();
+    }
+
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
+        const uuid = getUserUuid(api.getState());
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
+        } else if (!uuid || !uuid.length) {
+            userNotAvailable();
         } else {
-            const columns = dataExplorer.columns as DataColumns<string, GroupContentsResource>;
-            const typeFilters = serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
-
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const responseLinks = await this.services.linkService.list({
-                    filters: new FilterBuilder()
-                        .addEqual("link_class", LinkClass.STAR)
-                        .addEqual('tail_uuid', getUserUuid(api.getState()))
-                        .addEqual('tail_kind', ResourceKind.USER)
-                        .getFilters()
+                    ...dataExplorerToListParams(dataExplorer),
+                    filters: this.getLinkFilters(dataExplorer, uuid),
                 }).then(results => results);
                 const uuids = responseLinks.items.map(it => it.headUuid);
-                const groupItems: any = await this.services.groupsService.list({
-                    filters: new FilterBuilder()
-                        .addIn("uuid", uuids)
-                        .addILike("name", dataExplorer.searchValue)
-                        .addIsA("uuid", typeFilters)
-                        .getFilters()
+
+                const groupItems = await this.services.groupsService.list({
+                    filters: this.getResourceFilters(dataExplorer, uuids),
                 });
-                const collectionItems: any = await this.services.collectionService.list({
-                    filters: new FilterBuilder()
-                        .addIn("uuid", uuids)
-                        .addILike("name", dataExplorer.searchValue)
-                        .addIsA("uuid", typeFilters)
-                        .getFilters()
+                const collectionItems = await this.services.collectionService.list({
+                    filters: this.getResourceFilters(dataExplorer, uuids),
                 });
-                const processItems: any = await this.services.containerRequestService.list({
-                    filters: new FilterBuilder()
-                        .addIn("uuid", uuids)
-                        .addILike("name", dataExplorer.searchValue)
-                        .addIsA("uuid", typeFilters)
-                        .getFilters()
-                });
-                const response = groupItems;
-                collectionItems.items.forEach((it: any) => {
-                    response.itemsAvailable++;
-                    response.items.push(it);
-                });
-                processItems.items.forEach((it: any) => {
-                    response.itemsAvailable++;
-                    response.items.push(it);
+                const processItems = await this.services.containerRequestService.list({
+                    filters: this.getResourceFilters(dataExplorer, uuids),
                 });
 
-                api.dispatch(resourcesActions.SET_RESOURCES(response.items));
-                await api.dispatch<any>(loadMissingProcessesInformation(response.items));
+                const orderedItems = [
+                    ...groupItems.items,
+                    ...collectionItems.items,
+                    ...processItems.items
+                ];
+
+                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems));
+                await api.dispatch<any>(loadMissingProcessesInformation(processItems.items));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
-                    items: response.items.map((resource: any) => resource.uuid),
-                    itemsAvailable: response.itemsAvailable,
-                    page: Math.floor(response.offset / response.limit),
-                    rowsPerPage: response.limit
+                    ...listResultsToDataExplorerItemsMeta(responseLinks),
+                    items: orderedItems.map((resource: any) => resource.uuid),
                 }));
-                api.dispatch<any>(updateFavorites(response.items.map((item: any) => item.uuid)));
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                api.dispatch<any>(updateFavorites(uuids));
             } catch (e) {
                 api.dispatch(favoritePanelActions.SET_ITEMS({
                     items: [],
@@ -95,6 +97,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                     rowsPerPage: dataExplorer.rowsPerPage
                 }));
                 api.dispatch(couldNotFetchFavoritesContents());
+            } finally {
                 api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             }
         }
@@ -110,5 +113,11 @@ const favoritesPanelDataExplorerIsNotSet = () =>
 const couldNotFetchFavoritesContents = () =>
     snackbarActions.OPEN_SNACKBAR({
         message: 'Could not fetch favorites contents.',
+        kind: SnackbarKind.ERROR
+    });
+
+const userNotAvailable = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'User favorites not available.',
         kind: SnackbarKind.ERROR
     });
