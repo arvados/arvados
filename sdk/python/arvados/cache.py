@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """arvados.cache - Shim compatibility module
 
-This module used to define `arvados.api.SafeHTTPCache`. Now it only exists
+This module used to define `arvados.cache.SafeHTTPCache`. Now it only exists
 to provide backwards compatible imports. New code should prefer to import
-`arvados.api`.
+`arvados.api.ThreadSafeHTTPCache`.
 
 @private
 """
 
-from .api import SafeHTTPCache
+from .api import ThreadSafeHTTPCache as SafeHTTPCache

@@ -159,7 +159,7 @@ def _new_http_error(cls, *args, **kwargs):
         errors.ApiError, *args, **kwargs)
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
-class SafeHTTPCache(object):
+class ThreadSafeHTTPCache:
     """Thread-safe replacement for `httplib2.FileCache`
 
     `arvados.api.http_cache` is the preferred way to construct this object.
@@ -289,10 +289,10 @@ class ThreadSafeAPIClient(object):
         return getattr(self.localapi(), name)
 
 
-def http_cache(data_type: str) -> Optional[SafeHTTPCache]:
+def http_cache(data_type: str) -> Optional[ThreadSafeHTTPCache]:
     """Set up an HTTP file cache
 
-    This function constructs and returns an `arvados.api.SafeHTTPCache`
+    This function constructs and returns an `arvados.api.ThreadSafeHTTPCache`
     backed by the filesystem under a cache directory from the environment, or
     `None` if the directory cannot be set up. The return value can be passed to
     `httplib2.Http` as the `cache` argument.
@@ -307,7 +307,7 @@ def http_cache(data_type: str) -> Optional[SafeHTTPCache]:
     except (OSError, RuntimeError):
         return None
     else:
-        return SafeHTTPCache(str(path), max_age=60*60*24*2)
+        return ThreadSafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
         version: str,

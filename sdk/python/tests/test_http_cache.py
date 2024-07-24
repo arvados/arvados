@@ -15,7 +15,7 @@ import pytest
 from unittest import mock
 
 import arvados
-import arvados.cache
+import arvados.api
 import arvados.util
 from arvados._internal import basedirs
 
@@ -30,7 +30,7 @@ class CacheTestThread(threading.Thread):
         self._dir = dir
 
     def run(self):
-        c = arvados.cache.SafeHTTPCache(self._dir)
+        c = arvados.api.ThreadSafeHTTPCache(self._dir)
         url = 'http://example.com/foo'
         self.ok = True
         for x in range(16):
@@ -76,7 +76,7 @@ class CacheTest(unittest.TestCase):
         shutil.rmtree(self._dir)
 
     def test_cache_crud(self):
-        c = arvados.cache.SafeHTTPCache(self._dir, max_age=0)
+        c = arvados.api.ThreadSafeHTTPCache(self._dir, max_age=0)
         url = 'https://example.com/foo?bar=baz'
         data1 = _random(256)
         data2 = _random(128)
@@ -105,6 +105,6 @@ class CacheIntegrationTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
 
     def test_cache_used_by_default_client(self):
-        with mock.patch('arvados.cache.SafeHTTPCache.get') as getter:
+        with mock.patch('arvados.api.ThreadSafeHTTPCache.get') as getter:
             arvados.api('v1')._rootDesc.get('foobar')
             getter.assert_called()
