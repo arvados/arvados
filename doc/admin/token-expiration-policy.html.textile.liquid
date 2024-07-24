@@ -69,7 +69,7 @@ Clusters:
     ...
 </pre>
 
-When `TrustLoginTokens` is `false`, tokens issued through login will be "untrusted" by default.  Untrusted tokens cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens, but also interferes with some Workbench features that create new tokens on behalf of the user.
+When @TrustLoginTokens@ is @false@, tokens issued through login will be "untrusted" by default.  Untrusted tokens cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens, but also interferes with some Workbench features that create new tokens on behalf of the user.
 
 h2. Automatic expiration of all tokens
 
