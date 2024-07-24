@@ -56,6 +56,8 @@ Clusters:
 
 This is independent of @Workbench.IdleTimeout@.  Even if Workbench auto-logout is disabled, this option will ensure that the user is always required to log in again after the configured amount of time.
 
+The default value @Login.TokenLifetime@ is zero, meaning login tokens do not expire (unless @API.MaxTokenLifetime@ is set).
+
 h2. Untrusted login tokens
 
 <pre>
@@ -68,8 +70,6 @@ Clusters:
 </pre>
 
 When `TrustLoginTokens` is `false`, tokens issued through login will be "untrusted" by default.  Untrusted tokens cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens, but also interferes with some Workbench features that create new tokens on behalf of the user.
-
-The default value @Login.TokenLifetime@ is zero, meaning login tokens do not expire (unless @API.MaxTokenLifetime@ is set).
 
 h2. Automatic expiration of all tokens
 
