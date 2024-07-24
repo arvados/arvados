@@ -197,64 +197,6 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         raise IOError(errno.ENOSYS, "Not implemented")
 
 
-class StreamFileReader(ArvadosFileReaderBase):
-    class _NameAttribute(str):
-        # The Python file API provides a plain .name attribute.
-        # Older SDK provided a name() method.
-        # This class provides both, for maximum compatibility.
-        def __call__(self):
-            return self
-
-    def __init__(self, stream, segments, name):
-        super(StreamFileReader, self).__init__(self._NameAttribute(name), 'rb', num_retries=stream.num_retries)
-        self._stream = stream
-        self.segments = segments
-
-    def stream_name(self):
-        return self._stream.name()
-
-    def size(self):
-        n = self.segments[-1]
-        return n.range_start + n.range_size
-
-    @_FileLikeObjectBase._before_close
-    @retry_method
-    def read(self, size, num_retries=None):
-        """Read up to 'size' bytes from the stream, starting at the current file position"""
-        if size == 0:
-            return b''
-
-        data = b''
-        available_chunks = streams.locators_and_ranges(self.segments, self._filepos, size)
-        if available_chunks:
-            lr = available_chunks[0]
-            data = self._stream.readfrom(lr.locator+lr.segment_offset,
-                                         lr.segment_size,
-                                         num_retries=num_retries)
-
-        self._filepos += len(data)
-        return data
-
-    @_FileLikeObjectBase._before_close
-    @retry_method
-    def readfrom(self, start, size, num_retries=None):
-        """Read up to 'size' bytes from the stream, starting at 'start'"""
-        if size == 0:
-            return b''
-
-        data = []
-        for lr in streams.locators_and_ranges(self.segments, start, size):
-            data.append(self._stream.readfrom(lr.locator+lr.segment_offset, lr.segment_size,
-                                              num_retries=num_retries))
-        return b''.join(data)
-
-    def as_manifest(self):
-        segs = []
-        for r in self.segments:
-            segs.extend(self._stream.locators_and_ranges(r.locator, r.range_size))
-        return " ".join(streams.normalize_stream(".", {self.name: segs})) + "\n"
-
-
 def synchronized(orig_func):
     @functools.wraps(orig_func)
     def synchronized_wrapper(self, *args, **kwargs):

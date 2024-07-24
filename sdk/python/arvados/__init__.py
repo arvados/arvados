@@ -30,7 +30,6 @@ from . import api, errors, util
 from .api import api_from_config, http_cache
 from .collection import CollectionReader
 from arvados.keep import *
-from .arvfile import StreamFileReader
 from .logging import log_format, log_date_format, log_handler
 from .retry import RetryLoop
 
