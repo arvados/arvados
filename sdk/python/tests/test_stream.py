@@ -12,7 +12,6 @@ import hashlib
 from unittest import mock
 
 import arvados
-from arvados._ranges import Range
 
 from . import arvados_testutil as tutil
 from . import run_test_server

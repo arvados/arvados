@@ -300,7 +300,7 @@ class PollClient(threading.Thread):
 
         * api: arvados.api_resources.ArvadosAPIClient --- The Arvados API
           client used to query logs. It will be used in a separate thread,
-          so if it is not an instance of `arvados.safeapi.ThreadSafeApiCache`
+          so if it is not an instance of `arvados.api.ThreadSafeAPIClient`
           it should not be reused after the thread is started.
 
         * filters: arvados.events.Filter | None --- One event filter to
@@ -525,7 +525,7 @@ def subscribe(
 
     * api: arvados.api_resources.ArvadosAPIClient --- The Arvados API
       client used to query logs. It may be used in a separate thread,
-      so if it is not an instance of `arvados.safeapi.ThreadSafeApiCache`
+      so if it is not an instance of `arvados.api.ThreadSafeAPIClient`
       it should not be reused after this method returns.
 
     * filters: arvados.events.Filter | None --- One event filter to

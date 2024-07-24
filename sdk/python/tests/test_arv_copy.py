@@ -15,6 +15,7 @@ from arvados.collection import Collection, CollectionReader
 import pytest
 
 import arvados.commands.arv_copy as arv_copy
+from arvados._internal import basedirs
 from . import arvados_testutil as tutil
 from . import run_test_server
 
@@ -123,7 +124,7 @@ class TestApiForInstance:
             path = tmp_path / name
             if path.exists():
                 yield path
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'search', search)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'search', search)
 
     def expected_token(self, path):
         return f"v2/zzzzz-gj3su-{path.stem:>015s}/{path.stem:>050s}"

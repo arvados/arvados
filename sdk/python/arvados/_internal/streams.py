@@ -3,13 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import re
 
-_logger = logging.getLogger('arvados.ranges')
+from .. import config
+
+_logger = logging.getLogger('arvados.streams')
 
 # Log level below 'debug' !
 RANGES_SPAM = 9
 
-class Range(object):
+class Range:
     __slots__ = ("locator", "range_start", "range_size", "segment_offset")
 
     def __init__(self, locator, range_start, range_size, segment_offset=0):
@@ -26,6 +29,26 @@ class Range(object):
                 self.range_start == other.range_start and
                 self.range_size == other.range_size and
                 self.segment_offset == other.segment_offset)
+
+
+class LocatorAndRange:
+    __slots__ = ("locator", "block_size", "segment_offset", "segment_size")
+
+    def __init__(self, locator, block_size, segment_offset, segment_size):
+        self.locator = locator
+        self.block_size = block_size
+        self.segment_offset = segment_offset
+        self.segment_size = segment_size
+
+    def __eq__(self, other):
+        return  (self.locator == other.locator and
+                 self.block_size == other.block_size and
+                 self.segment_offset == other.segment_offset and
+                 self.segment_size == other.segment_size)
+
+    def __repr__(self):
+        return "LocatorAndRange(%r, %r, %r, %r)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
+
 
 def first_block(data_locators, range_start):
     block_start = 0
@@ -57,24 +80,6 @@ def first_block(data_locators, range_start):
         block_end = block_start + block_size
 
     return i
-
-class LocatorAndRange(object):
-    __slots__ = ("locator", "block_size", "segment_offset", "segment_size")
-
-    def __init__(self, locator, block_size, segment_offset, segment_size):
-        self.locator = locator
-        self.block_size = block_size
-        self.segment_offset = segment_offset
-        self.segment_size = segment_size
-
-    def __eq__(self, other):
-        return  (self.locator == other.locator and
-                 self.block_size == other.block_size and
-                 self.segment_offset == other.segment_offset and
-                 self.segment_size == other.segment_size)
-
-    def __repr__(self):
-        return "LocatorAndRange(%r, %r, %r, %r)" % (self.locator, self.block_size, self.segment_offset, self.segment_size)
 
 def locators_and_ranges(data_locators, range_start, range_size, limit=None):
     """Get blocks that are covered by a range.
@@ -223,3 +228,60 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
             data_locators[i] = Range(dl.locator, new_range_end, (old_segment_end-new_range_end), dl.segment_offset + (new_range_end-old_segment_start))
             return
         i += 1
+
+def escape(path):
+    return re.sub(r'[\\:\000-\040]', lambda m: "\\%03o" % ord(m.group(0)), path)
+
+def normalize_stream(stream_name, stream):
+    """Take manifest stream and return a list of tokens in normalized format.
+
+    :stream_name:
+      The name of the stream.
+
+    :stream:
+      A dict mapping each filename to a list of `_range.LocatorAndRange` objects.
+
+    """
+
+    stream_name = escape(stream_name)
+    stream_tokens = [stream_name]
+    sortedfiles = list(stream.keys())
+    sortedfiles.sort()
+
+    blocks = {}
+    streamoffset = 0
+    # Go through each file and add each referenced block exactly once.
+    for streamfile in sortedfiles:
+        for segment in stream[streamfile]:
+            if segment.locator not in blocks:
+                stream_tokens.append(segment.locator)
+                blocks[segment.locator] = streamoffset
+                streamoffset += segment.block_size
+
+    # Add the empty block if the stream is otherwise empty.
+    if len(stream_tokens) == 1:
+        stream_tokens.append(config.EMPTY_BLOCK_LOCATOR)
+
+    for streamfile in sortedfiles:
+        # Add in file segments
+        current_span = None
+        fout = escape(streamfile)
+        for segment in stream[streamfile]:
+            # Collapse adjacent segments
+            streamoffset = blocks[segment.locator] + segment.segment_offset
+            if current_span is None:
+                current_span = [streamoffset, streamoffset + segment.segment_size]
+            else:
+                if streamoffset == current_span[1]:
+                    current_span[1] += segment.segment_size
+                else:
+                    stream_tokens.append(u"{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
+                    current_span = [streamoffset, streamoffset + segment.segment_size]
+
+        if current_span is not None:
+            stream_tokens.append(u"{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
+
+        if not stream[streamfile]:
+            stream_tokens.append(u"0:0:{0}".format(fout))
+
+    return stream_tokens

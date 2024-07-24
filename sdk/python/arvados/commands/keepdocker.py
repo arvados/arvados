@@ -26,8 +26,9 @@ import arvados.config
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
-from arvados._version import __version__
 
+from arvados._internal import basedirs
+from arvados._version import __version__
 from typing import (
     Callable,
 )
@@ -187,7 +188,7 @@ def save_image(image_hash, image_file):
         pass  # We won't resume from this cache.  No big deal.
 
 def get_cache_dir(
-        mkparent: Callable[[], Path]=arvados.util._BaseDirectories('CACHE').storage_path,
+        mkparent: Callable[[], Path]=basedirs.BaseDirectories('CACHE').storage_path,
 ) -> str:
     path = mkparent() / 'docker'
     path.mkdir(mode=0o700, exist_ok=True)

@@ -18,10 +18,9 @@ import uuid
 import zlib
 
 from . import config
+from ._internal import streams
 from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
-from ._normalize_stream import normalize_stream
-from ._ranges import locators_and_ranges, replace_range, Range, LocatorAndRange
 from .retry import retry_method
 
 MOD = "mod"
@@ -196,64 +195,6 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
 
     def readfrom(self, start, size, num_retries=None):
         raise IOError(errno.ENOSYS, "Not implemented")
-
-
-class StreamFileReader(ArvadosFileReaderBase):
-    class _NameAttribute(str):
-        # The Python file API provides a plain .name attribute.
-        # Older SDK provided a name() method.
-        # This class provides both, for maximum compatibility.
-        def __call__(self):
-            return self
-
-    def __init__(self, stream, segments, name):
-        super(StreamFileReader, self).__init__(self._NameAttribute(name), 'rb', num_retries=stream.num_retries)
-        self._stream = stream
-        self.segments = segments
-
-    def stream_name(self):
-        return self._stream.name()
-
-    def size(self):
-        n = self.segments[-1]
-        return n.range_start + n.range_size
-
-    @_FileLikeObjectBase._before_close
-    @retry_method
-    def read(self, size, num_retries=None):
-        """Read up to 'size' bytes from the stream, starting at the current file position"""
-        if size == 0:
-            return b''
-
-        data = b''
-        available_chunks = locators_and_ranges(self.segments, self._filepos, size)
-        if available_chunks:
-            lr = available_chunks[0]
-            data = self._stream.readfrom(lr.locator+lr.segment_offset,
-                                         lr.segment_size,
-                                         num_retries=num_retries)
-
-        self._filepos += len(data)
-        return data
-
-    @_FileLikeObjectBase._before_close
-    @retry_method
-    def readfrom(self, start, size, num_retries=None):
-        """Read up to 'size' bytes from the stream, starting at 'start'"""
-        if size == 0:
-            return b''
-
-        data = []
-        for lr in locators_and_ranges(self.segments, start, size):
-            data.append(self._stream.readfrom(lr.locator+lr.segment_offset, lr.segment_size,
-                                              num_retries=num_retries))
-        return b''.join(data)
-
-    def as_manifest(self):
-        segs = []
-        for r in self.segments:
-            segs.extend(self._stream.locators_and_ranges(r.locator, r.range_size))
-        return " ".join(normalize_stream(".", {self.name: segs})) + "\n"
 
 
 def synchronized(orig_func):
@@ -913,7 +854,7 @@ class ArvadosFile(object):
                         map_loc[other_segment.locator] = self.parent._my_block_manager().dup_block(bufferblock, self).blockid
                 new_loc = map_loc[other_segment.locator]
 
-            self._segments.append(Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
+            self._segments.append(streams.Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
 
         self.set_committed(False)
 
@@ -1019,7 +960,7 @@ class ArvadosFile(object):
                     # segment is past the trucate size, all done
                     break
                 elif size < range_end:
-                    nr = Range(r.locator, r.range_start, size - r.range_start, 0)
+                    nr = streams.Range(r.locator, r.range_start, size - r.range_start, 0)
                     nr.segment_offset = r.segment_offset
                     new_segs.append(nr)
                     break
@@ -1032,10 +973,10 @@ class ArvadosFile(object):
             padding = self.parent._my_block_manager().get_padding_block()
             diff = size - self.size()
             while diff > config.KEEP_BLOCK_SIZE:
-                self._segments.append(Range(padding.blockid, self.size(), config.KEEP_BLOCK_SIZE, 0))
+                self._segments.append(streams.Range(padding.blockid, self.size(), config.KEEP_BLOCK_SIZE, 0))
                 diff -= config.KEEP_BLOCK_SIZE
             if diff > 0:
-                self._segments.append(Range(padding.blockid, self.size(), diff, 0))
+                self._segments.append(streams.Range(padding.blockid, self.size(), diff, 0))
             self.set_committed(False)
         else:
             # size == self.size()
@@ -1062,7 +1003,7 @@ class ArvadosFile(object):
         with self.lock:
             if size == 0 or offset >= self.size():
                 return memoryview(b'') if return_memoryview else b''
-            readsegs = locators_and_ranges(self._segments, offset, size)
+            readsegs = streams.locators_and_ranges(self._segments, offset, size)
 
             prefetch = None
             prefetch_lookahead = self.parent._my_block_manager().prefetch_lookahead
@@ -1078,10 +1019,12 @@ class ArvadosFile(object):
                 # every 16 MiB).
                 self._read_counter = (self._read_counter+1) % 128
                 if self._read_counter == 1:
-                    prefetch = locators_and_ranges(self._segments,
-                                                   offset + size,
-                                                   config.KEEP_BLOCK_SIZE * prefetch_lookahead,
-                                                   limit=(1+prefetch_lookahead))
+                    prefetch = streams.locators_and_ranges(
+                        self._segments,
+                        offset + size,
+                        config.KEEP_BLOCK_SIZE * prefetch_lookahead,
+                        limit=(1+prefetch_lookahead),
+                    )
 
         locs = set()
         data = []
@@ -1144,11 +1087,14 @@ class ArvadosFile(object):
                 self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
 
         self._current_bblock.append(data)
-
-        replace_range(self._segments, offset, len(data), self._current_bblock.blockid, self._current_bblock.write_pointer - len(data))
-
+        streams.replace_range(
+            self._segments,
+            offset,
+            len(data),
+            self._current_bblock.blockid,
+            self._current_bblock.write_pointer - len(data),
+        )
         self.parent.notify(WRITE, self.parent, self.name, (self, self))
-
         return len(data)
 
     @synchronized
@@ -1200,9 +1146,9 @@ class ArvadosFile(object):
     def _add_segment(self, blocks, pos, size):
         """Internal implementation of add_segment."""
         self.set_committed(False)
-        for lr in locators_and_ranges(blocks, pos, size):
-            last = self._segments[-1] if self._segments else Range(0, 0, 0, 0)
-            r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
+        for lr in streams.locators_and_ranges(blocks, pos, size):
+            last = self._segments[-1] if self._segments else streams.Range(0, 0, 0, 0)
+            r = streams.Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
             self._segments.append(r)
 
     @synchronized
@@ -1227,9 +1173,13 @@ class ArvadosFile(object):
                 loc = self.parent._my_block_manager().get_bufferblock(loc).locator()
             if portable_locators:
                 loc = KeepLocator(loc).stripped()
-            filestream.append(LocatorAndRange(loc, KeepLocator(loc).size,
-                                 segment.segment_offset, segment.range_size))
-        buf += ' '.join(normalize_stream(stream_name, {self.name: filestream}))
+            filestream.append(streams.LocatorAndRange(
+                loc,
+                KeepLocator(loc).size,
+                segment.segment_offset,
+                segment.range_size,
+            ))
+        buf += ' '.join(streams.normalize_stream(stream_name, {self.name: filestream}))
         buf += "\n"
         return buf
 
