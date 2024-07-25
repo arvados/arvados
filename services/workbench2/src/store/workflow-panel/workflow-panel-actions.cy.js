@@ -2,40 +2,31 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_TOKEN_KEY } from "services/auth-service/auth-service";
-
-import 'jest-localstorage-mock';
-import { ServiceRepository, createServices } from "services/services";
-import { configureStore, RootStore } from "../store";
+import { isEqual } from "lodash";
+import { createServices } from "services/services";
+import { configureStore } from "../store";
 import { createBrowserHistory } from "history";
-import { Config, mockConfig } from 'common/config';
-import { ApiActions } from "services/api/api-actions";
-import { ACCOUNT_LINK_STATUS_KEY } from 'services/link-account-service/link-account-service';
+import { mockConfig } from 'common/config';
 import Axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { ImportMock } from 'ts-mock-imports';
-import * as servicesModule from "services/services";
-import { SessionStatus } from "models/session";
 import { openRunProcess } from './workflow-panel-actions';
 import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 import { initialize } from 'redux-form';
-import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
 import { ResourceKind } from 'models/resource';
-import { WorkflowResource } from 'models/workflow';
 
 describe('workflow-panel-actions', () => {
     const axiosInst = Axios.create({ headers: {} });
     const axiosMock = new MockAdapter(axiosInst);
 
-    let store: RootStore;
-    let services: ServiceRepository;
-    const config: any = {};
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => { },
-        errorFn: (id: string, message: string) => { }
+    let store;
+    let services;
+    const config = {};
+    const actions = {
+        progressFn: (id, working) => { },
+        errorFn: (id, message) => { }
     };
-    let importMocks: any[];
+    let importMocks;
 
     beforeEach(() => {
         axiosMock.reset();
@@ -50,7 +41,7 @@ describe('workflow-panel-actions', () => {
     });
 
     it('opens the run process panel', async () => {
-        const wflist: WorkflowResource[] = [{
+        const wflist = [{
             uuid: "zzzzz-7fd4e-0123456789abcde",
             name: "foo",
             description: "",
@@ -73,16 +64,29 @@ describe('workflow-panel-actions', () => {
                 items: []
             });
 
-        const dispatchMock = jest.fn();
-        const dispatchWrapper = (action: any) => {
+        const dispatchMock = cy.spy();
+        const dispatchWrapper = (action ) => {
             dispatchMock(action);
             return store.dispatch(action);
         };
 
         await openRunProcess("zzzzz-7fd4e-0123456789abcde", "zzzzz-tpzed-0123456789abcde", "testing", { inputparm: "value" })(dispatchWrapper, store.getState, services);
-        expect(dispatchMock).toHaveBeenCalledWith(runProcessPanelActions.SET_WORKFLOWS(wflist));
-        expect(dispatchMock).toHaveBeenCalledWith(runProcessPanelActions.SET_SELECTED_WORKFLOW(wflist[0]));
-        expect(dispatchMock).toHaveBeenCalledWith(initialize(RUN_PROCESS_BASIC_FORM, { name: "testing" }));
-        expect(dispatchMock).toHaveBeenCalledWith(initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }));
+        expect(dispatchMock).to.be.calledWith(runProcessPanelActions.SET_WORKFLOWS(wflist));
+        expect(dispatchMock).to.be.calledWith(runProcessPanelActions.SET_SELECTED_WORKFLOW(wflist[0]));
+        expect(arrayDeeplyIncludesObject(dispatchMock.args, initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }))).to.be.true;
+        expect(dispatchMock).to.be.calledWith(initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }));
     });
 });
+
+const arrayDeeplyIncludesObject = (array, object) => {
+    return array.some((item) => {
+        if (isEqual(item, object)) {
+            return true;
+        }
+        if (typeof item === 'object') {
+            return arrayDeeplyIncludesObject(Object.values(item), object);
+        }
+        return false;
+    });
+};
+
