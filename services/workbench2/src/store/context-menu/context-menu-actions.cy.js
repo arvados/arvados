@@ -136,12 +136,12 @@ describe('context-menu-actions', () => {
                 };
                 const store = mockStore(initialState);
 
-                let menuKind: any;
+                let menuKind;
                 try {
-                    menuKind = store.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid as string, forceReadonly as boolean))
-                    expect(menuKind).toBe(expected);
+                    menuKind = store.dispatch(resourceUuidToContextMenuKind(resourceUuid, forceReadonly))
+                    expect(menuKind).to.equal(expected);
                 } catch (err) {
-                    throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid as string])} forceReadonly: ${forceReadonly} expected to be ${expected} but got ${menuKind}.`);
+                    throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid])} forceReadonly: ${forceReadonly} expected to be ${expected} but got ${menuKind}.`);
                 }
             });
         });
