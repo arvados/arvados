@@ -505,3 +505,9 @@
     out: out
   tool: wf/runseparate-wf.cwl
   doc: "test arv:SeparateRunner"
+
+- job: null
+  output:
+    out: out
+  tool: wf/output_dir_wf.cwl
+  doc: "test same file appearing in output of both Directory and array"
