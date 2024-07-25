@@ -427,11 +427,16 @@ The 'jobs' API is no longer supported.
         outputObj = copy.deepcopy(outputObj)
 
         files = []
-        def capture(fileobj):
+        def captureFile(fileobj):
             files.append(fileobj)
 
-        adjustDirObjs(outputObj, capture)
-        adjustFileObjs(outputObj, capture)
+        def captureDir(dirobj):
+            if dirobj["location"].startswith("keep:") and 'listing' in dirobj:
+                del dirobj['listing']
+            files.append(dirobj)
+
+        adjustDirObjs(outputObj, captureDir)
+        adjustFileObjs(outputObj, captureFile)
 
         generatemapper = NoFollowPathMapper(files, "", "", separateDirs=False)
 
