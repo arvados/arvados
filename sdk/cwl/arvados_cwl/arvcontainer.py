@@ -489,6 +489,17 @@ class ArvadosContainer(JobBase):
             logger.debug("Container request was %s", container_request)
             self.output_callback({}, "permanentFail")
 
+
+    def spot_instance_retry(self, record, container):
+        spot_instance_retry_req, _ = self.get_requirement("http://arvados.org/cwl#SpotInstanceRetry")
+        if spot_instance_retry_req is None:
+            return False
+        if container["preemptionNotice"]:
+            return True
+        return False
+
+
+
     def out_of_memory_retry(self, record, container):
         oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
         if oom_retry_req is None:
@@ -545,7 +556,12 @@ class ArvadosContainer(JobBase):
                     self.run(None)
                     retried = True
                     return
-
+                if processStatus == "permanentFail" and self.attempt_count == 1 and self.spot_instance_retry(record, container):
+                    logger.warning("%s Container failed with preemptible instance reclaimed, trying again nonpreemptible")
+                    self.job_runtime.enable_preemptible = False
+                    self.run(None)
+                    retried = True
+                    return
                 if rcode == 137:
                     logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin' or use the arv:OutOfMemoryRetry feature.",
                                  self.arvrunner.label(self))

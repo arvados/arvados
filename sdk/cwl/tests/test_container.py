@@ -84,8 +84,7 @@ class TestContainer(unittest.TestCase):
              "construct_tool_object": runner.arv_make_tool,
              "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access),
              "loader": Loader({}),
-             "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"}),
-             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__
+             "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"})
              })
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
@@ -620,7 +619,7 @@ class TestContainer(unittest.TestCase):
             self.fail("RuntimeStatusLoggingHandler should not be called recursively")
 
 
-    # Test to make sure that an exception raised from
+    # Test to make sure trunner = mock.MagicMock()hat an exception raised from
     # get_current_container doesn't cause the logger to raise an
     # exception
     @mock.patch("arvados_cwl.util.get_current_container")
@@ -1607,8 +1606,7 @@ class TestWorkflow(unittest.TestCase):
              "make_fs_access": make_fs_access,
              "loader": document_loader,
              "metadata": {"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"},
-             "construct_tool_object": runner.arv_make_tool,
-             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__})
+             "construct_tool_object": runner.arv_make_tool})
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
              "basedir": "",
@@ -1853,3 +1851,53 @@ class TestWorkflow(unittest.TestCase):
         api._rootDesc = copy.deepcopy(get_rootDesc())
         runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')
+    
+    @mock.patch("arvados.collection.Collection")
+    def test_spot_instance_retry(self, blah):
+        arvados_cwl.add_arv_hints()
+
+        api = mock.MagicMock()
+
+        runner = mock.MagicMock()
+        runner.api = api
+        runner.num_retries = 0
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
+        runner.api.containers().get().execute.return_value = {
+            "state": "Complete",
+            "output": "abc+123",
+            "exit_code": 138 # Want exit code to be failure
+        }
+        # Add assertions to make sure it reran as nonpreemptible
+        loadingContext, runtimeContext = self.helper(runner)
+        arvjob = arvados_cwl.ArvadosContainer(runner,
+                                              runtimeContext,
+                                              mock.MagicMock(),
+                                              {},
+                                              None,
+                                              [],
+                                              [],
+                                              "testjob")
+        arvjob.output_callback = mock.MagicMock()
+        arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
+        arvjob.outdir = "/var/spool/cwl"
+        arvjob.output_ttl = 3600
+        arvjob.uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzz1"
+
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
+
+        arvjob.done({
+            "state": "Final",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "modified_at": "2017-05-26T12:01:22Z",
+            "properties": {}
+        })
+
+        self.assertTrue(api.container_requests().create.called)
+        self.assertTrue(arvjob.attempt_count == 2)
