@@ -5,6 +5,7 @@
 import logging
 import json
 import os
+from unittest import async_case
 import urllib.request, urllib.parse, urllib.error
 import time
 import datetime
@@ -328,6 +329,11 @@ class ArvadosContainer(JobBase):
             elif runtimeContext.enable_preemptible is None:
                 pass
 
+        if scheduling_parameters.get("preemptible") and self.may_resubmit_non_preemptible():
+            # Only make one attempt, because if it is preempted we
+            # will resubmit and ask for a non-preemptible instance.
+            container_request["container_count_max"] = 1
+
         if self.timelimit is not None and self.timelimit > 0:
             scheduling_parameters["max_run_time"] = self.timelimit
 
@@ -489,16 +495,29 @@ class ArvadosContainer(JobBase):
             logger.debug("Container request was %s", container_request)
             self.output_callback({}, "permanentFail")
 
+    def may_resubmit_non_preemptible(self):
+        if self.job_runtime.enable_resubmit_non_preemptible is False:
+            # explicitly disabled
+            return False
+
+        spot_instance_retry_req, _ = self.get_requirement("http://arvados.org/cwl#PreemptionBehavior")
+        if spot_instance_retry_req:
+            if spot_instance_retry_req["resubmitNonPreemptible"] is False:
+                # explicitly disabled by hint
+                return False
+        elif self.job_runtime.enable_resubmit_non_preemptible is None:
+            # default behavior is we don't retry
+            return False
+
+        # At this point, by process of elimination either
+        # resubmitNonPreemptible or enable_resubmit_non_preemptible
+        # must be True, so now check if the container was actually
+        # preempted.
+
+        return True
 
     def spot_instance_retry(self, record, container):
-        spot_instance_retry_req, _ = self.get_requirement("http://arvados.org/cwl#SpotInstanceRetry")
-        if spot_instance_retry_req is None:
-            return False
-        if container["preemptionNotice"]:
-            return True
-        return False
-
-
+        return self.may_resubmit_non_preemptible() and bool(container["runtime_status"].get("preemptionNotice"))
 
     def out_of_memory_retry(self, record, container):
         oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
@@ -548,20 +567,36 @@ class ArvadosContainer(JobBase):
                 else:
                     processStatus = "permanentFail"
 
+                do_retry = False
+
                 if processStatus == "permanentFail" and self.attempt_count == 1 and self.out_of_memory_retry(record, container):
-                    logger.warning("%s Container failed with out of memory error, retrying with more RAM.",
+                    logger.info("%s Container failed with out of memory error.  Retrying container with more RAM.",
                                  self.arvrunner.label(self))
+                    self.job_runtime = self.job_runtime.copy()
+                    do_retry = True
+
+                if processStatus == "permanentFail" and self.attempt_count == 1 and self.spot_instance_retry(record, container):
+                    logger.info("%s Container failed because the preemptible instance it was running on was reclaimed.  Retrying container on a non-preemptible instance.")
+                    self.job_runtime = self.job_runtime.copy()
+                    self.job_runtime.enable_preemptible = False
+                    do_retry = True
+
+                if do_retry:
+                    # Delete the failed request, users reported it
+                    # confusing to have a failed request in the child
+                    # containers list when the workflow actually
+                    # succeeded.  For debugging, the log collection
+                    # will still be around, and we can get the uuid of
+                    # the 1st try from stderr logs.
+                    self.arvrunner.api.container_requests().delete(uuid=self.uuid).execute()
                     self.job_runtime.submit_request_uuid = None
                     self.uuid = None
                     self.run(None)
+                    # this flag suppresses calling the output callback, we only want to set this
+                    # when we're sure that the resubmission has happened without issue.
                     retried = True
                     return
-                if processStatus == "permanentFail" and self.attempt_count == 1 and self.spot_instance_retry(record, container):
-                    logger.warning("%s Container failed with preemptible instance reclaimed, trying again nonpreemptible")
-                    self.job_runtime.enable_preemptible = False
-                    self.run(None)
-                    retried = True
-                    return
+
                 if rcode == 137:
                     logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin' or use the arv:OutOfMemoryRetry feature.",
                                  self.arvrunner.label(self))
