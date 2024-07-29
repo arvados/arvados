@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/net/html"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -30,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/html"
 	check "gopkg.in/check.v1"
 )
 
@@ -939,7 +939,7 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 	href, hasPath := pathHrefMap[path]
 	c.Assert(hasPath, check.Equals, true) // the path is listed
 	relUrl := mustParseURL(href)
-	c.Check(relUrl.Path, check.Equals, "./" + path) // href can be decoded back to path
+	c.Check(relUrl.Path, check.Equals, "./"+path) // href can be decoded back to path
 }
 
 func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
@@ -994,7 +994,7 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 		c.Assert(hasExpected, check.Equals, true) // has expected anchor text
 		c.Assert(href, check.Not(check.Equals), "")
 		relUrl := mustParseURL(href)
-		c.Check(relUrl.Path, check.Equals, "./" + expectedAnchorText) // decoded href maps back to the anchor text
+		c.Check(relUrl.Path, check.Equals, "./"+expectedAnchorText) // decoded href maps back to the anchor text
 	}
 }
 
@@ -1339,12 +1339,12 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 				href, hasE := pathHrefMap[e]
 				c.Check(hasE, check.Equals, true, comment) // expected path is listed
 				relUrl := mustParseURL(href)
-				c.Check(relUrl.Path, check.Equals, "./" + e, comment) // href can be decoded back to path
+				c.Check(relUrl.Path, check.Equals, "./"+e, comment) // href can be decoded back to path
 			}
 			wgetCommand := getWgetExamplePre(listingPageDoc)
 			wgetExpected := regexp.MustCompile(`^\$ wget .*--cut-dirs=(\d+) .*'(https?://[^']+)'$`)
 			wgetMatchGroups := wgetExpected.FindStringSubmatch(wgetCommand)
-			c.Assert(wgetMatchGroups, check.NotNil) // wget command matches
+			c.Assert(wgetMatchGroups, check.NotNil)                                     // wget command matches
 			c.Check(wgetMatchGroups[1], check.Equals, fmt.Sprintf("%d", trial.cutDirs)) // correct level of cut dirs in wget command
 			printedUrl := mustParseURL(wgetMatchGroups[2])
 			c.Check(printedUrl.Host, check.Equals, req.URL.Host)
