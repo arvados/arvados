@@ -15,13 +15,14 @@ import pytest
 from unittest import mock
 
 import arvados
-import arvados.cache
+import arvados.api
 import arvados.util
+from arvados._internal import basedirs
+
 from . import run_test_server
 
 def _random(n):
     return bytearray(random.getrandbits(8) for _ in range(n))
-
 
 class CacheTestThread(threading.Thread):
     def __init__(self, dir):
@@ -29,7 +30,7 @@ class CacheTestThread(threading.Thread):
         self._dir = dir
 
     def run(self):
-        c = arvados.cache.SafeHTTPCache(self._dir)
+        c = arvados.api.ThreadSafeHTTPCache(self._dir)
         url = 'http://example.com/foo'
         self.ok = True
         for x in range(16):
@@ -54,7 +55,7 @@ class TestAPIHTTPCache:
             path = tmp_path / subdir
             path.mkdir(mode=mode)
             return path
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', storage_path)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'storage_path', storage_path)
         actual = arvados.http_cache(data_type)
         assert str(actual) == str(tmp_path / data_type)
 
@@ -62,7 +63,7 @@ class TestAPIHTTPCache:
     def test_unwritable_storage(self, monkeypatch, error):
         def fail(self, subdir='.', mode=0o700):
             raise error()
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', fail)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'storage_path', fail)
         actual = arvados.http_cache('unwritable')
         assert actual is None
 
@@ -75,7 +76,7 @@ class CacheTest(unittest.TestCase):
         shutil.rmtree(self._dir)
 
     def test_cache_crud(self):
-        c = arvados.cache.SafeHTTPCache(self._dir, max_age=0)
+        c = arvados.api.ThreadSafeHTTPCache(self._dir, max_age=0)
         url = 'https://example.com/foo?bar=baz'
         data1 = _random(256)
         data2 = _random(128)
@@ -104,6 +105,6 @@ class CacheIntegrationTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
 
     def test_cache_used_by_default_client(self):
-        with mock.patch('arvados.cache.SafeHTTPCache.get') as getter:
+        with mock.patch('arvados.api.ThreadSafeHTTPCache.get') as getter:
             arvados.api('v1')._rootDesc.get('foobar')
             getter.assert_called()

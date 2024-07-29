@@ -7,36 +7,25 @@ This module provides functions and constants that are useful across a variety
 of Arvados resource types, or extend the Arvados API client (see `arvados.api`).
 """
 
-import dataclasses
-import enum
 import errno
 import fcntl
-import functools
 import hashlib
 import httplib2
-import itertools
-import logging
 import operator
 import os
 import random
 import re
-import shlex
-import stat
 import subprocess
 import sys
-import warnings
 
 import arvados.errors
 
-from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
     Container,
     Dict,
     Iterator,
-    Mapping,
-    Optional,
     TypeVar,
     Union,
 )
@@ -77,220 +66,6 @@ link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
 """Regular expression to match any Arvados link UUID"""
 user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
 """Regular expression to match any Arvados user UUID"""
-
-logger = logging.getLogger('arvados')
-
-def _deprecated(version=None, preferred=None):
-    """Mark a callable as deprecated in the SDK
-
-    This will wrap the callable to emit as a DeprecationWarning
-    and add a deprecation notice to its docstring.
-
-    If the following arguments are given, they'll be included in the
-    notices:
-
-    * preferred: str | None --- The name of an alternative that users should
-      use instead.
-
-    * version: str | None --- The version of Arvados when the callable is
-      scheduled to be removed.
-    """
-    if version is None:
-        version = ''
-    else:
-        version = f' and scheduled to be removed in Arvados {version}'
-    if preferred is None:
-        preferred = ''
-    else:
-        preferred = f' Prefer {preferred} instead.'
-    def deprecated_decorator(func):
-        fullname = f'{func.__module__}.{func.__qualname__}'
-        parent, _, name = fullname.rpartition('.')
-        if name == '__init__':
-            fullname = parent
-        warning_msg = f'{fullname} is deprecated{version}.{preferred}'
-        @functools.wraps(func)
-        def deprecated_wrapper(*args, **kwargs):
-            warnings.warn(warning_msg, DeprecationWarning, 2)
-            return func(*args, **kwargs)
-        # Get func's docstring without any trailing newline or empty lines.
-        func_doc = re.sub(r'\n\s*$', '', func.__doc__ or '')
-        match = re.search(r'\n([ \t]+)\S', func_doc)
-        indent = '' if match is None else match.group(1)
-        warning_doc = f'\n\n{indent}.. WARNING:: Deprecated\n{indent}   {warning_msg}'
-        # Make the deprecation notice the second "paragraph" of the
-        # docstring if possible. Otherwise append it.
-        docstring, count = re.subn(
-            rf'\n[ \t]*\n{indent}',
-            f'{warning_doc}\n\n{indent}',
-            func_doc,
-            count=1,
-        )
-        if not count:
-            docstring = f'{func_doc.lstrip()}{warning_doc}'
-        deprecated_wrapper.__doc__ = docstring
-        return deprecated_wrapper
-    return deprecated_decorator
-
-@dataclasses.dataclass
-class _BaseDirectorySpec:
-    """Parse base directories
-
-    A _BaseDirectorySpec defines all the environment variable keys and defaults
-    related to a set of base directories (cache, config, state, etc.). It
-    provides pure methods to parse environment settings into valid paths.
-    """
-    systemd_key: str
-    xdg_home_key: str
-    xdg_home_default: PurePath
-    xdg_dirs_key: Optional[str] = None
-    xdg_dirs_default: str = ''
-
-    @staticmethod
-    def _abspath_from_env(env: Mapping[str, str], key: str) -> Optional[Path]:
-        try:
-            path = Path(env[key])
-        except (KeyError, ValueError):
-            ok = False
-        else:
-            ok = path.is_absolute()
-        return path if ok else None
-
-    @staticmethod
-    def _iter_abspaths(value: str) -> Iterator[Path]:
-        for path_s in value.split(':'):
-            path = Path(path_s)
-            if path.is_absolute():
-                yield path
-
-    def iter_systemd(self, env: Mapping[str, str]) -> Iterator[Path]:
-        return self._iter_abspaths(env.get(self.systemd_key, ''))
-
-    def iter_xdg(self, env: Mapping[str, str], subdir: PurePath) -> Iterator[Path]:
-        yield self.xdg_home(env, subdir)
-        if self.xdg_dirs_key is not None:
-            for path in self._iter_abspaths(env.get(self.xdg_dirs_key) or self.xdg_dirs_default):
-                yield path / subdir
-
-    def xdg_home(self, env: Mapping[str, str], subdir: PurePath) -> Path:
-        return (
-            self._abspath_from_env(env, self.xdg_home_key)
-            or self.xdg_home_default_path(env)
-        ) / subdir
-
-    def xdg_home_default_path(self, env: Mapping[str, str]) -> Path:
-        return (self._abspath_from_env(env, 'HOME') or Path.home()) / self.xdg_home_default
-
-    def xdg_home_is_customized(self, env: Mapping[str, str]) -> bool:
-        xdg_home = self._abspath_from_env(env, self.xdg_home_key)
-        return xdg_home is not None and xdg_home != self.xdg_home_default_path(env)
-
-
-class _BaseDirectorySpecs(enum.Enum):
-    """Base directory specifications
-
-    This enum provides easy access to the standard base directory settings.
-    """
-    CACHE = _BaseDirectorySpec(
-        'CACHE_DIRECTORY',
-        'XDG_CACHE_HOME',
-        PurePath('.cache'),
-    )
-    CONFIG = _BaseDirectorySpec(
-        'CONFIGURATION_DIRECTORY',
-        'XDG_CONFIG_HOME',
-        PurePath('.config'),
-        'XDG_CONFIG_DIRS',
-        '/etc/xdg',
-    )
-    STATE = _BaseDirectorySpec(
-        'STATE_DIRECTORY',
-        'XDG_STATE_HOME',
-        PurePath('.local', 'state'),
-    )
-
-
-class _BaseDirectories:
-    """Resolve paths from a base directory spec
-
-    Given a _BaseDirectorySpec, this class provides stateful methods to find
-    existing files and return the most-preferred directory for writing.
-    """
-    _STORE_MODE = stat.S_IFDIR | stat.S_IWUSR
-
-    def __init__(
-            self,
-            spec: Union[_BaseDirectorySpec, _BaseDirectorySpecs, str],
-            env: Mapping[str, str]=os.environ,
-            xdg_subdir: Union[os.PathLike, str]='arvados',
-    ) -> None:
-        if isinstance(spec, str):
-            spec = _BaseDirectorySpecs[spec].value
-        elif isinstance(spec, _BaseDirectorySpecs):
-            spec = spec.value
-        self._spec = spec
-        self._env = env
-        self._xdg_subdir = PurePath(xdg_subdir)
-
-    def search(self, name: str) -> Iterator[Path]:
-        any_found = False
-        for search_path in itertools.chain(
-                self._spec.iter_systemd(self._env),
-                self._spec.iter_xdg(self._env, self._xdg_subdir),
-        ):
-            path = search_path / name
-            if path.exists():
-                yield path
-                any_found = True
-        # The rest of this function is dedicated to warning the user if they
-        # have a custom XDG_*_HOME value that prevented the search from
-        # succeeding. This should be rare.
-        if any_found or not self._spec.xdg_home_is_customized(self._env):
-            return
-        default_home = self._spec.xdg_home_default_path(self._env)
-        default_path = Path(self._xdg_subdir / name)
-        if not (default_home / default_path).exists():
-            return
-        if self._spec.xdg_dirs_key is None:
-            suggest_key = self._spec.xdg_home_key
-            suggest_value = default_home
-        else:
-            suggest_key = self._spec.xdg_dirs_key
-            cur_value = self._env.get(suggest_key, '')
-            value_sep = ':' if cur_value else ''
-            suggest_value = f'{cur_value}{value_sep}{default_home}'
-        logger.warning(
-            "\
-%s was not found under your configured $%s (%s), \
-but does exist at the default location (%s) - \
-consider running this program with the environment setting %s=%s\
-",
-            default_path,
-            self._spec.xdg_home_key,
-            self._spec.xdg_home(self._env, ''),
-            default_home,
-            suggest_key,
-            shlex.quote(suggest_value),
-        )
-
-    def storage_path(
-            self,
-            subdir: Union[str, os.PathLike]=PurePath(),
-            mode: int=0o700,
-    ) -> Path:
-        for path in self._spec.iter_systemd(self._env):
-            try:
-                mode = path.stat().st_mode
-            except OSError:
-                continue
-            if (mode & self._STORE_MODE) == self._STORE_MODE:
-                break
-        else:
-            path = self._spec.xdg_home(self._env, self._xdg_subdir)
-        path /= subdir
-        path.mkdir(parents=True, exist_ok=True, mode=mode)
-        return path
-
 
 def is_hex(s: str, *length_args: int) -> bool:
     """Indicate whether a string is a hexadecimal number

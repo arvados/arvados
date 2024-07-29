@@ -30,9 +30,9 @@ import arvados.config as config
 import arvados.errors
 import arvados.retry as retry
 import arvados.util
-import arvados.diskcache
-from arvados._pycurlhelper import PyCurlHelper
-from . import timer
+
+from ._internal import basedirs, diskcache, Timer
+from ._internal.pycurl import PyCurlHelper
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
@@ -142,7 +142,7 @@ class KeepBlockCache(object):
         self._cache_updating = threading.Condition(self._cache_lock)
 
         if self._disk_cache and self._disk_cache_dir is None:
-            self._disk_cache_dir = str(arvados.util._BaseDirectories('CACHE').storage_path('keep'))
+            self._disk_cache_dir = str(basedirs.BaseDirectories('CACHE').storage_path('keep'))
 
         if self._max_slots == 0:
             if self._disk_cache:
@@ -170,7 +170,7 @@ class KeepBlockCache(object):
             if self._disk_cache:
                 fs = os.statvfs(self._disk_cache_dir)
                 # Calculation of available space incorporates existing cache usage
-                existing_usage = arvados.diskcache.DiskCacheSlot.cache_usage(self._disk_cache_dir)
+                existing_usage = diskcache.DiskCacheSlot.cache_usage(self._disk_cache_dir)
                 avail = (fs.f_bavail * fs.f_bsize + existing_usage) / 4
                 maxdisk = int((fs.f_blocks * fs.f_bsize) * 0.10)
                 # pick smallest of:
@@ -186,12 +186,12 @@ class KeepBlockCache(object):
 
         self.cache_total = 0
         if self._disk_cache:
-            self._cache = arvados.diskcache.DiskCacheSlot.init_cache(self._disk_cache_dir, self._max_slots)
+            self._cache = diskcache.DiskCacheSlot.init_cache(self._disk_cache_dir, self._max_slots)
             for slot in self._cache.values():
                 self.cache_total += slot.size()
             self.cap_cache()
 
-    class CacheSlot(object):
+    class _CacheSlot:
         __slots__ = ("locator", "ready", "content")
 
         def __init__(self, locator):
@@ -256,7 +256,7 @@ class KeepBlockCache(object):
             return n
         if self._disk_cache:
             # see if it exists on disk
-            n = arvados.diskcache.DiskCacheSlot.get_from_disk(locator, self._disk_cache_dir)
+            n = diskcache.DiskCacheSlot.get_from_disk(locator, self._disk_cache_dir)
             if n is not None:
                 self._cache[n.locator] = n
                 self.cache_total += n.size()
@@ -286,9 +286,9 @@ class KeepBlockCache(object):
                     self._resize_cache(self.cache_max, self._max_slots-1)
 
                 if self._disk_cache:
-                    n = arvados.diskcache.DiskCacheSlot(locator, self._disk_cache_dir)
+                    n = diskcache.DiskCacheSlot(locator, self._disk_cache_dir)
                 else:
-                    n = KeepBlockCache.CacheSlot(locator)
+                    n = KeepBlockCache._CacheSlot(locator)
                 self._cache[n.locator] = n
                 return n, True
 
@@ -332,7 +332,8 @@ class KeepBlockCache(object):
 
         self.cap_cache()
 
-class Counter(object):
+
+class _Counter:
     def __init__(self, v=0):
         self._lk = threading.Lock()
         self._val = v
@@ -350,10 +351,10 @@ class KeepClient(object):
     DEFAULT_TIMEOUT = PyCurlHelper.DEFAULT_TIMEOUT
     DEFAULT_PROXY_TIMEOUT = PyCurlHelper.DEFAULT_PROXY_TIMEOUT
 
-    class KeepService(PyCurlHelper):
+    class _KeepService(PyCurlHelper):
         """Make requests to a single Keep service, and track results.
 
-        A KeepService is intended to last long enough to perform one
+        A _KeepService is intended to last long enough to perform one
         transaction (GET or PUT) against one Keep service. This can
         involve calling either get() or put() multiple times in order
         to retry after transient failures. However, calling both get()
@@ -373,7 +374,7 @@ class KeepClient(object):
                      download_counter=None,
                      headers={},
                      insecure=False):
-            super(KeepClient.KeepService, self).__init__()
+            super().__init__()
             self.root = root
             self._user_agent_pool = user_agent_pool
             self._result = {'error': None}
@@ -418,7 +419,7 @@ class KeepClient(object):
             curl = self._get_user_agent()
             ok = None
             try:
-                with timer.Timer() as t:
+                with Timer() as t:
                     self._headers = {}
                     response_body = BytesIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
@@ -513,7 +514,7 @@ class KeepClient(object):
             curl = self._get_user_agent()
             ok = None
             try:
-                with timer.Timer() as t:
+                with Timer() as t:
                     self._headers = {}
                     body_reader = BytesIO(body)
                     response_body = BytesIO()
@@ -583,7 +584,7 @@ class KeepClient(object):
             return True
 
 
-    class KeepWriterQueue(queue.Queue):
+    class _KeepWriterQueue(queue.Queue):
         def __init__(self, copies, classes=[]):
             queue.Queue.__init__(self) # Old-style superclass
             self.wanted_copies = copies
@@ -668,7 +669,7 @@ class KeepClient(object):
                         self.pending_tries_notification.wait()
 
 
-    class KeepWriterThreadPool(object):
+    class _KeepWriterThreadPool:
         def __init__(self, data, data_hash, copies, max_service_replicas, timeout=None, classes=[]):
             self.total_task_nr = 0
             if (not max_service_replicas) or (max_service_replicas >= copies):
@@ -677,10 +678,10 @@ class KeepClient(object):
                 num_threads = int(math.ceil(1.0*copies/max_service_replicas))
             _logger.debug("Pool max threads is %d", num_threads)
             self.workers = []
-            self.queue = KeepClient.KeepWriterQueue(copies, classes)
+            self.queue = KeepClient._KeepWriterQueue(copies, classes)
             # Create workers
             for _ in range(num_threads):
-                w = KeepClient.KeepWriterThread(self.queue, data, data_hash, timeout)
+                w = KeepClient._KeepWriterThread(self.queue, data, data_hash, timeout)
                 self.workers.append(w)
 
         def add_task(self, ks, service_root):
@@ -701,11 +702,18 @@ class KeepClient(object):
             return self.queue.response
 
 
-    class KeepWriterThread(threading.Thread):
-        class TaskFailed(RuntimeError): pass
+    class _KeepWriterThread(threading.Thread):
+        class TaskFailed(RuntimeError):
+            """Exception for failed Keep writes
+
+            TODO: Move this class to the module top level and document it
+
+            @private
+            """
+
 
         def __init__(self, queue, data, data_hash, timeout=None):
-            super(KeepClient.KeepWriterThread, self).__init__()
+            super().__init__()
             self.timeout = timeout
             self.queue = queue
             self.data = data
@@ -722,7 +730,7 @@ class KeepClient(object):
                     locator, copies, classes = self.do_task(service, service_root)
                 except Exception as e:
                     if not isinstance(e, self.TaskFailed):
-                        _logger.exception("Exception in KeepWriterThread")
+                        _logger.exception("Exception in _KeepWriterThread")
                     self.queue.write_fail(service)
                 else:
                     self.queue.write_success(locator, copies, classes)
@@ -749,7 +757,7 @@ class KeepClient(object):
                                   result.get('body'))
                 raise self.TaskFailed()
 
-            _logger.debug("KeepWriterThread %s succeeded %s+%i %s",
+            _logger.debug("_KeepWriterThread %s succeeded %s+%i %s",
                           str(threading.current_thread()),
                           self.data_hash,
                           len(self.data),
@@ -857,12 +865,12 @@ class KeepClient(object):
         self.timeout = timeout
         self.proxy_timeout = proxy_timeout
         self._user_agent_pool = queue.LifoQueue()
-        self.upload_counter = Counter()
-        self.download_counter = Counter()
-        self.put_counter = Counter()
-        self.get_counter = Counter()
-        self.hits_counter = Counter()
-        self.misses_counter = Counter()
+        self.upload_counter = _Counter()
+        self.download_counter = _Counter()
+        self.put_counter = _Counter()
+        self.get_counter = _Counter()
+        self.hits_counter = _Counter()
+        self.misses_counter = _Counter()
         self._storage_classes_unsupported_warning = False
         self._default_classes = []
         if num_prefetch_threads is not None:
@@ -929,7 +937,7 @@ class KeepClient(object):
 
         """
         # TODO(twp): the timeout should be a property of a
-        # KeepService, not a KeepClient. See #4488.
+        # _KeepService, not a KeepClient. See #4488.
         t = self.proxy_timeout if self.using_proxy else self.timeout
         if len(t) == 2:
             return (t[0] * (1 << attempt_number), t[1])
@@ -1029,14 +1037,14 @@ class KeepClient(object):
 
     def map_new_services(self, roots_map, locator, force_rebuild, need_writable, headers):
         # roots_map is a dictionary, mapping Keep service root strings
-        # to KeepService objects.  Poll for Keep services, and add any
+        # to _KeepService objects.  Poll for Keep services, and add any
         # new ones to roots_map.  Return the current list of local
         # root strings.
         headers.setdefault('Authorization', "OAuth2 %s" % (self.api_token,))
         local_roots = self.weighted_service_roots(locator, force_rebuild, need_writable)
         for root in local_roots:
             if root not in roots_map:
-                roots_map[root] = self.KeepService(
+                roots_map[root] = self._KeepService(
                     root, self._user_agent_pool,
                     upload_counter=self.upload_counter,
                     download_counter=self.download_counter,
@@ -1169,9 +1177,9 @@ class KeepClient(object):
                                        len(hint) == 29 and
                                        self._gateway_services.get(hint[2:])
                                        )])
-            # Map root URLs to their KeepService objects.
+            # Map root URLs to their _KeepService objects.
             roots_map = {
-                root: self.KeepService(root, self._user_agent_pool,
+                root: self._KeepService(root, self._user_agent_pool,
                                        upload_counter=self.upload_counter,
                                        download_counter=self.download_counter,
                                        headers=headers,
@@ -1199,7 +1207,7 @@ class KeepClient(object):
                     loop.save_result(error)
                     continue
 
-                # Query KeepService objects that haven't returned
+                # Query _KeepService objects that haven't returned
                 # permanent failure, in our specified shuffle order.
                 services_to_try = [roots_map[root]
                                    for root in sorted_roots
@@ -1295,12 +1303,14 @@ class KeepClient(object):
             pending_classes = []
             if done_classes is not None:
                 pending_classes = list(set(classes) - set(done_classes))
-            writer_pool = KeepClient.KeepWriterThreadPool(data=data,
-                                                        data_hash=data_hash,
-                                                        copies=copies - done_copies,
-                                                        max_service_replicas=self.max_replicas_per_service,
-                                                        timeout=self.current_timeout(num_retries - tries_left),
-                                                        classes=pending_classes)
+            writer_pool = KeepClient._KeepWriterThreadPool(
+                data=data,
+                data_hash=data_hash,
+                copies=copies - done_copies,
+                max_service_replicas=self.max_replicas_per_service,
+                timeout=self.current_timeout(num_retries - tries_left),
+                classes=pending_classes,
+            )
             for service_root, ks in [(root, roots_map[root])
                                      for root in sorted_roots]:
                 if ks.finished():

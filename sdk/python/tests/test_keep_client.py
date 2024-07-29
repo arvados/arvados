@@ -27,6 +27,7 @@ import pycurl
 import arvados
 import arvados.retry
 import arvados.util
+
 from . import arvados_testutil as tutil
 from . import keepstub
 from . import run_test_server
@@ -583,7 +584,7 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
     def tearDown(self):
         DiskCacheBase.tearDown(self)
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_get_request_cache(self, get_mock):
         with tutil.mock_keep_responses(self.data, 200, 200):
             self.keep_client.get(self.locator)
@@ -591,7 +592,7 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
         # Request already cached, don't require more than one request
         get_mock.assert_called_once()
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_head_request_cache(self, get_mock):
         with tutil.mock_keep_responses(self.data, 200, 200):
             self.keep_client.head(self.locator)
@@ -599,7 +600,7 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
         # Don't cache HEAD requests so that they're not confused with GET reqs
         self.assertEqual(2, get_mock.call_count)
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_head_and_then_get_return_different_responses(self, get_mock):
         head_resp = None
         get_resp = None
@@ -1330,7 +1331,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
 
     def setUp(self):
         self.copies = 3
-        self.pool = arvados.KeepClient.KeepWriterThreadPool(
+        self.pool = arvados.KeepClient._KeepWriterThreadPool(
             data = 'foo',
             data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
             max_service_replicas = self.copies,
@@ -1460,7 +1461,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
     def tearDown(self):
         shutil.rmtree(self.disk_cache_dir)
 
-    @mock.patch('arvados.util._BaseDirectories.storage_path')
+    @mock.patch('arvados._internal.basedirs.BaseDirectories.storage_path')
     def test_default_disk_cache_dir(self, storage_path):
         expected = Path(self.disk_cache_dir)
         storage_path.return_value = expected
@@ -1468,7 +1469,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         storage_path.assert_called_with('keep')
         self.assertEqual(cache._disk_cache_dir, str(expected))
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_read(self, get_mock):
         # confirm it finds an existing cache block when the cache is
         # initialized.
@@ -1486,7 +1487,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
         get_mock.assert_not_called()
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_share(self, get_mock):
         # confirm it finds a cache block written after the disk cache
         # was initialized.
@@ -1557,7 +1558,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], "tmpXYZABC")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], "XYZABC")))
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_cap(self, get_mock):
         # confirm that the cache is kept to the desired limit
 
@@ -1579,7 +1580,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertFalse(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock")))
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_share(self, get_mock):
         # confirm that a second cache doesn't delete files that belong to the first cache.
 

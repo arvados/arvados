@@ -193,6 +193,10 @@ It is an error to supply a non-empty @manifest_text@ that is unused, i.e., the @
 }
 </pre></notextile>
 
+Collections on other clusters in a federation cannot be used as sources. Each source must exist on the current cluster and be readable by the current user.
+
+Similarly, if @manifest_text@ is provided, it must only reference data blocks that are stored on the current cluster. This API does not copy data from other clusters in a federation.
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
@@ -210,9 +214,9 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |collection|object||query||
-|replace_files|object|Initialize files and directories using content from other collections|query||
+|replace_files|object|Initialize files and directories with new content and/or content from other collections|query||
 
-The new collection's content can be initialized by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
+The new collection's content can be initialized by providing a @manifest_text@ key in the provided @collection@ object, or by "using the @replace_files@ option":#replace_files.
 
 h3(#delete). delete
 
@@ -287,9 +291,9 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 |collection|object||query||
-|replace_files|object|Delete and replace files and directories using content from other collections|query||
+|replace_files|object|Add, delete, and replace files and directories with new content and/or content from other collections|query||
 
-The collection's content can be updated by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
+The collection's existing content can be replaced entirely by providing a @manifest_text@ key in the provided @collection@ object, or updated in place by "using the @replace_files@ option":#replace_files.
 
 h3(#untrash). untrash
 

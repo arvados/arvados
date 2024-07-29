@@ -28,11 +28,10 @@ import time
 from collections import deque
 from stat import *
 
+from ._internal import streams
+from .api import ThreadSafeAPIClient
 from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, WrappableFile, _BlockManager, synchronized, must_be_writable, NoopLock
 from .keep import KeepLocator, KeepClient
-from ._normalize_stream import normalize_stream, escape
-from ._ranges import Range, LocatorAndRange
-from .safeapi import ThreadSafeApiCache
 import arvados.config as config
 import arvados.errors as errors
 import arvados.util
@@ -798,11 +797,15 @@ class RichCollectionBase(CollectionBase):
                         loc = arvfile.parent._my_block_manager().get_bufferblock(loc).locator()
                     if strip:
                         loc = KeepLocator(loc).stripped()
-                    filestream.append(LocatorAndRange(loc, KeepLocator(loc).size,
-                                         segment.segment_offset, segment.range_size))
+                    filestream.append(streams.LocatorAndRange(
+                        loc,
+                        KeepLocator(loc).size,
+                        segment.segment_offset,
+                        segment.range_size,
+                    ))
                 stream[filename] = filestream
             if stream:
-                buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
+                buf.append(" ".join(streams.normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
                 buf.append(self[dirname].manifest_text(
                     stream_name=os.path.join(stream_name, dirname),
@@ -1060,7 +1063,7 @@ class Collection(RichCollectionBase):
           settings from `apiconfig` (see below). If your client instantiates
           many Collection objects, you can help limit memory utilization by
           calling `arvados.api.api` to construct an
-          `arvados.safeapi.ThreadSafeApiCache`, and use that as the `api_client`
+          `arvados.api.ThreadSafeAPIClient`, and use that as the `api_client`
           for every Collection.
 
         * keep_client: arvados.keep.KeepClient | None --- The Keep client
@@ -1112,8 +1115,8 @@ class Collection(RichCollectionBase):
         self._api_client = api_client
         self._keep_client = keep_client
 
-        # Use the keep client from ThreadSafeApiCache
-        if self._keep_client is None and isinstance(self._api_client, ThreadSafeApiCache):
+        # Use the keep client from ThreadSafeAPIClient
+        if self._keep_client is None and isinstance(self._api_client, ThreadSafeAPIClient):
             self._keep_client = self._api_client.keep
 
         self._block_manager = block_manager
@@ -1263,7 +1266,7 @@ class Collection(RichCollectionBase):
     @synchronized
     def _my_api(self):
         if self._api_client is None:
-            self._api_client = ThreadSafeApiCache(self._config, version='v1')
+            self._api_client = ThreadSafeAPIClient(self._config, version='v1')
             if self._keep_client is None:
                 self._keep_client = self._api_client.keep
         return self._api_client
@@ -1704,7 +1707,7 @@ class Collection(RichCollectionBase):
                 block_locator = self._block_re.match(tok)
                 if block_locator:
                     blocksize = int(block_locator.group(1))
-                    blocks.append(Range(tok, streamoffset, blocksize, 0))
+                    blocks.append(streams.Range(tok, streamoffset, blocksize, 0))
                     streamoffset += blocksize
                 else:
                     state = SEGMENTS
@@ -1813,7 +1816,7 @@ class Subcollection(RichCollectionBase):
         """Encode empty directories by using an \056-named (".") empty file"""
         if len(self._items) == 0:
             return "%s %s 0:0:\\056\n" % (
-                escape(stream_name), config.EMPTY_BLOCK_LOCATOR)
+                streams.escape(stream_name), config.EMPTY_BLOCK_LOCATOR)
         return super(Subcollection, self)._get_manifest_text(stream_name,
                                                              strip, normalize,
                                                              only_committed)

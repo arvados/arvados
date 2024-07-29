@@ -16,7 +16,7 @@ import pycurl
 
 import arvados
 import arvados.collection
-from arvados._pycurlhelper import PyCurlHelper
+from .pycurl import PyCurlHelper
 
 logger = logging.getLogger('arvados.http_import')
 

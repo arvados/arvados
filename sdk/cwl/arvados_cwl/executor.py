@@ -330,8 +330,16 @@ The 'jobs' API is no longer supported.
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
                         logger.info("%s %s is Running", self.label(j), uuid)
-            elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
+            elif event["properties"]["new_attributes"]["state"] == "Final":
+                # underlying container is completed or cancelled
                 self.process_done(uuid, event["properties"]["new_attributes"])
+            elif (event["properties"]["new_attributes"]["state"] == "Committed" and
+                  event["properties"]["new_attributes"]["priority"] == 0):
+                # cancelled before it got a chance to run, remains in
+                # comitted state but isn't going to run so treat it as
+                # cancelled.
+                self.process_done(uuid, event["properties"]["new_attributes"])
+
 
     def label(self, obj):
         return "[%s %s]" % (self.work_api[0:-1], obj.name)
@@ -366,7 +374,7 @@ The 'jobs' API is no longer supported.
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]], select=["uuid", "container_uuid", "state", "log_uuid",
                                                                                          "output_uuid", "modified_at", "properties",
-                                                                                         "runtime_constraints"]).execute(num_retries=self.num_retries)
+                                                                                         "runtime_constraints", "priority"]).execute(num_retries=self.num_retries)
                     except Exception as e:
                         logger.warning("Temporary error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
@@ -427,11 +435,16 @@ The 'jobs' API is no longer supported.
         outputObj = copy.deepcopy(outputObj)
 
         files = []
-        def capture(fileobj):
+        def captureFile(fileobj):
             files.append(fileobj)
 
-        adjustDirObjs(outputObj, capture)
-        adjustFileObjs(outputObj, capture)
+        def captureDir(dirobj):
+            if dirobj["location"].startswith("keep:") and 'listing' in dirobj:
+                del dirobj['listing']
+            files.append(dirobj)
+
+        adjustDirObjs(outputObj, captureDir)
+        adjustFileObjs(outputObj, captureFile)
 
         generatemapper = NoFollowPathMapper(files, "", "", separateDirs=False)
 
