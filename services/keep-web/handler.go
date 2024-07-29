@@ -735,26 +735,18 @@ type fileListEnt struct {
 	IsDir bool
 }
 
-
-// NOTE for URL encoding of paths
-// The href value of the links in the HTML listing page should be in the
-// "escaped" (percent-encoded) form so that a user agent that follows the href
-// (e.g. browser) can request the correct path. The templating engine takes
-// care of translating the encoded path into valid HTML.
-
+// Given a filesystem path like `foo/"bar baz"`, return an escaped
+// (percent-encoded) relative path like `./foo/%22bar%20%baz%22`.
+//
+// Note the result may contain html-unsafe characters like '&'. These
+// will be handled separately by the HTML templating engine as needed.
 func relativeHref(path string) string {
 	u := &url.URL{Path: path}
 	return "./" + u.EscapedPath()
 }
 
-// NOTE for the example "wget" command generated on the listing page
-// We want to put the URL argument in single-quotes to avoid any execution by
-// the shell when pasted into it.
-// The single-quote is not a special character for paths, so it may stay
-// not-encoded if the resulting string is still valid.
-// A simple and interoperable way is to do a string replacement on the encoded
-// form.
-
+// Return a shell-quoted URL suitable for pasting to a command line
+// ("wget ...") to repeat the given HTTP request.
 func makeQuotedUrlForWget(r *http.Request) string {
 	scheme := r.Header.Get("X-Forwarded-Proto")
 	if scheme == "http" || scheme == "https" {
@@ -765,6 +757,9 @@ func makeQuotedUrlForWget(r *http.Request) string {
 		scheme = "http"
 	}
 	p := r.URL.EscapedPath()
+	// An escaped path may still contain single quote chars, which
+	// would interfere with our shell quoting. Avoid this by
+	// escaping them as %27.
 	return fmt.Sprintf("'%s://%s%s'", scheme, r.Host, strings.Replace(p, "'", "%27", -1))
 }
 
