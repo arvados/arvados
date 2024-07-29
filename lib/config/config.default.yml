@@ -1033,11 +1033,11 @@ Clusters:
       # Default value zero means tokens don't have expiration.
       TokenLifetime: 0s
 
-      # If true (default) tokens issued through login are allowed to create
-      # new tokens.
-      # If false, tokens issued through login are not allowed to
-      # viewing/creating other tokens.  New tokens can only be created
-      # by going through login again.
+      # If true (default), tokens are allowed to create new tokens and
+      # view existing tokens belonging to the same user.
+      # If false, tokens are not allowed to view or create other
+      # tokens. New tokens can only be created by going through login
+      # again.
       IssueTrustedTokens: true
 
       # Origins (scheme://host[:port]) of clients trusted to receive
