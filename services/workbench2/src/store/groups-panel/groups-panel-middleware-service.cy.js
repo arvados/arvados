@@ -2,33 +2,23 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import Axios, { AxiosInstance, AxiosResponse } from "axios";
+import Axios from "axios";
 import { mockConfig } from "common/config";
 import { createBrowserHistory } from "history";
-import { GroupsPanelMiddlewareService } from "./groups-panel-middleware-service";
-import { dataExplorerMiddleware } from "store/data-explorer/data-explorer-middleware";
-import { Dispatch, MiddlewareAPI } from "redux";
-import { DataColumns } from "components/data-table/data-table";
 import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
-import { SortDirection } from "components/data-table/data-column";
-import { createTree } from 'models/tree';
-import { DataTableFilterItem } from "components/data-table-filters/data-table-filters-tree";
 import { GROUPS_PANEL_ID } from "./groups-panel-actions";
-import { RootState, RootStore, configureStore } from "store/store";
-import { ServiceRepository, createServices } from "services/services";
-import { ApiActions } from "services/api/api-actions";
-import { ListResults } from "services/common-service/common-service";
-import { GroupResource } from "models/group";
+import { configureStore } from "store/store";
+import { createServices } from "services/services";
 import { getResource } from "store/resources/resources";
 
 describe("GroupsPanelMiddlewareService", () => {
-    let axiosInst: AxiosInstance;
-    let store: RootStore;
-    let services: ServiceRepository;
-    const config: any = {};
-    const actions: ApiActions = {
-        progressFn: (id: string, working: boolean) => { },
-        errorFn: (id: string, message: string) => { }
+    let axiosInst;
+    let store;
+    let services;
+    const config = {};
+    const actions = {
+        progressFn: (id, working) => { },
+        errorFn: (id, message) => { }
     };
 
     beforeEach(() => {
@@ -40,7 +30,7 @@ describe("GroupsPanelMiddlewareService", () => {
     it("requests group member counts and updates resource store", async () => {
         // Given
         const fakeUuid = "zzzzz-j7d0g-000000000000000";
-        axiosInst.get = jest.fn((url: string) => {
+        axiosInst.get = cy.spy((url) => {
             if (url === '/groups') {
                 return Promise.resolve(
                     { data: {
@@ -72,7 +62,7 @@ describe("GroupsPanelMiddlewareService", () => {
                             ]
                         }],
                         items_available: 1,
-                    }} as AxiosResponse);
+                    }});
             } else if (url === '/links') {
                 return Promise.resolve(
                     { data: {
@@ -81,12 +71,12 @@ describe("GroupsPanelMiddlewareService", () => {
                         kind: "arvados#linkList",
                         limit: 0,
                         offset: 0
-                    }} as AxiosResponse);
+                    }});
             } else {
                 return Promise.resolve(
-                    { data: {}} as AxiosResponse);
+                    { data: {}});
             }
-        }) as AxiosInstance['get'];
+        });
 
         // When
         await store.dispatch(dataExplorerActions.REQUEST_ITEMS({id: GROUPS_PANEL_ID}));
@@ -94,17 +84,17 @@ describe("GroupsPanelMiddlewareService", () => {
         await new Promise(setImmediate);
 
         // Expect
-        expect(axiosInst.get).toHaveBeenCalledTimes(2);
-        expect(axiosInst.get).toHaveBeenCalledWith('/groups', expect.anything());
-        expect(axiosInst.get).toHaveBeenCalledWith('/links', expect.anything());
-        const group = getResource<GroupResource>(fakeUuid)(store.getState().resources);
-        expect(group?.memberCount).toBe(234);
+        expect(axiosInst.get).to.be.calledTwice;
+        expect(axiosInst.get).to.be.calledWith('/groups', Cypress.sinon.match.any);
+        expect(axiosInst.get).to.be.calledWith('/links', Cypress.sinon.match.any);
+        const group = getResource(fakeUuid)(store.getState().resources);
+        expect(group?.memberCount).to.equal(234);
     });
 
     it('requests group member count and stores null on failure', async () => {
         // Given
         const fakeUuid = "zzzzz-j7d0g-000000000000000";
-        axiosInst.get = jest.fn((url: string) => {
+        axiosInst.get = cy.spy((url) => {
             if (url === '/groups') {
                 return Promise.resolve(
                     { data: {
@@ -136,13 +126,13 @@ describe("GroupsPanelMiddlewareService", () => {
                             ]
                         }],
                         items_available: 1,
-                    }} as AxiosResponse);
+                    }});
             } else if (url === '/links') {
                 return Promise.reject();
             } else {
-                return Promise.resolve({ data: {}} as AxiosResponse);
+                return Promise.resolve({ data: {}});
             }
-        }) as AxiosInstance['get'];
+        });
 
         // When
         await store.dispatch(dataExplorerActions.REQUEST_ITEMS({id: GROUPS_PANEL_ID}));
@@ -150,11 +140,11 @@ describe("GroupsPanelMiddlewareService", () => {
         await new Promise(setImmediate);
 
         // Expect
-        expect(axiosInst.get).toHaveBeenCalledTimes(2);
-        expect(axiosInst.get).toHaveBeenCalledWith('/groups', expect.anything());
-        expect(axiosInst.get).toHaveBeenCalledWith('/links', expect.anything());
-        const group = getResource<GroupResource>(fakeUuid)(store.getState().resources);
-        expect(group?.memberCount).toBe(null);
+        expect(axiosInst.get).to.be.calledTwice;
+        expect(axiosInst.get).to.be.calledWith('/groups', Cypress.sinon.match.any);
+        expect(axiosInst.get).to.be.calledWith('/links', Cypress.sinon.match.any);
+        const group = getResource(fakeUuid)(store.getState().resources);
+        expect(group?.memberCount).to.be.null;
     });
 
 });
