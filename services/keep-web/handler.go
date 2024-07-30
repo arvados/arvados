@@ -947,75 +947,118 @@ func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arva
 	return true
 }
 
+type fileEventLog struct {
+	requestPath  string
+	eventType    string
+	userUUID     string
+	userFullName string
+	collUUID     string
+	collPDH      string
+	collFilePath string
+}
+
+func newFileEventLog(
+	h *handler,
+	r *http.Request,
+	filepath string,
+	collection *arvados.Collection,
+	user *arvados.User,
+) *fileEventLog {
+	var eventType string
+	switch r.Method {
+	case "POST", "PUT":
+		eventType = "file_upload"
+	case "GET":
+		eventType = "file_download"
+	default:
+		return nil
+	}
+	ev := &fileEventLog{
+		requestPath: r.URL.Path,
+		eventType:   eventType,
+	}
+	if user != nil {
+		ev.userUUID = user.UUID
+		ev.userFullName = user.FullName
+	} else {
+		ev.userUUID = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Cluster.ClusterID)
+	}
+	if collection != nil {
+		ev.collFilePath = filepath
+		// h.determineCollection populates the collection_uuid
+		// prop with the PDH, if this collection is being
+		// accessed via PDH. For logging, we use a different
+		// field depending on whether it's a UUID or PDH.
+		if len(collection.UUID) > 32 {
+			ev.collPDH = collection.UUID
+		} else {
+			ev.collPDH = collection.PortableDataHash
+			ev.collUUID = collection.UUID
+		}
+	}
+	return ev
+}
+
+func (ev *fileEventLog) shouldLogPDH() bool {
+	return ev.eventType == "file_download" && ev.collPDH != ""
+}
+
+func (ev *fileEventLog) asDict() arvadosclient.Dict {
+	props := arvadosclient.Dict{
+		"reqPath":              ev.requestPath,
+		"collection_uuid":      ev.collUUID,
+		"collection_file_path": ev.collFilePath,
+	}
+	if ev.shouldLogPDH() {
+		props["portable_data_hash"] = ev.collPDH
+	}
+	return arvadosclient.Dict{
+		"object_uuid": ev.userUUID,
+		"event_type":  ev.eventType,
+		"properties":  props,
+	}
+}
+
+func (ev *fileEventLog) asFields() logrus.Fields {
+	fields := logrus.Fields{
+		"collection_file_path": ev.collFilePath,
+		"collection_uuid":      ev.collUUID,
+		"user_uuid":            ev.userUUID,
+	}
+	if ev.shouldLogPDH() {
+		fields["portable_data_hash"] = ev.collPDH
+	}
+	if !strings.HasSuffix(ev.userUUID, "-tpzed-anonymouspublic") {
+		fields["user_full_name"] = ev.userFullName
+	}
+	return fields
+}
+
 func (h *handler) logUploadOrDownload(
 	r *http.Request,
 	client *arvadosclient.ArvadosClient,
 	fs arvados.CustomFileSystem,
 	filepath string,
 	collection *arvados.Collection,
-	user *arvados.User) {
-
-	log := ctxlog.FromContext(r.Context())
-	props := make(map[string]string)
-	props["reqPath"] = r.URL.Path
-	var useruuid string
-	if user != nil {
-		log = log.WithField("user_uuid", user.UUID).
-			WithField("user_full_name", user.FullName)
-		useruuid = user.UUID
-	} else {
-		useruuid = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Cluster.ClusterID)
-	}
+	user *arvados.User,
+) {
 	if collection == nil && fs != nil {
 		collection, filepath = h.determineCollection(fs, filepath)
 	}
-	if collection != nil {
-		log = log.WithField("collection_file_path", filepath)
-		props["collection_file_path"] = filepath
-		// h.determineCollection populates the collection_uuid
-		// prop with the PDH, if this collection is being
-		// accessed via PDH. For logging, we use a different
-		// field depending on whether it's a UUID or PDH.
-		if len(collection.UUID) > 32 {
-			log = log.WithField("portable_data_hash", collection.UUID)
-			props["portable_data_hash"] = collection.UUID
-		} else {
-			log = log.WithField("collection_uuid", collection.UUID)
-			props["collection_uuid"] = collection.UUID
-		}
+	event := newFileEventLog(h, r, filepath, collection, user)
+	if event == nil {
+		return // Nothing to log
 	}
-	if r.Method == "PUT" || r.Method == "POST" {
-		log.Info("File upload")
-		if h.Cluster.Collections.WebDAVLogEvents {
-			go func() {
-				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-					"object_uuid": useruuid,
-					"event_type":  "file_upload",
-					"properties":  props}}
-				err := client.Create("logs", lr, nil)
-				if err != nil {
-					log.WithError(err).Error("Failed to create upload log event on API server")
-				}
-			}()
-		}
-	} else if r.Method == "GET" {
-		if collection != nil && collection.PortableDataHash != "" {
-			log = log.WithField("portable_data_hash", collection.PortableDataHash)
-			props["portable_data_hash"] = collection.PortableDataHash
-		}
-		log.Info("File download")
-		if h.Cluster.Collections.WebDAVLogEvents {
-			go func() {
-				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-					"object_uuid": useruuid,
-					"event_type":  "file_download",
-					"properties":  props}}
-				err := client.Create("logs", lr, nil)
-				if err != nil {
-					log.WithError(err).Error("Failed to create download log event on API server")
-				}
-			}()
-		}
+	log := ctxlog.FromContext(r.Context()).WithFields(event.asFields())
+	log.Info(strings.Replace(event.eventType, "file_", "File ", 1))
+	if h.Cluster.Collections.WebDAVLogEvents {
+		go func() {
+			logReq := arvadosclient.Dict{"log": event.asDict()}
+			err := client.Create("logs", logReq, nil)
+			if err != nil {
+				log.WithError(err).Errorf("Failed to create %s log event on API server", event.eventType)
+			}
+		}()
 	}
 }
 
