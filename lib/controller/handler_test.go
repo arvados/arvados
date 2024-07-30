@@ -224,6 +224,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	// depending on flags.
 	var wantError, wantBadContent bool
 	s.railsSpy.Director = func(req *http.Request) {
+		<-holdReqs
 		if wantError {
 			req.Method = "MAKE-COFFEE"
 		} else if wantBadContent {
