@@ -265,6 +265,22 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with warm cache")).Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore)
 
+	checkBackgroundRefresh := func(reqsExpected int) {
+		// There is no guarantee that a background refresh has
+		// progressed far enough that we can detect it
+		// directly (the first line of refresh() might not
+		// have run).  So, to avoid false positives, we just
+		// need to poll until it happens.
+		for deadline := time.Now().Add(time.Second); countRailsReqs() == reqsBefore && time.Now().Before(deadline); {
+			c.Logf("countRailsReqs = %d", countRailsReqs())
+			time.Sleep(time.Second / 100)
+		}
+		// Similarly, to ensure there are no additional
+		// refreshes, we just need to wait.
+		time.Sleep(time.Second / 2)
+		c.Check(countRailsReqs(), check.Equals, reqsExpected)
+	}
+
 	// Error with stale cache => caller gets OK with stale data
 	// while the re-fetch is attempted in the background
 	refreshNow()
@@ -273,10 +289,10 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with stale cache")).Wait()
 	close(holdReqs)
-	// Only one attempt to re-fetch (holdReqs ensured the first
-	// update took long enough for the last incoming request to
-	// arrive)
-	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
+	// After piling up 5 requests (holdReqs having ensured the
+	// first update took long enough for the last incoming request
+	// to arrive) there should be only one attempt to re-fetch.
+	checkBackgroundRefresh(reqsBefore + 1)
 
 	refreshNow()
 	wantError, wantBadContent = false, false
@@ -284,8 +300,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("refresh cache after error condition clears")).Wait()
 	close(holdReqs)
-	waitPendingUpdates()
-	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
+	checkBackgroundRefresh(reqsBefore + 1)
 
 	// Make sure expireAfter is getting set
 	waitPendingUpdates()
