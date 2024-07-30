@@ -352,12 +352,14 @@ Cypress.Commands.add("updateResource", (token, suffix, uuid, data) => {
         });
 });
 
-Cypress.Commands.add("loginAs", user => {
+Cypress.Commands.add("loginAs", (user, preserveLocalStorage = false) => {
     // This shouldn't be necessary unless we need to call loginAs multiple times
     // in the same test.
     cy.clearCookies();
-    cy.clearAllLocalStorage();
-    cy.clearAllSessionStorage();
+    if(preserveLocalStorage === false) {
+        cy.clearAllLocalStorage();
+        cy.clearAllSessionStorage();
+    }
     cy.visit(`/token/?api_token=${user.token}`);
     // Use waitUntil to avoid permafail race conditions with window.location being undefined
     cy.waitUntil(() => cy.window().then(win =>
@@ -573,3 +575,33 @@ Cypress.Commands.add("waitForDom", () => {
         }
     );
 });
+
+Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
+    const timeout = options.timeout || 10000;
+    const interval = options.interval || 100;
+  
+    cy.log(`Waiting for localStorage key: ${key}`)
+  
+    const checkLocalStorage = () => {
+      return new Cypress.Promise((resolve, reject) => {
+        const startTime = Date.now();
+  
+        const check = () => {
+          const value = localStorage.getItem(key);
+  
+          if (value !== null) {
+            resolve(value);
+          } else if (Date.now() - startTime > timeout) {
+            reject(new Error(`Timed out waiting for localStorage key: ${key}`));
+          } else {
+            setTimeout(check, interval);
+          }
+        };
+  
+        check();
+      });
+    };
+  
+    return cy.wrap(checkLocalStorage());
+  });
+  
