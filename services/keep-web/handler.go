@@ -676,6 +676,9 @@ var dirListingTemplate = `<!DOCTYPE HTML>
     .footer p {
       font-size: 82%;
     }
+    hr {
+      border: 1px solid #808080;
+    }
     ul {
       padding: 0;
     }
@@ -691,9 +694,9 @@ var dirListingTemplate = `<!DOCTYPE HTML>
 
 <P>This collection of data files is being shared with you through
 Arvados.  You can download individual files listed below.  To download
-the entire directory tree with wget, try:</P>
+the entire directory tree with <CODE>wget</CODE>, try:</P>
 
-<PRE>$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} https://{{ .Request.Host }}{{ .Request.URL.Path }}</PRE>
+<PRE id="wget-example">$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} {{ .QuotedUrlForWget }}</PRE>
 
 <H2>File Listing</H2>
 
@@ -701,9 +704,9 @@ the entire directory tree with wget, try:</P>
 <UL>
 {{range .Files}}
 {{if .IsDir }}
-  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{print "./" .Name}}/">{{.Name}}/</A></LI>
+  <LI>{{" " | printf "%15s  " | nbsp}}<A class="item" href="{{ .Href }}/">{{ .Name }}/</A></LI>
 {{else}}
-  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{print "./" .Name}}">{{.Name}}</A></LI>
+  <LI>{{.Size | printf "%15d  " | nbsp}}<A class="item" href="{{ .Href }}">{{ .Name }}</A></LI>
 {{end}}
 {{end}}
 </UL>
@@ -711,7 +714,7 @@ the entire directory tree with wget, try:</P>
 <P>(No files; this collection is empty.)</P>
 {{end}}
 
-<HR noshade>
+<HR>
 <DIV class="footer">
   <P>
     About Arvados:
@@ -722,12 +725,42 @@ the entire directory tree with wget, try:</P>
 </DIV>
 
 </BODY>
+</HTML>
 `
 
 type fileListEnt struct {
 	Name  string
+	Href  string
 	Size  int64
 	IsDir bool
+}
+
+// Given a filesystem path like `foo/"bar baz"`, return an escaped
+// (percent-encoded) relative path like `./foo/%22bar%20%baz%22`.
+//
+// Note the result may contain html-unsafe characters like '&'. These
+// will be handled separately by the HTML templating engine as needed.
+func relativeHref(path string) string {
+	u := &url.URL{Path: path}
+	return "./" + u.EscapedPath()
+}
+
+// Return a shell-quoted URL suitable for pasting to a command line
+// ("wget ...") to repeat the given HTTP request.
+func makeQuotedUrlForWget(r *http.Request) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "http" || scheme == "https" {
+		// use protocol reported by load balancer / proxy
+	} else if r.TLS != nil {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+	p := r.URL.EscapedPath()
+	// An escaped path may still contain single quote chars, which
+	// would interfere with our shell quoting. Avoid this by
+	// escaping them as %27.
+	return fmt.Sprintf("'%s://%s%s'", scheme, r.Host, strings.Replace(p, "'", "%27", -1))
 }
 
 func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collectionName string, fs http.FileSystem, base string, recurse bool) {
@@ -756,8 +789,10 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 					return err
 				}
 			} else {
+				listingName := path + ent.Name()
 				files = append(files, fileListEnt{
-					Name:  path + ent.Name(),
+					Name:  listingName,
+					Href:  relativeHref(listingName),
 					Size:  ent.Size(),
 					IsDir: ent.IsDir(),
 				})
@@ -785,10 +820,11 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 	})
 	w.WriteHeader(http.StatusOK)
 	tmpl.Execute(w, map[string]interface{}{
-		"CollectionName": collectionName,
-		"Files":          files,
-		"Request":        r,
-		"StripParts":     strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
+		"CollectionName":   collectionName,
+		"Files":            files,
+		"Request":          r,
+		"StripParts":       strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
+		"QuotedUrlForWget": makeQuotedUrlForWget(r),
 	})
 }
 
