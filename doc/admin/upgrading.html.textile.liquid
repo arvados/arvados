@@ -51,6 +51,7 @@ This upgrade includes a database schema update to rebuild full text search index
 h3. Configuration entries have been removed or renamed
 
 The following configuration keys have been renamed or removed.  Renamed keys will still be loaded if they appear with their old names, but you should update your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
+* @API.LogCreateRequestFraction@ has been removed
 * @Containers.JobsAPI.Enable@ has been removed
 * @Mail.EmailFrom@ has been removed
 * @Mail.IssueReporterEmailFrom@ has been removed
