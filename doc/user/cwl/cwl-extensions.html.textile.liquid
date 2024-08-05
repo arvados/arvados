@@ -21,6 +21,23 @@ $namespaces:
 
 For portability, most Arvados extensions should go into the @hints@ section of your CWL file.  This makes it possible for your workflows to run other CWL runners that do not recognize Arvados hints.  The difference between @hints@ and @requirements@ is that @hints@ are optional features that can be ignored by other runners and still produce the same output, whereas @requirements@ will fail the workflow if they cannot be fulfilled.  For example, @arv:IntermediateOutput@ should go in @hints@ as it will have no effect on non-Arvados platforms, however if your workflow explicitly accesses the Arvados API and will fail without it, you should put @arv:APIRequirement@ in @requirements@.
 
+* "RunInSingleContainer":#RunInSingleContainer
+* "SeparateRunner":#SeparateRunner
+* "RuntimeConstraints":#RuntimeConstraints
+* "PartitionRequirement":#PartitionRequirement
+* "APIRequirement":#APIRequirement
+* "IntermediateOutput":#IntermediateOutput
+* "Secrets":#Secrets
+* "WorkflowRunnerResources":#WorkflowRunnerResources
+* "ClusterTarget":#clustertarget
+* "OutputStorageClass":#OutputStorageClass
+* "ProcessProperties":#ProcessProperties
+* "OutputCollectionProperties":#OutputCollectionProperties
+* "CUDARequirement":#CUDARequirement
+* "UsePreemptible":#UsePreemptible
+* "PreemptionBehavior":#PreemptionBehavior
+* "OutOfMemoryRetry":#OutOfMemoryRetry
+
 {% codeblock as yaml %}
 hints:
   arv:RunInSingleContainer: {}
@@ -101,7 +118,7 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |runnerProcessName|optional string|Name to assign to the subworkflow process.  May be an expression with an input context of the post-scatter workflow step invocation.|
 
-h2. arv:RuntimeConstraints
+h2(#RuntimeConstraints). arv:RuntimeConstraints
 
 Set Arvados-specific runtime hints.
 
@@ -114,7 +131,7 @@ table(table table-bordered table-condensed).
 
 *keep_output_dir*: Use writable Keep mount.  Files are streamed to Keep as they are written.  Does not consume local scratch space, but does consume RAM for output buffers (up to 192 MiB per file simultaneously open for writing.)  Best suited to processes which produce sequential output of large files (non-sequential writes may produced fragmented file manifests).  Supports regular files and directories, does not support special files such as symlinks, hard links, named pipes, named sockets, or device nodes.|
 
-h2. arv:PartitionRequirement
+h2(#PartitionRequirement). arv:PartitionRequirement
 
 Select preferred compute partitions on which to run jobs.
 
@@ -130,7 +147,7 @@ Indicates that process wants to access to the Arvados API.  Will be granted netw
 
 Use @arv:APIRequirement@ in @hints@ to enable general (non-Arvados-specific) network access for a tool.
 
-h2. arv:IntermediateOutput
+h2(#IntermediateOutput). arv:IntermediateOutput
 
 Specify desired handling of intermediate output collections.
 
@@ -139,7 +156,7 @@ table(table table-bordered table-condensed).
 |outputTTL|int|If the value is greater than zero, consider intermediate output collections to be temporary and should be automatically trashed. Temporary collections will be trashed @outputTTL@ seconds after creation.  A value of zero means intermediate output should be retained indefinitely (this is the default behavior).
 Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire workflow.|
 
-h2. cwltool:Secrets
+h2(#Secrets). cwltool:Secrets
 
 Indicate that one or more input parameters are "secret".  Must be applied at the top level Workflow.  Secret parameters are not stored in keep, are hidden from logs and API responses, and are wiped from the database after the workflow completes.
 
@@ -149,7 +166,7 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |secrets|array<string>|Input parameters which are considered "secret".  Must be strings.|
 
-h2. arv:WorkflowRunnerResources
+h2(#WorkflowRunnerResources). arv:WorkflowRunnerResources
 
 Specify resource requirements for the workflow runner process (arvados-cwl-runner) that manages a workflow run.  Must be applied to the top level workflow.  Will also be set implicitly when using @--submit-runner-ram@ on the command line along with @--create-workflow@ or @--update-workflow@.  Use this to adjust the runner's allocation if the workflow runner is getting "out of memory" exceptions or being killed by the out-of-memory (OOM) killer.
 
