@@ -279,24 +279,12 @@ class Arvados::V1::GroupsController < ApplicationController
 
     included_by_uuid = {}
 
-    seen_last_class = false
     error_by_class = {}
     any_success = false
 
     klasses.each do |klass|
-      # check if current klass is same as params['last_object_class']
-      seen_last_class = true if((params['count'].andand.==('none')) and
-                                (params['last_object_class'].nil? or
-                                 params['last_object_class'].empty? or
-                                 params['last_object_class'] == klass.to_s))
-
       # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
-
-      # if specified, and count=none, then only look at the klass in
-      # last_object_class.
-      # for whatever reason, this parameter exists separately from 'wanted_klasses'
-      next if params['count'] == 'none' and !seen_last_class
 
       # don't process rest of object types if we already have needed number of objects
       break if params['count'] == 'none' and all_objects.size >= limit_all
