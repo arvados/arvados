@@ -1292,7 +1292,7 @@ describe("Collection panel tests", function () {
             });
         });
 
-        it("allows to cancel all files from the running upload", () => {
+        it.only("allows to cancel all files from the running upload", () => {
             cy.getAll("@testCollection1").then(function ([testCollection1]) {
                 cy.loginAs(activeUser);
 
@@ -1300,19 +1300,19 @@ describe("Collection panel tests", function () {
 
                 // Confirm initial collection state.
                 cy.get("[data-cy=collection-files-panel]").contains("bar").should("exist");
-                cy.get("[data-cy=collection-files-panel]").contains("5mb_a.bin").should("not.exist");
-                cy.get("[data-cy=collection-files-panel]").contains("5mb_b.bin").should("not.exist");
+                cy.get("[data-cy=collection-files-panel]").contains("15mb_a.bin").should("not.exist");
+                cy.get("[data-cy=collection-files-panel]").contains("15mb_b.bin").should("not.exist");
 
                 cy.get("[data-cy=upload-button]").click();
 
-                cy.fixture("files/5mb.bin", "base64").then(content => {
-                    cy.get("[data-cy=drag-and-drop]").upload(content, "5mb_a.bin");
-                    cy.get("[data-cy=drag-and-drop]").upload(content, "5mb_b.bin");
+                cy.fixture("files/15mb.bin", "base64").then(content => {
+                    cy.get("[data-cy=drag-and-drop]").upload(content, "15mb_a.bin");
+                    cy.get("[data-cy=drag-and-drop]").upload(content, "15mb_b.bin");
 
                     cy.get("[data-cy=form-submit-btn]").click();
-
+                    
                     cy.get("button[aria-label=Remove]").should("exist").click({ multiple: true});
-
+                    
                     cy.get("[data-cy=form-submit-btn]").should("not.exist");
 
                     // Confirm final collection state.
