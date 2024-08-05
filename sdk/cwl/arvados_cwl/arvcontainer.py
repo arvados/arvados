@@ -550,10 +550,13 @@ class ArvadosContainer(JobBase):
         outputs = {}
         retried = False
         rcode = None
+        do_retry = False
+
         try:
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
+
             if container["state"] == "Complete":
                 rcode = container["exit_code"]
                 if self.successCodes and rcode in self.successCodes:
@@ -567,41 +570,39 @@ class ArvadosContainer(JobBase):
                 else:
                     processStatus = "permanentFail"
 
-                do_retry = False
-
                 if processStatus == "permanentFail" and self.attempt_count == 1 and self.out_of_memory_retry(record, container):
                     logger.info("%s Container failed with out of memory error.  Retrying container with more RAM.",
                                  self.arvrunner.label(self))
                     self.job_runtime = self.job_runtime.copy()
                     do_retry = True
 
-                if processStatus == "permanentFail" and self.attempt_count == 1 and self.spot_instance_retry(record, container):
-                    logger.info("%s Container failed because the preemptible instance it was running on was reclaimed.  Retrying container on a non-preemptible instance.")
-                    self.job_runtime = self.job_runtime.copy()
-                    self.job_runtime.enable_preemptible = False
-                    do_retry = True
-
-                if do_retry:
-                    # Delete the failed request, users reported it
-                    # confusing to have a failed request in the child
-                    # containers list when the workflow actually
-                    # succeeded.  For debugging, the log collection
-                    # will still be around, and we can get the uuid of
-                    # the 1st try from stderr logs.
-                    self.arvrunner.api.container_requests().delete(uuid=self.uuid).execute()
-                    self.job_runtime.submit_request_uuid = None
-                    self.uuid = None
-                    self.run(None)
-                    # this flag suppresses calling the output callback, we only want to set this
-                    # when we're sure that the resubmission has happened without issue.
-                    retried = True
-                    return
-
-                if rcode == 137:
+                if rcode == 137 and not do_retry:
                     logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin' or use the arv:OutOfMemoryRetry feature.",
                                  self.arvrunner.label(self))
             else:
                 processStatus = "permanentFail"
+
+            if processStatus == "permanentFail" and self.attempt_count == 1 and self.spot_instance_retry(record, container):
+                logger.info("%s Container failed because the preemptible instance it was running on was reclaimed.  Retrying container on a non-preemptible instance.")
+                self.job_runtime = self.job_runtime.copy()
+                self.job_runtime.enable_preemptible = False
+                do_retry = True
+
+            if do_retry:
+                # Delete the failed request, users reported it
+                # confusing to have a failed request in the child
+                # containers list when the workflow actually
+                # succeeded.  For debugging, the log collection
+                # will still be around, and we can get the uuid of
+                # the 1st try from stderr logs.
+                self.arvrunner.api.container_requests().delete(uuid=self.uuid).execute()
+                self.job_runtime.submit_request_uuid = None
+                self.uuid = None
+                self.run(None)
+                # this flag suppresses calling the output callback, we only want to set this
+                # when we're sure that the resubmission has happened without issue.
+                retried = True
+                return
 
             logc = None
             if record["log_uuid"]:
