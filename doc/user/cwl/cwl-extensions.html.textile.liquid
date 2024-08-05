@@ -25,6 +25,9 @@ For portability, most Arvados extensions should go into the @hints@ section of y
 hints:
   arv:RunInSingleContainer: {}
 
+  arv:SeparateRunner:
+    runnerProcessName: $(inputs.sample_id)
+
   arv:RuntimeConstraints:
     keep_cache: 123456
     outputDirType: keep_output_dir
@@ -72,6 +75,9 @@ hints:
   arv:UsePreemptible:
     usePreemptible: true
 
+  arv:PreemptionBehavior:
+    resubmitNonPreemptible: true
+
   arv:OutOfMemoryRetry:
     memoryRetryMultiplier: 2
     memoryErrorRegex: "custom memory error"
@@ -80,6 +86,20 @@ hints:
 h2(#RunInSingleContainer). arv:RunInSingleContainer
 
 Apply this to a workflow step that runs a subworkflow.  Indicates that all the steps of the subworkflow should run together in a single container and not be scheduled separately.  If you have a sequence of short-running steps (less than 1-2 minutes each) this enables you to avoid scheduling and data transfer overhead by running all the steps together at once.  To use this feature, @cwltool@ must be installed in the container image.
+
+h2(#SeparateRunner). arv:SeparateRunner
+
+Apply this to a workflow step that runs a subworkflow.  Indicates that Arvados should launch a new workflow runner to manage that specific subworkflow instance.  If used on a scatter step, each scatter item is launched separately.  Using this option has three benefits:
+
+* Better organization in the "Subprocesses" table of the main workflow, including the ability to provide a custom name for the step
+* When re-running a batch that has run before, an entire subworkflow may be reused as a unit, which is faster than determining reuse for each step.
+* Significantly faster submit rate compared to invoking @arvados-cwl-runner@ to launch individual workflow instances separately.
+
+The disadvantage of this option is that because it does launch an additional workflow runner, that workflow runner consumes more compute resources compared to having all the steps managed by a single runner.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|runnerProcessName|optional string|Name to assign to the subworkflow process.  May be an expression with an input context of the post-scatter workflow step invocation.|
 
 h2. arv:RuntimeConstraints
 
@@ -192,6 +212,17 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |usePreemptible|boolean|Required, true to opt-in to using preemptible instances, false to opt-out.|
 
+h2(#PreemptionBehavior). arv:PreemptionBehavior
+
+This option determines the behavior when @arvados-cwl-runner@ detects that a workflow step was cancelled because the preemptible (spot market) instance it was running on was reclaimed by the cloud provider.  If 'true', instead of the retry behavior described above in 'UsePreemptible', on the first failure the workflow step will be re-submitted with preemption disabled, so it will be scheduled to run on non-preemptible (on-demand) instances.
+
+When preemptible instances are reclaimed, this is a signal that the cloud provider has restricted capacity for low priority preemptible instance.  As a result, the default behavior of turning around and rescheduling or launching on another preemptible instance has higher risk of being preempted a second or third time, spending more time and money but making no progress.  This option provides an alternate fallback behavior, by attempting to run the step on a preemptible instance the first time (saving money), but re-running the step as non-preemptible if the first attempt was preempted (ensuring continued progress).
+
+This behavior applied to each step individually.  If a step is preempted, then successfully re-run as non-preemptible, it does not affect the behavior of the next step, which will first be launched as preemptible, and so forth.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|resubmitNonPreemptible|boolean|Required.  If true, then when a workflow step is cancelled because the instance was preempted, re-submit the step with preemption disabled.|
 
 h2(#OutOfMemoryRetry). arv:OutOfMemoryRetry
 
