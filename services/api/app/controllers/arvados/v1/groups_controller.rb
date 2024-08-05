@@ -209,13 +209,6 @@ class Arvados::V1::GroupsController < ApplicationController
     # apply to each table being searched, not "groups".
     load_limit_offset_order_params(fill_table_names: false)
 
-    if params['count'] == 'none' and @offset != 0 and (params['last_object_class'].nil? or params['last_object_class'].empty?)
-      # can't use offset without getting counts, so
-      # fall back to count=exact behavior.
-      params['count'] = 'exact'
-      set_count_none = true
-    end
-
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
     # aggregate set.
@@ -369,11 +362,40 @@ class Arvados::V1::GroupsController < ApplicationController
       # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
 
-      # If count=none, :items_available will be nil, and offset is
-      # required to be 0.
-      klass_items_available = klass_object_list[:items_available] || 0
-      @items_available += klass_items_available
-      @offset = [@offset - klass_items_available, 0].max
+      # count=none, offset > 0, and nothing was returned, we don't
+      # know if this meant there were no matches, or offset caused it
+      # to run off the end
+      if params['count'] == 'none' and @offset > 0 and klass_object_list[:items].length == 0
+        params['count'] = 'exact'
+        oldoffset = @offset
+        oldlimit = @limit
+
+        # Just get the count.
+        @offset = 0
+        @limit = 0
+        apply_where_limit_order_params klass
+        requery_object_list = object_list(model_class: klass)
+        klass_object_list[:items_available] = requery_object_list[:items_available]
+
+        params['count'] = 'none'
+        @offset = oldoffset
+        @limit = oldlimit
+      end
+
+      klass_items_available = klass_object_list[:items_available]
+      if klass_items_available.nil?
+        # items_available may be nil if count=none and a non-zero
+        # number of items were returned.  One of these cases must be true:
+        #
+        # items returned >= limit, so we won't go to the next table, offset doesn't matter
+        # items returned < limit, so we want to start at the beginning of the next table, offset = 0
+        #
+        @offset = 0
+      else
+        # We have the exact count,
+        @items_available += klass_items_available
+        @offset = [@offset - klass_items_available, 0].max
+      end
 
       # Add objects to the list of objects to be returned.
       all_objects += klass_object_list[:items]
@@ -412,10 +434,6 @@ class Arvados::V1::GroupsController < ApplicationController
 
     if !@include.empty?
       @extra_included = included_by_uuid.values
-    end
-
-    if set_count_none
-      params['count'] = 'none'
     end
 
     @objects = all_objects
