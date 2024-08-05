@@ -79,6 +79,7 @@ export const NotificationsMenuComponent = (props: NotificationsMenuComponentProp
                 <Badge
                     badgeContent={0}
                     color="primary"
+                    data-cy="notifications-menu"
                 >
                     <NotificationIcon />
                 </Badge>

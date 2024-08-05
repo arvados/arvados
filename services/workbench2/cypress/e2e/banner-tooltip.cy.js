@@ -90,7 +90,7 @@ describe('Banner / tooltip tests', function () {
         cy.waitForDom().get('[data-cy=confirmation-dialog]', {timeout: 10000}).should('not.exist');
 
         //check that banner appears on toggle
-        cy.get('[title=Notifications]').click();
+        cy.get('[data-cy="notifications-menu"]').click();
         cy.get('li').contains('Restore Banner').click();
 
         cy.waitForDom().get('[data-cy=confirmation-dialog-ok-btn]', {timeout: 10000}).should('be.visible');
@@ -115,7 +115,7 @@ describe('Banner / tooltip tests', function () {
         cy.get('[data-cy=side-panel-tree]').trigger('mouseenter');
         cy.contains('This allows you to navigate through the app').should('be.visible');
 
-        cy.get('[title=Notifications]').click();
+        cy.get('[data-cy="notifications-menu"]').click();
         cy.get('li').contains('Disable tooltips').click();
 
         cy.contains('This allows you to navigate through the app').should('not.exist');
