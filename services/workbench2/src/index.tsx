@@ -253,6 +253,15 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             addRouteChangeHandlers(history, store);
             // ToDo: move to searchBar component
             store.dispatch(initAdvancedFormProjectsTree());
+            //expose store for cypress tests
+            if ((window as any).Cypress) {
+                console.log("setting redux store to localstorage");
+                window.localStorage.setItem("arvadosStore", JSON.stringify(store.getState()));
+                (window as any).store = store;
+                store.subscribe(() => {
+                    window.localStorage.setItem("arvadosStore", JSON.stringify(store.getState()));
+                });
+            }
         }
     };
 };

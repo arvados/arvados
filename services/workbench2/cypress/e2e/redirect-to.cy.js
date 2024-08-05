@@ -58,7 +58,7 @@ describe('redirect-to', () => {
         });
     });
 
-    describe.only('handleRedirects', () => {
+    describe('handleRedirects', () => {
         beforeEach(() => {
             cy.createCollection(adminUser.token, {
                 name: `Test collection ${Math.floor(Math.random() * 999999)}`,

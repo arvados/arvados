@@ -136,7 +136,6 @@ describe('tree-picker-actions', () => {
         // Expect ancestor service to be called
         expect(services.ancestorsService.ancestors).to.be.calledWith(emptyCollectionUuid, '');
         // Expect top level to be expanded and node to be selected
-        console.log(store.getState().treePicker["pickerId_shared"]);
         expect(store.getState().treePicker["pickerId_shared"][SHARED_PROJECT_ID].expanded).to.equal(true);
         expect(store.getState().treePicker["pickerId_shared"][emptyCollectionUuid].selected).to.equal(true);
 

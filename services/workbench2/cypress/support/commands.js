@@ -605,3 +605,25 @@ Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
     return cy.wrap(checkLocalStorage());
   });
   
+  //pauses test execution until the localStorage key changes
+  Cypress.Commands.add('waitForLocalStorageUpdate', (key, timeout = 10000) => {
+    const checkInterval = 200; // Interval to check the localStorage value
+    let previousValue = localStorage.getItem(key);
+  
+    return new Cypress.Promise((resolve, reject) => {
+      const checkValue = () => {
+        const currentValue = localStorage.getItem(key);
+        if (currentValue !== previousValue) {
+          resolve(currentValue);
+        } else if (Date.now() - startTime >= timeout) {
+          reject(new Error(`Timed out waiting for localStorage key "${key}" to change`));
+        } else {
+          setTimeout(checkValue, checkInterval);
+        }
+      };
+  
+      const startTime = Date.now();
+      checkValue();
+    });
+  });
+  
