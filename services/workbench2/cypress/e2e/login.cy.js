@@ -61,7 +61,7 @@ describe('Login tests', function() {
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
-        cy.get('button[title="Account Management"]').click();
+        cy.get('button[aria-label="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(
             `${activeUser.user.first_name} ${activeUser.user.last_name}`);
     })
@@ -102,11 +102,11 @@ describe('Login tests', function() {
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
-        cy.get('button[title="Admin Panel"]').click();
+        cy.get('button[aria-label="Admin Panel"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]')
             .contains('Repositories')
             .type('{esc}');
-        cy.get('button[title="Account Management"]').click();
+        cy.get('button[aria-label="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(
             `${adminUser.user.first_name} ${adminUser.user.last_name}`);
     })
@@ -115,7 +115,7 @@ describe('Login tests', function() {
         cy.visit('/');
         cy.get('#username').type(randomUser.username);
         cy.get('#password').type('wrong password');
-        cy.get("button span:contains('Log in')").click();
+        cy.contains('button', 'Log in').click();
         cy.get('p#password-helper-text').should('contain', 'authentication failed');
         cy.url().should('not.contain', '/projects/');
     })
@@ -124,11 +124,11 @@ describe('Login tests', function() {
         cy.visit('/');
         cy.get('#username').type(randomUser.username);
         cy.get('#password').type(randomUser.password);
-        cy.get("button span:contains('Log in')").click();
+        cy.contains('button', 'Log in').click();
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('contain', 'Your account is inactive');
-        cy.get('button[title="Account Management"]').click();
+        cy.get('button[aria-label="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(randomUser.username);
     })
 })
