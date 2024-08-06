@@ -119,26 +119,28 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
             <DialogActions>
                 <Grid container spacing={1} style={{ display: 'flex', width: '100%', flexDirection: 'column', alignItems: 'center'}}>
                     {tabNr === SharingDialogTab.URLS && withExpiration && 
-                        <section style={{minHeight: '42dvh', display: 'flex', flexDirection: 'column' }}>
-                            <LocalizationProvider dateAdapter={AdapterMoment}>
-                                <StaticDateTimePicker 
-                                    orientation="landscape" 
-                                    onChange={handleChange} 
-                                    value={expDate || moment().add(2, 'hour')} 
-                                    disablePast
-                                    minutesStep={5}
-                                    ampm={false}
-                                    slots={{
-                                        //removes redundant action bar
-                                        actionBar: () => null,
-                                    }}
-                                />
-                            </LocalizationProvider>
-                        </section>
-                    }
-                        <Typography variant='caption' align='center' marginBottom='1rem'>
-                            Maximum expiration date may be limited by the cluster configuration.
-                        </Typography>
+                        <>
+                            <section style={{minHeight: '42dvh', display: 'flex', flexDirection: 'column' }}>
+                                <LocalizationProvider dateAdapter={AdapterMoment}>
+                                    <StaticDateTimePicker 
+                                        orientation="landscape" 
+                                        onChange={handleChange} 
+                                        value={expDate || moment().add(2, 'hour')} 
+                                        disablePast
+                                        minutesStep={5}
+                                        ampm={false}
+                                        slots={{
+                                            //removes redundant action bar
+                                            actionBar: () => null,
+                                        }}
+                                    />
+                                </LocalizationProvider>
+                            </section>
+                            <Typography variant='caption' align='center' marginBottom='1rem'>
+                                Maximum expiration date may be limited by the cluster configuration.
+                            </Typography>
+                        </>
+                        }
                     {tabNr === SharingDialogTab.PERMISSIONS && !sharingURLsDisabled &&
                         privateAccess && sharingURLsNr > 0 &&
                         <Grid item md={12}>
@@ -147,7 +149,7 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
                             </Typography>
                         </Grid>
                     }
-                    <Grid container>
+                    <Grid style={{display: 'flex', justifyContent: 'end', flexDirection: 'row', width: '100%', marginBottom: '-0.5rem'}}>
                         {tabNr === SharingDialogTab.URLS && 
                             <Grid container style={{ display: 'flex', justifyContent: 'space-between'}}>
                                 <Grid display='flex'>
@@ -165,19 +167,22 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
                                         </Button>
                                     </Grid>
                                 </Grid>
-                                <Grid>
-                                    <Grid>
-                                    <Button onClick={() => {
-                                        onClose();
-                                        setWithExpiration(false);
-                                        }}
-                                        disabled={saveEnabled}
-                                        color='primary'
-                                        size='small'
-                                        style={{ marginLeft: '10px' }}
-                                        >
-                                            Close
-                                    </Button>
+                            </Grid>
+                        }
+                        <Grid>
+                            <Grid style={{display: 'flex'}}>
+                                <Button onClick={() => {
+                                    onClose();
+                                    setWithExpiration(false);
+                                    }}
+                                    disabled={saveEnabled}
+                                    color='primary'
+                                    size='small'
+                                    style={{ marginLeft: '10px' }}
+                                    >
+                                        Close
+                                </Button>
+                                {tabNr !== SharingDialogTab.URLS && 
                                     <Button onClick={() => {
                                             onSave();
                                         }}
@@ -190,10 +195,9 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
                                         >
                                             Save
                                     </Button>
-                                    </Grid>
-                                </Grid>
+                                }
                             </Grid>
-                        }
+                        </Grid>
                     </Grid>
                 </Grid>
             </DialogActions>

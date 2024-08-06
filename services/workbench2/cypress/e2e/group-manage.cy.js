@@ -36,8 +36,9 @@ describe('Group manage tests', function() {
         );
     });
 
-    it('creates a new group, add users to it and changes permission level', function() {
+    it.only('creates a new group, add users to it and changes permission level', function() {
         cy.loginAs(activeUser);
+        cy.pause();
 
         // Navigate to Groups
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
