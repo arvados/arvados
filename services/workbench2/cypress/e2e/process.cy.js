@@ -241,8 +241,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details]").should("contain", crName);
-
-                cy.get("[data-cy=process-details]").find('button[title="More options"]').click();
+                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
                 cy.get("ul[data-cy=context-menu]").contains("Copy and re-run process").click();
             });
 
