@@ -65,8 +65,8 @@ describe('Sharing tests', function () {
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Share').click({ waitForAnimations: false });
             });
-            cy.get('[id="select-permissions"]').as('selectPermissions');
-            cy.get('@selectPermissions').click();
+            cy.get('[data-cy=permission-select]').as('permissionSelect');
+            cy.get('@permissionSelect').click();
             cy.contains('Write').click();
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);

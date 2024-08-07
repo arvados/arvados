@@ -49,6 +49,7 @@ export const PermissionSelect = (props: SelectProps) =>
         variant="standard"
         {...props}
         disableUnderline
+        data-cy="permission-select"
         renderValue={renderPermissionItem}>
         <MenuItem value={PermissionSelectValue.READ}>
             {renderPermissionItem(PermissionSelectValue.READ)}
