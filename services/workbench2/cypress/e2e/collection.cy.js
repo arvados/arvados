@@ -1292,7 +1292,7 @@ describe("Collection panel tests", function () {
             });
         });
 
-        it.only("allows to cancel all files from the running upload", () => {
+        it("allows to cancel all files from the running upload", () => {
             cy.getAll("@testCollection1").then(function ([testCollection1]) {
                 cy.loginAs(activeUser);
 
