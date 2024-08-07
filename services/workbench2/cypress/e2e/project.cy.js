@@ -71,6 +71,7 @@ describe("Project tests", function () {
         // Create project and confirm the properties' real values.
         cy.get("[data-cy=form-submit-btn]").click();
         cy.get("[data-cy=form-dialog]").should("not.exist");        
+        cy.get("[data-cy=breadcrumb-last]").should("exist");
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         cy.doRequest("GET", "/arvados/v1/groups", null, {
             filters: `[["name", "=", "${projName}"], ["group_class", "=", "project"]]`,
@@ -98,10 +99,10 @@ describe("Project tests", function () {
         // Add another property
         cy.get("[data-cy=resource-properties-form]").within(() => {
             cy.get("[data-cy=property-field-key]").within(() => {
-                cy.get("input").type("Animal").blur();
+                cy.get("input").type("Medium").blur();
             });
             cy.get("[data-cy=property-field-value]").within(() => {
-                cy.get("input").type("Dog").blur();
+                cy.get("input").type("Egg").blur();
             });
             cy.get("[data-cy=property-add-btn]").click();
         });
@@ -114,7 +115,7 @@ describe("Project tests", function () {
                 cy.get("div[role=button]").contains("Color: Magenta");
                 cy.get("div[role=button]").contains("Color: Pink");
                 cy.get("div[role=button]").contains("Color: Yellow");
-                cy.get("div[role=button]").contains("Animal: Dog");
+                cy.get("div[role=button]").contains("Medium: Egg");
             });
         });
     });
