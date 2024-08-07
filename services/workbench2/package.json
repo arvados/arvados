@@ -137,7 +137,7 @@
     "test": "CI=true node scripts/test.js",
     "test-local": "node scripts/test.js",
     "test-cypress": " yarn cypress run --component",
-    "testByPath": "yarn cypress run --component --spec",
+    "test-path": "yarn cypress run --component --spec",
     "lint": "tslint src/** -t verbose",
     "build-css": "node-sass src/ -o src/",
     "watch-css": "npm run build-css && node-sass src/ -o src/ --watch --recursive"

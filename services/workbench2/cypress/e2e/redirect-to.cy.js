@@ -34,7 +34,9 @@ describe('redirect-to', () => {
             }).as('testCollection1');
         });
 
-        it('should store redirectTo in the session storage', () => {
+        // The following test is enabled on Electron only, as Chromium and Firefox
+        // require permissions to access the clipboard.
+        it('should store redirectTo in the session storage', { browser: 'electron'}, () => {
             cy.getAll('@testCollection1').then(function ([testCollection1]) {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testCollection1.uuid}`);
@@ -67,7 +69,9 @@ describe('redirect-to', () => {
             }).as('testCollection1');
         });
 
-        it('should redirect to page when it is present in session storage', () => {
+        // The following test is enabled on Electron only, as Chromium and Firefox
+        // require permissions to access the clipboard.
+        it('should redirect to page when it is present in session storage', { browser: 'electron'}, () => {
             let redirectUrl;
             let redirectPath;
             cy.getAll('@testCollection1').then(function ([testCollection1]) {
