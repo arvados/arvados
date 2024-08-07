@@ -22,7 +22,20 @@ export const getCollectionItemClipboardUrl = (href: string, shouldSanitizeToken 
     const url = shouldSanitizeToken ? sanitizeToken(href, false) : href;
     const redirectKey = inline ? REDIRECT_TO_PREVIEW_KEY : REDIRECT_TO_DOWNLOAD_KEY;
 
-    return shouldSanitizeToken ? `${origin}?${redirectKey}=${url}` : `${origin}${url}`;
+    if (shouldSanitizeToken) {
+        // "url" is path-percent-encoded (from WebDAV response); but valid
+        // encoded path may contain & and + that may cause trouble or confusion
+        // if directly put into query part; normalize it.
+        const decodedPath = decodeURIComponent(url);
+        // To emulate server-sent redirect verbatim; don't encode / and =
+        const queryEncodedPath = decodedPath.split(/([/=])/)
+                                            .map(s => /^[/=]$/.test(s) ? s : encodeURIComponent(s))
+                                            .join("");
+        return `${origin}/?${redirectKey}=${queryEncodedPath}`;
+    } else {
+        // Force the input to be a path and normalize leading slashes
+        return `${origin}${("/" + url).replace(/^(\/|%2F)+/i, "/")}`;
+    }
 };
 
 export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInlineSvcUrl: string): string => {
