@@ -229,20 +229,20 @@ describe('Project Details Card tests', function () {
                 });
             });
 
-        cy.get('[data-cy=key-input]').should('be.visible').click().type('Animal');
-        cy.get('[data-cy=value-input]').should('be.visible').click().type('Dog');
+        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('Animal');
+        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('Dog');
         cy.get('[data-cy=property-add-btn]').should('be.visible').click();
 
-        cy.get('[data-cy=key-input]').should('be.visible').click().type('Importance');
-        cy.get('[data-cy=value-input]').should('be.visible').click().type('Critical');
+        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('Importance');
+        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('Critical');
         cy.get('[data-cy=property-add-btn]').should('be.visible').click();
 
-        cy.get('[data-cy=key-input]').should('be.visible').click().type('very long key');
-        cy.get('[data-cy=value-input]').should('be.visible').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value');
+        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('very long key');
+        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value');
         cy.get('[data-cy=property-add-btn]').should('be.visible').click();
 
-        cy.get('[data-cy=key-input]').should('be.visible').click().type('very long key 2');
-        cy.get('[data-cy=value-input]').should('be.visible').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value 2');
+        cy.get('[data-cy=key-input]').should('be.visible').find('input').click().type('very long key 2');
+        cy.get('[data-cy=value-input]').should('be.visible').find('input').click().type('very loooooooooooooooooooooooooooooooooooooooooooooooooooooong value 2');
         cy.get('[data-cy=property-add-btn]').should('be.visible').click();
 
         cy.get('[data-cy=form-submit-btn]').click();
@@ -257,15 +257,18 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
 
         //check for key/value pairs in project details card
-        cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
-        cy.get('[data-cy=project-details-card]').contains('Importance').should('be.visible').click();
-        cy.waitForDom();
-        cy.window().then((win) => {
-            win.navigator.clipboard.readText().then((text) => {
-                //wait is necessary due to known issue with cypress@13.7.1
-                cy.wait(1000);
-                expect(text).to.match(new RegExp(`Importance: Critical`));
-            });
-        });
+        // only run in electron because other browsers require permission for clipboard
+        if (Cypress.browser.name === 'electron') {
+            cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
+            cy.get('[data-cy=project-details-card]').contains('Importance').should('be.visible').click();
+            cy.waitForDom();
+                cy.window().then((win) => {
+                    win.navigator.clipboard.readText().then((text) => {
+                        //wait is necessary due to known issue with cypress@13.7.1
+                        cy.wait(1000);
+                        expect(text).to.match(new RegExp(`Importance: Critical`));
+                    });
+                });
+        }
     });
 });
