@@ -70,6 +70,7 @@ describe("Project tests", function () {
 
         // Create project and confirm the properties' real values.
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");        
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         cy.doRequest("GET", "/arvados/v1/groups", null, {
             filters: `[["name", "=", "${projName}"], ["group_class", "=", "project"]]`,
@@ -647,7 +648,7 @@ describe("Project tests", function () {
     it("sorts displayed items correctly", () => {
         cy.loginAs(activeUser);
 
-        cy.get('[data-cy=project-panel] button[title="Select columns"]').click();
+        cy.get('[data-cy=project-panel] button[aria-label="Select columns"]').click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Date Created").click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Trash at").click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Delete at").click();
