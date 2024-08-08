@@ -211,6 +211,7 @@ describe("Project tests", function () {
                 });
             });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
 
         // open details panel and check 'owner' field
