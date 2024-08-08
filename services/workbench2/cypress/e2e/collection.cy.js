@@ -1162,6 +1162,8 @@ describe("Collection panel tests", function () {
         // Confirm that the user was taken to the newly created collection
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", collName);
         cy.get("[data-cy=collection-info-panel]")
             .should("contain", "default")

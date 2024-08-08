@@ -77,6 +77,8 @@ describe('Side panel tests', function() {
             properties: {filters: []},
         }).as('myFavoriteFilterGroup').then(function (myFavoriteFilterGroup) {
             cy.goToPath(`/projects/${myFavoriteFilterGroup.uuid}`);
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get('[data-cy=breadcrumb-last]').should('contain', 'my-favorite-filter-group');
 
             cy.get('[data-cy=side-panel-button]')

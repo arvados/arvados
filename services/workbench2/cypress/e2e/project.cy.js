@@ -70,8 +70,9 @@ describe("Project tests", function () {
 
         // Create project and confirm the properties' real values.
         cy.get("[data-cy=form-submit-btn]").click();
-        cy.get("[data-cy=form-dialog]").should("not.exist");        
-        cy.get("[data-cy=breadcrumb-last]").should("exist");
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });        
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         cy.doRequest("GET", "/arvados/v1/groups", null, {
             filters: `[["name", "=", "${projName}"], ["group_class", "=", "project"]]`,
@@ -291,12 +292,16 @@ describe("Project tests", function () {
         // Confirm that the user was taken to the newly created thing
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         // Create a subproject
         const subProjName = `Test project (${Math.floor(999999 * Math.random())})`;
         createProject(subProjName, projName);
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", subProjName);
     });
 
@@ -352,10 +357,14 @@ describe("Project tests", function () {
             // Go to subproject and trash it.
             cy.goToPath(`/projects/${testSubProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("contain", testSubProject.name);
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testSubProject.name).rightclick();
             cy.get("[data-cy=context-menu]").contains("Move to trash").click();
 
             // Confirm that the parent project should be displayed.
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testRootProject.name);
             cy.url().should("contain", `/projects/${testRootProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("not.contain", testSubProject.name);
@@ -420,11 +429,15 @@ describe("Project tests", function () {
             // Go to innermost project and trash its parent.
             cy.goToPath(`/projects/${testSubSubProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("contain", testSubSubProject.name);
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testSubSubProject.name);
             cy.get("[data-cy=side-panel-tree]").contains(testSubProject.name).rightclick();
             cy.get("[data-cy=context-menu]").contains("Move to trash").click();
 
             // Confirm that the trashed project's parent should be displayed.
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testRootProject.name);
             cy.url().should("contain", `/projects/${testRootProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("not.contain", testSubProject.name);
