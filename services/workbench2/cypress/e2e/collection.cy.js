@@ -57,7 +57,7 @@ describe("Collection panel tests", function () {
             });
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
             cy.waitForDom()
-            cy.get('[data-cy=data-table-row]').contains(name).should('exist').parent().parent().parent().parent().click()
+            cy.get('[data-cy=data-table-row]').contains(name).should('exist').parents('td').click()
             cy.waitForDom()
             cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
             msButtonTooltips.forEach((tooltip, index) => {

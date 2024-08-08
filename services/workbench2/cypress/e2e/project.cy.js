@@ -250,8 +250,8 @@ describe("Project tests", function () {
         cy.waitForDom()
         cy.go('back')
 
-        cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parent().parent().parent().click()
-        cy.waitForDom()
+            cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parents('td').click()
+            cy.waitForDom()
         cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
@@ -385,8 +385,8 @@ describe("Project tests", function () {
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("not.contain", barProjectNameA);
 
         // Click on the table row to select it, search should remain the same.
-        cy.get(`p:contains(${fooProjectNameA})`).parent().parent().parent().parent().click();
-        cy.get("[data-cy=search-input] input").should("have.value", "foo");
+            cy.get(`p:contains(${fooProjectNameA})`).should('exist').parents('td').click()
+            cy.get("[data-cy=search-input] input").should("have.value", "foo");
 
         // Click to navigate to the project, search should be reset
         cy.get(`p:contains(${fooProjectNameA})`).click();
