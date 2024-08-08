@@ -22,10 +22,10 @@ describe('helpers', () => {
     describe('getClipboardUrl', () => {
         it('should add redirectTo query param', () => {
             // when
-            const result = getCollectionItemClipboardUrl(url);
+            const result = getCollectionItemClipboardUrl(url, "http://downloads.localhost/", "http://*.collections.localhost/");
 
-            // then
-            expect(result).toBe('http://localhost/?redirectToDownload=https%3A//example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');
+	    // then
+	    expect(result).toBe('http://localhost/?redirectToDownload=https%3A//example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');
         });
     });
 

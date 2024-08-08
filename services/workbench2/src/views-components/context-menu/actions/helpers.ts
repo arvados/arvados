@@ -14,28 +14,24 @@ export const sanitizeToken = (href: string, tokenAsQueryParam = true): string =>
     return `${[prefix, ...rest].join('/')}${tokenAsQueryParam ? `${sep}api_token=${token}` : ''}`;
 };
 
+export const replaceCollectionId = (href: string, rep: string): string => {
+    const [prefix, suffix] = href.split('/c=');
+    const [uuid, ...rest] = suffix.split('/');
+
+    if (rep) {
+	return `${prefix}/c=${rep}/${rest.join('/')}`;
+    } else {
+	return `${prefix}/${rest.join('/')}`;
+    }
+};
+
 /**
  * @returns A shareable token-free WB2 url that redirects to keep-web after login
  */
-export const getCollectionItemClipboardUrl = (href: string, shouldSanitizeToken = true, inline = false): string => {
+export const getCollectionItemClipboardUrl = (href: string, keepWebServiceUrl: string, keepWebInlineServiceUrl: string): string => {
     const { origin } = window.location;
-    const url = shouldSanitizeToken ? sanitizeToken(href, false) : href;
-    const redirectKey = inline ? REDIRECT_TO_PREVIEW_KEY : REDIRECT_TO_DOWNLOAD_KEY;
-
-    if (shouldSanitizeToken) {
-        // "url" is path-percent-encoded (from WebDAV response); but valid
-        // encoded path may contain & and + that may cause trouble or confusion
-        // if directly put into query part; normalize it.
-        const decodedPath = decodeURIComponent(url);
-        // To emulate server-sent redirect verbatim; don't encode / and =
-        const queryEncodedPath = decodedPath.split(/([/=])/)
-                                            .map(s => /^[/=]$/.test(s) ? s : encodeURIComponent(s))
-                                            .join("");
-        return `${origin}/?${redirectKey}=${queryEncodedPath}`;
-    } else {
-        // Force the input to be a path and normalize leading slashes
-        return `${origin}${("/" + url).replace(/^(\/|%2F)+/i, "/")}`;
-    }
+    const url = sanitizeToken(href, false);
+    return getInlineFileUrl(url, keepWebServiceUrl, keepWebInlineServiceUrl);
 };
 
 export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInlineSvcUrl: string): string => {
