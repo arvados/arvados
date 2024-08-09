@@ -11,6 +11,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -955,6 +956,7 @@ type fileEventLog struct {
 	collUUID     string
 	collPDH      string
 	collFilePath string
+	clientAddr   string
 }
 
 func newFileEventLog(
@@ -973,16 +975,33 @@ func newFileEventLog(
 	default:
 		return nil
 	}
+
+	var clientAddr string
+	xff := strings.Join(r.Header.Values("X-Forwarded-For"), ",")
+	addrs := strings.Split(xff, ",")
+	if addr, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		addrs = append(addrs, addr)
+	}
+	for _, addr := range addrs {
+		if ip := net.ParseIP(strings.TrimSpace(addr)); ip != nil {
+			clientAddr = ip.String()
+			break
+		}
+	}
+
 	ev := &fileEventLog{
 		requestPath: r.URL.Path,
 		eventType:   eventType,
+		clientAddr:  clientAddr,
 	}
+
 	if user != nil {
 		ev.userUUID = user.UUID
 		ev.userFullName = user.FullName
 	} else {
 		ev.userUUID = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Cluster.ClusterID)
 	}
+
 	if collection != nil {
 		ev.collFilePath = filepath
 		// h.determineCollection populates the collection_uuid
@@ -996,6 +1015,7 @@ func newFileEventLog(
 			ev.collUUID = collection.UUID
 		}
 	}
+
 	return ev
 }
 

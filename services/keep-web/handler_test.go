@@ -79,6 +79,8 @@ func newRequest(method, urlStr string) *http.Request {
 		Host:       u.Host,
 		URL:        u,
 		RequestURI: u.RequestURI(),
+		RemoteAddr: "10.20.30.40:56789",
+		Header:     http.Header{},
 	}
 }
 
@@ -121,6 +123,103 @@ func (s *UnitSuite) TestLogFilePath(c *check.C) {
 		}
 		c.Check(actual.collFilePath, check.Equals, filePath)
 	}
+}
+
+func (s *UnitSuite) TestLogRemoteAddr(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+
+	for _, addr := range []string{"10.20.30.55", "192.168.144.120", "192.0.2.4"} {
+		req.RemoteAddr = addr + ":57914"
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil)
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, addr)
+	}
+
+	for _, addr := range []string{"100::20:30:40", "2001:db8::90:100", "3fff::30"} {
+		req.RemoteAddr = fmt.Sprintf("[%s]:57916", addr)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil)
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, addr)
+	}
+}
+
+func (s *UnitSuite) TestLogXForwardedFor(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	for xff, expected := range map[string]string{
+		"10.20.30.55":                          "10.20.30.55",
+		"192.168.144.120, 10.20.30.120":        "192.168.144.120",
+		"192.0.2.4, 192.0.2.6, 192.0.2.8":      "192.0.2.4",
+		"192.0.2.4,192.168.2.4":                "192.0.2.4",
+		"10.20.30.60,192.168.144.40,192.0.2.4": "10.20.30.60",
+		"100::20:30:50":                        "100::20:30:50",
+		"2001:db8::80:90, 100::100":            "2001:db8::80:90",
+		"3fff::ff, 3fff::ee, 3fff::fe":         "3fff::ff",
+		"3fff::3f,100::1000":                   "3fff::3f",
+		"2001:db8::88,100::88,3fff::88":        "2001:db8::88",
+		"10.20.30.60, 2001:db8::60":            "10.20.30.60",
+		"2001:db8::20,10.20.30.20":             "2001:db8::20",
+		", 10.20.30.123, 100::123":             "10.20.30.123",
+		",100::321,10.30.20.10":                "100::321",
+	} {
+		req.Header.Set("X-Forwarded-For", xff)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil)
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, expected)
+	}
+}
+
+func (s *UnitSuite) TestLogXForwardedForMalformed(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	for _, xff := range []string{"", ",", "10.20,30.40", "foo, bar"} {
+		req.Header.Set("X-Forwarded-For", xff)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil)
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, "10.20.30.40")
+	}
+}
+
+func (s *UnitSuite) TestLogXForwardedForMultivalue(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	req.Header.Set("X-Forwarded-For", ", ")
+	req.Header.Add("X-Forwarded-For", "2001:db8::db9:dbd")
+	req.Header.Add("X-Forwarded-For", "10.20.30.90")
+	actual := newFileEventLog(s.handler, req, filePath, nil, nil)
+	c.Assert(actual, check.NotNil)
+	c.Check(actual.clientAddr, check.Equals, "2001:db8::db9:dbd")
+}
+
+func (s *UnitSuite) TestLogClientAddressCanonicalization(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	expected := "2001:db8::12:0"
+
+	req.RemoteAddr = "[2001:db8::012:0000]:57918"
+	a := newFileEventLog(s.handler, req, filePath, nil, nil)
+	c.Assert(a, check.NotNil)
+	c.Check(a.clientAddr, check.Equals, expected)
+
+	req.RemoteAddr = "10.20.30.40:57919"
+	req.Header.Set("X-Forwarded-For", "2001:db8:0::0:12:00")
+	b := newFileEventLog(s.handler, req, filePath, nil, nil)
+	c.Assert(b, check.NotNil)
+	c.Check(b.clientAddr, check.Equals, expected)
 }
 
 func (s *UnitSuite) TestLogAnonymousUser(c *check.C) {
