@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { DispatchProp, connect } from 'react-redux';
+import { connect } from 'react-redux';
 import { Grid, Button, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
@@ -70,8 +70,8 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: any) => {
     return {
-        onContextMenu: openContextMenu,
-        onNewGroup: openCreateGroupDialog,
+        onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
+        onNewGroup: () => dispatch(openCreateGroupDialog()),
         handleRowClick: (uuid: string) => {
             dispatch(toggleOne(uuid))
             dispatch(deselectAllOthers(uuid))
