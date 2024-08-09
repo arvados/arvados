@@ -957,6 +957,7 @@ type fileEventLog struct {
 	collPDH      string
 	collFilePath string
 	clientAddr   string
+	clientToken  string
 }
 
 func newFileEventLog(
@@ -965,6 +966,7 @@ func newFileEventLog(
 	filepath string,
 	collection *arvados.Collection,
 	user *arvados.User,
+	token string,
 ) *fileEventLog {
 	var eventType string
 	switch r.Method {
@@ -993,6 +995,7 @@ func newFileEventLog(
 		requestPath: r.URL.Path,
 		eventType:   eventType,
 		clientAddr:  clientAddr,
+		clientToken: token,
 	}
 
 	if user != nil {
@@ -1065,7 +1068,7 @@ func (h *handler) logUploadOrDownload(
 	if collection == nil && fs != nil {
 		collection, filepath = h.determineCollection(fs, filepath)
 	}
-	event := newFileEventLog(h, r, filepath, collection, user)
+	event := newFileEventLog(h, r, filepath, collection, user, client.ApiToken)
 	if event == nil {
 		return // Nothing to log
 	}
