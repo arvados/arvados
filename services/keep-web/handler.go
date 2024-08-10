@@ -41,6 +41,10 @@ type handler struct {
 	lock       map[string]*sync.RWMutex
 	lockTidied time.Time
 
+	fileEventLogs         map[fileEventLog]time.Time
+	fileEventLogsMtx      sync.Mutex
+	fileEventLogsNextTidy time.Time
+
 	s3SecretCache         map[string]*cachedS3Secret
 	s3SecretCacheMtx      sync.Mutex
 	s3SecretCacheNextTidy time.Time
@@ -1057,6 +1061,36 @@ func (ev *fileEventLog) asFields() logrus.Fields {
 	return fields
 }
 
+func (h *handler) shouldLogEvent(event *fileEventLog, t time.Time) bool {
+	if event == nil {
+		return false
+	} else if event.eventType != "file_download" ||
+		h.Cluster.Collections.WebDAVLogDownloadInterval == 0 {
+		return true
+	}
+	td := h.Cluster.Collections.WebDAVLogDownloadInterval.Duration()
+	cutoff := t.Add(-td)
+	ev := *event
+	h.fileEventLogsMtx.Lock()
+	defer h.fileEventLogsMtx.Unlock()
+	if h.fileEventLogs == nil {
+		h.fileEventLogs = make(map[fileEventLog]time.Time)
+	}
+	shouldLog := h.fileEventLogs[ev].Before(cutoff)
+	if shouldLog {
+		h.fileEventLogs[ev] = t
+	}
+	if t.After(h.fileEventLogsNextTidy) {
+		for key, logTime := range h.fileEventLogs {
+			if logTime.Before(cutoff) {
+				delete(h.fileEventLogs, key)
+			}
+		}
+		h.fileEventLogsNextTidy = t.Add(td)
+	}
+	return shouldLog
+}
+
 func (h *handler) logUploadOrDownload(
 	r *http.Request,
 	client *arvadosclient.ArvadosClient,
@@ -1069,8 +1103,8 @@ func (h *handler) logUploadOrDownload(
 		collection, filepath = h.determineCollection(fs, filepath)
 	}
 	event := newFileEventLog(h, r, filepath, collection, user, client.ApiToken)
-	if event == nil {
-		return // Nothing to log
+	if !h.shouldLogEvent(event, time.Now()) {
+		return
 	}
 	log := ctxlog.FromContext(r.Context()).WithFields(event.asFields())
 	log.Info(strings.Replace(event.eventType, "file_", "File ", 1))

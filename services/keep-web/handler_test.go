@@ -84,6 +84,13 @@ func newRequest(method, urlStr string) *http.Request {
 	}
 }
 
+func newLoggerAndContext() (*bytes.Buffer, context.Context) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	return &logbuf, ctxlog.Context(context.Background(), logger)
+}
+
 func (s *UnitSuite) TestLogEventTypes(c *check.C) {
 	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
 	for method, expected := range map[string]string{
@@ -560,6 +567,7 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 	// Ensure we start with an empty cache
 	defer os.Setenv("HOME", os.Getenv("HOME"))
 	os.Setenv("HOME", c.MkDir())
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(0)
 
 	for _, trial := range []struct {
 		dataExists    bool
@@ -2059,6 +2067,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 
 	s.handler.Cluster.Collections.TrustAllContent = true
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(0)
 
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
@@ -2180,6 +2189,94 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				arvadostest.ActiveUserUUID, coll.UUID, "", "bar")
 		}
 	}
+}
+
+func (s *IntegrationSuite) TestLogThrottling(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	logbuf, ctx := newLoggerAndContext()
+	fooURL := "http://" + arvadostest.FooCollection + ".keep-web.example/foo"
+
+	var wg sync.WaitGroup
+	for _, byterange := range []string{"0-2", "0-1", "1-2"} {
+		byterange := byterange
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req := newRequest("GET", fooURL)
+			req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+			req.Header.Set("Range", "bytes="+byterange)
+			req = req.WithContext(ctx)
+			resp := httptest.NewRecorder()
+			s.handler.ServeHTTP(resp, req)
+			c.Check(resp.Result().StatusCode, check.Equals, http.StatusPartialContent)
+		}()
+	}
+	wg.Wait()
+
+	re := regexp.MustCompile(`\bmsg="File download".* collection_file_path=foo\b`)
+	matches := re.FindAll(logbuf.Bytes(), -1)
+	c.Check(matches, check.HasLen, 1,
+		check.Commentf("%d matching log messages: %+v", len(matches), matches))
+}
+
+func (s *IntegrationSuite) TestLogThrottleInterval(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Nanosecond)
+	logbuf, ctx := newLoggerAndContext()
+	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req = req.WithContext(ctx)
+
+	re := regexp.MustCompile(`\bmsg="File download".* collection_file_path=foo\b`)
+	for expected := 1; expected < 4; expected++ {
+		time.Sleep(2 * time.Nanosecond)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Assert(resp.Result().StatusCode, check.Equals, http.StatusOK)
+		matches := re.FindAll(logbuf.Bytes(), -1)
+		c.Assert(matches, check.HasLen, expected,
+			check.Commentf("%d matching log messages: %+v", len(matches), matches))
+	}
+}
+
+func (s *IntegrationSuite) TestLogThrottleDifferentTokens(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	logbuf, ctx := newLoggerAndContext()
+	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
+	req = req.WithContext(ctx)
+
+	trials := []string{arvadostest.ActiveToken, arvadostest.AdminToken}
+	for _, token := range trials {
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
+	}
+
+	re := regexp.MustCompile(`\bmsg="File download".* collection_file_path=foo\b`)
+	matches := re.FindAll(logbuf.Bytes(), -1)
+	c.Check(matches, check.HasLen, len(trials),
+		check.Commentf("%d matching log messages: %+v", len(matches), matches))
+}
+
+func (s *IntegrationSuite) TestLogThrottleDifferentFiles(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	logbuf, ctx := newLoggerAndContext()
+	baseURL := "http://" + arvadostest.MultilevelCollection1 + ".keep-web.example/"
+
+	trials := []string{"file1", "file2", "file3"}
+	for _, filename := range trials {
+		req := newRequest("GET", baseURL+filename)
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		req = req.WithContext(ctx)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
+	}
+
+	re := regexp.MustCompile(`\bmsg="File download".* collection_uuid=` + arvadostest.MultilevelCollection1 + `\b`)
+	matches := re.FindAll(logbuf.Bytes(), -1)
+	c.Check(matches, check.HasLen, len(trials),
+		check.Commentf("%d matching log messages: %+v", len(matches), matches))
 }
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {

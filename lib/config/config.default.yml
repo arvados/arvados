@@ -804,6 +804,13 @@ Clusters:
       # load on the API server and you don't need it.
       WebDAVLogEvents: true
 
+      # Only post one download log if a specific client has already
+      # downloaded part of a specific file within
+      # WebDAVLogDownloadInterval. This reduces redundant log events when a
+      # client like `aws s3 cp` downloads one file in small chunks in
+      # parallel. Set this to 0 to disable log deduplication.
+      WebDAVLogDownloadInterval: 30s
+
       # Per-connection output buffer for WebDAV downloads. May improve
       # throughput for large files, particularly when storage volumes
       # have high latency.
