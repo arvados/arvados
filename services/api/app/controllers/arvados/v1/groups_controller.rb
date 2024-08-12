@@ -350,24 +350,20 @@ class Arvados::V1::GroupsController < ApplicationController
       # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
 
-      # count=none, offset > 0, and nothing was returned, we don't
-      # know if this meant there were no matches, or offset caused it
-      # to run off the end
+      # The appropriate @offset for querying the next table depends on
+      # how many matching rows in this table were skipped due to the
+      # current @offset. If we retrieved any items (or @offset is
+      # already zero), then clearly exactly @offset rows were skipped,
+      # and the correct @offset for the next table is zero.
+      # Otherwise, we need to count all matching rows in the current
+      # table, and subtract that from @offset. If our previous query
+      # used count=none, we will need an additional query to get that
+      # count.
       if params['count'] == 'none' and @offset > 0 and klass_object_list[:items].length == 0
-        params['count'] = 'exact'
-        oldoffset = @offset
-        oldlimit = @limit
-
         # Just get the count.
-        @offset = 0
-        @limit = 0
-        apply_where_limit_order_params klass
-        requery_object_list = object_list(model_class: klass)
-        klass_object_list[:items_available] = requery_object_list[:items_available]
-
-        params['count'] = 'none'
-        @offset = oldoffset
-        @limit = oldlimit
+        klass_object_list[:items_available] = @objects.
+                                                except(:limit).except(:offset).
+                                                count(@distinct ? :id : '*')
       end
 
       klass_items_available = klass_object_list[:items_available]
