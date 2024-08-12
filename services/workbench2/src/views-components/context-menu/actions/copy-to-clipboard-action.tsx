@@ -6,7 +6,6 @@ import React from "react";
 import copy from 'copy-to-clipboard';
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
 import { Link } from "components/icon/icon";
-import { getCollectionItemClipboardUrl } from "./helpers";
 
 interface CopyToClipboardActionProps {
     href?: any;

@@ -29,7 +29,6 @@ export const replaceCollectionId = (href: string, rep: string): string => {
  * @returns A shareable token-free WB2 url that redirects to keep-web after login
  */
 export const getCollectionItemClipboardUrl = (href: string, keepWebServiceUrl: string, keepWebInlineServiceUrl: string): string => {
-    const { origin } = window.location;
     const url = sanitizeToken(href, false);
     return getInlineFileUrl(url, keepWebServiceUrl, keepWebInlineServiceUrl);
 };

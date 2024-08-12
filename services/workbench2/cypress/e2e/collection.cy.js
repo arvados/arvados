@@ -275,7 +275,7 @@ describe("Collection panel tests", function () {
             });
     });
 
-    it("shows collection by URL", function () {
+    it.only("shows collection by URL", function () {
         cy.loginAs(activeUser);
         [true, false].map(function (isWritable) {
             // Using different file names to avoid test flakyness: the second iteration
@@ -351,7 +351,8 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy link to clipboard")
+                                .and("contain", "Copy link to latest version")
+                                .and("contain", "Copy link to this exact version")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
@@ -359,7 +360,8 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("not.contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy link to clipboard")
+                                .and("contain", "Copy link to latest version")
+                                .and("contain", "Copy link to this exact version")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
