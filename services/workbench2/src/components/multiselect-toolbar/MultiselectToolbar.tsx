@@ -86,15 +86,12 @@ type IconProps = {
     publicFavorites: PublicFavoritesState;
 }
 
-const disallowedPaths = [
-    "/favorites",
-    "/public-favorites",
-    "/trash",
-    "/group/",
+const detailsCardPaths = [
+    '/projects',
 ]
 
-const isPathDisallowed = (location: string): boolean => {
-    return disallowedPaths.some(path => location.includes(path))
+export const usesDetailsCard = (location: string): boolean => {
+    return detailsCardPaths.some(path => location.includes(path))
 }
 
 export const MultiselectToolbar = connect(
@@ -103,9 +100,10 @@ export const MultiselectToolbar = connect(
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
-        const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
+        const selectedResourceArray = selectedToArray(checkedList);
+        const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
-        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
+        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
         const rawActions =
@@ -204,15 +202,21 @@ export function selectedToArray(checkedList: TCheckedList): Array<string> {
     return arrayifiedSelectedList;
 }
 
-export function selectedToKindSet(checkedList: TCheckedList): Set<string> {
+export function selectedToKindSet(checkedList: TCheckedList, resources: ResourcesState = {}): Set<string> {
     const setifiedList = new Set<string>();
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {
-            setifiedList.add(extractUuidKind(key) as string);
+            isGroupResource(key, resources) ? setifiedList.add(ContextMenuKind.GROUPS) : setifiedList.add(extractUuidKind(key) as string);
         }
     }
     return setifiedList;
 }
+
+const isGroupResource = (uuid: string, resources: ResourcesState): boolean => {
+    const resource = getResource(uuid)(resources);
+    if(!resource) return false;
+    return resource.kind === ResourceKind.PROJECT && (resource as GroupResource).groupClass === GroupClass.ROLE;
+};
 
 function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
     const result = {};

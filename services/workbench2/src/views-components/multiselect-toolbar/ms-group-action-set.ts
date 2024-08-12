@@ -43,9 +43,9 @@ const msRemoveGroupAction: MultiSelectMenuAction = {
     name: ContextMenuActionNames.REMOVE,
     icon: RemoveIcon,
     hasAlts: false,
-    isForMulti: false,
+    isForMulti: true,
     execute: (dispatch, resources) => {
-        dispatch<any>(openRemoveGroupDialog(resources[0].uuid));
+        resources.forEach(resource => dispatch<any>(openRemoveGroupDialog(resource.uuid)));
     },
 };
 
