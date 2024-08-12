@@ -212,7 +212,7 @@ export function selectedToKindSet(checkedList: TCheckedList, resources: Resource
     return setifiedList;
 }
 
-const isGroupResource = (uuid: string, resources: ResourcesState): boolean => {
+export const isGroupResource = (uuid: string, resources: ResourcesState): boolean => {
     const resource = getResource(uuid)(resources);
     if(!resource) return false;
     return resource.kind === ResourceKind.PROJECT && (resource as GroupResource).groupClass === GroupClass.ROLE;
