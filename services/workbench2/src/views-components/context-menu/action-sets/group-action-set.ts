@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet, ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
-import { RenameIcon, AdvancedIcon, RemoveIcon } from 'components/icon/icon';
+import { RenameIcon, AdvancedIcon, RemoveIcon, DetailsIcon } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { openRemoveGroupDialog, openGroupUpdateDialog } from 'store/groups-panel/groups-panel-actions';
+import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 
 export const groupActionSet: ContextMenuActionSet = [
     [
@@ -30,5 +31,12 @@ export const groupActionSet: ContextMenuActionSet = [
                 dispatch<any>(openRemoveGroupDialog(resources[0].uuid));
             },
         },
+        {
+            name: ContextMenuActionNames.VIEW_DETAILS,
+            icon: DetailsIcon,
+            execute: (dispatch, resources) => {
+                dispatch<any>(toggleDetailsPanel(resources[0].uuid));
+            },
+        }
     ],
 ];
