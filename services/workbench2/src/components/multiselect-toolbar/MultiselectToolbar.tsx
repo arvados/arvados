@@ -90,7 +90,7 @@ const disallowedPaths = [
     "/favorites",
     "/public-favorites",
     "/trash",
-    "/group",
+    "/group/",
 ]
 
 const isPathDisallowed = (location: string): boolean => {
@@ -243,11 +243,17 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
                 return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
             }
 
-            return isAdmin && !readonly
-                ? resource && resource.groupClass !== GroupClass.FILTER
-                    ? ContextMenuKind.PROJECT_ADMIN
-                    : ContextMenuKind.FILTER_GROUP_ADMIN
-                : isEditable
+            if (isAdmin && !readonly) {
+                if (resource?.groupClass === GroupClass.FILTER) {
+                    return ContextMenuKind.FILTER_GROUP_ADMIN;
+                }
+                if (resource?.groupClass === GroupClass.ROLE) {
+                    return ContextMenuKind.GROUPS;
+                }
+                return ContextMenuKind.PROJECT_ADMIN;
+            }
+
+            return isEditable
                 ? resource && resource.groupClass !== GroupClass.FILTER
                     ? ContextMenuKind.PROJECT
                     : ContextMenuKind.FILTER_GROUP
