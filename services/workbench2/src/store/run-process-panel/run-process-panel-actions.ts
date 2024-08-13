@@ -162,7 +162,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
         const newProcessData = {
             ownerUuid: ownerUUid,
             name: basicForm.name,
-            description: basicForm.description,
+            description: advancedForm.description,
             state: ContainerRequestState.COMMITTED,
             mounts: createWorkflowMounts(selectedWorkflow, inputObject),
             secret_mounts: secret_mounts,

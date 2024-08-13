@@ -177,10 +177,11 @@ export const reRunProcess =
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 
             const owner = getResource<ProjectResource | UserResource>(workflow.ownerUuid)(getState().resources);
-            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description, owner };
+            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, owner };
             dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
 
             const advancedInitialData: RunProcessAdvancedFormData = {
+		description: process.description,
                 output: process.outputName,
                 runtime: process.schedulingParameters.max_run_time,
                 ram: process.runtimeConstraints.ram,

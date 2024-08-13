@@ -11,9 +11,11 @@ import { ExpandIcon } from 'components/icon/icon';
 import * as IntInput from './inputs/int-input';
 import { min } from 'validators/min';
 import { optional } from 'validators/optional';
+import { PROCESS_NAME_VALIDATION } from 'validators/validators';
 
 export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
 
+export const DESCRIPTION_FIELD = 'description';
 export const OUTPUT_FIELD = 'output';
 export const RUNTIME_FIELD = 'runtime';
 export const RAM_FIELD = 'ram';
@@ -22,6 +24,7 @@ export const KEEP_CACHE_RAM_FIELD = 'keep_cache_ram';
 export const RUNNER_IMAGE_FIELD = 'acr_container_image';
 
 export interface RunProcessAdvancedFormData {
+    [DESCRIPTION_FIELD]?: string;
     [OUTPUT_FIELD]?: string;
     [RUNTIME_FIELD]?: number;
     [RAM_FIELD]: number;
@@ -41,6 +44,12 @@ export const RunProcessAdvancedForm =
                 </ExpansionPanelSummary>
                 <ExpansionPanelDetails style={{ padding: 0 }}>
                     <Grid container spacing={32}>
+			<Grid item xs={12} md={6}>
+			    <Field
+				name={DESCRIPTION_FIELD}
+				     component={TextField as any}
+				     label="Optional description" />
+			</Grid>
                         <Grid item xs={12} md={6}>
                             <Field
                                 name={OUTPUT_FIELD}

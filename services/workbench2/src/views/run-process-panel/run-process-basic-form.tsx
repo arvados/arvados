@@ -17,7 +17,6 @@ export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
 
 export interface RunProcessBasicFormData {
     name: string;
-    description: string;
     owner?: ProjectResource | UserResource;
 }
 
@@ -34,7 +33,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: "1.875rem",
     },
     description: {
-	marginBottom: "3em",
     }
 });
 
@@ -44,27 +42,6 @@ export const RunProcessBasicForm =
     })(withStyles(styles)((props: InjectedFormProps<RunProcessBasicFormData, RunProcessBasicFormProps> & RunProcessBasicFormProps & WithStyles<CssRules>) =>
 	<form>
             <Grid container spacing={32}>
-		<Grid item xs={12} md={6}>
-                    <Field
-			name='name'
-			component={TextField as any}
-			label="Name for this workflow run"
-			required
-			validate={PROCESS_NAME_VALIDATION} />
-		</Grid>
-		<Grid item xs={12} md={6}>
-                    <ProjectInput required input={{
-			id: "owner",
-			label: "Project where the workflow will run"
-                    } as ProjectCommandInputParameter}
-				  options={{ showOnlyOwned: false, showOnlyWritable: true }} />
-		</Grid>
-		<Grid item xs={12} md={6}>
-                    <Field
-			name='description'
-			component={TextField as any}
-			label="Optional description" />
-		</Grid>
 		<Grid item xs={12}>
 		    {props.workflow && <Typography className={props.classes.name}
 						   data-cy='workflow-name'>{props.workflow.name}</Typography>}
@@ -77,5 +54,21 @@ export const RunProcessBasicForm =
 						   dangerouslySetInnerHTML={{ __html: props.workflow.description }}
 				       />}
 		</Grid>
+		<Grid item xs={12} md={6}>
+		    <Field
+			name='name'
+			     component={TextField as any}
+			     label="Name for this workflow run"
+			     required
+			validate={PROCESS_NAME_VALIDATION} />
+		</Grid>
+		<Grid item xs={12} md={6}>
+                    <ProjectInput required input={{
+			id: "owner",
+			label: "Project where the workflow will run"
+                    } as ProjectCommandInputParameter}
+				  options={{ showOnlyOwned: false, showOnlyWritable: true }} />
+		</Grid>
+
 	    </Grid>
 	</form>));
