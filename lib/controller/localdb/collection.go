@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -96,6 +97,10 @@ func (conn *Conn) CollectionUpdate(ctx context.Context, opts arvados.UpdateOptio
 		// them.
 		opts.Select = append([]string{"is_trashed", "trash_at"}, opts.Select...)
 	}
+	err = conn.lockUUID(ctx, opts.UUID)
+	if err != nil {
+		return arvados.Collection{}, err
+	}
 	if opts.Attrs, err = conn.applyReplaceFilesOption(ctx, opts.UUID, opts.Attrs, opts.ReplaceFiles); err != nil {
 		return arvados.Collection{}, err
 	}
@@ -126,6 +131,18 @@ func (conn *Conn) signCollection(ctx context.Context, coll *arvados.Collection) 
 	coll.ManifestText = arvados.SignManifest(coll.ManifestText, token, exp, ttl, []byte(conn.cluster.Collections.BlobSigningKey))
 }
 
+func (conn *Conn) lockUUID(ctx context.Context, uuid string) error {
+	tx, err := ctrlctx.CurrentTx(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, `insert into uuid_locks (uuid) values ($1) on conflict (uuid) do update set n=uuid_locks.n+1`, uuid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // If replaceFiles is non-empty, populate attrs["manifest_text"] by
 // starting with the content of fromUUID (or an empty collection if
 // fromUUID is empty) and applying the specified file/directory
@@ -135,8 +152,20 @@ func (conn *Conn) signCollection(ctx context.Context, coll *arvados.Collection) 
 func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, attrs map[string]interface{}, replaceFiles map[string]string) (map[string]interface{}, error) {
 	if len(replaceFiles) == 0 {
 		return attrs, nil
-	} else if mtxt, ok := attrs["manifest_text"].(string); ok && len(mtxt) > 0 {
-		return nil, httpserver.Errorf(http.StatusBadRequest, "ambiguous request: both 'replace_files' and attrs['manifest_text'] values provided")
+	}
+
+	providedManifestText, _ := attrs["manifest_text"].(string)
+	if providedManifestText != "" {
+		used := false
+		for _, src := range replaceFiles {
+			if strings.HasPrefix(src, "manifest_text/") {
+				used = true
+				break
+			}
+		}
+		if !used {
+			return nil, httpserver.Errorf(http.StatusBadRequest, "invalid request: attrs['manifest_text'] was provided, but would not be used because it is not referenced by any 'replace_files' entry")
+		}
 	}
 
 	// Load the current collection (if any) and set up an
@@ -199,6 +228,21 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 		}
 	}
 
+	current := make(map[string]*arvados.Subtree)
+	// Check whether any sources are "current/...", and if so,
+	// populate current with the relevant snapshot.  Doing this
+	// ahead of time, before making any modifications to dstfs
+	// below, ensures that even instructions like {/a: current/b,
+	// b: current/a} will be handled correctly.
+	for _, src := range replaceFiles {
+		if strings.HasPrefix(src, "current/") && current[src] == nil {
+			current[src], err = arvados.Snapshot(dstfs, src[8:])
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", src, err)
+			}
+		}
+	}
+
 	var srcidloaded string
 	var srcfs arvados.FileSystem
 	// Apply the requested replacements.
@@ -217,15 +261,33 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 			}
 			continue
 		}
+		var snap *arvados.Subtree
 		srcspec := strings.SplitN(src, "/", 2)
 		srcid, srcpath := srcspec[0], "/"
-		if !arvadosclient.PDHMatch(srcid) {
-			return nil, httpserver.Errorf(http.StatusBadRequest, "invalid source %q for replace_files[%q]: must be \"\" or \"PDH\" or \"PDH/path\"", src, dst)
-		}
 		if len(srcspec) == 2 && srcspec[1] != "" {
 			srcpath = srcspec[1]
 		}
-		if srcidloaded != srcid {
+		switch {
+		case srcid == "current":
+			snap = current[src]
+			if snap == nil {
+				return nil, fmt.Errorf("internal error: current[%s] == nil", src)
+			}
+		case srcid == "manifest_text":
+			if srcidloaded == srcid {
+				break
+			}
+			srcfs = nil
+			srccoll := &arvados.Collection{ManifestText: providedManifestText}
+			srcfs, err = srccoll.FileSystem(&arvados.StubClient{}, &arvados.StubClient{})
+			if err != nil {
+				return nil, err
+			}
+			srcidloaded = srcid
+		case arvadosclient.PDHMatch(srcid):
+			if srcidloaded == srcid {
+				break
+			}
 			srcfs = nil
 			srccoll, err := conn.CollectionGet(ctx, arvados.GetOptions{UUID: srcid})
 			if err != nil {
@@ -239,10 +301,14 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 				return nil, err
 			}
 			srcidloaded = srcid
+		default:
+			return nil, httpserver.Errorf(http.StatusBadRequest, "invalid source %q for replace_files[%q]: must be \"\" or \"SRC\" or \"SRC/path\" where SRC is \"current\", \"manifest_text\", or a portable data hash", src, dst)
 		}
-		snap, err := arvados.Snapshot(srcfs, srcpath)
-		if err != nil {
-			return nil, httpserver.Errorf(http.StatusBadRequest, "error getting snapshot of %q from %q: %w", srcpath, srcid, err)
+		if snap == nil {
+			snap, err = arvados.Snapshot(srcfs, srcpath)
+			if err != nil {
+				return nil, httpserver.Errorf(http.StatusBadRequest, "error getting snapshot of %q from %q: %w", srcpath, srcid, err)
+			}
 		}
 		// Create intermediate dirs, in case dst is
 		// "newdir1/newdir2/dst".

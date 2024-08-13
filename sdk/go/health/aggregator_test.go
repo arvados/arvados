@@ -57,6 +57,19 @@ func (s *AggregatorSuite) SetUpTest(c *check.C) {
 	s.resp = httptest.NewRecorder()
 }
 
+func (s *AggregatorSuite) TestSameVersion(c *check.C) {
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.1~dev20240610194320"), check.Equals, false)
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.1~dev20240610194320 (go1.21.10)"), check.Equals, false)
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.1~dev20240610194320 (go1.21.9)"), check.Equals, false)
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.0~dev20240610194320 (go1.21.9)"), check.Equals, true)
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.0~dev20240611211146 (go1.21.10)"), check.Equals, true)
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.0~dev20240611211146"), check.Equals, true)
+	c.Check(sameVersion("2.8.0~dev20240610194320 (go1.21.10)", "2.8.0"), check.Equals, false)
+	c.Check(sameVersion("2.8.0~dev20240610194320", "2.8.0"), check.Equals, false)
+	c.Check(sameVersion("2.8.0", "2.8.0"), check.Equals, true)
+	c.Check(sameVersion("2.8.0", "2.8.1"), check.Equals, false)
+}
+
 func (s *AggregatorSuite) TestNoAuth(c *check.C) {
 	s.req.Header.Del("Authorization")
 	s.handler.ServeHTTP(s.resp, s.req)

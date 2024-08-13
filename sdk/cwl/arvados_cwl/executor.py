@@ -28,7 +28,7 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
-from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map, print_keep_deps
+from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map, print_keep_deps, ArvSecretStore
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow, make_workflow_record
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
@@ -206,6 +206,7 @@ The 'jobs' API is no longer supported.
         self.toplevel_runtimeContext = ArvRuntimeContext(vars(arvargs))
         self.toplevel_runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
+        self.toplevel_runtimeContext.secret_store = ArvSecretStore()
 
         self.defer_downloads = arvargs.submit and arvargs.defer_downloads
 
@@ -329,8 +330,16 @@ The 'jobs' API is no longer supported.
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
                         logger.info("%s %s is Running", self.label(j), uuid)
-            elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
+            elif event["properties"]["new_attributes"]["state"] == "Final":
+                # underlying container is completed or cancelled
                 self.process_done(uuid, event["properties"]["new_attributes"])
+            elif (event["properties"]["new_attributes"]["state"] == "Committed" and
+                  event["properties"]["new_attributes"]["priority"] == 0):
+                # cancelled before it got a chance to run, remains in
+                # comitted state but isn't going to run so treat it as
+                # cancelled.
+                self.process_done(uuid, event["properties"]["new_attributes"])
+
 
     def label(self, obj):
         return "[%s %s]" % (self.work_api[0:-1], obj.name)
@@ -365,7 +374,7 @@ The 'jobs' API is no longer supported.
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]], select=["uuid", "container_uuid", "state", "log_uuid",
                                                                                          "output_uuid", "modified_at", "properties",
-                                                                                         "runtime_constraints"]).execute(num_retries=self.num_retries)
+                                                                                         "runtime_constraints", "priority"]).execute(num_retries=self.num_retries)
                     except Exception as e:
                         logger.warning("Temporary error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
@@ -426,11 +435,16 @@ The 'jobs' API is no longer supported.
         outputObj = copy.deepcopy(outputObj)
 
         files = []
-        def capture(fileobj):
+        def captureFile(fileobj):
             files.append(fileobj)
 
-        adjustDirObjs(outputObj, capture)
-        adjustFileObjs(outputObj, capture)
+        def captureDir(dirobj):
+            if dirobj["location"].startswith("keep:") and 'listing' in dirobj:
+                del dirobj['listing']
+            files.append(dirobj)
+
+        adjustDirObjs(outputObj, captureDir)
+        adjustFileObjs(outputObj, captureFile)
 
         generatemapper = NoFollowPathMapper(files, "", "", separateDirs=False)
 
@@ -539,7 +553,12 @@ The 'jobs' API is no longer supported.
             try:
                 filepath = uri_file_path(tool.tool["id"])
                 cwd = os.path.dirname(filepath)
-                subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["git", "log", "--format=%H", "-n1", "HEAD"],
+                    cwd=cwd,
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                )
                 in_a_git_repo = True
             except Exception as e:
                 pass
@@ -547,25 +566,32 @@ The 'jobs' API is no longer supported.
         gitproperties = {}
 
         if in_a_git_repo:
-            git_commit = subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_date = subprocess.run(["git", "log", "--format=%cD", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_committer = subprocess.run(["git", "log", "--format=%cn <%ce>", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
-            git_origin = subprocess.run(["git", "remote", "get-url", "origin"], cwd=cwd, capture_output=True, text=True).stdout
-            git_status = subprocess.run(["git", "status", "--untracked-files=no", "--porcelain"], cwd=cwd, capture_output=True, text=True).stdout
-            git_describe = subprocess.run(["git", "describe", "--always", "--tags"], cwd=cwd, capture_output=True, text=True).stdout
-            git_toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, capture_output=True, text=True).stdout
+            def git_output(cmd):
+                return subprocess.run(
+                    cmd,
+                    cwd=cwd,
+                    stdout=subprocess.PIPE,
+                    universal_newlines=True,
+                ).stdout.strip()
+            git_commit = git_output(["git", "log", "--format=%H", "-n1", "HEAD"])
+            git_date = git_output(["git", "log", "--format=%cD", "-n1", "HEAD"])
+            git_committer = git_output(["git", "log", "--format=%cn <%ce>", "-n1", "HEAD"])
+            git_branch = git_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            git_origin = git_output(["git", "remote", "get-url", "origin"])
+            git_status = git_output(["git", "status", "--untracked-files=no", "--porcelain"])
+            git_describe = git_output(["git", "describe", "--always", "--tags"])
+            git_toplevel = git_output(["git", "rev-parse", "--show-toplevel"])
             git_path = filepath[len(git_toplevel):]
 
             gitproperties = {
-                "http://arvados.org/cwl#gitCommit": git_commit.strip(),
-                "http://arvados.org/cwl#gitDate": git_date.strip(),
-                "http://arvados.org/cwl#gitCommitter": git_committer.strip(),
-                "http://arvados.org/cwl#gitBranch": git_branch.strip(),
-                "http://arvados.org/cwl#gitOrigin": git_origin.strip(),
-                "http://arvados.org/cwl#gitStatus": git_status.strip(),
-                "http://arvados.org/cwl#gitDescribe": git_describe.strip(),
-                "http://arvados.org/cwl#gitPath": git_path.strip(),
+                "http://arvados.org/cwl#gitCommit": git_commit,
+                "http://arvados.org/cwl#gitDate": git_date,
+                "http://arvados.org/cwl#gitCommitter": git_committer,
+                "http://arvados.org/cwl#gitBranch": git_branch,
+                "http://arvados.org/cwl#gitOrigin": git_origin,
+                "http://arvados.org/cwl#gitStatus": git_status,
+                "http://arvados.org/cwl#gitDescribe": git_describe,
+                "http://arvados.org/cwl#gitPath": git_path,
             }
         else:
             for g in ("http://arvados.org/cwl#gitCommit",
@@ -963,3 +989,7 @@ The 'jobs' API is no longer supported.
             self.trash_intermediate_output()
 
         return (self.final_output, self.final_status)
+
+def blank_secrets(job_order_object, process):
+    secrets_req, _ = process.get_requirement("http://commonwl.org/cwltool#Secrets")
+    pass

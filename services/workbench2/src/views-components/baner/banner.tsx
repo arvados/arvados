@@ -61,7 +61,7 @@ export const BannerComponent = (props: BannerComponentProps) => {
 
     useEffect(() => {
         if (!!bannerUUID && bannerUUID !== "") {
-        try {
+            try {
             servicesProvider
                 .getServices()
                 .collectionService.files(bannerUUID)

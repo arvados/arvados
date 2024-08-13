@@ -33,7 +33,12 @@ RUN cd /usr/src/arvados && \
 RUN cd /usr/src/arvados && \
     apt-get update && \
     go mod download && \
-    go run ./cmd/arvados-server install -type test && cd .. && \
+    go run ./cmd/arvados-server install -type test && \
+    # Installing WB2 deps persists cypress to the home folder
+    # This is convenient to running cypress locally where yarn is run outside the container
+    cd services/workbench2 && \
+    yarn install && \
+    cd /usr/src/arvados && \
     rm -rf arvados && \
     apt-get clean
 

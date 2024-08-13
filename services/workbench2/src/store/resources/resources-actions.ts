@@ -101,8 +101,10 @@ export const createResourceProperty = (data: TagProperty) =>
 export const addPropertyToResourceForm = (data: ResourcePropertiesFormData, formName: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const properties = { ...formValueSelector(formName)(getState(), 'properties') };
-        const key = data.keyID || data.key;
-        const value =  data.valueID || data.value;
+        const vocabulary = getState().properties.vocabulary?.tags;
+        const dataTags = getTagsIfExist(data.key, data.value, vocabulary);
+        const key = data.keyID || dataTags.key || data.key;
+        const value =  data.valueID || dataTags.value || data.value;
         dispatch(change(
             formName,
             'properties',
@@ -117,3 +119,21 @@ export const removePropertyFromResourceForm = (key: string, value: string, formN
             'properties',
             deleteProperty(properties, key, value)));
     };
+
+
+const getTagsIfExist = (dataKey: string, dataValue: string, vocabulary: any) => {
+    let k, v;
+    for (const key in vocabulary) {
+        if (vocabulary[key].labels.find(l=>l.label === dataKey)) {
+            k = key;
+            const { values } = vocabulary[key];
+            for (const val in values) {
+                if (values[val].labels.find(l=>l.label === dataValue)) {
+                    v = val;
+                    break;
+                }
+            }
+        }
+    }
+    return { key: k, value: v };
+};

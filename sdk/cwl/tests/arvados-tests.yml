@@ -505,3 +505,60 @@
     out: out
   tool: wf/runseparate-wf.cwl
   doc: "test arv:SeparateRunner"
+
+- job: null
+  output: {
+    "val": {
+        "basename": "testdir",
+        "class": "Directory",
+        "listing": [
+            {
+                "basename": "a",
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "class": "File",
+                "location": "testdir/a",
+                "size": 0
+            },
+            {
+                "basename": "b",
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "class": "File",
+                "location": "testdir/b",
+                "size": 0
+            },
+            {
+                "basename": "c",
+                "class": "Directory",
+                "listing": [
+                    {
+                        "basename": "d",
+                        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "class": "File",
+                        "location": "testdir/c/d",
+                        "size": 0
+                    }
+                ],
+                "location": "testdir/c"
+            }
+        ],
+        "location": "testdir"
+    },
+    "val2": [
+        {
+            "basename": "a",
+            "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+            "class": "File",
+            "location": "a",
+            "size": 0
+        },
+        {
+            "basename": "b",
+            "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+            "class": "File",
+            "location": "b",
+            "size": 0
+        }
+    ]
+  }
+  tool: wf/output_dir_wf.cwl
+  doc: "test same file appearing in output of both Directory and array"

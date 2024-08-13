@@ -1,0 +1,469 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+.  /usr/local/lib/arvbox/common.sh
+
+while [ ! -f $ARVADOS_CONTAINER_PATH/api.ready ]; do
+    sleep 1
+done
+
+set -u
+
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
+export ARVADOS_API_HOST_INSECURE=1
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
+export ARVADOS_BANNER_UUID=$(cat $ARVADOS_CONTAINER_PATH/banner-uuid)
+
+cat > /tmp/banner.html <<EOF
+<html>
+
+<head>
+	<meta content="text/html; charset=UTF-8" http-equiv="content-type">
+	<style type="text/css">
+		ul.lst-kix_e8r60w1cm8h8-0 {
+			list-style-type: none
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-1 {
+			list-style-type: none
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-2 {
+			list-style-type: none
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-3 {
+			list-style-type: none
+		}
+
+		.lst-kix_e8r60w1cm8h8-4>li:before {
+			content: "\0025cb   "
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-4 {
+			list-style-type: none
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-5 {
+			list-style-type: none
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-6 {
+			list-style-type: none
+		}
+
+		.lst-kix_e8r60w1cm8h8-2>li:before {
+			content: "\0025a0   "
+		}
+
+		.lst-kix_e8r60w1cm8h8-3>li:before {
+			content: "\0025cf   "
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-7 {
+			list-style-type: none
+		}
+
+		ul.lst-kix_e8r60w1cm8h8-8 {
+			list-style-type: none
+		}
+
+		.lst-kix_e8r60w1cm8h8-1>li:before {
+			content: "\0025cb   "
+		}
+
+		.lst-kix_e8r60w1cm8h8-5>li:before {
+			content: "\0025a0   "
+		}
+
+		.lst-kix_e8r60w1cm8h8-6>li:before {
+			content: "\0025cf   "
+		}
+
+		.lst-kix_e8r60w1cm8h8-7>li:before {
+			content: "\0025cb   "
+		}
+
+		.lst-kix_e8r60w1cm8h8-0>li:before {
+			content: "\0025cf   "
+		}
+
+		.lst-kix_e8r60w1cm8h8-8>li:before {
+			content: "\0025a0   "
+		}
+
+		ol {
+			margin: 0;
+			padding: 0
+		}
+
+		table td,
+		table th {
+			padding: 0
+		}
+
+		.c30 {
+			border-right-style: solid;
+			padding: 5pt 5pt 5pt 5pt;
+			border-bottom-color: #35476f;
+			border-top-width: 0pt;
+			border-right-width: 0pt;
+			border-left-color: #35476f;
+			vertical-align: top;
+			border-right-color: #35476f;
+			border-left-width: 0pt;
+			border-top-style: solid;
+			background-color: #e1e5ed;
+			border-left-style: solid;
+			border-bottom-width: 0pt;
+			width: 468.8pt;
+			border-top-color: #35476f;
+			border-bottom-style: solid
+		}
+
+		.c1 {
+			padding-top: 0pt;
+			padding-bottom: 0pt;
+			line-height: 1.15;
+			orphans: 2;
+			widows: 2;
+			text-align: left;
+			height: 11pt
+		}
+
+		.c0 {
+			color: #35476f;
+			font-weight: 700;
+			text-decoration: none;
+			vertical-align: baseline;
+			font-size: 22pt;
+			font-family: "Arial";
+			font-style: normal
+		}
+
+		.c7 {
+			color: #35476f;
+			font-weight: 700;
+			text-decoration: none;
+			vertical-align: baseline;
+			font-size: 18pt;
+			font-family: "Arial";
+			font-style: normal
+		}
+
+		.c3 {
+			padding-top: 0pt;
+			padding-bottom: 0pt;
+			line-height: 1.15;
+			orphans: 2;
+			widows: 2;
+			text-align: left
+		}
+
+		.c24 {
+			padding-top: 0pt;
+			padding-bottom: 0pt;
+			line-height: 1.15;
+			orphans: 2;
+			widows: 2;
+			text-align: center
+		}
+
+		.c9 {
+			-webkit-text-decoration-skip: none;
+			color: #1155cc;
+			font-weight: 700;
+			text-decoration: underline;
+			text-decoration-skip-ink: none;
+			font-size: 16pt
+		}
+
+		.c17 {
+			text-decoration-skip-ink: none;
+			font-size: 16pt;
+			-webkit-text-decoration-skip: none;
+			color: #1155cc;
+			text-decoration: underline
+		}
+
+		.c10 {
+			text-decoration: none;
+			vertical-align: baseline;
+			font-family: "Arial";
+			font-style: normal
+		}
+
+		.c13 {
+			margin-left: -0.8pt;
+			border-spacing: 0;
+			border-collapse: collapse;
+			margin-right: auto
+		}
+
+		.c15 {
+			font-size: 15pt;
+			color: #35476f;
+			font-weight: 700
+		}
+
+		.c26 {
+			color: #568c42;
+			font-weight: 700;
+			font-size: 22pt
+		}
+
+		.c6 {
+			font-size: 22pt;
+			color: #35476f;
+			font-weight: 700
+		}
+
+		.c20 {
+			color: #000000;
+			font-weight: 700;
+			font-size: 16pt
+		}
+
+		.c12 {
+			color: #35476f;
+			font-weight: 400;
+			font-size: 16pt
+		}
+
+		.c16 {
+			vertical-align: baseline;
+			font-family: "Arial";
+			font-style: normal
+		}
+
+		.c22 {
+			color: #35476f;
+			font-weight: 700;
+			font-size: 30pt
+		}
+
+		.c2 {
+			font-size: 16pt;
+			color: #35476f;
+			font-weight: 700
+		}
+
+		.c28 {
+			color: #568c42;
+			font-weight: 700;
+			font-size: 16pt
+		}
+
+		.c11 {
+			color: #35476f;
+			font-weight: 400;
+			font-size: 14pt
+		}
+
+		.c23 {
+			background-color: #ffffff;
+			max-width: 450pt;
+			padding: 24pt 72pt 72pt 72pt
+		}
+
+		.c4 {
+			color: inherit;
+			text-decoration: inherit
+		}
+
+		.c27 {
+			color: #434343;
+			font-size: 14pt
+		}
+
+		.c5 {
+			color: #434343;
+			font-size: 16pt
+		}
+
+		.c21 {
+			color: #000000;
+			font-size: 14pt
+		}
+
+		.c29 {
+			color: #000000;
+			font-size: 13pt
+		}
+
+		.c19 {
+			color: #434343;
+			font-size: 15pt
+		}
+
+		.c25 {
+			height: 0pt
+		}
+
+		.c18 {
+			font-weight: 400
+		}
+
+		.c14 {
+			text-indent: 36pt
+		}
+
+		.c8 {
+			margin-left: 72pt
+		}
+
+		.title {
+			padding-top: 0pt;
+			color: #000000;
+			font-size: 26pt;
+			padding-bottom: 3pt;
+			font-family: "Arial";
+			line-height: 1.15;
+			page-break-after: avoid;
+			orphans: 2;
+			widows: 2;
+			text-align: left
+		}
+
+		.subtitle {
+			padding-top: 0pt;
+			color: #666666;
+			font-size: 15pt;
+			padding-bottom: 16pt;
+			font-family: "Arial";
+			line-height: 1.15;
+			page-break-after: avoid;
+			orphans: 2;
+			widows: 2;
+			text-align: left
+		}
+
+		li {
+			color: #000000;
+			font-size: 11pt;
+			font-family: "Arial"
+		}
+
+		p {
+			margin: 0;
+			color: #000000;
+			font-size: 11pt;
+			font-family: "Arial"
+		}
+	</style>
+</head>
+
+<body class="c23 doc-content">
+	<p class="c24"><span class="c10 c22">WELCOME TO ARVBOX</span></p>
+	<p class="c1"><span class="c10 c20"></span></p>
+	<p class="c3"><span class="c10 c5 c18">Arvbox is a self-contained instance of Arvados for development and evaluation.
+You are currently on the Arvados Workbench, an web application for interactively accessing Arvados
+			functionality. </span></p>
+	<br>
+	<table class="c13">
+		<tr class="c25">
+			<td class="c30" colspan="1" rowspan="1">
+				<p class="c3"><span class="c10 c27 c18"> If you
+						close this message and want to retrieve it, use the bell icon &#x1f514; located left of the user menu on the
+						upper right hand corner of the Workbench window.</span></p>
+			</td>
+		</tr>
+	</table>
+
+	<p class="c1"><span class="c7"></span></p>
+	<br>
+	<p class="c3"><span class="c6">Getting Started with Arvados</span></p>
+	<br>
+	<section style="display: flex; flex-direction: row;">
+	<p class="c3"> <span class="c9"><a class="c4" href="https://doc.arvados.org/user/tutorials/wgs-tutorial.html"
+				target="_blank">Arvados Walkthrough </a> </span>
+		<span class="c5"> A walkthrough tutorial of both interactive and programmatic Arvados functionality using a
+				Whole Genome Sequencing (WGS) processing example.</span>
+		</p>
+	</section>
+	<br>
+
+	<section style="display: flex; flex-direction: row;">
+		<p class="c3"><span class="c9"><a class="c4" href="https://doc.arvados.org/user/index.html" target="_blank"> Arvados User Guide
+			</a> </span>
+	<span class="c5"> Documentation for utilizing Arvados including using both Arvados Workbench and command line
+			including running workflows and managing data. </span></p>
+	</section>
+	<br>
+
+	<section style="display: flex; flex-direction: row;">
+		<p class="c3"><span class="c9"><a class="c4" href="https://www.youtube.com/watch?v=0GxiolI1t_0&t=2s" target="_blank"> Arvados
+				Overview Video </a> </span>
+	 <span class="c5"> Video introducing Arvados technical components including Keep (contentaddressable storage
+			system) and Crunch (workflow orchestration system). </span></p>
+	</section>
+	<br>
+
+	<section style="display: flex; flex-direction: row;">
+		<p class="c3"><span class="c9"><a class="c4" href="https://doc.arvados.org/rnaseq-cwl-training/01-introduction/index.html"
+				target="_blank"> Getting Started with CWL</a> </span>
+	 <span class="c5"> This training will walk you through developing, running, and debugging a best-practices Common
+			Workflow Language (CWL) workflow using the Arvados platform. </span></p>
+	</section>
+	<br>
+	<br>
+	<p class="c3"><span class="c6">Arvados Support</span></p>
+	<br>
+
+	<section style="display: flex; flex-direction: row;">
+		<p class="c3"><span class="c9"><a class="c4" href="https://gitter.im/arvados/community" target="_blank"> Community Live Chat</a>
+		</span>
+	<span class="c5"> Join developers, power users, and newcomers for live chat in the arvados/community channel on
+			Gitter. </span></p>
+	</section>
+
+	<br>
+
+	<section style="display: flex; flex-direction: row;">
+		<p class="c3"><span class="c9"><a class="c4" href="https://forum.arvados.org/" target="_blank"> Community Forum</a> </span>
+	<span class="c5"> The Arvados forum has topic-based discussion, Q&amp;A and community support. </span></p>
+	</section>
+
+	<br>
+
+
+	<section style="display: flex; flex-direction: row;">
+		<p class="c3"><span class="c9"><a class="c4" href="https://www.curii.com/offerings.html" target="_blank"> Enterprise Level
+				Support</a> </span>
+	<span class="c5"> Curii Corporation</a></span> <span class="c5">provides managed installations as well as
+			commercial support. </span></p>
+	</section>
+
+	<br>
+	<br>
+	<p class="c3"><span class="c15">Note:</span><span class="c19">&nbsp;Using Arvbox to run Arvados is not recommended or supported for production use.
+        For production use, Curii can help you.  You can also <a href="https://doc.arvados.org/install/index.html">install it yourself</a>. </span></p>
+
+</body>
+
+</html>
+
+EOF
+
+set +e
+read -rd $'\000' banner <<EOF
+{
+ "uuid": "$ARVADOS_BANNER_UUID"
+}
+EOF
+set -e
+
+if ! arv collection get --uuid ${ARVADOS_BANNER_UUID} ; then
+    arv collection create --collection "$banner"
+fi
+
+if ! arv-get ${ARVADOS_BANNER_UUID}/banner.html ; then
+    arv-put --update-collection ${ARVADOS_BANNER_UUID} /tmp/banner.html
+fi
+
+touch /tmp/banner-ready

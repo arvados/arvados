@@ -29,7 +29,7 @@ import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { WorkflowProcessesPanel } from './workflow-processes-panel';
 
-type CssRules = 'root'
+type CssRules =
     | 'button'
     | 'infoCard'
     | 'propertiesCard'
@@ -49,9 +49,6 @@ type CssRules = 'root'
     | 'content';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    root: {
-        width: '100%',
-    },
     button: {
         cursor: 'pointer'
     },
@@ -142,7 +139,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     { name: "Definition" },
                 ];
                 return item
-                    ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
+                    ? <MPVContainer spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
                         <MPVPanelContent xs="auto" data-cy='registered-workflow-info-panel'>
                             <Card className={classes.infoCard}>
                                 <CardHeader

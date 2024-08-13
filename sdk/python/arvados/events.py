@@ -264,7 +264,7 @@ class EventClient(threading.Thread):
         This method runs in a separate thread to receive and process events
         from the server.
         """
-        self.setName(f'ArvadosWebsockets-{self.ident}')
+        self.name = f'ArvadosWebsockets-{self.ident}'
         while self._client_ok and not self.is_closed.is_set():
             try:
                 with self._subscribe_lock:
@@ -300,7 +300,7 @@ class PollClient(threading.Thread):
 
         * api: arvados.api_resources.ArvadosAPIClient --- The Arvados API
           client used to query logs. It will be used in a separate thread,
-          so if it is not an instance of `arvados.safeapi.ThreadSafeApiCache`
+          so if it is not an instance of `arvados.api.ThreadSafeAPIClient`
           it should not be reused after the thread is started.
 
         * filters: arvados.events.Filter | None --- One event filter to
@@ -525,7 +525,7 @@ def subscribe(
 
     * api: arvados.api_resources.ArvadosAPIClient --- The Arvados API
       client used to query logs. It may be used in a separate thread,
-      so if it is not an instance of `arvados.safeapi.ThreadSafeApiCache`
+      so if it is not an instance of `arvados.api.ThreadSafeAPIClient`
       it should not be reused after this method returns.
 
     * filters: arvados.events.Filter | None --- One event filter to

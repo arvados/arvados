@@ -285,11 +285,11 @@ VERSION="latest"
 
 # We pin the salt version to avoid potential incompatibilities when a new
 # stable version is released.
-SALT_VERSION="3006"
+SALT_VERSION="3007"
 
 # Other formula versions we depend on
-POSTGRES_TAG="7529300c287b1c288af0f494ca668c2217bd1c5d"
-POSTGRES_URL="https://github.com/saltstack-formulas/postgres-formula.git"
+POSTGRES_TAG="a809e03bad115bbdf24ad347e2dc9a52e144c31f"
+POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
 NGINX_TAG="v2.8.1"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.5"
@@ -361,39 +361,60 @@ fi
 if [ "${DUMP_CONFIG}" = "yes" ]; then
   echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  OS_IDS="$(. /etc/os-release && echo "${ID:-} ${ID_LIKE:-}")"
-  echo "Detected distro families: $OS_IDS"
+  # Read the variables of /etc/os-release but prefix their names with `_OS_`
+  # to avoid name conflicts.
+  eval "$(awk '(/^[A-Z_]+=/) { print "_OS_" $0 }' /etc/os-release)"
+  echo "Detected distro families: ${_OS_ID:-} ${_OS_ID_LIKE:-}"
 
   # Several of our formulas use the cron module, which requires the crontab
   # command. We install systemd-cron to ensure we have that.
   # The rest of these packages are required by the rest of the script.
-  for OS_ID in $OS_IDS; do
+  for OS_ID in ${_OS_ID:-} ${_OS_ID_LIKE:-}; do
     case "$OS_ID" in
       rhel)
         echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
         sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
         setenforce permissive
         yum install -y curl git jq systemd-cron
+        if command -v salt-call >/dev/null; then
+            echo "Salt already installed"
+            break
+        fi
+        curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+        sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
         break
         ;;
       debian)
-        DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
-        DEBIAN_FRONTEND=noninteractive apt install -y curl git jq systemd-cron
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 update
+        # This list includes our own dependencies, plus depdencies necessary
+        # to retrieve the Salt apt repository.
+        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                                       apt-transport-https ca-certificates curl git gnupg jq systemd-cron
+        if command -v salt-call >/dev/null; then
+            echo "Salt already installed"
+            break
+        fi
+        salt_apt_url="https://repo.saltproject.io/salt/py3/$_OS_ID/$_OS_VERSION_ID/$(dpkg --print-architecture)"
+        salt_apt_key=SALT-PROJECT-GPG-PUBKEY-2023.gpg
+        install -d -m 755 /etc/apt/keyrings
+        curl -fsSL -o "/etc/apt/keyrings/$salt_apt_key" "$salt_apt_url/$salt_apt_key"
+        chmod go+r "/etc/apt/keyrings/$salt_apt_key"
+        install -b -m 644 /dev/stdin "/etc/apt/sources.list.d/salt$SALT_VERSION.sources" <<EOFSOURCES
+Types: deb
+URIs: $salt_apt_url/$SALT_VERSION
+Suites: $_OS_VERSION_CODENAME
+Components: main
+Signed-by: /etc/apt/keyrings/$salt_apt_key
+EOFSOURCES
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y salt-minion
         break
         ;;
     esac
   done
 
-  if which salt-call; then
-    echo "Salt already installed"
-  else
-    curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-    sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
-    /bin/systemctl stop salt-minion.service
-    /bin/systemctl disable salt-minion.service
-  fi
-
   # Set salt to masterless mode
+  systemctl disable --now salt-minion.service
   cat > /etc/salt/minion << EOFSM
 failhard: "True"
 
@@ -721,6 +742,10 @@ else
   for R in ${ROLES:-}; do
     case "${R}" in
       "database")
+        # Skip if using an external service
+        if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
+          continue
+        fi
         # States
         grep -q "\- postgres$" ${STATES_TOP} || echo "    - postgres" >> ${STATES_TOP}
         grep -q "extra.prometheus_pg_exporter" ${STATES_TOP} || echo "    - extra.prometheus_pg_exporter" >> ${STATES_TOP}
@@ -838,6 +863,9 @@ else
         fi
         echo "    - extra.passenger_rvm" >> ${STATES_TOP}
         grep -q "^    - postgres\\.client$" ${STATES_TOP} || echo "    - postgres.client" >> ${STATES_TOP}
+        if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
+          grep -q "    - extra.postgresql_external" ${STATES_TOP} || echo "    - extra.postgresql_external" >> ${STATES_TOP}
+        fi
 
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
@@ -864,6 +892,10 @@ else
         grep -q "nginx_snippets" ${PILLARS_TOP}           || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
         grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
+
+        if [[ "${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}" != "" ]]; then
+          grep -q "    - postgresql_external" ${PILLARS_TOP} || echo "    - postgresql_external" >> ${PILLARS_TOP}
+        fi
 
         if [ "${ENABLE_BALANCER}" == "no" ]; then
           if [ "${SSL_MODE}" = "lets-encrypt" ]; then

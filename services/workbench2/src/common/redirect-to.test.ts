@@ -12,7 +12,12 @@ describe('redirect-to', () => {
         keepWebServiceUrl: 'http://localhost',
         keepWebServiceInlineUrl: 'http://localhost-inline'
     };
-    const redirectTo = 'c=acbd18db4cc2f85cedef654fccc4a4d8%2B3/foo';
+    // PDH is immaterial; for explanation: md5+sizehint of manifest (replace
+    // <LF> with linefeed char)
+    // `. d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\040-\040%27?a=b<LF>`
+    // ie. empty file with filename 'foo - %27?a=b'
+    const underlyingPath = '/c=6b1c735de6ae0f2e60cd75d7de36476f+61/foo - %27?a=b';
+    const redirectToParamInput = '/c=6b1c735de6ae0f2e60cd75d7de36476f%2B61/foo%20-%20%2527?a=b';
     const locationTemplate = {
         hash: '',
         hostname: '',
@@ -38,7 +43,7 @@ describe('redirect-to', () => {
             delete mockWindow.location;
             mockWindow.location = {
                 ...locationTemplate,
-                href: `${location.href}?redirectToDownload=${redirectTo}`,
+                href: `${location.href}?redirectToDownload=${redirectToParamInput}`,
             } as any;
             Object.defineProperty(mockWindow, 'localStorage', {
                 value: {
@@ -48,12 +53,12 @@ describe('redirect-to', () => {
             });
         });
 
-        it('should store redirectTo in the session storage', () => {
+        it('should store decoded target path in the local storage', () => {
             // when
             storeRedirects();
 
             // then
-            expect(mockWindow.localStorage.setItem).toHaveBeenCalledWith('redirectToDownload', decodeURIComponent(redirectTo));
+            expect(mockWindow.localStorage.setItem).toHaveBeenCalledWith('redirectToDownload', underlyingPath);
         });
     });
 
@@ -62,23 +67,26 @@ describe('redirect-to', () => {
             delete mockWindow.location;
             mockWindow.location = {
                 ...locationTemplate,
-                href: `${location.href}?redirectToDownload=${redirectTo}`,
-            } as any;;
+                href: `${location.href}?redirectToDownload=${redirectToParamInput}`,
+            } as any;
             Object.defineProperty(mockWindow, 'localStorage', {
                 value: {
-                    getItem: () => redirectTo,
+                    getItem: () => underlyingPath,
                     removeItem: jest.fn(),
                 },
                 writable: true
             });
         });
 
-        it('should redirect to page when it is present in session storage', () => {
+        it('should redirect to page when it is present in local storage', () => {
             // when
             handleRedirects("abcxyz", config);
 
             // then
-            expect(mockWindow.location.href).toBe(`${config.keepWebServiceUrl}${redirectTo}?api_token=abcxyz`);
+            let navTarget = new URL(mockWindow.location.href);
+            expect(navTarget.origin).toBe(config.keepWebServiceUrl);
+            expect(decodeURIComponent(navTarget.pathname)).toBe(underlyingPath);
+            expect(navTarget.search).toBe('?api_token=abcxyz');
         });
     });
 });

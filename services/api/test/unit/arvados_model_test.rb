@@ -126,45 +126,28 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   test "search index exists on models that go into projects" do
-    all_tables =  ActiveRecord::Base.connection.tables - [
-      'ar_internal_metadata',
-      'permission_refresh_lock',
-      'schema_migrations',
-      # tables that may still exist in the database even though model
-      # classes have been deleted:
-      'humans',
-      'jobs',
-      'job_tasks',
-      'keep_disks',
-      'nodes',
-      'pipeline_instances',
-      'pipeline_templates',
-      'repositories',
-      'specimens',
-      'traits',
-    ]
+    ActiveRecord::Base.descendants.each do |model_class|
+      next if model_class.abstract_class?
+      next if !model_class.respond_to?('searchable_columns')
 
-    all_tables.each do |table|
-      table_class = table.classify.constantize
-      if table_class.respond_to?('searchable_columns')
-        search_index_columns = table_class.searchable_columns('ilike')
-        # Disappointing, but text columns aren't indexed yet.
-        search_index_columns -= table_class.columns.select { |c|
-          c.type == :text or c.name == 'description' or c.name == 'file_names'
-        }.collect(&:name)
+      search_index_columns = model_class.searchable_columns('ilike')
+      # Disappointing, but text columns aren't indexed yet.
+      search_index_columns -= model_class.columns.select { |c|
+        c.type == :text or c.name == 'description' or c.name == 'file_names'
+      }.collect(&:name)
+      next if search_index_columns.empty?
 
-        indexes = ActiveRecord::Base.connection.indexes(table)
-        search_index_by_columns = indexes.select do |index|
-          # After rails 5.0 upgrade, AR::Base.connection.indexes() started to include
-          # GIN indexes, with its 'columns' attribute being a String like
-          # 'to_tsvector(...)'
-          index.columns.is_a?(Array) ? index.columns.sort == search_index_columns.sort : false
-        end
-        search_index_by_name = indexes.select do |index|
-          index.name == "#{table}_search_index"
-        end
-        assert !search_index_by_columns.empty?, "#{table} has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
+      indexes = ActiveRecord::Base.connection.indexes(model_class.table_name)
+      search_index_by_columns = indexes.select do |index|
+        # After rails 5.0 upgrade, AR::Base.connection.indexes() started to include
+        # GIN indexes, with its 'columns' attribute being a String like
+        # 'to_tsvector(...)'
+        index.columns.is_a?(Array) ? index.columns.sort == search_index_columns.sort : false
       end
+      search_index_by_name = indexes.select do |index|
+        index.name == "#{model_class.table_name}_search_index"
+      end
+      assert !search_index_by_columns.empty?, "#{model_class.table_name} (#{model_class.to_s}) has no search index with columns #{search_index_columns}. Instead found search index with columns #{search_index_by_name.first.andand.columns}"
     end
   end
 
@@ -186,6 +169,15 @@ class ArvadosModelTest < ActiveSupport::TestCase
         ok = (expect == searchable)
         assert ok, "Invalid or no trigram index on #{table} named #{indexname}\nexpect: #{expect.inspect}\nfound: #{searchable}"
       end
+    end
+
+    test "UUID and hash columns are excluded from #{table} full text index" do
+      class_name = model.first.classify
+      actual = class_name.constantize.full_text_searchable_columns
+      assert_equal(
+        actual & full_text_excluded_columns, [],
+        "UUID/hash columns returned by #{class_name}.full_text_searchable_columns",
+      )
     end
   end
 
@@ -230,15 +222,15 @@ class ArvadosModelTest < ActiveSupport::TestCase
     group.update!(name: "test create and update name 1")
     results = Group.where(uuid: group.uuid)
     assert_equal "test create and update name 1", results.first.name, "Expected name to be updated to 1"
-    updated_at_1 = results.first.updated_at.to_f
+    modified_at_1 = results.first.modified_at.to_f
 
     # update 2
     group.update!(name: "test create and update name 2")
     results = Group.where(uuid: group.uuid)
     assert_equal "test create and update name 2", results.first.name, "Expected name to be updated to 2"
-    updated_at_2 = results.first.updated_at.to_f
+    modified_at_2 = results.first.modified_at.to_f
 
-    assert_equal true, (updated_at_2 > updated_at_1), "Expected updated time 2 to be newer than 1"
+    assert_equal true, (modified_at_2 > modified_at_1), "Expected modified time 2 to be newer than 1"
   end
 
   test 'jsonb column' do

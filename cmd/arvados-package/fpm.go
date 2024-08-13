@@ -117,7 +117,6 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		"/usr/bin/arv-get",
 		"/usr/bin/arv-keepdocker",
 		"/usr/bin/arv-ls",
-		"/usr/bin/arv-migrate-docker19",
 		"/usr/bin/arv-normalize",
 		"/usr/bin/arv-put",
 		"/usr/bin/arv-ws",

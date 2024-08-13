@@ -80,7 +80,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
 
     discovery_doc = JSON.parse(@response.body)
 
-    group_index_params = discovery_doc['resources']['groups']['methods']['index']['parameters']
+    group_index_params = discovery_doc['resources']['groups']['methods']['list']['parameters']
     group_contents_params = discovery_doc['resources']['groups']['methods']['contents']['parameters']
 
     assert_equal group_contents_params.keys.sort, (group_index_params.keys + ['uuid', 'recursive', 'include', 'include_old_versions']).sort
@@ -97,8 +97,8 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
 
     discovery_doc = JSON.parse(@response.body)
 
-    workflows_index_params = discovery_doc['resources']['workflows']['methods']['index']['parameters']  # no changes from super
-    coll_index_params = discovery_doc['resources']['collections']['methods']['index']['parameters']
+    workflows_index_params = discovery_doc['resources']['workflows']['methods']['list']['parameters']  # no changes from super
+    coll_index_params = discovery_doc['resources']['collections']['methods']['list']['parameters']
 
     assert_equal (workflows_index_params.keys + ['include_trash', 'include_old_versions']).sort, coll_index_params.keys.sort
 

@@ -35,6 +35,84 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+type CachedS3SecretSuite struct{}
+
+var _ = check.Suite(&CachedS3SecretSuite{})
+
+func (s *CachedS3SecretSuite) activeACA(expiresAt time.Time) *arvados.APIClientAuthorization {
+	return &arvados.APIClientAuthorization{
+		UUID:      arvadostest.ActiveTokenUUID,
+		APIToken:  arvadostest.ActiveToken,
+		ExpiresAt: expiresAt,
+	}
+}
+
+func (s *CachedS3SecretSuite) TestNewCachedS3SecretExpiresBeforeTTL(c *check.C) {
+	expected := time.Unix(1<<29, 0)
+	aca := s.activeACA(expected)
+	actual := newCachedS3Secret(aca, time.Unix(1<<30, 0))
+	c.Check(actual.expiry, check.Equals, expected)
+}
+
+func (s *CachedS3SecretSuite) TestNewCachedS3SecretExpiresAfterTTL(c *check.C) {
+	expected := time.Unix(1<<29, 0)
+	aca := s.activeACA(time.Unix(1<<30, 0))
+	actual := newCachedS3Secret(aca, expected)
+	c.Check(actual.expiry, check.Equals, expected)
+}
+
+func (s *CachedS3SecretSuite) TestNewCachedS3SecretWithoutExpiry(c *check.C) {
+	expected := time.Unix(1<<29, 0)
+	aca := s.activeACA(time.Time{})
+	actual := newCachedS3Secret(aca, expected)
+	c.Check(actual.expiry, check.Equals, expected)
+}
+
+func (s *CachedS3SecretSuite) cachedSecretWithExpiry(expiry time.Time) *cachedS3Secret {
+	return &cachedS3Secret{
+		auth:   s.activeACA(expiry),
+		expiry: expiry,
+	}
+}
+
+func (s *CachedS3SecretSuite) TestIsValidAtEmpty(c *check.C) {
+	cache := &cachedS3Secret{}
+	c.Check(cache.isValidAt(time.Unix(0, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(1<<31, 0)), check.Equals, false)
+}
+
+func (s *CachedS3SecretSuite) TestIsValidAtNoAuth(c *check.C) {
+	cache := &cachedS3Secret{expiry: time.Unix(3, 0)}
+	c.Check(cache.isValidAt(time.Unix(2, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(4, 0)), check.Equals, false)
+}
+
+func (s *CachedS3SecretSuite) TestIsValidAtNoExpiry(c *check.C) {
+	cache := &cachedS3Secret{auth: s.activeACA(time.Unix(3, 0))}
+	c.Check(cache.isValidAt(time.Unix(2, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(4, 0)), check.Equals, false)
+}
+
+func (s *CachedS3SecretSuite) TestIsValidAtTimeAfterExpiry(c *check.C) {
+	expiry := time.Unix(10, 0)
+	cache := s.cachedSecretWithExpiry(expiry)
+	c.Check(cache.isValidAt(expiry), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(1<<25, 0)), check.Equals, false)
+	c.Check(cache.isValidAt(time.Unix(1<<30, 0)), check.Equals, false)
+}
+
+func (s *CachedS3SecretSuite) TestIsValidAtTimeBeforeExpiry(c *check.C) {
+	cache := s.cachedSecretWithExpiry(time.Unix(1<<30, 0))
+	c.Check(cache.isValidAt(time.Unix(1<<25, 0)), check.Equals, true)
+	c.Check(cache.isValidAt(time.Unix(1<<27, 0)), check.Equals, true)
+	c.Check(cache.isValidAt(time.Unix(1<<29, 0)), check.Equals, true)
+}
+
+func (s *CachedS3SecretSuite) TestIsValidAtZeroTime(c *check.C) {
+	cache := s.cachedSecretWithExpiry(time.Unix(10, 0))
+	c.Check(cache.isValidAt(time.Time{}), check.Equals, false)
+}
+
 type s3stage struct {
 	arv        *arvados.Client
 	ac         *arvadosclient.ArvadosClient
@@ -180,6 +258,110 @@ func (s *IntegrationSuite) TestS3Signatures(c *check.C) {
 			c.Check(err, check.NotNil)
 		}
 	}
+}
+
+func (s *IntegrationSuite) TestS3SecretCacheUpdates(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	reqUrl, err := url.Parse("https://" + stage.collbucket.Name + ".example.com/")
+	c.Assert(err, check.IsNil)
+
+	for trialName, trialAuth := range map[string]string{
+		"v1 token":                    arvadostest.ActiveToken,
+		"token UUID":                  arvadostest.ActiveTokenUUID,
+		"v2 token query escaped":      url.QueryEscape(arvadostest.ActiveTokenV2),
+		"v2 token underscore escaped": strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1),
+	} {
+		s.handler.s3SecretCache = nil
+		req, err := http.NewRequest("GET", reqUrl.String(), bytes.NewReader(nil))
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		secret := trialAuth
+		if secret[5:12] == "-gj3su-" {
+			secret = arvadostest.ActiveToken
+		}
+		s.sign(c, req, trialAuth, secret)
+		rec := httptest.NewRecorder()
+		s.handler.ServeHTTP(rec, req)
+		if !c.Check(rec.Result().StatusCode, check.Equals, http.StatusOK,
+			check.Commentf("%s auth did not get 200 OK response: %v", trialName, req)) {
+			continue
+		}
+
+		for name, key := range map[string]string{
+			"v1 token":   arvadostest.ActiveToken,
+			"token UUID": arvadostest.ActiveTokenUUID,
+			"v2 token":   arvadostest.ActiveTokenV2,
+		} {
+			actual, ok := s.handler.s3SecretCache[key]
+			if c.Check(ok, check.Equals, true, check.Commentf("%s not cached from %s", name, trialName)) {
+				c.Check(actual.auth.UUID, check.Equals, arvadostest.ActiveTokenUUID)
+			}
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestS3SecretCacheUsed(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	token := arvadostest.ActiveToken
+	// Step 1: Make a request to get the active token in the cache.
+	reqUrl, err := url.Parse("https://" + stage.collbucket.Name + ".example.com/")
+	c.Assert(err, check.IsNil)
+	req, err := http.NewRequest("GET", reqUrl.String(), bytes.NewReader(nil))
+	s.sign(c, req, token, token)
+	rec := httptest.NewRecorder()
+	s.handler.ServeHTTP(rec, req)
+	resp := rec.Result()
+	c.Assert(resp.StatusCode, check.Equals, http.StatusOK,
+		check.Commentf("first request did not get 200 OK response"))
+
+	// Step 2: Remove some cache keys our request doesn't rely upon.
+	c.Assert(s.handler.s3SecretCache[arvadostest.ActiveTokenUUID], check.NotNil)
+	delete(s.handler.s3SecretCache, arvadostest.ActiveTokenUUID)
+	c.Assert(s.handler.s3SecretCache[arvadostest.ActiveTokenV2], check.NotNil)
+	delete(s.handler.s3SecretCache, arvadostest.ActiveTokenV2)
+
+	// Step 3: Repeat the original request.
+	rec = httptest.NewRecorder()
+	s.handler.ServeHTTP(rec, req)
+	resp = rec.Result()
+	c.Assert(resp.StatusCode, check.Equals, http.StatusOK,
+		check.Commentf("cached auth request did not get 200 OK response"))
+
+	// Step 4: Confirm the deleted cache keys were not re-added
+	// (which would imply the authorization was re-requested and cached).
+	c.Check(s.handler.s3SecretCache[arvadostest.ActiveTokenUUID], check.IsNil,
+		check.Commentf("token UUID re-added to cache after removal"))
+	c.Check(s.handler.s3SecretCache[arvadostest.ActiveTokenV2], check.IsNil,
+		check.Commentf("v2 token re-added to cache after removal"))
+}
+
+func (s *IntegrationSuite) TestS3SecretCacheCleanup(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	td := -2 * s3SecretCacheTidyInterval
+	startTidied := time.Now().Add(td)
+	s.handler.s3SecretCacheNextTidy = startTidied
+	s.handler.s3SecretCache = make(map[string]*cachedS3Secret)
+	s.handler.s3SecretCache["old"] = &cachedS3Secret{expiry: startTidied.Add(td)}
+
+	reqUrl, err := url.Parse("https://" + stage.collbucket.Name + ".example.com/")
+	c.Assert(err, check.IsNil)
+	req, err := http.NewRequest("GET", reqUrl.String(), bytes.NewReader(nil))
+	token := arvadostest.ActiveToken
+	s.sign(c, req, token, token)
+	rec := httptest.NewRecorder()
+	s.handler.ServeHTTP(rec, req)
+
+	c.Check(s.handler.s3SecretCache["old"], check.IsNil,
+		check.Commentf("expired token not removed from cache"))
+	c.Check(s.handler.s3SecretCacheNextTidy.After(startTidied), check.Equals, true,
+		check.Commentf("s3SecretCacheNextTidy not updated"))
+	c.Check(s.handler.s3SecretCache[token], check.NotNil,
+		check.Commentf("just-used token not found in cache"))
 }
 
 func (s *IntegrationSuite) TestS3HeadBucket(c *check.C) {
@@ -592,6 +774,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		body           string
 		responseCode   int
 		responseRegexp []string
+		checkEtag      bool
 	}{
 		{
 			url:            "https://" + stage.collbucket.Name + ".example.com/",
@@ -616,6 +799,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			method:         "GET",
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`⛵\n`},
+			checkEtag:      true,
 		},
 		{
 			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/beep",
@@ -628,6 +812,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			method:         "GET",
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`boop`},
+			checkEtag:      true,
 		},
 		{
 			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
@@ -645,6 +830,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			method:         "GET",
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`boop`},
+			checkEtag:      true,
 		},
 	} {
 		url, err := url.Parse(trial.url)
@@ -660,6 +846,9 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		c.Assert(err, check.IsNil)
 		for _, re := range trial.responseRegexp {
 			c.Check(string(body), check.Matches, re)
+		}
+		if trial.checkEtag {
+			c.Check(resp.Header.Get("Etag"), check.Matches, `"[\da-f]{32}\+\d+"`)
 		}
 	}
 }
@@ -1300,6 +1489,16 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	// started catching the NoSuchKey error code and replacing it
 	// with "Source object '%s' does not exist.".
 	c.Check(string(buf), check.Matches, `(?ms).*(NoSuchKey|Source object.*does not exist).*\n`)
+
+	tmpfile = c.MkDir() + "/foo"
+	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.URL[7:], "--host-bucket="+s.testServer.URL[7:], "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo", tmpfile)
+	buf, err = cmd.CombinedOutput()
+	c.Logf("%s", buf)
+	if c.Check(err, check.IsNil) {
+		checkcontent, err := os.ReadFile(tmpfile)
+		c.Check(err, check.IsNil)
+		c.Check(string(checkcontent), check.Equals, "foo")
+	}
 }
 
 func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {

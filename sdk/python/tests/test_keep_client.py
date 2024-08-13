@@ -27,6 +27,7 @@ import pycurl
 import arvados
 import arvados.retry
 import arvados.util
+
 from . import arvados_testutil as tutil
 from . import keepstub
 from . import run_test_server
@@ -60,7 +61,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         foo_locator = self.keep_client.put('foo')
         self.assertRegex(
             foo_locator,
-            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3',
             'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
 
         # 6 bytes because uploaded 2 copies
@@ -77,7 +78,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put(blob_str)
         self.assertRegex(
             blob_locator,
-            '^7fc7c53b45e53926ba52821140fef396\+6',
+            r'^7fc7c53b45e53926ba52821140fef396\+6',
             ('wrong locator from Keep.put(<binarydata>):' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
                          blob_str,
@@ -90,7 +91,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put(blob_data)
         self.assertRegex(
             blob_locator,
-            '^84d90fc0d8175dd5dcfab04b999bc956\+67108864',
+            r'^84d90fc0d8175dd5dcfab04b999bc956\+67108864',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
                          blob_data,
@@ -102,7 +103,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put(blob_data, copies=1)
         self.assertRegex(
             blob_locator,
-            '^c902006bc98a3eb4a3663b65ab4a6fab\+8',
+            r'^c902006bc98a3eb4a3663b65ab4a6fab\+8',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
                          blob_data,
@@ -112,22 +113,10 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         blob_locator = self.keep_client.put('', copies=1)
         self.assertRegex(
             blob_locator,
-            '^d41d8cd98f00b204e9800998ecf8427e\+0',
+            r'^d41d8cd98f00b204e9800998ecf8427e\+0',
             ('wrong locator from Keep.put(""): ' + blob_locator))
 
-    def test_unicode_must_be_ascii(self):
-        # If unicode type, must only consist of valid ASCII
-        foo_locator = self.keep_client.put(u'foo')
-        self.assertRegex(
-            foo_locator,
-            '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
-            'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
-
-        if sys.version_info < (3, 0):
-            with self.assertRaises(UnicodeEncodeError):
-                # Error if it is not ASCII
-                self.keep_client.put(u'\xe2')
-
+    def test_KeepPutDataType(self):
         with self.assertRaises(AttributeError):
             # Must be bytes or have an encode() method
             self.keep_client.put({})
@@ -136,7 +125,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         locator = self.keep_client.put('test_head')
         self.assertRegex(
             locator,
-            '^b9a772c7049325feb7130fff1f8333e9\+9',
+            r'^b9a772c7049325feb7130fff1f8333e9\+9',
             'wrong md5 hash from Keep.put for "test_head": ' + locator)
         self.assertEqual(True, self.keep_client.head(locator))
         self.assertEqual(self.keep_client.get(locator),
@@ -177,8 +166,9 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers, DiskCacheBase)
 
         # GET from a different user => bad request
         run_test_server.authorize_with('spectator')
+        keep_client2 = arvados.KeepClient(block_cache=self.make_block_cache(self.disk_cache))
         self.assertRaises(arvados.errors.KeepReadError,
-                          arvados.Keep.get,
+                          keep_client2.get,
                           bar_locator)
 
         # Unauthenticated GET for a signed locator => bad request
@@ -217,7 +207,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers, DiskCacheBase):
         baz_locator = keep_client.put('baz')
         self.assertRegex(
             baz_locator,
-            '^73feffa4b7f6bb68e44cf984c85f6e88\+3',
+            r'^73feffa4b7f6bb68e44cf984c85f6e88\+3',
             'wrong md5 hash from Keep.put("baz"): ' + baz_locator)
         self.assertEqual(keep_client.get(baz_locator),
                          b'baz',
@@ -594,7 +584,7 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
     def tearDown(self):
         DiskCacheBase.tearDown(self)
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_get_request_cache(self, get_mock):
         with tutil.mock_keep_responses(self.data, 200, 200):
             self.keep_client.get(self.locator)
@@ -602,7 +592,7 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
         # Request already cached, don't require more than one request
         get_mock.assert_called_once()
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_head_request_cache(self, get_mock):
         with tutil.mock_keep_responses(self.data, 200, 200):
             self.keep_client.head(self.locator)
@@ -610,7 +600,7 @@ class KeepClientCacheTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCacheB
         # Don't cache HEAD requests so that they're not confused with GET reqs
         self.assertEqual(2, get_mock.call_count)
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_head_and_then_get_return_different_responses(self, get_mock):
         head_resp = None
         get_resp = None
@@ -1341,7 +1331,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
 
     def setUp(self):
         self.copies = 3
-        self.pool = arvados.KeepClient.KeepWriterThreadPool(
+        self.pool = arvados.KeepClient._KeepWriterThreadPool(
             data = 'foo',
             data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
             max_service_replicas = self.copies,
@@ -1471,7 +1461,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
     def tearDown(self):
         shutil.rmtree(self.disk_cache_dir)
 
-    @mock.patch('arvados.util._BaseDirectories.storage_path')
+    @mock.patch('arvados._internal.basedirs.BaseDirectories.storage_path')
     def test_default_disk_cache_dir(self, storage_path):
         expected = Path(self.disk_cache_dir)
         storage_path.return_value = expected
@@ -1479,7 +1469,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         storage_path.assert_called_with('keep')
         self.assertEqual(cache._disk_cache_dir, str(expected))
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_read(self, get_mock):
         # confirm it finds an existing cache block when the cache is
         # initialized.
@@ -1497,7 +1487,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
 
         get_mock.assert_not_called()
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_share(self, get_mock):
         # confirm it finds a cache block written after the disk cache
         # was initialized.
@@ -1568,7 +1558,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], "tmpXYZABC")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], "XYZABC")))
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_cap(self, get_mock):
         # confirm that the cache is kept to the desired limit
 
@@ -1590,7 +1580,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertFalse(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock")))
 
-    @mock.patch('arvados.KeepClient.KeepService.get')
+    @mock.patch('arvados.KeepClient._KeepService.get')
     def test_disk_cache_share(self, get_mock):
         # confirm that a second cache doesn't delete files that belong to the first cache.
 
@@ -1643,9 +1633,12 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
                 keep_client.get(self.locator)
 
     def test_disk_cache_retry_write_error(self):
-        block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
-                                                  disk_cache_dir=self.disk_cache_dir)
-
+        cache_max_before = 512 * 1024 * 1024
+        block_cache = arvados.keep.KeepBlockCache(
+            cache_max=cache_max_before,
+            disk_cache=True,
+            disk_cache_dir=self.disk_cache_dir,
+        )
         keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
 
         called = False
@@ -1658,11 +1651,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             else:
                 return realmmap(*args, **kwargs)
 
-        with patch('mmap.mmap') as mockmmap:
-            mockmmap.side_effect = sideeffect_mmap
-
-            cache_max_before = block_cache.cache_max
-
+        with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
             with tutil.mock_keep_responses(self.data, 200) as mock:
                 self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
 
@@ -1672,7 +1661,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
         # shrank the cache in response to ENOSPC
-        self.assertTrue(cache_max_before > block_cache.cache_max)
+        self.assertGreater(cache_max_before, block_cache.cache_max)
 
     def test_disk_cache_retry_write_error2(self):
         block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
@@ -1690,9 +1679,7 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             else:
                 return realmmap(*args, **kwargs)
 
-        with patch('mmap.mmap') as mockmmap:
-            mockmmap.side_effect = sideeffect_mmap
-
+        with patch('mmap.mmap', autospec=True, side_effect=sideeffect_mmap) as mockmmap:
             slots_before = block_cache._max_slots
 
             with tutil.mock_keep_responses(self.data, 200) as mock:
@@ -1704,4 +1691,4 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
         # shrank the cache in response to ENOMEM
-        self.assertTrue(slots_before > block_cache._max_slots)
+        self.assertGreater(slots_before, block_cache._max_slots)

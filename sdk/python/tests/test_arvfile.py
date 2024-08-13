@@ -10,13 +10,14 @@ import unittest
 from unittest import mock
 
 import arvados
-from arvados._ranges import Range
-from arvados.keep import KeepLocator
-from arvados.collection import Collection
+
+from arvados._internal.streams import Range
 from arvados.arvfile import ArvadosFile, ArvadosFileReader
+from arvados.collection import Collection
+from arvados.keep import KeepLocator
 
 from . import arvados_testutil as tutil
-from .test_stream import StreamFileReaderTestCase, StreamRetryTestMixin
+from .test_stream import StreamFileReaderTestMixin, StreamRetryTestMixin
 
 class ArvadosFileWriterTestCase(unittest.TestCase):
     class MockKeep(object):
@@ -620,7 +621,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual(b"01234567", keep.get("2e9ec317e197819358fbc43afca7d837+8"))
 
 
-class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
+class ArvadosFileReaderTestCase(unittest.TestCase, StreamFileReaderTestMixin):
     class MockParent(object):
         class MockBlockMgr(object):
             def __init__(self, blocks, nocache):
@@ -649,6 +650,11 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             return ArvadosFileReaderTestCase.MockParent.MockBlockMgr(self.blocks, self.nocache)
 
 
+    def make_file_reader(self, name='emptyfile', data='', nocache=False):
+        loc = tutil.str_keep_locator(data)
+        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent({loc: data}, nocache=nocache), name, stream=[Range(loc, 0, len(data))], segments=[Range(0, len(data), len(data))])
+        return ArvadosFileReader(af, mode='rb')
+
     def make_count_reader(self, nocache=False):
         stream = []
         n = 0
@@ -658,7 +664,21 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             blocks[loc] = d
             stream.append(Range(loc, n, len(d)))
             n += len(d)
-        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), "count.txt", stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
+        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache=nocache), "count.txt", stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
+        return ArvadosFileReader(af, mode="rb")
+
+    def make_newlines_reader(self, nocache=False):
+        stream = []
+        segments = []
+        n = 0
+        blocks = {}
+        for d in [b'one\ntwo\n\nth', b'ree\nfour\n\n']:
+            loc = tutil.str_keep_locator(d)
+            blocks[loc] = d
+            stream.append(Range(loc, n, len(d)))
+            segments.append(Range(n, len(d), n+len(d)))
+            n += len(d)
+        af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache=nocache), "count.txt", stream=stream, segments=segments)
         return ArvadosFileReader(af, mode="rb")
 
     def test_read_block_crossing_behavior(self):
@@ -667,16 +687,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
         sfile = self.make_count_reader(nocache=True)
         self.assertEqual(b'12345678', sfile.read(8))
 
-    def test_successive_reads(self):
-        # Override StreamFileReaderTestCase.test_successive_reads
-        sfile = self.make_count_reader(nocache=True)
-        self.assertEqual(b'1234', sfile.read(4))
-        self.assertEqual(b'5678', sfile.read(4))
-        self.assertEqual(b'9', sfile.read(4))
-        self.assertEqual(b'', sfile.read(4))
-
     def test_tell_after_block_read(self):
-        # Override StreamFileReaderTestCase.test_tell_after_block_read
         sfile = self.make_count_reader(nocache=True)
         self.assertEqual(b'12345678', sfile.read(8))
         self.assertEqual(8, sfile.tell())

@@ -446,55 +446,51 @@ test_package_presence() {
     # sure it gets picked up by the test and/or upload steps.
     # Get the list of packages from the repos
 
+    local pkg_url
     if [[ "$FORCE_BUILD" == "1" ]]; then
       echo "Package $full_pkgname build forced with --force-build, building"
+      return 0
     elif [[ "$FORMAT" == "deb" ]]; then
-      declare -A dd
-      dd[debian11]=bullseye
-      dd[debian12]=bookworm
-      dd[ubuntu2004]=focal
-      dd[ubuntu2204]=jammy
-      D=${dd[$TARGET]}
+      local codename
+      case "$TARGET" in
+          debian11) codename=bullseye ;;
+          debian12) codename=bookworm ;;
+          ubuntu2004) codename=focal ;;
+          ubuntu2204) codename=jammy ;;
+          ubuntu2404) codename=noble ;;
+          *)
+              echo "FIXME: Don't know deb URL path for $TARGET, building"
+              return 0
+              ;;
+      esac
+      local repo_subdir
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
       else
         repo_subdir=${pkgname:0:1}
       fi
-
-      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/)
-      echo "${repo_pkg_list}" |grep -q ${full_pkgname}
-      if [ $? -eq 0 ] ; then
-        echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/${full_pkgname}
-        return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
-        echo "Package $full_pkgname exists, not rebuilding!"
-        return 1
-      else
-        echo "Package $full_pkgname not found, building"
-        return 0
-      fi
+      pkg_url="http://apt.arvados.org/$codename/pool/main/$repo_subdir/$pkgname/$full_pkgname"
     else
       local rpm_root
       case "$TARGET" in
-        rocky8) rpm_root="CentOS/8/dev" ;;
+        rocky8) rpm_root="RHEL/8/dev" ;;
         *)
           echo "FIXME: Don't know RPM URL path for $TARGET, building"
           return 0
           ;;
       esac
-      local rpm_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
+      pkg_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
+    fi
 
-      if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$rpm_url"; then
-        echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        return 1
-      elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
-        echo "Package $full_pkgname exists, not rebuilding!"
-        return 1
-      else
-        echo "Package $full_pkgname not found, building"
-        return 0
-      fi
+    if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$pkg_url"; then
+      echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
+      return 1
+    elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
+      echo "Package $full_pkgname exists, not rebuilding!"
+      return 1
+    else
+      echo "Package $full_pkgname not found, building"
+      return 0
     fi
 }
 
@@ -715,15 +711,15 @@ fpm_build_virtualenv_worker () {
       fi
   fi
   if [[ $? -ne 0 ]]; then
-    printf "Error, unable to download/build wheel for %s @ %s" "$PKG" "$PKG_DIR"
-    exit 1
-  elif ! "$PYTHON_BUILDROOT/venv/bin/piprepo" build "$PYTHON_BUILDROOT/wheelhouse"; then
-    printf "Error, unable to update local wheel repository"
+    printf "Error, unable to download/build wheel for %s @ %s\n" "$PKG" "$PKG_DIR"
     exit 1
   fi
 
   if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
+  elif ! "$PYTHON_BUILDROOT/venv/bin/piprepo" build "$PYTHON_BUILDROOT/wheelhouse"; then
+    printf "Error, unable to update local wheel repository\n"
+    exit 1
   fi
 
   local venv_dir="$PYTHON_BUILDROOT/$PYTHON_PKG"
@@ -741,7 +737,7 @@ fpm_build_virtualenv_worker () {
 
   local pip_wheel="$(ls --sort=time --reverse "$PYTHON_BUILDROOT/wheelhouse/$(echo "$PKG" | sed s/-/_/g)-"*.whl | tail -n1)"
   if [[ -z "$pip_wheel" ]]; then
-    printf "Error, unable to find built wheel for $PKG"
+    printf "Error, unable to find built wheel for $PKG\n"
     exit 1
   elif ! "$venv_dir/bin/pip" install $DASHQ_UNLESS_DEBUG $CACHE_FLAG --extra-index-url="file://$PYTHON_BUILDROOT/wheelhouse/simple" "$pip_wheel"; then
     printf "Error, unable to run

@@ -32,6 +32,10 @@ else:
 DEFAULT_ARGLIST = [
     '--output-directory=sdk/python',
     '../sdk/python/build/lib/arvados/',
+    # Because the module is prviate, pdoc does not build documentation for any
+    # of it. The exclusion below additionally prevents pdoc from hyperlinking
+    # references under arvados._internal that appear in method signatures, etc.
+    '!arvados._internal',
 ]
 MD_EXTENSIONS = {
     'admonitions': None,

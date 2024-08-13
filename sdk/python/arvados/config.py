@@ -17,10 +17,12 @@ from typing import (
 )
 
 from . import util
+from ._internal import basedirs
 
 _settings = None
 default_config_file = ''
-""".. WARNING: Deprecated
+"""
+.. WARNING:: Deprecated
    Default configuration initialization now searches for the "default"
    configuration in several places. This value no longer has any effect.
 """
@@ -33,7 +35,7 @@ def initialize(
             str,
             os.PathLike,
             Callable[[str], Iterable[os.PathLike]],
-        ]=util._BaseDirectories('CONFIG').search,
+        ]=basedirs.BaseDirectories('CONFIG').search,
 ) -> None:
     global _settings
     _settings = {}

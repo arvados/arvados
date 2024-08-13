@@ -26,51 +26,15 @@ Packages are available for the following Red Hat-based distributions:
 * RHEL 8
 * Rocky Linux 8
 
-To install them with dnf, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
-
-<notextile>
-<pre><code>[arvados]
-name=Arvados
-baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
-gpgcheck=1
-gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
-</code></pre>
-</notextile>
-
-{% include 'gpg_key_fingerprint' %}
+{% include 'setup_redhat_repo' %}
 
 h3(#debian). Debian and Ubuntu
 
-Packages are available for recent versions of Debian and Ubuntu.
+Packages are available for the following Debian-based distributions:
 
-First, register the Arvados signing key in apt's database:
+* Debian 12 ("bookworm")
+* Debian 11 ("bullseye")
+* Ubuntu 22.04 ("jammy")
+* Ubuntu 20.04 ("focal")
 
-{% include 'install_debian_key' %}
-
-{% include 'gpg_key_fingerprint' %}
-
-Then set up the package source by running this command:
-
-<notextile>
-<pre><code># <span class="userinput">tee /etc/apt/sources.list.d/arvados.sources &gt;/dev/null &lt;&lt;EOF
-Types: deb
-URIs: https://apt.arvados.org/$(lsb_release -cs)
-Suites: $(lsb_release -cs)
-Components: main
-Signed-by: /etc/apt/keyrings/arvados.asc
-EOF
-</span></code></pre>
-</notextile>
-
-{% include 'notebox_begin' %}
-
-fn1. Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's "universe" repository.  If you're installing on Ubuntu, make sure you have the universe sources uncommented in @/etc/apt/sources.list@.
-
-{% include 'notebox_end' %}
-
-Retrieve the package list:
-
-<notextile>
-<pre><code># <span class="userinput">apt update</span>
-</code></pre>
-</notextile>
+{% include 'setup_debian_repo' %}

@@ -7,36 +7,8 @@ import withStyles from '@material-ui/core/styles/withStyles';
 import { DispatchProp, connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
 import { StyleRulesCallback, WithStyles } from '@material-ui/core';
-
-import { DataExplorer } from 'views-components/data-explorer/data-explorer';
-import { DataColumns } from 'components/data-table/data-table';
 import { RootState } from 'store/store';
-import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
-import { ContainerRequestState } from 'models/container-request';
-import { SortDirection } from 'components/data-table/data-column';
-import { ResourceKind, Resource } from 'models/resource';
-import {
-    ResourceName,
-    ProcessStatus as ResourceStatus,
-    ResourceType,
-    ResourceOwnerWithName,
-    ResourcePortableDataHash,
-    ResourceFileSize,
-    ResourceFileCount,
-    ResourceUUID,
-    ResourceContainerUuid,
-    ContainerRunTime,
-    ResourceOutputUuid,
-    ResourceLogUuid,
-    ResourceParentProcess,
-    ResourceModifiedByUserUuid,
-    ResourceVersion,
-    ResourceCreatedAtDate,
-    ResourceLastModifiedDate,
-    ResourceTrashDate,
-    ResourceDeleteDate,
-} from 'views-components/data-explorer/renderers';
-import { ProjectIcon } from 'components/icon/icon';
+import { Resource } from 'models/resource';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
@@ -44,17 +16,17 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
 import { ArvadosTheme } from 'common/custom-theme';
-import { createTree } from 'models/tree';
-import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
-import { ProjectResource } from 'models/project';
 import { deselectAllOthers, toggleOne } from 'store/multiselect/multiselect-actions';
-import { DetailsCardRoot } from 'views-components/details-card/details-card-root'; 
+import { DetailsCardRoot } from 'views-components/details-card/details-card-root';
+import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
+import { ProjectPanelData } from './project-panel-data';
+import { ProjectPanelRun } from './project-panel-run';
 
-type CssRules = 'root' | 'button' ;
+type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -65,179 +37,23 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         marginLeft: theme.spacing.unit,
     },
+    mpvRoot: {
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        '& > div': {
+            height: '100%',
+        },
+    },
+    dataExplorer: {
+        height: "100%",
+    },
 });
 
-export enum ProjectPanelColumnNames {
-    NAME = 'Name',
-    STATUS = 'Status',
-    TYPE = 'Type',
-    OWNER = 'Owner',
-    PORTABLE_DATA_HASH = 'Portable Data Hash',
-    FILE_SIZE = 'File Size',
-    FILE_COUNT = 'File Count',
-    UUID = 'UUID',
-    CONTAINER_UUID = 'Container UUID',
-    RUNTIME = 'Runtime',
-    OUTPUT_UUID = 'Output UUID',
-    LOG_UUID = 'Log UUID',
-    PARENT_PROCESS = 'Parent Process UUID',
-    MODIFIED_BY_USER_UUID = 'Modified by User UUID',
-    VERSION = 'Version',
-    CREATED_AT = 'Date Created',
-    LAST_MODIFIED = 'Last Modified',
-    TRASH_AT = 'Trash at',
-    DELETE_AT = 'Delete at',
-}
-
-export interface ProjectPanelFilter extends DataTableFilterItem {
-    type: ResourceKind | ContainerRequestState;
-}
-
-export const projectPanelColumns: DataColumns<string, ProjectResource> = [
-    {
-        name: ProjectPanelColumnNames.NAME,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: 'name' },
-        filters: createTree(),
-        render: (uuid) => <ResourceName uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.STATUS,
-        selected: true,
-        configurable: true,
-        mutuallyExclusiveFilters: true,
-        filters: getInitialProcessStatusFilters(),
-        render: (uuid) => <ResourceStatus uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.TYPE,
-        selected: true,
-        configurable: true,
-        filters: getInitialResourceTypeFilters(),
-        render: (uuid) => <ResourceType uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.OWNER,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceOwnerWithName uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourcePortableDataHash uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.FILE_SIZE,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceFileSize uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.FILE_COUNT,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceFileCount uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.UUID,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceUUID uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.CONTAINER_UUID,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceContainerUuid uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.RUNTIME,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ContainerRunTime uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.OUTPUT_UUID,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceOutputUuid uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.LOG_UUID,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceLogUuid uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.PARENT_PROCESS,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceParentProcess uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.MODIFIED_BY_USER_UUID,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceModifiedByUserUuid uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.VERSION,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: (uuid) => <ResourceVersion uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.CREATED_AT,
-        selected: false,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: 'createdAt' },
-        filters: createTree(),
-        render: (uuid) => <ResourceCreatedAtDate uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.LAST_MODIFIED,
-        selected: true,
-        configurable: true,
-        sort: { direction: SortDirection.DESC, field: 'modifiedAt' },
-        filters: createTree(),
-        render: (uuid) => <ResourceLastModifiedDate uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.TRASH_AT,
-        selected: false,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: 'trashAt' },
-        filters: createTree(),
-        render: (uuid) => <ResourceTrashDate uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.DELETE_AT,
-        selected: false,
-        configurable: true,
-        sort: { direction: SortDirection.NONE, field: 'deleteAt' },
-        filters: createTree(),
-        render: (uuid) => <ResourceDeleteDate uuid={uuid} />,
-    },
+const panelsData: MPVPanelState[] = [
+    { name: "Data", visible: true },
+    { name: "Workflow Runs", visible: false },
 ];
-
-export const PROJECT_PANEL_ID = 'projectPanel';
-
-const DEFAULT_VIEW_MESSAGES = ['Your project is empty.', 'Please create a project or create a collection and upload a data.'];
 
 interface ProjectPanelDataProps {
     currentItemId: string;
@@ -270,15 +86,37 @@ export const ProjectPanel = withStyles(styles)(
                 const { classes } = this.props;
                 return <div data-cy='project-panel' className={classes.root}>
                     <DetailsCardRoot />
-                    <DataExplorer
-                        id={PROJECT_PANEL_ID}
-                        onRowClick={this.handleRowClick}
-                        onRowDoubleClick={this.handleRowDoubleClick}
-                        onContextMenu={this.handleContextMenu}
-                        contextMenuColumn={true}
-                        defaultViewIcon={ProjectIcon}
-                        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-                    />
+                    <MPVContainer
+                        className={classes.mpvRoot}
+                        spacing={8}
+                        panelStates={panelsData}
+                        mutuallyExclusive
+                        justify-content="flex-start"
+                        direction="column"
+                        wrap="nowrap">
+                        <MPVPanelContent
+                            forwardProps
+                            xs="auto"
+                            data-cy="process-data"
+                            className={classes.dataExplorer}>
+                            <ProjectPanelData
+                                onRowClick={this.handleRowClick}
+                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onContextMenu={this.handleContextMenu}
+                            />
+                        </MPVPanelContent>
+                        <MPVPanelContent
+                            forwardProps
+                            xs="auto"
+                            data-cy="process-run"
+                            className={classes.dataExplorer}>
+                            <ProjectPanelRun
+                                onRowClick={this.handleRowClick}
+                                onRowDoubleClick={this.handleRowDoubleClick}
+                                onContextMenu={this.handleContextMenu}
+                            />
+                        </MPVPanelContent>
+                    </MPVContainer>
                 </div>
             }
 

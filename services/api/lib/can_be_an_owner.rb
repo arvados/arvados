@@ -24,12 +24,14 @@ module CanBeAnOwner
                       'jobs',
                       'job_tasks',
                       'keep_disks',
+                      'materialized_permissions',
                       'nodes',
                       'pipeline_instances',
                       'pipeline_templates',
                       'repositories',
                       'specimens',
                       'traits',
+                      'uuid_locks',
                     ])
       klass = t.classify.constantize
       next unless klass and 'owner_uuid'.in?(klass.columns.collect(&:name))

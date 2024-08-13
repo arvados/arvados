@@ -272,7 +272,6 @@ debug_echo -e "\nPython packages\n"
 # Before a Python package can be built, its dependencies must already be built.
 # This list is ordered accordingly.
 setup_build_virtualenv
-fpm_build_virtualenv cwltest "==2.3.20230108193615" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-python-client" "sdk/python" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "$FORMAT" "$ARCH"
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"

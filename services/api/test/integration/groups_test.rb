@@ -152,6 +152,10 @@ class GroupsTest < ActionDispatch::IntegrationTest
       assert_nil json_response['items_available']
       if first_results.nil?
         first_results = json_response['items']
+        # should get back at least two different kinds of objects, to
+        # test offset paging properly.
+        kinds = first_results.map { |i| i['kind'] }
+        assert_equal 2, kinds.uniq.length
       else
         assert_equal first_results[offset]['uuid'], json_response['items'][0]['uuid']
       end

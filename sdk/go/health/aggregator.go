@@ -501,7 +501,10 @@ func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, st
 	return nil
 }
 
-var reGoVersion = regexp.MustCompile(` \(go\d+([\d.])*\)$`)
+var (
+	reGoVersion  = regexp.MustCompile(` \(go\d+([\d.])*\)$`)
+	reDevVersion = regexp.MustCompile(`~dev\d+$`)
+)
 
 // Return true if either a==b or the only difference is that one has a
 // " (go1.2.3)" suffix and the other does not.
@@ -509,17 +512,10 @@ var reGoVersion = regexp.MustCompile(` \(go\d+([\d.])*\)$`)
 // This allows us to recognize a non-Go (rails) service as the same
 // version as a Go service.
 func sameVersion(a, b string) bool {
-	if a == b {
-		return true
-	}
-	anogo := reGoVersion.ReplaceAllLiteralString(a, "")
-	bnogo := reGoVersion.ReplaceAllLiteralString(b, "")
-	if (anogo == a) != (bnogo == b) {
-		// only one of a/b has a (go1.2.3) suffix, so compare
-		// without that part
-		return anogo == bnogo
-	}
-	// both or neither has a (go1.2.3) suffix, and we already know
-	// a!=b
-	return false
+	// Strip " (go1.2.3)" suffix
+	a = reGoVersion.ReplaceAllLiteralString(a, "")
+	b = reGoVersion.ReplaceAllLiteralString(b, "")
+	anodev := reDevVersion.ReplaceAllLiteralString(a, "")
+	bnodev := reDevVersion.ReplaceAllLiteralString(b, "")
+	return anodev == bnodev && (a == anodev) == (b == bnodev)
 }

@@ -9,17 +9,19 @@ import { useAsyncInterval } from "common/use-async-interval";
 import { Process, isProcessRunning } from "store/processes/process";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
-import { fetchSubprocessProgress } from "store/subprocess-panel/subprocess-panel-actions";
-import { ProcessStatusFilter } from "store/resource-type-filters/resource-type-filters";
+import { fetchProcessProgressBarStatus, isProcess } from "store/subprocess-panel/subprocess-panel-actions";
+import { ProcessStatusFilter, serializeOnlyProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
+import { ProjectResource } from "models/project";
+import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { RootState } from "store/store";
+import { ProcessResource } from "models/process";
+import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
+import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
+import { DataColumns } from "components/data-table/data-table";
 
-type CssRules = 'progressWrapper' | 'progressStacked';
+type CssRules = 'progressStacked';
 
 const styles: StyleRulesCallback<CssRules> = (theme) => ({
-    progressWrapper: {
-        margin: "28px 0 0",
-        flexGrow: 1,
-        flexBasis: "100px",
-    },
     progressStacked: {
         border: "1px solid gray",
         height: "10px",
@@ -32,57 +34,111 @@ const styles: StyleRulesCallback<CssRules> = (theme) => ({
 });
 
 export interface ProgressBarDataProps {
-    process: Process;
+    parentResource: Process | ProjectResource | undefined;
+    dataExplorerId?: string;
+    typeFilter?: string;
 }
 
 export interface ProgressBarActionProps {
-    fetchSubprocessProgress: (requestingContainerUuid: string) => Promise<ProgressBarData | undefined>;
+    fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => Promise<ProgressBarStatus | undefined>;
 }
 
 type ProgressBarProps = ProgressBarDataProps & ProgressBarActionProps & WithStyles<CssRules>;
 
-export type ProgressBarData = {
+export type ProgressBarCounts = {
     [ProcessStatusFilter.COMPLETED]: number;
     [ProcessStatusFilter.RUNNING]: number;
     [ProcessStatusFilter.FAILED]: number;
     [ProcessStatusFilter.QUEUED]: number;
 };
 
+export type ProgressBarStatus = {
+    counts: ProgressBarCounts;
+    shouldPollProject: boolean;
+};
+
+const mapStateToProps = (state: RootState, props: ProgressBarDataProps) => {
+    let typeFilter: string | undefined = undefined;
+
+    if (props.dataExplorerId) {
+        const dataExplorerState = getDataExplorer(state.dataExplorer, props.dataExplorerId);
+        const columns = dataExplorerState.columns as DataColumns<string, ProcessResource>;
+        typeFilter = serializeOnlyProcessTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelRunColumnNames.TYPE));
+    }
+
+    return { typeFilter };
+};
+
 const mapDispatchToProps = (dispatch: Dispatch): ProgressBarActionProps => ({
-    fetchSubprocessProgress: (requestingContainerUuid: string) => {
-        return dispatch<any>(fetchSubprocessProgress(requestingContainerUuid));
+    fetchProcessProgressBarStatus: (parentResourceUuid: string, typeFilter?: string) => {
+        return dispatch<any>(fetchProcessProgressBarStatus(parentResourceUuid, typeFilter));
     },
 });
 
-export const SubprocessProgressBar = connect(null, mapDispatchToProps)(withStyles(styles)(
-    ({ process, classes, fetchSubprocessProgress }: ProgressBarProps) => {
+export const SubprocessProgressBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
+    ({ parentResource, typeFilter, classes, fetchProcessProgressBarStatus }: ProgressBarProps) => {
 
-        const [progressData, setProgressData] = useState<ProgressBarData | undefined>(undefined);
-        const requestingContainerUuid = process.containerRequest.containerUuid;
-        const isRunning = isProcessRunning(process);
+        const [progressCounts, setProgressData] = useState<ProgressBarCounts | undefined>(undefined);
+        const [shouldPollProject, setShouldPollProject] = useState<boolean>(false);
+        const shouldPollProcess = isProcess(parentResource) ? isProcessRunning(parentResource) : false;
 
-        useAsyncInterval(async () => (
-            requestingContainerUuid && setProgressData(await fetchSubprocessProgress(requestingContainerUuid))
-        ), isRunning ? 5000 : null);
+        // Should polling be active based on container status
+        // or result of aggregated project process contents
+        const shouldPoll = shouldPollProject || shouldPollProcess;
 
-        useEffect(() => {
-            if (!isRunning && requestingContainerUuid) {
-                fetchSubprocessProgress(requestingContainerUuid)
-                    .then(result => setProgressData(result));
+        const parentUuid = parentResource
+            ? isProcess(parentResource)
+                ? parentResource.containerRequest.uuid
+                : parentResource.uuid
+            : "";
+
+        // Runs periodically whenever polling should be happeing
+        // Either when the workflow is running (shouldPollProcess) or when the
+        //   project contains steps in an active state (shouldPollProject)
+        useAsyncInterval(async () => {
+            if (parentUuid) {
+                fetchProcessProgressBarStatus(parentUuid, typeFilter)
+                    .then(result => {
+                        if (result) {
+                            setProgressData(result.counts);
+                            setShouldPollProject(result.shouldPollProject);
+                        }
+                    });
             }
-        }, [fetchSubprocessProgress, isRunning, requestingContainerUuid]);
+        }, shouldPoll ? 5000 : null);
+
+        // Runs fetch on first load for processes and projects, except when
+        //   process is running since polling will be enabled by shouldPoll.
+        // Project polling starts false so this is still needed for project
+        //   initial load to set shouldPollProject and kick off shouldPoll
+        // Watches shouldPollProcess but not shouldPollProject
+        //   * This runs a final fetch when process ends & is updated through
+        //     websocket / store
+        //   * We ignore shouldPollProject entirely since it changes to false
+        //     as a result of a fetch so the data is already up to date
+        useEffect(() => {
+            if (!shouldPollProcess && parentUuid) {
+                fetchProcessProgressBarStatus(parentUuid, typeFilter)
+                    .then(result => {
+                        if (result) {
+                            setProgressData(result.counts);
+                            setShouldPollProject(result.shouldPollProject);
+                        }
+                    });
+            }
+        }, [fetchProcessProgressBarStatus, shouldPollProcess, parentUuid, typeFilter]);
 
         let tooltip = "";
-        if (progressData) {
+        if (progressCounts) {
             let total = 0;
             [ProcessStatusFilter.COMPLETED,
             ProcessStatusFilter.RUNNING,
             ProcessStatusFilter.FAILED,
             ProcessStatusFilter.QUEUED].forEach(psf => {
-                if (progressData[psf] > 0) {
+                if (progressCounts[psf] > 0) {
                     if (tooltip.length > 0) { tooltip += ", "; }
-                    tooltip += `${progressData[psf]} ${psf}`;
-                    total += progressData[psf];
+                    tooltip += `${progressCounts[psf]} ${psf}`;
+                    total += progressCounts[psf];
                 }
             });
             if (total > 0) {
@@ -91,28 +147,26 @@ export const SubprocessProgressBar = connect(null, mapDispatchToProps)(withStyle
             }
         }
 
-        return progressData !== undefined && getStatusTotal(progressData) > 0 ? <div className={classes.progressWrapper}>
-            <Tooltip title={tooltip}>
-                <CProgressStacked className={classes.progressStacked}>
-                    <CProgress height={10} color="success"
-                        value={getStatusPercent(progressData, ProcessStatusFilter.COMPLETED)} />
-                    <CProgress height={10} color="success" variant="striped"
-                        value={getStatusPercent(progressData, ProcessStatusFilter.RUNNING)} />
-                    <CProgress height={10} color="danger"
-                        value={getStatusPercent(progressData, ProcessStatusFilter.FAILED)} />
-                    <CProgress height={10} color="secondary" variant="striped"
-                        value={getStatusPercent(progressData, ProcessStatusFilter.QUEUED)} />
-                </CProgressStacked>
-            </Tooltip>
-        </div> : <></>;
+        return progressCounts !== undefined && getStatusTotal(progressCounts) > 0 ? <Tooltip title={tooltip}>
+            <CProgressStacked className={classes.progressStacked}>
+                <CProgress height={10} color="success"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.COMPLETED)} />
+                <CProgress height={10} color="success" variant="striped"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.RUNNING)} />
+                <CProgress height={10} color="danger"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.FAILED)} />
+                <CProgress height={10} color="secondary" variant="striped"
+                    value={getStatusPercent(progressCounts, ProcessStatusFilter.QUEUED)} />
+            </CProgressStacked>
+        </Tooltip> : <></>;
     }
 ));
 
-const getStatusTotal = (progressData: ProgressBarData) =>
-    (Object.keys(progressData).reduce((accumulator, key) => (accumulator += progressData[key]), 0));
+const getStatusTotal = (progressCounts: ProgressBarCounts) =>
+    (Object.keys(progressCounts).reduce((accumulator, key) => (accumulator += progressCounts[key]), 0));
 
 /**
  * Gets the integer percent value for process status
  */
-const getStatusPercent = (progressData: ProgressBarData, status: keyof ProgressBarData) =>
-    (progressData[status] / getStatusTotal(progressData) * 100);
+const getStatusPercent = (progressCounts: ProgressBarCounts, status: keyof ProgressBarCounts) =>
+    (progressCounts[status] / getStatusTotal(progressCounts) * 100);

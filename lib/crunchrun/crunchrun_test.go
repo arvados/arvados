@@ -36,7 +36,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
 
 	. "gopkg.in/check.v1"
 )
@@ -414,26 +413,12 @@ func (fw FileWrapper) Splice(*arvados.Subtree) error {
 	return errors.New("not implemented")
 }
 
-func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
-	if filename == hwImageID+".tar" {
-		rdr := ioutil.NopCloser(&bytes.Buffer{})
-		client.Called = true
-		return FileWrapper{rdr, 1321984}, nil
-	} else if filename == "/file1_in_main.txt" {
-		rdr := ioutil.NopCloser(strings.NewReader("foo"))
-		client.Called = true
-		return FileWrapper{rdr, 3}, nil
-	}
-	return nil, nil
-}
-
 type apiStubServer struct {
 	server    *httptest.Server
 	proxy     *httputil.ReverseProxy
 	intercept func(http.ResponseWriter, *http.Request) bool
 
 	container arvados.Container
-	logs      map[string]string
 }
 
 func apiStub() (*arvados.Client, *apiStubServer) {
@@ -450,19 +435,6 @@ func apiStub() (*arvados.Client, *apiStubServer) {
 
 func (apistub *apiStubServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if apistub.intercept != nil && apistub.intercept(w, r) {
-		return
-	}
-	if r.Method == "POST" && r.URL.Path == "/arvados/v1/logs" {
-		var body struct {
-			Log struct {
-				EventType  string `json:"event_type"`
-				Properties struct {
-					Text string
-				}
-			}
-		}
-		json.NewDecoder(r.Body).Decode(&body)
-		apistub.logs[body.Log.EventType] += body.Log.Properties.Text
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/arvados/v1/collections/"+hwPDH {
@@ -556,10 +528,6 @@ type KeepErrorTestClient struct {
 	KeepTestClient
 }
 
-func (*KeepErrorTestClient) ManifestFileReader(manifest.Manifest, string) (arvados.File, error) {
-	return nil, errors.New("KeepError")
-}
-
 func (*KeepErrorTestClient) BlockWrite(context.Context, arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
 	return arvados.BlockWriteResponse{}, errors.New("KeepError")
 }
@@ -574,22 +542,6 @@ type KeepReadErrorTestClient struct {
 
 func (*KeepReadErrorTestClient) ReadAt(string, []byte, int) (int, error) {
 	return 0, errors.New("KeepError")
-}
-
-type ErrorReader struct {
-	FileWrapper
-}
-
-func (ErrorReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("ErrorReader")
-}
-
-func (ErrorReader) Seek(int64, int) (int64, error) {
-	return 0, errors.New("ErrorReader")
-}
-
-func (*KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
-	return ErrorReader{}, nil
 }
 
 func dockerLog(fd byte, msg string) []byte {

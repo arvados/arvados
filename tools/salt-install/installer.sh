@@ -269,8 +269,16 @@ terraform)
   logfile=terraform-$(date -Iseconds).log
   (cd terraform/vpc && terraform apply -auto-approve) 2>&1 | tee -a $logfile
   (cd terraform/data-storage && terraform apply -auto-approve) 2>&1 | tee -a $logfile
-  (cd terraform/services && terraform apply -auto-approve) 2>&1 | grep -v letsencrypt_iam_secret_access_key | tee -a $logfile
-  (cd terraform/services && echo -n 'letsencrypt_iam_secret_access_key = ' && terraform output letsencrypt_iam_secret_access_key) 2>&1 | tee -a $logfile
+  (cd terraform/services && \
+    terraform apply -auto-approve) 2>&1 | \
+    grep -v letsencrypt_iam_secret_access_key | \
+    grep -v database_password | \
+    tee -a $logfile
+  (cd terraform/services && \
+    echo -n 'letsencrypt_iam_secret_access_key = ' && \
+    terraform output letsencrypt_iam_secret_access_key && \
+    echo -n 'database_password = ' && \
+    terraform output database_password) 2>&1 | tee -a $logfile
   ;;
 
 terraform-destroy)

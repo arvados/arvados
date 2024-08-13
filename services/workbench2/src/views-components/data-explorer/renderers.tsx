@@ -56,6 +56,7 @@ import { ProcessResource } from "models/process";
 import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
+import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -459,8 +460,6 @@ export const TokenApiClientId = withResourceData("apiClientId", renderCommonData
 export const TokenApiToken = withResourceData("apiToken", renderCommonData);
 
 export const TokenCreatedByIpAddress = withResourceData("createdByIpAddress", renderCommonDate);
-
-export const TokenDefaultOwnerUuid = withResourceData("defaultOwnerUuid", renderCommonData);
 
 export const TokenExpiresAt = withResourceData("expiresAt", renderCommonDate);
 
@@ -1037,7 +1036,18 @@ const renderType = (type: string, subtype: string) => <Typography noWrap>{resour
 
 export const ResourceType = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return { type: resource ? resource.kind : "", subtype: resource && resource.kind === ResourceKind.GROUP ? resource.groupClass : "" };
+    return {
+        type: resource ? resource.kind : "",
+        subtype: resource
+            ? resource.kind === ResourceKind.GROUP
+                ? resource.groupClass
+                : resource.kind === ResourceKind.PROCESS
+                    ? resource.requestingContainerUuid
+                        ? ProcessTypeFilter.CHILD_PROCESS
+                        : ProcessTypeFilter.MAIN_PROCESS
+                    : ""
+            : ""
+    };
 })((props: { type: string; subtype: string }) => renderType(props.type, props.subtype));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {

@@ -21,6 +21,21 @@
 #   controller = 300
 # }
 
+# Use an RDS instance for database. For this to work, make sure to also set
+# 'use_rds' to true in '../vpc/terraform.tfvars'.
+# use_rds = true
+#
+# Provide custom values if needed.
+# rds_username = ""
+# rds_password = ""
+# rds_instance_type = "db.m5.xlarge"
+# rds_postgresql_version = "16.3"
+# rds_allocated_storage = 200
+# rds_max_allocated_storage = 1000
+# rds_backup_retention_period = 30
+# rds_backup_before_deletion = false
+# rds_final_backup_name = ""
+
 # AWS secret's name which holds the SSL certificate private key's password.
 # Default: "arvados-ssl-privkey-password"
 # ssl_password_secret_name_suffix = "some-name-suffix"

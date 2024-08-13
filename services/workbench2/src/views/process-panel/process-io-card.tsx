@@ -43,6 +43,7 @@ import {
     IntCommandInputParameter,
     isArrayOfType,
     isPrimitiveOfType,
+    isSecret,
     StringArrayCommandInputParameter,
     StringCommandInputParameter,
     getEnumType,
@@ -600,6 +601,7 @@ const ProcessIORaw = withStyles(styles)(({ data, hidden, classes }: ProcessIORaw
             <DefaultVirtualCodeSnippet
                 lines={JSON.stringify(data, null, 2).split('\n')}
                 linked
+                copyButton
             />
         </Paper>
     </div>
@@ -688,6 +690,9 @@ type FileWithSecondaryFiles = {
 
 export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string): ProcessIOValue[] => {
     switch (true) {
+        case isSecret(input):
+            return [{ display: <SecretValue /> }];
+
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
             const boolValue = (input as BooleanCommandInputParameter).value;
             return boolValue !== undefined && !(Array.isArray(boolValue) && boolValue.length === 0)
@@ -993,6 +998,8 @@ const isExternalValue = (val: any) => Object.keys(val).includes("$import") || Ob
 export const EmptyValue = withStyles(styles)(({ classes }: WithStyles<CssRules>) => <span className={classes.emptyValue}>No value</span>);
 
 const UnsupportedValue = withStyles(styles)(({ classes }: WithStyles<CssRules>) => <span className={classes.emptyValue}>Cannot display value</span>);
+
+const SecretValue = withStyles(styles)(({ classes }: WithStyles<CssRules>) => <span className={classes.emptyValue}>Cannot display secret</span>);
 
 const UnsupportedValueChip = withStyles(styles)(({ classes }: WithStyles<CssRules>) => (
     <Chip

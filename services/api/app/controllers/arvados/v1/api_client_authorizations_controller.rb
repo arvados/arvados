@@ -41,7 +41,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       # translate UUID to numeric ID here.
       resource_attrs[:user_id] =
         User.where(uuid: resource_attrs.delete(:owner_uuid)).first.andand.id
-    elsif not resource_attrs[:user_id]
+    else
       resource_attrs[:user_id] = current_user.id
     end
     resource_attrs[:api_client_id] = Thread.current[:api_client].id

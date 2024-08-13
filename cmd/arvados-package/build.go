@@ -18,7 +18,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
@@ -149,14 +149,14 @@ func dockerRm(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	ctrs, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Limit: -1})
+	ctrs, err := cli.ContainerList(ctx, container.ListOptions{All: true, Limit: -1})
 	if err != nil {
 		return err
 	}
 	for _, ctr := range ctrs {
 		for _, ctrname := range ctr.Names {
 			if ctrname == "/"+name {
-				err = cli.ContainerRemove(ctx, ctr.ID, types.ContainerRemoveOptions{})
+				err = cli.ContainerRemove(ctx, ctr.ID, container.RemoveOptions{})
 				if err != nil {
 					return fmt.Errorf("error removing container %s: %w", ctr.ID, err)
 				}

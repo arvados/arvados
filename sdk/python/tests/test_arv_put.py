@@ -33,8 +33,9 @@ from unittest import mock
 import arvados
 import arvados.commands.put as arv_put
 import arvados.util
-from . import arvados_testutil as tutil
+from arvados._internal import basedirs
 
+from . import arvados_testutil as tutil
 from .arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
 from . import run_test_server
 
@@ -259,7 +260,7 @@ class TestArvadosPutResumeCacheDir:
             cache_dir = arv_put.ResumeCache.CACHE_DIR
         else:
             monkeypatch.setattr(arv_put.ResumeCache, 'CACHE_DIR', cache_dir)
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', tmp_path.__truediv__)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'storage_path', tmp_path.__truediv__)
         actual = arv_put.ResumeCache.make_path(args)
         assert isinstance(actual, str)
         assert Path(actual).parent == (tmp_path / cache_dir)
@@ -296,7 +297,7 @@ class TestArvadosPutUploadJobCacheDir:
             cache_dir = arv_put.ArvPutUploadJob.CACHE_DIR
         else:
             monkeypatch.setattr(arv_put.ArvPutUploadJob, 'CACHE_DIR', cache_dir)
-        monkeypatch.setattr(arvados.util._BaseDirectories, 'storage_path', storage_path)
+        monkeypatch.setattr(basedirs.BaseDirectories, 'storage_path', storage_path)
         job = arv_put.ArvPutUploadJob([str(tmp_path)], use_cache=True)
         job.destroy_cache()
         assert Path(job._cache_filename).parent == (tmp_path / cache_dir)
