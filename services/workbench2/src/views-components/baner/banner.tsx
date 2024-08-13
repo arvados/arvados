@@ -84,8 +84,8 @@ export const BannerComponent = (props: BannerComponentProps) => {
                             });
                     }
                 })
-            } catch (e) {
-                console.error("Failed to load banner", e);
+            } catch (error) {
+                console.error("Failed to load banner", error);
             }
         }
     }, [bannerUUID, keepWebInlineServiceUrl, openBanner, isOpen]);
