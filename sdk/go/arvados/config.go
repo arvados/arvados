@@ -118,6 +118,7 @@ type Cluster struct {
 		FreezeProjectRequiresProperties  StringSet
 		UnfreezeProjectRequiresAdmin     bool
 		LockBeforeUpdate                 bool
+		UseKeepServicesTable             bool
 	}
 	AuditLogs struct {
 		MaxAge             Duration

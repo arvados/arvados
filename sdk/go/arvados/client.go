@@ -86,6 +86,10 @@ type Client struct {
 	// Where to write debug logs. May be nil.
 	Logger logrus.FieldLogger
 
+	// The cluster config, if the Client was initialized via
+	// NewClientFromConfig. Otherwise nil.
+	Cluster *Cluster
+
 	dd *DiscoveryDocument
 
 	defaultRequestID string
@@ -166,6 +170,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		Timeout:         5 * time.Minute,
 		DiskCacheSize:   cluster.Collections.WebDAVCache.DiskCacheSize,
 		requestLimiter:  &requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
+		Cluster:         cluster,
 	}, nil
 }
 

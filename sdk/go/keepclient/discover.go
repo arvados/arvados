@@ -5,6 +5,7 @@
 package keepclient
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -139,6 +140,38 @@ func (kc *KeepClient) discoverServices() error {
 			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
 		}
 		kc.setServiceRoots(roots, roots, roots)
+		return nil
+	}
+
+	if kc.Arvados.Cluster != nil && !kc.Arvados.Cluster.API.UseKeepServicesTable {
+		kc.disableDiscovery = true
+		roots := make(map[string]string)
+		for url, info := range kc.Arvados.Cluster.Services.Keepstore.InternalURLs {
+			rvz := info.Rendezvous
+			if rvz == "" {
+				rvz = url.String()
+			}
+			// If info.Rendezvous is 15 ascii alphanums,
+			// we use it verbatim as the last 15 chars of
+			// the UUID. Otherwise, we hash
+			// info.Rendezvous (or, if empty, the URL) and
+			// use the first 15 chars of the hash as the
+			// last 15 chars of the UUID. This matches the
+			// behavior of
+			// services/api/app/models/keep_service.rb.
+			rvzhash := len(rvz) != 15
+			for i := 0; i < len(rvz) && !rvzhash; i++ {
+				rvzhash = !(rvz[i] >= '0' && rvz[i] <= '9' ||
+					rvz[i] >= 'a' && rvz[i] <= 'z' ||
+					rvz[i] >= 'A' && rvz[i] <= 'Z')
+			}
+			if rvzhash {
+				rvz = fmt.Sprintf("%x", md5.Sum([]byte(rvz)))[:15]
+			}
+			uuid := kc.Arvados.Cluster.ClusterID + "-bi6l4-" + rvz
+			roots[uuid] = url.String()
+		}
+		kc.setServiceRoots(roots, roots, nil)
 		return nil
 	}
 

@@ -757,6 +757,7 @@ def setup_config():
                 "API": {
                     "RequestTimeout": "30s",
                     "LockBeforeUpdate": True,
+                    "UseKeepServicesTable": True,
                 },
                 "Login": {
                     "Test": {

@@ -6,6 +6,7 @@ Clusters:
       RequestTimeout: 30s
       VocabularyPath: ""
       MaxTokenLifetime: 24h
+      UseKeepServicesTable: true
     TLS:
       Insecure: true
     Collections:
