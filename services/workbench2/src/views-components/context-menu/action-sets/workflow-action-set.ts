@@ -28,8 +28,8 @@ export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
         {
             icon: DetailsIcon,
             name: ContextMenuActionNames.VIEW_DETAILS,
-            execute: dispatch => {
-                dispatch<any>(toggleDetailsPanel());
+            execute: (dispatch, resources) => {
+                dispatch<any>(toggleDetailsPanel(resources[0].uuid));
             },
         },
         {

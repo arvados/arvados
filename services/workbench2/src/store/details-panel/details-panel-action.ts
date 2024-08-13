@@ -67,7 +67,7 @@ export const refreshCollectionVersionsList = (uuid: string) =>
         );
     };
 
-export const toggleDetailsPanel = (uuid: string = '') => (dispatch: Dispatch, getState: () => RootState) => {
+export const toggleDetailsPanel = (uuid: string) => (dispatch: Dispatch, getState: () => RootState) => {
     const { detailsPanel }= getState()
     const isTargetUuidNew = uuid !== detailsPanel.resourceUuid
     if(isTargetUuidNew && uuid !== CLOSE_DRAWER && detailsPanel.isOpened){
