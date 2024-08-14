@@ -4,6 +4,13 @@
 
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
+# This record's api_token is the SystemRootToken used by the test
+# suite (in fact, sdk/python/tests/run_test_server.py copies it from
+# this file into the test suite config file). That token is accepted
+# regardless of database contents (see
+# ApiClientAuthorization.check_system_root_token) but having a fixture
+# for it allows test cases to access it the same way as other token
+# fixtures, i.e., api_client_authorizations(:system_user).
 system_user:
   uuid: zzzzz-gj3su-000000000000000
   user: system_user
