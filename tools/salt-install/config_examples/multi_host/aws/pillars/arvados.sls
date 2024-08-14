@@ -45,7 +45,6 @@ arvados:
     #     - g++
     #     - gcc
     #     - git
-    #     - libcurl4
     #     - libcurl4-gnutls-dev
     #     - libpq-dev
     #     - libxml2
