@@ -75,6 +75,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
       Format: text
     API:
       MaxConcurrentRequests: 128
+      UseKeepServicesTable: true
     Containers:
       CloudVMs:
         Enable: true
