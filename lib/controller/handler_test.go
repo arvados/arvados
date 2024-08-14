@@ -224,6 +224,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	// depending on flags.
 	var wantError, wantBadContent bool
 	s.railsSpy.Director = func(req *http.Request) {
+		<-holdReqs
 		if wantError {
 			req.Method = "MAKE-COFFEE"
 		} else if wantBadContent {
@@ -264,6 +265,22 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with warm cache")).Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore)
 
+	checkBackgroundRefresh := func(reqsExpected int) {
+		// There is no guarantee that a background refresh has
+		// progressed far enough that we can detect it
+		// directly (the first line of refresh() might not
+		// have run).  So, to avoid false positives, we just
+		// need to poll until it happens.
+		for deadline := time.Now().Add(time.Second); countRailsReqs() == reqsBefore && time.Now().Before(deadline); {
+			c.Logf("countRailsReqs = %d", countRailsReqs())
+			time.Sleep(time.Second / 100)
+		}
+		// Similarly, to ensure there are no additional
+		// refreshes, we just need to wait.
+		time.Sleep(time.Second / 2)
+		c.Check(countRailsReqs(), check.Equals, reqsExpected)
+	}
+
 	// Error with stale cache => caller gets OK with stale data
 	// while the re-fetch is attempted in the background
 	refreshNow()
@@ -272,10 +289,10 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with stale cache")).Wait()
 	close(holdReqs)
-	// Only one attempt to re-fetch (holdReqs ensured the first
-	// update took long enough for the last incoming request to
-	// arrive)
-	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
+	// After piling up 5 requests (holdReqs having ensured the
+	// first update took long enough for the last incoming request
+	// to arrive) there should be only one attempt to re-fetch.
+	checkBackgroundRefresh(reqsBefore + 1)
 
 	refreshNow()
 	wantError, wantBadContent = false, false
@@ -283,8 +300,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("refresh cache after error condition clears")).Wait()
 	close(holdReqs)
-	waitPendingUpdates()
-	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
+	checkBackgroundRefresh(reqsBefore + 1)
 
 	// Make sure expireAfter is getting set
 	waitPendingUpdates()
@@ -785,60 +801,4 @@ func (s *HandlerSuite) TestLogActivity(c *check.C) {
 		c.Assert(err, check.IsNil)
 		c.Check(rows, check.Equals, 1, check.Commentf("expect 1 row for user uuid %s", userUUID))
 	}
-}
-
-func (s *HandlerSuite) TestLogLimiting(c *check.C) {
-	s.handler.Cluster.API.MaxConcurrentRequests = 2
-	s.handler.Cluster.API.LogCreateRequestFraction = 0.5
-
-	logreq := httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
-			"log": {
-                          "event_type": "test"
-			}
-		}`))
-	logreq.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-
-	// Log create succeeds
-	for i := 0; i < 2; i++ {
-		resp := httptest.NewRecorder()
-		s.handler.ServeHTTP(resp, logreq)
-		c.Check(resp.Code, check.Equals, http.StatusOK)
-		var lg arvados.Log
-		err := json.Unmarshal(resp.Body.Bytes(), &lg)
-		c.Check(err, check.IsNil)
-		c.Check(lg.UUID, check.Matches, "zzzzz-57u5n-.*")
-	}
-
-	// Pretend there's a log create in flight
-	s.handler.limitLogCreate <- struct{}{}
-
-	// Log create should be rejected now
-	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, logreq)
-	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
-
-	// Other requests still succeed
-	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-	resp = httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	var u arvados.User
-	err := json.Unmarshal(resp.Body.Bytes(), &u)
-	c.Check(err, check.IsNil)
-	c.Check(u.UUID, check.Equals, arvadostest.ActiveUserUUID)
-
-	// log create still fails
-	resp = httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, logreq)
-	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
-
-	// Pretend in-flight log is done
-	<-s.handler.limitLogCreate
-
-	// log create succeeds again
-	resp = httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, logreq)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-
 }

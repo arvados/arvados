@@ -209,13 +209,6 @@ class Arvados::V1::GroupsController < ApplicationController
     # apply to each table being searched, not "groups".
     load_limit_offset_order_params(fill_table_names: false)
 
-    if params['count'] == 'none' and @offset != 0 and (params['last_object_class'].nil? or params['last_object_class'].empty?)
-      # can't use offset without getting counts, so
-      # fall back to count=exact behavior.
-      params['count'] = 'exact'
-      set_count_none = true
-    end
-
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
     # aggregate set.
@@ -286,24 +279,12 @@ class Arvados::V1::GroupsController < ApplicationController
 
     included_by_uuid = {}
 
-    seen_last_class = false
     error_by_class = {}
     any_success = false
 
     klasses.each do |klass|
-      # check if current klass is same as params['last_object_class']
-      seen_last_class = true if((params['count'].andand.==('none')) and
-                                (params['last_object_class'].nil? or
-                                 params['last_object_class'].empty? or
-                                 params['last_object_class'] == klass.to_s))
-
       # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
-
-      # if specified, and count=none, then only look at the klass in
-      # last_object_class.
-      # for whatever reason, this parameter exists separately from 'wanted_klasses'
-      next if params['count'] == 'none' and !seen_last_class
 
       # don't process rest of object types if we already have needed number of objects
       break if params['count'] == 'none' and all_objects.size >= limit_all
@@ -369,11 +350,36 @@ class Arvados::V1::GroupsController < ApplicationController
       # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
 
-      # If count=none, :items_available will be nil, and offset is
-      # required to be 0.
-      klass_items_available = klass_object_list[:items_available] || 0
-      @items_available += klass_items_available
-      @offset = [@offset - klass_items_available, 0].max
+      # The appropriate @offset for querying the next table depends on
+      # how many matching rows in this table were skipped due to the
+      # current @offset. If we retrieved any items (or @offset is
+      # already zero), then clearly exactly @offset rows were skipped,
+      # and the correct @offset for the next table is zero.
+      # Otherwise, we need to count all matching rows in the current
+      # table, and subtract that from @offset. If our previous query
+      # used count=none, we will need an additional query to get that
+      # count.
+      if params['count'] == 'none' and @offset > 0 and klass_object_list[:items].length == 0
+        # Just get the count.
+        klass_object_list[:items_available] = @objects.
+                                                except(:limit).except(:offset).
+                                                count(@distinct ? :id : '*')
+      end
+
+      klass_items_available = klass_object_list[:items_available]
+      if klass_items_available.nil?
+        # items_available may be nil if count=none and a non-zero
+        # number of items were returned.  One of these cases must be true:
+        #
+        # items returned >= limit, so we won't go to the next table, offset doesn't matter
+        # items returned < limit, so we want to start at the beginning of the next table, offset = 0
+        #
+        @offset = 0
+      else
+        # We have the exact count,
+        @items_available += klass_items_available
+        @offset = [@offset - klass_items_available, 0].max
+      end
 
       # Add objects to the list of objects to be returned.
       all_objects += klass_object_list[:items]
@@ -412,10 +418,6 @@ class Arvados::V1::GroupsController < ApplicationController
 
     if !@include.empty?
       @extra_included = included_by_uuid.values
-    end
-
-    if set_count_none
-      params['count'] = 'none'
     end
 
     @objects = all_objects

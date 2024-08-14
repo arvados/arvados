@@ -15,6 +15,7 @@ import { SidePanelRightArrowIcon } from '../icon/icon';
 import { ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
+import { kebabCase } from 'lodash';
 
 type CssRules = 'list'
     | 'listItem'
@@ -299,7 +300,7 @@ export const Tree = withStyles(styles)(
             : () => props.showSelection ? true : false;
 
         const getProperArrowAnimation = (status: string, items: Array<TreeItem<T>>) => {
-            return isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon style={{ fontSize: '14px' }} />;
+            return isSidePanelIconNotNeeded(status, items) ? <span /> : <SidePanelRightArrowIcon style={{ fontSize: '14px' }} data-cy="side-panel-arrow-icon" />;
         }
 
         const isSidePanelIconNotNeeded = (status: string, items: Array<TreeItem<T>>) => {
@@ -361,7 +362,9 @@ export const Tree = withStyles(styles)(
                             <CircularProgress size={10} className={loader} /> : null}
                         <i onClick={(e) => handleToggleItemOpen(it, e)}
                             className={toggableIconContainer}>
-                            <ListItemIcon className={getToggableIconClassNames(it.open, it.active)}>
+                            <ListItemIcon className={getToggableIconClassNames(it.open, it.active)}
+                                data-cy={`tree-item-toggle-${kebabCase(it.id.toString())}`}
+                                >
                                 {getProperArrowAnimation(it.status, it.items!)}
                             </ListItemIcon>
                         </i>

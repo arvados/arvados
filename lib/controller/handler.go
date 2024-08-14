@@ -44,7 +44,6 @@ type Handler struct {
 	secureClient   *http.Client
 	insecureClient *http.Client
 	dbConnector    ctrlctx.DBConnector
-	limitLogCreate chan struct{}
 
 	cache map[string]*cacheEnt
 }
@@ -150,7 +149,6 @@ func (h *Handler) setup() {
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
 	hs = prepend(hs, h.routeContainerEndpoints(rtr))
-	hs = prepend(hs, h.limitLogCreateRequests)
 	hs = h.setupProxyRemoteCluster(hs)
 	hs = prepend(hs, oidcAuthorizer.Middleware)
 	mux.Handle("/", hs)
@@ -163,12 +161,6 @@ func (h *Handler) setup() {
 	ic := *arvados.InsecureHTTPClient
 	ic.CheckRedirect = neverRedirect
 	h.insecureClient = &ic
-
-	logCreateLimit := int(float64(h.Cluster.API.MaxConcurrentRequests) * h.Cluster.API.LogCreateRequestFraction)
-	if logCreateLimit == 0 && h.Cluster.API.LogCreateRequestFraction > 0 {
-		logCreateLimit = 1
-	}
-	h.limitLogCreate = make(chan struct{}, logCreateLimit)
 
 	h.proxy = &proxy{
 		Name: "arvados-controller",
@@ -229,20 +221,6 @@ func (h *Handler) routeContainerEndpoints(rtr http.Handler) middlewareFunc {
 			next.ServeHTTP(w, req)
 		}
 	}
-}
-
-func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	if cap(h.limitLogCreate) > 0 && req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs") {
-		select {
-		case h.limitLogCreate <- struct{}{}:
-			defer func() { <-h.limitLogCreate }()
-			next.ServeHTTP(w, req)
-		default:
-			http.Error(w, "Excess log messages", http.StatusServiceUnavailable)
-		}
-		return
-	}
-	next.ServeHTTP(w, req)
 }
 
 // cacheEnt implements a basic stale-while-revalidate cache, suitable

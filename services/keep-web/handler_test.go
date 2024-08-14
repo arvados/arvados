@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -30,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/html"
 	check "gopkg.in/check.v1"
 )
 
@@ -905,7 +905,8 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 	client.AuthToken = arvadostest.ActiveToken
 	fs, err := (&arvados.Collection{}).FileSystem(client, nil)
 	c.Assert(err, check.IsNil)
-	f, err := fs.OpenFile("https:\\\"odd' path chars", os.O_CREATE, 0777)
+	path := `https:\\"odd' path chars`
+	f, err := fs.OpenFile(path, os.O_CREATE, 0777)
 	c.Assert(err, check.IsNil)
 	f.Close()
 	mtxt, err := fs.MarshalManifest(".")
@@ -931,7 +932,14 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./https:%5c%22odd%27%20path%20chars"\S+https:\\&#34;odd&#39; path chars.*`)
+	doc, err := html.Parse(resp.Body)
+	c.Assert(err, check.IsNil)
+	pathHrefMap := getPathHrefMap(doc)
+	c.Check(pathHrefMap, check.HasLen, 1) // the one leaf added to collection
+	href, hasPath := pathHrefMap[path]
+	c.Assert(hasPath, check.Equals, true) // the path is listed
+	relUrl := mustParseURL(href)
+	c.Check(relUrl.Path, check.Equals, "./"+path) // href can be decoded back to path
 }
 
 func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
@@ -940,7 +948,6 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 	s.handler.Cluster.Collections.ForwardSlashNameSubstitution = "{SOLIDUS}"
 	name := "foo/bar/baz"
 	nameShown := strings.Replace(name, "/", "{SOLIDUS}", -1)
-	nameShownEscaped := strings.Replace(name, "/", "%7bSOLIDUS%7d", -1)
 
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveToken
@@ -963,9 +970,9 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 	defer arv.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
 
 	base := "http://download.example.com/by_id/" + coll.OwnerUUID + "/"
-	for tryURL, expectRegexp := range map[string]string{
-		base:                          `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
-		base + nameShownEscaped + "/": `(?ms).*href="./filename"\S+filename.*`,
+	for tryURL, expectedAnchorText := range map[string]string{
+		base:                   nameShown + "/",
+		base + nameShown + "/": "filename",
 	} {
 		u, _ := url.Parse(tryURL)
 		req := &http.Request{
@@ -980,7 +987,14 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 		resp := httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
-		c.Check(resp.Body.String(), check.Matches, expectRegexp)
+		doc, err := html.Parse(resp.Body)
+		c.Assert(err, check.IsNil) // valid HTML
+		pathHrefMap := getPathHrefMap(doc)
+		href, hasExpected := pathHrefMap[expectedAnchorText]
+		c.Assert(hasExpected, check.Equals, true) // has expected anchor text
+		c.Assert(href, check.Not(check.Equals), "")
+		relUrl := mustParseURL(href)
+		c.Check(relUrl.Path, check.Equals, "./"+expectedAnchorText) // decoded href maps back to the anchor text
 	}
 }
 
@@ -1317,11 +1331,24 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
+			listingPageDoc, err := html.Parse(resp.Body)
+			c.Check(err, check.IsNil, comment) // valid HTML document
+			pathHrefMap := getPathHrefMap(listingPageDoc)
+			c.Assert(pathHrefMap, check.Not(check.HasLen), 0, comment)
 			for _, e := range trial.expect {
-				e = strings.Replace(e, " ", "%20", -1)
-				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./`+e+`".*`, comment)
+				href, hasE := pathHrefMap[e]
+				c.Check(hasE, check.Equals, true, comment) // expected path is listed
+				relUrl := mustParseURL(href)
+				c.Check(relUrl.Path, check.Equals, "./"+e, comment) // href can be decoded back to path
 			}
-			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`, comment)
+			wgetCommand := getWgetExamplePre(listingPageDoc)
+			wgetExpected := regexp.MustCompile(`^\$ wget .*--cut-dirs=(\d+) .*'(https?://[^']+)'$`)
+			wgetMatchGroups := wgetExpected.FindStringSubmatch(wgetCommand)
+			c.Assert(wgetMatchGroups, check.NotNil)                                     // wget command matches
+			c.Check(wgetMatchGroups[1], check.Equals, fmt.Sprintf("%d", trial.cutDirs)) // correct level of cut dirs in wget command
+			printedUrl := mustParseURL(wgetMatchGroups[2])
+			c.Check(printedUrl.Host, check.Equals, req.URL.Host)
+			c.Check(printedUrl.Path, check.Equals, req.URL.Path) // URL arg in wget command can be decoded to the right path
 		}
 
 		comment = check.Commentf("WebDAV: %q => %q", trial.uri, trial.expect)
@@ -1372,6 +1399,80 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			}
 		}
 	}
+}
+
+// Shallow-traverse the HTML document, gathering the nodes satisfying the
+// predicate function in the output slice. If a node matches the predicate,
+// none of its children will be visited.
+func getNodes(document *html.Node, predicate func(*html.Node) bool) []*html.Node {
+	var acc []*html.Node
+	var traverse func(*html.Node, []*html.Node) []*html.Node
+	traverse = func(root *html.Node, sofar []*html.Node) []*html.Node {
+		if root == nil {
+			return sofar
+		}
+		if predicate(root) {
+			return append(sofar, root)
+		}
+		for cur := root.FirstChild; cur != nil; cur = cur.NextSibling {
+			sofar = traverse(cur, sofar)
+		}
+		return sofar
+	}
+	return traverse(document, acc)
+}
+
+// Returns true if a node has the attribute targetAttr with the given value
+func matchesAttributeValue(node *html.Node, targetAttr string, value string) bool {
+	for _, attr := range node.Attr {
+		if attr.Key == targetAttr && attr.Val == value {
+			return true
+		}
+	}
+	return false
+}
+
+// Concatenate the content of text-node children of node; only direct
+// children are visited, and any non-text children are skipped.
+func getNodeText(node *html.Node) string {
+	var recv strings.Builder
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.TextNode {
+			recv.WriteString(c.Data)
+		}
+	}
+	return recv.String()
+}
+
+// Returns a map from the directory listing item string (a path) to the href
+// value of its <a> tag (an encoded relative URL)
+func getPathHrefMap(document *html.Node) map[string]string {
+	isItemATag := func(node *html.Node) bool {
+		return node.Type == html.ElementNode && node.Data == "a" && matchesAttributeValue(node, "class", "item")
+	}
+	aTags := getNodes(document, isItemATag)
+	output := make(map[string]string)
+	for _, elem := range aTags {
+		textContent := getNodeText(elem)
+		for _, attr := range elem.Attr {
+			if attr.Key == "href" {
+				output[textContent] = attr.Val
+				break
+			}
+		}
+	}
+	return output
+}
+
+func getWgetExamplePre(document *html.Node) string {
+	isWgetPre := func(node *html.Node) bool {
+		return node.Type == html.ElementNode && matchesAttributeValue(node, "id", "wget-example")
+	}
+	elements := getNodes(document, isWgetPre)
+	if len(elements) != 1 {
+		return ""
+	}
+	return getNodeText(elements[0])
 }
 
 func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
