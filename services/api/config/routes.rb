@@ -19,7 +19,6 @@ Rails.application.routes.draw do
         post 'create_system_auth', on: :collection
         get 'current', on: :collection
       end
-      resources :api_clients
       resources :authorized_keys
       resources :collections do
         get 'provenance', on: :member

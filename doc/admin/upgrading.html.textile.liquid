@@ -48,6 +48,24 @@ h3. Slow migration on upgrade
 
 This upgrade includes a database schema update to rebuild full text search indexes to remove UUID and portable data hash column data.  This will provide better search results to users and take less space on the databaes, but plan for the @arvados-api-server@ package upgrade to take longer than usual.
 
+h3. Legacy APIs and response fields have been removed
+
+The following APIs have been removed:
+* "api_clients":https://doc.arvados.org/v2.7/api/methods/api_clients.html
+* "humans":https://doc.arvados.org/v2.7/api/methods/humans.html
+* "jobs":https://doc.arvados.org/v2.7/api/methods/jobs.html
+* "job_tasks":https://doc.arvados.org/v2.7/api/methods/job_tasks.html
+* "nodes":https://doc.arvados.org/v2.7/api/methods/nodes.html
+* "pipeline_instances":https://doc.arvados.org/v2.7/api/methods/pipeline_instances.html
+* "pipeline_templates":https://doc.arvados.org/v2.7/api/methods/pipeline_templates.html
+* "repositories":https://doc.arvados.org/v2.7/api/methods/repositories.html, and "keep_disks":https://doc.arvados.org/v2.7/api/methods/keep_disks.html
+* "specimens":https://doc.arvados.org/v2.7/api/methods/specimens.html
+* "traits":https://doc.arvados.org/v2.7/api/methods/traits.html
+
+The following fields are no longer returned in API responses.
+* @api_client_id@, @user_id@, @default_owner_uuid@ ("api_client_authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html API)
+* @modified_by_client_uuid@ (all APIs)
+
 h3. Configuration entries have been removed or renamed
 
 The following configuration keys have been renamed or removed.  Renamed keys will still be loaded if they appear with their old names, but you should update your @/etc/arvados/config.yml@ file to avoid warnings when services start up.

@@ -784,7 +784,7 @@ The Arvados team.
     authorize_with :admin
 
     remoteuser = User.create!(uuid: "zbbbb-tpzed-remotremotremot")
-    tok = ApiClientAuthorization.create!(user: remoteuser, api_client: api_clients(:untrusted)).api_token
+    tok = ApiClientAuthorization.create!(user: remoteuser).api_token
 
     auth = ApiClientAuthorization.validate(token: tok)
     assert_not_nil(auth)
@@ -813,19 +813,6 @@ The Arvados team.
            redirect_to_new_user: true,
          })
     assert_response(422)
-  end
-
-  [[:active, :project_viewer_trustedclient],
-   [:active_trustedclient, :project_viewer]].each do |src, dst|
-    test "refuse to merge with untrusted token (#{src} -> #{dst})" do
-      authorize_with(src)
-      post(:merge, params: {
-             new_user_token: api_client_authorizations(dst).api_token,
-             new_owner_uuid: api_client_authorizations(dst).user.uuid,
-             redirect_to_new_user: true,
-           })
-      assert_response(403)
-    end
   end
 
   [[:expired_trustedclient, :project_viewer_trustedclient],

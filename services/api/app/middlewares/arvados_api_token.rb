@@ -76,8 +76,6 @@ class ArvadosApiToken
 
     Thread.current[:api_client_ip_address] = remote_ip
     Thread.current[:api_client_authorization] = auth
-    Thread.current[:api_client_uuid] = auth.andand.api_client.andand.uuid
-    Thread.current[:api_client] = auth.andand.api_client
     Thread.current[:token] = accepted
     Thread.current[:user] = auth.andand.user
 

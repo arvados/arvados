@@ -10,7 +10,6 @@ class ApiClientAuthorization < ArvadosModel
   extend CurrentApiClient
   extend DbCurrentTime
 
-  belongs_to :api_client, optional: true
   belongs_to :user, optional: true
   after_initialize :assign_random_api_token
   serialize :scopes, Array
@@ -19,7 +18,6 @@ class ApiClientAuthorization < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :owner_uuid
-    t.add :api_client_id
     # NB the "api_token" db column is a misnomer in that it's only the
     # "secret" part of a token: a v1 token is just the secret, but a
     # v2 token is "v2/uuid/secret".
@@ -51,11 +49,6 @@ class ApiClientAuthorization < ArvadosModel
   def owner_uuid_changed?
     self.user_id_changed?
   end
-
-  def modified_by_client_uuid
-    nil
-  end
-  def modified_by_client_uuid=(x) end
 
   def modified_by_user_uuid
     nil
@@ -141,7 +134,6 @@ class ApiClientAuthorization < ArvadosModel
       return ApiClientAuthorization.new(user: User.find_by_uuid(anonymous_user_uuid),
                                         uuid: Rails.configuration.ClusterID+"-gj3su-anonymouspublic",
                                         api_token: secret,
-                                        api_client: anonymous_user_token_api_client,
                                         scopes: ['GET /'])
     else
       return nil
@@ -152,8 +144,7 @@ class ApiClientAuthorization < ArvadosModel
     if token == Rails.configuration.SystemRootToken
       return ApiClientAuthorization.new(user: User.find_by_uuid(system_user_uuid),
                                         uuid: Rails.configuration.ClusterID+"-gj3su-000000000000000",
-                                        api_token: token,
-                                        api_client: system_root_token_api_client)
+                                        api_token: token)
     else
       return nil
     end
@@ -207,7 +198,7 @@ class ApiClientAuthorization < ArvadosModel
 
       # fast path: look up the token in the local database
       auth = ApiClientAuthorization.
-             includes(:user, :api_client).
+             includes(:user).
              where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token_uuid).
              first
       if auth && auth.user &&
@@ -241,7 +232,7 @@ class ApiClientAuthorization < ArvadosModel
       # and then insert a local row for a faster lookup next time.
       hmac = OpenSSL::HMAC.hexdigest('sha256', Rails.configuration.SystemRootToken, token)
       auth = ApiClientAuthorization.
-               includes(:user, :api_client).
+               includes(:user).
                where('api_token in (?, ?) and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token, hmac).
                first
       if auth && auth.user
@@ -395,7 +386,6 @@ class ApiClientAuthorization < ArvadosModel
         auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
           auth.user = user
           auth.api_token = stored_secret
-          auth.api_client_id = 0
           auth.scopes = scopes
           auth.expires_at = exp
         end
@@ -420,7 +410,6 @@ class ApiClientAuthorization < ArvadosModel
       end
       auth.update!(user: user,
                    api_token: stored_secret,
-                   api_client_id: 0,
                    scopes: scopes,
                    expires_at: exp)
       Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} and scopes #{scopes} in local db"

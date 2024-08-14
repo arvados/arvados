@@ -165,6 +165,22 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     end
   end
 
+  test "ignore modified_by_client_uuid in select param" do
+    authorize_with :active
+    get :index, params: {select: ["uuid", "modified_by_client_uuid"]}
+    assert_response :success
+    json_response['items'].each do |coll|
+      assert_includes(coll.keys, 'uuid')
+      refute_includes(coll.keys, 'name')
+    end
+  end
+
+  test "reject invalid field in select param" do
+    authorize_with :active
+    get :index, params: {select: ["uuid", "field_does_not_exist"]}
+    assert_response 422
+  end
+
   [0,1,2].each do |limit|
     test "get index with limit=#{limit}" do
       authorize_with :active

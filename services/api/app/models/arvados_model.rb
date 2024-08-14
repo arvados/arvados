@@ -12,7 +12,7 @@ class ArvadosModel < ApplicationRecord
   self.abstract_class = true
 
   include ArvadosModelUpdates
-  include CurrentApiClient      # current_user, current_api_client, etc.
+  include CurrentApiClient      # current_user, current_api_client_authorization, etc.
   include DbCurrentTime
   extend RecordFilters
 
@@ -744,7 +744,6 @@ class ArvadosModel < ApplicationRecord
     if !timeless_updater
       self.modified_at = current_time
     end
-    self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true
   end
 

@@ -61,7 +61,7 @@ export const GroupMemberAttributesDialog = compose(
     );
 
 const attributes = (memberGroup: PermissionResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, etag, href, linkClass } = memberGroup;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, etag, href, linkClass } = memberGroup;
     return (
         <span>
             <Grid container direction="row">
@@ -71,7 +71,6 @@ const attributes = (memberGroup: PermissionResource, classes: any) => {
                     {createdAt && <Grid item>Created at</Grid>}
                     {modifiedAt && <Grid item>Modified at</Grid>}
                     {modifiedByUserUuid && <Grid item>Modified by user uuid</Grid>}
-                    {modifiedByClientUuid && <Grid item>Modified by client uuid</Grid>}
                     {uuid && <Grid item>uuid</Grid>}
                     {linkClass && <Grid item>Link Class</Grid>}
                     {etag && <Grid item>Etag</Grid>}
@@ -83,7 +82,6 @@ const attributes = (memberGroup: PermissionResource, classes: any) => {
                     <Grid item>{createdAt}</Grid>
                     <Grid item>{modifiedAt}</Grid>
                     <Grid item>{modifiedByUserUuid}</Grid>
-                    <Grid item>{modifiedByClientUuid}</Grid>
                     <Grid item>{uuid}</Grid>
                     <Grid item>{linkClass}</Grid>
                     <Grid item>{etag}</Grid>

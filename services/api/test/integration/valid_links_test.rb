@@ -8,7 +8,7 @@ class ValidLinksTest < ActionDispatch::IntegrationTest
   fixtures :all
 
   test "tail must exist on update" do
-    admin_auth = {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin).api_token}"}
+    admin_auth = {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:admin).api_token}"}
 
     post "/arvados/v1/links",
       params: {

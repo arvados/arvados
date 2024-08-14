@@ -71,7 +71,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	}
 
 	req.Header.Add("X-Request-Id", reqid)
-	req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+	req.Header.Add("Authorization", "Bearer "+kc.Arvados.ApiToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	req.Header.Add(XKeepDesiredReplicas, fmt.Sprint(kc.Want_replicas))
 	if len(classesTodo) > 0 {

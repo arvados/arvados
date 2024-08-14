@@ -407,7 +407,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "container logs created by dispatch are visible to container requestor" do
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     Log.create!(object_uuid: containers(:running).uuid,
                 event_type: "test")
 
@@ -417,7 +417,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "container logs created by dispatch are public if container request is public" do
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     Log.create!(object_uuid: containers(:running_older).uuid,
                 event_type: "test")
 

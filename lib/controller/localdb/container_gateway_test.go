@@ -88,7 +88,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	forceInternalURLForTest = &arvados.URL{Scheme: "https", Host: s.srv.Listener.Addr().String()}
 	ac := &arvados.Client{
 		APIHost:   s.srv.Listener.Addr().String(),
-		AuthToken: arvadostest.Dispatch1Token,
+		AuthToken: arvadostest.SystemRootToken,
 		Insecure:  true,
 	}
 	s.gw = &crunchrun.Gateway{

@@ -260,7 +260,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if auth, _ := ctx.Value(contextKeyAuthorization{}).(string); auth != "" {
 		req.Header.Add("Authorization", auth)
 	} else if c.AuthToken != "" {
-		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
+		req.Header.Add("Authorization", "Bearer "+c.AuthToken)
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {

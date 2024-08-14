@@ -61,7 +61,7 @@ export const RepositoryAttributesDialog = compose(
     );
 
 const attributes = (repositoryData: RepositoryResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name } = repositoryData;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name } = repositoryData;
     return (
         <span>
             <Grid container direction="row">
@@ -71,7 +71,6 @@ const attributes = (repositoryData: RepositoryResource, classes: any) => {
                     <Grid item>Created at</Grid>
                     <Grid item>Modified at</Grid>
                     <Grid item>Modified by user uuid</Grid>
-                    <Grid item>Modified by client uuid</Grid>
                     <Grid item>uuid</Grid>
                 </Grid>
                 <Grid item xs={7} className={classes.leftContainer}>
@@ -80,7 +79,6 @@ const attributes = (repositoryData: RepositoryResource, classes: any) => {
                     <Grid item>{createdAt}</Grid>
                     <Grid item>{modifiedAt}</Grid>
                     <Grid item>{modifiedByUserUuid}</Grid>
-                    <Grid item>{modifiedByClientUuid}</Grid>
                     <Grid item>{uuid}</Grid>
                 </Grid>
             </Grid>

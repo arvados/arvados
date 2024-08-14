@@ -50,214 +50,6 @@
   },
   "protocol": "rest",
   "resources": {
-    "api_clients": {
-      "methods": {
-        "get": {
-          "id": "arvados.api_clients.get",
-          "path": "api_clients/{uuid}",
-          "httpMethod": "GET",
-          "description": "Gets a ApiClient's metadata by UUID.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the ApiClient in question.",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "parameterOrder": [
-            "uuid"
-          ],
-          "response": {
-            "$ref": "ApiClient"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "list": {
-          "id": "arvados.api_clients.list",
-          "path": "api_clients",
-          "httpMethod": "GET",
-          "description": "List ApiClients.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ApiClients. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#apiClientList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
-          "parameters": {
-            "filters": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "where": {
-              "type": "object",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "order": {
-              "type": "array",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of each object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "distinct": {
-              "type": "boolean",
-              "required": false,
-              "default": "false",
-              "description": "",
-              "location": "query"
-            },
-            "limit": {
-              "type": "integer",
-              "required": false,
-              "default": "100",
-              "description": "",
-              "location": "query"
-            },
-            "offset": {
-              "type": "integer",
-              "required": false,
-              "default": "0",
-              "description": "",
-              "location": "query"
-            },
-            "count": {
-              "type": "string",
-              "required": false,
-              "default": "exact",
-              "description": "",
-              "location": "query"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            },
-            "bypass_federation": {
-              "type": "boolean",
-              "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
-              "location": "query"
-            }
-          },
-          "response": {
-            "$ref": "ApiClientList"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados",
-            "https://api.arvados.org/auth/arvados.readonly"
-          ]
-        },
-        "create": {
-          "id": "arvados.api_clients.create",
-          "path": "api_clients",
-          "httpMethod": "POST",
-          "description": "Create a new ApiClient.",
-          "parameters": {
-            "select": {
-              "type": "array",
-              "description": "Attributes of the new object to return in the response.",
-              "required": false,
-              "location": "query"
-            },
-            "ensure_unique_name": {
-              "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
-              "location": "query",
-              "required": false,
-              "default": "false"
-            },
-            "cluster_id": {
-              "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
-              "location": "query",
-              "required": false
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "api_client": {
-                "$ref": "ApiClient"
-              }
-            }
-          },
-          "response": {
-            "$ref": "ApiClient"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "update": {
-          "id": "arvados.api_clients.update",
-          "path": "api_clients/{uuid}",
-          "httpMethod": "PUT",
-          "description": "Update attributes of an existing ApiClient.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the ApiClient in question.",
-              "required": true,
-              "location": "path"
-            },
-            "select": {
-              "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
-              "required": false,
-              "location": "query"
-            }
-          },
-          "request": {
-            "required": true,
-            "properties": {
-              "api_client": {
-                "$ref": "ApiClient"
-              }
-            }
-          },
-          "response": {
-            "$ref": "ApiClient"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "delete": {
-          "id": "arvados.api_clients.delete",
-          "path": "api_clients/{uuid}",
-          "httpMethod": "DELETE",
-          "description": "Delete an existing ApiClient.",
-          "parameters": {
-            "uuid": {
-              "type": "string",
-              "description": "The UUID of the ApiClient in question.",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "response": {
-            "$ref": "ApiClient"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        }
-      }
-    },
     "api_client_authorizations": {
       "methods": {
         "get": {
@@ -470,12 +262,6 @@
           "httpMethod": "POST",
           "description": "create_system_auth api_client_authorizations",
           "parameters": {
-            "api_client_id": {
-              "type": "integer",
-              "required": false,
-              "description": "",
-              "location": "query"
-            },
             "scopes": {
               "type": "array",
               "required": false,
@@ -3933,80 +3719,6 @@
   },
   "revision": "20240627",
   "schemas": {
-    "ApiClientList": {
-      "id": "ApiClientList",
-      "description": "ApiClient list",
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "Object type. Always arvados#apiClientList.",
-          "default": "arvados#apiClientList"
-        },
-        "etag": {
-          "type": "string",
-          "description": "List version."
-        },
-        "items": {
-          "type": "array",
-          "description": "The list of ApiClients.",
-          "items": {
-            "$ref": "ApiClient"
-          }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of ApiClients."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of ApiClients."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
-        }
-      }
-    },
-    "ApiClient": {
-      "id": "ApiClient",
-      "description": "ApiClient",
-      "type": "object",
-      "uuidPrefix": "ozdt8",
-      "properties": {
-        "uuid": {
-          "type": "string"
-        },
-        "etag": {
-          "type": "string",
-          "description": "Object version."
-        },
-        "owner_uuid": {
-          "type": "string"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
-        "modified_by_user_uuid": {
-          "type": "string"
-        },
-        "modified_at": {
-          "type": "datetime"
-        },
-        "name": {
-          "type": "string"
-        },
-        "url_prefix": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "datetime"
-        },
-        "is_trusted": {
-          "type": "boolean"
-        }
-      }
-    },
     "ApiClientAuthorizationList": {
       "id": "ApiClientAuthorizationList",
       "description": "ApiClientAuthorization list",
@@ -4057,9 +3769,6 @@
         },
         "api_token": {
           "type": "string"
-        },
-        "api_client_id": {
-          "type": "integer"
         },
         "created_by_ip_address": {
           "type": "string"
@@ -4130,9 +3839,6 @@
           "description": "Object version."
         },
         "owner_uuid": {
-          "type": "string"
-        },
-        "modified_by_client_uuid": {
           "type": "string"
         },
         "modified_by_user_uuid": {
@@ -4214,9 +3920,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
         },
         "modified_by_user_uuid": {
           "type": "string"
@@ -4391,9 +4094,6 @@
         "modified_at": {
           "type": "datetime"
         },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
         "modified_by_user_uuid": {
           "type": "string"
         },
@@ -4543,9 +4243,6 @@
         "modified_at": {
           "type": "datetime"
         },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
         "modified_by_user_uuid": {
           "type": "string"
         },
@@ -4689,9 +4386,6 @@
         "created_at": {
           "type": "datetime"
         },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
         "modified_by_user_uuid": {
           "type": "string"
         },
@@ -4775,9 +4469,6 @@
         "owner_uuid": {
           "type": "string"
         },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
         "modified_by_user_uuid": {
           "type": "string"
         },
@@ -4858,9 +4549,6 @@
         "created_at": {
           "type": "datetime"
         },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
         "modified_by_user_uuid": {
           "type": "string"
         },
@@ -4936,9 +4624,6 @@
           "type": "integer"
         },
         "owner_uuid": {
-          "type": "string"
-        },
-        "modified_by_client_uuid": {
           "type": "string"
         },
         "modified_by_user_uuid": {
@@ -5023,9 +4708,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
         },
         "modified_by_user_uuid": {
           "type": "string"
@@ -5112,9 +4794,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
         },
         "modified_by_user_uuid": {
           "type": "string"
@@ -5232,9 +4911,6 @@
         "owner_uuid": {
           "type": "string"
         },
-        "modified_by_client_uuid": {
-          "type": "string"
-        },
         "modified_by_user_uuid": {
           "type": "string"
         },
@@ -5305,9 +4981,6 @@
         },
         "modified_at": {
           "type": "datetime"
-        },
-        "modified_by_client_uuid": {
-          "type": "string"
         },
         "modified_by_user_uuid": {
           "type": "string"

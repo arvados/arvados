@@ -53,8 +53,6 @@ export const AttributesSshKeyDialog = compose(
                         <Grid item xs={7}>{data.sshKey.expiresAt}</Grid>
                         <Grid item xs={5}>Modified by user uuid</Grid>
                         <Grid item xs={7}>{data.sshKey.modifiedByUserUuid}</Grid>
-                        <Grid item xs={5}>Modified by client uuid</Grid>
-                        <Grid item xs={7}>{data.sshKey.modifiedByClientUuid}</Grid>
                     </Grid>}
                 </DialogContent>
                 <DialogActions>

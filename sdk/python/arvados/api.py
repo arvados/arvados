@@ -91,7 +91,7 @@ def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
             self.max_request_size < len(kwargs['body'])):
             raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
 
-        headers['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
+        headers['Authorization'] = 'Bearer %s' % self.arvados_api_token
 
         if (time.time() - self._last_request_time) > self._max_keepalive_idle:
             # High probability of failure due to connection atrophy. Make

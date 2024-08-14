@@ -15,7 +15,7 @@ import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-author
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { ResourcesState } from 'store/resources/resources';
 import {
-    CommonUuid, TokenApiClientId, TokenApiToken, TokenCreatedByIpAddress, TokenExpiresAt,
+    CommonUuid, TokenApiToken, TokenCreatedByIpAddress, TokenExpiresAt,
     TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
 } from 'views-components/data-explorer/renderers';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
@@ -31,7 +31,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export enum ApiClientAuthorizationPanelColumnNames {
     UUID = 'UUID',
-    API_CLIENT_ID = 'API Client ID',
     API_TOKEN = 'API Token',
     CREATED_BY_IP_ADDRESS = 'Created by IP address',
     EXPIRES_AT = 'Expires at',
@@ -49,13 +48,6 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
         render: uuid => <CommonUuid uuid={uuid} />
-    },
-    {
-        name: ApiClientAuthorizationPanelColumnNames.API_CLIENT_ID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <TokenApiClientId uuid={uuid} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.API_TOKEN,

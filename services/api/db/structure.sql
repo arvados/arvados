@@ -349,7 +349,7 @@ SET default_with_oids = false;
 CREATE TABLE public.api_client_authorizations (
     id bigint NOT NULL,
     api_token character varying(255) NOT NULL,
-    api_client_id bigint NOT NULL,
+    api_client_id bigint DEFAULT 0 NOT NULL,
     user_id bigint NOT NULL,
     created_by_ip_address character varying(255),
     last_used_by_ip_address character varying(255),
@@ -3346,4 +3346,5 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20240329173437'),
 ('20240402162733'),
 ('20240604183200'),
-('20240618121312');
+('20240618121312'),
+('20240627201747');

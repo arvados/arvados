@@ -63,7 +63,7 @@ RESTService <- R6::R6Class(
         {
             fileURL <- paste0(self$getWebDavHostName(), "c=",
                               uuid, "/", relativePath);
-            headers <- list(Authorization = paste("OAuth2", self$token))
+            headers <- list(Authorization = paste("Bearer", self$token))
 
             serverResponse <- self$http$exec("DELETE", fileURL, headers,
                                              retryTimes = self$numRetries)
@@ -80,7 +80,7 @@ RESTService <- R6::R6Class(
             fromURL <- paste0(collectionURL, from)
             toURL <- paste0(collectionURL, trimFromStart(to, "/"))
 
-            headers <- list("Authorization" = paste("OAuth2", self$token),
+            headers <- list("Authorization" = paste("Bearer", self$token),
                             "Destination" = toURL)
 
             serverResponse <- self$http$exec("MOVE", fromURL, headers,
@@ -98,7 +98,7 @@ RESTService <- R6::R6Class(
             fromURL <- paste0(collectionURL, from)
             toURL <- paste0(collectionURL, trimFromStart(to, "/"))
 
-            headers <- list("Authorization" = paste("OAuth2", self$token),
+            headers <- list("Authorization" = paste("Bearer", self$token),
                             "Destination" = toURL)
 
             serverResponse <- self$http$exec("COPY", fromURL, headers,
@@ -137,7 +137,7 @@ RESTService <- R6::R6Class(
 
             subcollectionURL <- paste0(collectionURL, "/", relativePath);
 
-            headers <- list("Authorization" = paste("OAuth2", self$token))
+            headers <- list("Authorization" = paste("Bearer", self$token))
 
             response <- self$http$exec("PROPFIND", subcollectionURL, headers,
                                        retryTimes = self$numRetries)
@@ -165,11 +165,11 @@ RESTService <- R6::R6Class(
 
             if(offset == 0 && length == 0)
             {
-                headers <- list(Authorization = paste("OAuth2", self$token))
+                headers <- list(Authorization = paste("Bearer", self$token))
             }
             else
             {
-                headers <- list(Authorization = paste("OAuth2", self$token),
+                headers <- list(Authorization = paste("Bearer", self$token),
                                 Range = range)
             }
 
@@ -189,7 +189,7 @@ RESTService <- R6::R6Class(
         {
             fileURL <- paste0(self$getWebDavHostName(),
                              "c=", uuid, "/", relativePath);
-            headers <- list(Authorization = paste("OAuth2", self$token),
+            headers <- list(Authorization = paste("Bearer", self$token),
                             "Content-Type" = contentType)
             body <- content
 
@@ -206,7 +206,7 @@ RESTService <- R6::R6Class(
         {
             fileURL <- paste0(self$getWebDavHostName(),
                               "c=", uuid, "/", relativePath);
-            headers <- list(Authorization = paste("OAuth2", self$token))
+            headers <- list(Authorization = paste("Bearer", self$token))
 
             conn <- self$http$getConnection(fileURL, headers, openMode)
         }
@@ -221,7 +221,7 @@ RESTService <- R6::R6Class(
         {
             fileURL <- paste0(self$getWebDavHostName(), "c=",
                               uuid, "/", relativePath)
-            headers <- list(Authorization = paste("OAuth2", self$token),
+            headers <- list(Authorization = paste("Bearer", self$token),
                             "Content-Type" = contentType)
             body <- NULL
 

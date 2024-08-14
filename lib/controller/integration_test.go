@@ -544,12 +544,12 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(cr.UUID, check.Matches, "z2222-.*")
 
-	c.Log("...post with good cached token ('OAuth2 ...')")
+	c.Log("...post with good cached token ('Bearer ...')")
 	cr = arvados.ContainerRequest{}
 	req, err = http.NewRequest("POST", "https://"+ac2.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body.Bytes()))
 	c.Assert(err, check.IsNil)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "OAuth2 "+ac2.AuthToken)
+	req.Header.Set("Authorization", "Bearer "+ac2.AuthToken)
 	resp, err = arvados.InsecureHTTPClient.Do(req)
 	c.Assert(err, check.IsNil)
 	defer resp.Body.Close()
@@ -798,7 +798,6 @@ func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
 		},
 	)
 	c.Assert(err, check.IsNil)
-	c.Assert(resp.APIClientID, check.Not(check.Equals), 0)
 	newTok := resp.TokenV2()
 	c.Assert(newTok, check.Not(check.Equals), "")
 

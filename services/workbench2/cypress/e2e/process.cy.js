@@ -246,7 +246,6 @@ describe("Process tests", function () {
             uuid: fakeContainerUuid,
             owner_uuid: "zzzzz-tpzed-000000000000000",
             created_at: "2023-02-13T15:55:47.308915000Z",
-            modified_by_client_uuid: "zzzzz-ozdt8-q6dzdi1lcc03155",
             modified_by_user_uuid: "zzzzz-tpzed-000000000000000",
             modified_at: "2023-02-15T19:12:45.987086000Z",
             command: [

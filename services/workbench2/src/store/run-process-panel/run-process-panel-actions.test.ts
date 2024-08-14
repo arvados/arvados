@@ -87,7 +87,6 @@ describe("run-process-panel-actions", () => {
                         uuid: "zzzzz-7fd4e-2tlnerdkxnl4fjt",
                         ownerUuid: "zzzzz-tpzed-o4njwilpp4ov321",
                         createdAt: "2020-07-15T19:40:50.296041000Z",
-                        modifiedByClientUuid: "zzzzz-ozdt8-libnr89sc5nq111",
                         modifiedByUserUuid: "zzzzz-tpzed-o4njwilpp4ov321",
                         modifiedAt: "2020-07-15T19:40:50.296376000Z",
                         name: "revsort.cwl",

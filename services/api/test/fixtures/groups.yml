@@ -41,7 +41,6 @@ activeandfriends:
   uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-08-22 14:02:18.481582707 Z
-  modified_by_client_uuid:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-08-22 14:02:18.481319501 Z
   name: Active User and friends
@@ -87,7 +86,6 @@ aproject:
   uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -99,7 +97,6 @@ asubproject:
   uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -111,7 +108,6 @@ afiltergroup:
   uuid: zzzzz-j7d0g-thisfiltergroup
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -124,7 +120,6 @@ afiltergroup2:
   uuid: zzzzz-j7d0g-afiltergrouptwo
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -137,7 +132,6 @@ afiltergroup3:
   uuid: zzzzz-j7d0g-filtergroupthre
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -150,7 +144,6 @@ afiltergroup4:
   uuid: zzzzz-j7d0g-filtergroupfour
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -163,7 +156,6 @@ afiltergroup5:
   uuid: zzzzz-j7d0g-filtergroupfive
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -175,7 +167,6 @@ afiltergroup5:
 fuse_filters_test_project:
   uuid: zzzzz-j7d0g-fusefiltertest1
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2024-02-09T12:00:00Z
   modified_at: 2024-02-09T12:00:01Z
@@ -187,7 +178,6 @@ future_project_viewing_group:
   uuid: zzzzz-j7d0g-futrprojviewgrp
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -198,7 +188,6 @@ future_project_viewing_group:
 bad_group_has_ownership_cycle_a:
   uuid: zzzzz-j7d0g-cx2al9cqkmsf1hs
   owner_uuid: zzzzz-j7d0g-0077nzts8c178lw
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-05-03 18:50:08 -0400
   modified_at: 2014-05-03 18:50:08 -0400
@@ -209,7 +198,6 @@ bad_group_has_ownership_cycle_a:
 bad_group_has_ownership_cycle_b:
   uuid: zzzzz-j7d0g-0077nzts8c178lw
   owner_uuid: zzzzz-j7d0g-cx2al9cqkmsf1hs
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-05-03 18:50:08 -0400
   modified_at: 2014-05-03 18:50:08 -0400
@@ -265,7 +253,6 @@ empty_project:
   uuid: zzzzz-j7d0g-9otoxmrksam74q6
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-12-16 15:56:27.967534940 Z
-  modified_by_client_uuid: ~
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-12-16 15:56:27.967358199 Z
   name: Empty project
@@ -277,7 +264,6 @@ project_with_10_collections:
   uuid: zzzzz-j7d0g-0010collections
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -289,7 +275,6 @@ project_with_201_collections:
   uuid: zzzzz-j7d0g-0201collections
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -301,7 +286,6 @@ project_with_10_pipelines:
   uuid: zzzzz-j7d0g-000010pipelines
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -313,7 +297,6 @@ project_with_2_pipelines_and_60_crs:
   uuid: zzzzz-j7d0g-nnncrspipelines
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -325,7 +308,6 @@ project_with_25_pipelines:
   uuid: zzzzz-j7d0g-000025pipelines
   owner_uuid: zzzzz-tpzed-user1withloadab
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -337,7 +319,6 @@ fuse_owned_project:
   uuid: zzzzz-j7d0g-0000ownedbyfuse
   owner_uuid: zzzzz-tpzed-0fusedrivertest
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-0fusedrivertest
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
@@ -351,7 +332,6 @@ project_owns_itself:
   uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
   owner_uuid: zzzzz-j7d0g-7rqh7hdshd5yp5t
   created_at: 2014-11-05 22:31:24.258424340 Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: 6pbr1-tpzed-000000000000000
   modified_at: 2014-11-05 22:31:24.258242890 Z
   name: zzzzz-j7d0g-7rqh7hdshd5yp5t
@@ -365,7 +345,6 @@ subproject_in_active_user_home_project_to_test_unique_key_violation:
   uuid: zzzzz-j7d0g-subprojsamenam1
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2013-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2013-04-21 15:37:48 -0400
   updated_at: 2013-04-21 15:37:48 -0400
@@ -377,7 +356,6 @@ subproject_in_asubproject_with_same_name_as_one_in_active_user_home:
   uuid: zzzzz-j7d0g-subprojsamenam2
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   created_at: 2013-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2013-04-21 15:37:48 -0400
   updated_at: 2013-04-21 15:37:48 -0400
@@ -389,7 +367,6 @@ starred_and_shared_active_user_project:
   uuid: zzzzz-j7d0g-starredshared01
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400

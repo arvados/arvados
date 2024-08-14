@@ -80,7 +80,7 @@ locked:
   uuid: zzzzz-dz642-lockedcontainer
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Locked
-  locked_by_uuid: zzzzz-gj3su-k9dvestay1plssr
+  locked_by_uuid: zzzzz-gj3su-000000000000000
   priority: 0
   created_at: <%= 2.minute.ago.to_fs(:db) %>
   updated_at: <%= 2.minute.ago.to_fs(:db) %>

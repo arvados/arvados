@@ -158,7 +158,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 		"http://"+srv.Addr+"/",
 		strings.NewReader("TestViaHeader"))
 	c.Assert(err, Equals, nil)
-	req.Header.Add("Authorization", "OAuth2 "+arvadostest.ActiveToken)
+	req.Header.Add("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp, err := (&http.Client{}).Do(req)
 	c.Assert(err, Equals, nil)
 	c.Check(resp.Header.Get("Via"), Equals, "HTTP/1.1 keepproxy")
@@ -235,7 +235,7 @@ func (s *ServerRequiredSuite) TestStorageClassesConfirmedHeader(c *C) {
 		bytes.NewReader(content))
 	c.Assert(err, IsNil)
 	req.Header.Set("X-Keep-Storage-Classes", "default")
-	req.Header.Set("Authorization", "OAuth2 "+arvadostest.ActiveToken)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	req.Header.Set("Content-Type", "application/octet-stream")
 
 	resp, err := client.Do(req)
@@ -296,7 +296,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 			bytes.NewReader(content))
 		c.Assert(err, IsNil)
 		req.Header.Set("Content-Length", t.sendLength)
-		req.Header.Set("Authorization", "OAuth2 "+arvadostest.ActiveToken)
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 		req.Header.Set("Content-Type", "application/octet-stream")
 
 		resp := httptest.NewRecorder()
@@ -580,7 +580,7 @@ func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
 			"http://"+srv.Addr+"/",
 			strings.NewReader("qux"))
 		c.Check(err, IsNil)
-		req.Header.Add("Authorization", "OAuth2 "+arvadostest.ActiveToken)
+		req.Header.Add("Authorization", "Bearer "+arvadostest.ActiveToken)
 		req.Header.Add("Content-Type", "application/octet-stream")
 		resp, err := client.Do(req)
 		c.Check(err, Equals, nil)

@@ -51,8 +51,10 @@ var DecodeTokenCookie func(string) ([]byte, error) = base64.URLEncoding.DecodeSt
 // LoadTokensFromHTTPRequest loads all tokens it can find in the
 // headers and query string of an http query.
 func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
-	// Load plain token from "Authorization: OAuth2 ..." header
-	// (typically used by smart API clients)
+	// Load plain token from "Authorization: Bearer ..." header
+	// (typically used by smart API clients).  Note many pre-3.0
+	// clients send "OAuth2 ..." instead of "Bearer ..." and that
+	// is still accepted.
 	if toks := strings.SplitN(r.Header.Get("Authorization"), " ", 2); len(toks) == 2 && (toks[0] == "OAuth2" || toks[0] == "Bearer") {
 		a.Tokens = append(a.Tokens, strings.TrimSpace(toks[1]))
 	}

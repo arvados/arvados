@@ -11,7 +11,6 @@ type Container struct {
 	UUID                      string                 `json:"uuid"`
 	Etag                      string                 `json:"etag"`
 	CreatedAt                 time.Time              `json:"created_at"`
-	ModifiedByClientUUID      string                 `json:"modified_by_client_uuid"`
 	ModifiedByUserUUID        string                 `json:"modified_by_user_uuid"`
 	ModifiedAt                time.Time              `json:"modified_at"`
 	Command                   []string               `json:"command"`
@@ -49,7 +48,6 @@ type ContainerRequest struct {
 	UUID                    string                 `json:"uuid"`
 	OwnerUUID               string                 `json:"owner_uuid"`
 	CreatedAt               time.Time              `json:"created_at"`
-	ModifiedByClientUUID    string                 `json:"modified_by_client_uuid"`
 	ModifiedByUserUUID      string                 `json:"modified_by_user_uuid"`
 	ModifiedAt              time.Time              `json:"modified_at"`
 	Href                    string                 `json:"href"`

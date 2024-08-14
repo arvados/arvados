@@ -118,7 +118,6 @@ navbar:
       - api/methods/links.html.textile.liquid
       - api/methods/computed_permissions.html.textile.liquid
       - api/methods/authorized_keys.html.textile.liquid
-      - api/methods/api_clients.html.textile.liquid
       - api/methods/user_agreements.html.textile.liquid
       - api/methods/virtual_machines.html.textile.liquid
     - Data management:

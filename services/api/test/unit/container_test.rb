@@ -91,8 +91,8 @@ class ContainerTest < ActiveSupport::TestCase
                               {environment: {"FOO" => "BAR"}},
                               {mounts: {"FOO" => "BAR"}},
                               {output_path: "/tmp3"},
-                              {locked_by_uuid: "zzzzz-gj3su-027z32aux8dg2s1"},
-                              {auth_uuid: "zzzzz-gj3su-017z32aux8dg2s1"},
+                              {locked_by_uuid: api_client_authorizations(:admin).uuid},
+                              {auth_uuid: api_client_authorizations(:system_user).uuid},
                               {runtime_constraints: {"FOO" => "BAR"}}]
   end
 
@@ -174,7 +174,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal c.runtime_status, {}
     assert_equal Container::Queued, c.state
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.update! state: Container::Locked
     c.update! state: Container::Running
 
@@ -214,7 +214,7 @@ class ContainerTest < ActiveSupport::TestCase
       c1.update! runtime_status: {'error' => 'Oops!'}
     end
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
 
     # Allow updates when state = Locked
     c1.update! state: Container::Locked
@@ -240,7 +240,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     c2, _ = minimal_new(attrs)
     assert_equal c2.runtime_status, {}
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c2.update! state: Container::Locked
     c2.update! state: Container::Running
     c2.update! state: Container::Cancelled
@@ -295,7 +295,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_recent, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_older.uuid, c_recent.uuid
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_older.update!({state: Container::Locked})
     c_older.update!({state: Container::Running})
     c_older.update!(completed_attrs)
@@ -332,7 +332,7 @@ class ContainerTest < ActiveSupport::TestCase
 
     assert_not_equal c_output1.uuid, c_output2.uuid
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
 
     out1 = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     log1 = collections(:log_collection).portable_data_hash
@@ -358,7 +358,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_faster_started_second, _ = minimal_new(common_attrs.merge({use_existing: false}))
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_slower.update!({state: Container::Locked})
     c_slower.update!({state: Container::Running,
                                  progress: 0.1})
@@ -382,7 +382,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_faster_started_second, _ = minimal_new(common_attrs.merge({use_existing: false}))
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_slower.update!({state: Container::Locked})
     c_slower.update!({state: Container::Running,
                                  progress: 0.1})
@@ -406,7 +406,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_faster_started_second, _ = minimal_new(common_attrs.merge({use_existing: false}))
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_slower.update!({state: Container::Locked})
     c_slower.update!({state: Container::Running,
                                  progress: 0.1})
@@ -434,7 +434,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_high_priority_newer, _ = minimal_new(common_attrs.merge({use_existing: false}))
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_low_priority.uuid, c_high_priority_older.uuid, c_high_priority_newer.uuid].uniq.length
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_low_priority.update!({state: Container::Locked,
                                        priority: 1})
     c_high_priority_older.update!({state: Container::Locked,
@@ -452,7 +452,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_failed, _ = minimal_new(common_attrs.merge({use_existing: false}))
     c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_failed.uuid, c_running.uuid
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_failed.update!({state: Container::Locked})
     c_failed.update!({state: Container::Running})
     c_failed.update!({state: Container::Complete,
@@ -473,7 +473,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_completed, _ = minimal_new(common_attrs.merge({use_existing: false}))
     c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_completed.uuid, c_running.uuid
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_completed.update!({state: Container::Locked})
     c_completed.update!({state: Container::Running})
     c_completed.update!({state: Container::Complete,
@@ -494,7 +494,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_locked, _ = minimal_new(common_attrs.merge({use_existing: false}))
     c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_running.uuid, c_locked.uuid
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_locked.update!({state: Container::Locked})
     c_running.update!({state: Container::Locked})
     c_running.update!({state: Container::Running,
@@ -510,7 +510,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_locked, _ = minimal_new(common_attrs.merge({use_existing: false}))
     c_queued, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_queued.uuid, c_locked.uuid
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c_locked.update!({state: Container::Locked})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -521,7 +521,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "failed"}})
     c, _ = minimal_new(attrs)
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.update!({state: Container::Locked})
     c.update!({state: Container::Running})
     c.update!({state: Container::Complete,
@@ -544,7 +544,7 @@ class ContainerTest < ActiveSupport::TestCase
         set_user_from_auth :active
         c1_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"test" => name, "state" => c1_state}, scheduling_parameters: {"preemptible" => c1_preemptible}})
         c1, _ = minimal_new(c1_attrs)
-        set_user_from_auth :dispatch1
+        set_user_from_auth :system_user
         c1.update!({state: Container::Locked}) if c1_state != Container::Queued
         c1.update!({state: Container::Running, priority: c1_priority}) if c1_state == Container::Running
         c2_attrs = c1_attrs.merge({scheduling_parameters: {"preemptible" => c2_preemptible}})
@@ -673,7 +673,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     c, _ = minimal_new priority: 1
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     check_illegal_updates c, [{state: Container::Running},
                               {state: Container::Complete}]
 
@@ -693,7 +693,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     c, cr = minimal_new priority: 0
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     assert_equal Container::Queued, c.state
 
     assert_raise(ArvadosModel::LockFailedError) do
@@ -758,7 +758,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     c, cr = minimal_new
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     assert_equal Container::Queued, c.state
     assert_equal 0, c.lock_count
 
@@ -801,7 +801,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container queued cancel" do
     set_user_from_auth :active
     c, cr = minimal_new({container_count_max: 1})
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     assert c.update(state: Container::Cancelled), show_errors(c)
     check_no_change_from_cancelled c
     cr.reload
@@ -823,7 +823,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container locked cancel" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     assert c.lock, show_errors(c)
     assert c.update(state: Container::Cancelled), show_errors(c)
     check_no_change_from_cancelled c
@@ -833,7 +833,7 @@ class ContainerTest < ActiveSupport::TestCase
     Rails.configuration.API.TokenMaxLifetime = 1.hour
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     assert c.lock, show_errors(c)
     refute c.auth.nil?
     assert c.auth.expires_at.nil?
@@ -843,7 +843,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container locked cancel with log" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     assert c.lock, show_errors(c)
     assert c.update(
              state: Container::Cancelled,
@@ -855,7 +855,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container running cancel" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     c.update! state: Container::Running
     c.update! state: Container::Cancelled
@@ -905,7 +905,7 @@ class ContainerTest < ActiveSupport::TestCase
       set_user_from_auth :active
       c, _ = minimal_new
       if start_state != Container::Queued
-        set_user_from_auth :dispatch1
+        set_user_from_auth :system_user
         c.lock
         if start_state != Container::Locked
           c.update! state: Container::Running
@@ -925,7 +925,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "can only change exit code while running and at completion" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     check_illegal_updates c, [{exit_code: 1}]
     c.update! state: Container::Running
@@ -946,7 +946,7 @@ class ContainerTest < ActiveSupport::TestCase
 
     logpdh_time1 = logcoll.portable_data_hash
 
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     assert_equal c.locked_by_uuid, Thread.current[:api_client_authorization].uuid
     c.update!(log: logpdh_time1)
@@ -992,20 +992,18 @@ class ContainerTest < ActiveSupport::TestCase
         set_user_from_auth :active
         c, _ = minimal_new
       end
-      set_user_from_auth :dispatch1
+      set_user_from_auth :system_user
       c.lock
       c.update! state: Container::Running
 
       if tok == "runtime_token"
         auth = ApiClientAuthorization.validate(token: c.runtime_token)
         Thread.current[:api_client_authorization] = auth
-        Thread.current[:api_client] = auth.api_client
         Thread.current[:token] = auth.token
         Thread.current[:user] = auth.user
       else
         auth = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
         Thread.current[:api_client_authorization] = auth
-        Thread.current[:api_client] = auth.api_client
         Thread.current[:token] = auth.token
         Thread.current[:user] = auth.user
       end
@@ -1024,7 +1022,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "not allowed to set output that is not readable by current user" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     c.update! state: Container::Running
 
@@ -1039,7 +1037,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "other token cannot set output on running container" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     c.update! state: Container::Running
 
@@ -1052,7 +1050,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "can set trashed output on running container" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     c.update! state: Container::Running
 
@@ -1066,7 +1064,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "not allowed to set trashed output that is not readable by current user" do
     set_user_from_auth :active
     c, _ = minimal_new
-    set_user_from_auth :dispatch1
+    set_user_from_auth :system_user
     c.lock
     c.update! state: Container::Running
 
@@ -1097,7 +1095,7 @@ class ContainerTest < ActiveSupport::TestCase
       set_user_from_auth :active
       c, cr = minimal_new(secret_mounts: {'/secret' => {'kind' => 'text', 'content' => 'foo'}},
                           container_count_max: 1, runtime_token: api_client_authorizations(:active).token)
-      set_user_from_auth :dispatch1
+      set_user_from_auth :system_user
       c.lock
       c.update!(state: Container::Running)
       c.reload

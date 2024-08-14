@@ -39,22 +39,6 @@ export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
 
 url_prefix="https://$localip:${services[workbench2-ssl]}/"
 
-set +e
-read -rd $'\000' apiclient <<EOF
-{
-   "url_prefix": "$url_prefix",
-   "is_trusted": true
-}
-EOF
-set -e
-
-clientuuid=$(arv --format=uuid api_client list --filters '[["url_prefix", "=", "'$url_prefix'"]]')
-if [[ -n "$clientuuid" ]] ; then
-    arv api_client update --uuid $clientuuid --api-client "$apiclient"
-else
-    arv api_client create --api-client "$apiclient"
-fi
-
 # Can't use "yarn start", need to run the dev server script
 # directly so that the TERM signal from "sv restart" gets to the
 # right process.
