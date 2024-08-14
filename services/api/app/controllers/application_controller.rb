@@ -23,7 +23,6 @@ end
 require 'load_param'
 
 class ApplicationController < ActionController::Base
-  include ThemesForRails::ActionController
   include CurrentApiClient
   include LoadParam
   include DbCurrentTime
