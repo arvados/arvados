@@ -84,6 +84,9 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
    # cannot look up other tokens for other users
    [:admin_trustedclient, :active, 404, 200, 0],
    [:active_trustedclient, :admin, 404, 200, 0],
+   # system root token is always trusted
+   [:system_user, :active, 200, 200, 1],
+   [:system_user, :admin, 200, 200, 1],
   ].each do |auth_token, target_token, expect_get_response, expect_list_response, expect_list_items|
     test "using '#{auth_token}', get '#{target_token}' by uuid" do
       authorize_with auth_token

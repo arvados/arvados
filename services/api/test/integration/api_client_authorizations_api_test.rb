@@ -16,15 +16,16 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  [:admin_trustedclient, :SystemRootToken].each do |tk|
-    test "create token for different user using #{tk}" do
-      if tk == :SystemRootToken
-        token = "xyzzy-SystemRootToken"
-        Rails.configuration.SystemRootToken = token
-      else
-        token = api_client_authorizations(tk).api_token
-      end
-
+  [
+    [true, :active, 403],
+    [true, :admin, 200],
+    [true, :system_user, 200],
+    [false, :active, 403],
+    [false, :admin, 403],
+    [false, :system_user, 200],
+  ].each do |issue_trusted_tokens, tk, expect_response|
+    test "create token for different user using #{tk} with IssueTrustedTokens=#{issue_trusted_tokens}" do
+      Rails.configuration.Login.IssueTrustedTokens = issue_trusted_tokens
       post "/arvados/v1/api_client_authorizations",
            params: {
              :format => :json,
@@ -32,12 +33,14 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
                :owner_uuid => users(:spectator).uuid
              }
            },
-           headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{token}"}
-      assert_response :success
+           headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(tk).api_token}"}
+
+      assert_response expect_response
+      return if expect_response >= 300
 
       get "/arvados/v1/users/current",
           params: {:format => :json},
-          headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{json_response['api_token']}"}
+          headers: {'HTTP_AUTHORIZATION' => "Bearer #{json_response['api_token']}"}
       @json_response = nil
       assert_equal json_response['uuid'], users(:spectator).uuid
     end

@@ -144,11 +144,12 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def check_issue_trusted_tokens
+    return true if current_api_client_authorization.andand.api_token == Rails.configuration.SystemRootToken
     return forbidden if !Rails.configuration.Login.IssueTrustedTokens
   end
 
   def forbidden
-    send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
+    send_error('Action prohibited by IssueTrustedTokens configuration.',
                status: 403)
   end
 end
