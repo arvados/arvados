@@ -81,7 +81,7 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
                 dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(owner.uuid));
             }
 
-            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { owner }));
+            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name, owner }));
 
             const definition = parseWorkflowDefinition(workflow);
             if (definition) {

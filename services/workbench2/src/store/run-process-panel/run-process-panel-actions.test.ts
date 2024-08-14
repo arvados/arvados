@@ -3,6 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { runProcess } from "./run-process-panel-actions";
+import {
+    RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD,
+    KEEP_CACHE_RAM_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, RUNNER_IMAGE_FIELD,
+    DESCRIPTION_FIELD,
+} from 'views/run-process-panel/run-process-advanced-form';
 
 jest.mock("../navigation/navigation-action", () => ({
     navigateTo: (link: any) => link,
@@ -20,12 +25,19 @@ jest.mock("redux-form", () => ({
             case "runProcessBasicForm":
                 return {
                     name: "basicFormTestName",
-                    description: "basicFormTestDescription",
                 };
             case "runProcessInputsForm":
                 return {};
-            default:
-                return null;
+            case "runProcessAdvancedForm":
+                return {
+                    description: "basicFormTestDescription",
+		    vcpus: 1,
+		    ram: 16000 * (1024 * 1024),
+		    keep_cache_ram: 256 * (1024 * 1024),
+		    acr_container_image: "arvados/jobs:2.0.4"
+		};
+	    default:
+		return null;
         }
     },
 }));
