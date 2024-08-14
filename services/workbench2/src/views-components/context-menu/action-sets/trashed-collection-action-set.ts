@@ -6,7 +6,7 @@ import { ContextMenuActionSet, ContextMenuActionNames } from '../context-menu-ac
 import { DetailsIcon, ProvenanceGraphIcon, AdvancedIcon, RestoreFromTrashIcon } from 'components/icon/icon';
 import { toggleCollectionTrashed } from 'store/trash/trash-actions';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 
 export const trashedCollectionActionSet: ContextMenuActionSet = [
     [
@@ -14,7 +14,7 @@ export const trashedCollectionActionSet: ContextMenuActionSet = [
             icon: DetailsIcon,
             name: ContextMenuActionNames.VIEW_DETAILS,
             execute: (dispatch, resources) => {
-                dispatch<any>(toggleDetailsPanel(resources[0].uuid));
+                dispatch<any>(openDetailsPanel(resources[0].uuid));
             },
         },
         {

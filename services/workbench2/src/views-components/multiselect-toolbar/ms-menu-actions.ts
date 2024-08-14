@@ -12,7 +12,7 @@ import { checkFavorite } from 'store/favorites/favorites-reducer';
 import { toggleFavorite } from 'store/favorites/favorites-actions';
 import { favoritePanelActions } from 'store/favorite-panel/favorite-panel-action';
 import { openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
@@ -68,7 +68,7 @@ const msViewDetailsAction: MultiSelectMenuAction  = {
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {
-        dispatch<any>(toggleDetailsPanel(resources[0].uuid));
+        dispatch<any>(openDetailsPanel(resources[0].uuid));
     },
 };
 

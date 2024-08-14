@@ -4,18 +4,16 @@
 
 import React from "react";
 
-import { Toolbar, StyleRulesCallback, IconButton, Tooltip, Grid, WithStyles, withStyles } from "@material-ui/core";
-import { DetailsIcon } from "components/icon/icon";
+import { Toolbar, StyleRulesCallback, Grid, WithStyles, withStyles } from "@material-ui/core";
 import { Breadcrumbs } from "views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import * as Routes from 'routes/routes';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import RefreshButton from "components/refresh-button/refresh-button";
 import { loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
 import { Dispatch } from "redux";
 
-type CssRules = 'mainBar' | 'breadcrumbContainer' | 'infoTooltip';
+type CssRules = 'mainBar' | 'breadcrumbContainer';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     mainBar: {
@@ -24,15 +22,10 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     breadcrumbContainer: {
         overflow: 'hidden',
     },
-    infoTooltip: {
-        marginTop: '-10px',
-        marginLeft: '10px',
-    }
 });
 
 interface MainContentBarProps {
     onRefreshPage: () => void;
-    onDetailsPanelToggle: () => void;
     buttonVisible: boolean;
     projectUuid: string;
 }
@@ -65,7 +58,6 @@ const mapStateToProps = (state: RootState) => {
 };
 
 const mapDispatchToProps = () => (dispatch: Dispatch) => ({
-    onDetailsPanelToggle: (uuid: string) => dispatch<any>(toggleDetailsPanel(uuid)),
     onRefreshButtonClick: (id) => {
         dispatch<any>(loadSidePanelTreeProjects(id));
     }

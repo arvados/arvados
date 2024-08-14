@@ -26,7 +26,7 @@ import { ToggleTrashAction } from "views-components/context-menu/actions/trash-a
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
-import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
+import { openDetailsPanel } from "store/details-panel/details-panel-action";
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openRestoreCollectionVersionDialog } from "store/collections/collection-version-actions";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
@@ -73,7 +73,7 @@ const commonActionSet: ContextMenuActionSet = [
             icon: DetailsIcon,
             name: ContextMenuActionNames.VIEW_DETAILS,
             execute: (dispatch, resources) => {
-                dispatch<any>(toggleDetailsPanel(resources[0].uuid));
+                dispatch<any>(openDetailsPanel(resources[0].uuid));
             },
         },
         {
