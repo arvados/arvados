@@ -329,6 +329,8 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 // the token is invalid.
 type authorizer func(*http.Request, string) int
 
+// We still need to accept "OAuth2 ..." as equivalent to "Bearer ..."
+// for compatibility with older clients, including SDKs before 3.0.
 func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
 	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
@@ -1137,7 +1139,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 
 	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	authHeader := http.Header{
-		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
+		"Authorization": {"Bearer " + arvadostest.ActiveToken},
 	}
 	for _, trial := range []struct {
 		uri      string

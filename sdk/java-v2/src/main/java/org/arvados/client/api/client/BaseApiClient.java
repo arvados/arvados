@@ -45,7 +45,7 @@ abstract class BaseApiClient {
 
     Request.Builder getRequestBuilder() {
         return new Request.Builder()
-                .addHeader("authorization", String.format("OAuth2 %s", config.getApiToken()))
+                .addHeader("authorization", String.format("Bearer %s", config.getApiToken()))
                 .addHeader("cache-control", "no-cache");
     }
 

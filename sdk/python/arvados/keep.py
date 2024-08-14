@@ -1040,7 +1040,7 @@ class KeepClient(object):
         # to _KeepService objects.  Poll for Keep services, and add any
         # new ones to roots_map.  Return the current list of local
         # root strings.
-        headers.setdefault('Authorization', "OAuth2 %s" % (self.api_token,))
+        headers.setdefault('Authorization', "Bearer %s" % (self.api_token,))
         local_roots = self.weighted_service_roots(locator, force_rebuild, need_writable)
         for root in local_roots:
             if root not in roots_map:

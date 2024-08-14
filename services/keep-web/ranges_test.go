@@ -74,7 +74,7 @@ func (s *IntegrationSuite) TestRanges(c *check.C) {
 			Host:       url.Host,
 			RequestURI: url.RequestURI(),
 			Header: http.Header{
-				"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
 				"Range":         {"bytes=" + trial.header},
 			},
 		}

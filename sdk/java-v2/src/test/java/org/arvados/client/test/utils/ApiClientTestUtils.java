@@ -32,7 +32,7 @@ public final class ApiClientTestUtils {
     }
 
     public static void assertAuthorizationHeader(RecordedRequest request) {
-        assertThat(request.getHeader("authorization")).isEqualTo("OAuth2 " + new FileConfigProvider().getApiToken());
+        assertThat(request.getHeader("authorization")).isEqualTo("Bearer " + new FileConfigProvider().getApiToken());
     }
 
     public static void assertRequestPath(RecordedRequest request, String subPath) {

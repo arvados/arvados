@@ -376,7 +376,7 @@ const curlHeader = (resourceKind: string, resource: string) =>
 
 const curlExample = (uuid: string, resourcePrefix: string, resource: string | string[], resourceKind: string, resourceName: string) => {
     const curlExample = `curl -X PUT \\
-  -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \\
+  -H "Authorization: Bearer $ARVADOS_API_TOKEN" \\
   --data-urlencode ${resourceKind}@/dev/stdin \\
   https://$ARVADOS_API_HOST/arvados/v1/${resourcePrefix}/${uuid} \\
   <<EOF

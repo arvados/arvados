@@ -252,7 +252,7 @@ class UsersTest < ActionDispatch::IntegrationTest
           "username" => "barney"
         }
       },
-      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
+      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_token(:admin)}"}
     assert_response :success
     rp = json_response
     assert_not_nil rp["uuid"]

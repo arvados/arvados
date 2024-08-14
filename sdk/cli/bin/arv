@@ -274,7 +274,7 @@ def fetch_rsc_obj client, arvados, rsc, uuid, remaining_opts
                             :parameters => {"uuid" => uuid},
                             :authenticated => false,
                             :headers => {
-                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                              authorization: 'Bearer '+ENV['ARVADOS_API_TOKEN']
                             })
     obj = check_response result
   rescue => e
@@ -323,7 +323,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
                      :body_object => { rsc.singularize => newobj },
                      :authenticated => false,
                      :headers => {
-                       authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                       authorization: 'Bearer '+ENV['ARVADOS_API_TOKEN']
                      })
       results = check_response result
       STDERR.puts "Updated object #{results['uuid']}"
@@ -405,7 +405,7 @@ def arv_create client, arvados, global_opts, remaining_opts
                    :body_object => {object_type => newobj},
                    :authenticated => false,
                    :headers => {
-                     authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                     authorization: 'Bearer '+ENV['ARVADOS_API_TOKEN']
                    })
     results = check_response result
     puts "Created object #{results['uuid']}"
@@ -677,7 +677,7 @@ when
   uri_s = eval(api_method).generate_uri(request_parameters)
   Curl::Easy.perform(uri_s) do |curl|
     curl.headers['Accept'] = 'text/plain'
-    curl.headers['Authorization'] = "OAuth2 #{ENV['ARVADOS_API_TOKEN']}"
+    curl.headers['Authorization'] = "Bearer #{ENV['ARVADOS_API_TOKEN']}"
     if ENV['ARVADOS_API_HOST_INSECURE']
       curl.ssl_verify_peer = false
       curl.ssl_verify_host = false
@@ -694,7 +694,7 @@ else
                           :body_object => request_body,
                           :authenticated => false,
                           :headers => {
-                            authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                            authorization: 'Bearer '+ENV['ARVADOS_API_TOKEN']
                           })
 end
 

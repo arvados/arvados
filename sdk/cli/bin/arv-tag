@@ -25,7 +25,7 @@ def api_call(method, parameters:{}, request_body:{})
                            :body_object => request_body,
                            :authenticated => false,
                            :headers => {
-                             authorization: "OAuth2 #{ENV['ARVADOS_API_TOKEN']}",
+                             authorization: "Bearer #{ENV['ARVADOS_API_TOKEN']}",
                            })
 
   begin

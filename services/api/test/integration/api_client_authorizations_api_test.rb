@@ -12,7 +12,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
   test "create system auth" do
     post "/arvados/v1/api_client_authorizations/create_system_auth",
       params: {:format => :json, :scopes => ['test'].to_json},
-      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin_trustedclient).api_token}"}
+      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:admin_trustedclient).api_token}"}
     assert_response :success
   end
 
@@ -51,7 +51,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
     Rails.configuration.SystemRootToken = token
     get "/arvados/v1/users/current",
         params: {:format => :json},
-        headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{token}"}
+        headers: {'HTTP_AUTHORIZATION' => "Bearer #{token}"}
     assert_equal json_response['uuid'], system_user_uuid
   end
 
@@ -63,7 +63,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
           :owner_uuid => users(:spectator).uuid
         }
       },
-      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active_trustedclient).api_token}"}
+      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:active_trustedclient).api_token}"}
     assert_response 403
   end
 
@@ -83,7 +83,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
                  :expires_at => desired_expiration,
                }
              },
-             headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{token}"}
+             headers: {'HTTP_AUTHORIZATION' => "Bearer #{token}"}
         assert_response 200
         expiration_t = json_response['expires_at'].to_time
         if admin && desired_expiration
@@ -103,7 +103,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
                 :expires_at => desired_expiration
               }
             },
-            headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{token}"}
+            headers: {'HTTP_AUTHORIZATION' => "Bearer #{token}"}
         assert_response 200
         expiration_t = json_response['expires_at'].to_time
         if admin && desired_expiration

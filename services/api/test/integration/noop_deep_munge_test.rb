@@ -37,7 +37,7 @@ class NoopDeepMungeTest < ActionDispatch::IntegrationTest
         }
       }.to_json,
       headers: {
-        'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin).api_token}",
+        'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:admin).api_token}",
         'CONTENT_TYPE' => 'application/json'
       }
     assert_response :success
