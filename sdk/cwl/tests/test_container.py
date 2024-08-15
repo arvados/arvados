@@ -5,7 +5,6 @@
 import arvados_cwl
 import arvados_cwl.context
 import arvados_cwl.util
-#from arvados_cwl.arvdocker import arv_docker_clear_cache
 import copy
 import arvados.config
 import logging
@@ -61,7 +60,6 @@ class TestContainer(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
-        #arv_docker_clear_cache()
 
     def tearDown(self):
         root_logger = logging.getLogger('')
@@ -976,8 +974,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_setting_storage_class(self, keepdocker):
-        #arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -1052,8 +1048,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_setting_process_properties(self, keepdocker):
-        #arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -1148,7 +1142,6 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_cuda_requirement(self, keepdocker):
         arvados_cwl.add_arv_hints()
-        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1456,7 +1449,6 @@ class TestContainer(unittest.TestCase):
                         expect_resubmit_behavior,
                         keepdocker):
         arvados_cwl.add_arv_hints()
-        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1730,7 +1722,6 @@ class TestContainer(unittest.TestCase):
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
-        #arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
