@@ -46,7 +46,8 @@ type CssRules =
     | 'header'
     | 'title'
     | 'avatar'
-    | 'content';
+    | 'content'
+    | 'subheader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
@@ -63,6 +64,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.greyL
+    },
+    subHeader: {
+        color: theme.customs.colors.greyD
     },
     tag: {
         marginRight: theme.spacing.unit / 2,
@@ -139,76 +143,73 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     { name: "Definition" },
                 ];
                 return item
-                    ? <MPVContainer spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
-                        <MPVPanelContent xs="auto" data-cy='registered-workflow-info-panel'>
-                            <Card className={classes.infoCard}>
-                                <CardHeader
-                                    className={classes.header}
-                                    classes={{
-                                        content: classes.title,
-                                        avatar: classes.avatar,
-                                    }}
-                                    avatar={<WorkflowIcon className={classes.iconHeader} />}
-                                    title={
-                                        <Tooltip title={item.name} placement="bottom-start">
-                                            <Typography noWrap variant='h6'>
-                                                {item.name}
-                                            </Typography>
-                                        </Tooltip>
-                                    }
-                                    subheader={
-                                        <Tooltip title={item.description || '(no-description)'} placement="bottom-start">
-                                            <Typography noWrap variant='body1' color='inherit'>
-                                                {item.description || '(no-description)'}
-                                            </Typography>
-                                        </Tooltip>}
-                                    action={
-                                        <Tooltip title="More options" disableFocusListener>
-                                            <IconButton
-                                                aria-label="More options"
-                                                onClick={event => this.handleContextMenu(event)}>
-                                                <MoreVerticalIcon />
-                                            </IconButton>
-                                        </Tooltip>}
+                     ? <MPVContainer spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
+                         <MPVPanelContent xs="auto" data-cy='registered-workflow-info-panel'>
+                             <Card className={classes.infoCard}>
+                                 <CardHeader
+                                     className={classes.header}
+                                     classes={{
+                                         content: classes.title,
+                                         avatar: classes.avatar,
+                                     }}
+                                     avatar={<WorkflowIcon className={classes.iconHeader} />}
+                                     title={
+                                         <Tooltip title={item.name} placement="bottom-start">
+                                             <Typography noWrap variant='h6'>
+									 {item.name}
+                                             </Typography>
+                                         </Tooltip>
+                                     }
+                                     subheader={
+					 <div className={classes.subHeader} dangerouslySetInnerHTML={{ __html: item.description || '(no-description)' }}></div>
+				     }
+                                     action={
+                                         <Tooltip title="More options" disableFocusListener>
+                                             <IconButton
+                                                 aria-label="More options"
+                                                 onClick={event => this.handleContextMenu(event)}>
+                                                 <MoreVerticalIcon />
+                                             </IconButton>
+                                         </Tooltip>}
 
-                                />
+                                 />
 
-                                <CardContent className={classes.content}>
-                                    <WorkflowDetailsAttributes workflow={item} />
-                                </CardContent>
-                            </Card>
-                        </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs maxHeight="100%">
-                            <WorkflowProcessesPanel />
-                        </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-outputs" maxHeight="100%">
-                            <ProcessIOCard
-                                label={ProcessIOCardType.OUTPUT}
-                                params={outputParams}
-                                raw={{}}
-                                forceShowParams={true}
-                            />
-                        </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs data-cy="process-inputs" maxHeight="100%">
-                            <ProcessIOCard
-                                label={ProcessIOCardType.INPUT}
-                                params={inputParams}
-                                raw={{}}
-                                forceShowParams={true}
-                            />
-                        </MPVPanelContent>
-                        <MPVPanelContent xs maxHeight="100%">
-                            <Card className={classes.filesCard}>
-                                <CardHeader title="Workflow Definition" />
-                                <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={workflowCollection} />
-                            </Card>
-                        </MPVPanelContent>
-                    </MPVContainer>
-                    :
-                    <NotFoundView
-                        icon={WorkflowIcon}
-                        messages={["Workflow not found"]}
-                    />
+                                 <CardContent className={classes.content}>
+                                     <WorkflowDetailsAttributes workflow={item} />
+                                 </CardContent>
+                             </Card>
+                         </MPVPanelContent>
+                         <MPVPanelContent forwardProps xs maxHeight="100%">
+                             <WorkflowProcessesPanel />
+                         </MPVPanelContent>
+                         <MPVPanelContent forwardProps xs data-cy="process-outputs" maxHeight="100%">
+                             <ProcessIOCard
+                                 label={ProcessIOCardType.OUTPUT}
+                                 params={outputParams}
+                                 raw={{}}
+                                 forceShowParams={true}
+                             />
+                         </MPVPanelContent>
+                         <MPVPanelContent forwardProps xs data-cy="process-inputs" maxHeight="100%">
+                             <ProcessIOCard
+                                 label={ProcessIOCardType.INPUT}
+                                 params={inputParams}
+                                 raw={{}}
+                                 forceShowParams={true}
+                             />
+                         </MPVPanelContent>
+                         <MPVPanelContent xs maxHeight="100%">
+                             <Card className={classes.filesCard}>
+                                 <CardHeader title="Workflow Definition" />
+                                 <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={workflowCollection} />
+                             </Card>
+                         </MPVPanelContent>
+                     </MPVContainer>
+:
+                       <NotFoundView
+                           icon={WorkflowIcon}
+                           messages={["Workflow not found"]}
+                       />
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
