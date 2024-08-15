@@ -47,7 +47,7 @@ type CssRules =
     | 'title'
     | 'avatar'
     | 'content'
-    | 'subheader';
+    | 'subHeader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
