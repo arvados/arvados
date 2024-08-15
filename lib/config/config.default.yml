@@ -319,12 +319,6 @@ Clusters:
       # (Experimental) Use row-level locking on update API calls.
       LockBeforeUpdate: false
 
-      # Force system services to use the keep_services database table
-      # contents (via arvados/v1/keep_services/accessible) instead of
-      # just connecting to the keepstore servers listed in the config
-      # file. Intended for test environments only.
-      UseKeepServicesTable: false
-
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want

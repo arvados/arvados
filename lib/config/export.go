@@ -81,7 +81,6 @@ var whitelist = map[string]bool{
 	"API.RequestTimeout":                                  true,
 	"API.SendTimeout":                                     true,
 	"API.UnfreezeProjectRequiresAdmin":                    true,
-	"API.UseKeepServicesTable":                            false,
 	"API.VocabularyPath":                                  false,
 	"API.WebsocketClientEventQueue":                       false,
 	"API.WebsocketServerEventQueue":                       false,

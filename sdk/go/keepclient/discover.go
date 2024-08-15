@@ -143,7 +143,7 @@ func (kc *KeepClient) discoverServices() error {
 		return nil
 	}
 
-	if kc.Arvados.Cluster != nil && !kc.Arvados.Cluster.API.UseKeepServicesTable {
+	if kc.Arvados.Cluster != nil && os.Getenv("ARVADOS_USE_KEEP_ACCESSIBLE_API") == "" {
 		kc.disableDiscovery = true
 		roots := make(map[string]string)
 		for url, info := range kc.Arvados.Cluster.Services.Keepstore.InternalURLs {

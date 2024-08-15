@@ -60,6 +60,13 @@ func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
 }
 
 func (s *StandaloneSuite) TestKeepServicesFromClusterConfig(c *check.C) {
+	// This behavior is disabled via env var in the test
+	// environment. Clear the env var to test the default
+	// production behavior.
+	v := "ARVADOS_USE_KEEP_ACCESSIBLE_API"
+	defer os.Setenv(v, os.Getenv(v))
+	os.Unsetenv(v)
+
 	rdr := bytes.NewReader([]byte(`
 Clusters:
  zzzzz:
