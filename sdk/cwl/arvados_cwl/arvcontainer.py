@@ -588,19 +588,20 @@ class ArvadosContainer(JobBase):
                 do_retry = True
 
             if do_retry:
-                # Delete the failed request, users reported it
-                # confusing to have a failed request in the child
-                # containers list when the workflow actually
-                # succeeded.  For debugging, the log collection
-                # will still be around, and we can get the uuid of
-                # the 1st try from stderr logs.
-                self.arvrunner.api.container_requests().delete(uuid=self.uuid).execute()
+                # Add a property indicating that this container was resubmitted.
+                updateproperties = record["properties"].copy()
+                olduuid = self.uuid
                 self.job_runtime.submit_request_uuid = None
                 self.uuid = None
                 self.run(None)
                 # this flag suppresses calling the output callback, we only want to set this
                 # when we're sure that the resubmission has happened without issue.
                 retried = True
+                # Add a property to the old container request indicating it
+                # was retried
+                updateproperties["arv:failed_container_resubmitted"] = self.uuid
+                self.arvrunner.api.container_requests().update(uuid=olduuid,
+                                                               body={"properties": updateproperties}).execute()
                 return
 
             logc = None

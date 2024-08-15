@@ -1531,6 +1531,9 @@ class TestContainer(unittest.TestCase):
         expect_resubmit_container_request = expect_container_request.copy()
         expect_resubmit_container_request['scheduling_parameters'] = {'preemptible': False}
 
+        runner.api.container_requests().create().execute.return_value = {"uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+                                                                         "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"}
+
         if expect_resubmit_behavior:
             expect_container_request['container_count_max'] = 1
 
@@ -1547,6 +1550,9 @@ class TestContainer(unittest.TestCase):
                 "preemptionNotice": "bye bye"
             }
         }
+        runner.api.container_requests().create().execute.return_value = {"uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzz2",
+                                                                         "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzz2"}
+
         j.done({
             "state": "Final",
             "log_uuid": "",
@@ -1558,6 +1564,8 @@ class TestContainer(unittest.TestCase):
             "name": "testjob"
         })
         if expect_resubmit_behavior:
+            runner.api.container_requests().update.assert_any_call(
+                uuid="zzzzz-xvhdp-zzzzzzzzzzzzzzz", body={"properties": {"arv:failed_container_resubmitted": "zzzzz-xvhdp-zzzzzzzzzzzzzz2"}})
             runner.api.container_requests().create.assert_called_with(
                 body=JsonDiffMatcher(expect_resubmit_container_request))
 
