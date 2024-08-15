@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 Rails.application.routes.draw do
-  themes_for_rails
-
   # OPTIONS requests are not allowed at routes that use cookies.
   ['/auth/*a', '/login', '/logout'].each do |nono|
     match nono, to: 'user_sessions#cross_origin_forbidden', via: 'OPTIONS'

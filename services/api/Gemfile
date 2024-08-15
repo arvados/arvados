@@ -41,8 +41,6 @@ gem 'andand'
 
 gem 'optimist'
 
-gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
-
 gem 'arvados', '~> 2.7.0.rc1'
 gem 'httpclient'
 
