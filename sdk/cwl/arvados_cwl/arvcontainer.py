@@ -5,7 +5,6 @@
 import logging
 import json
 import os
-from unittest import async_case
 import urllib.request, urllib.parse, urllib.error
 import time
 import datetime

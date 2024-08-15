@@ -1340,18 +1340,19 @@ class TestContainer(unittest.TestCase):
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @parameterized.expand([
-        ("None, None", None, None),
-        ("None, True", None, True),
-        ("None, False", None, False),
-        ("False, None", False, None),
-        ("False, True", False, True),
-        ("False, False", False, False),
-        ("True, None", True, None),
-        ("True, True", True, True),
-        ("True, False", True, False),
+        ("None, None",   None,  None,  None),
+        ("None, True",   None,  True,  True),
+        ("None, False",  None,  False, False),
+        ("False, None",  False, None,  False),
+        ("False, True",  False, True,  False),
+        ("False, False", False, False, False),
+        ("True, None",   True,  None,  True),
+        ("True, True",   True,  True,  True),
+        ("True, False",  True,  False, False),
     ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_run_preemptible_hint(self, _, enable_preemptible, preemptible_hint, keepdocker):
+    def test_run_preemptible_hint(self, _, enable_preemptible, preemptible_hint,
+                                  preemptible_setting, keepdocker):
         arvados_cwl.add_arv_hints()
 
         runner = mock.MagicMock()
@@ -1395,16 +1396,9 @@ class TestContainer(unittest.TestCase):
         # Test the interactions between --enable/disable-preemptible
         # and UsePreemptible hint
 
-        if enable_preemptible is None:
-            if preemptible_hint is None:
-                sched = {}
-            else:
-                sched = {'preemptible': preemptible_hint}
-        else:
-            if preemptible_hint is None:
-                sched = {'preemptible': enable_preemptible}
-            else:
-                sched = {'preemptible': enable_preemptible and preemptible_hint}
+        sched = {}
+        if preemptible_setting is not None:
+            sched['preemptible'] = preemptible_setting
 
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
             j.run(runtimeContext)
