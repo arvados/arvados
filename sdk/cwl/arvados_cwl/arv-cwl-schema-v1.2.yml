@@ -454,3 +454,23 @@ $graph:
       type: ['null', string, cwl:Expression]
       doc: |
         Custom name to use for the runner process
+
+
+- name: PreemptionBehavior
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    If `resubmitNonPreemptible` is true and a workflow step fails due
+    to the instance it is running on being preempted, re-submit the
+    container with the `preemptible` flag set to false.
+  fields:
+    - name: class
+      type: string
+      doc: "arv:PreemptionBehavior"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+
+    - name: resubmitNonPreemptible
+      type: boolean

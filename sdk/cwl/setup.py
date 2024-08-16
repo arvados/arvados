@@ -41,6 +41,9 @@ setup(name='arvados-cwl-runner',
       classifiers=[
           'Programming Language :: Python :: 3',
       ],
+      test_requires=[
+        'parameterized'
+      ],
       test_suite='tests',
       zip_safe=True,
 )
