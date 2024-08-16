@@ -951,10 +951,11 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	c.Check(logFileContent(c, s.runner, "crunchstat.txt"), Matches, `(?ms).*mem \d+ swap \d+ pgmajfault \d+ rss.*`)
+	c.Check(logFileContent(c, s.runner, "crunchstat.txt"), Matches, `(?ms).*`+reTimestamp+` mem \d+ swap \d+ pgmajfault \d+ rss.*`)
+	c.Check(logFileContent(c, s.runner, "hoststat.txt"), Matches, `(?ms).*`+reTimestamp+` mem \d+ swap \d+ pgmajfault \d+ rss.*`)
 
 	// Check that we called (*crunchstat.Reporter)Stop().
-	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Maximum crunch-run memory rss usage was \d+ bytes\n.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*`+reTimestamp+` Maximum crunch-run memory rss usage was \d+ bytes\n.*`)
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
@@ -1766,7 +1767,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 	})
 	c.Check(s.api.CalledWith("container.exit_code", 3), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*status code 3\n.*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*`+reTimestamp+` Container exited with status code 3\n.*`)
 }
 
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
@@ -1821,7 +1822,8 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 	c.Check(s.api.CalledWith("container.runtime_status.warning", "arv-mount: Keep write error"), NotNil)
 	c.Check(s.api.CalledWith("container.runtime_status.warningDetail", "Test: Keep write error: I am a teapot"), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*Container exited with status code 137 \(signal 9, SIGKILL\).*`)
+	c.Check(logFileContent(c, s.runner, "crunch-run.txt"), Matches, `(?ms).*`+reTimestamp+` Container exited with status code 137 \(signal 9, SIGKILL\).*`)
+	c.Check(logFileContent(c, s.runner, "arv-mount.txt"), Matches, reTimestamp+` Test: Keep write error: I am a teapot\n`)
 }
 
 func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C) {
