@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -982,12 +983,20 @@ func newFileEventLog(
 		return nil
 	}
 
+	// We want to log the address of the proxy closest to keep-web—the last
+	// value in the X-Forwarded-For list—or the client address if there is no
+	// valid proxy.
 	var clientAddr string
+	// 1. Build a slice of proxy addresses from X-Forwarded-For.
 	xff := strings.Join(r.Header.Values("X-Forwarded-For"), ",")
 	addrs := strings.Split(xff, ",")
+	// 2. Reverse the slice so it's in our most preferred order for logging.
+	slices.Reverse(addrs)
+	// 3. Append the client address to that slice.
 	if addr, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		addrs = append(addrs, addr)
 	}
+	// 4. Use the first valid address in the slice.
 	for _, addr := range addrs {
 		if ip := net.ParseIP(strings.TrimSpace(addr)); ip != nil {
 			clientAddr = ip.String()

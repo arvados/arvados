@@ -162,19 +162,19 @@ func (s *UnitSuite) TestLogXForwardedFor(c *check.C) {
 	req := newRequest("GET", collURL+filePath)
 	for xff, expected := range map[string]string{
 		"10.20.30.55":                          "10.20.30.55",
-		"192.168.144.120, 10.20.30.120":        "192.168.144.120",
-		"192.0.2.4, 192.0.2.6, 192.0.2.8":      "192.0.2.4",
-		"192.0.2.4,192.168.2.4":                "192.0.2.4",
-		"10.20.30.60,192.168.144.40,192.0.2.4": "10.20.30.60",
+		"192.168.144.120, 10.20.30.120":        "10.20.30.120",
+		"192.0.2.4, 192.0.2.6, 192.0.2.8":      "192.0.2.8",
+		"192.0.2.4,192.168.2.4":                "192.168.2.4",
+		"10.20.30.60,192.168.144.40,192.0.2.4": "192.0.2.4",
 		"100::20:30:50":                        "100::20:30:50",
-		"2001:db8::80:90, 100::100":            "2001:db8::80:90",
-		"3fff::ff, 3fff::ee, 3fff::fe":         "3fff::ff",
-		"3fff::3f,100::1000":                   "3fff::3f",
-		"2001:db8::88,100::88,3fff::88":        "2001:db8::88",
-		"10.20.30.60, 2001:db8::60":            "10.20.30.60",
-		"2001:db8::20,10.20.30.20":             "2001:db8::20",
-		", 10.20.30.123, 100::123":             "10.20.30.123",
-		",100::321,10.30.20.10":                "100::321",
+		"2001:db8::80:90, 100::100":            "100::100",
+		"3fff::ff, 3fff::ee, 3fff::fe":         "3fff::fe",
+		"3fff::3f,100::1000":                   "100::1000",
+		"2001:db8::88,100::88,3fff::88":        "3fff::88",
+		"10.20.30.60, 2001:db8::60":            "2001:db8::60",
+		"2001:db8::20,10.20.30.20":             "10.20.30.20",
+		", 10.20.30.123, 100::123":             "100::123",
+		",100::321,10.30.20.10":                "10.30.20.10",
 	} {
 		req.Header.Set("X-Forwarded-For", xff)
 		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
@@ -208,7 +208,7 @@ func (s *UnitSuite) TestLogXForwardedForMultivalue(c *check.C) {
 	req.Header.Add("X-Forwarded-For", "10.20.30.90")
 	actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
 	c.Assert(actual, check.NotNil)
-	c.Check(actual.clientAddr, check.Equals, "2001:db8::db9:dbd")
+	c.Check(actual.clientAddr, check.Equals, "10.20.30.90")
 }
 
 func (s *UnitSuite) TestLogClientAddressCanonicalization(c *check.C) {
