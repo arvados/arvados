@@ -57,7 +57,7 @@ export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChang
     ({ inputs, workflow, selectedPreset, presets, onPresetChange, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
         <Grid container spacing={16} data-cy="new-process-panel">
             <Grid item xs={12}>
-                <RunProcessBasicForm />
+                <RunProcessBasicForm workflow={workflow} />
                 <RunProcessInputsForm inputs={inputs} />
                 <RunProcessAdvancedForm />
             </Grid>
