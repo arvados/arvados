@@ -126,6 +126,24 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	})
 	ctx := ctxlog.Context(c.ctx, logger)
 
+	// Check whether the caller is attempting to use environment
+	// variables to override cluster configuration, and advise
+	// that won't work.
+	{
+		envhost := os.Getenv("ARVADOS_API_HOST")
+		if envhost != "" && envhost != cluster.Services.Controller.ExternalURL.Host {
+			logger.Warn("ARVADOS_API_HOST environment variable is present, but will not be used")
+		}
+		envins := os.Getenv("ARVADOS_API_HOST_INSECURE")
+		if envins != "" && (envins != "0") != cluster.TLS.Insecure {
+			logger.Warn("ARVADOS_API_HOST_INSECURE environment variable is present, but will not be used")
+		}
+		envtoken := os.Getenv("ARVADOS_API_TOKEN")
+		if envtoken != "" && envtoken != cluster.SystemRootToken {
+			logger.Warn("ARVADOS_API_TOKEN environment variable is present, but will not be used")
+		}
+	}
+
 	listenURL, internalURL, err := getListenAddr(cluster.Services, c.svcName, log)
 	if err != nil {
 		return 1
