@@ -146,6 +146,7 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
             return ProcessStatus.DRAFT;
 
         case containerRequest.state === ContainerRequestState.FINAL &&
+		   containerRequest.properties &&
 		   Boolean(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]):
 		   // Failed but a new container request for the same work was resubmitted.
 		   return ProcessStatus.RESUBMITTED;
