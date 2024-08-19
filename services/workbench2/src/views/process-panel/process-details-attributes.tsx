@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, StyleRulesCallback, withStyles } from "@material-ui/core";
+import { Grid, StyleRulesCallback, withStyles, Typography, } from "@material-ui/core";
 import { Dispatch } from 'redux';
 import { formatCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
 import { CollectionName, ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
-import { getProcess, getProcessStatus } from "store/processes/process";
+import { getProcess, getProcessStatus, ProcessProperties } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
@@ -23,6 +23,9 @@ import { ContainerRequestResource } from "models/container-request";
 import { filterResources } from "store/resources/resources";
 import { JSONMount } from 'models/mount-types';
 import { getCollectionUrl } from 'models/collection';
+import { Link } from "react-router-dom";
+import { getResourceUrl } from "routes/routes";
+import WarningIcon from '@material-ui/icons/Warning';
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -109,24 +112,30 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
                 </Grid>}
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Docker image locator'
-                        linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute
-                        label='Owner' linkToUuid={containerRequest.ownerUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
-                </Grid>
-                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
-                </Grid>}
+	    {containerRequest.properties["arv:failed_container_resubmitted"] && <Grid item xs={12}>
+		<Typography>
+		    <WarningIcon />
+		    This process failed but was automatically resubmitted.  <Link to={getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]) || ""}> Click here to go to the resubmitted process.</Link>
+		</Typography>
+	    </Grid>}
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Docker image locator'
+				  linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute
+                    label='Owner' linkToUuid={containerRequest.ownerUuid}
+                    uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
+            </Grid>
+            {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
+            </Grid>}
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
                 </Grid>
