@@ -2229,14 +2229,29 @@ func (s *IntegrationSuite) TestLogThrottling(c *check.C) {
 	fooURL := "http://" + arvadostest.FooCollection + ".keep-web.example/foo"
 	req := newRequest("GET", fooURL)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	pattern := `\bmsg="File download".* collection_file_path=foo\b`
+
+	// All these requests get byte zero and should be logged.
 	reqs := make(map[*http.Request]int)
-	for _, byterange := range []string{"0-2", "0-1", "1-2"} {
+	reqs[req] = http.StatusOK
+	for _, byterange := range []string{"0-2", "0-1", "0-", "-3"} {
 		req := req.Clone(context.Background())
 		req.Header.Set("Range", "bytes="+byterange)
 		reqs[req] = http.StatusPartialContent
 	}
 	logbuf := s.serveAndLogRequests(c, &reqs)
-	countLogMatches(c, logbuf, `\bmsg="File download".* collection_file_path=foo\b`, 1)
+	countLogMatches(c, logbuf, pattern, len(reqs))
+
+	// None of these requests get byte zero so they should all be throttled
+	// (now that we've made at least one request for byte zero).
+	reqs = make(map[*http.Request]int)
+	for _, byterange := range []string{"1-2", "1-", "2-", "-1", "-2"} {
+		req := req.Clone(context.Background())
+		req.Header.Set("Range", "bytes="+byterange)
+		reqs[req] = http.StatusPartialContent
+	}
+	logbuf = s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, pattern, 0)
 }
 
 func (s *IntegrationSuite) TestLogThrottleInterval(c *check.C) {

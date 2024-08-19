@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"slices"
 	"sort"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/gotd/contrib/http_range"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
@@ -1070,11 +1072,17 @@ func (ev *fileEventLog) asFields() logrus.Fields {
 	return fields
 }
 
-func (h *handler) shouldLogEvent(event *fileEventLog, t time.Time) bool {
+func (h *handler) shouldLogEvent(
+	event *fileEventLog,
+	req *http.Request,
+	fileInfo os.FileInfo,
+	t time.Time,
+) bool {
 	if event == nil {
 		return false
 	} else if event.eventType != "file_download" ||
-		h.Cluster.Collections.WebDAVLogDownloadInterval == 0 {
+		h.Cluster.Collections.WebDAVLogDownloadInterval == 0 ||
+		fileInfo == nil {
 		return true
 	}
 	td := h.Cluster.Collections.WebDAVLogDownloadInterval.Duration()
@@ -1086,6 +1094,26 @@ func (h *handler) shouldLogEvent(event *fileEventLog, t time.Time) bool {
 		h.fileEventLogs = make(map[fileEventLog]time.Time)
 	}
 	shouldLog := h.fileEventLogs[ev].Before(cutoff)
+	if !shouldLog {
+		// Go's http fs server evaluates http.Request.Header.Get("Range")
+		// (as of Go 1.22) so we should do the same.
+		// Don't worry about merging multiple headers, etc.
+		ranges, err := http_range.ParseRange(req.Header.Get("Range"), fileInfo.Size())
+		if ranges == nil || err != nil {
+			// The Range header was either empty or malformed.
+			// Err on the side of logging.
+			shouldLog = true
+		} else {
+			// Log this request only if it requested the first byte
+			// (our heuristic for "starting a new download").
+			for _, reqRange := range ranges {
+				if reqRange.Start == 0 {
+					shouldLog = true
+					break
+				}
+			}
+		}
+	}
 	if shouldLog {
 		h.fileEventLogs[ev] = t
 	}
@@ -1108,11 +1136,19 @@ func (h *handler) logUploadOrDownload(
 	collection *arvados.Collection,
 	user *arvados.User,
 ) {
-	if collection == nil && fs != nil {
-		collection, filepath = h.determineCollection(fs, filepath)
+	var fileInfo os.FileInfo
+	if fs != nil {
+		if collection == nil {
+			collection, filepath = h.determineCollection(fs, filepath)
+		}
+		if collection != nil {
+			// It's okay to ignore this error because shouldLogEvent will
+			// always return true if fileInfo == nil.
+			fileInfo, _ = fs.Stat(path.Join("by_id", collection.UUID, filepath))
+		}
 	}
 	event := newFileEventLog(h, r, filepath, collection, user, client.ApiToken)
-	if !h.shouldLogEvent(event, time.Now()) {
+	if !h.shouldLogEvent(event, r, fileInfo, time.Now()) {
 		return
 	}
 	log := ctxlog.FromContext(r.Context()).WithFields(event.asFields())
