@@ -15,6 +15,7 @@ const initialState: ProcessPanel = {
     outputDefinitions: [],
     outputParams: null,
     usageReport: null,
+    containerStatus: null,
 };
 
 export type OutputDataUpdate = {

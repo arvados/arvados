@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, StyleRulesCallback, withStyles } from "@material-ui/core";
+import { Grid, StyleRulesCallback, withStyles, Typography } from "@material-ui/core";
 import { Dispatch } from 'redux';
 import { formatCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -45,16 +45,23 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 
     let workflowCollection = "";
     let workflowPath = "";
+    let schedulingStatus = "";
     if (process?.containerRequest?.mounts && process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW]) {
         const wf = process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
 
-        if (wf.content["$graph"] &&
-            wf.content["$graph"].length > 0 &&
-            wf.content["$graph"][0] &&
-            wf.content["$graph"][0]["steps"] &&
-            wf.content["$graph"][0]["steps"][0]) {
+	if (process?.container &&
+	    state.processPanel.containerStatus?.uuid === process?.container?.uuid)
+	{
+	    schedulingStatus = state.processPanel.containerStatus.schedulingStatus;
+	}
 
-            const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
+        if (wf.content["$graph"] &&
+	    wf.content["$graph"].length > 0 &&
+	    wf.content["$graph"][0] &&
+	    wf.content["$graph"][0]["steps"] &&
+	    wf.content["$graph"][0]["steps"][0]) {
+
+		const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
             const pdh = wf.content["$graph"][0]["steps"][0].run.match(REGEX);
             if (pdh) {
                 workflowCollection = pdh[1];
@@ -67,9 +74,10 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
         container: process?.container,
         workflowCollection,
         workflowPath,
+	schedulingStatus,
         subprocesses: filterResources((resource: ContainerRequestResource) =>
             resource.kind === ResourceKind.CONTAINER_REQUEST &&
-            resource.requestingContainerUuid === process?.containerRequest.containerUuid
+									    resource.requestingContainerUuid === process?.containerRequest.containerUuid
         )(state.resources),
     };
 };
@@ -87,9 +95,15 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionP
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
         (props: {
-            request: ProcessResource, container?: ContainerResource, subprocesses: ContainerRequestResource[],
-            workflowCollection, workflowPath,
-            twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string>
+            request: ProcessResource,
+	    container?: ContainerResource,
+	    subprocesses: ContainerRequestResource[],
+            workflowCollection,
+	    workflowPath,
+	    schedulingStatus,
+            twoCol?: boolean,
+	    hideProcessPanelRedundantFields?: boolean,
+	    classes: Record<CssRules, string>
         } & ProcessDetailsAttributesActionProps) => {
             const containerRequest = props.request;
             const container = props.container;
@@ -109,43 +123,47 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
                 </Grid>}
-                <Grid item xs={12} md={mdSize}>
+            {props.schedulingStatus !== "" && <Grid item xs={12} md={12}>
+                <Typography>{props.schedulingStatus}</Typography>
+		    </Grid>}
+
+		<Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
+		</Grid>
+		<Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Docker image locator'
-                        linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
+				      linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+		</Grid>
+		<Grid item xs={12} md={mdSize}>
                     <DetailsAttribute
-                        label='Owner' linkToUuid={containerRequest.ownerUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
+			label='Owner' linkToUuid={containerRequest.ownerUuid}
+			uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+		</Grid>
+		<Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
-                </Grid>
-                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+		</Grid>
+		{!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
-                </Grid>}
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Started at' value={container ? formatDate(container.startedAt) : "(none)"} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container run time'>
-                        <ContainerRunTime uuid={containerRequest.uuid} />
-                    </DetailsAttribute>
-                </Grid>
-                {(containerRequest && containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-modifiedby-user">
-                    <DetailsAttribute
-                        label='Submitted by' linkToUuid={containerRequest.modifiedByUserUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-                </Grid>}
+		</Grid>}
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Started at' value={container ? formatDate(container.startedAt) : "(none)"} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Container run time'>
+                    <ContainerRunTime uuid={containerRequest.uuid} />
+                </DetailsAttribute>
+            </Grid>
+            {(containerRequest && containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-modifiedby-user">
+                <DetailsAttribute
+                    label='Submitted by' linkToUuid={containerRequest.modifiedByUserUuid}
+                    uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+            </Grid>}
                 {(container && container.runtimeUserUuid && container.runtimeUserUuid !== containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
                     <DetailsAttribute
                         label='Run as' linkToUuid={container.runtimeUserUuid}
