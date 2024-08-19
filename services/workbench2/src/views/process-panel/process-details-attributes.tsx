@@ -61,7 +61,7 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 	    wf.content["$graph"][0]["steps"] &&
 	    wf.content["$graph"][0]["steps"][0]) {
 
-		const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
+	    const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
             const pdh = wf.content["$graph"][0]["steps"][0].run.match(REGEX);
             if (pdh) {
                 workflowCollection = pdh[1];
@@ -117,16 +117,12 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
             return <Grid container>
-                <Grid item xs={12}>
-                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
-                </Grid>
-                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
-                </Grid>}
-            {props.schedulingStatus !== "" && <Grid item xs={12} md={12}>
-                <Typography>{props.schedulingStatus}</Typography>
-		    </Grid>}
-
+            <Grid item xs={12}>
+                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} schedulingStatus={props.schedulingStatus} />
+            </Grid>
+            {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
+            </Grid>}
 		<Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
 		</Grid>
