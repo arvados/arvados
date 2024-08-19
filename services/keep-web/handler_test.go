@@ -2191,32 +2191,47 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) TestLogThrottling(c *check.C) {
-	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+func (s *IntegrationSuite) serveAndLogRequests(c *check.C, reqs *map[*http.Request]int) *bytes.Buffer {
 	logbuf, ctx := newLoggerAndContext()
-	fooURL := "http://" + arvadostest.FooCollection + ".keep-web.example/foo"
-
 	var wg sync.WaitGroup
-	for _, byterange := range []string{"0-2", "0-1", "1-2"} {
-		byterange := byterange
+	for req, expectStatus := range *reqs {
+		req := req.WithContext(ctx)
+		expectStatus := expectStatus
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			req := newRequest("GET", fooURL)
-			req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-			req.Header.Set("Range", "bytes="+byterange)
-			req = req.WithContext(ctx)
 			resp := httptest.NewRecorder()
 			s.handler.ServeHTTP(resp, req)
-			c.Check(resp.Result().StatusCode, check.Equals, http.StatusPartialContent)
+			c.Check(resp.Result().StatusCode, check.Equals, expectStatus)
 		}()
 	}
 	wg.Wait()
+	return logbuf
+}
 
-	re := regexp.MustCompile(`\bmsg="File download".* collection_file_path=foo\b`)
-	matches := re.FindAll(logbuf.Bytes(), -1)
-	c.Check(matches, check.HasLen, 1,
+func countLogMatches(c *check.C, logbuf *bytes.Buffer, pattern string, matchCount int) bool {
+	search, err := regexp.Compile(pattern)
+	if !c.Check(err, check.IsNil, check.Commentf("failed to compile regexp: %v", err)) {
+		return false
+	}
+	matches := search.FindAll(logbuf.Bytes(), -1)
+	return c.Check(matches, check.HasLen, matchCount,
 		check.Commentf("%d matching log messages: %+v", len(matches), matches))
+}
+
+func (s *IntegrationSuite) TestLogThrottling(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	fooURL := "http://" + arvadostest.FooCollection + ".keep-web.example/foo"
+	req := newRequest("GET", fooURL)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	reqs := make(map[*http.Request]int)
+	for _, byterange := range []string{"0-2", "0-1", "1-2"} {
+		req := req.Clone(context.Background())
+		req.Header.Set("Range", "bytes="+byterange)
+		reqs[req] = http.StatusPartialContent
+	}
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_file_path=foo\b`, 1)
 }
 
 func (s *IntegrationSuite) TestLogThrottleInterval(c *check.C) {
@@ -2240,43 +2255,28 @@ func (s *IntegrationSuite) TestLogThrottleInterval(c *check.C) {
 
 func (s *IntegrationSuite) TestLogThrottleDifferentTokens(c *check.C) {
 	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
-	logbuf, ctx := newLoggerAndContext()
 	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
-	req = req.WithContext(ctx)
-
-	trials := []string{arvadostest.ActiveToken, arvadostest.AdminToken}
-	for _, token := range trials {
+	reqs := make(map[*http.Request]int)
+	for _, token := range []string{arvadostest.ActiveToken, arvadostest.AdminToken} {
+		req := req.Clone(context.Background())
 		req.Header.Set("Authorization", "Bearer "+token)
-		resp := httptest.NewRecorder()
-		s.handler.ServeHTTP(resp, req)
-		c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
+		reqs[req] = http.StatusOK
 	}
-
-	re := regexp.MustCompile(`\bmsg="File download".* collection_file_path=foo\b`)
-	matches := re.FindAll(logbuf.Bytes(), -1)
-	c.Check(matches, check.HasLen, len(trials),
-		check.Commentf("%d matching log messages: %+v", len(matches), matches))
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_file_path=foo\b`, len(reqs))
 }
 
 func (s *IntegrationSuite) TestLogThrottleDifferentFiles(c *check.C) {
 	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
-	logbuf, ctx := newLoggerAndContext()
 	baseURL := "http://" + arvadostest.MultilevelCollection1 + ".keep-web.example/"
-
-	trials := []string{"file1", "file2", "file3"}
-	for _, filename := range trials {
+	reqs := make(map[*http.Request]int)
+	for _, filename := range []string{"file1", "file2", "file3"} {
 		req := newRequest("GET", baseURL+filename)
 		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-		req = req.WithContext(ctx)
-		resp := httptest.NewRecorder()
-		s.handler.ServeHTTP(resp, req)
-		c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
+		reqs[req] = http.StatusOK
 	}
-
-	re := regexp.MustCompile(`\bmsg="File download".* collection_uuid=` + arvadostest.MultilevelCollection1 + `\b`)
-	matches := re.FindAll(logbuf.Bytes(), -1)
-	c.Check(matches, check.HasLen, len(trials),
-		check.Commentf("%d matching log messages: %+v", len(matches), matches))
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_uuid=`+arvadostest.MultilevelCollection1+`\b`, len(reqs))
 }
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
