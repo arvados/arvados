@@ -24,7 +24,7 @@ const mapStateToPropsUUID = (state: RootState) => {
 						    state.auth.config.keepWebServiceUrl,
 						    state.auth.config.keepWebInlineServiceUrl),
                 kind: 'file',
-		customText: "Copy link to latest version (content may change if collection changes)",
+		customText: "Copy link to latest version",
 	    };
         }
     }
@@ -46,7 +46,7 @@ const mapStateToPropsPDH = (state: RootState) => {
 						    state.auth.config.keepWebServiceUrl,
 						    state.auth.config.keepWebInlineServiceUrl),
 		kind: 'file',
-		customText: "Copy link to this exact version (content is immutable)",
+		customText: "Copy link to immutable version",
 	    };
         }
     }
@@ -70,7 +70,7 @@ const mapStateToPropsCWL = (state: RootState) => {
 	    return {
                 href: `keep:${currentCollectionPDH}${path}`,
 		kind: 'file',
-		customText: "Copy file reference to use in CWL",
+		customText: "Copy CWL file reference",
 	    };
         }
     }
