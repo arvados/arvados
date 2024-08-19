@@ -57,7 +57,7 @@ export const loadProcess =
 
         let containerStatus: ContainerStatus | undefined = undefined;
         try {
-            containerStatus = await services.containerRequestService.containerStatus(containerRequestUuid);
+            containerStatus = await services.containerRequestService.containerStatus(containerRequestUuid, false);
             dispatch<any>(processPanelActions.SET_CONTAINER_STATUS(containerStatus));
         } catch {
         }
