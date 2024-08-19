@@ -66,8 +66,13 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 
 func newCollection(collID string) *arvados.Collection {
 	coll := &arvados.Collection{UUID: collID}
+	manifestKey := collID
 	if pdh, ok := arvadostest.TestCollectionUUIDToPDH[collID]; ok {
 		coll.PortableDataHash = pdh
+		manifestKey = pdh
+	}
+	if mtext, ok := arvadostest.TestCollectionPDHToManifest[manifestKey]; ok {
+		coll.ManifestText = mtext
 	}
 	return coll
 }
