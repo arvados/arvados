@@ -2279,6 +2279,21 @@ func (s *IntegrationSuite) TestLogThrottleDifferentFiles(c *check.C) {
 	countLogMatches(c, logbuf, `\bmsg="File download".* collection_uuid=`+arvadostest.MultilevelCollection1+`\b`, len(reqs))
 }
 
+func (s *IntegrationSuite) TestLogThrottleDifferentSources(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	reqs := make(map[*http.Request]int)
+	reqs[req] = http.StatusOK
+	for _, xff := range []string{"10.22.33.44", "100::123"} {
+		req := req.Clone(context.Background())
+		req.Header.Set("X-Forwarded-For", xff)
+		reqs[req] = http.StatusOK
+	}
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_file_path=foo\b`, len(reqs))
+}
+
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
 	lockTidyInterval = time.Second
