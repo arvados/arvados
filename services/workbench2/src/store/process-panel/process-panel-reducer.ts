@@ -79,5 +79,8 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
         SET_USAGE_REPORT: ({ usageReport }) => {
             return { ...state, usageReport };
         },
+	SET_CONTAINER_STATUS: (containerStatus) => {
+            return { ...state, containerStatus };
+	},
         default: () => state,
     });
