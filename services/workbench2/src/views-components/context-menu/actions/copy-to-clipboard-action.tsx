@@ -6,13 +6,18 @@ import React from "react";
 import copy from 'copy-to-clipboard';
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
 import { Link } from "components/icon/icon";
-import { getCollectionItemClipboardUrl } from "./helpers";
 
-export const CopyToClipboardAction = (props: { href?: any, download?: any, onClick?: () => void, kind?: string, currentCollectionUuid?: string; }) => {
+interface CopyToClipboardActionProps {
+    href?: any;
+    kind?: string;
+    customText?: string;
+    onClick?: () => void;
+};
+
+export const CopyToClipboardAction = (props: CopyToClipboardActionProps) => {
     const copyToClipboard = () => {
         if (props.href) {
-            const clipboardUrl = getCollectionItemClipboardUrl(props.href, true, true);
-            copy(clipboardUrl);
+	    copy(props.href);
         }
 
         if (props.onClick) {
@@ -21,13 +26,13 @@ export const CopyToClipboardAction = (props: { href?: any, download?: any, onCli
     };
 
     return props.href
-        ? <ListItem button onClick={copyToClipboard}>
-            <ListItemIcon>
-                <Link />
-            </ListItemIcon>
-            <ListItemText>
-                Copy link to clipboard
-            </ListItemText>
-        </ListItem>
-        : null;
+         ? <ListItem button onClick={copyToClipboard}>
+             <ListItemIcon>
+                 <Link />
+             </ListItemIcon>
+             <ListItemText>
+                 {props.customText ? props.customText : "Copy link to clipboard"}
+             </ListItemText>
+         </ListItem>
+         : null;
 };
