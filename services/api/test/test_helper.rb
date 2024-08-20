@@ -51,13 +51,14 @@ module ArvadosTestSupport
 
   def full_text_excluded_columns
     [
-      # All the columns that end with "hash" or "uuid" as of June 2024/Arvados 3.0.
-      # It's okay if this list isn't complete, it just needs to be complete
+      # All the columns that contain a UUID or PDH as of June 2024/Arvados 3.0.
+      # It's okay if this list gets out-of-date, it just needs to be complete
       # enough to test that full text indexes exclude the right columns.
       "authorized_user_uuid",
       "auth_uuid",
       "cancelled_by_client_uuid",
       "cancelled_by_user_uuid",
+      "container_image",
       "container_uuid",
       "current_version_uuid",
       "for_container_uuid",
