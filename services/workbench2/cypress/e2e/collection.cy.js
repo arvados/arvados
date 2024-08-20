@@ -353,7 +353,7 @@ describe("Collection panel tests", function () {
                                 .should("contain", "Download")
                                 .and("contain", "Open in new tab")
                                 .and("contain", "Copy link to latest version")
-                                .and("contain", "Copy link to this exact version")
+                                .and("contain", "Copy link to immutable version")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
@@ -362,7 +362,7 @@ describe("Collection panel tests", function () {
                                 .should("not.contain", "Download")
                                 .and("contain", "Open in new tab")
                                 .and("contain", "Copy link to latest version")
-                                .and("contain", "Copy link to this exact version")
+                                .and("contain", "Copy link to immutable version")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
