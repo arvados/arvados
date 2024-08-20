@@ -105,17 +105,19 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 .filter(k => (typeof containerRequest.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
+            const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
+
             return <Grid container>
-                <Grid item xs={12}>
-                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
-                </Grid>
-                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
-                </Grid>}
-            {containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED] && <Grid item xs={12}>
+            <Grid item xs={12}>
+                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
+            </Grid>
+            {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
+            </Grid>}
+            {resubmittedUrl && <Grid item xs={12}>
                 <Typography>
                     <WarningIcon />
-                    This process failed but was automatically resubmitted.  <Link to={getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]) || ""}> Click here to go to the resubmitted process.</Link>
+                    This process failed but was automatically resubmitted.  <Link to={resubmittedUrl}> Click here to go to the resubmitted process.</Link>
                 </Typography>
             </Grid>}
             <Grid item xs={12} md={mdSize}>

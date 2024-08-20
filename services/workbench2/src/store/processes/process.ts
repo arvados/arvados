@@ -103,7 +103,7 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             running = true;
             break;
         case ProcessStatus.RESUBMITTED:
-            color = theme.customs.colors.orange;
+            color = theme.customs.colors.darkOrange;
             break;
         case ProcessStatus.FAILING:
             color = theme.customs.colors.red900;
