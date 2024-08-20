@@ -41,7 +41,7 @@ export enum ProcessProperties {
  * @returns a Process object with containerRequest and optional container or undefined
  */
 export const getProcess = (uuid: string) => (resources: ResourcesState): Process | undefined => {
-	if (extractUuidKind(uuid) === ResourceKind.CONTAINER_REQUEST) {
+    if (extractUuidKind(uuid) === ResourceKind.CONTAINER_REQUEST) {
         const containerRequest = getResource<ContainerRequestResource>(uuid)(resources);
         if (containerRequest) {
             if (containerRequest.containerUuid) {
@@ -104,7 +104,7 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             break;
         case ProcessStatus.RESUBMITTED:
             color = theme.customs.colors.orange;
-	    break;
+            break;
         case ProcessStatus.FAILING:
             color = theme.customs.colors.red900;
             running = true;
@@ -146,23 +146,23 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
             return ProcessStatus.DRAFT;
 
         case containerRequest.state === ContainerRequestState.FINAL &&
-		   containerRequest.properties &&
-		   Boolean(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]):
-		   // Failed but a new container request for the same work was resubmitted.
-		   return ProcessStatus.RESUBMITTED;
+                   containerRequest.properties &&
+                   Boolean(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]):
+                   // Failed but a new container request for the same work was resubmitted.
+                   return ProcessStatus.RESUBMITTED;
 
         case containerRequest.state === ContainerRequestState.FINAL &&
-			  container?.state === ContainerState.RUNNING:
-			  // It is about to be completed but we haven't
-			  // gotten the updated container record yet,
-			  // if we don't catch this and show it as "Running"
-			  // it will flicker "Cancelled" briefly
-			  return ProcessStatus.RUNNING;
+                          container?.state === ContainerState.RUNNING:
+                          // It is about to be completed but we haven't
+                          // gotten the updated container record yet,
+                          // if we don't catch this and show it as "Running"
+                          // it will flicker "Cancelled" briefly
+                          return ProcessStatus.RUNNING;
 
         case containerRequest.state === ContainerRequestState.FINAL &&
-				 container?.state !== ContainerState.COMPLETE:
-				 // Request was finalized before its container started (or the
-				 // container was cancelled)
+                                 container?.state !== ContainerState.COMPLETE:
+                                 // Request was finalized before its container started (or the
+                                 // container was cancelled)
             return ProcessStatus.CANCELLED;
 
         case container && container.state === ContainerState.COMPLETE:

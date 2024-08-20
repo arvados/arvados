@@ -112,18 +112,18 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
                 </Grid>}
-	    {containerRequest.properties["arv:failed_container_resubmitted"] && <Grid item xs={12}>
-		<Typography>
-		    <WarningIcon />
-		    This process failed but was automatically resubmitted.  <Link to={getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]) || ""}> Click here to go to the resubmitted process.</Link>
-		</Typography>
-	    </Grid>}
+            {containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED] && <Grid item xs={12}>
+                <Typography>
+                    <WarningIcon />
+                    This process failed but was automatically resubmitted.  <Link to={getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]) || ""}> Click here to go to the resubmitted process.</Link>
+                </Typography>
+            </Grid>}
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
             </Grid>
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Docker image locator'
-				  linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+                                  linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
             </Grid>
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute
@@ -189,9 +189,9 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Priority' value={containerRequest.priority} />
                 </Grid>
                 {/*
-			NOTE: The property list should be kept at the bottom, because it spans
-			the entire available width, without regards of the twoCol prop.
-			*/}
+                        NOTE: The property list should be kept at the bottom, because it spans
+                        the entire available width, without regards of the twoCol prop.
+                        */}
                 <Grid item xs={12} md={12}>
                     <DetailsAttribute label='Properties' />
                     {filteredPropertyKeys.length > 0
