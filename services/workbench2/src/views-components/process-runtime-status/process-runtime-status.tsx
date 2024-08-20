@@ -19,18 +19,18 @@ import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 
 type CssRules = 'root'
-	      | 'heading'
-	      | 'summary'
-	      | 'summaryText'
-	      | 'details'
-	      | 'detailsText'
-	      | 'error'
-	      | 'errorColor'
-	      | 'warning'
-	      | 'warningColor'
-	      | 'paperRoot'
-	      | 'schedulingStatus'
-	      | 'schedulingText';
+              | 'heading'
+              | 'summary'
+              | 'summaryText'
+              | 'details'
+              | 'detailsText'
+              | 'error'
+              | 'errorColor'
+              | 'warning'
+              | 'warningColor'
+              | 'paperRoot'
+              | 'schedulingStatus'
+              | 'schedulingText';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -72,13 +72,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     schedulingStatus: {
         backgroundColor: theme.palette.common.white,
         color: theme.customs.colors.grey600,
-	border: `2px solid ${theme.customs.colors.grey600}`,
-	borderRadius: `5px`,
-	marginTop: '8px',
+        border: `2px solid ${theme.customs.colors.grey600}`,
+        borderRadius: `5px`,
+        marginTop: '8px',
     },
     schedulingText: {
-	paddingTop: theme.spacing.unit * 1,
-	paddingBottom: theme.spacing.unit * 1,
+        paddingTop: theme.spacing.unit * 1,
+        paddingBottom: theme.spacing.unit * 1,
     },
     paperRoot: {
         minHeight: theme.spacing.unit * 6,
@@ -96,50 +96,50 @@ type ProcessRuntimeStatusProps = ProcessRuntimeStatusDataProps & WithStyles<CssR
 
 export const ProcessRuntimeStatus = withStyles(styles)(
     ({ runtimeStatus, containerCount, schedulingStatus, classes }: ProcessRuntimeStatusProps) => {
-	return <div className={classes.root}>
+        return <div className={classes.root}>
         { schedulingStatus !== "" &&
           <div data-cy='process-runtime-scheduling-status' className={classes.schedulingStatus}>
               <Typography className={classNames(classes.heading, classes.summary, classes.schedulingText)}>
-		  {`Scheduling: ${schedulingStatus}`}
+                  {`Scheduling status: ${schedulingStatus}`}
               </Typography>
-	  </div>
+          </div>
         }
         { runtimeStatus?.error &&
           <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
-	      <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
+              <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                   <Typography className={classNames(classes.heading, classes.errorColor)}>
-		      {`Error: ${runtimeStatus.error }`}
+                      {`Error: ${runtimeStatus.error }`}
                   </Typography>
-	      </ExpansionPanelSummary>
-	      <ExpansionPanelDetails className={classes.details}>
+              </ExpansionPanelSummary>
+              <ExpansionPanelDetails className={classes.details}>
                   <Typography className={classNames(classes.errorColor, classes.detailsText)}>
-		      {runtimeStatus?.errorDetail || 'No additional error details available'}
+                      {runtimeStatus?.errorDetail || 'No additional error details available'}
                   </Typography>
-	      </ExpansionPanelDetails>
+              </ExpansionPanelDetails>
           </ExpansionPanel></div>
         }
             { runtimeStatus?.warning &&
               <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0}>
-		  <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
+                  <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                       <Typography className={classNames(classes.heading, classes.warningColor)}>
-			  {`Warning: ${runtimeStatus.warning }`}
+                          {`Warning: ${runtimeStatus.warning }`}
                       </Typography>
-		  </ExpansionPanelSummary>
-		  <ExpansionPanelDetails className={classes.details}>
+                  </ExpansionPanelSummary>
+                  <ExpansionPanelDetails className={classes.details}>
                       <Typography className={classNames(classes.warningColor, classes.detailsText)}>
-			  {runtimeStatus?.warningDetail || 'No additional warning details available'}
+                          {runtimeStatus?.warningDetail || 'No additional warning details available'}
                       </Typography>
-		  </ExpansionPanelDetails>
+                  </ExpansionPanelDetails>
               </ExpansionPanel></div>
             }
             { containerCount > 1 &&
               <div data-cy='process-runtime-status-retry-warning' >
-		  <Paper className={classNames(classes.warning, classes.paperRoot)} elevation={0}>
+                  <Paper className={classNames(classes.warning, classes.paperRoot)} elevation={0}>
                       <Typography className={classNames(classes.heading, classes.summary, classes.warningColor)}>
-			  {`Warning: Process retried ${containerCount - 1} time${containerCount > 2 ? 's' : ''} due to failure.`}
+                          {`Warning: Process retried ${containerCount - 1} time${containerCount > 2 ? 's' : ''} due to failure.`}
                       </Typography>
-		  </Paper>
+                  </Paper>
               </div>
             }
-	</div>
+        </div>
 });

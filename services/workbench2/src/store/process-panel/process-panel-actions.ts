@@ -44,49 +44,51 @@ export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
 
 export const toggleProcessPanelFilter = processPanelActions.TOGGLE_PROCESS_PANEL_FILTER;
 
+export const loadContainerStatus =
+    (containerRequestUuid: string) =>
+        (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            services.containerRequestService.containerStatus(containerRequestUuid, false).then(containerStatus =>
+                dispatch<any>(processPanelActions.SET_CONTAINER_STATUS(containerStatus))).catch(() => {});
+        };
+
 export const loadProcess =
     (containerRequestUuid: string) =>
-	async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
+        async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
             let containerRequest: ContainerRequestResource | undefined = undefined;
-        try {
-            containerRequest = await services.containerRequestService.get(containerRequestUuid);
-            dispatch<any>(updateResources([containerRequest]));
-        } catch {
-            return undefined;
-        }
-
-        let containerStatus: ContainerStatus | undefined = undefined;
-        try {
-            containerStatus = await services.containerRequestService.containerStatus(containerRequestUuid, false);
-            dispatch<any>(processPanelActions.SET_CONTAINER_STATUS(containerStatus));
-        } catch {
-        }
-
-        if (containerRequest.outputUuid) {
             try {
-                const collection = await services.collectionService.get(containerRequest.outputUuid, false);
-                dispatch<any>(updateResources([collection]));
-            } catch {}
-        }
+                containerRequest = await services.containerRequestService.get(containerRequestUuid);
+                dispatch<any>(updateResources([containerRequest]));
+            } catch {
+                return undefined;
+            }
 
-        if (containerRequest.containerUuid) {
-            let container: ContainerResource | undefined = undefined;
-            try {
-                container = await services.containerService.get(containerRequest.containerUuid, false);
-                dispatch<any>(updateResources([container]));
-            } catch {}
+            dispatch<any>(loadContainerStatus(containerRequestUuid));
 
-            try {
-                if (container && container.runtimeUserUuid) {
-                    const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
-                    dispatch<any>(updateResources([runtimeUser]));
-                }
-            } catch {}
+            if (containerRequest.outputUuid) {
+                try {
+                    const collection = await services.collectionService.get(containerRequest.outputUuid, false);
+                    dispatch<any>(updateResources([collection]));
+                } catch {}
+            }
 
-            return { containerRequest, container };
-        }
-        return { containerRequest };
-	};
+            if (containerRequest.containerUuid) {
+                let container: ContainerResource | undefined = undefined;
+                try {
+                    container = await services.containerService.get(containerRequest.containerUuid, false);
+                    dispatch<any>(updateResources([container]));
+                } catch {}
+
+                try {
+                    if (container && container.runtimeUserUuid) {
+                        const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
+                        dispatch<any>(updateResources([runtimeUser]));
+                    }
+                } catch {}
+
+                return { containerRequest, container };
+            }
+            return { containerRequest };
+        };
 
 export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState) => {
     // Reset subprocess data explorer if navigating to new process

@@ -10,19 +10,20 @@ import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
 import { CollectionName, ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
-import { getProcess, getProcessStatus } from "store/processes/process";
+import { Process, getProcess, getProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
-import { ContainerResource } from "models/container";
-import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
+import { ContainerResource, ContainerState } from "models/container";
+import { navigateToOutput, openWorkflow, loadContainerStatus } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
-import { ContainerRequestResource } from "models/container-request";
+import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 import { filterResources } from "store/resources/resources";
 import { JSONMount } from 'models/mount-types';
 import { getCollectionUrl } from 'models/collection';
+import { useAsyncInterval } from 'common/use-async-interval';
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -49,19 +50,19 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
     if (process?.containerRequest?.mounts && process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW]) {
         const wf = process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
 
-	if (process?.container &&
-	    state.processPanel.containerStatus?.uuid === process?.container?.uuid)
-	{
-	    schedulingStatus = state.processPanel.containerStatus.schedulingStatus;
-	}
+        if (process?.container &&
+            state.processPanel.containerStatus?.uuid === process?.container?.uuid)
+        {
+            schedulingStatus = state.processPanel.containerStatus.schedulingStatus;
+        }
 
         if (wf.content["$graph"] &&
-	    wf.content["$graph"].length > 0 &&
-	    wf.content["$graph"][0] &&
-	    wf.content["$graph"][0]["steps"] &&
-	    wf.content["$graph"][0]["steps"][0]) {
+            wf.content["$graph"].length > 0 &&
+            wf.content["$graph"][0] &&
+            wf.content["$graph"][0]["steps"] &&
+            wf.content["$graph"][0]["steps"][0]) {
 
-	    const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
+            const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
             const pdh = wf.content["$graph"][0]["steps"][0].run.match(REGEX);
             if (pdh) {
                 workflowCollection = pdh[1];
@@ -74,10 +75,10 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
         container: process?.container,
         workflowCollection,
         workflowPath,
-	schedulingStatus,
+        schedulingStatus,
         subprocesses: filterResources((resource: ContainerRequestResource) =>
-            resource.kind === ResourceKind.CONTAINER_REQUEST &&
-									    resource.requestingContainerUuid === process?.containerRequest.containerUuid
+            (resource.kind === ResourceKind.CONTAINER_REQUEST &&
+             resource.requestingContainerUuid === process?.containerRequest.containerUuid)
         )(state.resources),
     };
 };
@@ -85,25 +86,32 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 interface ProcessDetailsAttributesActionProps {
     navigateToOutput: (resource: ContainerRequestResource) => void;
     openWorkflow: (uuid: string) => void;
+    pollSchedulingStatus: (uuid: string) => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionProps => ({
     navigateToOutput: (resource) => dispatch<any>(navigateToOutput(resource)),
     openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
+    pollSchedulingStatus: (uuid) => dispatch<any>(loadContainerStatus(uuid)),
 });
+
+const isProcessScheduling = (container?: ContainerResource): boolean => (
+    container?.state === ContainerState.QUEUED || container?.state === ContainerState.LOCKED
+);
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
         (props: {
             request: ProcessResource,
-	    container?: ContainerResource,
-	    subprocesses: ContainerRequestResource[],
+            container?: ContainerResource,
+            subprocesses: ContainerRequestResource[],
             workflowCollection,
-	    workflowPath,
-	    schedulingStatus,
+            workflowPath,
+            schedulingStatus,
             twoCol?: boolean,
-	    hideProcessPanelRedundantFields?: boolean,
-	    classes: Record<CssRules, string>
+            hideProcessPanelRedundantFields?: boolean,
+            pollSchedulingStatus: (processUuid: string) => Promise<void>,
+            classes: Record<CssRules, string>
         } & ProcessDetailsAttributesActionProps) => {
             const containerRequest = props.request;
             const container = props.container;
@@ -113,34 +121,44 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const workflowCollection = props.workflowCollection;
             const workflowPath = props.workflowPath;
             const filteredPropertyKeys = Object.keys(containerRequest.properties)
-                .filter(k => (typeof containerRequest.properties[k] !== 'object'));
+                                               .filter(k => (typeof containerRequest.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
+            let schedulingStatus = props.schedulingStatus;
+
+            useAsyncInterval(() => (
+                props.pollSchedulingStatus(containerRequest.uuid)
+            ), isProcessScheduling(container) ? 5000 : null);
+
+            if (containerRequest.state == ContainerRequestState.UNCOMMITTED) {
+                schedulingStatus = "In draft state, not ready to run";
+            }
+
             return <Grid container>
             <Grid item xs={12}>
-                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} schedulingStatus={props.schedulingStatus} />
+                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} schedulingStatus={schedulingStatus} />
             </Grid>
             {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
             </Grid>}
-		<Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
-		</Grid>
-		<Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Docker image locator'
-				      linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
-		</Grid>
-		<Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute
-			label='Owner' linkToUuid={containerRequest.ownerUuid}
-			uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-		</Grid>
-		<Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
-		</Grid>
-		{!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
-		</Grid>}
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Docker image locator'
+                                  linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute
+                    label='Owner' linkToUuid={containerRequest.ownerUuid}
+                    uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+            </Grid>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
+            </Grid>
+            {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
+            </Grid>}
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
             </Grid>
@@ -160,53 +178,53 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     label='Submitted by' linkToUuid={containerRequest.modifiedByUserUuid}
                     uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
             </Grid>}
-                {(container && container.runtimeUserUuid && container.runtimeUserUuid !== containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
-                    <DetailsAttribute
-                        label='Run as' linkToUuid={container.runtimeUserUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-                </Grid>}
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Requesting container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
-                </Grid>
-                <Grid item xs={6}>
-                    <DetailsAttribute label='Output collection' />
-                    {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest!)}>
-                        <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
-                    </span>}
-                </Grid>
-                {container && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Cost' value={
-                        `${hasTotalCost ? formatCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatCost(container.cost) : 'not available'} for this container`
-                    } />
+            {(container && container.runtimeUserUuid && container.runtimeUserUuid !== containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
+                <DetailsAttribute
+                    label='Run as' linkToUuid={container.runtimeUserUuid}
+                    uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+            </Grid>}
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Requesting container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
+            </Grid>
+            <Grid item xs={6}>
+                <DetailsAttribute label='Output collection' />
+                {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest!)}>
+                    <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
+                </span>}
+            </Grid>
+            {container && <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Cost' value={
+                `${hasTotalCost ? formatCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatCost(container.cost) : 'not available'} for this container`
+                } />
 
-                    {container && workflowCollection && <Grid item xs={12} md={mdSize}>
-                        <DetailsAttribute label='Workflow code' link={getCollectionUrl(workflowCollection)} value={workflowPath} />
-                    </Grid>}
+                {container && workflowCollection && <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Workflow code' link={getCollectionUrl(workflowCollection)} value={workflowPath} />
                 </Grid>}
-                {containerRequest.properties.template_uuid &&
-                    <Grid item xs={12} md={mdSize}>
-                        <span onClick={() => props.openWorkflow(containerRequest.properties.template_uuid)}>
-                            <DetailsAttribute classValue={classes.link}
-                                label='Workflow' value={containerRequest.properties.workflowName} />
-                        </span>
-                    </Grid>}
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Priority' value={containerRequest.priority} />
-                </Grid>
-                {/*
-			NOTE: The property list should be kept at the bottom, because it spans
-			the entire available width, without regards of the twoCol prop.
-			*/}
-                <Grid item xs={12} md={12}>
-                    <DetailsAttribute label='Properties' />
-                    {filteredPropertyKeys.length > 0
-                        ? filteredPropertyKeys.map(k =>
-                            Array.isArray(containerRequest.properties[k])
-                                ? containerRequest.properties[k].map((v: string) =>
-                                    getPropertyChip(k, v, undefined, classes.propertyTag))
-                                : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
-                        : <div>No properties</div>}
-                </Grid>
+            </Grid>}
+            {containerRequest.properties.template_uuid &&
+             <Grid item xs={12} md={mdSize}>
+                 <span onClick={() => props.openWorkflow(containerRequest.properties.template_uuid)}>
+                     <DetailsAttribute classValue={classes.link}
+                                       label='Workflow' value={containerRequest.properties.workflowName} />
+                 </span>
+             </Grid>}
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Priority' value={containerRequest.priority} />
+            </Grid>
+            {/*
+                NOTE: The property list should be kept at the bottom, because it spans
+                the entire available width, without regards of the twoCol prop.
+              */}
+            <Grid item xs={12} md={12}>
+                <DetailsAttribute label='Properties' />
+                {filteredPropertyKeys.length > 0
+                                             ? filteredPropertyKeys.map(k =>
+                                                 Array.isArray(containerRequest.properties[k])
+                                                 ? containerRequest.properties[k].map((v: string) =>
+                                                     getPropertyChip(k, v, undefined, classes.propertyTag))
+                                                 : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
+                                             : <div>No properties</div>}
+            </Grid>
             </Grid>;
         }
     )
