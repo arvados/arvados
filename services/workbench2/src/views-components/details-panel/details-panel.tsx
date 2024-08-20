@@ -204,7 +204,7 @@ export const DetailsPanel = withStyles(styles)(
                             </Tooltip>
                         </Grid>
                         <Grid item>
-                            <IconButton color="inherit" onClick={()=>onCloseDrawer(CLOSE_DRAWER)}>
+                            <IconButton data-cy="close-details-btn" color="inherit" onClick={()=>onCloseDrawer(CLOSE_DRAWER)}>
                                 <CloseIcon />
                             </IconButton>
                         </Grid>

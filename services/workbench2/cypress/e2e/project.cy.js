@@ -195,6 +195,7 @@ describe("Project tests", function () {
         cy.get("[data-cy=form-submit-btn]").click();
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.go('back')
+        cy.waitForDom();
 
         // Create subproject from context menu
         cy.get("[data-cy=project-panel] tbody tr").contains(parentProjName).rightclick({ force: true });
@@ -207,13 +208,17 @@ describe("Project tests", function () {
                 });
             });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
 
         // open details panel and check 'owner' field
-        cy.get("[data-cy=additional-info-icon]").click();
+        cy.get('[data-cy=multiselect-button]').eq(0).trigger('mouseover');
+        cy.get('body').contains('View details').should('exist')
+        cy.get('[data-cy=multiselect-button]').eq(0).click();
         cy.waitForDom();
+
         cy.get("[data-cy=details-panel-owner]").contains(parentProjName).should("be.visible")
-        cy.get("[data-cy=additional-info-icon]").click();
+        cy.get("[data-cy=close-details-btn]").click();
     });
 
     it('shows the appropriate buttons in the multiselect toolbar', () => {
@@ -432,23 +437,6 @@ describe("Project tests", function () {
             cy.get("[data-cy=not-found-content]").should("not.exist");
             cy.get("[data-cy=not-found-page]").should("not.exist");
         });
-    });
-
-    it("shows details panel when clicking on the info icon", () => {
-        cy.createGroup(activeUser.token, {
-            name: `Test root project ${Math.floor(Math.random() * 999999)}`,
-            group_class: "project",
-        })
-            .as("testRootProject")
-            .then(function (testRootProject) {
-                cy.loginAs(activeUser);
-
-                cy.get("[data-cy=side-panel-tree]").contains(testRootProject.name).click();
-
-                cy.get("[data-cy=additional-info-icon]").click();
-
-                cy.contains(testRootProject.uuid).should("exist");
-            });
     });
 
     it("clears search input when changing project", () => {

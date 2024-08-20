@@ -19,7 +19,7 @@ import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
-import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
+import { openDetailsPanel } from "store/details-panel/details-panel-action";
 import { navigateToOutput } from "store/process-panel/process-panel-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
@@ -65,8 +65,8 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
         {
             icon: DetailsIcon,
             name: ContextMenuActionNames.VIEW_DETAILS,
-            execute: dispatch => {
-                dispatch<any>(toggleDetailsPanel());
+            execute: (dispatch, resources) => {
+                dispatch<any>(openDetailsPanel(resources[0].uuid));
             },
         },
         {

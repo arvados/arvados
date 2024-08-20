@@ -218,7 +218,8 @@ describe("Collection panel tests", function () {
                     .should("contain", this.testCollection.name)
                     .and("not.contain", "Color: Magenta")
                     .and("not.contain", "Size: S");
-                cy.get("[data-cy=additional-info-icon]").click();
+                cy.get("[data-cy=collection-panel-options-btn]").click();
+                cy.get("[data-cy=context-menu]").contains("View details").click();
 
                 cy.get("[data-cy=details-panel]").within(() => {
                     cy.get("[data-cy=details-panel-edit-btn]").click();

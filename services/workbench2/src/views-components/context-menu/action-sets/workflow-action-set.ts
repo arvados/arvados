@@ -6,7 +6,7 @@ import { ContextMenuActionSet, ContextMenuActionNames } from "views-components/c
 import { openRunProcess, openRemoveWorkflowDialog } from "store/workflow-panel/workflow-panel-actions";
 import { DetailsIcon, AdvancedIcon, OpenIcon, Link, StartIcon, DeleteForever } from "components/icon/icon";
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
-import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
+import { openDetailsPanel } from "store/details-panel/details-panel-action";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 
 export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
@@ -28,8 +28,8 @@ export const readOnlyWorkflowActionSet: ContextMenuActionSet = [
         {
             icon: DetailsIcon,
             name: ContextMenuActionNames.VIEW_DETAILS,
-            execute: dispatch => {
-                dispatch<any>(toggleDetailsPanel());
+            execute: (dispatch, resources) => {
+                dispatch<any>(openDetailsPanel(resources[0].uuid));
             },
         },
         {
