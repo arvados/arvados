@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Autocomplete } from 'components/autocomplete/autocomplete';
+import { Autocomplete, AutocompleteCat } from 'components/autocomplete/autocomplete';
 import { connect, DispatchProp } from 'react-redux';
 import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
@@ -99,6 +99,7 @@ export const ParticipantSelect = connect()(
                     renderChipValue={this.renderChipValue}
                     renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
+                    category={AutocompleteCat.SHARING}
                     disabled={this.props.disabled} />
             );
         }

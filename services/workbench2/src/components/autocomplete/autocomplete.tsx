@@ -33,7 +33,12 @@ export interface AutocompleteProps<Item, Suggestion> {
     renderChipValue?: (item: Item) => string;
     renderChipTooltip?: (item: Item) => string;
     renderSuggestion?: (suggestion: Suggestion) => React.ReactNode;
+    category?: AutocompleteCat;
 }
+
+export enum AutocompleteCat {
+    SHARING = 'sharing',
+};
 
 export interface AutocompleteState {
     suggestionsOpen: boolean;
@@ -57,7 +62,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                     {this.renderLabel()}
                     {this.renderInput()}
                     {this.renderHelperText()}
-                    {this.renderSuggestions()}
+                    {this.props.category === AutocompleteCat.SHARING ? this.renderSharingSuggestions() : this.renderSuggestions()}
                 </FormControl>
             </RootRef>
         );
@@ -88,6 +93,31 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     }
 
     renderSuggestions() {
+        const { suggestions = [] } = this.props;
+        return (
+            <Popper
+                open={this.isSuggestionBoxOpen()}
+                anchorEl={this.inputRef.current}
+                key={suggestions.length}>
+                <Paper onMouseDown={this.preventBlur}>
+                    <List dense style={{ width: this.getSuggestionsWidth() }}>
+                        {suggestions.map(
+                            (suggestion, index) =>
+                                <ListItem
+                                    button
+                                    key={index}
+                                    onClick={this.handleSelect(suggestion)}
+                                    selected={index === this.state.selectedSuggestionIndex}>
+                                    {this.renderSuggestion(suggestion)}
+                                </ListItem>
+                        )}
+                    </List>
+                </Paper>
+            </Popper>
+        );
+    }
+
+    renderSharingSuggestions() {
         const { suggestions = [] } = this.props;
         const groups = suggestions.filter(item => isGroup(item));
         const people = suggestions.filter(item => !isGroup(item));
