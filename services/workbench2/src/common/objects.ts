@@ -16,3 +16,17 @@ export function getModifiedKeysValues(a: any, b: any) {
     });
     return obj;
 }
+
+export function sortByKey<T>(arr: T[], key: string): T[] {
+    return arr.sort((a, b) => {
+        if (a[key] < b[key]) {
+            return -1;
+        }
+        if (a[key] > b[key]) {
+            return 1;
+        }
+        return 0; // If equal
+    });
+}
+  
+  

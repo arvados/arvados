@@ -14,6 +14,7 @@ import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
 import { isGroup } from 'common/isGroup';
+import { sortByKey } from 'common/objects';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -125,8 +126,8 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     renderSharingSuggestions() {
         const { suggestions = [] } = this.props;
-        const groups = suggestions.filter(item => isGroup(item));
-        const users = suggestions.filter(item => !isGroup(item));
+        const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
+        const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
 
         return (
             <Popper
