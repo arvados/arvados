@@ -73,6 +73,13 @@ export const ParticipantSelect = connect()(
             suggestions: []
         };
 
+        componentDidUpdate() {
+            const { value, suggestions } = this.state;
+            if (value.length < this.minAutoSuggestLength && suggestions.length > 0) {
+                this.setState({ suggestions: [] });
+            }
+        }
+
         render() {
             const { label = 'Add people and groups' } = this.props;
 
@@ -152,10 +159,12 @@ export const ParticipantSelect = connect()(
             this.setState({ value: event.target.value }, this.getSuggestions);
         }
 
+        minAutoSuggestLength = 3;
         getSuggestions = debounce(() => this.props.dispatch<any>(this.requestSuggestions), 500);
 
         requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
             const { value } = this.state;
+            if (value.length < this.minAutoSuggestLength) return;
             const limit = 5; // FIXME: Does this provide a good UX?
 
             const filterUsers = new FilterBuilder()
