@@ -13,6 +13,7 @@ import {
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
+import { isGroup } from 'common/isGroup';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -88,20 +89,36 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     renderSuggestions() {
         const { suggestions = [] } = this.props;
+        const groups = suggestions.filter(item => isGroup(item));
+        const people = suggestions.filter(item => !isGroup(item));
+
         return (
             <Popper
                 open={this.isSuggestionBoxOpen()}
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
-                    <List dense style={{ width: this.getSuggestionsWidth() }}>
-                        {suggestions.map(
+                People
+                <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
+                        {people.map(
                             (suggestion, index) =>
                                 <ListItem
                                     button
                                     key={index}
                                     onClick={this.handleSelect(suggestion)}
                                     selected={index === this.state.selectedSuggestionIndex}>
+                                    {this.renderSuggestion(suggestion)}
+                                </ListItem>
+                        )}
+                    </List>
+                    Groups
+                    <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
+                        {groups.map(
+                            (suggestion, index) =>
+                                <ListItem
+                                    button
+                                    key={index}
+                                    onClick={this.handleSelect(suggestion)}>
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
                         )}
