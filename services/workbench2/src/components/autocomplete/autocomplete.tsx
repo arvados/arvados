@@ -8,7 +8,7 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip
+    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip, Typography
 } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
@@ -135,7 +135,8 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
                 Users
-                <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
+                {!!users.length ? 
+                    <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
                         {users.map(
                             (suggestion, index) =>
                                 <ListItem
@@ -147,8 +148,9 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
                         )}
-                    </List>
-                    Groups
+                    </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no users found</Typography>}
+                Groups
+                {!!groups.length ? 
                     <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
                         {groups.map(
                             (suggestion, index) =>
@@ -160,7 +162,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
                         )}
-                    </List>
+                    </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no groups found</Typography>}
                 </Paper>
             </Popper>
         );
