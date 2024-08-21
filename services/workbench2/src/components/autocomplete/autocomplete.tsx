@@ -55,6 +55,12 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     containerRef = React.createRef<HTMLDivElement>();
     inputRef = React.createRef<HTMLInputElement>();
 
+    componentDidUpdate( prevProps: Readonly<AutocompleteProps<Value, Suggestion>>, prevState: Readonly<AutocompleteState>, snapshot?: any ): void {
+        if (prevState.selectedSuggestionIndex !== this.state.selectedSuggestionIndex) {
+            document.getElementById(`users-${this.state.selectedSuggestionIndex}`)?.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
     render() {
         return (
             <RootRef rootRef={this.containerRef}>
@@ -120,7 +126,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     renderSharingSuggestions() {
         const { suggestions = [] } = this.props;
         const groups = suggestions.filter(item => isGroup(item));
-        const people = suggestions.filter(item => !isGroup(item));
+        const users = suggestions.filter(item => !isGroup(item));
 
         return (
             <Popper
@@ -128,13 +134,14 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
-                People
+                Users
                 <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
-                        {people.map(
+                        {users.map(
                             (suggestion, index) =>
                                 <ListItem
                                     button
-                                    key={index}
+                                    id={`users-${index}`}
+                                    key={`users-${index}`}
                                     onClick={this.handleSelect(suggestion)}
                                     selected={index === this.state.selectedSuggestionIndex}>
                                     {this.renderSuggestion(suggestion)}
@@ -147,7 +154,8 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                             (suggestion, index) =>
                                 <ListItem
                                     button
-                                    key={index}
+                                    id={`groups-${index}`}
+                                    key={`groups-${index}`}
                                     onClick={this.handleSelect(suggestion)}>
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
