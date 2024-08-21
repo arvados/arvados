@@ -16,8 +16,11 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
@@ -65,6 +68,29 @@ func Command(svcName arvados.ServiceName, newHandler NewHandlerFunc) cmd.Handler
 }
 
 func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	sigch := make(chan os.Signal, 1)
+	signal.Notify(sigch, syscall.SIGHUP)
+	for {
+		ctx, cancel := context.WithCancel(c.ctx)
+		var wantReload atomic.Bool
+		go func() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-sigch:
+				wantReload.Store(true)
+				cancel()
+			}
+		}()
+		code := c.run(ctx, prog, args, stdin, stdout, stderr)
+		cancel()
+		if !wantReload.Load() {
+			return code
+		}
+	}
+}
+
+func (c *command) run(ctx context.Context, prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	log := ctxlog.New(stderr, "json", "info")
 
 	var err error
@@ -124,7 +150,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		"PID":       os.Getpid(),
 		"ClusterID": cluster.ClusterID,
 	})
-	ctx := ctxlog.Context(c.ctx, logger)
+	ctx = ctxlog.Context(ctx, logger)
 
 	// Check whether the caller is attempting to use environment
 	// variables to override cluster configuration, and advise
@@ -210,14 +236,21 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	go func() {
 		// Shut down server if handler dies
 		<-handler.Done()
+		logger.Warn("handler stopped")
 		srv.Close()
 	}()
-	go c.requestQueueDumpCheck(cluster, prog, reg, &srv.Server, logger)
+	go c.requestQueueDumpCheck(ctx, cluster, prog, reg, &srv.Server, logger)
 	err = srv.Wait()
 	if err != nil {
 		return 1
 	}
-	return 0
+	if ctx.Err() != nil {
+		// caller asked for shutdown
+		return 0
+	} else {
+		// Handler must have stopped
+		return 1
+	}
 }
 
 // If SystemLogs.RequestQueueDumpDirectory is set, monitor the
@@ -225,7 +258,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 // concurrent requests in any queue ("api" or "tunnel") exceeds 90% of
 // its maximum slots, write the /_inspect/requests data to a JSON file
 // in the specified directory.
-func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, reg *prometheus.Registry, srv *http.Server, logger logrus.FieldLogger) {
+func (c *command) requestQueueDumpCheck(ctx context.Context, cluster *arvados.Cluster, prog string, reg *prometheus.Registry, srv *http.Server, logger logrus.FieldLogger) {
 	outdir := cluster.SystemLogs.RequestQueueDumpDirectory
 	if outdir == "" || cluster.ManagementToken == "" {
 		return
@@ -233,6 +266,9 @@ func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, r
 	logger = logger.WithField("worker", "RequestQueueDump")
 	outfile := outdir + "/" + prog + "-requests.json"
 	for range time.NewTicker(requestQueueDumpCheckInterval).C {
+		if ctx.Err() != nil {
+			return
+		}
 		mfs, err := reg.Gather()
 		if err != nil {
 			logger.WithError(err).Warn("error getting metrics")
