@@ -43,7 +43,18 @@ type AutocompleteClasses = 'sharingList' | 'emptyList';
 const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
     sharingList: {
         maxHeight: '8rem', 
-        overflowX: 'scroll',
+        overflowY: 'scroll',
+        scrollbarColor: 'rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0)',
+        '&::-webkit-scrollbar': {
+            width: '0.4em',
+        },
+        '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            borderRadius: '4px',
+        },
+        '&::-webkit-scrollbar-track': {
+            backgroundColor: 'rgba(0, 0, 0, 0)',
+        },
     },
     emptyList: {
         padding: '0.5rem',
