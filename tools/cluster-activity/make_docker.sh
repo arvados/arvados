@@ -28,7 +28,7 @@ trap 'rm -rf "$context_dir"' EXIT INT TERM QUIT
 
 cluster_activity_version=$(cd $WORKSPACE/tools/cluster-activity && python3 arvados_version.py)
 
-for src_dir in "$WORKSPACE/sdk/python" "$WORKSPACE/tools/crunchstat-summary" "$WORKSPACE/tools/cluster-activity" ; do
+for src_dir in "$WORKSPACE/sdk/python" "$WORKSPACE/tools/cluster-activity" ; do
     env -C "$src_dir" python3 setup.py sdist --dist-dir="$context_dir"
 done
 

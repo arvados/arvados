@@ -17,95 +17,9 @@ from typing import List
 import statistics
 
 from dataclasses import dataclass
-
-import crunchstat_summary.dygraphs
-from crunchstat_summary.summarizer import Task
-
 from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
+from arvados_cluster_activity.reportchart import ReportChart
 
-sortablecss = """
-@charset "UTF-8";
-.sortable thead th:not(.no-sort) {
-  cursor: pointer;
-}
-.sortable thead th:not(.no-sort)::after, .sortable thead th:not(.no-sort)::before {
-  transition: color 0.1s ease-in-out;
-  font-size: 1.2em;
-  color: transparent;
-}
-.sortable thead th:not(.no-sort)::after {
-  margin-left: 3px;
-  content: "▸";
-}
-.sortable thead th:not(.no-sort):hover::after {
-  color: inherit;
-}
-.sortable thead th:not(.no-sort)[aria-sort=descending]::after {
-  color: inherit;
-  content: "▾";
-}
-.sortable thead th:not(.no-sort)[aria-sort=ascending]::after {
-  color: inherit;
-  content: "▴";
-}
-.sortable thead th:not(.no-sort).indicator-left::after {
-  content: "";
-}
-.sortable thead th:not(.no-sort).indicator-left::before {
-  margin-right: 3px;
-  content: "▸";
-}
-.sortable thead th:not(.no-sort).indicator-left:hover::before {
-  color: inherit;
-}
-.sortable thead th:not(.no-sort).indicator-left[aria-sort=descending]::before {
-  color: inherit;
-  content: "▾";
-}
-.sortable thead th:not(.no-sort).indicator-left[aria-sort=ascending]::before {
-  color: inherit;
-  content: "▴";
-}
-
-table.aggtable td:nth-child(2) {
-  text-align: right;
-}
-
-table.active-projects td:nth-child(4),
-table.active-projects td:nth-child(5) {
-  text-align: right;
-  padding-right: 6em;
-}
-
-table.single-project td:nth-child(3),
-table.single-project td:nth-child(4) {
-  text-align: right;
-  padding-right: 6em;
-}
-
-table.active-projects th:nth-child(4),
-table.active-projects th:nth-child(5) {
-  text-align: left;
-}
-
-table.project td:nth-child(3),
-table.project td:nth-child(4),
-table.project td:nth-child(5),
-table.project td:nth-child(6),
-table.project td:nth-child(7) {
-  text-align: right;
-  padding-right: 6em;
-}
-
-table.project th:nth-child(3),
-table.project th:nth-child(4),
-table.project th:nth-child(5),
-table.project th:nth-child(6),
-table.project th:nth-child(7) {
-  text-align: left;
-}
-
-"""
 
 @dataclass
 class WorkflowRunSummary:
@@ -130,18 +44,6 @@ class ProjectSummary:
     activityspan: str = ""
     tablerow: str = ""
 
-@dataclass
-class Summarizer:
-    label: str
-    tasks: collections.defaultdict[str, Task]
-
-    def long_label(self):
-        return self.label
-
-
-def date_export(item):
-    if isinstance(item, datetime):
-        return """@new Date("{}")@""".format(item.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 def aws_monthly_cost(value):
     value_gb = value / (1024*1024*1024)
@@ -165,56 +67,9 @@ def format_with_suffix_base10(summary_value):
         if summary_value < 1000:
             return "%.3f %s" % (summary_value, scale)
 
-containers_category = 'Concurrent running containers'
-storage_category = 'Storage Usage'
-
-class ReportChart(crunchstat_summary.dygraphs.DygraphsChart):
-    def __init__(self, label, summarizers):
-        super(ReportChart, self).__init__(label, summarizers)
-        self.label = label
-        self.summarizers = summarizers
-        self.STYLE = '\n'.join((self.STYLE, sortablecss))
-
-    JSASSETS = ['dygraphs.js', 'sortable.js']
-
-    def sections(self):
-        return [
-            {
-                'label': s.long_label(),
-                'charts': [
-                    self.chartdata(s.label, s.tasks, stat)
-                    for stat in ((containers_category, ['containers']),
-                                 (storage_category, ['storage used']),
-                                 )
-                    ],
-            }
-            for s in self.summarizers]
-
-    def js(self):
-        return 'var chartdata = {};\n{}{}'.format(
-            json.dumps(self.sections(), default=date_export).replace('"@', '').replace('@"', '').replace('\\"', '"'),
-            '\n'.join([pkg_resources.resource_string('crunchstat_summary', 'synchronizer.js').decode('utf-8')]),
-            '\n'.join([pkg_resources.resource_string('arvados_cluster_activity', jsa).decode('utf-8') for jsa in self.JSASSETS]))
-
-    def _collate_data(self, tasks, stats):
-        data = []
-        nulls = []
-        # uuid is category for crunch2
-        for uuid, task in tasks.items():
-            # All stats in a category are assumed to have the same time base and same number of samples
-            category = stats[0]
-            series_names = stats[1]
-            sn0 = series_names[0]
-            series = task.series[(category,sn0)]
-            for i in range(len(series)):
-                pt = series[i]
-                vals = [task.series[(category,stat)][i][1] for stat in series_names[1:]]
-                data.append([pt[0]] + nulls + [pt[1]] + vals)
-            nulls.append(None)
-        return sorted(data)
-
-
-WEBCHART_CLASS = ReportChart
+containers_graph = ('Concurrent running containers', 'containers')
+storage_graph = ('Storage usage', 'used')
+managed_graph = ('Data under management', 'managed')
 
 
 def runtime_str(container_request, containers):
@@ -258,24 +113,26 @@ class ClusterActivityReport(object):
         self.total_hours = 0
         self.total_cost = 0
         self.total_workflows = 0
-        self.summarizers = []
         self.storage_cost = 0
         self.summary_fetched = False
+        self.graphs = {}
 
     def run(self):
         pass
 
-    def collect_graph(self, s1, since, to, taskname, legend, metric, resampleTo, extra=None):
+    def collect_graph(self, since, to, metric, resampleTo, extra=None):
         if not self.prom_client:
             return
 
-        task = s1.tasks[taskname]
+        flatdata = []
 
         for series in get_metric_usage(self.prom_client, since, to, metric % self.cluster, resampleTo=resampleTo):
             for t in series.itertuples():
-                task.series[taskname, legend].append(t)
+                flatdata.append([t[0], t[1]])
                 if extra:
                     extra(t)
+
+        return flatdata
 
     def collect_storage_cost(self, t):
         self.storage_cost += aws_monthly_cost(t.y) / (30*24)
@@ -298,51 +155,43 @@ class ClusterActivityReport(object):
             container_cumulative_hours += t.y / 12
 
         logging.info("Getting container hours time series")
-        s1 = Summarizer(label="", tasks=collections.defaultdict(Task))
-        self.collect_graph(s1, since, to, containers_category, "containers",
+
+        self.graphs[containers_graph] = self.collect_graph(since, to,
                            "arvados_dispatchcloud_containers_running{cluster='%s'}",
                            resampleTo="5min",
                            extra=collect_container_hours
                            )
 
         logging.info("Getting data usage time series")
-        s2 = Summarizer(label="", tasks=collections.defaultdict(Task))
-        self.collect_graph(s2, since, to, storage_category, "managed",
+        self.graphs[managed_graph] = self.collect_graph(since, to,
                            "arvados_keep_collection_bytes{cluster='%s'}", resampleTo="60min")
 
-        self.collect_graph(s2, since, to, storage_category, "storage used",
+        self.graphs[storage_graph] = self.collect_graph(since, to,
                            "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
 
         managed_data_now = None
         storage_used_now = None
 
-        if len(s2.tasks[storage_category].series[storage_category,"managed"]) > 0:
-            managed_data_now = s2.tasks[storage_category].series[storage_category,"managed"][-1]
-        if len(s2.tasks[storage_category].series[storage_category,"storage used"]) > 0:
-            storage_used_now = s2.tasks[storage_category].series[storage_category,"storage used"][-1]
+        if len(self.graphs.get(managed_graph, [])) > 0:
+            managed_data_now = self.graphs[managed_graph][-1][1]
+
+        if len(self.graphs.get(storage_graph, [])) > 0:
+            storage_used_now = self.graphs[storage_graph][-1][1]
 
         if managed_data_now and storage_used_now:
-            storage_cost = aws_monthly_cost(storage_used_now.y)
-            dedup_ratio = managed_data_now.y/storage_used_now.y
-            dedup_savings = aws_monthly_cost(managed_data_now.y) - storage_cost
+            storage_cost = aws_monthly_cost(storage_used_now)
+            dedup_ratio = managed_data_now/storage_used_now
+            dedup_savings = aws_monthly_cost(managed_data_now) - storage_cost
 
-        if self.prom_client:
-            self.summarizers = [s1, s2]
-        else:
-            self.summarizers = []
-
-        tophtml = ""
-        bottomhtml = ""
         label = self.label
 
-        tophtml = []
+        cards = []
 
         workbench = self.arv_client.config()["Services"]["Workbench2"]["ExternalURL"]
         if workbench.endswith("/"):
             workbench = workbench[:-1]
 
         if to.date() == date.today():
-
             # The deduplication ratio overstates things a bit, you can
             # have collections which reference a small slice of a large
             # block, and this messes up the intuitive value of this ratio
@@ -361,14 +210,14 @@ class ClusterActivityReport(object):
             <tr><th>Deduplication ratio</th> <td>{dedup_ratio:.1f}</td></tr>
             <tr><th>Approximate monthly storage cost</th> <td>${storage_cost:,.2f}</td></tr>
                 """.format(
-                       managed_data_now=format_with_suffix_base10(managed_data_now.y),
-                       storage_used_now=format_with_suffix_base10(storage_used_now.y),
+                       managed_data_now=format_with_suffix_base10(managed_data_now),
+                       storage_used_now=format_with_suffix_base10(storage_used_now),
                        dedup_savings=dedup_savings,
                        storage_cost=storage_cost,
                        dedup_ratio=dedup_ratio,
                 )
 
-            tophtml.append("""<h2>Cluster status as of {now}</h2>
+            cards.append("""<h2>Cluster status as of {now}</h2>
             <table class='aggtable'><tbody>
             <tr><th><a href="{workbench}/users">Total users</a></th><td>{total_users}</td></tr>
             <tr><th>Total projects</th><td>{total_projects}</td></tr>
@@ -381,7 +230,7 @@ class ClusterActivityReport(object):
                        workbench=workbench,
                        data_rows=data_rows))
 
-        tophtml.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
+        cards.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
         <table class='aggtable'><tbody>
         <tr><th>Active users</th> <td>{active_users}</td></tr>
         <tr><th><a href="#Active_Projects">Active projects</a></th> <td>{active_projects}</td></tr>
@@ -402,8 +251,6 @@ class ClusterActivityReport(object):
                    reporting_days=(to - since).days,
                    storage_cost=self.storage_cost))
 
-        bottomhtml = []
-
         projectlist = sorted(self.project_summary.items(), key=lambda x: x[1].cost, reverse=True)
 
         for k, prj in projectlist:
@@ -420,7 +267,11 @@ class ClusterActivityReport(object):
                 users=", ".join(prj.users),
             )
 
-        bottomhtml.append(
+        cards.append("""
+                <div id="chart"></div>
+            """)
+
+        cards.append(
             """
             <a id="Active_Projects"><h2>Active Projects</h2></a>
             <table class='sortable active-projects'>
@@ -451,7 +302,7 @@ class ClusterActivityReport(object):
                 # </table>
 
 
-            bottomhtml.append(
+            cards.append(
                 """<a id="{name}"></a><a href="{workbench}/projects/{uuid}"><h2>{name}</h2></a>
 
                 <table class='sortable single-project'>
@@ -492,7 +343,7 @@ class ClusterActivityReport(object):
         # technologies that do not support data deduplication.</p>
 
 
-        bottomhtml.append("""
+        cards.append("""
         <h2 id="prices">Note on usage and cost calculations</h2>
 
         <div style="max-width: 60em">
@@ -553,7 +404,7 @@ class ClusterActivityReport(object):
         </div>
         """)
 
-        return WEBCHART_CLASS(label, self.summarizers).html(tophtml, bottomhtml)
+        return ReportChart(label, cards, self.graphs).html()
 
     def flush_containers(self, pending, include_steps, exclude):
         containers = {}

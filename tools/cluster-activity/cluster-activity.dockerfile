@@ -9,6 +9,5 @@ COPY *.tar.gz /root
 RUN python3 -mvenv /usr/local/cluster-activity && \
     /usr/local/cluster-activity/bin/pip install \
     $(ls /root/arvados-python-client-*.tar.gz) \
-    $(ls /root/crunchstat_summary-*.tar.gz) \
     $(ls /root/arvados-cluster-activity-*.tar.gz)\[prometheus\] && \
     ln -s /usr/local/cluster-activity/bin/arv-cluster-activity /usr/local/bin

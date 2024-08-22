@@ -2,16 +2,59 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import crunchstat_summary.webchart
+import json
+import pkg_resources
+from arvados._internal.report_template import ReportTemplate
 
+class DygraphsChart(ReportTemplate):
+    """Crunchstat report using dygraphs for charting.
+    """
 
-class DygraphsChart(crunchstat_summary.webchart.WebChart):
     CSS = 'https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css'
     JSLIB = 'https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js'
     JSASSETS = ['synchronizer.js','dygraphs.js']
 
-    def headHTML(self):
-        return '<link rel="stylesheet" href="{}">\n'.format(self.CSS)
+    def __init__(self, label, summarizers, beforechart, afterchart):
+        super().__init__(label)
+        self.summarizers = summarizers
+        self.beforechart = beforechart
+        self.afterchart = afterchart
+
+    def html(self):
+        self.cards.extend(self.beforechart)
+        self.cards.append("""
+                <h2>Graph</h2>
+                <div id="chart"></div>
+            """)
+        self.cards.extend(self.afterchart)
+
+        return super().html()
+
+    def js(self):
+        return '''
+        <script type="text/javascript" src="{jslib}"></script>
+        <script type="text/javascript">
+        var chartdata = {chartdata};\n{jsassets}
+        </script>'''.format(
+            jslib=self.JSLIB,
+            chartdata=json.dumps(self.sections()),
+            jsassets='\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa).decode('utf-8') for jsa in self.JSASSETS]))
+
+    def sections(self):
+        return [
+            {
+                'label': s.long_label(),
+                'charts': [
+                    self.chartdata(s.label, s.tasks, stat)
+                    for stat in (('cpu', ['user+sys__rate', 'user__rate', 'sys__rate']),
+                                 ('mem', ['rss']),
+                                 ('net:eth0', ['tx+rx__rate','rx__rate','tx__rate']),
+                                 ('net:keep0', ['tx+rx__rate','rx__rate','tx__rate']),
+                                 ('statfs', ['used', 'total']),
+                                 )
+                    ],
+            }
+            for s in self.summarizers]
 
     def chartdata(self, label, tasks, stats):
         '''For Crunch2, label is the name of container request,
@@ -45,3 +88,7 @@ class DygraphsChart(crunchstat_summary.webchart.WebChart):
                 data.append([pt[0].total_seconds()] + nulls + [pt[1]] + vals)
             nulls.append(None)
         return sorted(data)
+
+    def style(self):
+        return '\n'.join((super().style(),
+                         '<link rel="stylesheet" href="{}">\n'.format(self.CSS)))
