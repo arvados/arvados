@@ -67,14 +67,14 @@ describe('Group manage tests', function() {
             .within(() => {
                 cy.get('[data-cy=invite-people-field] input').type("other");
             });
-        cy.get('[role=tooltip]').click();
+        cy.get('[data-cy=sharing-suggestion]').click();
         // Add admin to the group
         cy.get('.sharing-dialog')
             .should('contain', 'Sharing settings')
             .within(() => {
                 cy.get('[data-cy=invite-people-field] input').type("admin");
             });
-        cy.get('[role=tooltip]').click();
+        cy.get('[data-cy=sharing-suggestion]').click();
         cy.get('.sharing-dialog').get('[data-cy=add-invited-people]').click();
         cy.get('.sharing-dialog').contains('Close').click();
 

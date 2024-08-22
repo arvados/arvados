@@ -15,7 +15,6 @@ import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
 import { isGroup } from 'common/isGroup';
 import { sortByKey } from 'common/objects';
-import classNames from 'classnames';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -316,12 +315,12 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     renderSharingSuggestion(suggestion: Suggestion) {
         if (isGroup(suggestion)) {
             return <ListItemText>
-                        <Typography noWrap>
+                        <Typography noWrap data-cy="sharing-suggestion">
                             {(suggestion as any).name}
                         </Typography>
                     </ListItemText>;}
         return <ListItemText>
-                    <Typography>
+                    <Typography data-cy="sharing-suggestion">
                         {`${(suggestion as any).fullName} (${(suggestion as any).username})`}
                     </Typography>
                 </ListItemText>;

@@ -31,6 +31,7 @@ interface ParticipantSelectProps {
     onlyPeople?: boolean;
     onlyActive?: boolean;
     disabled?: boolean;
+    category?: AutocompleteCat;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -99,7 +100,7 @@ export const ParticipantSelect = connect()(
                     renderChipValue={this.renderChipValue}
                     renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
-                    category={AutocompleteCat.SHARING}
+                    category={this.props.category}
                     disabled={this.props.disabled} />
             );
         }
