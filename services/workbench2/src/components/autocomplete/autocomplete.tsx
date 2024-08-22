@@ -165,7 +165,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                     id={`groups-${index}`}
                                     key={`groups-${index}`}
                                     onClick={this.handleSelect(suggestion)}>
-                                    {this.renderSuggestion(suggestion)}
+                                    {this.renderSharingSuggestion(suggestion)}
                                 </ListItem>
                         )}
                     </List> : <Typography variant="caption" className={classes.emptyList}>no groups found</Typography>}
@@ -179,7 +179,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                     id={`users-${index}`}
                                     key={`users-${index}`}
                                     onClick={this.handleSelect(suggestion)}>
-                                    {this.renderSuggestion(suggestion)}
+                                    {this.renderSharingSuggestion(suggestion)}
                                 </ListItem>
                         )}
                     </List> : <Typography variant="caption" className={classes.emptyList}>no users found</Typography>}
@@ -299,6 +299,20 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         return renderSuggestion
             ? renderSuggestion(suggestion)
             : <ListItemText>{JSON.stringify(suggestion)}</ListItemText>;
+    }
+
+    renderSharingSuggestion(suggestion: Suggestion) {
+        if (isGroup(suggestion)) {
+            return <ListItemText>
+                        <Typography noWrap>
+                            {(suggestion as any).name}
+                        </Typography>
+                    </ListItemText>;}
+        return <ListItemText>
+                    <Typography>
+                        {`${(suggestion as any).fullName} (${(suggestion as any).username})`}
+                    </Typography>
+                </ListItemText>;
     }
 
     getSuggestionsWidth() {
