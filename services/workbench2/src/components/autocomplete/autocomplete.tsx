@@ -15,6 +15,7 @@ import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
 import { isGroup } from 'common/isGroup';
 import { sortByKey } from 'common/objects';
+import classNames from 'classnames';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -37,6 +38,19 @@ export interface AutocompleteProps<Item, Suggestion> {
     category?: AutocompleteCat;
 }
 
+type AutocompleteClasses = 'sharingList' | 'emptyList';
+
+const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
+    sharingList: {
+        maxHeight: '8rem', 
+        overflowX: 'scroll',
+    },
+    emptyList: {
+        padding: '0.5rem',
+        fontStyle: 'italic',
+    },
+});
+
 export enum AutocompleteCat {
     SHARING = 'sharing',
 };
@@ -46,7 +60,8 @@ export interface AutocompleteState {
     selectedSuggestionIndex: number;
 }
 
-export class Autocomplete<Value, Suggestion> extends React.Component<AutocompleteProps<Value, Suggestion>, AutocompleteState> {
+export const Autocomplete = withStyles(autocompleteStyles)(
+    class Autocomplete<Value, Suggestion> extends React.Component<AutocompleteProps<Value, Suggestion> & WithStyles<AutocompleteClasses>, AutocompleteState> {
 
     state = {
         suggestionsOpen: false,
@@ -119,7 +134,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     }
 
     renderSharingSuggestions() {
-        const { suggestions = [] } = this.props;
+        const { suggestions = [], classes } = this.props;
         const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
         const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
 
@@ -131,7 +146,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                 <Paper onMouseDown={this.preventBlur}>
                 Groups
                 {!!groups.length ? 
-                    <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
+                    <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
                         {groups.map(
                             (suggestion, index) =>
                                 <ListItem
@@ -142,10 +157,10 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
                         )}
-                    </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no groups found</Typography>}
+                    </List> : <Typography variant="caption" className={classes.emptyList}>no groups found</Typography>}
                 Users
                 {!!users.length ? 
-                    <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
+                    <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
                         {users.map(
                             (suggestion, index) =>
                                 <ListItem
@@ -156,7 +171,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                                     {this.renderSuggestion(suggestion)}
                                 </ListItem>
                         )}
-                    </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no users found</Typography>}
+                    </List> : <Typography variant="caption" className={classes.emptyList}>no users found</Typography>}
                 </Paper>
             </Popper>
         );
@@ -278,7 +293,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     getSuggestionsWidth() {
         return this.containerRef.current ? this.containerRef.current.offsetWidth : 'auto';
     }
-}
+});
 
 type ChipClasses = 'root';
 
@@ -293,7 +308,7 @@ const Chip = withStyles(chipStyles)(MuiChip);
 
 type PopperClasses = 'root';
 
-const popperStyles: StyleRulesCallback<ChipClasses> = theme => ({
+const popperStyles: StyleRulesCallback<PopperClasses> = theme => ({
     root: {
         zIndex: theme.zIndex.modal,
     }
