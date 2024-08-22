@@ -38,7 +38,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     category?: AutocompleteCat;
 }
 
-type AutocompleteClasses = 'sharingList' | 'emptyList';
+type AutocompleteClasses = 'sharingList' | 'emptyList' | 'listSubHeader' | 'numFound';
 
 const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
     sharingList: {
@@ -59,6 +59,16 @@ const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
     emptyList: {
         padding: '0.5rem',
         fontStyle: 'italic',
+    },
+    listSubHeader: {
+        padding: '0.5rem',
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+    },
+    numFound: {
+        fontStyle: 'italic',
+        fontSize: '0.8rem',
     },
 });
 
@@ -155,7 +165,9 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
-                Groups
+                <div className={classes.listSubHeader}>
+                    Groups {<span className={classes.numFound}>{groups.length} {groups.length === 1 ? 'match' : 'matches'} found</span>}
+                </div>
                 {!!groups.length ? 
                     <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
                         {groups.map(
@@ -169,7 +181,9 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                 </ListItem>
                         )}
                     </List> : <Typography variant="caption" className={classes.emptyList}>no groups found</Typography>}
-                Users
+                <div className={classes.listSubHeader}>
+                    Users {<span className={classes.numFound}>{users.length} {users.length === 1 ? 'match' : 'matches'} found</span>}
+                </div>
                 {!!users.length ? 
                     <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
                         {users.map(
