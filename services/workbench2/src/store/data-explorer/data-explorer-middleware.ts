@@ -47,7 +47,7 @@ export const dataExplorerMiddleware =
                             api.dispatch(actions.RESET_PAGINATION());
                             api.dispatch(actions.REQUEST_ITEMS(true));
                         }),
-                        REQUEST_ITEMS: handleAction(({ criteriaChanged, background }) => {
+                        REQUEST_ITEMS: handleAction(({ criteriaChanged = true, background }) => {
                             api.dispatch<any>(async (
                                 dispatch: Dispatch,
                                 getState: () => RootState,
