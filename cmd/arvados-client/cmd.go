@@ -9,7 +9,6 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cli"
 	"git.arvados.org/arvados.git/lib/cmd"
-	"git.arvados.org/arvados.git/lib/costanalyzer"
 	"git.arvados.org/arvados.git/lib/deduplicationreport"
 	"git.arvados.org/arvados.git/lib/diagnostics"
 	"git.arvados.org/arvados.git/lib/mount"
@@ -46,7 +45,6 @@ var (
 		"workflow":                 cli.APICall,
 
 		"connect-ssh":          connectSSHCommand{},
-		"costanalyzer":         costanalyzer.Command,
 		"deduplication-report": deduplicationreport.Command,
 		"diagnostics":          diagnostics.Command{},
 		"logs":                 logsCommand{},
