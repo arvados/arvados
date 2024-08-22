@@ -36,6 +36,7 @@ interface Colors {
     grey900: string;
     purple: string;
     orange: string;
+    darkOrange: string;
     greyL: string;
     greyD: string;
     darkblue: string;
