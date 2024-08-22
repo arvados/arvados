@@ -34,6 +34,7 @@ func (s *Suite) TearDownSuite(c *check.C) {
 
 func (s *Suite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(2, true)
+	keepclient.RefreshServiceDiscovery()
 
 	// Use a small page size to exercise paging without adding
 	// lots of fixtures

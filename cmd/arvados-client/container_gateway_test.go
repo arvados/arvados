@@ -246,6 +246,7 @@ type logsSuite struct{}
 
 func (s *logsSuite) TestContainerRequestLog(c *check.C) {
 	arvadostest.StartKeep(2, true)
+	keepclient.RefreshServiceDiscovery()
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 

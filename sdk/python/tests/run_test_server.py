@@ -432,7 +432,7 @@ def stop(force=False):
         my_api_host = None
 
 def get_config():
-    with open(os.environ["ARVADOS_CONFIG"]) as f:
+    with open(os.path.join(TEST_TMPDIR, 'arvados.yml')) as f:
         return yaml.safe_load(f)
 
 def internal_port_from_config(service, idx=0):
@@ -491,30 +491,21 @@ def stop_ws():
         return
     kill_server_pid(_pidfile('ws'))
 
-def _start_keep(n, blob_signing=False):
-    datadir = os.path.join(TEST_TMPDIR, "keep%d.data"%n)
+def _start_keep(n, port):
+    datadir = os.path.join(TEST_TMPDIR, f'keep{n}.data')
     if os.path.exists(datadir):
         shutil.rmtree(datadir)
     os.mkdir(datadir)
-    port = internal_port_from_config("Keepstore", idx=n)
 
-    # Currently, if there are multiple InternalURLs for a single host,
-    # the only way to tell a keepstore process which one it's supposed
-    # to listen on is to supply a redacted version of the config, with
-    # the other InternalURLs removed.
-    conf = os.path.join(TEST_TMPDIR, "keep%d.yaml"%n)
-    confdata = get_config()
-    confdata['Clusters']['zzzzz']['Services']['Keepstore']['InternalURLs'] = {"http://127.0.0.1:%d"%port: {}}
-    confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
-    with open(conf, 'w') as f:
-        yaml.safe_dump(confdata, f)
-    keep_cmd = ["arvados-server", "keepstore", "-config", conf]
+    env = _service_environ()
+    env['ARVADOS_SERVICE_INTERNAL_URL'] = f'http://127.0.0.1:{port}'
+    keep_cmd = ["arvados-server", "keepstore"]
 
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
         with open('/dev/null') as _stdin:
             child = subprocess.Popen(
                 keep_cmd,
-                env=_service_environ(),
+                env=env,
                 stdin=_stdin,
                 stdout=logf,
                 stderr=logf,
@@ -529,27 +520,35 @@ def _start_keep(n, blob_signing=False):
 
     return port
 
-def run_keep(num_servers=2, **kwargs):
-    stop_keep(num_servers)
+def run_keep(num_servers=2, blob_signing=True):
+    stop_keep()
 
-    api = arvados.api(
-        version='v1',
-        host=os.environ['ARVADOS_API_HOST'],
-        token=os.environ['ARVADOS_API_TOKEN'],
-        insecure=True)
+    # Rewrite the config file with a new set of keepstore
+    # InternalURLs, and the new blob_signing config value.
+    ports = sorted([find_available_port() for _ in range(num_servers)])
+    confdata = get_config()
+    confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
+    confdata['Clusters']['zzzzz']['Services']['Keepstore']['InternalURLs'] = {
+        f'http://127.0.0.1:{ports[n]}': {
+            'Rendezvous': f'keepdisk{n:07d}',
+        } for n in range(num_servers)
+    }
+    confdata['Clusters']['zzzzz']['Volumes'] = {
+        f'zzzzz-nyw5e-{n:015d}': {
+            'AccessViaHosts': {
+                f'http://127.0.0.1:{ports[n]}': {},
+            },
+            'Driver': 'Directory',
+            'DriverParameters': {
+                'Root': os.path.join(TEST_TMPDIR, f'keep{n}.data'),
+            },
+        } for n in range(num_servers)
+    }
+    with open(os.path.join(TEST_TMPDIR, 'arvados.yml'), 'w') as f:
+        yaml.safe_dump(confdata, f)
 
-    for d in api.keep_services().list(filters=[['service_type','=','disk']]).execute()['items']:
-        api.keep_services().delete(uuid=d['uuid']).execute()
-
-    for d in range(0, num_servers):
-        port = _start_keep(d, **kwargs)
-        svc = api.keep_services().create(body={'keep_service': {
-            'uuid': 'zzzzz-bi6l4-keepdisk{:07d}'.format(d),
-            'service_host': 'localhost',
-            'service_port': port,
-            'service_type': 'disk',
-            'service_ssl_flag': False,
-        }}).execute()
+    for n in range(num_servers):
+        _start_keep(n, ports[n])
 
     # If keepproxy and/or keep-web is running, send SIGHUP to make
     # them discover the new keepstore services.
@@ -562,12 +561,9 @@ def run_keep(num_servers=2, **kwargs):
             except OSError:
                 os.remove(pidfile)
 
-def _stop_keep(n):
-    kill_server_pid(_pidfile('keep{}'.format(n)))
-
-def stop_keep(num_servers=2):
-    for n in range(0, num_servers):
-        _stop_keep(n)
+def stop_keep():
+    for n in range(8):
+        kill_server_pid(_pidfile(f'keep{n}'))
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -592,23 +588,7 @@ def run_keep_proxy():
         f.write(str(kp.pid))
     _wait_until_port_listens(port)
 
-    print("Using API %s token %s" % (os.environ['ARVADOS_API_HOST'], auth_token('admin')), file=sys.stdout)
-    api = arvados.api(
-        version='v1',
-        host=os.environ['ARVADOS_API_HOST'],
-        token=auth_token('admin'),
-        insecure=True)
-    for d in api.keep_services().list(
-            filters=[['service_type','=','proxy']]).execute()['items']:
-        api.keep_services().delete(uuid=d['uuid']).execute()
-    api.keep_services().create(body={'keep_service': {
-        'service_host': 'localhost',
-        'service_port': port,
-        'service_type': 'proxy',
-        'service_ssl_flag': False,
-    }}).execute()
     os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(port)
-    _wait_until_port_listens(port)
 
 def stop_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -828,17 +808,6 @@ def setup_config():
                         "User": True,
                     },
                 },
-                "Volumes": {
-                    "zzzzz-nyw5e-%015d"%n: {
-                        "AccessViaHosts": {
-                            "http://%s:%s" % (localhost, keepstore_ports[n]): {},
-                        },
-                        "Driver": "Directory",
-                        "DriverParameters": {
-                            "Root": os.path.join(TEST_TMPDIR, "keep%d.data"%n),
-                        },
-                    } for n in range(len(keepstore_ports))
-                },
             },
         },
     }
@@ -992,7 +961,7 @@ if __name__ == "__main__":
     elif args.action == 'start_keep':
         run_keep(blob_signing=args.keep_blob_signing, num_servers=args.num_keep_servers)
     elif args.action == 'stop_keep':
-        stop_keep(num_servers=args.num_keep_servers)
+        stop_keep()
     elif args.action == 'start_keep_proxy':
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':

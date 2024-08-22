@@ -67,10 +67,11 @@ func pythonDir() string {
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartKeep(2, false)
+	RefreshServiceDiscovery()
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	arvadostest.StopKeep(2)
+	arvadostest.StopKeep()
 	os.Setenv("HOME", origHOME)
 }
 

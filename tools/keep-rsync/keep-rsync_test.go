@@ -52,7 +52,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
-	arvadostest.StopKeep(3)
+	arvadostest.StopKeep()
 }
 
 func (s *ServerNotRequiredSuite) SetUpTest(c *C) {
@@ -459,7 +459,7 @@ func (s *DoMainTestSuite) Test_doMainWithSrcAndDstConfig(c *C) {
 	// in setupRsync func, kcSrc and kcDst will be the same and no
 	// actual copying to dst will happen, but that's ok.
 	arvadostest.StartKeep(2, false)
-	defer arvadostest.StopKeep(2)
+	defer arvadostest.StopKeep()
 	keepclient.RefreshServiceDiscovery()
 
 	err := doMain()

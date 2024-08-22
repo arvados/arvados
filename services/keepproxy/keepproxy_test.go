@@ -59,6 +59,7 @@ var TestProxyUUID = "zzzzz-bi6l4-lrixqc4fxofbmzz"
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartKeep(2, false)
+	keepclient.RefreshServiceDiscovery()
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
@@ -66,12 +67,13 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	arvadostest.StopKeep(2)
+	arvadostest.StopKeep()
 }
 
 func (s *ServerRequiredConfigYmlSuite) SetUpSuite(c *C) {
 	// config.yml defines 4 keepstores
 	arvadostest.StartKeep(4, false)
+	keepclient.RefreshServiceDiscovery()
 }
 
 func (s *ServerRequiredConfigYmlSuite) SetUpTest(c *C) {
@@ -79,14 +81,15 @@ func (s *ServerRequiredConfigYmlSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredConfigYmlSuite) TearDownSuite(c *C) {
-	arvadostest.StopKeep(4)
+	arvadostest.StopKeep()
 }
 
 func (s *NoKeepServerSuite) SetUpSuite(c *C) {
 	// We need API to have some keep services listed, but the
 	// services themselves should be unresponsive.
 	arvadostest.StartKeep(2, false)
-	arvadostest.StopKeep(2)
+	keepclient.RefreshServiceDiscovery()
+	arvadostest.StopKeep()
 }
 
 func (s *NoKeepServerSuite) SetUpTest(c *C) {

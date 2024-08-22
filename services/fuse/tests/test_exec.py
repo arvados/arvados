@@ -38,7 +38,7 @@ class ExecMode(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        run_test_server.stop_keep(num_servers=2)
+        run_test_server.stop_keep()
 
     def setUp(self):
         self.mnt = tempfile.mkdtemp()
