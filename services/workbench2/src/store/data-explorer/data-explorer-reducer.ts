@@ -76,8 +76,9 @@ export const dataExplorerReducer = (
             update(state, id, (explorer) => {
                 // Reject updates to pages other than current,
                 //  DataExplorer middleware should retry
+                // Also reject update if DE is pending, reduces flicker and appearance of race
                 const updatedPage = page || 0;
-                if (explorer.page === updatedPage) {
+                if (explorer.page === updatedPage && explorer.requestState === DataTableRequestState.PENDING) {
                     return {
                         ...explorer,
                         items,
