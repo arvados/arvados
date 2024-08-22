@@ -102,8 +102,7 @@ def csv_dateformat(datestr):
 
 
 class ClusterActivityReport(object):
-    def __init__(self, prom_client, label=None, threads=1, **kwargs):
-        self.threadcount = threads
+    def __init__(self, prom_client):
         self.arv_client = arvados.api()
         self.prom_client = prom_client
         self.cluster = self.arv_client.config()["ClusterID"]
@@ -117,25 +116,22 @@ class ClusterActivityReport(object):
         self.summary_fetched = False
         self.graphs = {}
 
-    def run(self):
-        pass
-
-    def collect_graph(self, since, to, metric, resampleTo, extra=None):
+    def collect_graph(self, since, to, metric, resample_to, extra=None):
         if not self.prom_client:
             return
 
         flatdata = []
 
-        for series in get_metric_usage(self.prom_client, since, to, metric % self.cluster, resampleTo=resampleTo):
+        for series in get_metric_usage(self.prom_client, since, to, metric % self.cluster, resampleTo=resample_to):
             for t in series.itertuples():
                 flatdata.append([t[0], t[1]])
                 if extra:
-                    extra(t)
+                    extra(t[0], t[1])
 
         return flatdata
 
-    def collect_storage_cost(self, t):
-        self.storage_cost += aws_monthly_cost(t.y) / (30*24)
+    def collect_storage_cost(self, timestamp, value):
+        self.storage_cost += aws_monthly_cost(value) / (30*24)
 
     def html_report(self, since, to, exclude, include_workflow_steps):
 
@@ -148,26 +144,27 @@ class ClusterActivityReport(object):
                 pass
 
         container_cumulative_hours = 0
-        def collect_container_hours(t):
+        def collect_container_hours(timestamp, value):
             nonlocal container_cumulative_hours
             # resampled to 5 minute increments but we want
             # a sum of hours
-            container_cumulative_hours += t.y / 12
+            container_cumulative_hours += value / 12
 
         logging.info("Getting container hours time series")
 
         self.graphs[containers_graph] = self.collect_graph(since, to,
                            "arvados_dispatchcloud_containers_running{cluster='%s'}",
-                           resampleTo="5min",
+                           resample_to="5min",
                            extra=collect_container_hours
                            )
 
         logging.info("Getting data usage time series")
         self.graphs[managed_graph] = self.collect_graph(since, to,
-                           "arvados_keep_collection_bytes{cluster='%s'}", resampleTo="60min")
+                           "arvados_keep_collection_bytes{cluster='%s'}", resample_to="60min")
 
         self.graphs[storage_graph] = self.collect_graph(since, to,
-                           "arvados_keep_total_bytes{cluster='%s'}", resampleTo="60min", extra=self.collect_storage_cost)
+                           "arvados_keep_total_bytes{cluster='%s'}", resample_to="60min",
+                                                        extra=self.collect_storage_cost)
 
         managed_data_now = None
         storage_used_now = None
@@ -181,7 +178,7 @@ class ClusterActivityReport(object):
         if managed_data_now and storage_used_now:
             storage_cost = aws_monthly_cost(storage_used_now)
             dedup_ratio = managed_data_now/storage_used_now
-            dedup_savings = aws_monthly_cost(managed_data_now) - storage_cost
+
 
         label = self.label
 
@@ -200,6 +197,7 @@ class ClusterActivityReport(object):
             # So for now, as much fun as this is, I'm excluding it from
             # the report.
             #
+            # dedup_savings = aws_monthly_cost(managed_data_now) - storage_cost
             # <tr><th>Monthly savings from storage deduplication</th> <td>${dedup_savings:,.2f}</td></tr>
 
             data_rows = ""
@@ -212,7 +210,6 @@ class ClusterActivityReport(object):
                 """.format(
                        managed_data_now=format_with_suffix_base10(managed_data_now),
                        storage_used_now=format_with_suffix_base10(storage_used_now),
-                       dedup_savings=dedup_savings,
                        storage_cost=storage_cost,
                        dedup_ratio=dedup_ratio,
                 )
@@ -260,7 +257,6 @@ class ClusterActivityReport(object):
                 prj.activityspan = "{} to {}".format(prj.earliest.date(), prj.latest.date())
 
             prj.tablerow = """<td>{users}</td> <td>{active}</td> <td>{hours:,.1f}</td> <td>${cost:,.2f}</td>""".format(
-                name=prj.name,
                 active=prj.activityspan,
                 cost=prj.cost,
                 hours=prj.hours,
@@ -295,12 +291,6 @@ class ClusterActivityReport(object):
                     totalcost=sum(r.cost),
                     workflowlink="""<a href="{workbench}/workflows/{uuid}">{name}</a>""".format(workbench=workbench,uuid=r.uuid,name=r.name)
                     if r.uuid != "none" else r.name))
-
-                # <table>
-                # <thead><tr><th>Users</th> <th>Active</th> <th>Compute usage</th> <th>Compute cost</th> </tr></thead>
-                # <tbody><tr>{projectrow}</tr></tbody>
-                # </table>
-
 
             cards.append(
                 """<a id="{name}"></a><a href="{workbench}/projects/{uuid}"><h2>{name}</h2></a>
@@ -406,7 +396,7 @@ class ClusterActivityReport(object):
 
         return ReportChart(label, cards, self.graphs).html()
 
-    def flush_containers(self, pending, include_steps, exclude):
+    def iter_container_info(self, pending, include_steps, exclude):
         containers = {}
 
         for container in arvados.util.keyset_list_all(
@@ -597,6 +587,7 @@ class ClusterActivityReport(object):
                 filters=[
                     ["command", "like", "[\"arvados-cwl-runner%"],
                     ["created_at", ">=", since.strftime("%Y%m%dT%H%M%SZ")],
+                    ["created_at", "<=", to.strftime("%Y%m%dT%H%M%SZ")],
                 ],
                 select=["uuid", "owner_uuid", "container_uuid", "name", "cumulative_cost", "properties", "modified_by_user_uuid", "created_at"]):
 
@@ -608,14 +599,14 @@ class ClusterActivityReport(object):
             else:
                 count += len(pending)
                 logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
-                for row in self.flush_containers(pending, include_steps, exclude):
+                for row in self.iter_container_info(pending, include_steps, exclude):
                     self.collect_summary_stats(row)
                     yield row
                 pending.clear()
 
         count += len(pending)
         logging.info("Exporting workflow runs %s - %s", count-len(pending), count)
-        for row in self.flush_containers(pending, include_steps, exclude):
+        for row in self.iter_container_info(pending, include_steps, exclude):
             self.collect_summary_stats(row)
             yield row
 

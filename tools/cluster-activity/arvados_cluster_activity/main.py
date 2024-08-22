@@ -133,9 +133,11 @@ def get_prometheus_client():
     if prom_user:
         headers["Authorization"] = "Basic %s" % str(base64.b64encode(bytes("%s:%s" % (prom_user, prom_pw), 'utf-8')), 'utf-8')
 
-    prom = PrometheusConnect(url=prom_host, headers=headers)
-
-    return prom
+    try:
+        return PrometheusConnect(url=prom_host, headers=headers)
+    except Exception as e:
+        logging.warn("Connecting to Prometheus failed, will not collect activity from Prometheus.  Error was: %s" % e)
+        return None
 
 def report_from_prometheus(prom, cluster, since, to):
 
