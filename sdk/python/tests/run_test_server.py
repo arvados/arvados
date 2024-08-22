@@ -560,10 +560,24 @@ def run_keep(num_servers=2, blob_signing=True):
                     os.kill(int(pid.read()), signal.SIGHUP)
             except OSError:
                 os.remove(pidfile)
+    # Force railsapi to reload services from config (otherwise, the
+    # next incoming request might return the old list, even if it also
+    # triggers a config reload)
+    with open(os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'restart.txt'), 'w'):
+        pass
+    ls = arvados.api('v1').keep_services().list().execute()
+    # print(f'{ls=}', file=sys.stderr)
 
 def stop_keep():
     for n in range(8):
         kill_server_pid(_pidfile(f'keep{n}'))
+    # Force railsapi to reload services from config (otherwise, the
+    # next incoming request might return the old list, even if it also
+    # triggers a config reload)
+    with open(os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'restart.txt'), 'w'):
+        pass
+    ls = arvados.api('v1').keep_services().list().execute()
+    # print(f'{ls=}', file=sys.stderr)
 
 def run_keep_proxy():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:

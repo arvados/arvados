@@ -12,7 +12,7 @@ class KeepProxyTest < ActionDispatch::IntegrationTest
     assert_response :success
     services = json_response['items']
 
-    assert_operator 2, :<=, services.length
+    assert_equal Rails.configuration.Services.Keepstore.InternalURLs.length, services.length
     services.each do |service|
       assert_equal 'disk', service['service_type']
     end
@@ -27,10 +27,10 @@ class KeepProxyTest < ActionDispatch::IntegrationTest
 
     assert_equal 1, services.length
 
-    assert_equal keep_services(:proxy).uuid, services[0]['uuid']
-    assert_equal keep_services(:proxy).service_host, services[0]['service_host']
-    assert_equal keep_services(:proxy).service_port, services[0]['service_port']
-    assert_equal keep_services(:proxy).service_ssl_flag, services[0]['service_ssl_flag']
+    scheme = "http#{'s' if services[0]['service_ssl_flag']}"
+    host = services[0]['service_host']
+    port = services[0]['service_port']
+    assert_equal Rails.configuration.Services.Keepproxy.ExternalURL.to_s, "#{scheme}://#{host}:#{port}/"
     assert_equal 'proxy', services[0]['service_type']
   end
 end

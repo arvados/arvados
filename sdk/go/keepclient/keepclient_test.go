@@ -47,7 +47,6 @@ type StandaloneSuite struct {
 var origHOME = os.Getenv("HOME")
 
 func (s *StandaloneSuite) SetUpTest(c *C) {
-	RefreshServiceDiscovery()
 	// Prevent cache state from leaking between test cases
 	os.Setenv("HOME", c.MkDir())
 	s.origDefaultRetryDelay = DefaultRetryDelay
@@ -67,16 +66,15 @@ func pythonDir() string {
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartKeep(2, false)
-	RefreshServiceDiscovery()
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep()
+	RefreshServiceDiscovery()
 	os.Setenv("HOME", origHOME)
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
-	RefreshServiceDiscovery()
 	// Prevent cache state from leaking between test cases
 	os.Setenv("HOME", c.MkDir())
 }
@@ -90,7 +88,7 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	c.Assert(err, IsNil)
 	c.Check(len(kc.LocalRoots()), Equals, 2)
 	for _, root := range kc.LocalRoots() {
-		c.Check(root, Matches, "http://localhost:\\d+")
+		c.Check(root, Matches, `http://127\.0\.0\.1:\d+`)
 	}
 }
 
@@ -1169,7 +1167,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		n, url2, err := kc.Ask(hash)
 		c.Check(err, IsNil)
 		c.Check(n, Equals, int64(len(content)))
-		c.Check(url2, Matches, "http://localhost:\\d+/\\Q"+hash+"\\E")
+		c.Check(url2, Matches, `http://127.0.0.1:\d+/\Q`+hash+`\E`)
 	}
 	{
 		loc, err := kc.LocalLocator(hash)
@@ -1585,33 +1583,29 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 			"service_type": "testblobstore"}},
 		&blobKeepService)
 	c.Assert(err, IsNil)
-	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
+	uuid := blobKeepService["uuid"].(string)
+	defer func() {
+		err := arv.Delete("keep_services", uuid, nil, nil)
+		c.Check(err, IsNil)
+		RefreshServiceDiscovery()
+	}()
 	RefreshServiceDiscovery()
 
 	// Make a keepclient and ensure that the testblobstore is included
 	kc, err := MakeKeepClient(arv)
 	c.Assert(err, IsNil)
 
-	// verify kc.LocalRoots
-	c.Check(len(kc.LocalRoots()), Equals, 3)
-	for _, root := range kc.LocalRoots() {
-		c.Check(root, Matches, "http://localhost:\\d+")
+	for _, trial := range []struct {
+		label string
+		fn    func() map[string]string
+	}{
+		{label: "LocalRoots", fn: kc.LocalRoots},
+		{label: "GatewayRoots", fn: kc.GatewayRoots},
+		{label: "WritableLocalRoots", fn: kc.WritableLocalRoots},
+	} {
+		c.Logf("checking %s", trial.label)
+		c.Check(trial.fn(), DeepEquals, map[string]string{uuid: "http://localhost:21321"})
 	}
-	c.Assert(kc.LocalRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
-
-	// verify kc.GatewayRoots
-	c.Check(len(kc.GatewayRoots()), Equals, 3)
-	for _, root := range kc.GatewayRoots() {
-		c.Check(root, Matches, "http://localhost:\\d+")
-	}
-	c.Assert(kc.GatewayRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
-
-	// verify kc.WritableLocalRoots
-	c.Check(len(kc.WritableLocalRoots()), Equals, 3)
-	for _, root := range kc.WritableLocalRoots() {
-		c.Check(root, Matches, "http://localhost:\\d+")
-	}
-	c.Assert(kc.WritableLocalRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
 
 	c.Assert(kc.replicasPerService, Equals, 0)
 	c.Assert(kc.foundNonDiskSvc, Equals, true)
