@@ -15,6 +15,7 @@ export enum DataTableRequestState {
 export const dataExplorerActions = unionize({
     CLEAR: ofType<{ id: string }>(),
     RESET_PAGINATION: ofType<{ id: string }>(),
+    SET_LOADING_ITEMS_AVAILABLE: ofType<{ id: string, loadingItemsAvailable: boolean }>(),
     SET_ITEMS_AVAILABLE: ofType<{ id: string, itemsAvailable: number }>(),
     RESET_ITEMS_AVAILABLE: ofType<{ id: string }>(),
     REQUEST_ITEMS: ofType<{ id: string; criteriaChanged?: boolean, background?: boolean }>(),
@@ -39,6 +40,7 @@ export type DataExplorerAction = UnionOf<typeof dataExplorerActions>;
 export const bindDataExplorerActions = (id: string) => ({
     CLEAR: () => dataExplorerActions.CLEAR({ id }),
     RESET_PAGINATION: () => dataExplorerActions.RESET_PAGINATION({ id }),
+    SET_LOADING_ITEMS_AVAILABLE: (loadingItemsAvailable: boolean) => dataExplorerActions.SET_LOADING_ITEMS_AVAILABLE({ id, loadingItemsAvailable }),
     SET_ITEMS_AVAILABLE: (itemsAvailable: number) => dataExplorerActions.SET_ITEMS_AVAILABLE({ id, itemsAvailable }),
     RESET_ITEMS_AVAILABLE: () => dataExplorerActions.RESET_ITEMS_AVAILABLE({ id }),
     REQUEST_ITEMS: (criteriaChanged?: boolean, background?: boolean) => dataExplorerActions.REQUEST_ITEMS({ id, criteriaChanged, background }),

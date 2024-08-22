@@ -24,6 +24,7 @@ export interface DataExplorer {
     columns: DataColumns<any, any>;
     items: any[];
     itemsAvailable: number;
+    loadingItemsAvailable: boolean;
     page: number;
     rowsPerPage: number;
     rowsPerPageOptions: number[];
@@ -38,6 +39,7 @@ export const initialDataExplorer: DataExplorer = {
     columns: [],
     items: [],
     itemsAvailable: 0,
+    loadingItemsAvailable: false,
     page: 0,
     rowsPerPage: 50,
     rowsPerPageOptions: [10, 20, 50, 100, 200, 500],
@@ -92,9 +94,17 @@ export const dataExplorerReducer = (
             })
         ),
 
+        SET_LOADING_ITEMS_AVAILABLE: ({ id, loadingItemsAvailable }) =>
+            update(state, id, (explorer) => ({
+                ...explorer,
+                loadingItemsAvailable,
+            })),
+
         SET_ITEMS_AVAILABLE: ({ id, itemsAvailable }) =>
             update(state, id, (explorer) => ({
-                 ...explorer, itemsAvailable
+                 ...explorer,
+                 itemsAvailable,
+                 loadingItemsAvailable: false,
             })),
 
         RESET_ITEMS_AVAILABLE: ({ id }) =>

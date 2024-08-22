@@ -38,6 +38,7 @@ export const dataExplorerMiddleware =
                         }),
                         SET_FILTERS: handleAction(() => {
                             api.dispatch(actions.RESET_PAGINATION());
+                            api.dispatch(actions.SET_LOADING_ITEMS_AVAILABLE(true));
                             api.dispatch(actions.REQUEST_ITEMS(true));
                         }),
                         TOGGLE_SORT: handleAction(() => {
@@ -45,6 +46,7 @@ export const dataExplorerMiddleware =
                         }),
                         SET_EXPLORER_SEARCH_VALUE: handleAction(() => {
                             api.dispatch(actions.RESET_PAGINATION());
+                            api.dispatch(actions.SET_LOADING_ITEMS_AVAILABLE(true));
                             api.dispatch(actions.REQUEST_ITEMS(true));
                         }),
                         REQUEST_ITEMS: handleAction(({ criteriaChanged = true, background }) => {
