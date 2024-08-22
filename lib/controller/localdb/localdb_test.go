@@ -14,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
@@ -33,6 +34,7 @@ type localdbSuite struct {
 
 func (s *localdbSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(2, true)
+	keepclient.RefreshServiceDiscovery()
 }
 
 func (s *localdbSuite) TearDownSuite(c *check.C) {

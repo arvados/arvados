@@ -15,6 +15,7 @@ import (
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"gopkg.in/check.v1"
 )
 
@@ -28,6 +29,7 @@ type Suite struct{}
 
 func (*Suite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(2, true)
+	keepclient.RefreshServiceDiscovery()
 }
 
 func (*Suite) TestUnrecoverableBlock(c *check.C) {

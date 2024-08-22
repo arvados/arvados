@@ -54,7 +54,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 }
 
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
-	arvadostest.StopKeep(2)
+	arvadostest.StopKeep()
 	log.SetOutput(os.Stdout)
 	c.Log(logBuffer.String())
 }
@@ -318,7 +318,8 @@ func (s *DoMainTestSuite) Test_doMain_WithNoBlockHashFile(c *C) {
 
 	// Start keepservers.
 	arvadostest.StartKeep(2, false)
-	defer arvadostest.StopKeep(2)
+	keepclient.RefreshServiceDiscovery()
+	defer arvadostest.StopKeep()
 
 	args := []string{"-config", config}
 	var stderr bytes.Buffer
@@ -332,7 +333,8 @@ func (s *DoMainTestSuite) Test_doMain_WithNoSuchBlockHashFile(c *C) {
 	defer os.Remove(config)
 
 	arvadostest.StartKeep(2, false)
-	defer arvadostest.StopKeep(2)
+	keepclient.RefreshServiceDiscovery()
+	defer arvadostest.StopKeep()
 
 	args := []string{"-config", config, "-block-hash-file", "no-such-file"}
 	var stderr bytes.Buffer
@@ -344,7 +346,8 @@ func (s *DoMainTestSuite) Test_doMain_WithNoSuchBlockHashFile(c *C) {
 func (s *DoMainTestSuite) Test_doMain(c *C) {
 	// Start keepservers.
 	arvadostest.StartKeep(2, false)
-	defer arvadostest.StopKeep(2)
+	keepclient.RefreshServiceDiscovery()
+	defer arvadostest.StopKeep()
 
 	config := setupConfigFile(c, "config")
 	defer os.Remove(config)

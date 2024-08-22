@@ -592,6 +592,7 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 	} {
 		c.Logf("trial: %+v", trial)
 		arvadostest.StartKeep(2, true)
+		keepclient.RefreshServiceDiscovery()
 		if trial.dataExists {
 			arv, err := arvadosclient.MakeArvadosClient()
 			c.Assert(err, check.IsNil)

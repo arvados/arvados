@@ -40,6 +40,7 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 	}
 	arvadostest.ResetEnv()
 	arvadostest.StartKeep(4, true)
+	keepclient.RefreshServiceDiscovery()
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	arv.ApiToken = arvadostest.SystemRootToken
@@ -62,7 +63,7 @@ func (s *integrationSuite) TearDownSuite(c *check.C) {
 	if testing.Short() {
 		c.Skip("-short")
 	}
-	arvadostest.StopKeep(4)
+	arvadostest.StopKeep()
 }
 
 func (s *integrationSuite) SetUpTest(c *check.C) {

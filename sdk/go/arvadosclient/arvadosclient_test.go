@@ -35,7 +35,7 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	arvadostest.StopKeep(2)
+	arvadostest.StopKeep()
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {

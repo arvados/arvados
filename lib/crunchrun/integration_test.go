@@ -50,6 +50,7 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 	}
 
 	arvadostest.StartKeep(2, true)
+	keepclient.RefreshServiceDiscovery()
 
 	out, err := exec.Command("docker", "load", "--input", arvadostest.BusyboxDockerImage(c)).CombinedOutput()
 	c.Log(string(out))

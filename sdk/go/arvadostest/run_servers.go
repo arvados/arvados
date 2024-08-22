@@ -97,14 +97,12 @@ func StartKeep(numKeepServers int, blobSigning bool) {
 }
 
 // StopKeep stops keep servers that were started with StartKeep.
-// numkeepServers should be the same value that was passed to StartKeep,
-// which is 2 under all normal circumstances.
-func StopKeep(numKeepServers int) {
+func StopKeep() {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 	chdirToPythonTests()
 
-	cmd := exec.Command("python", "run_test_server.py", "stop_keep", "--num-keep-servers", strconv.Itoa(numKeepServers))
+	cmd := exec.Command("python", "run_test_server.py", "stop_keep")
 	bgRun(cmd)
 	// Without Wait, "go test" in go1.10.1 tends to hang. https://github.com/golang/go/issues/24050
 	cmd.Wait()

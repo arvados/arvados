@@ -15,6 +15,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
@@ -33,6 +34,7 @@ func (s *mainSuite) TestVersionFlag(c *check.C) {
 
 func (s *mainSuite) TestHTTPServer(c *check.C) {
 	arvadostest.StartKeep(2, true)
+	keepclient.RefreshServiceDiscovery()
 
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
