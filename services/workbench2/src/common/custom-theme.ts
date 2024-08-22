@@ -35,19 +35,19 @@ interface Colors {
     grey700: string;
     grey900: string;
     purple: string;
-    orange: string; 
+    orange: string;
     greyL: string;
     greyD: string;
     darkblue: string;
 }
 
 /**
-* arvadosGreyLight is the hex equivalent of rgba(0,0,0,0.87) on #fafafa background and arvadosGreyDark is the hex equivalent of rgab(0,0,0,0.54) on #fafafa background  
+* arvadosGreyLight is the hex equivalent of rgba(0,0,0,0.87) on #fafafa background and arvadosGreyDark is the hex equivalent of rgab(0,0,0,0.54) on #fafafa background
 */
 
 const arvadosDarkBlue = '#052a3c';
-const arvadosGreyLight = '#737373'; 
-const arvadosGreyDark = '#212121'; 
+const arvadosGreyLight = '#737373';
+const arvadosGreyDark = '#212121';
 const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
@@ -76,6 +76,7 @@ export const themeOptions: ArvadosThemeOptions = {
             grey900: grey900,
             darkblue: arvadosDarkBlue,
             orange: '#f0ad4e',
+            darkOrange: '#9A6E31',
             greyL: arvadosGreyLight,
             greyD: arvadosGreyDark,
         }
@@ -127,7 +128,7 @@ export const themeOptions: ArvadosThemeOptions = {
                 alignItems: 'center'
             },
             title: {
-                color: arvadosGreyDark, 
+                color: arvadosGreyDark,
                 fontSize: '1.25rem'
             }
         },
