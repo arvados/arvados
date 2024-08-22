@@ -56,12 +56,6 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     containerRef = React.createRef<HTMLDivElement>();
     inputRef = React.createRef<HTMLInputElement>();
 
-    componentDidUpdate( prevProps: Readonly<AutocompleteProps<Value, Suggestion>>, prevState: Readonly<AutocompleteState>, snapshot?: any ): void {
-        if (prevState.selectedSuggestionIndex !== this.state.selectedSuggestionIndex) {
-            document.getElementById(`users-${this.state.selectedSuggestionIndex}`)?.scrollIntoView({ block: 'nearest' });
-        }
-    }
-
     render() {
         return (
             <RootRef rootRef={this.containerRef}>
@@ -135,21 +129,6 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
-                Users
-                {!!users.length ? 
-                    <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
-                        {users.map(
-                            (suggestion, index) =>
-                                <ListItem
-                                    button
-                                    id={`users-${index}`}
-                                    key={`users-${index}`}
-                                    onClick={this.handleSelect(suggestion)}
-                                    selected={index === this.state.selectedSuggestionIndex}>
-                                    {this.renderSuggestion(suggestion)}
-                                </ListItem>
-                        )}
-                    </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no users found</Typography>}
                 Groups
                 {!!groups.length ? 
                     <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
@@ -164,6 +143,20 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                                 </ListItem>
                         )}
                     </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no groups found</Typography>}
+                Users
+                {!!users.length ? 
+                    <List dense style={{ width: this.getSuggestionsWidth(), maxHeight: '8rem', overflowX: 'scroll' }}>
+                        {users.map(
+                            (suggestion, index) =>
+                                <ListItem
+                                    button
+                                    id={`users-${index}`}
+                                    key={`users-${index}`}
+                                    onClick={this.handleSelect(suggestion)}>
+                                    {this.renderSuggestion(suggestion)}
+                                </ListItem>
+                        )}
+                    </List> : <Typography variant="caption" style={{ padding: '0.5rem', fontStyle: 'italic' }}>no users found</Typography>}
                 </Paper>
             </Popper>
         );
