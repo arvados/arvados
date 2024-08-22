@@ -67,6 +67,20 @@ func (s *KeepstoreMigrationSuite) SetUpSuite(c *check.C) {
 	}
 }
 
+// Delete fake keep_services entries added by SetUpSuite.
+func (s *KeepstoreMigrationSuite) TearDownSuite(c *check.C) {
+	client := arvados.NewClientFromEnv()
+	var svcList arvados.KeepServiceList
+	err := client.RequestAndDecode(&svcList, "GET", "arvados/v1/keep_services", nil, nil)
+	c.Assert(err, check.IsNil)
+	for _, ks := range svcList.Items {
+		if ks.ServiceType == "disk" {
+			err = client.RequestAndDecode(new(struct{}), "DELETE", "arvados/v1/keep_services/"+ks.UUID, nil, nil)
+			c.Check(err, check.IsNil)
+		}
+	}
+}
+
 func (s *KeepstoreMigrationSuite) checkEquivalentWithKeepstoreConfig(c *check.C, keepstoreconfig, clusterconfig, expectedconfig string) {
 	keepstorefile, err := ioutil.TempFile("", "")
 	c.Assert(err, check.IsNil)

@@ -14,23 +14,20 @@ class KeepServiceTest < ActiveSupport::TestCase
   end
 
   test "non-admins cannot update services" do
+    set_user_from_auth :admin
+    ks = KeepService.new
+    assert(ks.save, "saving new service failed")
     set_user_from_auth :active
-    ks = keep_services(:proxy)
     ks.service_port = 64434
     assert_not_allowed do
       ks.save
     end
   end
 
-  test "admins can create services" do
+  test "admins can create and update services" do
     set_user_from_auth :admin
     ks = KeepService.new
     assert(ks.save, "saving new service failed")
-  end
-
-  test "admins can update services" do
-    set_user_from_auth :admin
-    ks = keep_services(:proxy)
     ks.service_port = 64434
     assert(ks.save, "saving updated service failed")
   end

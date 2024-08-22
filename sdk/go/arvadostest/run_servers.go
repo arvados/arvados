@@ -117,10 +117,10 @@ func bgRun(cmd *exec.Cmd) {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stderr
 	if err := cmd.Start(); err != nil {
-		log.Fatalf("%+v: %s", cmd.Args, err)
+		panic(fmt.Sprintf("%+v: %s", cmd.Args, err))
 	}
 	if _, err := cmd.Process.Wait(); err != nil {
-		log.Fatalf("%+v: %s", cmd.Args, err)
+		panic(fmt.Sprintf("%+v: %s", cmd.Args, err))
 	}
 }
 
