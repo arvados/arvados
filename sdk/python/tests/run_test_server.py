@@ -266,7 +266,9 @@ def _service_environ():
     """Return an environment mapping suitable for running an arvados
     service process."""
     env = dict(os.environ)
-    env['ARVADOS_USE_KEEP_ACCESSIBLE_API'] = 'true'
+    env.pop('ARVADOS_API_HOST', None)
+    env.pop('ARVADOS_API_HOST_INSECURE', None)
+    env.pop('ARVADOS_API_TOKEN', None)
     return env
 
 def run(leave_running_atexit=False):
@@ -959,7 +961,6 @@ if __name__ == "__main__":
             print("export ARVADOS_API_TOKEN={}".format(shlex.quote(token)))
             print("export ARVADOS_API_HOST={}".format(shlex.quote(host)))
             print("export ARVADOS_API_HOST_INSECURE=true")
-            print("export ARVADOS_USE_KEEP_ACCESSIBLE_API=true")
         else:
             print(host)
     elif args.action == 'stop':
