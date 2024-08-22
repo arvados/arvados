@@ -42,7 +42,7 @@ type AutocompleteClasses = 'sharingList' | 'emptyList' | 'listSubHeader' | 'numF
 
 const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
     sharingList: {
-        maxHeight: '8rem', 
+        maxHeight: '10rem', 
         overflowY: 'scroll',
         scrollbarColor: 'rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0)',
         '&::-webkit-scrollbar': {
@@ -165,10 +165,9 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}>
                 <Paper onMouseDown={this.preventBlur}>
-                <div className={classes.listSubHeader}>
-                    Groups {<span className={classes.numFound}>{groups.length} {groups.length === 1 ? 'match' : 'matches'} found</span>}
-                </div>
-                {!!groups.length ? 
+                    <div className={classes.listSubHeader}>
+                        Groups {<span className={classes.numFound}>{groups.length} {groups.length === 1 ? 'match' : 'matches'} found</span>}
+                    </div>
                     <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
                         {groups.map(
                             (suggestion, index) =>
@@ -180,11 +179,10 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                     {this.renderSharingSuggestion(suggestion)}
                                 </ListItem>
                         )}
-                    </List> : <Typography variant="caption" className={classes.emptyList}>no groups found</Typography>}
-                <div className={classes.listSubHeader}>
-                    Users {<span className={classes.numFound}>{users.length} {users.length === 1 ? 'match' : 'matches'} found</span>}
-                </div>
-                {!!users.length ? 
+                    </List> 
+                    <div className={classes.listSubHeader}>
+                        Users {<span className={classes.numFound}>{users.length} {users.length === 1 ? 'match' : 'matches'} found</span>}
+                    </div>
                     <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
                         {users.map(
                             (suggestion, index) =>
@@ -196,7 +194,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                     {this.renderSharingSuggestion(suggestion)}
                                 </ListItem>
                         )}
-                    </List> : <Typography variant="caption" className={classes.emptyList}>no users found</Typography>}
+                    </List> 
                 </Paper>
             </Popper>
         );
