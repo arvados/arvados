@@ -4,7 +4,7 @@
 
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, getDataExplorerColumnFilters, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getDataExplorerColumnFilters, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
@@ -18,6 +18,7 @@ import { LinkClass } from 'models/link';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { ListArguments } from 'services/common-service/common-service';
 
 export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -45,7 +46,15 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             .getFilters();
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    getLinkParams(dataExplorer: DataExplorer, publicProjectUuid: string): ListArguments {
+        return {
+            ...dataExplorerToListParams(dataExplorer),
+            filters: this.getLinkFilters(dataExplorer, publicProjectUuid),
+            count: "none",
+        };
+    }
+
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
@@ -55,11 +64,8 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 const uuidPrefix = api.getState().auth.config.uuidPrefix;
                 const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 
-                const responseLinks = await this.services.linkService.list({
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                    filters: this.getLinkFilters(dataExplorer, publicProjectUuid)
-                });
+                // Get items
+                const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, publicProjectUuid));
                 const uuids = responseLinks.items.map(it => it.headUuid);
 
                 const groupItems = await this.services.groupsService.list({
