@@ -1,0 +1,813 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Cluster report for xzzz1 from 2024-04-04 to 2024-04-06</title>
+
+
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js"></script>
+        <script type="text/javascript">
+        var chartdata = [{"label": "Concurrent running containers", "charts": [{"data": [[new Date("2024-04-06T11:00:00Z"), 3], [new Date("2024-04-06T11:05:00Z"), 5], [new Date("2024-04-06T11:10:00Z"), 2], [new Date("2024-04-06T11:15:00Z"), 5], [new Date("2024-04-06T11:20:00Z"), 3]], "options": {"legend": "always", "connectSeparatedPoints": true, "labels": ["date", "containers"], "includeZero": true, "title": "Concurrent running containers"}}]}, {"label": "Data under management", "charts": [{"data": [[new Date("2024-04-06T11:00:00Z"), 3], [new Date("2024-04-06T11:05:00Z"), 5], [new Date("2024-04-06T11:10:00Z"), 2], [new Date("2024-04-06T11:15:00Z"), 5], [new Date("2024-04-06T11:20:00Z"), 3]], "options": {"legend": "always", "connectSeparatedPoints": true, "labels": ["date", "managed"], "includeZero": true, "title": "Data under management"}}]}, {"label": "Storage usage", "charts": [{"data": [[new Date("2024-04-06T11:00:00Z"), 3], [new Date("2024-04-06T11:05:00Z"), 5], [new Date("2024-04-06T11:10:00Z"), 2], [new Date("2024-04-06T11:15:00Z"), 5], [new Date("2024-04-06T11:20:00Z"), 3]], "options": {"legend": "always", "connectSeparatedPoints": true, "labels": ["date", "used"], "includeZero": true, "title": "Storage usage"}}]}];
+// Copyright (c) 2009 Dan Vanderkam. All rights reserved.
+//
+// SPDX-License-Identifier: MIT
+
+/**
+ * Synchronize zooming and/or selections between a set of dygraphs.
+ *
+ * Usage:
+ *
+ *   var g1 = new Dygraph(...),
+ *       g2 = new Dygraph(...),
+ *       ...;
+ *   var sync = Dygraph.synchronize(g1, g2, ...);
+ *   // charts are now synchronized
+ *   sync.detach();
+ *   // charts are no longer synchronized
+ *
+ * You can set options using the last parameter, for example:
+ *
+ *   var sync = Dygraph.synchronize(g1, g2, g3, {
+ *      selection: true,
+ *      zoom: true
+ *   });
+ *
+ * The default is to synchronize both of these.
+ *
+ * Instead of passing one Dygraph object as each parameter, you may also pass an
+ * array of dygraphs:
+ *
+ *   var sync = Dygraph.synchronize([g1, g2, g3], {
+ *      selection: false,
+ *      zoom: true
+ *   });
+ *
+ * You may also set `range: false` if you wish to only sync the x-axis.
+ * The `range` option has no effect unless `zoom` is true (the default).
+ *
+ * Original source: https://github.com/danvk/dygraphs/blob/master/src/extras/synchronizer.js
+ * at commit b55a71d768d2f8de62877c32b3aec9e9975ac389
+ *
+ * Copyright (c) 2009 Dan Vanderkam
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+(function() {
+/* global Dygraph:false */
+'use strict';
+
+var Dygraph;
+if (window.Dygraph) {
+  Dygraph = window.Dygraph;
+} else if (typeof(module) !== 'undefined') {
+  Dygraph = require('../dygraph');
+}
+
+var synchronize = function(/* dygraphs..., opts */) {
+  if (arguments.length === 0) {
+    throw 'Invalid invocation of Dygraph.synchronize(). Need >= 1 argument.';
+  }
+
+  var OPTIONS = ['selection', 'zoom', 'range'];
+  var opts = {
+    selection: true,
+    zoom: true,
+    range: true
+  };
+  var dygraphs = [];
+  var prevCallbacks = [];
+
+  var parseOpts = function(obj) {
+    if (!(obj instanceof Object)) {
+      throw 'Last argument must be either Dygraph or Object.';
+    } else {
+      for (var i = 0; i < OPTIONS.length; i++) {
+        var optName = OPTIONS[i];
+        if (obj.hasOwnProperty(optName)) opts[optName] = obj[optName];
+      }
+    }
+  };
+
+  if (arguments[0] instanceof Dygraph) {
+    // Arguments are Dygraph objects.
+    for (var i = 0; i < arguments.length; i++) {
+      if (arguments[i] instanceof Dygraph) {
+        dygraphs.push(arguments[i]);
+      } else {
+        break;
+      }
+    }
+    if (i < arguments.length - 1) {
+      throw 'Invalid invocation of Dygraph.synchronize(). ' +
+            'All but the last argument must be Dygraph objects.';
+    } else if (i == arguments.length - 1) {
+      parseOpts(arguments[arguments.length - 1]);
+    }
+  } else if (arguments[0].length) {
+    // Invoked w/ list of dygraphs, options
+    for (var i = 0; i < arguments[0].length; i++) {
+      dygraphs.push(arguments[0][i]);
+    }
+    if (arguments.length == 2) {
+      parseOpts(arguments[1]);
+    } else if (arguments.length > 2) {
+      throw 'Invalid invocation of Dygraph.synchronize(). ' +
+            'Expected two arguments: array and optional options argument.';
+    }  // otherwise arguments.length == 1, which is fine.
+  } else {
+    throw 'Invalid invocation of Dygraph.synchronize(). ' +
+          'First parameter must be either Dygraph or list of Dygraphs.';
+  }
+
+  if (dygraphs.length < 2) {
+    throw 'Invalid invocation of Dygraph.synchronize(). ' +
+          'Need two or more dygraphs to synchronize.';
+  }
+
+  var readycount = dygraphs.length;
+  for (var i = 0; i < dygraphs.length; i++) {
+    var g = dygraphs[i];
+    g.ready( function() {
+      if (--readycount == 0) {
+        // store original callbacks
+        var callBackTypes = ['drawCallback', 'highlightCallback', 'unhighlightCallback'];
+        for (var j = 0; j < dygraphs.length; j++) {
+          if (!prevCallbacks[j]) {
+            prevCallbacks[j] = {};
+          }
+          for (var k = callBackTypes.length - 1; k >= 0; k--) {
+            prevCallbacks[j][callBackTypes[k]] = dygraphs[j].getFunctionOption(callBackTypes[k]);
+          }
+        }
+
+        // Listen for draw, highlight, unhighlight callbacks.
+        if (opts.zoom) {
+          attachZoomHandlers(dygraphs, opts, prevCallbacks);
+        }
+
+        if (opts.selection) {
+          attachSelectionHandlers(dygraphs, prevCallbacks);
+        }
+      }
+    });
+  }
+
+  return {
+    detach: function() {
+      for (var i = 0; i < dygraphs.length; i++) {
+        var g = dygraphs[i];
+        if (opts.zoom) {
+          g.updateOptions({drawCallback: prevCallbacks[i].drawCallback});
+        }
+        if (opts.selection) {
+          g.updateOptions({
+            highlightCallback: prevCallbacks[i].highlightCallback,
+            unhighlightCallback: prevCallbacks[i].unhighlightCallback
+          });
+        }
+      }
+      // release references & make subsequent calls throw.
+      dygraphs = null;
+      opts = null;
+      prevCallbacks = null;
+    }
+  };
+};
+
+function arraysAreEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  var i = a.length;
+  if (i !== b.length) return false;
+  while (i--) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function attachZoomHandlers(gs, syncOpts, prevCallbacks) {
+  var block = false;
+  for (var i = 0; i < gs.length; i++) {
+    var g = gs[i];
+    g.updateOptions({
+      drawCallback: function(me, initial) {
+        if (block || initial) return;
+        block = true;
+        var opts = {
+          dateWindow: me.xAxisRange()
+        };
+        if (syncOpts.range) opts.valueRange = me.yAxisRange();
+
+        for (var j = 0; j < gs.length; j++) {
+          if (gs[j] == me) {
+            if (prevCallbacks[j] && prevCallbacks[j].drawCallback) {
+              prevCallbacks[j].drawCallback.apply(this, arguments);
+            }
+            continue;
+          }
+
+          // Only redraw if there are new options
+          if (arraysAreEqual(opts.dateWindow, gs[j].getOption('dateWindow')) && 
+              arraysAreEqual(opts.valueRange, gs[j].getOption('valueRange'))) {
+            continue;
+          }
+
+          gs[j].updateOptions(opts);
+        }
+        block = false;
+      }
+    }, true /* no need to redraw */);
+  }
+}
+
+function attachSelectionHandlers(gs, prevCallbacks) {
+  var block = false;
+  for (var i = 0; i < gs.length; i++) {
+    var g = gs[i];
+
+    g.updateOptions({
+      highlightCallback: function(event, x, points, row, seriesName) {
+        if (block) return;
+        block = true;
+        var me = this;
+        for (var i = 0; i < gs.length; i++) {
+          if (me == gs[i]) {
+            if (prevCallbacks[i] && prevCallbacks[i].highlightCallback) {
+              prevCallbacks[i].highlightCallback.apply(this, arguments);
+            }
+            continue;
+          }
+          var idx = gs[i].getRowForX(x);
+          if (idx !== null) {
+            gs[i].setSelection(idx, seriesName);
+          }
+        }
+        block = false;
+      },
+      unhighlightCallback: function(event) {
+        if (block) return;
+        block = true;
+        var me = this;
+        for (var i = 0; i < gs.length; i++) {
+          if (me == gs[i]) {
+            if (prevCallbacks[i] && prevCallbacks[i].unhighlightCallback) {
+              prevCallbacks[i].unhighlightCallback.apply(this, arguments);
+            }
+            continue;
+          }
+          gs[i].clearSelection();
+        }
+        block = false;
+      }
+    }, true /* no need to redraw */);
+  }
+}
+
+Dygraph.synchronize = synchronize;
+
+})();
+
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+window.onload = function() {
+    var charts = {};
+    var fmt = {
+        iso: function(y) {
+            var s='';
+            if (y > 1000000000000000) { y=y/1000000000000000; s='P'; }
+            else if (y > 1000000000000) { y=y/1000000000000; s='T'; }
+            else if (y > 1000000000) { y=y/1000000000; s='G'; }
+            else if (y > 1000000) { y=y/1000000; s='M'; }
+            else if (y > 1000) { y=y/1000; s='K'; }
+            return y.toFixed(2).replace(/\.0+$/, '')+s;
+        },
+        time: function(s) {
+            var ret = ''
+            if (s >= 86400) ret += Math.floor(s/86400) + 'd'
+            if (s >= 3600) ret += Math.floor(s/3600)%24 + 'h'
+            if (s >= 60) ret += Math.floor(s/60)%60 + 'm'
+            ret += Math.floor(s)%60 + 's'
+            // finally, strip trailing zeroes: 1d0m0s -> 1d
+            return ret.replace(/(\D)(0\D)*$/, '$1')
+        },
+        date: function(s, opts, sth, dg, idk, excludeHour) {
+            var date = new Date(s);
+            var options = {month: 'numeric', day: 'numeric'};
+            if (!excludeHour) {
+                options.hour = 'numeric';
+                options.minute = 'numeric';
+                options.hour12 = false;
+            }
+            var r = new Intl.DateTimeFormat(undefined, options).format(date);
+            return r;
+        },
+    }
+    var ticker = {
+        time: function(min, max, pixels, opts, dg) {
+            var max_ticks = Math.floor(pixels / (opts('axisLabelWidth')+opts('pixelsPerLabel')/2))
+            var natural = [1, 5, 10, 30, 60,
+                           120, 300, 600, 1800, 3600,
+                           7200, 14400, 43200, 86400]
+            var interval = natural.shift()*1000
+            while (max>min && (max-min)/interval > max_ticks) {
+                interval = (natural.shift()*1000) || (interval * 2)
+            }
+            var ticks = []
+            var excludeHour = false;
+            var date = new Date(min);
+            // need to take the seconds since midnight and then round off to the nearest interval.
+            var millisecondsSinceMidnight = (date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds()) * 1000;
+            if (interval >= 86400000) {
+                excludeHour = true;
+            } else {
+                var roundedOff = Math.ceil(millisecondsSinceMidnight/interval)*interval;
+                min = (min - millisecondsSinceMidnight) + roundedOff;
+            }
+            //for (var i=Math.ceil(min/interval)*interval; i<=max; i+=interval) {
+            for (var i=min; i<=max; i+=interval) {
+                ticks.push({v: i, label: opts('axisLabelFormatter')(i, opts, "", false, false, excludeHour)})
+            }
+            return ticks
+        },
+    }
+    chartdata.forEach(function(section, section_idx) {
+        var chartDiv = document.getElementById("chart");
+        section.charts.forEach(function(chart, chart_idx) {
+            // Skip chart if every series has zero data points
+            if (0 == chart.data.reduce(function(len, series) {
+                return len + series.length;
+            }, 0)) {
+                return;
+            }
+            var id = 'chart-'+section_idx+'-'+chart_idx;
+            var div = document.createElement('div');
+            div.setAttribute('id', id);
+            div.setAttribute('style', 'width: 100%; height: 250px');
+            chartDiv.appendChild(div);
+            chart.options.valueFormatter = function(y) {
+            }
+            chart.options.axes = {
+                x: {
+                    axisLabelFormatter: fmt.date,
+                    valueFormatter: fmt.date,
+                    ticker: ticker.time,
+                    axisLabelWidth: 60,
+                    pixelsPerLabel: 20,
+                },
+                y: {
+                    axisLabelFormatter: fmt.iso,
+                    valueFormatter: fmt.iso,
+                },
+            }
+            var div2 = document.createElement('div');
+            div2.setAttribute('style', 'width: 150px; height: 250px');
+            chart.options.labelsDiv = div2;
+            chart.options.labelsSeparateLines = true;
+
+            var div3 = document.createElement('div');
+            div3.setAttribute('style', 'display: flex; padding-bottom: 16px');
+            div3.appendChild(div);
+            div3.appendChild(div2);
+            chartDiv.appendChild(div3);
+
+            charts[id] = new Dygraph(div, chart.data, chart.options);
+        });
+    });
+
+    var sync = Dygraph.synchronize(Object.values(charts), {range: false});
+
+    if (typeof window.debug === 'undefined')
+        window.debug = {};
+    window.debug.charts = charts;
+};
+
+/**
+ * Copyright Jonas Earendel. All rights reserved.
+ * SPDX-License-Identifier: Unlicense
+ *
+ * sortable v3.2.3
+ *
+ * https://www.npmjs.com/package/sortable-tablesort
+ * https://github.com/tofsjonas/sortable
+ *
+ * Makes html tables sortable, No longer ie9+ 😢
+ *
+ * Styling is done in css.
+ *
+ * Copyleft 2017 Jonas Earendel
+ *
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ *
+ */
+document.addEventListener('click', function (e) {
+    try {
+        // allows for elements inside TH
+        function findElementRecursive(element, tag) {
+            return element.nodeName === tag ? element : findElementRecursive(element.parentNode, tag);
+        }
+        var ascending_table_sort_class = 'asc';
+        var no_sort_class = 'no-sort';
+        var null_last_class = 'n-last';
+        var table_class_name = 'sortable';
+        var alt_sort_1 = e.shiftKey || e.altKey;
+        var element = findElementRecursive(e.target, 'TH');
+        var tr = element.parentNode;
+        var thead = tr.parentNode;
+        var table = thead.parentNode;
+        function getValue(element) {
+            var _a;
+            var value = alt_sort_1 ? element.dataset.sortAlt : (_a = element.dataset.sort) !== null && _a !== void 0 ? _a : element.textContent;
+            return value;
+        }
+        if (thead.nodeName === 'THEAD' && // sortable only triggered in `thead`
+            table.classList.contains(table_class_name) &&
+            !element.classList.contains(no_sort_class) // .no-sort is now core functionality, no longer handled in CSS
+        ) {
+            var column_index_1;
+            var nodes = tr.cells;
+            var tiebreaker_1 = +element.dataset.sortTbr;
+            // Reset thead cells and get column index
+            for (var i = 0; i < nodes.length; i++) {
+                if (nodes[i] === element) {
+                    column_index_1 = +element.dataset.sortCol || i;
+                }
+                else {
+                    nodes[i].setAttribute('aria-sort', 'none');
+                }
+            }
+            var direction = 'descending';
+            if (element.getAttribute('aria-sort') === 'descending' ||
+                (table.classList.contains(ascending_table_sort_class) && element.getAttribute('aria-sort') !== 'ascending')) {
+                direction = 'ascending';
+            }
+            // Update the `th` class accordingly
+            element.setAttribute('aria-sort', direction);
+            var reverse_1 = direction === 'ascending';
+            var sort_null_last_1 = table.classList.contains(null_last_class);
+            var compare_1 = function (a, b, index) {
+                var x = getValue(b.cells[index]);
+                var y = getValue(a.cells[index]);
+                if (sort_null_last_1) {
+                    if (x === '' && y !== '') {
+                        return -1;
+                    }
+                    if (y === '' && x !== '') {
+                        return 1;
+                    }
+                }
+                // Before comparing, clean up formatted numbers that may have a leading dollar sign and/or commas.
+                x = x.replace("$", "").replace(",", "");
+                y = y.replace("$", "").replace(",", "");
+                var temp = +x - +y;
+                var bool = isNaN(temp) ? x.localeCompare(y) : temp;
+                return reverse_1 ? -bool : bool;
+            };
+            // loop through all tbodies and sort them
+            for (var i = 0; i < table.tBodies.length; i++) {
+                var org_tbody = table.tBodies[i];
+                // Put the array rows in an array, so we can sort them...
+                var rows = [].slice.call(org_tbody.rows, 0);
+                // Sort them using Array.prototype.sort()
+                rows.sort(function (a, b) {
+                    var bool = compare_1(a, b, column_index_1);
+                    return bool === 0 && !isNaN(tiebreaker_1) ? compare_1(a, b, tiebreaker_1) : bool;
+                });
+                // Make an empty clone
+                var clone_tbody = org_tbody.cloneNode();
+                // Put the sorted rows inside the clone
+                clone_tbody.append.apply(clone_tbody, rows);
+                // And finally replace the unsorted tbody with the sorted one
+                table.replaceChild(clone_tbody, org_tbody);
+            }
+        }
+        // eslint-disable-next-line no-unused-vars
+    }
+    catch (error) {
+        // console.log(error)
+    }
+});
+
+        </script>
+
+
+    <style>
+        body {
+          background: #fafafa;
+          font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+          font-size: 0.875rem;
+          color: rgba(0, 0, 0, 0.87);
+          font-weight: 400;
+        }
+        .card {
+          background: #ffffff;
+          box-shadow: 0px 1px 5px 0px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 3px 1px -2px rgba(0,0,0,0.12);
+          border-radius: 4px;
+          margin: 20px;
+        }
+        .content {
+          padding: 2px 16px 8px 16px;
+        }
+        table {
+          border-spacing: 0px;
+        }
+        tr {
+          height: 36px;
+          text-align: left;
+        }
+        th {
+          padding-right: 4em;
+          border-top: 1px solid rgba(224, 224, 224, 1);
+        }
+        td {
+          padding-right: 2em;
+          border-top: 1px solid rgba(224, 224, 224, 1);
+        }
+        #chart {
+          margin-left: -20px;
+        }
+    </style>
+    
+
+<style>
+@charset "UTF-8";
+.sortable thead th:not(.no-sort) {
+  cursor: pointer;
+}
+.sortable thead th:not(.no-sort)::after, .sortable thead th:not(.no-sort)::before {
+  transition: color 0.1s ease-in-out;
+  font-size: 1.2em;
+  color: transparent;
+}
+.sortable thead th:not(.no-sort)::after {
+  margin-left: 3px;
+  content: "▸";
+}
+.sortable thead th:not(.no-sort):hover::after {
+  color: inherit;
+}
+.sortable thead th:not(.no-sort)[aria-sort=descending]::after {
+  color: inherit;
+  content: "▾";
+}
+.sortable thead th:not(.no-sort)[aria-sort=ascending]::after {
+  color: inherit;
+  content: "▴";
+}
+.sortable thead th:not(.no-sort).indicator-left::after {
+  content: "";
+}
+.sortable thead th:not(.no-sort).indicator-left::before {
+  margin-right: 3px;
+  content: "▸";
+}
+.sortable thead th:not(.no-sort).indicator-left:hover::before {
+  color: inherit;
+}
+.sortable thead th:not(.no-sort).indicator-left[aria-sort=descending]::before {
+  color: inherit;
+  content: "▾";
+}
+.sortable thead th:not(.no-sort).indicator-left[aria-sort=ascending]::before {
+  color: inherit;
+  content: "▴";
+}
+
+table.aggtable td:nth-child(2) {
+  text-align: right;
+}
+
+table.active-projects td:nth-child(4),
+table.active-projects td:nth-child(5) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.single-project td:nth-child(3),
+table.single-project td:nth-child(4) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.active-projects th:nth-child(4),
+table.active-projects th:nth-child(5) {
+  text-align: left;
+}
+
+table.project td:nth-child(3),
+table.project td:nth-child(4),
+table.project td:nth-child(5),
+table.project td:nth-child(6),
+table.project td:nth-child(7) {
+  text-align: right;
+  padding-right: 6em;
+}
+
+table.project th:nth-child(3),
+table.project th:nth-child(4),
+table.project th:nth-child(5),
+table.project th:nth-child(6),
+table.project th:nth-child(7) {
+  text-align: left;
+}
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css">
+
+
+
+
+  </head>
+
+  <body>
+  <div class="card">
+    <div class="content">
+      <h1>Cluster report for xzzz1 from 2024-04-04 to 2024-04-06</h1>
+    </div>
+  </div>
+
+
+                <div class="card">
+                  <div class="content">
+<h2>Cluster status as of 2024-04-06</h2>
+            <table class='aggtable'><tbody>
+            <tr><th><a href="https://xzzz1.arvadosapi.com/users">Total users</a></th><td>4</td></tr>
+            <tr><th>Total projects</th><td>6</td></tr>
+            
+            <tr><th>Total data under management</th> <td>0.003 KB</td></tr>
+            <tr><th>Total storage usage</th> <td>0.003 KB</td></tr>
+            <tr><th>Deduplication ratio</th> <td>1.0</td></tr>
+            <tr><th>Approximate monthly storage cost</th> <td>$0.00</td></tr>
+                
+            </tbody></table>
+            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
+            
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="content">
+<h2>Activity and cost over the 2 day period 2024-04-04 to 2024-04-06</h2>
+        <table class='aggtable'><tbody>
+        <tr><th>Active users</th> <td>1</td></tr>
+        <tr><th><a href="#Active_Projects">Active projects</a></th> <td>1</td></tr>
+        <tr><th>Workflow runs</th> <td>1</td></tr>
+        <tr><th>Compute used</th> <td>1.5 hours</td></tr>
+        <tr><th>Compute cost</th> <td>$0.23</td></tr>
+        <tr><th>Storage cost</th> <td>$0.00</td></tr>
+        </tbody></table>
+        <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
+        
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="content">
+
+                <div id="chart"></div>
+            
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="content">
+
+            <a id="Active_Projects"><h2>Active Projects</h2></a>
+            <table class='sortable active-projects'>
+            <thead><tr><th>Project</th> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
+            <tbody><tr><td><a href="#WGS chr19 test for 2.7.2~rc3">WGS chr19 test for 2.7.2~rc3</a></td><td>User1</td> <td>2024-04-05 to 2024-08-22</td> <td>1.5</td> <td>$0.23</td></tr></tbody>
+            </table>
+            <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
+            
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="content">
+<a id="WGS chr19 test for 2.7.2~rc3"></a><a href="https://xzzz1.arvadosapi.com/projects/pirca-j7d0g-cukk4aw4iamj90c"><h2>WGS chr19 test for 2.7.2~rc3</h2></a>
+
+                <table class='sortable single-project'>
+                <thead><tr> <th>Users</th> <th>Active</th> <th>Compute usage (hours)</th> <th>Compute cost</th> </tr></thead>
+                <tbody><tr><td>User1</td> <td>2024-04-05 to 2024-08-22</td> <td>1.5</td> <td>$0.23</td></tr></tbody>
+                </table>
+
+                <table class='sortable project'>
+                <thead><tr><th>Workflow run count</th> <th>Workflow name</th> <th>Median runtime</th> <th>Mean runtime</th> <th>Median cost per run</th> <th>Mean cost per run</th> <th>Sum cost over runs</th></tr></thead>
+                <tbody>
+                
+                <tr><td>1</td> <td>WGS processing workflow scattered over samples (v1.1-2-gcf002b3)</td> <td>1:19:21</td> <td>1:19:21</td> <td>$1.37</td> <td>$1.37</td> <td>$1.37</td></tr>
+                
+                </tbody></table>
+                
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="content">
+
+        <h2 id="prices">Note on usage and cost calculations</h2>
+
+        <div style="max-width: 60em">
+
+        <p>The numbers presented in this report are estimates and will
+        not perfectly match your cloud bill.  Nevertheless this report
+        should be useful for identifying your main cost drivers.</p>
+
+        <h3>Storage</h3>
+
+        <p>"Total data under management" is what you get if you add up
+        all blocks referenced by all collections in Workbench, without
+        considering deduplication.</p>
+
+        <p>"Total storage usage" is the actual underlying storage
+        usage, accounting for data deduplication.</p>
+
+        <p>Storage costs are based on AWS "S3 Standard"
+        described on the <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 pricing</a> page:</p>
+
+        <ul>
+        <li>$0.023 per GB / Month for the first 50 TB</li>
+        <li>$0.022 per GB / Month for the next 450 TB</li>
+        <li>$0.021 per GB / Month over 500 TB</li>
+        </ul>
+
+        <p>Finally, this only the base storage cost, and does not
+        include any fees associated with S3 API usage.  However, there
+        are generally no ingress/egress fees if your Arvados instance
+        and S3 bucket are in the same region, which is the normal
+        recommended configuration.</p>
+
+        <h3>Compute</h3>
+
+        <p>"Compute usage" are instance-hours used in running
+        workflows.  Because multiple steps may run in parallel on
+        multiple instances, a workflow that completes in four hours
+        but runs parallel steps on five instances, would be reported
+        as using 20 instance hours.</p>
+
+        <p>"Runtime" is the actual wall clock time that it took to
+        complete a workflow.  This does not include time spent in the
+        queue for the workflow itself, but does include queuing time
+        of individual workflow steps.</p>
+
+        <p>Computational costs are derived from Arvados cost
+        calculations of container runs.  For on-demand instances, this
+        uses the prices from the InstanceTypes section of the Arvado
+        config file, set by the system administrator.  For spot
+        instances, this uses current spot prices retrieved on the fly
+        the AWS API.</p>
+
+        <p>Be aware that the cost calculations are only for the time
+        the container is running and only do not take into account the
+        overhead of launching instances or idle time between scheduled
+        tasks or prior to automatic shutdown.</p>
+
+        </div>
+        
+                  </div>
+                </div>
+
+  </body>
+</html>
+        

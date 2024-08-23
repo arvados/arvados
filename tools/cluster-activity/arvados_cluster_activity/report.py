@@ -188,7 +188,8 @@ class ClusterActivityReport(object):
         if workbench.endswith("/"):
             workbench = workbench[:-1]
 
-        if to.date() == date.today():
+        print(to.date(), self.today())
+        if to.date() == self.today():
             # The deduplication ratio overstates things a bit, you can
             # have collections which reference a small slice of a large
             # block, and this messes up the intuitive value of this ratio
@@ -221,7 +222,7 @@ class ClusterActivityReport(object):
             {data_rows}
             </tbody></table>
             <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
-            """.format(now=date.today(),
+            """.format(now=self.today(),
                        total_users=self.total_users,
                        total_projects=self.total_projects,
                        workbench=workbench,
@@ -632,3 +633,6 @@ class ClusterActivityReport(object):
             csvwriter.writerow(row)
 
         self.summary_fetched = True
+
+    def today(self):
+        return date.today()

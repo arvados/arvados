@@ -73,6 +73,8 @@ services/keepproxy/pkg-extras/etc/default/keepproxy
 *.tar
 tools/crunchstat-summary/tests/crunchstat_error_messages.txt
 tools/crunchstat-summary/crunchstat_summary/synchronizer.js
+tools/cluster-activity/test/*.html
+tools/cluster-activity/test/*.csv
 build/package-build-dockerfiles/debian9/D39DC0E3.asc
 build/package-test-dockerfiles/debian9/D39DC0E3.asc
 sdk/R/DESCRIPTION

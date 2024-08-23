@@ -1,0 +1,3 @@
+Project,Workflow,Step,Sample,User,Submitted,Runtime,Cost
+WGS chr19 test for 2.7.2~rc3,WGS processing workflow scattered over samples (v1.1-2-gcf002b3),workflow runner,Sample1,User1,2024-04-05 20:38:07,1:19:21,0.113
+WGS chr19 test for 2.7.2~rc3,WGS processing workflow scattered over samples (v1.1-2-gcf002b3),bwamem-samtools-view,Sample1,User1,2024-04-05 20:40:42,0:08:22,0.116
