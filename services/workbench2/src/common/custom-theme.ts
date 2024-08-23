@@ -122,6 +122,7 @@ export const themeOptions: ArvadosThemeOptions = {
         MuiListItemText: {
             root: {
                 padding: 0,
+                paddingBottom: '2px',
             }
         },
         MuiListItemIcon: {
