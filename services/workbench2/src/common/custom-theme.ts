@@ -108,6 +108,11 @@ export const themeOptions: ArvadosThemeOptions = {
                 color: grey900
             }
         },
+        MuiListItem: {
+            root: {
+                color: grey900
+            }
+        },
         MuiListItemText: {
             root: {
                 padding: 0
