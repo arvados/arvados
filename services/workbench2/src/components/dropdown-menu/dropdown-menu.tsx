@@ -24,7 +24,7 @@ export class DropdownMenu extends React.Component<DropdownMenuProps, DropdownMen
     };
 
     transformOrigin: PopoverOrigin = {
-        vertical: -50,
+        vertical: 0,
         horizontal: 0,
     };
 
