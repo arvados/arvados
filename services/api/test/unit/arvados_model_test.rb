@@ -151,32 +151,26 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
-  [
-    %w[collections collections_trgm_text_search_idx],
-    %w[container_requests container_requests_trgm_text_search_idx],
-    %w[groups groups_trgm_text_search_idx],
-    %w[workflows workflows_trgm_text_search_idx]
-  ].each do |model|
-    table = model[0]
-    indexname = model[1]
-    test "trigram index exists on #{table} model" do
-      table_class = table.classify.constantize
-      expect = table_class.full_text_searchable_columns
-      ok = false
+  [Collection, ContainerRequest, Group, Workflow].each do |model|
+    test "trigram index exists on #{model} model" do
+      expect = model.full_text_searchable_columns
       conn = ActiveRecord::Base.connection
-      conn.exec_query("SELECT indexdef FROM pg_indexes WHERE tablename = '#{table}' AND indexname = '#{indexname}'").each do |res|
+      index_name = "#{model.table_name}_trgm_text_search_idx"
+      indexes = conn.exec_query("SELECT indexdef FROM pg_indexes WHERE tablename = '#{model.table_name}' AND indexname = '#{index_name}'")
+      assert_not_equal(indexes.length, 0)
+      indexes.each do |res|
         searchable = res['indexdef'].scan(/COALESCE\(+([A-Za-z_]+)/).flatten
-        ok = (expect == searchable)
-        assert ok, "Invalid or no trigram index on #{table} named #{indexname}\nexpect: #{expect.inspect}\nfound: #{searchable}"
+        assert_equal(
+          searchable, expect,
+          "Invalid or no trigram index for #{model} named #{index_name}\nexpect: #{expect.inspect}\nfound: #{searchable}",
+        )
       end
     end
 
-    test "UUID and hash columns are excluded from #{table} full text index" do
-      class_name = model.first.classify
-      actual = class_name.constantize.full_text_searchable_columns
+    test "UUID and hash columns are excluded from #{model} full text index" do
       assert_equal(
-        actual & full_text_excluded_columns, [],
-        "UUID/hash columns returned by #{class_name}.full_text_searchable_columns",
+        model.full_text_searchable_columns & full_text_excluded_columns, [],
+        "UUID/hash columns returned by #{model}.full_text_searchable_columns",
       )
     end
   end
