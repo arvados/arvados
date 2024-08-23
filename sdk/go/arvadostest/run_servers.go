@@ -104,8 +104,6 @@ func StopKeep() {
 
 	cmd := exec.Command("python", "run_test_server.py", "stop_keep")
 	bgRun(cmd)
-	// Without Wait, "go test" in go1.10.1 tends to hang. https://github.com/golang/go/issues/24050
-	cmd.Wait()
 }
 
 // Start cmd, with stderr and stdout redirected to our own
