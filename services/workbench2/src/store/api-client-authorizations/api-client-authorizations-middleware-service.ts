@@ -31,7 +31,7 @@ export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlew
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer) => ({
+const getParams = (dataExplorer: DataExplorer): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder<ApiClientAuthorization>(dataExplorer)
 });
