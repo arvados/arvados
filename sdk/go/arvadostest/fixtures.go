@@ -113,6 +113,24 @@ const (
 	DockerImage112Filename = "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar"
 )
 
+var TestCollectionUUIDToPDH = map[string]string{
+	FooCollection: FooCollectionPDH,
+	MultilevelCollection1: MultilevelCollection1PDH,
+	FooAndBarFilesInDirUUID: FooAndBarFilesInDirPDH,
+	BarFileCollectionUUID: BarFileCollectionPDH,
+}
+
+var TestCollectionPDHToManifest = map[string]string{
+	FooCollectionPDH: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n",
+	MultilevelCollection1PDH: `. d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+./dir1/subdir d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+./dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+`,
+	FooAndBarFilesInDirPDH: "./dir1 3858f62230ac3c915f300c664312c63f+6 3:3:bar 0:3:foo\n",
+	BarFileCollectionPDH: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+}
+
 // PathologicalManifest : A valid manifest designed to test
 // various edge cases and parsing requirements
 const PathologicalManifest = ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 73feffa4b7f6bb68e44cf984c85f6e88+3+Z+K@xyzzy acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:zero@0 0:1:f 1:0:zero@1 1:4:ooba 4:0:zero@4 5:1:r 5:4:rbaz 9:0:zero@9\n" +

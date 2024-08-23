@@ -121,6 +121,7 @@ var whitelist = map[string]bool{
 	"Collections.TrustAllContent":                         true,
 	"Collections.WebDAVCache":                             false,
 	"Collections.WebDAVLogEvents":                         false,
+	"Collections.WebDAVLogDownloadInterval":               false,
 	"Collections.WebDAVOutputBuffer":                      false,
 	"Collections.WebDAVPermission":                        false,
 	"Containers":                                          true,
