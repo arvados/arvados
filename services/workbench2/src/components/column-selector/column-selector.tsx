@@ -28,10 +28,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: 24
     },
     listItem: {
-        padding: 0
+        padding: 0,
     },
     listItemText: {
-        paddingTop: '0.2rem'
+        paddingLeft: '4px',
     }
 });
 

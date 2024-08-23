@@ -115,12 +115,13 @@ export const themeOptions: ArvadosThemeOptions = {
         },
         MuiListItemText: {
             root: {
-                padding: 0
+                padding: 0,
             }
         },
         MuiListItemIcon: {
             root: {
                 fontSize: '1.25rem',
+                marginRight: '-18px'
             }
         },
         MuiCardHeader: {
