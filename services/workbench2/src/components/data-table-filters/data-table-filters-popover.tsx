@@ -52,7 +52,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         userSelect: 'none',
         width: 16,
         height: 15,
-        marginTop: 1,
+        paddingBottom: 18,
     },
     iconButton: {
         color: theme.palette.text.primary,
