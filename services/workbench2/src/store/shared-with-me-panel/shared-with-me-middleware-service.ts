@@ -2,9 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams, getDataExplorerColumnFilters } from '../data-explorer/data-explorer-middleware-service';
-import { ServiceRepository } from 'services/services';
-import { MiddlewareAPI, Dispatch } from 'redux';
+import {
+    DataExplorerMiddlewareService,
+    listResultsToDataExplorerItemsMeta,
+    dataExplorerToListParams,
+    getDataExplorerColumnFilters,
+} from "../data-explorer/data-explorer-middleware-service";
+import { ServiceRepository } from "services/services";
+import { MiddlewareAPI, Dispatch } from "redux";
 import { RootState } from 'store/store';
 import { getDataExplorer, DataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateFavorites } from 'store/favorites/favorites-actions';
@@ -13,7 +18,7 @@ import { loadMissingProcessesInformation } from 'store/project-panel/project-pan
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from 'services/common-service/common-service';
-import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
 import { SortDirection } from 'components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
@@ -31,11 +36,11 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const response = await this.services.groupsService
                 .contents('', getParams(dataExplorer, state.auth));
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
@@ -51,7 +56,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer, authState: AuthState) => ({
+export const getParams = (dataExplorer: DataExplorer, authState: AuthState): ContentsArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer, authState),

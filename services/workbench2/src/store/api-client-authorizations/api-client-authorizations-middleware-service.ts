@@ -10,7 +10,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
 import { apiClientAuthorizationsActions } from 'store/api-client-authorizations/api-client-authorizations-actions';
-import { ListResults } from 'services/common-service/common-service';
+import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 
 export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlewareService {

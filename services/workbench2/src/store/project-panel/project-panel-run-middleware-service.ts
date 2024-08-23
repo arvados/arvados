@@ -15,7 +15,7 @@ import { ServiceRepository } from "services/services";
 import { SortDirection } from "components/data-table/data-column";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
+import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
 import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
@@ -35,7 +35,6 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { containerRequestFieldsNoMounts } from "models/container-request";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
-import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 
 export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -53,8 +52,10 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
+                api.dispatch<any>(projectPanelRunActions.SET_IS_NOT_FOUND({ isNotFound: false }));
                 if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+                // Get items
                 const containerRequests = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, projectUuid, !!isProjectTrashed));
                 const resourceUuids = containerRequests.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
@@ -72,7 +73,7 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
                     })
                 );
                 if (e.status === 404) {
-                    api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true}));
+                    api.dispatch<any>(projectPanelRunActions.SET_IS_NOT_FOUND({ isNotFound: true}));
                 }
                 else {
                     api.dispatch(couldNotFetchProjectContents());
@@ -104,7 +105,7 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-export const getParams = (dataExplorer: DataExplorer, projectUuid: string, isProjectTrashed: boolean) => ({
+export const getParams = (dataExplorer: DataExplorer, projectUuid: string, isProjectTrashed: boolean): ContentsArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer, projectUuid),

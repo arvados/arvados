@@ -24,7 +24,7 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         const groupUuid = getCurrentGroupDetailsPanelUuid(api.getState().properties);
         if (!dataExplorer || !groupUuid) {
@@ -32,10 +32,11 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             return;
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
                 const groupResource = await this.services.groupsService.get(groupUuid);
                 api.dispatch(updateResources([groupResource]));
 
+                // Get items
                 const permissionsIn = await this.services.permissionService.list(getParams(dataExplorer, groupUuid));
                 api.dispatch(updateResources(permissionsIn.items));
 
@@ -74,7 +75,7 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer, groupUuid: string) => ({
+export const getParams = (dataExplorer: DataExplorer, groupUuid: string): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: getFilters(groupUuid),
 });

@@ -22,7 +22,7 @@ import { updatePublicFavorites } from 'store/public-favorites/public-favorites-a
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { DataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { DataExplorer, getDataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
@@ -34,13 +34,16 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
-        const dataExplorer = api.getState().dataExplorer[this.getId()];
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         const userUuid = getUserUuid(api.getState());
         if (!userUuid) { return; }
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+            // Get items
             const listResults = await this.services.groupsService
                 .contents('', getParams(dataExplorer));
 

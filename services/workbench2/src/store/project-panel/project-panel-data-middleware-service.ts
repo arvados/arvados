@@ -15,7 +15,7 @@ import { ServiceRepository } from "services/services";
 import { SortDirection } from "components/data-table/data-column";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
+import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
@@ -34,7 +34,6 @@ import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
-import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 
 export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -52,8 +51,10 @@ export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareSer
             api.dispatch(projectPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: false }));
+                api.dispatch<any>(projectPanelDataActions.SET_IS_NOT_FOUND({ isNotFound: false }));
                 if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+                // Get items
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
                 const resourceUuids = [...response.items.map(item => item.uuid), projectUuid];
                 api.dispatch<any>(updateFavorites(resourceUuids));
@@ -70,7 +71,7 @@ export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareSer
                     })
                 );
                 if (e.status === 404) {
-                    api.dispatch<any>(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true}));
+                    api.dispatch<any>(projectPanelDataActions.SET_IS_NOT_FOUND({ isNotFound: true}));
                 }
                 else {
                     api.dispatch(couldNotFetchProjectContents());
@@ -91,7 +92,7 @@ export const setItems = (listResults: ListResults<GroupContentsResource>) =>
         items: listResults.items.map(resource => resource.uuid),
     });
 
-export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean) => ({
+export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean): ContentsArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer),

@@ -60,7 +60,8 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
                 const uuidPrefix = api.getState().auth.config.uuidPrefix;
                 const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 

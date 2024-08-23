@@ -61,9 +61,9 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
 
         try {
             if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
-
             const params = this.getParams(api, dataExplorer);
 
+            // Get items
             if (params !== null) {
                 const containerRequests = await this.services.containerRequestService.list(params);
                 api.dispatch(updateResources(containerRequests.items));

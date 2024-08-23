@@ -17,6 +17,7 @@ import { ListArguments, ListResults } from "services/common-service/common-servi
 import { ProjectResource } from "models/project";
 import { CollectionResource } from "models/collection";
 import { UserResource } from "models/user";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -24,13 +25,16 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         const groupUuid = getCurrentGroupDetailsPanelUuid(api.getState().properties);
         if (!dataExplorer || !groupUuid) {
             // No-op if data explorer is not set since refresh may be triggered from elsewhere
         } else {
             try {
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+                // Get items
                 const permissionsOut = await this.services.permissionService.list(getParams(dataExplorer, groupUuid));
                 api.dispatch(updateResources(permissionsOut.items));
 
@@ -73,12 +77,14 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
                 }
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
+            } finally {
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }
 }
 
-export const getParams = (dataExplorer: DataExplorer, groupUuid: string) => ({
+export const getParams = (dataExplorer: DataExplorer, groupUuid: string): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: getFilters(groupUuid),
 });

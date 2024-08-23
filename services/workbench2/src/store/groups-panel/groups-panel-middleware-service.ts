@@ -53,13 +53,15 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
         };
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         if (!dataExplorer) {
             api.dispatch(groupsPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+                // Get items
                 const groups = await this.services.groupsService.list(this.getParams(dataExplorer));
                 api.dispatch(updateResources(groups.items));
                 api.dispatch(GroupsPanelActions.SET_ITEMS({

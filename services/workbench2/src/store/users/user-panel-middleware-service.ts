@@ -12,7 +12,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { SortDirection } from 'components/data-table/data-column';
 import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
-import { ListResults } from 'services/common-service/common-service';
+import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { userBindedActions } from 'store/users/users-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { UserResource } from 'models/user';
@@ -26,16 +26,16 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const users = await this.services.userService.list(getParams(dataExplorer));
             api.dispatch(updateResources(users.items));
             api.dispatch(setItems(users));
 
-            // Get "all users" group memberships
+            // Get "all users" group memberships for account status
             const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
             const allUserMemberships = await this.services.permissionService.list({
                 filters: new FilterBuilder()
@@ -52,12 +52,16 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
     }
 }
 
-const getParams = (dataExplorer: DataExplorer) => ({
-    ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
-    filters: new FilterBuilder()
+const getFilters = (dataExplorer: DataExplorer) => (
+    new FilterBuilder()
         .addFullTextSearch(dataExplorer.searchValue)
         .getFilters()
+);
+
+const getParams = (dataExplorer: DataExplorer): ListArguments => ({
+    ...dataExplorerToListParams(dataExplorer),
+    order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer),
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
