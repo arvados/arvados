@@ -10,7 +10,7 @@ from io import StringIO
 
 from arvados_cluster_activity.report import ClusterActivityReport
 
-class TestingClusterActivityReport(ClusterActivityReport):
+class _TestingClusterActivityReport(ClusterActivityReport):
     def report_from_api(self, since, to, include_steps, exclude):
         items = [
             {
@@ -91,7 +91,7 @@ def test_report(apistub):
     }
 
     prom_client = mock.MagicMock()
-    report_obj = TestingClusterActivityReport(prom_client)
+    report_obj = _TestingClusterActivityReport(prom_client)
 
     ## test CSV report
     csvreport = StringIO()

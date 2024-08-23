@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 import json
-import pkg_resources
+import importlib.resources
 from datetime import datetime
 from arvados._internal.report_template import ReportTemplate
 
@@ -128,6 +128,8 @@ class ReportChart(ReportTemplate):
         }
 
     def js(self):
+
+
         return '''
         <script type="text/javascript" src="{jslib}"></script>
         <script type="text/javascript">
@@ -135,7 +137,7 @@ class ReportChart(ReportTemplate):
         </script>'''.format(
             jslib=self.JSLIB,
             chartdata=json.dumps(self.sections(), default=date_export).replace('"@', '').replace('@"', '').replace('\\"', '"'),
-            jsassets='\n'.join([pkg_resources.resource_string('arvados_cluster_activity', jsa).decode('utf-8') for jsa in self.JSASSETS]))
+            jsassets='\n'.join([importlib.resources.files('arvados_cluster_activity').joinpath(jsa).read_bytes().decode('utf-8') for jsa in self.JSASSETS]))
 
     def style(self):
         return '\n'.join((super().style(),

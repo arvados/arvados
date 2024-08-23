@@ -12,7 +12,6 @@ import math
 import collections
 import json
 from datetime import date, datetime, timedelta
-import pkg_resources
 from typing import List
 import statistics
 

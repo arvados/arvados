@@ -9,8 +9,6 @@ except ImportError:
 
 import json
 from typing import ItemsView
-import pkg_resources
-
 
 class ReportTemplate(object):
     """Base class for HTML reports produced by Arvados reporting tools.
