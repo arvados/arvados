@@ -69,11 +69,17 @@ export const getOrder = <T extends Resource = Resource>(dataExplorer: DataExplor
     }
 };
 
+export type DataExplorerMeta = {
+    itemsAvailable?: number;
+    page: number;
+    rowsPerPage: number;
+}
+
 export const listResultsToDataExplorerItemsMeta = <R>({
     itemsAvailable,
     offset,
     limit,
-}: ListResults<R>) => ({
+}: ListResults<R>): DataExplorerMeta => ({
     itemsAvailable,
     page: Math.floor(offset / limit),
     rowsPerPage: limit,
