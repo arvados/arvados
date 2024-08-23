@@ -4,11 +4,11 @@
 
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, getOrder } from 'store/data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getOrder } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { resourcesActions } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
@@ -22,32 +22,28 @@ import { getUserDisplayName } from 'models/user';
 import { CollectionResource } from 'models/collection';
 import { replace } from "react-router-redux";
 import { getNavUrl } from 'routes/routes';
+import { ListArguments } from 'services/common-service/common-service';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         if (!dataExplorer) {
             api.dispatch(collectionPanelDataExplorerIsNotSet());
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const userUuid = getUserUuid(api.getState());
-                const pathname = api.getState().router.location!.pathname;
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+                const state = api.getState();
+                const userUuid = getUserUuid(state);
+                const pathname = state.router.location!.pathname;
                 const contentAddress = pathname.split('/')[2];
-                const response = await this.services.collectionService.list({
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
-                    filters: new FilterBuilder()
-                        .addEqual('portable_data_hash', contentAddress)
-                        .addILike("name", dataExplorer.searchValue)
-                        .getFilters(),
-                    includeOldVersions: true,
-                    order: getOrder<CollectionResource>(dataExplorer)
-                });
+
+                // Get items
+                const response = await this.services.collectionService.list(getParams(dataExplorer, contentAddress));
                 const userUuids = response.items.map(it => {
                     if (extractUuidKind(it.ownerUuid) === ResourceKind.USER) {
                         return it.ownerUuid;
@@ -91,9 +87,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                 api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
                 if (response.itemsAvailable === 1) {
                     api.dispatch<any>(replace(getNavUrl(response.items[0].uuid, api.getState().auth)));
-                    api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 } else {
-                    api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                     api.dispatch(resourcesActions.SET_RESOURCES(response.items));
                     api.dispatch(collectionsContentAddressActions.SET_ITEMS({
                         items: response.items.map((resource: any) => resource.uuid),
@@ -103,7 +97,6 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     }));
                 }
             } catch (e) {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(collectionsContentAddressActions.SET_ITEMS({
                     items: [],
                     itemsAvailable: 0,
@@ -111,10 +104,27 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     rowsPerPage: dataExplorer.rowsPerPage
                 }));
                 api.dispatch(couldNotFetchCollections());
+            } finally {
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             }
         }
     }
 }
+
+const getFilters = (dataExplorer: DataExplorer, contentAddress: string) => (
+    new FilterBuilder()
+        .addEqual('portable_data_hash', contentAddress)
+        .addILike("name", dataExplorer.searchValue)
+        .getFilters()
+);
+
+const getParams = (dataExplorer: DataExplorer, contentAddress: string): ListArguments => ({
+    ...dataExplorerToListParams(dataExplorer),
+    filters: getFilters(dataExplorer, contentAddress),
+    order: getOrder<CollectionResource>(dataExplorer),
+    includeOldVersions: true,
+    count: 'none',
+});
 
 const collectionPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
