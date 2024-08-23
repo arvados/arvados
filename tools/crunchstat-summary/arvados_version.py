@@ -26,7 +26,7 @@ PACKAGE_DEPENDENCY_MAP = {
     'arvados-user-activity': ['arvados-python-client'],
     'arvados_fuse': ['arvados-python-client'],
     'crunchstat_summary': ['arvados-python-client'],
-    'arvados_cluster_activity': ['arvados-python-client', 'crunchstat_summary'],
+    'arvados_cluster_activity': ['arvados-python-client'],
 }
 PACKAGE_MODULE_MAP = {
     'arvados-cwl-runner': 'arvados_cwl',
