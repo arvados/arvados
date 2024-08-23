@@ -220,7 +220,10 @@ export const themeOptions: ArvadosThemeOptions = {
             dark: '#015272',
             light: '#82cffd',
             contrastText: '#fff'
-        }
+        },
+        background: {
+            default: '#fafafa',
+        },
     },
 };
 
