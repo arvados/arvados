@@ -78,6 +78,12 @@ export const themeOptions: ArvadosThemeOptions = {
         }
     },
     overrides: {
+        MuiTableCell: {
+            root: {
+                paddingTop: '12px',
+                paddingBottom: '12px',
+            },
+        },
         MuiTypography: {
             body1: {
                 fontSize: '0.875rem'
