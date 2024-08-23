@@ -22,6 +22,7 @@ import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resou
 import { ResourceKind } from "models/resource";
 import { LinkClass } from "models/link";
 import { GroupContentsResource } from "services/groups-service/groups-service";
+import { ListArguments } from "services/common-service/common-service";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -50,7 +51,15 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             .getFilters();
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    getLinkParams(dataExplorer: DataExplorer, uuid: string): ListArguments {
+        return {
+            ...dataExplorerToListParams(dataExplorer),
+            filters: this.getLinkFilters(dataExplorer, uuid),
+            count: "none",
+        };
+    }
+
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         const uuid = getUserUuid(api.getState());
         if (!dataExplorer) {
@@ -59,11 +68,10 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             userNotAvailable();
         } else {
             try {
-                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-                const responseLinks = await this.services.linkService.list({
-                    ...dataExplorerToListParams(dataExplorer),
-                    filters: this.getLinkFilters(dataExplorer, uuid),
-                }).then(results => results);
+                if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+                // Get items
+                const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, uuid));
                 const uuids = responseLinks.items.map(it => it.headUuid);
 
                 const groupItems = await this.services.groupsService.list({
