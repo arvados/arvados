@@ -54,10 +54,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
 export const getParams = (dataExplorer: DataExplorer, authState: AuthState) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
-    filters: joinFilters(
-        getFilters(dataExplorer),
-        new FilterBuilder().addDistinct('uuid', `${authState.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters(),
-    ),
+    filters: getFilters(dataExplorer, authState),
     excludeHomeProject: true,
 });
 
@@ -81,7 +78,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
     }
 };
 
-const getFilters = (dataExplorer: DataExplorer) => {
+const getFilters = (dataExplorer: DataExplorer, authState: AuthState) => {
     const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SharedWithMePanelColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
@@ -97,7 +94,10 @@ const getFilters = (dataExplorer: DataExplorer) => {
     // Filter by container status
     const statusFilters = buildProcessStatusFilters(new FilterBuilder(), activeStatusFilter || "", GroupContentsResourcePrefix.PROCESS).getFilters();
 
-    return joinFilters(statusFilters, typeFilters, nameFilters);
+    // Filter public favorites
+    const favoritesFilter = new FilterBuilder().addDistinct('uuid', `${authState.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters()
+
+    return joinFilters(statusFilters, typeFilters, nameFilters, favoritesFilter);
 };
 
 
