@@ -134,6 +134,8 @@ class ClusterActivityReport(object):
         self.storage_cost += aws_monthly_cost(value) / (30*24)
 
     def html_report(self, since, to, exclude, include_workflow_steps):
+        """Get a cluster activity report for the desired time period,
+        returning a string containing the report as an HTML document."""
 
         self.label = "Cluster report for %s from %s to %s" % (self.cluster, since.date(), to.date())
 
@@ -398,6 +400,11 @@ class ClusterActivityReport(object):
         return ReportChart(label, cards, self.graphs).html()
 
     def iter_container_info(self, pending, include_steps, exclude):
+        # "pending" is a list of arvados-cwl-runner container requests
+        # returned by the API.  This method fetches detailed
+        # information about the runs and yields report rows.
+
+        # 1. Get container records corresponding to container requests.
         containers = {}
 
         for container in arvados.util.keyset_list_all(
@@ -409,6 +416,8 @@ class ClusterActivityReport(object):
 
             containers[container["uuid"]] = container
 
+        # 2. Look for the template_uuid property and fetch the
+        # corresponding workflow record.
         workflows = {}
         workflows["none"] = "workflow run from command line"
 
@@ -422,6 +431,7 @@ class ClusterActivityReport(object):
                 select=["uuid", "name"]):
             workflows[wf["uuid"]] = wf["name"]
 
+        # 3. Look at owner_uuid and fetch owning projects and users
         projects = {}
 
         for pr in arvados.util.keyset_list_all(
@@ -432,6 +442,7 @@ class ClusterActivityReport(object):
                 select=["uuid", "name"]):
             projects[pr["uuid"]] = pr["name"]
 
+        # 4. Look at owner_uuid and modified_by_user_uuid and get user records
         for pr in arvados.util.keyset_list_all(
                 self.arv_client.users().list,
                 filters=[
@@ -440,12 +451,14 @@ class ClusterActivityReport(object):
                 select=["uuid", "full_name", "first_name", "last_name"]):
             projects[pr["uuid"]] = pr["full_name"]
 
+        # 5. Optionally iterate over individual workflow steps.
         if include_steps:
             name_regex = re.compile(r"(.+)_[0-9]+")
             child_crs = {}
             child_cr_containers = set()
             stepcount = 0
 
+            # 5.1. Go through the container requests owned by the toplevel workflow container
             logging.info("Getting workflow steps")
             for cr in arvados.util.keyset_list_all(
                 self.arv_client.container_requests().list,
@@ -461,6 +474,10 @@ class ClusterActivityReport(object):
                 if g:
                     cr["name"] = g[1]
 
+                # 5.2. Get the containers corresponding to the
+                # container requests.  This has the same logic as
+                # report_from_api where we batch it into 1000 items at
+                # a time.
                 child_crs.setdefault(cr["requesting_container_uuid"], []).append(cr)
                 child_cr_containers.add(cr["container_uuid"])
                 if len(child_cr_containers) == 1000:
@@ -477,6 +494,7 @@ class ClusterActivityReport(object):
                     logging.info("Got workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
                     child_cr_containers.clear()
 
+            # Get any remaining containers
             if child_cr_containers:
                 stepcount += len(child_cr_containers)
                 for container in arvados.util.keyset_list_all(
@@ -489,6 +507,9 @@ class ClusterActivityReport(object):
                     containers[container["uuid"]] = container
                 logging.info("Got workflow steps %s - %s", stepcount-len(child_cr_containers), stepcount)
 
+        # 6. Now go through the list of workflow runs, yield a row
+        # with all the information we have collected, as well as the
+        # details for each workflow step (if enabled)
         for container_request in pending:
             if not container_request["container_uuid"] or not containers[container_request["container_uuid"]]["started_at"] or not containers[container_request["container_uuid"]]["finished_at"]:
                 continue
@@ -595,6 +616,16 @@ class ClusterActivityReport(object):
             if container_request["cumulative_cost"] == 0:
                 continue
 
+            # Every 1000 container requests, we fetch the
+            # corresponding container records.
+            #
+            # What's so special about 1000?  Because that's the
+            # maximum Arvados page size, so when we use ['uuid', 'in',
+            # [...]] to fetch associated records it doesn't make sense
+            # to provide more than 1000 uuids.
+            #
+            # TODO: use the ?include=container_uuid feature so a
+            # separate request to the containers table isn't necessary.
             if len(pending) < 1000:
                 pending.append(container_request)
             else:

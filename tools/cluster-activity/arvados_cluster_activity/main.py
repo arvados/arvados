@@ -119,7 +119,11 @@ def print_container_usage(prom, start_time, end_time, metric, label, fn=None):
 
 
 def get_prometheus_client():
-    from prometheus_api_client import PrometheusConnect
+    try:
+        from prometheus_api_client import PrometheusConnect
+    except ImportError as e:
+        logging.warn("Failed to import prometheus_api_client client.  Did you include the [prometheus] option when installing the package?  Error was: %s" % e)
+        return None
 
     prom_host = os.environ.get("PROMETHEUS_HOST")
     prom_token = os.environ.get("PROMETHEUS_APIKEY")
