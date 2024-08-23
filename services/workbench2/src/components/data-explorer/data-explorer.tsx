@@ -17,6 +17,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@material-ui/core/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
+import { InlinePulser } from "components/loading/inline-pulser";
 
 type CssRules = "titleWrapper" | "msToolbarStyles" | "subToolbarWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | 'progressWrapper' | 'progressWrapperNoTitle' | "dataTable" | "container";
 
@@ -105,6 +106,7 @@ interface DataExplorerDataProps<T> {
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
+    loadingItemsAvailable: boolean;
     columns: DataColumns<T, any>;
     searchLabel?: string;
     searchValue: string;
@@ -198,6 +200,7 @@ export const DataExplorer = withStyles(styles)(
                 onSearch,
                 items,
                 itemsAvailable,
+                loadingItemsAvailable,
                 onRowClick,
                 onRowDoubleClick,
                 classes,
@@ -376,8 +379,8 @@ export const DataExplorer = withStyles(styles)(
                                             page={this.props.page}
                                             onChangePage={this.changePage}
                                             onChangeRowsPerPage={this.changeRowsPerPage}
-                                            // Disable next button on empty lists since that's not default behavior
-                                            nextIconButtonProps={itemsAvailable > 0 ? {} : { disabled: true }}
+                                            labelDisplayedRows={renderPaginationLabel(loadingItemsAvailable)}
+                                            nextIconButtonProps={getPaginiationButtonProps(itemsAvailable, loadingItemsAvailable)}
                                             component="div"
                                         />
                                     ) : (
@@ -448,4 +451,18 @@ export const DataExplorer = withStyles(styles)(
             render: this.renderContextMenuTrigger,
         };
     }
+);
+
+const renderPaginationLabel = (loading: boolean) => ({ from, to, count }) => (
+    loading ?
+        <InlinePulser/>
+        : <>{from}-{to} of {count}</>
+);
+
+const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => (
+    loading
+        ? { disabled: false } // Always allow paging while loading total
+        : itemsAvailable > 0
+            ? { }
+            : { disabled: true } // Disable next button on empty lists since that's not default behavior
 );
