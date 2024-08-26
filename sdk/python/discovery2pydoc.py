@@ -52,17 +52,9 @@ _DEPRECATED_NOTICE = '''
 .. WARNING:: Deprecated
    This resource is deprecated in the Arvados API.
 '''
-_DEPRECATED_RESOURCES = frozenset([
-    'Humans',
-    'JobTasks',
-    'Jobs',
-    'KeepDisks',
-    'Nodes',
-    'PipelineInstances',
-    'PipelineTemplates',
-    'Specimens'
-    'Traits',
-])
+# _DEPRECATED_RESOURCES contains string keys of resources in the discovery
+# document that are currently deprecated.
+_DEPRECATED_RESOURCES = frozenset()
 _DEPRECATED_SCHEMAS = frozenset([
     *(name[:-1] for name in _DEPRECATED_RESOURCES),
     *(f'{name[:-1]}List' for name in _DEPRECATED_RESOURCES),
