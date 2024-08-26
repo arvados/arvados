@@ -13,11 +13,14 @@ import { DefaultView } from 'components/default-view/default-view';
 import { InfoIcon } from 'components/icon/icon';
 import classNames from 'classnames';
 
-type CssRules = 'root' | 'button' | 'buttonIcon' | 'content';
+type CssRules = 'root' | 'buttonRow' | 'button' | 'buttonIcon' | 'content';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
-        marginTop: '10px',
+        marginTop: '0',
+    },
+    buttonRow: {
+        marginBottom: '15px',
     },
     button: {
         padding: '2px 5px',
@@ -30,6 +33,7 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     content: {
         overflow: 'auto',
+        marginTop: '-15px',
     },
 });
 
@@ -205,7 +209,7 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
 
     return (
         <Grid container {...props} className={classes.root}>
-            <Grid container item direction="row">
+            <Grid container item direction="row" className={classes.buttonRow}>
                 {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
             </Grid>
             <Grid container item {...props} xs className={classes.content}
