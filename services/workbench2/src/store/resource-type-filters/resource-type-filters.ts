@@ -340,7 +340,7 @@ const buildProcessTypeFilters = ({ fb, filters, use_prefix }: { fb: FilterBuilde
         case filters.length === 0 || filters.length === PROCESS_TYPES.length:
             return fb;
         case includes(ProcessTypeFilter.MAIN_PROCESS, filters):
-            return fb.addEqual('container_requests.requesting_container_uuid', null, use_prefix ? PROCESS_PREFIX : '');
+            return fb.addEqual('requesting_container_uuid', null, use_prefix ? PROCESS_PREFIX : '');
         case includes(ProcessTypeFilter.CHILD_PROCESS, filters):
             return fb.addDistinct('requesting_container_uuid', null, use_prefix ? PROCESS_PREFIX : '');
         default:
@@ -377,7 +377,7 @@ export const serializeOnlyProcessTypeFilters = pipe(
         () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
         filters => filters,
         mappedFilters => ({
-            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: false }),
+            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: true }),
             selectedFilters
         })
     )(),
