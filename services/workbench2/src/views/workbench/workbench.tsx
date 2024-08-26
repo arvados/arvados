@@ -348,7 +348,7 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                     customClassName={classes.splitter}
                     percentage={true}
                     primaryIndex={0}
-                    primaryMinSize={10}
+                    primaryMinSize={14.5}
                     secondaryInitialSize={getSplitterInitialSize()}
                     secondaryMinSize={40}
                     onSecondaryPaneSizeChange={saveSplitterSize}

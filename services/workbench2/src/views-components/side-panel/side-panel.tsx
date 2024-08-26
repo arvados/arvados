@@ -73,25 +73,22 @@ export const SidePanel = withStyles(styles)(
 
             return (
                 <Grid item xs>
-                        {props.isCollapsed ? 
-                            <div ref={splitPaneRef}>
-                        <>
-
-                            <SidePanelToggle />
-                            <SidePanelCollapsed />
-                        </>
+                    {props.isCollapsed ? 
+                        <div ref={splitPaneRef}>
+                            <div>
+                                <SidePanelToggle />
+                                <SidePanelCollapsed />
+                            </div>
                         </div>
                             :
-                            <>
                         <div ref={splitPaneRef}>
-                            <Grid className={classes.topButtonContainer}>
+                            <div className={classes.topButtonContainer}>
                                 <SidePanelButton key={props.currentRoute} />
                                 <SidePanelToggle/>
-                            </Grid>
+                            </div>
                             <SidePanelTree {...props} />
                         </div>
-                        </>
-                        }
-                    </Grid>
+                    }
+                </Grid>
         )}
     ));
