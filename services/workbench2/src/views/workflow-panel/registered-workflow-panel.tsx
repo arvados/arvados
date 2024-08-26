@@ -135,7 +135,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     { name: "Definition" },
                 ];
                 return item
-                    ? <MPVContainer className={classes.root} spacing={1} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
+                    ? <MPVContainer className={classes.root} spacing={1} direction="column" justifyContent="flex-start" wrap="nowrap" panelStates={panelsData}>
                         <MPVPanelContent xs="auto" data-cy='registered-workflow-info-panel'>
                             <Card className={classes.infoCard}>
                                 <CardHeader
