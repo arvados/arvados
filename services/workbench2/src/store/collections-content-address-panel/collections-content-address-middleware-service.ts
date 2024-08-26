@@ -109,6 +109,9 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const getFilters = (dataExplorer: DataExplorer, contentAddress: string) => (

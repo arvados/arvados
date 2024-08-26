@@ -73,6 +73,9 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 export const getParams = (dataExplorer: DataExplorer, groupUuid: string): ListArguments => ({

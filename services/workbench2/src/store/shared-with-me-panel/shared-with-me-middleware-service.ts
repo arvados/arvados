@@ -30,6 +30,7 @@ import { AuthState } from 'store/auth/auth-reducer';
 import { SharedWithMePanelColumnNames } from 'views/shared-with-me-panel/shared-with-me-panel';
 import { buildProcessStatusFilters, serializeResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { DataColumns } from 'components/data-table/data-table';
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -54,11 +55,36 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
         }
     }
+
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.groupsService.contents('', getCountParams(dataExplorer, state.auth))
+                .then((results: ListResults<GroupContentsResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(sharedWithMePanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                })
+        }
+    }
 }
 
 export const getParams = (dataExplorer: DataExplorer, authState: AuthState): ContentsArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer, authState),
+    excludeHomeProject: true,
+    count: "none",
+});
+
+const getCountParams = (dataExplorer: DataExplorer, authState: AuthState): ContentsArguments => ({
+    limit: 0,
+    count: 'exact',
     filters: getFilters(dataExplorer, authState),
     excludeHomeProject: true,
 });

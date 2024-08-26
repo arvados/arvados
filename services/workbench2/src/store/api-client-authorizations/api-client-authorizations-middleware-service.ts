@@ -29,6 +29,9 @@ export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlew
             api.dispatch(couldNotFetchLinks());
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const getParams = (dataExplorer: DataExplorer): ListArguments => ({

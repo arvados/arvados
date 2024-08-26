@@ -68,6 +68,9 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         }
         api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const getOrder = (dataExplorer: DataExplorer) => {

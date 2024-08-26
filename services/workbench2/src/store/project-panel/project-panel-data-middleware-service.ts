@@ -84,6 +84,9 @@ export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareSer
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>

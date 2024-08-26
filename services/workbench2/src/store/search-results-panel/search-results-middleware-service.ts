@@ -105,6 +105,9 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             }
         );
     }
+
+    // Empty requestCount method since search relies on included itemsAvailable
+    async requestCount() {}
 }
 
 export const searchSingleCluster = (session: Session, searchValue: string) =>

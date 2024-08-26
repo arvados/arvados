@@ -86,6 +86,9 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 export const loadMissingProcessesInformation = (resources: GroupContentsResource[]) => async (dispatch: Dispatch) => {

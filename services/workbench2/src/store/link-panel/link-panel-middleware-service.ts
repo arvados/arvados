@@ -33,6 +33,9 @@ export class LinkMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 export const getParams = (dataExplorer: DataExplorer): ListArguments => ({

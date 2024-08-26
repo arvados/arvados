@@ -104,6 +104,9 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const favoritesPanelDataExplorerIsNotSet = () =>

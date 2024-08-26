@@ -34,6 +34,9 @@ export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch(couldNotFetchWorkflows());
         }
     }
+
+    // Don't use separate request count on unused WF panel
+    async requestCount() {}
 }
 
 export const getParams = (dataExplorer: DataExplorer) => ({

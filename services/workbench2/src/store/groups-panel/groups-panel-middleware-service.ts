@@ -96,6 +96,9 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const groupsPanelDataExplorerIsNotSet = () =>

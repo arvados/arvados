@@ -5,6 +5,7 @@
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
+import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 
 export enum DataTableRequestState {
     IDLE,
@@ -62,3 +63,9 @@ export const bindDataExplorerActions = (id: string) => ({
 });
 
 export type BoundDataExplorerActions = ReturnType<typeof bindDataExplorerActions>;
+
+export const couldNotFetchItemsAvailable = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: "Could not fetch total items.",
+        kind: SnackbarKind.ERROR,
+    });

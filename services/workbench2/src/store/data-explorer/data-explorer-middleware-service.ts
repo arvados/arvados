@@ -31,6 +31,19 @@ export abstract class DataExplorerMiddlewareService {
         return getDataExplorerColumnFilters(columns, columnName);
     }
 
+    /**
+     * Consumers can use this method to request
+     * total count separately and in parallel
+     * @param api
+     * @param criteriaChanged
+     * @param background
+     */
+    abstract requestCount(
+        api: MiddlewareAPI<Dispatch, RootState>,
+        criteriaChanged?: boolean,
+        background?: boolean
+    ): Promise<void>;
+
     abstract requestItems(
         api: MiddlewareAPI<Dispatch, RootState>,
         criteriaChanged?: boolean,

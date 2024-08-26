@@ -89,4 +89,7 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
             if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }

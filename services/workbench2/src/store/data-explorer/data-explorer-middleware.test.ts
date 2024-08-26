@@ -215,4 +215,6 @@ class ServiceMock extends DataExplorerMiddlewareService {
         this.config.requestItems(api);
         return Promise.resolve();
     }
+
+    async requestCount() {}
 }

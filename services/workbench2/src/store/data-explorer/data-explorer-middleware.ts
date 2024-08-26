@@ -10,6 +10,7 @@ import {
     dataExplorerActions,
     bindDataExplorerActions,
     DataTableRequestState,
+    couldNotFetchItemsAvailable,
 } from './data-explorer-action';
 import { getDataExplorer } from './data-explorer-reducer';
 import { DataExplorerMiddlewareService } from './data-explorer-middleware-service';
@@ -69,7 +70,41 @@ export const dataExplorerMiddleware =
                                                         requestState: DataTableRequestState.PENDING,
                                                     })
                                                 );
-                                                await service.requestItems(api, criteriaChanged, background);
+
+                                                // Fetch results
+                                                const result = service.requestItems(api, criteriaChanged, background);
+
+                                                // Enable loading indicator on non-background fetches
+                                                if (!background) {
+                                                    api.dispatch<any>(
+                                                        dataExplorerActions.SET_LOADING_ITEMS_AVAILABLE({
+                                                            id: service.getId(),
+                                                            loadingItemsAvailable: true
+                                                        })
+                                                    );
+                                                }
+
+                                                // Fetch count
+                                                const count = service.requestCount(api, criteriaChanged, background)
+                                                    .catch(() => {
+                                                        // Show error toast if count fetch failed
+                                                        // This catch block also prevents a failed count request
+                                                        // from triggring data explorer load failure / reload
+                                                        couldNotFetchItemsAvailable();
+                                                    })
+                                                    .finally(() => {
+                                                        // Turn off itemsAvailable loading indicator when done
+                                                        api.dispatch<any>(
+                                                            dataExplorerActions.SET_LOADING_ITEMS_AVAILABLE({
+                                                                id: service.getId(),
+                                                                loadingItemsAvailable: false
+                                                            })
+                                                        );
+                                                    });
+
+                                                // Await results and count
+                                                await Promise.all([result, count]);
+
                                             } catch {
                                                 dispatch(
                                                     actions.SET_REQUEST_STATE({

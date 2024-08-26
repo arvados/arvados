@@ -74,6 +74,10 @@ export class UserProfileGroupsMiddlewareService extends DataExplorerMiddlewareSe
             }
         }
     }
+
+    // Groups are filtered from a list request
+    // and cannot currently support separate count requests
+    async requestCount() {}
 }
 
 const couldNotFetchGroups = () =>

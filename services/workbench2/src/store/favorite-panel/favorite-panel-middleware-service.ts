@@ -110,6 +110,9 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             }
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const favoritesPanelDataExplorerIsNotSet = () =>

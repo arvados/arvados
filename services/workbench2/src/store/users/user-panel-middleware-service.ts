@@ -50,6 +50,9 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
+
+    // Placeholder
+    async requestCount() {}
 }
 
 const getFilters = (dataExplorer: DataExplorer) => (
