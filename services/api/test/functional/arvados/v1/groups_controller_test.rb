@@ -485,6 +485,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     [['container_requests.', '=', nil], 422],
     [['.requesting_container_uuid', '=', nil], 422],
     [['no_such_table.uuid', '!=', 'zzzzz-tpzed-xurymjxw79nv3jz'], 422],
+    [["container.state", "=", "Complete"], 200,
+        'zzzzz-xvhdp-cr4completedctr', 'zzzzz-xvhdp-cr5trashedcontr'],
   ].each do |filter, expect_code, expect_uuid, not_expect_uuid|
     test "get contents with '#{filter}' filter" do
       authorize_with :active
