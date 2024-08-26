@@ -32,6 +32,7 @@ import urllib.request
 from typing import (
     Any,
     Callable,
+    Iterator,
     Mapping,
     Optional,
     Sequence,
@@ -98,7 +99,7 @@ import googleapiclient.discovery
 import googleapiclient.http
 import httplib2
 import sys
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Dict, Generic, List, Literal, Optional, TypeVar
 if sys.version_info < (3, 8):
     from typing_extensions import TypedDict
 else:
@@ -196,6 +197,24 @@ class Parameter(inspect.Parameter):
             default=inspect.Parameter.empty,
         )
 
+    @classmethod
+    def from_request(cls, spec: Mapping[str, Any]) -> 'Parameter':
+        try:
+            # Unpack the single key and value out of properties
+            (key, val_spec), = spec['properties'].items()
+        except (KeyError, ValueError):
+            # ValueError if there was not exactly one property
+            raise NotImplementedError(
+                "only exactly one request parameter is currently supported",
+            ) from None
+        val_type = get_type_annotation(val_spec['$ref'])
+        return cls('body', {
+            'description': f"""A dictionary with a single item `{key!r}`.
+Its value is a `{val_type}` dictionary defining the attributes to set.""",
+            'required': spec['required'],
+            'type': f'Dict[Literal[{key!r}], {val_type}]',
+        })
+
     def default_value(self) -> object:
         try:
             src_value: str = self._spec['default']
@@ -244,8 +263,7 @@ class Method:
         self._annotate = annotate
         self._required_params = []
         self._optional_params = []
-        for param_name, param_spec in spec['parameters'].items():
-            param = Parameter(param_name, param_spec)
+        for param in self._iter_parameters():
             if param.is_required():
                 param_list = self._required_params
             else:
@@ -253,6 +271,16 @@ class Method:
             param_list.append(param)
         self._required_params.sort(key=NAME_KEY)
         self._optional_params.sort(key=NAME_KEY)
+
+    def _iter_parameters(self) -> Iterator[Parameter]:
+        try:
+            body = self._spec['request']
+        except KeyError:
+            pass
+        else:
+            yield Parameter.from_request(body)
+        for name, spec in self._spec['parameters'].items():
+            yield Parameter(name, spec)
 
     def signature(self) -> inspect.Signature:
         parameters = [
