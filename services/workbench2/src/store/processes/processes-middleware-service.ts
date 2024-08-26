@@ -13,6 +13,7 @@ import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer
 import { BoundDataExplorerActions, couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 import { updateResources } from 'store/resources/resources-actions';
 import { ListArguments, ListResults } from 'services/common-service/common-service';
+import { ContentsArguments } from 'services/groups-service/groups-service';
 import { ProcessResource } from 'models/process';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
@@ -20,9 +21,10 @@ import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
 import { loadMissingProcessesInformation } from '../project-panel/project-panel-run-middleware-service';
+import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
-export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
-    constructor(private services: ServiceRepository, private actions: BoundDataExplorerActions, id: string) {
+    export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
+        constructor(private services: ServiceRepository, private actions: BoundDataExplorerActions, id: string) {
         super(id);
     }
 
@@ -33,17 +35,18 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
             filterName => statusColumnFilters[filterName].selected
         ) || ProcessStatusFilter.ALL;
 
-        const nameFilter = new FilterBuilder().addILike("name", dataExplorer.searchValue).getFilters();
-        const statusFilter = buildProcessStatusFilters(new FilterBuilder(), activeStatusFilter).getFilters();
 
-        return joinFilters(
-            nameFilter,
-            statusFilter,
-        );
+        let filters = new FilterBuilder().addIsA('uuid', 'arvados#containerRequest');
+        if (dataExplorer.searchValue && dataExplorer.searchValue !== "") {
+            filters = filters.addILike("name", dataExplorer.searchValue);
+        }
+
+        return buildProcessStatusFilters(filters, activeStatusFilter).getFilters();
     }
 
-    getParams(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): ListArguments | null {
-        const filters = this.getFilters(api, dataExplorer);
+
+    getParams(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): ContentsArguments | null {
+        const filters = this.getFilters(api, dataExplorer)
         if (filters === null) {
             return null;
         }
@@ -65,6 +68,7 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
             filters,
             limit: 0,
             count: 'exact',
+            include: ["owner_uuid", "container_uuid"]
         };
     }
 
@@ -78,9 +82,19 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
 
             // Get items
             if (params !== null) {
-                const containerRequests = await this.services.containerRequestService.list(params);
+                const containerRequests = await this.services.groupsService.contents('',
+                    {
+                        ...this.getParams(api, dataExplorer),
+                        select: containerRequestFieldsNoMounts.concat(containerFieldsNoMounts)
+                });
                 api.dispatch(updateResources(containerRequests.items));
-                await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
+                if (containerRequests.included) {
+                    api.dispatch(updateResources(containerRequests.included));
+                }
+
+                // This is the one
+                //await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
+
                 api.dispatch(this.actions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(containerRequests),
                     items: containerRequests.items.map(resource => resource.uuid),

@@ -43,7 +43,7 @@ export const loadContainers =
     };
 
 // Until the api supports unselecting fields, we need a list of all other fields to omit mounts
-const containerFieldsNoMounts = [
+export const containerFieldsNoMounts = [
     "auth_uuid",
     "command",
     "container_image",
