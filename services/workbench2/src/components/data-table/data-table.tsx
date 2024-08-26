@@ -130,8 +130,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     firstTableHead: {
         paddingLeft: "5px",
-        fontSize: "0.8125rem",
-        backgroundColor: theme.palette.background.paper,
     },
     tableHead: {
         wordWrap: "break-word",
@@ -407,7 +405,7 @@ export const DataTable = withStyles(styles)(
                 </TableCell>
             ) : (
                 <TableCell
-                    className={index === 1 ? classes.firstTableHead : classes.tableHead}
+                    className={classnames(classes.tableHead, index === 1 ? classes.firstTableHead : '')}
                     key={key || index}>
                     {renderHeader ? (
                         renderHeader()
