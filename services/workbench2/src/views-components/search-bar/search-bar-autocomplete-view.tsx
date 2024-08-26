@@ -16,7 +16,7 @@ type CssRules = 'searchView' | 'list' | 'listItem';
 const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         searchView: {
-            borderRadius: `0 0 calc(${theme.spacing(1)} / 2) calc(${theme.spacing(1)} / 2)`
+            borderRadius: `0 0 ${theme.spacing(0.5)} ${theme.spacing(0.5)}`
         },
         list: {
             padding: 0

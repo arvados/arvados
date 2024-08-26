@@ -61,7 +61,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     searchView: {
         color: theme.palette.common.black,
-        borderRadius: `0 0 calc(${theme.spacing(1)} / 2) calc(${theme.spacing(1)} / 2)`
+        borderRadius: `0 0 ${theme.spacing(0.5)} ${theme.spacing(0.5)}`
     },
     selectGrid: {
         marginBottom: theme.spacing(2)

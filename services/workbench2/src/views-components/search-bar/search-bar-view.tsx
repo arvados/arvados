@@ -42,7 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
         containerSearchViewOpened: {
             position: "relative",
             width: "100%",
-            borderRadius: `calc(${theme.spacing(1)} / 2) calc(${theme.spacing(1)} / 2) 0 0`,
+            borderRadius: `${theme.spacing(0.5)} ${theme.spacing(0.5)} 0 0`,
             zIndex: theme.zIndex.modal,
         },
         input: {
