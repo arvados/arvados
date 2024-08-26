@@ -31,6 +31,7 @@ export interface DataExplorer {
     searchValue: string;
     working?: boolean;
     requestState: DataTableRequestState;
+    countRequestState: DataTableRequestState;
     isNotFound: boolean;
 }
 
@@ -45,6 +46,7 @@ export const initialDataExplorer: DataExplorer = {
     rowsPerPageOptions: [10, 20, 50, 100, 200, 500],
     searchValue: '',
     requestState: DataTableRequestState.IDLE,
+    countRequestState: DataTableRequestState.IDLE,
     isNotFound: false,
 };
 
@@ -101,11 +103,18 @@ export const dataExplorerReducer = (
             })),
 
         SET_ITEMS_AVAILABLE: ({ id, itemsAvailable }) =>
-            update(state, id, (explorer) => ({
-                 ...explorer,
-                 itemsAvailable,
-                 loadingItemsAvailable: false,
-            })),
+            update(state, id, (explorer) => {
+                // Ignore itemsAvailable updates if another countRequest is requested
+                if (explorer.countRequestState === DataTableRequestState.PENDING) {
+                    return {
+                        ...explorer,
+                        itemsAvailable,
+                        loadingItemsAvailable: false,
+                    };
+                } else {
+                    return explorer;
+                }
+            }),
 
         RESET_ITEMS_AVAILABLE: ({ id }) =>
             update(state, id, (explorer) => ({ ...explorer, itemsAvailable: 0 })),
@@ -133,6 +142,9 @@ export const dataExplorerReducer = (
 
         SET_REQUEST_STATE: ({ id, requestState }) =>
             update(state, id, (explorer) => ({ ...explorer, requestState })),
+
+        SET_COUNT_REQUEST_STATE: ({ id, countRequestState }) =>
+            update(state, id, (explorer) => ({ ...explorer, countRequestState })),
 
         TOGGLE_SORT: ({ id, columnName }) =>
             update(state, id, mapColumns(toggleSort(columnName))),

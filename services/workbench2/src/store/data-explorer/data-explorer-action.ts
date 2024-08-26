@@ -20,6 +20,7 @@ export const dataExplorerActions = unionize({
     SET_ITEMS_AVAILABLE: ofType<{ id: string, itemsAvailable: number }>(),
     RESET_ITEMS_AVAILABLE: ofType<{ id: string }>(),
     REQUEST_ITEMS: ofType<{ id: string; criteriaChanged?: boolean, background?: boolean }>(),
+    REQUEST_COUNT: ofType<{ id: string; criteriaChanged?: boolean, background?: boolean }>(),
     REQUEST_STATE: ofType<{ id: string; criteriaChanged?: boolean }>(),
     SET_FETCH_MODE: ofType<{ id: string; fetchMode: DataTableFetchMode }>(),
     SET_COLUMNS: ofType<{ id: string; columns: DataColumns<any, any> }>(),
@@ -33,6 +34,7 @@ export const dataExplorerActions = unionize({
     SET_EXPLORER_SEARCH_VALUE: ofType<{ id: string; searchValue: string }>(),
     RESET_EXPLORER_SEARCH_VALUE: ofType<{ id: string }>(),
     SET_REQUEST_STATE: ofType<{ id: string; requestState: DataTableRequestState }>(),
+    SET_COUNT_REQUEST_STATE: ofType<{ id: string; countRequestState: DataTableRequestState }>(),
     SET_IS_NOT_FOUND: ofType<{ id: string; isNotFound: boolean }>(),
 });
 
@@ -45,6 +47,7 @@ export const bindDataExplorerActions = (id: string) => ({
     SET_ITEMS_AVAILABLE: (itemsAvailable: number) => dataExplorerActions.SET_ITEMS_AVAILABLE({ id, itemsAvailable }),
     RESET_ITEMS_AVAILABLE: () => dataExplorerActions.RESET_ITEMS_AVAILABLE({ id }),
     REQUEST_ITEMS: (criteriaChanged?: boolean, background?: boolean) => dataExplorerActions.REQUEST_ITEMS({ id, criteriaChanged, background }),
+    REQUEST_COUNT: (criteriaChanged?: boolean, background?: boolean) => dataExplorerActions.REQUEST_COUNT({ id, criteriaChanged, background }),
     SET_FETCH_MODE: (payload: { fetchMode: DataTableFetchMode }) => dataExplorerActions.SET_FETCH_MODE({ ...payload, id }),
     SET_COLUMNS: (payload: { columns: DataColumns<any, any> }) => dataExplorerActions.SET_COLUMNS({ ...payload, id }),
     SET_FILTERS: (payload: { columnName: string; filters: DataTableFilters }) => dataExplorerActions.SET_FILTERS({ ...payload, id }),
@@ -59,6 +62,7 @@ export const bindDataExplorerActions = (id: string) => ({
     SET_EXPLORER_SEARCH_VALUE: (payload: { searchValue: string }) => dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ ...payload, id }),
     RESET_EXPLORER_SEARCH_VALUE: () => dataExplorerActions.RESET_EXPLORER_SEARCH_VALUE({ id }),
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) => dataExplorerActions.SET_REQUEST_STATE({ ...payload, id }),
+    SET_COUNT_REQUEST_STATE: (payload: { countRequestState: DataTableRequestState }) => dataExplorerActions.SET_COUNT_REQUEST_STATE({ ...payload, id }),
     SET_IS_NOT_FOUND: (payload: { isNotFound: boolean }) => dataExplorerActions.SET_IS_NOT_FOUND({ ...payload, id }),
 });
 
