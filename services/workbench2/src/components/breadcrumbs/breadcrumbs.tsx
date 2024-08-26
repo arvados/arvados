@@ -46,6 +46,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     buttonLabel: {
         overflow: 'hidden',
         justifyContent: 'flex-start',
+        display: 'inherit',
+        alignItems: 'inherit',
     },
     icon: {
         fontSize: 20,
@@ -95,16 +97,18 @@ export const Breadcrumbs = withStyles(styles)(
                             color="inherit"
                             onClick={() => onClick(navFunc, item)}
                             onContextMenu={event => onContextMenu(event, item)}>
-                            <Icon className={classes.icon} />
-                            <Typography
-                                noWrap
-                                color="inherit"
-                                className={classes.label}>
-                                {item.label}
-                            </Typography>
-                            {
-                                (resources[item.uuid] as any)?.frozenByUuid ? <FreezeIcon className={classes.frozenIcon} /> : null
-                            }
+                            <span className={classes.buttonLabel}>
+                                <Icon className={classes.icon} />
+                                <Typography
+                                    noWrap
+                                    color="inherit"
+                                    className={classes.label}>
+                                    {item.label}
+                                </Typography>
+                                {
+                                    (resources[item.uuid] as any)?.frozenByUuid ? <FreezeIcon className={classes.frozenIcon} /> : null
+                                }
+                            </span>
                         </Button>
                     </Tooltip>
                     {!isLastItem && <ChevronRightIcon color="inherit" className={classNames('parentItem', classes.chevron)} />}
