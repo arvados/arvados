@@ -73,6 +73,8 @@ type CssRules =
     | "checkBox"
     | "firstTableCell"
     | "tableCell"
+    | "firstTableHead"
+    | "tableHead"
     | "arrow"
     | "arrowButton"
     | "tableCellWorkflows";
@@ -99,10 +101,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: '2rem',
         height: "1.5rem",
         paddingLeft: '0.9rem',
-        marginRight: '0.5rem'
+        marginRight: '0.5rem',
+        backgroundColor: theme.palette.background.paper,
     },
     checkBoxCell: {
         padding: "0",
+        backgroundColor: theme.palette.background.paper,
     },
     clickBox: {
         display: 'flex',
@@ -123,6 +127,18 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     firstTableCell: {
         paddingLeft: "5px",
+    },
+    firstTableHead: {
+        paddingLeft: "5px",
+        fontSize: "0.8125rem",
+        backgroundColor: theme.palette.background.paper,
+    },
+    tableHead: {
+        wordWrap: "break-word",
+        paddingRight: "24px",
+        color: "#737373",
+        fontSize: "0.8125rem",
+        backgroundColor: theme.palette.background.paper,
     },
     tableCellWorkflows: {
         "&:nth-last-child(2)": {
@@ -322,7 +338,7 @@ export const DataTable = withStyles(styles)(
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
-                        <Table data-cy="data-table">
+                        <Table data-cy="data-table" stickyHeader>
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
@@ -391,7 +407,7 @@ export const DataTable = withStyles(styles)(
                 </TableCell>
             ) : (
                 <TableCell
-                    className={index === 1 ? classes.firstTableCell : classes.tableCell}
+                    className={index === 1 ? classes.firstTableHead : classes.tableHead}
                     key={key || index}>
                     {renderHeader ? (
                         renderHeader()
