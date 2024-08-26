@@ -64,7 +64,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: theme.spacing(1)
     },
     chipsRoot: {
-        margin: `0px -calc(${theme.spacing(1)} / 2)`,
+        margin: `0px -${theme.spacing(0.5)}`,
     },
     copyIcon: {
         marginLeft: theme.spacing(1),

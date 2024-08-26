@@ -32,7 +32,7 @@ type CssRules = 'root';
 
 const styles: CustomStyleRulesCallback<CssRules> = ({ spacing }) => ({
     root: {
-        margin: `0px -calc(${spacing(1)} / 2)`,
+        margin: `0px ${spacing(0.5)}`,
     },
 });
 export const Chips = withStyles(styles)(

@@ -16,7 +16,7 @@ const permissionItemStyles: CustomStyleRulesCallback<SelectItemClasses> = theme 
         marginLeft: theme.spacing(1),
     },
     icon: {
-        margin: `-calc(${theme.spacing(1)} / 2) 0`
+        margin: `${theme.spacing(0.5)} 0`
     }
 });
 

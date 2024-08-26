@@ -31,7 +31,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     chipsRoot: {
-        margin: `0px -calc(${theme.spacing(1)} / 2)`,
+        margin: `0px -${theme.spacing(0.5)}`,
     },
     vmTableWrapper: {
         overflowX: 'auto',
