@@ -47,6 +47,7 @@ interface Colors {
 
 const arvadosDarkBlue = '#052a3c';
 const arvadosGreyLight = '#737373';
+const arvadosGreyVeryLight = '#fafafa';
 const arvadosGreyDark = '#212121';
 const grey500 = grey["500"];
 const grey600 = grey["600"];
@@ -143,16 +144,14 @@ export const themeOptions: ArvadosThemeOptions = {
         },
         MuiAccordion: {
             root: {
-                "&$expanded": {
-                  "marginTop": "8px"
-                },
+                backgroundColor: arvadosGreyVeryLight,
               },
         },
         MuiAccordionDetails: {
             root: {
                 marginBottom: 0,
                 paddingBottom: '4px',
-            }
+            },
         },
         MuiAccordionSummary: {
             content: {
@@ -163,7 +162,6 @@ export const themeOptions: ArvadosThemeOptions = {
                 fontSize: '1.25rem',
                 margin: 0,
             },
-            expanded: {},
         },
         MuiMenuItem: {
             root: {
