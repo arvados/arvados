@@ -119,7 +119,7 @@ export const LoginPanel = withStyles(styles)(
                                 native
                                 value={homeCluster}
                                 style={{ margin: "1em" }}
-                                onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value as string))}>
+                                onChange={(event) => dispatch(authActions.SET_HOME_CLUSTER(event.target.value))}>
                                 {Object.keys(remoteHosts).map((k) => <option key={k} value={k}>{k}</option>)}
                             </Select>
                         </Typography>}

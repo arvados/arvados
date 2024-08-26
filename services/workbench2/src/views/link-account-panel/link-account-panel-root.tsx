@@ -124,7 +124,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                                     native
                                     defaultValue={selectedCluster}
                                     style={{ marginLeft: "1em" }}
-                                    onChange={(event) => setSelectedCluster(event.target.value as string)}>
+                                    onChange={(event) => setSelectedCluster(event.target.value)}>
                                     {Object.keys(remoteHostsConfig).map((k) => k !== localCluster ? <option key={k} value={k}>{k}</option> : null)}
                                 </Select>
                             </Grid>

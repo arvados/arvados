@@ -40,7 +40,7 @@ export const ProcessLogForm = withStyles(styles)(
                 <Select
                     variant="standard"
                     value={selectedFilter.value}
-                    onChange={(ev: any) => onChange({ label: ev.target.innerText as string, value: ev.target.value as string })}
+                    onChange={(ev: any) => onChange({ label: ev.target.innerText, value: ev.target.value})}
                     input={<Input name="eventType" id="log-label-placeholder" />}
                     name="eventType">
                     {
