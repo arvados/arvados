@@ -22,7 +22,8 @@ import { getUserDisplayName } from 'models/user';
 import { CollectionResource } from 'models/collection';
 import { replace } from "react-router-redux";
 import { getNavUrl } from 'routes/routes';
-import { ListArguments } from 'services/common-service/common-service';
+import { ListArguments, ListResults } from 'services/common-service/common-service';
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -110,8 +111,24 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const pathname = state.router.location!.pathname;
+        const contentAddress = pathname.split('/')[2];
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.collectionService.list(getCountParams(dataExplorer, contentAddress))
+                .then((results: ListResults<CollectionResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(collectionsContentAddressActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const getFilters = (dataExplorer: DataExplorer, contentAddress: string) => (
@@ -127,6 +144,13 @@ const getParams = (dataExplorer: DataExplorer, contentAddress: string): ListArgu
     order: getOrder<CollectionResource>(dataExplorer),
     includeOldVersions: true,
     count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer, contentAddress: string): ListArguments => ({
+    limit: 0,
+    count: 'exact',
+    filters: getFilters(dataExplorer, contentAddress),
+    includeOldVersions: true,
 });
 
 const collectionPanelDataExplorerIsNotSet = () =>

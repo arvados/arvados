@@ -29,6 +29,8 @@ import { joinFilters } from 'services/api/filter-builder';
 import { CollectionResource } from "models/collection";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
+import { ListResults } from "services/common-service/common-service";
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
@@ -69,8 +71,22 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.groupsService.contents('', getCountParams(dataExplorer))
+                .then((results: ListResults<GroupContentsResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(trashPanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const getOrder = (dataExplorer: DataExplorer) => {
@@ -114,6 +130,15 @@ const getParams = (dataExplorer: DataExplorer): ContentsArguments => ({
     filters: getFilters(dataExplorer),
     recursive: true,
     includeTrash: true,
+    count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer): ContentsArguments => ({
+    filters: getFilters(dataExplorer),
+    recursive: true,
+    includeTrash: true,
+    limit: 0,
+    count: 'exact',
 });
 
 const couldNotFetchTrashContents = () =>

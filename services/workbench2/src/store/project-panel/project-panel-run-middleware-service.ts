@@ -35,6 +35,7 @@ import { updatePublicFavorites } from "store/public-favorites/public-favorites-a
 import { containerRequestFieldsNoMounts } from "models/container-request";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 
 export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -87,8 +88,24 @@ export class ProjectPanelRunMiddlewareService extends DataExplorerMiddlewareServ
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const projectUuid = getProjectPanelCurrentUuid(state);
+        const isProjectTrashed = getProperty<string>(IS_PROJECT_PANEL_TRASHED)(state.properties);
+
+        if (criteriaChanged && projectUuid) {
+            // Get itemsAvailable
+            return this.services.groupsService.contents(projectUuid, getCountParams(dataExplorer, projectUuid, !!isProjectTrashed))
+                .then((results: ListResults<GroupContentsResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(projectPanelRunActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 export const loadMissingProcessesInformation = (resources: GroupContentsResource[]) => async (dispatch: Dispatch) => {
@@ -114,6 +131,14 @@ export const getParams = (dataExplorer: DataExplorer, projectUuid: string, isPro
     filters: getFilters(dataExplorer, projectUuid),
     includeTrash: isProjectTrashed,
     select: containerRequestFieldsNoMounts,
+    count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer, projectUuid: string, isProjectTrashed: boolean): ContentsArguments => ({
+    filters: getFilters(dataExplorer, projectUuid),
+    includeTrash: isProjectTrashed,
+    limit: 0,
+    count: 'exact',
 });
 
 export const getFilters = (dataExplorer: DataExplorer, projectUuid: string) => {

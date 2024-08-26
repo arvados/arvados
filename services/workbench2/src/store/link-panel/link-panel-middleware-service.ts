@@ -13,6 +13,7 @@ import { ListArguments, ListResults } from 'services/common-service/common-servi
 import { LinkResource } from 'models/link';
 import { linkPanelActions } from 'store/link-panel/link-panel-actions';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class LinkMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -34,13 +35,30 @@ export class LinkMiddlewareService extends DataExplorerMiddlewareService {
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.linkService.list(getCountParams())
+                .then((results: ListResults<LinkResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(linkPanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 export const getParams = (dataExplorer: DataExplorer): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder<LinkResource>(dataExplorer)
+    order: getOrder<LinkResource>(dataExplorer),
+    count: 'none',
+});
+
+const getCountParams = (): ListArguments => ({
+    limit: 0,
+    count: 'exact',
 });
 
 export const setItems = (listResults: ListResults<LinkResource>) =>

@@ -34,6 +34,7 @@ import { selectedFieldsOfGroup } from "models/group";
 import { defaultCollectionSelectedFields } from "models/collection";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 
 export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -85,8 +86,24 @@ export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareSer
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const projectUuid = getProjectPanelCurrentUuid(state);
+        const isProjectTrashed = getProperty<string>(IS_PROJECT_PANEL_TRASHED)(state.properties);
+
+        if (criteriaChanged && projectUuid) {
+            // Get itemsAvailable
+            return this.services.groupsService.contents(projectUuid, getCountParams(dataExplorer, !!isProjectTrashed))
+                .then((results: ListResults<GroupContentsResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(projectPanelDataActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
@@ -101,6 +118,14 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
     filters: getFilters(dataExplorer),
     includeTrash: isProjectTrashed,
     select: selectedFieldsOfGroup.concat(defaultCollectionSelectedFields),
+    count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean): ContentsArguments => ({
+    filters: getFilters(dataExplorer),
+    includeTrash: isProjectTrashed,
+    limit: 0,
+    count: 'exact',
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {

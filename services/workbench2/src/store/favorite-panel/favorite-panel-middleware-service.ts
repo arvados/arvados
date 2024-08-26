@@ -20,9 +20,10 @@ import { loadMissingProcessesInformation } from "store/project-panel/project-pan
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { ResourceKind } from "models/resource";
-import { LinkClass } from "models/link";
+import { LinkClass, LinkResource } from "models/link";
 import { GroupContentsResource } from "services/groups-service/groups-service";
-import { ListArguments } from "services/common-service/common-service";
+import { ListArguments, ListResults } from "services/common-service/common-service";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -56,6 +57,14 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
             ...dataExplorerToListParams(dataExplorer),
             filters: this.getLinkFilters(dataExplorer, uuid),
             count: "none",
+        };
+    }
+
+    getCountParams(dataExplorer: DataExplorer, uuid: string): ListArguments {
+        return {
+            filters: this.getLinkFilters(dataExplorer, uuid),
+            limit: 0,
+            count: "exact",
         };
     }
 
@@ -111,8 +120,23 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const uuid = getUserUuid(api.getState());
+
+        if (criteriaChanged && uuid && uuid.length) {
+            // Get itemsAvailable
+            return this.services.linkService.list(this.getCountParams(dataExplorer, uuid))
+                .then((results: ListResults<LinkResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(favoritePanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const favoritesPanelDataExplorerIsNotSet = () =>

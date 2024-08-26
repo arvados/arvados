@@ -12,6 +12,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { apiClientAuthorizationsActions } from 'store/api-client-authorizations/api-client-authorizations-actions';
 import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -30,13 +31,30 @@ export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlew
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.apiClientAuthorizationService.list(getCountParams())
+                .then((results: ListResults<ApiClientAuthorization>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(apiClientAuthorizationsActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const getParams = (dataExplorer: DataExplorer): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder<ApiClientAuthorization>(dataExplorer)
+    order: getOrder<ApiClientAuthorization>(dataExplorer),
+    count: 'none',
+});
+
+const getCountParams = (): ListArguments => ({
+    limit: 0,
+    count: 'exact',
 });
 
 export const setItems = (listResults: ListResults<ApiClientAuthorization>) =>

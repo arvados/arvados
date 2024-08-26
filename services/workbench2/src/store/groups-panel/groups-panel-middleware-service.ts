@@ -15,7 +15,8 @@ import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { GroupResource, GroupClass } from 'models/group';
 import { SortDirection } from 'components/data-table/data-column';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { ListArguments } from "services/common-service/common-service";
+import { ListArguments, ListResults } from "services/common-service/common-service";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 
 export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -50,6 +51,15 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
             ...dataExplorerToListParams(dataExplorer),
             filters: this.getFilters(dataExplorer),
             order: this.getOrder(dataExplorer),
+            count: 'none',
+        };
+    }
+
+    getCountParams(dataExplorer: DataExplorer): ListArguments {
+        return {
+            filters: this.getFilters(dataExplorer),
+            limit: 0,
+            count: 'exact',
         };
     }
 
@@ -97,8 +107,22 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.groupsService.list(this.getCountParams(dataExplorer))
+                .then((results: ListResults<GroupResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(GroupsPanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const groupsPanelDataExplorerIsNotSet = () =>

@@ -20,6 +20,7 @@ import { UserPanelColumnNames } from 'views/user-panel/user-panel';
 import { BuiltinGroups, getBuiltinGroupUuid } from 'models/group';
 import { LinkClass } from 'models/link';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class UserMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -51,8 +52,22 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.userService.list(getCountParams(dataExplorer))
+                .then((results: ListResults<UserResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(userBindedActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const getFilters = (dataExplorer: DataExplorer) => (
@@ -64,6 +79,13 @@ const getFilters = (dataExplorer: DataExplorer) => (
 const getParams = (dataExplorer: DataExplorer): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer),
+    count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer): ListArguments => ({
+    limit: 0,
+    count: 'exact',
     filters: getFilters(dataExplorer),
 });
 

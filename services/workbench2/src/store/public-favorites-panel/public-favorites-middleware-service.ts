@@ -14,11 +14,12 @@ import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel';
 import { publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
 import { DataColumns } from 'components/data-table/data-table';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
-import { LinkClass } from 'models/link';
+import { LinkClass, LinkResource } from 'models/link';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { ListArguments } from 'services/common-service/common-service';
+import { ListArguments, ListResults } from 'services/common-service/common-service';
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -51,6 +52,14 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             ...dataExplorerToListParams(dataExplorer),
             filters: this.getLinkFilters(dataExplorer, publicProjectUuid),
             count: "none",
+        };
+    }
+
+    getCountParams(dataExplorer: DataExplorer, publicProjectUuid: string): ListArguments {
+        return {
+            filters: this.getLinkFilters(dataExplorer, publicProjectUuid),
+            limit: 0,
+            count: "exact",
         };
     }
 
@@ -105,8 +114,24 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const uuidPrefix = api.getState().auth.config.uuidPrefix;
+        const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.linkService.list(this.getCountParams(dataExplorer, publicProjectUuid))
+                .then((results: ListResults<LinkResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(publicFavoritePanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 const favoritesPanelDataExplorerIsNotSet = () =>

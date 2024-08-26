@@ -14,6 +14,8 @@ import { getCurrentGroupDetailsPanelUuid, GroupPermissionsPanelActions } from 's
 import { LinkClass } from 'models/link';
 import { ResourceKind } from 'models/resource';
 import { ListArguments, ListResults } from "services/common-service/common-service";
+import { PermissionResource } from "models/permission";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
 import { ProjectResource } from "models/project";
 import { CollectionResource } from "models/collection";
 import { UserResource } from "models/user";
@@ -83,13 +85,28 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
         }
     }
 
-    // Placeholder
-    async requestCount() {}
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const groupUuid = getCurrentGroupDetailsPanelUuid(state.properties);
+
+        if (criteriaChanged && groupUuid) {
+            // Get itemsAvailable
+            return this.services.permissionService.list(getCountParams(groupUuid))
+                .then((results: ListResults<PermissionResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(GroupPermissionsPanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
 export const getParams = (dataExplorer: DataExplorer, groupUuid: string): ListArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: getFilters(groupUuid),
+    count: 'none',
 });
 
 export const getMetadataParams = (dataExplorer: DataExplorer, uuids: string[]): ListArguments => ({
@@ -98,6 +115,12 @@ export const getMetadataParams = (dataExplorer: DataExplorer, uuids: string[]): 
         .addIn('uuid', uuids)
         .getFilters(),
     count: 'none',
+});
+
+export const getCountParams = (groupUuid: string): ListArguments => ({
+    filters: getFilters(groupUuid),
+    limit: 0,
+    count: 'exact',
 });
 
 export const getFilters = (groupUuid: string) => {
