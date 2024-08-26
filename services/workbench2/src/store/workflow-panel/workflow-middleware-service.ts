@@ -80,10 +80,10 @@ export class WorkflowProcessesMiddlewareService extends ProcessesMiddlewareServi
 
         const workflow_uuid = registeredWorkflowMatch.params.id;
 
-        const requesting_container = new FilterBuilder().addEqual('properties.template_uuid', workflow_uuid).getFilters();
+        const template_uuid = new FilterBuilder().addEqual('properties.template_uuid', workflow_uuid, 'container_requests').getFilters();
         const sup = super.getFilters(api, dataExplorer);
         if (sup === null) { return null; }
 
-        return joinFilters(sup, requesting_container);
+        return joinFilters(sup, template_uuid);
     }
 }
