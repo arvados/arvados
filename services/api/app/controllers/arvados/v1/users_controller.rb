@@ -107,22 +107,6 @@ class Arvados::V1::UsersController < ApplicationController
       @object = model_class.create! resource_attrs
     end
 
-    # It's not always possible for the client to know the user's
-    # username when submitting this request: the username might have
-    # been assigned automatically in create!() above. If client
-    # provided a plain repository name, prefix it with the username
-    # now that we know what it is.
-    if params[:repo_name].nil?
-      full_repo_name = nil
-    elsif @object.username.nil?
-      raise ArgumentError.
-        new("cannot setup a repository because user has no username")
-    elsif params[:repo_name].index("/")
-      full_repo_name = params[:repo_name]
-    else
-      full_repo_name = "#{@object.username}/#{params[:repo_name]}"
-    end
-
     @response = @object.setup(vm_uuid: params[:vm_uuid],
                               send_notification_email: params[:send_notification_email])
 
