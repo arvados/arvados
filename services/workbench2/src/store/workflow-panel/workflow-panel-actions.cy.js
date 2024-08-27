@@ -13,6 +13,7 @@ import { openRunProcess } from './workflow-panel-actions';
 import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 import { initialize } from 'redux-form';
 import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
+import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
 import { ResourceKind } from 'models/resource';
 
 describe('workflow-panel-actions', () => {
@@ -64,17 +65,31 @@ describe('workflow-panel-actions', () => {
                 items: []
             });
 
-        const dispatchMock = cy.spy();
+        const dispatchMock = cy.spy().as('dispatchMock');
         const dispatchWrapper = (action ) => {
             dispatchMock(action);
             return store.dispatch(action);
         };
 
+        const expectedBasicArgs = {
+            type: "@@redux-form/INITIALIZE",
+            meta: {
+              form: RUN_PROCESS_BASIC_FORM,
+              keepDirty: undefined,
+            },
+            payload: {
+              name: "testing",
+              owner: undefined,
+            }
+          }
+
         await openRunProcess("zzzzz-7fd4e-0123456789abcde", "zzzzz-tpzed-0123456789abcde", "testing", { inputparm: "value" })(dispatchWrapper, store.getState, services);
-        expect(dispatchMock).to.be.calledWith(runProcessPanelActions.SET_WORKFLOWS(wflist));
-        expect(dispatchMock).to.be.calledWith(runProcessPanelActions.SET_SELECTED_WORKFLOW(wflist[0]));
-        expect(arrayDeeplyIncludesObject(dispatchMock.args, initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }))).to.be.true;
-        expect(dispatchMock).to.be.calledWith(initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }));
+        cy.get('@dispatchMock').then((dispatchMock) => {
+            expect(dispatchMock).to.be.calledWith(runProcessPanelActions.SET_WORKFLOWS(wflist));
+            expect(dispatchMock).to.be.calledWith(runProcessPanelActions.SET_SELECTED_WORKFLOW(wflist[0]));
+            expect(arrayDeeplyIncludesObject(dispatchMock.args, expectedBasicArgs)).to.be.true;
+            expect(dispatchMock).to.be.calledWith(initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }));
+        });
     });
 });
 
