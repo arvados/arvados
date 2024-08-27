@@ -76,6 +76,7 @@ type CssRules =
     | "firstTableHead"
     | "tableHead"
     | "selected"
+    | "hovered"
     | "arrow"
     | "arrowButton"
     | "tableCellWorkflows";
@@ -140,7 +141,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         backgroundColor: theme.palette.background.paper,
     },
     selected: {
-        backgroundColor: `${CustomTheme.palette.grey['200']} !important`
+        backgroundColor: `${CustomTheme.palette.grey['300']} !important`
+    },
+    hovered: {
+        backgroundColor: `${CustomTheme.palette.grey['100']} !important`
     },
     tableCellWorkflows: {
         "&:nth-last-child(2)": {
@@ -166,6 +170,7 @@ export type TCheckedList = Record<string, boolean>;
 type DataTableState = {
     isSelected: boolean;
     isLoaded: boolean;
+    hoveredIndex: number | null;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -175,6 +180,7 @@ export const DataTable = withStyles(styles)(
         state: DataTableState = {
             isSelected: false,
             isLoaded: false,
+            hoveredIndex: null,
         };
 
         componentDidMount(): void {
@@ -453,13 +459,18 @@ export const DataTable = withStyles(styles)(
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
+            const { hoveredIndex } = this.state;
             const isSelected = item === selectedResourceUuid;
-            const getClassnames = (index: number) => {
+            const getClassnames = (colIndex: number) => {
                 if(currentRoute === '/workflows') return classes.tableCellWorkflows;
-                if(index === 0) return classnames(classes.checkBoxCell, isSelected ? classes.selected : "");
-                if(index === 1) return classnames(classes.tableCell, classes.firstTableCell, isSelected ? classes.selected : "");
+                if(colIndex === 0) return classnames(classes.checkBoxCell, isSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
+                if(colIndex === 1) return classnames(classes.tableCell, classes.firstTableCell, isSelected ? classes.selected : "");
                 return classnames(classes.tableCell, isSelected ? classes.selected : "");
             };
+            const handleHover = (index: number | null) => {
+                this.setState({ hoveredIndex: index });
+            }
+
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -470,12 +481,14 @@ export const DataTable = withStyles(styles)(
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
                     selected={isSelected}
                     className={isSelected ? classes.selected : ""}
+                    onMouseEnter={()=>handleHover(index)}
+                    onMouseLeave={()=>handleHover(null)}
                 >
-                    {this.mapVisibleColumns((column, index) => (
+                    {this.mapVisibleColumns((column, colIndex) => (
                         <TableCell
-                            key={column.key || index}
-                            data-cy={column.key || index}
-                            className={getClassnames(index)}>
+                            key={column.key || colIndex}
+                            data-cy={column.key || colIndex}
+                            className={getClassnames(colIndex)}>
                             {column.render(item)}
                         </TableCell>
                     ))}
