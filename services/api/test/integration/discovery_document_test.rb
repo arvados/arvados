@@ -54,4 +54,28 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
                  "If the live version is correct, copy it to the git working directory by running:\n" +
                  "cp #{out_path} #{src_path}\n")
   end
+
+  test "all methods have full descriptions" do
+    get "/discovery/v1/apis/arvados/v1/rest"
+    assert_response :success
+    missing = []
+    def missing.check(name, key, spec)
+      self << "#{name} #{key}" if spec[key].blank?
+    end
+
+    Enumerator::Chain.new(
+      *json_response["resources"].map { |_, res| res["methods"].each_value }
+    ).each do |method|
+      method_name = method["id"]
+      missing.check(method_name, "description", method)
+      method["parameters"].andand.each_pair do |param_name, param|
+        missing.check("#{method_name} #{param_name} parameter", "description", param)
+      end
+    end
+
+    assert_equal(
+      missing, [],
+      "named methods and schemas are missing documentation",
+    )
+  end
 end

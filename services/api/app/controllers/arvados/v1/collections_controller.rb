@@ -13,10 +13,16 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, default: false, description: "Include collections whose is_trashed attribute is true.",
+          type: 'boolean',
+          required: false,
+          default: false,
+          description: "Include collections whose `is_trashed` attribute is true.",
         },
         include_old_versions: {
-          type: 'boolean', required: false, default: false, description: "Include past collection versions.",
+          type: 'boolean',
+          required: false,
+          default: false,
+          description: "Include past collection versions.",
         },
       })
   end
@@ -25,10 +31,16 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, default: false, description: "Show collection even if its is_trashed attribute is true.",
+          type: 'boolean',
+          required: false,
+          default: false,
+          description: "Show collection even if its `is_trashed` attribute is true.",
         },
         include_old_versions: {
-          type: 'boolean', required: false, default: true, description: "Include past collection versions.",
+          type: 'boolean',
+          required: false,
+          default: true,
+          description: "Include past collection versions.",
         },
       })
   end
@@ -269,6 +281,10 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
   end
 
+  def self._provenance_method_description
+    "Detail the provenance of a given collection."
+  end
+
   def provenance
     visited = {}
     if @object[:uuid]
@@ -277,6 +293,10 @@ class Arvados::V1::CollectionsController < ApplicationController
       search_edges(visited, @object[:portable_data_hash], :search_up)
     end
     send_json visited
+  end
+
+  def self._used_by_method_description
+    "Detail where a given collection has been used."
   end
 
   def used_by

@@ -30,6 +30,10 @@ class Arvados::V1::UsersController < ApplicationController
     render_list
   end
 
+  def self._current_method_description
+    "Return the user record associated with the API token authorizing this request."
+  end
+
   def current
     if current_user
       @object = current_user
@@ -39,9 +43,17 @@ class Arvados::V1::UsersController < ApplicationController
     end
   end
 
+  def self._system_method_description
+    "Return this cluster's system (\"root\") user record."
+  end
+
   def system
     @object = system_user
     show
+  end
+
+  def self._activate_method_description
+    "Set the `is_active` flag on a user record."
   end
 
   def activate
@@ -92,6 +104,10 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
+  def self._setup_method_description
+    "Convenience method to \"fully\" set up a user record with a virtual machine login and notification email."
+  end
+
   # create user object and all the needed links
   def setup
     if params[:uuid]
@@ -113,11 +129,19 @@ class Arvados::V1::UsersController < ApplicationController
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
   end
 
+  def self._unsetup_method_description
+    "Unset a user's active flag and delete associated records."
+  end
+
   # delete user agreements, vm, repository, login links; set state to inactive
   def unsetup
     reload_object_before_update
     @object.unsetup
     show
+  end
+
+  def self._merge_method_description
+    "Transfer ownership of one user's data to another."
   end
 
   def merge
@@ -180,19 +204,30 @@ class Arvados::V1::UsersController < ApplicationController
   def self._merge_requires_parameters
     {
       new_owner_uuid: {
-        type: 'string', required: true,
+        type: 'string',
+        required: true,
+        description: "UUID of the user or group that will take ownership of data owned by the old user.",
       },
       new_user_token: {
-        type: 'string', required: false,
+        type: 'string',
+        required: false,
+        description: "Valid API token for the user receiving ownership. If you use this option, it takes ownership of data owned by the user making the request.",
       },
       redirect_to_new_user: {
-        type: 'boolean', required: false, default: false,
+        type: 'boolean',
+        required: false,
+        default: false,
+        description: "If true, authorization attempts for the old user will be redirected to the new user.",
       },
       old_user_uuid: {
-        type: 'string', required: false,
+        type: 'string',
+        required: false,
+        description: "UUID of the user whose ownership is being transferred to `new_owner_uuid`. You must be an admin to use this option.",
       },
       new_user_uuid: {
-        type: 'string', required: false,
+        type: 'string',
+        required: false,
+        description: "UUID of the user receiving ownership. You must be an admin to use this option.",
       }
     }
   end
@@ -200,19 +235,30 @@ class Arvados::V1::UsersController < ApplicationController
   def self._setup_requires_parameters
     {
       uuid: {
-        type: 'string', required: false,
+        type: 'string',
+        required: false,
+        description: "UUID of an existing user record to set up."
       },
       user: {
-        type: 'object', required: false,
+        type: 'object',
+        required: false,
+        description: "Attributes of a new user record to set up.",
       },
       repo_name: {
-        type: 'string', required: false,
+        type: 'string',
+        required: false,
+        description: "This parameter is obsolete and ignored.",
       },
       vm_uuid: {
-        type: 'string', required: false,
+        type: 'string',
+        required: false,
+        description: "If given, setup creates a login link to allow this user to access the Arvados virtual machine with this UUID.",
       },
       send_notification_email: {
-        type: 'boolean', required: false, default: false,
+        type: 'boolean',
+        required: false,
+        default: false,
+        description: "If true, send an email to the user notifying them they can now access this Arvados cluster.",
       },
     }
   end
@@ -220,7 +266,12 @@ class Arvados::V1::UsersController < ApplicationController
   def self._update_requires_parameters
     super.merge({
       bypass_federation: {
-        type: 'boolean', required: false, default: false,
+        type: 'boolean',
+        required: false,
+        default: false,
+        description: "If true, do not try to update the user on any other clusters in the federation,
+only the cluster that received the request.
+You must be an administrator to use this flag.",
       },
     })
   end

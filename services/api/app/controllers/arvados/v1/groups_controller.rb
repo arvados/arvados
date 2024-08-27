@@ -15,7 +15,10 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, default: false, description: "Include items whose is_trashed attribute is true.",
+          type: 'boolean',
+          required: false,
+          default: false,
+          description: "Include items whose `is_trashed` attribute is true.",
         },
       })
   end
@@ -24,28 +27,46 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, default: false, description: "Show group/project even if its is_trashed attribute is true.",
+          type: 'boolean',
+          required: false,
+          default: false,
+          description: "Return group/project even if its `is_trashed` attribute is true.",
         },
       })
   end
 
   def self._contents_requires_parameters
-    params = _index_requires_parameters.
-      merge({
-              uuid: {
-                type: 'string', required: false, default: '',
-              },
-              recursive: {
-                type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
-              },
-              include: {
-                type: 'array', required: false, description: 'Include objects referred to by listed fields in "included" response field. Subsets of ["owner_uuid", "container_uuid"] are supported.',
-              },
-              include_old_versions: {
-                type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
-              }
-            })
-    params
+    _index_requires_parameters.merge(
+      {
+        uuid: {
+          type: 'string',
+          required: false,
+          default: '',
+          description: "The UUID of the user or group to list owned objects.",
+        },
+        recursive: {
+          type: 'boolean',
+          required: false,
+          default: false, description: 'Include contents from child groups recursively.',
+        },
+        include: {
+          type: 'array',
+          required: false,
+          description: "An array of referenced objects to include in the `included` field of the response. Supported values in the array are:
+
+  * `\"container_uuid\"`
+  * `\"owner_uuid\"`
+
+",
+        },
+        include_old_versions: {
+          type: 'boolean',
+          required: false,
+          default: false,
+          description: 'If true, include past versions of collections in the listing.',
+        }
+      }
+    )
   end
 
   def self._create_requires_parameters
@@ -56,7 +77,7 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'boolean',
           location: 'query',
           default: false,
-          description: 'defer permissions update',
+          description: 'If true, cluster permission will not be updated immediately, but instead at the next configured update interval.',
         }
       }
     )
@@ -70,7 +91,7 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'boolean',
           location: 'query',
           default: false,
-          description: 'defer permissions update',
+          description: 'If true, cluster permission will not be updated immediately, but instead at the next configured update interval.',
         }
       }
     )
@@ -119,6 +140,10 @@ class Arvados::V1::GroupsController < ApplicationController
     end
   end
 
+  def self._contents_method_description
+    "List objects that belong to a group."
+  end
+
   def contents
     @orig_select = @select
     load_searchable_objects
@@ -137,6 +162,10 @@ class Arvados::V1::GroupsController < ApplicationController
       list[:included] = @extra_included.as_api_response(nil, {select: @orig_select})
     end
     send_json(list)
+  end
+
+  def self._shared_method_description
+    "List groups that the current user can access via permission links."
   end
 
   def shared
@@ -180,9 +209,19 @@ class Arvados::V1::GroupsController < ApplicationController
   end
 
   def self._shared_requires_parameters
-    rp = self._index_requires_parameters
-    rp[:include] = { type: 'string', required: false }
-    rp
+    self._index_requires_parameters.merge(
+      {
+        include: {
+          type: 'string',
+          required: false,
+          description: "A string naming referenced objects to include in the `included` field of the response. Supported values are:
+
+  * `\"owner_uuid\"`
+
+",
+        },
+      }
+    )
   end
 
   protected

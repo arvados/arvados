@@ -362,7 +362,7 @@ def document_resource(name: str, spec: Mapping[str, Any]) -> str:
     ]
     return f'''class {class_name}:
 {to_docstring(docstring, 4)}
-{''.join(method.doc(slice(1)) for method in sorted(methods, key=NAME_KEY))}
+{''.join(method.doc() for method in sorted(methods, key=NAME_KEY))}
 '''
 
 def parse_arguments(arglist: Optional[Sequence[str]]) -> argparse.Namespace:

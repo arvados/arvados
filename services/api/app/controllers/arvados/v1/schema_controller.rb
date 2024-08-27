@@ -29,6 +29,13 @@ class Arvados::V1::SchemaController < ApplicationController
     'show' => 'get',
   }
 
+  HttpMethodDescriptionMap = {
+    "DELETE" => "delete",
+    "GET" => "query",
+    "POST" => "update",
+    "PUT" => "create",
+  }
+
   def discovery_doc
     Rails.application.eager_load!
     remoteHosts = {}
@@ -147,7 +154,7 @@ class Arvados::V1::SchemaController < ApplicationController
       end
       discovery[:schemas][k.to_s + 'List'] = {
         id: k.to_s + 'List',
-        description: k.to_s + ' list',
+        description: "A list of #{k} objects.",
         type: "object",
         properties: {
           kind: {
@@ -157,11 +164,11 @@ class Arvados::V1::SchemaController < ApplicationController
           },
           etag: {
             type: "string",
-            description: "List version."
+            description: "List cache version."
           },
           items: {
             type: "array",
-            description: "The list of #{k.to_s.pluralize}.",
+            description: "An array of matching #{k} objects.",
             items: {
               "$ref" => k.to_s
             }
@@ -182,31 +189,34 @@ class Arvados::V1::SchemaController < ApplicationController
       }
       discovery[:schemas][k.to_s] = {
         id: k.to_s,
-        description: k.to_s,
+        description: "Arvados #{k.to_s.underscore.humanize}.",
         type: "object",
-        uuidPrefix: (k.respond_to?(:uuid_prefix) ? k.uuid_prefix : nil),
+        uuidPrefix: nil,
         properties: {
-          uuid: {
-            type: "string",
-            description: "Object ID."
-          },
           etag: {
             type: "string",
-            description: "Object version."
+            description: "Object cache version."
           }
         }.merge(object_properties)
       }
+      if k.respond_to? :uuid_prefix
+        discovery[:schemas][k.to_s][:uuidPrefix] ||= k.uuid_prefix
+        discovery[:schemas][k.to_s][:properties][:uuid] ||= {
+          type: "string",
+          description: "This #{k.to_s.underscore.humanize.downcase}'s Arvados UUID, like `zzzzz-#{k.uuid_prefix}-12345abcde67890`."
+        }
+      end
       discovery[:resources][k.to_s.underscore.pluralize] = {
         methods: {
           get: {
             id: "arvados.#{k.to_s.underscore.pluralize}.get",
             path: "#{k.to_s.underscore.pluralize}/{uuid}",
             httpMethod: "GET",
-            description: "Gets a #{k.to_s}'s metadata by UUID.",
+            description: "Get a #{k.to_s} record by UUID.",
             parameters: {
               uuid: {
                 type: "string",
-                description: "The UUID of the #{k.to_s} in question.",
+                description: "The UUID of the #{k.to_s} to return.",
                 required: true,
                 location: "path"
               }
@@ -226,28 +236,7 @@ class Arvados::V1::SchemaController < ApplicationController
             id: "arvados.#{k.to_s.underscore.pluralize}.list",
             path: k.to_s.underscore.pluralize,
             httpMethod: "GET",
-            description:
-              %|List #{k.to_s.pluralize}.
-
-                   The <code>list</code> method returns a
-                   <a href="/api/resources.html">resource list</a> of
-                   matching #{k.to_s.pluralize}. For example:
-
-                   <pre>
-                   {
-                    "kind":"arvados##{k.to_s.camelcase(:lower)}List",
-                    "etag":"",
-                    "self_link":"",
-                    "next_page_token":"",
-                    "next_link":"",
-                    "items":[
-                       ...
-                    ],
-                    "items_available":745,
-                    "_profile":{
-                     "request_time":0.157236317
-                    }
-                    </pre>|,
+            description: "Retrieve a #{k.to_s}List.",
             parameters: {
             },
             response: {
@@ -287,7 +276,7 @@ class Arvados::V1::SchemaController < ApplicationController
             parameters: {
               uuid: {
                 type: "string",
-                description: "The UUID of the #{k.to_s} in question.",
+                description: "The UUID of the #{k.to_s} to update.",
                 required: true,
                 location: "path"
               }
@@ -315,7 +304,7 @@ class Arvados::V1::SchemaController < ApplicationController
             parameters: {
               uuid: {
                 type: "string",
-                description: "The UUID of the #{k.to_s} in question.",
+                description: "The UUID of the #{k.to_s} to delete.",
                 required: true,
                 location: "path"
               }
@@ -347,7 +336,7 @@ class Arvados::V1::SchemaController < ApplicationController
               id: "arvados.#{k.to_s.underscore.pluralize}.#{method_name}",
               path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
               httpMethod: httpMethod,
-              description: "#{method_name} #{k.to_s.underscore.pluralize}",
+              description: ctl_class.send("_#{method_name}_method_description".to_sym),
               parameters: {},
               response: {
                 "$ref" => (method_name == 'list' ? "#{k.to_s}List" : k.to_s)
@@ -357,15 +346,21 @@ class Arvados::V1::SchemaController < ApplicationController
               ]
             }
             route.segment_keys.each do |key|
-              if key != :format
-                key = :uuid if key == :id
-                method[:parameters][key] = {
-                  type: "string",
-                  description: "",
-                  required: true,
-                  location: "path"
-                }
+              case key
+              when :format
+                next
+              when :id, :uuid
+                key = :uuid
+                description = "The UUID of the #{k} to #{HttpMethodDescriptionMap[httpMethod]}."
+              else
+                description = ""
               end
+              method[:parameters][key] = {
+                type: "string",
+                description: description,
+                required: true,
+                location: "path",
+              }
             end
           else
             # We already built a generic method description, but we
@@ -430,7 +425,7 @@ class Arvados::V1::SchemaController < ApplicationController
           id: "arvados.configs.get",
           path: "config",
           httpMethod: "GET",
-          description: "Get public config",
+          description: "Get this cluster's public configuration settings.",
           parameters: {
           },
           parameterOrder: [
@@ -451,7 +446,13 @@ class Arvados::V1::SchemaController < ApplicationController
           id: "arvados.vocabularies.get",
           path: "vocabulary",
           httpMethod: "GET",
-          description: "Get vocabulary definition",
+          description: "Get this cluster's configured vocabulary definition.
+
+Refer to [metadata vocabulary documentation][] for details.
+
+[metadata vocabulary documentation]: https://doc.aravdos.org/admin/metadata-vocabulary.html
+
+",
           parameters: {
           },
           parameterOrder: [
@@ -472,7 +473,8 @@ class Arvados::V1::SchemaController < ApplicationController
           id: "arvados.sys.trash_sweep",
           path: "sys/trash_sweep",
           httpMethod: "POST",
-          description: "apply scheduled trash and delete operations",
+          description:
+            "Run scheduled data trash and sweep operations across this cluster's Keep services.",
           parameters: {
           },
           parameterOrder: [

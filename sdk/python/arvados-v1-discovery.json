@@ -60,13 +60,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the ApiClientAuthorization in question.",
+              "description": "The UUID of the ApiClientAuthorization to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -86,29 +86,29 @@
           "id": "arvados.api_client_authorizations.list",
           "path": "api_client_authorizations",
           "httpMethod": "GET",
-          "description": "List ApiClientAuthorizations.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ApiClientAuthorizations. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#apiClientAuthorizationList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a ApiClientAuthorizationList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -116,40 +116,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -169,20 +170,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -210,13 +211,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the ApiClientAuthorization in question.",
+              "description": "The UUID of the ApiClientAuthorization to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -244,7 +245,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the ApiClientAuthorization in question.",
+              "description": "The UUID of the ApiClientAuthorization to delete.",
               "required": true,
               "location": "path"
             }
@@ -260,12 +261,13 @@
           "id": "arvados.api_client_authorizations.create_system_auth",
           "path": "api_client_authorizations/create_system_auth",
           "httpMethod": "POST",
-          "description": "create_system_auth api_client_authorizations",
+          "description": "Create a token for the system (\"root\") user.",
           "parameters": {
             "scopes": {
               "type": "array",
               "required": false,
-              "description": "",
+              "default": "[\"all\"]",
+              "description": "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n",
               "location": "query"
             }
           },
@@ -280,7 +282,7 @@
           "id": "arvados.api_client_authorizations.current",
           "path": "api_client_authorizations/current",
           "httpMethod": "GET",
-          "description": "current api_client_authorizations",
+          "description": "Return all metadata for the token used to authorize this request.",
           "parameters": {},
           "response": {
             "$ref": "ApiClientAuthorization"
@@ -301,13 +303,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the AuthorizedKey in question.",
+              "description": "The UUID of the AuthorizedKey to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -327,29 +329,29 @@
           "id": "arvados.authorized_keys.list",
           "path": "authorized_keys",
           "httpMethod": "GET",
-          "description": "List AuthorizedKeys.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching AuthorizedKeys. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#authorizedKeyList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a AuthorizedKeyList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -357,40 +359,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -410,20 +413,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -451,13 +454,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the AuthorizedKey in question.",
+              "description": "The UUID of the AuthorizedKey to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -485,7 +488,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the AuthorizedKey in question.",
+              "description": "The UUID of the AuthorizedKey to delete.",
               "required": true,
               "location": "path"
             }
@@ -509,13 +512,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Collection in question.",
+              "description": "The UUID of the Collection to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
@@ -523,7 +526,7 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Show collection even if its is_trashed attribute is true.",
+              "description": "Show collection even if its `is_trashed` attribute is true.",
               "location": "query"
             },
             "include_old_versions": {
@@ -549,29 +552,29 @@
           "id": "arvados.collections.list",
           "path": "collections",
           "httpMethod": "GET",
-          "description": "List Collections.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Collections. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#collectionList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a CollectionList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -579,47 +582,48 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             },
             "include_trash": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Include collections whose is_trashed attribute is true.",
+              "description": "Include collections whose `is_trashed` attribute is true.",
               "location": "query"
             },
             "include_old_versions": {
@@ -646,20 +650,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             },
@@ -697,13 +701,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Collection in question.",
+              "description": "The UUID of the Collection to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
@@ -741,7 +745,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Collection in question.",
+              "description": "The UUID of the Collection to delete.",
               "required": true,
               "location": "path"
             }
@@ -757,11 +761,11 @@
           "id": "arvados.collections.provenance",
           "path": "collections/{uuid}/provenance",
           "httpMethod": "GET",
-          "description": "provenance collections",
+          "description": "Detail the provenance of a given collection.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Collection to query.",
               "required": true,
               "location": "path"
             }
@@ -777,11 +781,11 @@
           "id": "arvados.collections.used_by",
           "path": "collections/{uuid}/used_by",
           "httpMethod": "GET",
-          "description": "used_by collections",
+          "description": "Detail where a given collection has been used.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Collection to query.",
               "required": true,
               "location": "path"
             }
@@ -797,11 +801,11 @@
           "id": "arvados.collections.trash",
           "path": "collections/{uuid}/trash",
           "httpMethod": "POST",
-          "description": "trash collections",
+          "description": "Trash a collection.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Collection to update.",
               "required": true,
               "location": "path"
             }
@@ -817,11 +821,11 @@
           "id": "arvados.collections.untrash",
           "path": "collections/{uuid}/untrash",
           "httpMethod": "POST",
-          "description": "untrash collections",
+          "description": "Untrash a collection.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Collection to update.",
               "required": true,
               "location": "path"
             }
@@ -841,29 +845,29 @@
           "id": "arvados.computed_permissions.list",
           "path": "computed_permissions",
           "httpMethod": "GET",
-          "description": "List ComputedPermissions.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ComputedPermissions. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#computedPermissionList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a ComputedPermissionList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -871,21 +875,21 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             }
           },
@@ -909,13 +913,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Container in question.",
+              "description": "The UUID of the Container to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -935,29 +939,29 @@
           "id": "arvados.containers.list",
           "path": "containers",
           "httpMethod": "GET",
-          "description": "List Containers.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Containers. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#containerList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a ContainerList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -965,40 +969,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -1018,20 +1023,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -1059,13 +1064,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Container in question.",
+              "description": "The UUID of the Container to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -1093,7 +1098,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Container in question.",
+              "description": "The UUID of the Container to delete.",
               "required": true,
               "location": "path"
             }
@@ -1109,11 +1114,11 @@
           "id": "arvados.containers.auth",
           "path": "containers/{uuid}/auth",
           "httpMethod": "GET",
-          "description": "auth containers",
+          "description": "Get the API client authorization token associated with this container.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Container to query.",
               "required": true,
               "location": "path"
             }
@@ -1129,11 +1134,11 @@
           "id": "arvados.containers.lock",
           "path": "containers/{uuid}/lock",
           "httpMethod": "POST",
-          "description": "lock containers",
+          "description": "Lock a container (for a dispatcher to begin running it).",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Container to update.",
               "required": true,
               "location": "path"
             }
@@ -1149,11 +1154,11 @@
           "id": "arvados.containers.unlock",
           "path": "containers/{uuid}/unlock",
           "httpMethod": "POST",
-          "description": "unlock containers",
+          "description": "Unlock a container (for a dispatcher to stop running it).",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Container to update.",
               "required": true,
               "location": "path"
             }
@@ -1169,11 +1174,11 @@
           "id": "arvados.containers.update_priority",
           "path": "containers/{uuid}/update_priority",
           "httpMethod": "POST",
-          "description": "update_priority containers",
+          "description": "Recalculate and return the priority of a given container.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Container to update.",
               "required": true,
               "location": "path"
             }
@@ -1189,11 +1194,11 @@
           "id": "arvados.containers.secret_mounts",
           "path": "containers/{uuid}/secret_mounts",
           "httpMethod": "GET",
-          "description": "secret_mounts containers",
+          "description": "Return secret mount information for the container associated with the API token authorizing this request.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Container to query.",
               "required": true,
               "location": "path"
             }
@@ -1209,7 +1214,7 @@
           "id": "arvados.containers.current",
           "path": "containers/current",
           "httpMethod": "GET",
-          "description": "current containers",
+          "description": "Return the container record associated with the API token authorizing this request.",
           "parameters": {},
           "response": {
             "$ref": "Container"
@@ -1230,13 +1235,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the ContainerRequest in question.",
+              "description": "The UUID of the ContainerRequest to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
@@ -1263,29 +1268,29 @@
           "id": "arvados.container_requests.list",
           "path": "container_requests",
           "httpMethod": "GET",
-          "description": "List ContainerRequests.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching ContainerRequests. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#containerRequestList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a ContainerRequestList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -1293,40 +1298,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             },
             "include_trash": {
@@ -1353,20 +1359,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -1394,13 +1400,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the ContainerRequest in question.",
+              "description": "The UUID of the ContainerRequest to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -1428,7 +1434,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the ContainerRequest in question.",
+              "description": "The UUID of the ContainerRequest to delete.",
               "required": true,
               "location": "path"
             }
@@ -1444,12 +1450,12 @@
           "id": "arvados.container_requests.container_status",
           "path": "container_requests/{uuid}/container_status",
           "httpMethod": "GET",
-          "description": "container_status container_requests",
+          "description": "Return scheduling details for a container request.",
           "parameters": {
             "uuid": {
               "type": "string",
               "required": true,
-              "description": "The UUID of the ContainerRequest in question.",
+              "description": "The UUID of the container request to query.",
               "location": "query"
             }
           },
@@ -1472,13 +1478,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Group in question.",
+              "description": "The UUID of the Group to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
@@ -1486,7 +1492,7 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Show group/project even if its is_trashed attribute is true.",
+              "description": "Return group/project even if its `is_trashed` attribute is true.",
               "location": "query"
             }
           },
@@ -1505,29 +1511,29 @@
           "id": "arvados.groups.list",
           "path": "groups",
           "httpMethod": "GET",
-          "description": "List Groups.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Groups. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#groupList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a GroupList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -1535,47 +1541,48 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             },
             "include_trash": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Include items whose is_trashed attribute is true.",
+              "description": "Include items whose `is_trashed` attribute is true.",
               "location": "query"
             }
           },
@@ -1595,20 +1602,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             },
@@ -1617,7 +1624,7 @@
               "type": "boolean",
               "location": "query",
               "default": "false",
-              "description": "defer permissions update"
+              "description": "If true, cluster permission will not be updated immediately, but instead at the next configured update interval."
             }
           },
           "request": {
@@ -1643,13 +1650,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Group in question.",
+              "description": "The UUID of the Group to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
@@ -1658,7 +1665,7 @@
               "type": "boolean",
               "location": "query",
               "default": "false",
-              "description": "defer permissions update"
+              "description": "If true, cluster permission will not be updated immediately, but instead at the next configured update interval."
             }
           },
           "request": {
@@ -1684,7 +1691,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Group in question.",
+              "description": "The UUID of the Group to delete.",
               "required": true,
               "location": "path"
             }
@@ -1700,29 +1707,29 @@
           "id": "arvados.groups.contents",
           "path": "groups/contents",
           "httpMethod": "GET",
-          "description": "contents groups",
+          "description": "List objects that belong to a group.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -1730,54 +1737,55 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             },
             "include_trash": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Include items whose is_trashed attribute is true.",
+              "description": "Include items whose `is_trashed` attribute is true.",
               "location": "query"
             },
             "uuid": {
               "type": "string",
               "required": false,
               "default": "",
-              "description": "",
+              "description": "The UUID of the user or group to list owned objects.",
               "location": "query"
             },
             "recursive": {
@@ -1790,14 +1798,14 @@
             "include": {
               "type": "array",
               "required": false,
-              "description": "Include objects referred to by listed fields in \"included\" response field. Subsets of [\"owner_uuid\", \"container_uuid\"] are supported.",
+              "description": "An array of referenced objects to include in the `included` field of the response. Supported values in the array are:\n\n  * `\"container_uuid\"`\n  * `\"owner_uuid\"`\n\n",
               "location": "query"
             },
             "include_old_versions": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Include past collection versions.",
+              "description": "If true, include past versions of collections in the listing.",
               "location": "query"
             }
           },
@@ -1812,29 +1820,29 @@
           "id": "arvados.groups.shared",
           "path": "groups/shared",
           "httpMethod": "GET",
-          "description": "shared groups",
+          "description": "List groups that the current user can access via permission links.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -1842,53 +1850,54 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             },
             "include_trash": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Include items whose is_trashed attribute is true.",
+              "description": "Include items whose `is_trashed` attribute is true.",
               "location": "query"
             },
             "include": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "A string naming referenced objects to include in the `included` field of the response. Supported values are:\n\n  * `\"owner_uuid\"`\n\n",
               "location": "query"
             }
           },
@@ -1903,11 +1912,11 @@
           "id": "arvados.groups.trash",
           "path": "groups/{uuid}/trash",
           "httpMethod": "POST",
-          "description": "trash groups",
+          "description": "Trash a group.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Group to update.",
               "required": true,
               "location": "path"
             }
@@ -1923,11 +1932,11 @@
           "id": "arvados.groups.untrash",
           "path": "groups/{uuid}/untrash",
           "httpMethod": "POST",
-          "description": "untrash groups",
+          "description": "Untrash a group.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Group to update.",
               "required": true,
               "location": "path"
             }
@@ -1951,13 +1960,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the KeepService in question.",
+              "description": "The UUID of the KeepService to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -1977,29 +1986,29 @@
           "id": "arvados.keep_services.list",
           "path": "keep_services",
           "httpMethod": "GET",
-          "description": "List KeepServices.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching KeepServices. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#keepServiceList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a KeepServiceList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -2007,40 +2016,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -2060,20 +2070,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -2101,13 +2111,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the KeepService in question.",
+              "description": "The UUID of the KeepService to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -2135,7 +2145,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the KeepService in question.",
+              "description": "The UUID of the KeepService to delete.",
               "required": true,
               "location": "path"
             }
@@ -2151,7 +2161,7 @@
           "id": "arvados.keep_services.accessible",
           "path": "keep_services/accessible",
           "httpMethod": "GET",
-          "description": "accessible keep_services",
+          "description": "List Keep services that the current client can access.",
           "parameters": {},
           "response": {
             "$ref": "KeepService"
@@ -2172,13 +2182,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Link in question.",
+              "description": "The UUID of the Link to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -2198,29 +2208,29 @@
           "id": "arvados.links.list",
           "path": "links",
           "httpMethod": "GET",
-          "description": "List Links.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Links. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#linkList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a LinkList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -2228,40 +2238,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -2281,20 +2292,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -2322,13 +2333,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Link in question.",
+              "description": "The UUID of the Link to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -2356,7 +2367,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Link in question.",
+              "description": "The UUID of the Link to delete.",
               "required": true,
               "location": "path"
             }
@@ -2372,11 +2383,11 @@
           "id": "arvados.links.get_permissions",
           "path": "permissions/{uuid}",
           "httpMethod": "GET",
-          "description": "get_permissions links",
+          "description": "List permissions granted on an Arvados object.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the Link to query.",
               "required": true,
               "location": "path"
             }
@@ -2400,13 +2411,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Log in question.",
+              "description": "The UUID of the Log to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -2426,29 +2437,29 @@
           "id": "arvados.logs.list",
           "path": "logs",
           "httpMethod": "GET",
-          "description": "List Logs.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Logs. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#logList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a LogList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -2456,40 +2467,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -2509,20 +2521,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -2550,13 +2562,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Log in question.",
+              "description": "The UUID of the Log to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -2584,7 +2596,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Log in question.",
+              "description": "The UUID of the Log to delete.",
               "required": true,
               "location": "path"
             }
@@ -2608,13 +2620,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the User in question.",
+              "description": "The UUID of the User to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -2634,29 +2646,29 @@
           "id": "arvados.users.list",
           "path": "users",
           "httpMethod": "GET",
-          "description": "List Users.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Users. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a UserList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -2664,40 +2676,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -2717,20 +2730,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -2758,13 +2771,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the User in question.",
+              "description": "The UUID of the User to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
@@ -2772,7 +2785,7 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If true, do not try to update the user on any other clusters in the federation,\nonly the cluster that received the request.\nYou must be an administrator to use this flag.",
               "location": "query"
             }
           },
@@ -2799,7 +2812,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the User in question.",
+              "description": "The UUID of the User to delete.",
               "required": true,
               "location": "path"
             }
@@ -2815,7 +2828,7 @@
           "id": "arvados.users.current",
           "path": "users/current",
           "httpMethod": "GET",
-          "description": "current users",
+          "description": "Return the user record associated with the API token authorizing this request.",
           "parameters": {},
           "response": {
             "$ref": "User"
@@ -2828,7 +2841,7 @@
           "id": "arvados.users.system",
           "path": "users/system",
           "httpMethod": "GET",
-          "description": "system users",
+          "description": "Return this cluster's system (\"root\") user record.",
           "parameters": {},
           "response": {
             "$ref": "User"
@@ -2841,11 +2854,11 @@
           "id": "arvados.users.activate",
           "path": "users/{uuid}/activate",
           "httpMethod": "POST",
-          "description": "activate users",
+          "description": "Set the `is_active` flag on a user record.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the User to update.",
               "required": true,
               "location": "path"
             }
@@ -2861,37 +2874,37 @@
           "id": "arvados.users.setup",
           "path": "users/setup",
           "httpMethod": "POST",
-          "description": "setup users",
+          "description": "Convenience method to \"fully\" set up a user record with a virtual machine login and notification email.",
           "parameters": {
             "uuid": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "UUID of an existing user record to set up.",
               "location": "query"
             },
             "user": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "Attributes of a new user record to set up.",
               "location": "query"
             },
             "repo_name": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "This parameter is obsolete and ignored.",
               "location": "query"
             },
             "vm_uuid": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "If given, setup creates a login link to allow this user to access the Arvados virtual machine with this UUID.",
               "location": "query"
             },
             "send_notification_email": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If true, send an email to the user notifying them they can now access this Arvados cluster.",
               "location": "query"
             }
           },
@@ -2906,11 +2919,11 @@
           "id": "arvados.users.unsetup",
           "path": "users/{uuid}/unsetup",
           "httpMethod": "POST",
-          "description": "unsetup users",
+          "description": "Unset a user's active flag and delete associated records.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the User to update.",
               "required": true,
               "location": "path"
             }
@@ -2926,37 +2939,37 @@
           "id": "arvados.users.merge",
           "path": "users/merge",
           "httpMethod": "POST",
-          "description": "merge users",
+          "description": "Transfer ownership of one user's data to another.",
           "parameters": {
             "new_owner_uuid": {
               "type": "string",
               "required": true,
-              "description": "",
+              "description": "UUID of the user or group that will take ownership of data owned by the old user.",
               "location": "query"
             },
             "new_user_token": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "Valid API token for the user receiving ownership. If you use this option, it takes ownership of data owned by the user making the request.",
               "location": "query"
             },
             "redirect_to_new_user": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If true, authorization attempts for the old user will be redirected to the new user.",
               "location": "query"
             },
             "old_user_uuid": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "UUID of the user whose ownership is being transferred to `new_owner_uuid`. You must be an admin to use this option.",
               "location": "query"
             },
             "new_user_uuid": {
               "type": "string",
               "required": false,
-              "description": "",
+              "description": "UUID of the user receiving ownership. You must be an admin to use this option.",
               "location": "query"
             }
           },
@@ -2979,13 +2992,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the UserAgreement in question.",
+              "description": "The UUID of the UserAgreement to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -3005,29 +3018,29 @@
           "id": "arvados.user_agreements.list",
           "path": "user_agreements",
           "httpMethod": "GET",
-          "description": "List UserAgreements.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching UserAgreements. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#userAgreementList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a UserAgreementList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -3035,40 +3048,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -3088,20 +3102,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -3129,13 +3143,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the UserAgreement in question.",
+              "description": "The UUID of the UserAgreement to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -3163,7 +3177,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the UserAgreement in question.",
+              "description": "The UUID of the UserAgreement to delete.",
               "required": true,
               "location": "path"
             }
@@ -3179,7 +3193,7 @@
           "id": "arvados.user_agreements.signatures",
           "path": "user_agreements/signatures",
           "httpMethod": "GET",
-          "description": "signatures user_agreements",
+          "description": "List all user agreement signature links from a user.",
           "parameters": {},
           "response": {
             "$ref": "UserAgreement"
@@ -3192,20 +3206,7 @@
           "id": "arvados.user_agreements.sign",
           "path": "user_agreements/sign",
           "httpMethod": "POST",
-          "description": "sign user_agreements",
-          "parameters": {},
-          "response": {
-            "$ref": "UserAgreement"
-          },
-          "scopes": [
-            "https://api.arvados.org/auth/arvados"
-          ]
-        },
-        "new": {
-          "id": "arvados.user_agreements.new",
-          "path": "user_agreements/new",
-          "httpMethod": "GET",
-          "description": "new user_agreements",
+          "description": "Create a signature link from the current user for a given user agreement.",
           "parameters": {},
           "response": {
             "$ref": "UserAgreement"
@@ -3226,13 +3227,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the VirtualMachine in question.",
+              "description": "The UUID of the VirtualMachine to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -3252,29 +3253,29 @@
           "id": "arvados.virtual_machines.list",
           "path": "virtual_machines",
           "httpMethod": "GET",
-          "description": "List VirtualMachines.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching VirtualMachines. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#virtualMachineList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a VirtualMachineList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -3282,40 +3283,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -3335,20 +3337,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -3376,13 +3378,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the VirtualMachine in question.",
+              "description": "The UUID of the VirtualMachine to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -3410,7 +3412,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the VirtualMachine in question.",
+              "description": "The UUID of the VirtualMachine to delete.",
               "required": true,
               "location": "path"
             }
@@ -3426,11 +3428,11 @@
           "id": "arvados.virtual_machines.logins",
           "path": "virtual_machines/{uuid}/logins",
           "httpMethod": "GET",
-          "description": "logins virtual_machines",
+          "description": "List login permission links for a given virtual machine.",
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "",
+              "description": "The UUID of the VirtualMachine to query.",
               "required": true,
               "location": "path"
             }
@@ -3446,7 +3448,7 @@
           "id": "arvados.virtual_machines.get_all_logins",
           "path": "virtual_machines/get_all_logins",
           "httpMethod": "GET",
-          "description": "get_all_logins virtual_machines",
+          "description": "List login permission links for all virtual machines.",
           "parameters": {},
           "response": {
             "$ref": "VirtualMachine"
@@ -3467,13 +3469,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Workflow in question.",
+              "description": "The UUID of the Workflow to return.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -3493,29 +3495,29 @@
           "id": "arvados.workflows.list",
           "path": "workflows",
           "httpMethod": "GET",
-          "description": "List Workflows.\n\n                   The <code>list</code> method returns a\n                   <a href=\"/api/resources.html\">resource list</a> of\n                   matching Workflows. For example:\n\n                   <pre>\n                   {\n                    \"kind\":\"arvados#workflowList\",\n                    \"etag\":\"\",\n                    \"self_link\":\"\",\n                    \"next_page_token\":\"\",\n                    \"next_link\":\"\",\n                    \"items\":[\n                       ...\n                    ],\n                    \"items_available\":745,\n                    \"_profile\":{\n                     \"request_time\":0.157236317\n                    }\n                    </pre>",
+          "description": "Retrieve a WorkflowList.",
           "parameters": {
             "filters": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "Filters to limit which objects are returned by their attributes.\nRefer to the [filters reference][] for more information about how to write filters.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n",
               "location": "query"
             },
             "where": {
               "type": "object",
               "required": false,
-              "description": "",
+              "description": "An object to limit which objects are returned by their attributes.\nThe keys of this object are attribute names.\nEach value is either a single matching value or an array of matching values for that attribute.\nThe `filters` parameter is more flexible and preferred.\n",
               "location": "query"
             },
             "order": {
               "type": "array",
               "required": false,
-              "description": "",
+              "description": "An array of strings to set the order in which matching objects are returned.\nEach string has the format `<ATTRIBUTE> <DIRECTION>`.\n`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.\n",
               "location": "query"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of each object to return in the response.",
+              "description": "An array of names of attributes to return from each matching object.",
               "required": false,
               "location": "query"
             },
@@ -3523,40 +3525,41 @@
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "",
+              "description": "If this is true, and multiple objects have the same values\nfor the attributes that you specify in the `select` parameter, then each unique\nset of values will only be returned once in the result set.\n",
               "location": "query"
             },
             "limit": {
               "type": "integer",
               "required": false,
               "default": "100",
-              "description": "",
+              "description": "The maximum number of objects to return in the result.\nNote that the API may return fewer results than this if your request hits other\nlimits set by the administrator.\n",
               "location": "query"
             },
             "offset": {
               "type": "integer",
               "required": false,
               "default": "0",
-              "description": "",
+              "description": "Return matching objects starting from this index.\nNote that result indexes may change if objects are modified in between a series\nof list calls.\n",
               "location": "query"
             },
             "count": {
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
               "type": "string",
-              "description": "List objects on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster to return objects from",
               "location": "query",
               "required": false
             },
             "bypass_federation": {
               "type": "boolean",
               "required": false,
-              "description": "bypass federation behavior, list items from local instance database only",
+              "default": "false",
+              "description": "If true, do not return results from other clusters in the\nfederation, only the cluster that received the request.\nYou must be an administrator to use this flag.\n",
               "location": "query"
             }
           },
@@ -3576,20 +3579,20 @@
           "parameters": {
             "select": {
               "type": "array",
-              "description": "Attributes of the new object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             },
             "ensure_unique_name": {
               "type": "boolean",
-              "description": "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+              "description": "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
               "location": "query",
               "required": false,
               "default": "false"
             },
             "cluster_id": {
               "type": "string",
-              "description": "Create object on a remote federated cluster instead of the current one.",
+              "description": "Cluster ID of a federated cluster where this object should be created.",
               "location": "query",
               "required": false
             }
@@ -3617,13 +3620,13 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Workflow in question.",
+              "description": "The UUID of the Workflow to update.",
               "required": true,
               "location": "path"
             },
             "select": {
               "type": "array",
-              "description": "Attributes of the updated object to return in the response.",
+              "description": "An array of names of attributes to return in the response.",
               "required": false,
               "location": "query"
             }
@@ -3651,7 +3654,7 @@
           "parameters": {
             "uuid": {
               "type": "string",
-              "description": "The UUID of the Workflow in question.",
+              "description": "The UUID of the Workflow to delete.",
               "required": true,
               "location": "path"
             }
@@ -3721,7 +3724,7 @@
   "schemas": {
     "ApiClientAuthorizationList": {
       "id": "ApiClientAuthorizationList",
-      "description": "ApiClientAuthorization list",
+      "description": "A list of ApiClientAuthorization objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -3731,11 +3734,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of ApiClientAuthorizations.",
+          "description": "An array of matching ApiClientAuthorization objects.",
           "items": {
             "$ref": "ApiClientAuthorization"
           }
@@ -3756,16 +3759,13 @@
     },
     "ApiClientAuthorization": {
       "id": "ApiClientAuthorization",
-      "description": "ApiClientAuthorization",
+      "description": "Arvados Api client authorization.",
       "type": "object",
       "uuidPrefix": "gj3su",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
         },
         "api_token": {
           "type": "string"
@@ -3787,12 +3787,16 @@
         },
         "scopes": {
           "type": "Array"
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-gj3su-12345abcde67890`."
         }
       }
     },
     "AuthorizedKeyList": {
       "id": "AuthorizedKeyList",
-      "description": "AuthorizedKey list",
+      "description": "A list of AuthorizedKey objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -3802,11 +3806,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of AuthorizedKeys.",
+          "description": "An array of matching AuthorizedKey objects.",
           "items": {
             "$ref": "AuthorizedKey"
           }
@@ -3827,16 +3831,17 @@
     },
     "AuthorizedKey": {
       "id": "AuthorizedKey",
-      "description": "AuthorizedKey",
+      "description": "Arvados Authorized key.",
       "type": "object",
       "uuidPrefix": "fngyi",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-fngyi-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -3869,7 +3874,7 @@
     },
     "CollectionList": {
       "id": "CollectionList",
-      "description": "Collection list",
+      "description": "A list of Collection objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -3879,11 +3884,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Collections.",
+          "description": "An array of matching Collection objects.",
           "items": {
             "$ref": "Collection"
           }
@@ -3904,16 +3909,13 @@
     },
     "Collection": {
       "id": "Collection",
-      "description": "Collection",
+      "description": "Arvados Collection.",
       "type": "object",
       "uuidPrefix": "4zz18",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
         },
         "owner_uuid": {
           "type": "string"
@@ -3938,6 +3940,10 @@
         },
         "replication_confirmed": {
           "type": "integer"
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-4zz18-12345abcde67890`."
         },
         "manifest_text": {
           "type": "text"
@@ -3988,7 +3994,7 @@
     },
     "ComputedPermissionList": {
       "id": "ComputedPermissionList",
-      "description": "ComputedPermission list",
+      "description": "A list of ComputedPermission objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -3998,11 +4004,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of ComputedPermissions.",
+          "description": "An array of matching ComputedPermission objects.",
           "items": {
             "$ref": "ComputedPermission"
           }
@@ -4023,7 +4029,7 @@
     },
     "ComputedPermission": {
       "id": "ComputedPermission",
-      "description": "ComputedPermission",
+      "description": "Arvados Computed permission.",
       "type": "object",
       "properties": {
         "user_uuid": {
@@ -4039,7 +4045,7 @@
     },
     "ContainerList": {
       "id": "ContainerList",
-      "description": "Container list",
+      "description": "A list of Container objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4049,11 +4055,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Containers.",
+          "description": "An array of matching Container objects.",
           "items": {
             "$ref": "Container"
           }
@@ -4074,16 +4080,17 @@
     },
     "Container": {
       "id": "Container",
-      "description": "Container",
+      "description": "Arvados Container.",
       "type": "object",
       "uuidPrefix": "dz642",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-dz642-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4188,7 +4195,7 @@
     },
     "ContainerRequestList": {
       "id": "ContainerRequestList",
-      "description": "ContainerRequest list",
+      "description": "A list of ContainerRequest objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4198,11 +4205,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of ContainerRequests.",
+          "description": "An array of matching ContainerRequest objects.",
           "items": {
             "$ref": "ContainerRequest"
           }
@@ -4223,16 +4230,17 @@
     },
     "ContainerRequest": {
       "id": "ContainerRequest",
-      "description": "ContainerRequest",
+      "description": "Arvados Container request.",
       "type": "object",
       "uuidPrefix": "xvhdp",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-xvhdp-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4334,7 +4342,7 @@
     },
     "GroupList": {
       "id": "GroupList",
-      "description": "Group list",
+      "description": "A list of Group objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4344,11 +4352,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Groups.",
+          "description": "An array of matching Group objects.",
           "items": {
             "$ref": "Group"
           }
@@ -4369,16 +4377,17 @@
     },
     "Group": {
       "id": "Group",
-      "description": "Group",
+      "description": "Arvados Group.",
       "type": "object",
       "uuidPrefix": "j7d0g",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-j7d0g-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4420,7 +4429,7 @@
     },
     "KeepServiceList": {
       "id": "KeepServiceList",
-      "description": "KeepService list",
+      "description": "A list of KeepService objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4430,11 +4439,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of KeepServices.",
+          "description": "An array of matching KeepService objects.",
           "items": {
             "$ref": "KeepService"
           }
@@ -4455,16 +4464,17 @@
     },
     "KeepService": {
       "id": "KeepService",
-      "description": "KeepService",
+      "description": "Arvados Keep service.",
       "type": "object",
       "uuidPrefix": "bi6l4",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-bi6l4-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4497,7 +4507,7 @@
     },
     "LinkList": {
       "id": "LinkList",
-      "description": "Link list",
+      "description": "A list of Link objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4507,11 +4517,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Links.",
+          "description": "An array of matching Link objects.",
           "items": {
             "$ref": "Link"
           }
@@ -4532,16 +4542,17 @@
     },
     "Link": {
       "id": "Link",
-      "description": "Link",
+      "description": "Arvados Link.",
       "type": "object",
       "uuidPrefix": "o0j2j",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-o0j2j-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4574,7 +4585,7 @@
     },
     "LogList": {
       "id": "LogList",
-      "description": "Log list",
+      "description": "A list of Log objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4584,11 +4595,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Logs.",
+          "description": "An array of matching Log objects.",
           "items": {
             "$ref": "Log"
           }
@@ -4609,19 +4620,20 @@
     },
     "Log": {
       "id": "Log",
-      "description": "Log",
+      "description": "Arvados Log.",
       "type": "object",
       "uuidPrefix": "57u5n",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
         },
         "id": {
           "type": "integer"
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-57u5n-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4657,7 +4669,7 @@
     },
     "UserList": {
       "id": "UserList",
-      "description": "User list",
+      "description": "A list of User objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4667,11 +4679,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Users.",
+          "description": "An array of matching User objects.",
           "items": {
             "$ref": "User"
           }
@@ -4692,16 +4704,17 @@
     },
     "User": {
       "id": "User",
-      "description": "User",
+      "description": "Arvados User.",
       "type": "object",
       "uuidPrefix": "tpzed",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-tpzed-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4743,7 +4756,7 @@
     },
     "UserAgreementList": {
       "id": "UserAgreementList",
-      "description": "UserAgreement list",
+      "description": "A list of UserAgreement objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4753,11 +4766,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of UserAgreements.",
+          "description": "An array of matching UserAgreement objects.",
           "items": {
             "$ref": "UserAgreement"
           }
@@ -4778,16 +4791,13 @@
     },
     "UserAgreement": {
       "id": "UserAgreement",
-      "description": "UserAgreement",
+      "description": "Arvados User agreement.",
       "type": "object",
       "uuidPrefix": "gv0sa",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
         },
         "owner_uuid": {
           "type": "string"
@@ -4812,6 +4822,10 @@
         },
         "replication_confirmed": {
           "type": "integer"
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-gv0sa-12345abcde67890`."
         },
         "manifest_text": {
           "type": "text"
@@ -4862,7 +4876,7 @@
     },
     "VirtualMachineList": {
       "id": "VirtualMachineList",
-      "description": "VirtualMachine list",
+      "description": "A list of VirtualMachine objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4872,11 +4886,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of VirtualMachines.",
+          "description": "An array of matching VirtualMachine objects.",
           "items": {
             "$ref": "VirtualMachine"
           }
@@ -4897,16 +4911,17 @@
     },
     "VirtualMachine": {
       "id": "VirtualMachine",
-      "description": "VirtualMachine",
+      "description": "Arvados Virtual machine.",
       "type": "object",
       "uuidPrefix": "2x53u",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-2x53u-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"
@@ -4927,7 +4942,7 @@
     },
     "WorkflowList": {
       "id": "WorkflowList",
-      "description": "Workflow list",
+      "description": "A list of Workflow objects.",
       "type": "object",
       "properties": {
         "kind": {
@@ -4937,11 +4952,11 @@
         },
         "etag": {
           "type": "string",
-          "description": "List version."
+          "description": "List cache version."
         },
         "items": {
           "type": "array",
-          "description": "The list of Workflows.",
+          "description": "An array of matching Workflow objects.",
           "items": {
             "$ref": "Workflow"
           }
@@ -4962,16 +4977,17 @@
     },
     "Workflow": {
       "id": "Workflow",
-      "description": "Workflow",
+      "description": "Arvados Workflow.",
       "type": "object",
       "uuidPrefix": "7fd4e",
       "properties": {
-        "uuid": {
-          "type": "string"
-        },
         "etag": {
           "type": "string",
-          "description": "Object version."
+          "description": "Object cache version."
+        },
+        "uuid": {
+          "type": "string",
+          "description": "This object's Arvados UUID, like `zzzzz-7fd4e-12345abcde67890`."
         },
         "owner_uuid": {
           "type": "string"

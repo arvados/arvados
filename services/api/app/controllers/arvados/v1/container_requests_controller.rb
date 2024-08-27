@@ -35,7 +35,7 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
     (super rescue {}).
       merge({
         uuid: {
-          type: 'string', required: true, description: "The UUID of the ContainerRequest in question.",
+          type: 'string', required: true, description: "The UUID of the container request to query.",
         },
       })
   end
@@ -43,6 +43,10 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
   # This API is handled entirely by controller, so this method is
   # never called -- it's only here for the sake of adding the API to
   # the generated discovery document.
+  def self._container_status_method_description
+    "Return scheduling details for a container request."
+  end
+  
   def container_status
     send_json({"errors" => "controller-only API, not handled by rails"}, status: 400)
   end
