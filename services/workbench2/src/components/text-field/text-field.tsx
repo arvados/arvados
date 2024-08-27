@@ -6,7 +6,7 @@ import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { TextField as MaterialTextField } from '@mui/material';
+import { TextField as MaterialTextField, FormControlOwnProps } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import RichTextEditor from 'react-rte';
@@ -33,7 +33,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const TextField = withStyles(styles)((props: TextFieldProps & {
-    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: any, placeholder?: string,
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: FormControlOwnProps["margin"], placeholder?: string,
     helperText?: string, type?: string,
 }) =>
     <MaterialTextField
