@@ -58,50 +58,57 @@ interface DialogProjectDataProps {
 
 type DialogProjectProps = DialogProjectDataProps & WithDialogProps<{}> & InjectedFormProps<any> & WithStyles<CssRules>;
 
-export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
-    <Dialog
-        open={props.open}
-        onClose={props.closeDialog}
-        disableEscapeKeyDown={props.submitting}
-        fullWidth
-        scroll='paper'
-        maxWidth='md'>
-        <form data-cy='form-dialog' className={props.classes.form}>
-            <DialogTitle className={props.classes.dialogTitle}>
-                {props.dialogTitle}
-            </DialogTitle>
-            <DialogContent className={props.classes.formContainer}>
-                <props.formFields {...props} />
-            </DialogContent>
-            <DialogActions className={props.classes.dialogActions}>
-                <Button
-                    data-cy='form-cancel-btn'
-                    onClick={() => {
-                        props.closeDialog();
+export const FormDialog = withStyles(styles)((props: DialogProjectProps) => {
+    
+    const handleClose = (ev, reason) => {
+        if (reason !== 'backdropClick') {
+            props.closeDialog();
+        }
+    }
+    
+    return <Dialog
+                open={props.open}
+                onClose={handleClose}
+                disableEscapeKeyDown={props.submitting}
+                fullWidth
+                scroll='paper'
+                maxWidth='md'>
+                <form data-cy='form-dialog' className={props.classes.form}>
+                    <DialogTitle className={props.classes.dialogTitle}>
+                        {props.dialogTitle}
+                    </DialogTitle>
+                    <DialogContent className={props.classes.formContainer}>
+                        <props.formFields {...props} />
+                    </DialogContent>
+                    <DialogActions className={props.classes.dialogActions}>
+                        <Button
+                            data-cy='form-cancel-btn'
+                            onClick={() => {
+                                props.closeDialog();
 
-                        if (props.cancelCallback) {
-                            props.cancelCallback();
-                            props.reset();
-                            props.initialize({});
-                        }
-                    }}
-                    className={props.classes.button}
-                    color="primary"
-                    disabled={props.doNotDisableCancel ? false : props.submitting}>
-                    {props.cancelLabel || 'Cancel'}
-                </Button>
-                <Button
-                    data-cy='form-submit-btn'
-                    type="submit"
-                    onClick={props.handleSubmit}
-                    className={props.classes.lastButton}
-                    color="primary"
-                    disabled={props.invalid || props.submitting || (props.pristine && !props.enableWhenPristine)}
-                    variant="contained">
-                    {props.submitLabel || 'Submit'}
-                    {props.submitting && <CircularProgress size={20} className={props.classes.progressIndicator} />}
-                </Button>
-            </DialogActions>
-        </form>
-    </Dialog>
-);
+                                if (props.cancelCallback) {
+                                    props.cancelCallback();
+                                    props.reset();
+                                    props.initialize({});
+                                }
+                            }}
+                            className={props.classes.button}
+                            color="primary"
+                            disabled={props.doNotDisableCancel ? false : props.submitting}>
+                            {props.cancelLabel || 'Cancel'}
+                        </Button>
+                        <Button
+                            data-cy='form-submit-btn'
+                            type="submit"
+                            onClick={props.handleSubmit}
+                            className={props.classes.lastButton}
+                            color="primary"
+                            disabled={props.invalid || props.submitting || (props.pristine && !props.enableWhenPristine)}
+                            variant="contained">
+                            {props.submitLabel || 'Submit'}
+                            {props.submitting && <CircularProgress size={20} className={props.classes.progressIndicator} />}
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+});

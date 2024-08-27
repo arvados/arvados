@@ -66,6 +66,11 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
     const [withExpiration, setWithExpiration] = React.useState<boolean>(false);
 
     const handleChange = (newValue: moment.Moment) => setExpDate(newValue);
+    const handleClose = (ev, reason) => {
+        if (reason !== 'backdropClick') {
+            onClose();
+        }
+    }
 
     // Sets up the dialog depending on the resource type
     if (!showTabs && tabNr !== SharingDialogTab.PERMISSIONS) {
@@ -81,7 +86,7 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
     }, [withExpiration]);
 
     return (
-        <Dialog {...{ open, onClose }} className="sharing-dialog" fullWidth maxWidth='sm' >
+        <Dialog {...{ open, onClose }} className="sharing-dialog" onClose={handleClose} fullWidth maxWidth='sm' >
             <DialogTitle>
                 Sharing settings
             </DialogTitle>
