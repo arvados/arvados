@@ -75,6 +75,7 @@ type CssRules =
     | "tableCell"
     | "firstTableHead"
     | "tableHead"
+    | "selected"
     | "arrow"
     | "arrowButton"
     | "tableCellWorkflows";
@@ -137,6 +138,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
         color: "#737373",
         fontSize: "0.8125rem",
         backgroundColor: theme.palette.background.paper,
+    },
+    selected: {
+        backgroundColor: `${CustomTheme.palette.grey['200']} !important`
     },
     tableCellWorkflows: {
         "&:nth-last-child(2)": {
@@ -450,6 +454,12 @@ export const DataTable = withStyles(styles)(
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             const isSelected = item === selectedResourceUuid;
+            const getClassnames = (index: number) => {
+                if(currentRoute === '/workflows') return classes.tableCellWorkflows;
+                if(index === 0) return classnames(classes.checkBoxCell, isSelected ? classes.selected : "");
+                if(index === 1) return classnames(classes.tableCell, classes.firstTableCell, isSelected ? classes.selected : "");
+                return classnames(classes.tableCell, isSelected ? classes.selected : "");
+            };
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -459,19 +469,13 @@ export const DataTable = withStyles(styles)(
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
                     selected={isSelected}
-                    style={isSelected ? { backgroundColor: CustomTheme.palette.grey['200'] } : {}}
+                    className={isSelected ? classes.selected : ""}
                 >
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}
                             data-cy={column.key || index}
-                            className={
-                                currentRoute === "/workflows"
-                                    ? classes.tableCellWorkflows
-                                    : index === 0
-                                    ? classes.checkBoxCell
-                                    : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ""}`
-                            }>
+                            className={getClassnames(index)}>
                             {column.render(item)}
                         </TableCell>
                     ))}
