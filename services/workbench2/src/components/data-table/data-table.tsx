@@ -460,12 +460,12 @@ export const DataTable = withStyles(styles)(
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
             const { hoveredIndex } = this.state;
-            const isSelected = item === selectedResourceUuid;
+            const isRowSelected = item === selectedResourceUuid;
             const getClassnames = (colIndex: number) => {
                 if(currentRoute === '/workflows') return classes.tableCellWorkflows;
-                if(colIndex === 0) return classnames(classes.checkBoxCell, isSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
-                if(colIndex === 1) return classnames(classes.tableCell, classes.firstTableCell, isSelected ? classes.selected : "");
-                return classnames(classes.tableCell, isSelected ? classes.selected : "");
+                if(colIndex === 0) return classnames(classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
+                if(colIndex === 1) return classnames(classes.tableCell, classes.firstTableCell, isRowSelected ? classes.selected : "");
+                return classnames(classes.tableCell, isRowSelected ? classes.selected : "");
             };
             const handleHover = (index: number | null) => {
                 this.setState({ hoveredIndex: index });
@@ -479,8 +479,8 @@ export const DataTable = withStyles(styles)(
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={isSelected}
-                    className={isSelected ? classes.selected : ""}
+                    selected={isRowSelected}
+                    className={isRowSelected ? classes.selected : ""}
                     onMouseEnter={()=>handleHover(index)}
                     onMouseLeave={()=>handleHover(null)}
                 >
