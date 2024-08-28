@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 const path = require("path");
+require('cypress-plugin-tab')
 
 describe("Collection panel tests", function () {
     let activeUser;
@@ -245,9 +246,9 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=property-field-value]").within(() => {
                         cy.get("input").type("sMaLL");
                     });
-                    // Cannot "type()" TAB on Cypress so let's click another field
-                    // to trigger the onBlur event.
-                    cy.get("[data-cy=property-field-key]").click();
+                    // simulate tabbing out of the value field
+                    cy.focused().tab();
+                    cy.waitForDom();
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
