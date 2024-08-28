@@ -404,6 +404,7 @@ class Arvados::V1::SchemaController < ApplicationController
     discovery[:schemas]['ComputedPermission'][:properties].reject! do |prop|
       [:uuid, :etag].include?(prop)
     end
+    discovery[:schemas]['ComputedPermission'][:properties]['perm_level'][:type] = 'string'
 
     # The 'replace_files' option is implemented in lib/controller,
     # not Rails -- we just need to add it here so discovery-aware
