@@ -41,6 +41,8 @@ RPM_FILE=$(APP_NAME)-$(VERSION)-$(ITERATION).x86_64.rpm
 GOPATH=$(shell go env GOPATH)
 export WORKSPACE?=$(shell pwd)
 
+export CYPRESS_FAIL_FAST_ENABLED?=false
+
 ARVADOS_DIRECTORY?=$(shell env -C $(WORKSPACE) git rev-parse --show-toplevel)
 
 ifndef ci
@@ -92,9 +94,9 @@ unit-tests: yarn-install
 integration-tests: yarn-install check-arvados-directory
 	yarn run cypress install
 ifeq ($(SPECFILE), ALL)
-	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
+	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY)
 else
-	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY) -- --spec $(SPECFILE)
+	$(WORKSPACE)/tools/run-integration-tests.sh $(INTERACTIVE) -a $(ARVADOS_DIRECTORY) -- --spec $(SPECFILE)
 endif
 
 integration-tests-in-docker: workbench2-build-image check-arvados-directory
