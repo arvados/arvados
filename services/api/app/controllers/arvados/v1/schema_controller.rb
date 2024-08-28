@@ -412,7 +412,14 @@ class Arvados::V1::SchemaController < ApplicationController
     [:create, :update].each do |action|
       discovery[:resources]['collections'][:methods][action][:parameters]['replace_files'] = {
         type: 'object',
-        description: 'Files and directories to initialize/replace with content from other collections.',
+        description:
+          "Add, delete, and replace files and directories with new content
+and/or content from other collections. Refer to the
+[replace_files reference][] for details.
+
+[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files
+
+",
         required: false,
         location: 'query',
         properties: {},
