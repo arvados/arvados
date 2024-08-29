@@ -459,7 +459,7 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
 
                     // Rename 'subdir/foo' to 'bar'
-                    cy.wait(1000);
+                    cy.waitForDom();
                     cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
                     cy.get("[data-cy=form-dialog]")
@@ -474,7 +474,7 @@ describe("Collection panel tests", function () {
 
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains("Home").click();
 
-                    cy.wait(2000);
+                    cy.waitForDom();
                     cy.get("[data-cy=collection-files-panel]")
                         .should("contain", subdir) // empty dir kept
                         .and("contain", "bar");
