@@ -99,11 +99,7 @@ import googleapiclient.discovery
 import googleapiclient.http
 import httplib2
 import sys
-from typing import Any, Dict, Generic, List, Literal, Optional, TypeVar
-if sys.version_info < (3, 8):
-    from typing_extensions import TypedDict
-else:
-    from typing import TypedDict
+from typing import Any, Dict, Generic, List, Literal, Optional, TypedDict, TypeVar
 
 # ST represents an API response type
 ST = TypeVar('ST', bound=TypedDict)
