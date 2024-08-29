@@ -114,10 +114,10 @@ const (
 )
 
 var TestCollectionUUIDToPDH = map[string]string{
-	FooCollection: FooCollectionPDH,
-	MultilevelCollection1: MultilevelCollection1PDH,
+	FooCollection:           FooCollectionPDH,
+	MultilevelCollection1:   MultilevelCollection1PDH,
 	FooAndBarFilesInDirUUID: FooAndBarFilesInDirPDH,
-	BarFileCollectionUUID: BarFileCollectionPDH,
+	BarFileCollectionUUID:   BarFileCollectionPDH,
 }
 
 var TestCollectionPDHToManifest = map[string]string{
@@ -128,7 +128,7 @@ var TestCollectionPDHToManifest = map[string]string{
 ./dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
 `,
 	FooAndBarFilesInDirPDH: "./dir1 3858f62230ac3c915f300c664312c63f+6 3:3:bar 0:3:foo\n",
-	BarFileCollectionPDH: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+	BarFileCollectionPDH:   ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
 }
 
 // PathologicalManifest : A valid manifest designed to test
