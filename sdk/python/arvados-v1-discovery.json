@@ -56,7 +56,7 @@
           "id": "arvados.api_client_authorizations.get",
           "path": "api_client_authorizations/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a ApiClientAuthorization's metadata by UUID.",
+          "description": "Get a ApiClientAuthorization record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -299,7 +299,7 @@
           "id": "arvados.authorized_keys.get",
           "path": "authorized_keys/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a AuthorizedKey's metadata by UUID.",
+          "description": "Get a AuthorizedKey record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -508,7 +508,7 @@
           "id": "arvados.collections.get",
           "path": "collections/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a Collection's metadata by UUID.",
+          "description": "Get a Collection record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -669,7 +669,7 @@
             },
             "replace_files": {
               "type": "object",
-              "description": "Files and directories to initialize/replace with content from other collections.",
+              "description": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
               "required": false,
               "location": "query",
               "properties": {},
@@ -713,7 +713,7 @@
             },
             "replace_files": {
               "type": "object",
-              "description": "Files and directories to initialize/replace with content from other collections.",
+              "description": "Add, delete, and replace files and directories with new content\nand/or content from other collections. Refer to the\n[replace_files reference][] for details.\n\n[replace_files reference]: https://doc.arvados.org/api/methods/collections.html#replace_files\n\n",
               "required": false,
               "location": "query",
               "properties": {},
@@ -909,7 +909,7 @@
           "id": "arvados.containers.get",
           "path": "containers/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a Container's metadata by UUID.",
+          "description": "Get a Container record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -1231,7 +1231,7 @@
           "id": "arvados.container_requests.get",
           "path": "container_requests/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a ContainerRequest's metadata by UUID.",
+          "description": "Get a ContainerRequest record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -1474,7 +1474,7 @@
           "id": "arvados.groups.get",
           "path": "groups/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a Group's metadata by UUID.",
+          "description": "Get a Group record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -1956,7 +1956,7 @@
           "id": "arvados.keep_services.get",
           "path": "keep_services/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a KeepService's metadata by UUID.",
+          "description": "Get a KeepService record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -2178,7 +2178,7 @@
           "id": "arvados.links.get",
           "path": "links/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a Link's metadata by UUID.",
+          "description": "Get a Link record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -2407,7 +2407,7 @@
           "id": "arvados.logs.get",
           "path": "logs/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a Log's metadata by UUID.",
+          "description": "Get a Log record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -2616,7 +2616,7 @@
           "id": "arvados.users.get",
           "path": "users/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a User's metadata by UUID.",
+          "description": "Get a User record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -2988,7 +2988,7 @@
           "id": "arvados.user_agreements.get",
           "path": "user_agreements/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a UserAgreement's metadata by UUID.",
+          "description": "Get a UserAgreement record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -3223,7 +3223,7 @@
           "id": "arvados.virtual_machines.get",
           "path": "virtual_machines/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a VirtualMachine's metadata by UUID.",
+          "description": "Get a VirtualMachine record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -3465,7 +3465,7 @@
           "id": "arvados.workflows.get",
           "path": "workflows/{uuid}",
           "httpMethod": "GET",
-          "description": "Gets a Workflow's metadata by UUID.",
+          "description": "Get a Workflow record by UUID.",
           "parameters": {
             "uuid": {
               "type": "string",
@@ -3674,7 +3674,7 @@
           "id": "arvados.configs.get",
           "path": "config",
           "httpMethod": "GET",
-          "description": "Get public config",
+          "description": "Get this cluster's public configuration settings.",
           "parameters": {},
           "parameterOrder": [],
           "response": {},
@@ -3691,7 +3691,7 @@
           "id": "arvados.vocabularies.get",
           "path": "vocabulary",
           "httpMethod": "GET",
-          "description": "Get vocabulary definition",
+          "description": "Get this cluster's configured vocabulary definition.\n\nRefer to [metadata vocabulary documentation][] for details.\n\n[metadata vocabulary documentation]: https://doc.aravdos.org/admin/metadata-vocabulary.html\n\n",
           "parameters": {},
           "parameterOrder": [],
           "response": {},
@@ -3708,7 +3708,7 @@
           "id": "arvados.sys.trash_sweep",
           "path": "sys/trash_sweep",
           "httpMethod": "POST",
-          "description": "apply scheduled trash and delete operations",
+          "description": "Run scheduled data trash and sweep operations across this cluster's Keep services.",
           "parameters": {},
           "parameterOrder": [],
           "response": {},
@@ -3759,7 +3759,7 @@
     },
     "ApiClientAuthorization": {
       "id": "ApiClientAuthorization",
-      "description": "Arvados Api client authorization.",
+      "description": "Arvados API client authorization token\n\nThis resource represents an API token a user may use to authenticate an\nArvados API request.",
       "type": "object",
       "uuidPrefix": "gj3su",
       "properties": {
@@ -3768,29 +3768,36 @@
           "description": "Object cache version."
         },
         "api_token": {
+          "description": "The secret token that can be used to authorize Arvados API requests.",
           "type": "string"
         },
         "created_by_ip_address": {
+          "description": "The IP address of the client that created this token.",
           "type": "string"
         },
         "last_used_by_ip_address": {
+          "description": "The IP address of the client that last used this token.",
           "type": "string"
         },
         "last_used_at": {
+          "description": "The last time this token was used to authorize a request. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "expires_at": {
+          "description": "The time after which this token is no longer valid for authorization. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "created_at": {
+          "description": "The time this API client authorization was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "scopes": {
+          "description": "An array of strings identifying HTTP methods and API paths this token is\nauthorized to use. Refer to the [scopes reference][] for details.\n\n[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes\n\n",
           "type": "Array"
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-gj3su-12345abcde67890`."
+          "description": "This API client authorization's Arvados UUID, like `zzzzz-gj3su-12345abcde67890`."
         }
       }
     },
@@ -3831,7 +3838,7 @@
     },
     "AuthorizedKey": {
       "id": "AuthorizedKey",
-      "description": "Arvados Authorized key.",
+      "description": "Arvados authorized public key\n\nThis resource represents a public key a user may use to authenticate themselves\nto services on the cluster. Its primary use today is to store SSH keys for\nvirtual machines (\"shell nodes\"). It may be extended to store other keys in\nthe future.",
       "type": "object",
       "uuidPrefix": "fngyi",
       "properties": {
@@ -3841,33 +3848,42 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-fngyi-12345abcde67890`."
+          "description": "This authorized key's Arvados UUID, like `zzzzz-fngyi-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this authorized key.",
           "type": "string"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this authorized key.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this authorized key was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "name": {
+          "description": "The name of this authorized key assigned by a user.",
           "type": "string"
         },
         "key_type": {
+          "description": "A string identifying what type of service uses this key. Supported values are:\n\n  * `\"SSH\"`\n\n",
           "type": "string"
         },
         "authorized_user_uuid": {
+          "description": "The UUID of the Arvados user that is authorized by this key.",
           "type": "string"
         },
         "public_key": {
+          "description": "The full public key, in the format referenced by `key_type`.",
           "type": "text"
         },
         "expires_at": {
+          "description": "The time after which this key is no longer valid for authorization. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "created_at": {
+          "description": "The time this authorized key was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         }
       }
@@ -3909,7 +3925,7 @@
     },
     "Collection": {
       "id": "Collection",
-      "description": "Arvados Collection.",
+      "description": "Arvados data collection\n\nA collection describes how a set of files is stored in data blocks in Keep,\nalong with associated metadata.",
       "type": "object",
       "uuidPrefix": "4zz18",
       "properties": {
@@ -3918,76 +3934,99 @@
           "description": "Object cache version."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this collection.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this collection was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this collection.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this collection was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "portable_data_hash": {
+          "description": "The portable data hash of this collection. This string provides a unique\nand stable reference to these contents.",
           "type": "string"
         },
         "replication_desired": {
+          "description": "The number of copies that should be made for data in this collection.",
           "type": "integer"
         },
         "replication_confirmed_at": {
+          "description": "The last time the cluster confirmed that it met `replication_confirmed`\nfor this collection. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "replication_confirmed": {
+          "description": "The number of copies of data in this collection that the cluster has confirmed\nexist in storage.",
           "type": "integer"
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-4zz18-12345abcde67890`."
+          "description": "This collection's Arvados UUID, like `zzzzz-4zz18-12345abcde67890`."
         },
         "manifest_text": {
+          "description": "The manifest text that describes how files are constructed from data blocks\nin this collection. Refer to the [manifest format][] reference for details.\n\n[manifest format]: https://doc.arvados.org/architecture/manifest-format.html\n\n",
           "type": "text"
         },
         "name": {
+          "description": "The name of this collection assigned by a user.",
           "type": "string"
         },
         "description": {
+          "description": "A longer description of this collection assigned by a user.",
           "type": "string"
         },
         "properties": {
+          "description": "A hash of arbitrary metadata for this collection.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "delete_at": {
+          "description": "The time this collection will be permanently deleted. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "trash_at": {
+          "description": "The time this collection will be trashed. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "is_trashed": {
+          "description": "A boolean flag to indicate whether or not this collection is trashed.",
           "type": "boolean"
         },
         "storage_classes_desired": {
+          "description": "An array of strings identifying the storage class(es) that should be used\nfor data in this collection. Storage classes are configured by the cluster administrator.",
           "type": "Array"
         },
         "storage_classes_confirmed": {
+          "description": "An array of strings identifying the storage class(es) the cluster has\nconfirmed have a copy of this collection's data.",
           "type": "Array"
         },
         "storage_classes_confirmed_at": {
+          "description": "The last time the cluster confirmed that data was stored on the storage\nclass(es) in `storage_classes_confirmed`. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "current_version_uuid": {
+          "description": "The UUID of the current version of this collection.",
           "type": "string"
         },
         "version": {
+          "description": "An integer that counts which version of a collection this record\nrepresents. Refer to [collection versioning][] for details. This attribute is\nread-only.\n\n[collection versioning]: https://doc.arvados.org/user/topics/collection-versioning.html\n\n",
           "type": "integer"
         },
         "preserve_version": {
+          "description": "A boolean flag to indicate whether this specific version of this collection\nshould be persisted in cluster storage.",
           "type": "boolean"
         },
         "file_count": {
+          "description": "The number of files represented in this collection's `manifest_text`.\nThis attribute is read-only.",
           "type": "integer"
         },
         "file_size_total": {
+          "description": "The total size in bytes of files represented in this collection's `manifest_text`.\nThis attribute is read-only.",
           "type": "integer"
         }
       }
@@ -4029,17 +4068,20 @@
     },
     "ComputedPermission": {
       "id": "ComputedPermission",
-      "description": "Arvados Computed permission.",
+      "description": "Arvados computed permission\n\nComputed permissions do not correspond directly to any Arvados resource, but\nprovide a simple way to query the entire graph of permissions granted to\nusers and groups.",
       "type": "object",
       "properties": {
         "user_uuid": {
+          "description": "The UUID of the Arvados user who has this permission.",
           "type": "string"
         },
         "target_uuid": {
+          "description": "The UUID of the Arvados object the user has access to.",
           "type": "string"
         },
         "perm_level": {
-          "type": "integer"
+          "description": "A string representing the user's level of access to the target object.\nPossible values are:\n\n  * `\"can_read\"`\n  * `\"can_write\"`\n  * `\"can_manage\"`\n\n",
+          "type": "string"
         }
       }
     },
@@ -4080,7 +4122,7 @@
     },
     "Container": {
       "id": "Container",
-      "description": "Arvados Container.",
+      "description": "Arvados container record\n\nA container represents compute work that has been or should be dispatched,\nalong with its results. A container can satisfy one or more container requests.",
       "type": "object",
       "uuidPrefix": "dz642",
       "properties": {
@@ -4090,105 +4132,138 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-dz642-12345abcde67890`."
+          "description": "This container's Arvados UUID, like `zzzzz-dz642-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this container.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this container was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_at": {
+          "description": "The time this container was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this container.",
           "type": "string"
         },
         "state": {
+          "description": "A string representing the container's current execution status. Possible\nvalues are:\n\n  * `\"Queued\"` --- This container has not been dispatched yet.\n  * `\"Locked\"` --- A dispatcher has claimed this container in preparation to run it.\n  * `\"Running\"` --- A dispatcher is running this container.\n  * `\"Cancelled\"` --- Container execution has been cancelled by user request.\n  * `\"Complete\"` --- A dispatcher ran this container to completion and recorded the results.\n\n",
           "type": "string"
         },
         "started_at": {
+          "description": " The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "finished_at": {
+          "description": " The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "log": {
+          "description": "The portable data hash of the Arvados collection that contains this\ncontainer's logs.",
           "type": "string"
         },
         "environment": {
+          "description": "A hash of string keys and values that defines the environment variables\nfor the dispatcher to set when it executes this container.",
           "type": "Hash"
         },
         "cwd": {
+          "description": "A string that the defines the working directory that the dispatcher should\nuse when it executes the command inside this container.",
           "type": "string"
         },
         "command": {
+          "description": "An array of strings that defines the command that the dispatcher should\nexecute inside this container.",
           "type": "Array"
         },
         "output_path": {
+          "description": "A string that defines the file or directory path where the command\nwrites output that should be saved from this container.",
           "type": "string"
         },
         "mounts": {
+          "description": "A hash where each key names a directory inside this container, and its\nvalue is an object that defines the mount source for that directory. Refer\nto the [mount types reference][] for details.\n\n[mount types reference]: https://doc.arvados.org/api/methods/containers.html#mount_types\n\n",
           "type": "Hash"
         },
         "runtime_constraints": {
+          "description": "A hash that identifies compute resources this container requires to run\nsuccessfully. See the [runtime constraints reference][] for details.\n\n[runtime constraints reference]: https://doc.arvados.org/api/methods/containers.html#runtime_constraints\n\n",
           "type": "Hash"
         },
         "output": {
+          "description": "The portable data hash of the Arvados collection that contains this\ncontainer's output file(s).",
           "type": "string"
         },
         "container_image": {
+          "description": "The portable data hash of the Arvados collection that contains the image\nto use for this container.",
           "type": "string"
         },
         "progress": {
+          "description": "A float between 0.0 and 1.0 (inclusive) that represents the container's\nexecution progress. This attribute is not implemented yet.",
           "type": "float"
         },
         "priority": {
+          "description": "An integer between 0 and 1000 (inclusive) that represents this container's\nscheduling priority. 0 represents a request to be cancelled. Higher\nvalues represent higher priority. Refer to the [priority reference][] for details.\n\n[priority reference]: https://doc.arvados.org/api/methods/container_requests.html#priority\n\n",
           "type": "integer"
         },
         "exit_code": {
+          "description": "An integer that records the Unix exit code of the `command` from a\nfinished container.",
           "type": "integer"
         },
         "auth_uuid": {
+          "description": "The UUID of the Arvados API client authorization token that a dispatcher\nshould use to set up this container. This token is automatically created by\nArvados and this attribute automatically assigned unless a container is\ncreated with `runtime_token`.",
           "type": "string"
         },
         "locked_by_uuid": {
+          "description": "The UUID of the Arvados API client authorization token that successfully\nlocked this container in preparation to execute it.",
           "type": "string"
         },
         "scheduling_parameters": {
+          "description": "A hash of scheduling parameters that should be passed to the underlying\ndispatcher when this container is run.\nSee the [scheduling parameters reference][] for details.\n\n[scheduling parameters reference]: https://doc.arvados.org/api/methods/containers.html#scheduling_parameters\n\n",
           "type": "Hash"
         },
         "runtime_status": {
+          "description": "A hash with status updates from a running container.\nRefer to the [runtime status reference][] for details.\n\n[runtime status reference]: https://doc.arvados.org/api/methods/containers.html#runtime_status\n\n",
           "type": "Hash"
         },
         "runtime_user_uuid": {
+          "description": "The UUID of the Arvados user associated with the API client authorization\ntoken used to run this container.",
           "type": "text"
         },
         "runtime_auth_scopes": {
+          "description": "The `scopes` from the API client authorization token used to run this container.",
           "type": "Array"
         },
         "lock_count": {
+          "description": "The number of times this container has been locked by a dispatcher. This\nmay be greater than 1 if a dispatcher locks a container but then execution is\ninterrupted for any reason.",
           "type": "integer"
         },
         "gateway_address": {
+          "description": "A string with the address of the Arvados gateway server, in `HOST:PORT`\nformat. This is for internal use only.",
           "type": "string"
         },
         "interactive_session_started": {
+          "description": "This flag is set true if any user starts an interactive shell inside the\nrunning container.",
           "type": "boolean"
         },
         "output_storage_classes": {
+          "description": "An array of strings identifying the storage class(es) that should be set\non the output collection of this container. Storage classes are configured by\nthe cluster administrator.",
           "type": "Array"
         },
         "output_properties": {
+          "description": "A hash of arbitrary metadata to set on the output collection of this container.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "cost": {
+          "description": "A float with the estimated cost of the cloud instance used to run this\ncontainer. The value is `0` if cost estimation is not available on this cluster.",
           "type": "float"
         },
         "subrequests_cost": {
+          "description": "A float with the estimated cost of all cloud instances used to run this\ncontainer and all its subrequests. The value is `0` if cost estimation is not\navailable on this cluster.",
           "type": "float"
         },
         "output_glob": {
+          "description": "An array of strings of shell-style glob patterns that define which file(s)\nand subdirectory(ies) under the `output_path` directory should be recorded in\nthe container's final output. Refer to the [glob patterns reference][] for details.\n\n[glob patterns reference]: https://doc.arvados.org/api/methods/containers.html#glob_patterns\n\n",
           "type": "Array"
         }
       }
@@ -4230,7 +4305,7 @@
     },
     "ContainerRequest": {
       "id": "ContainerRequest",
-      "description": "Arvados Container request.",
+      "description": "Arvados container request\n\nA container request represents a user's request that Arvados do some compute\nwork, along with full details about what work should be done. Arvados will\nattempt to fulfill the request by mapping it to a matching container record,\nrunning the work on demand if necessary.",
       "type": "object",
       "uuidPrefix": "xvhdp",
       "properties": {
@@ -4240,102 +4315,134 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-xvhdp-12345abcde67890`."
+          "description": "This container request's Arvados UUID, like `zzzzz-xvhdp-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this container request.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this container request was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_at": {
+          "description": "The time this container request was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this container request.",
           "type": "string"
         },
         "name": {
+          "description": "The name of this container request assigned by a user.",
           "type": "string"
         },
         "description": {
+          "description": "A longer description of this container request assigned by a user.",
           "type": "text"
         },
         "properties": {
+          "description": "A hash of arbitrary metadata for this container request.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "state": {
+          "description": "A string indicating where this container request is in its lifecycle.\nPossible values are:\n\n  * `\"Uncommitted\"` --- The container request has not been finalized and can still be edited.\n  * `\"Committed\"` --- The container request is ready to be fulfilled.\n  * `\"Final\"` --- The container request has been fulfilled or cancelled.\n\n",
           "type": "string"
         },
         "requesting_container_uuid": {
+          "description": "The UUID of the container that created this container request, if any.",
           "type": "string"
         },
         "container_uuid": {
+          "description": "The UUID of the container that fulfills this container request, if any.",
           "type": "string"
         },
         "container_count_max": {
+          "description": "An integer that defines the maximum number of times Arvados should attempt\nto dispatch a container to fulfill this container request.",
           "type": "integer"
         },
         "mounts": {
+          "description": "A hash where each key names a directory inside this container, and its\nvalue is an object that defines the mount source for that directory. Refer\nto the [mount types reference][] for details.\n\n[mount types reference]: https://doc.arvados.org/api/methods/containers.html#mount_types\n\n",
           "type": "Hash"
         },
         "runtime_constraints": {
+          "description": "A hash that identifies compute resources this container requires to run\nsuccessfully. See the [runtime constraints reference][] for details.\n\n[runtime constraints reference]: https://doc.arvados.org/api/methods/containers.html#runtime_constraints\n\n",
           "type": "Hash"
         },
         "container_image": {
+          "description": "The portable data hash of the Arvados collection that contains the image\nto use for this container.",
           "type": "string"
         },
         "environment": {
+          "description": "A hash of string keys and values that defines the environment variables\nfor the dispatcher to set when it executes this container.",
           "type": "Hash"
         },
         "cwd": {
+          "description": "A string that the defines the working directory that the dispatcher should\nuse when it executes the command inside this container.",
           "type": "string"
         },
         "command": {
+          "description": "An array of strings that defines the command that the dispatcher should\nexecute inside this container.",
           "type": "Array"
         },
         "output_path": {
+          "description": "A string that defines the file or directory path where the command\nwrites output that should be saved from this container.",
           "type": "string"
         },
         "priority": {
+          "description": "An integer between 0 and 1000 (inclusive) that represents this container request's\nscheduling priority. 0 represents a request to be cancelled. Higher\nvalues represent higher priority. Refer to the [priority reference][] for details.\n\n[priority reference]: https://doc.arvados.org/api/methods/container_requests.html#priority\n\n",
           "type": "integer"
         },
         "expires_at": {
+          "description": "The time after which this container request will no longer be fulfilled. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "filters": {
+          "description": "An array of filters that limit which existing containers are eligible to\nsatisfy this container request. Refer to the [filters reference][] for details.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n\n",
           "type": "text"
         },
         "container_count": {
+          "description": "An integer that records how many times Arvados has attempted to dispatch\na container to fulfill this container request.",
           "type": "integer"
         },
         "use_existing": {
+          "description": "A boolean flag. If set, Arvados may choose to satisfy this container\nrequest with an eligible container that already exists. Otherwise, Arvados will\nsatisfy this container request with a newer container, which will usually result\nin the container running again.",
           "type": "boolean"
         },
         "scheduling_parameters": {
+          "description": "A hash of scheduling parameters that should be passed to the underlying\ndispatcher when this container is run.\nSee the [scheduling parameters reference][] for details.\n\n[scheduling parameters reference]: https://doc.arvados.org/api/methods/containers.html#scheduling_parameters\n\n",
           "type": "Hash"
         },
         "output_uuid": {
+          "description": "The UUID of the Arvados collection that contains output for all the\ncontainer(s) that were dispatched to fulfill this container request.",
           "type": "string"
         },
         "log_uuid": {
+          "description": "The UUID of the Arvados collection that contains logs for all the\ncontainer(s) that were dispatched to fulfill this container request.",
           "type": "string"
         },
         "output_name": {
+          "description": "The name to set on the output collection of this container request.",
           "type": "string"
         },
         "output_ttl": {
+          "description": "An integer in seconds. If greater than zero, when an output collection is\ncreated for this container request, its `expires_at` attribute will be set this\nfar in the future.",
           "type": "integer"
         },
         "output_storage_classes": {
+          "description": "An array of strings identifying the storage class(es) that should be set\non the output collection of this container request. Storage classes are configured by\nthe cluster administrator.",
           "type": "Array"
         },
         "output_properties": {
+          "description": "A hash of arbitrary metadata to set on the output collection of this container request.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "cumulative_cost": {
+          "description": "A float with the estimated cost of all cloud instances used to run\ncontainer(s) to fulfill this container request. The value is `0` if cost\nestimation is not available on this cluster.",
           "type": "float"
         },
         "output_glob": {
+          "description": "An array of strings of shell-style glob patterns that define which file(s)\nand subdirectory(ies) under the `output_path` directory should be recorded in\nthe container's final output. Refer to the [glob patterns reference][] for details.\n\n[glob patterns reference]: https://doc.arvados.org/api/methods/containers.html#glob_patterns\n\n",
           "type": "Array"
         }
       }
@@ -4377,7 +4484,7 @@
     },
     "Group": {
       "id": "Group",
-      "description": "Arvados Group.",
+      "description": "Arvados group\n\nGroups provide a way to organize users or data together, depending on their\n`group_class`.",
       "type": "object",
       "uuidPrefix": "j7d0g",
       "properties": {
@@ -4387,42 +4494,54 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-j7d0g-12345abcde67890`."
+          "description": "This group's Arvados UUID, like `zzzzz-j7d0g-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this group.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this group was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this group.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this group was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "name": {
+          "description": "The name of this group assigned by a user.",
           "type": "string"
         },
         "description": {
+          "description": "A longer description of this group assigned by a user.",
           "type": "string"
         },
         "group_class": {
+          "description": "A string representing which type of group this is. One of:\n\n  * `\"filter\"` --- A virtual project whose contents are selected dynamically by filters.\n  * `\"project\"` --- An Arvados project that can contain collections,\n    container records, workflows, and subprojects.\n  * `\"role\"` --- A group of users that can be granted permissions in Arvados.\n\n",
           "type": "string"
         },
         "trash_at": {
+          "description": "The time this group will be trashed. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "is_trashed": {
+          "description": "A boolean flag to indicate whether or not this group is trashed.",
           "type": "boolean"
         },
         "delete_at": {
+          "description": "The time this group will be permanently deleted. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "properties": {
+          "description": "A hash of arbitrary metadata for this group.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "frozen_by_uuid": {
+          "description": "The UUID of the user that has frozen this group, if any. Frozen projects\ncannot have their contents or metadata changed, even by admins.",
           "type": "string"
         }
       }
@@ -4464,7 +4583,7 @@
     },
     "KeepService": {
       "id": "KeepService",
-      "description": "Arvados Keep service.",
+      "description": "Arvados Keep service\n\nThis resource stores information about a single Keep service in this Arvados\ncluster that clients can contact to retrieve and store data.",
       "type": "object",
       "uuidPrefix": "bi6l4",
       "properties": {
@@ -4474,33 +4593,42 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-bi6l4-12345abcde67890`."
+          "description": "This Keep service's Arvados UUID, like `zzzzz-bi6l4-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this Keep service.",
           "type": "string"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this Keep service.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this Keep service was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "service_host": {
+          "description": "The DNS hostname of this Keep service.",
           "type": "string"
         },
         "service_port": {
+          "description": "The TCP port where this Keep service listens.",
           "type": "integer"
         },
         "service_ssl_flag": {
+          "description": "A boolean flag that indicates whether or not this Keep service uses TLS/SSL.",
           "type": "boolean"
         },
         "service_type": {
+          "description": "A string that describes which type of Keep service this is. One of:\n\n  * `\"disk\"` --- A service that stores blocks on a local filesystem.\n  * `\"blob\"` --- A service that stores blocks in a cloud object store.\n  * `\"proxy\"` --- A keepproxy service.\n\n",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this Keep service was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "read_only": {
+          "description": "A boolean flag. If set, this Keep service does not accept requests to write data\nblocks; it only serves blocks it already has.",
           "type": "boolean"
         }
       }
@@ -4542,7 +4670,7 @@
     },
     "Link": {
       "id": "Link",
-      "description": "Arvados Link.",
+      "description": "Arvados object link\n\nA link provides a way to define relationships between Arvados objects,\ndepending on their `link_class`.",
       "type": "object",
       "uuidPrefix": "o0j2j",
       "properties": {
@@ -4552,33 +4680,42 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-o0j2j-12345abcde67890`."
+          "description": "This link's Arvados UUID, like `zzzzz-o0j2j-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this link.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this link was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this link.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this link was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "tail_uuid": {
+          "description": "The UUID of the Arvados object that is the target of this relationship.",
           "type": "string"
         },
         "link_class": {
+          "description": "A string that defines which kind of link this is. One of:\n\n  * `\"permission\"` --- This link grants a permission to the user or group\n    referenced by `head_uuid` to the object referenced by `tail_uuid`. The\n    access level is set by `name`.\n  * `\"star\"` --- This link represents a \"favorite.\" The user referenced\n    by `head_uuid` wants quick access to the object referenced by `tail_uuid`.\n  * `\"tag\"` --- This link represents an unstructured metadata tag. The object\n    referenced by `tail_uuid` has the tag defined by `name`.\n\n",
           "type": "string"
         },
         "name": {
+          "description": "The primary value of this link. For `\"permission\"` links, this is one of\n`\"can_read\"`, `\"can_write\"`, or `\"can_manage\"`.",
           "type": "string"
         },
         "head_uuid": {
+          "description": "The UUID of the Arvados object that is the originator or actor in this\nrelationship. May be null.",
           "type": "string"
         },
         "properties": {
+          "description": "A hash of arbitrary metadata for this link.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         }
       }
@@ -4620,7 +4757,7 @@
     },
     "Log": {
       "id": "Log",
-      "description": "Arvados Log.",
+      "description": "Arvados log record\n\nThis resource represents a single log record about an event in this Arvados\ncluster. Some individual Arvados services create log records. Users can also\ncreate custom logs.",
       "type": "object",
       "uuidPrefix": "57u5n",
       "properties": {
@@ -4629,40 +4766,51 @@
           "description": "Object cache version."
         },
         "id": {
+          "description": "The serial number of this log. You can use this in filters to query logs\nthat were created before/after another.",
           "type": "integer"
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-57u5n-12345abcde67890`."
+          "description": "This log's Arvados UUID, like `zzzzz-57u5n-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this log.",
           "type": "string"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this log.",
           "type": "string"
         },
         "object_uuid": {
+          "description": "The UUID of the Arvados object that this log pertains to, such as a user\nor container.",
           "type": "string"
         },
         "event_at": {
+          "description": " The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "event_type": {
+          "description": "An arbitrary short string that classifies what type of log this is.",
           "type": "string"
         },
         "summary": {
+          "description": "A text string that describes the logged event. This is the primary\nattribute for simple logs.",
           "type": "text"
         },
         "properties": {
+          "description": "A hash of arbitrary metadata for this log.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "created_at": {
+          "description": "The time this log was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_at": {
+          "description": "The time this log was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "object_owner_uuid": {
+          "description": "The `owner_uuid` of the object referenced by `object_uuid` at the time\nthis log was created.",
           "type": "string"
         }
       }
@@ -4704,7 +4852,7 @@
     },
     "User": {
       "id": "User",
-      "description": "Arvados User.",
+      "description": "Arvados user\n\nA user represents a single individual or role who may be authorized to access\nthis Arvados cluster.",
       "type": "object",
       "uuidPrefix": "tpzed",
       "properties": {
@@ -4714,42 +4862,54 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-tpzed-12345abcde67890`."
+          "description": "This user's Arvados UUID, like `zzzzz-tpzed-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this user.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this user was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this user.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this user was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "email": {
+          "description": "This user's email address.",
           "type": "string"
         },
         "first_name": {
+          "description": "This user's first name.",
           "type": "string"
         },
         "last_name": {
+          "description": "This user's last name.",
           "type": "string"
         },
         "identity_url": {
+          "description": "A URL that represents this user with the cluster's identity provider.",
           "type": "string"
         },
         "is_admin": {
+          "description": "A boolean flag. If set, this user is an administrator of the Arvados\ncluster, and automatically passes most permissions checks.",
           "type": "boolean"
         },
         "prefs": {
+          "description": "A hash that stores cluster-wide user preferences.",
           "type": "Hash"
         },
         "is_active": {
+          "description": "A boolean flag. If unset, this user is not permitted to make any Arvados\nAPI requests.",
           "type": "boolean"
         },
         "username": {
+          "description": "This user's Unix username on virtual machines.",
           "type": "string"
         }
       }
@@ -4791,7 +4951,7 @@
     },
     "UserAgreement": {
       "id": "UserAgreement",
-      "description": "Arvados User agreement.",
+      "description": "Arvados user agreement\n\nA user agreement is a collection with terms that users must agree to before\nthey can use this Arvados cluster.",
       "type": "object",
       "uuidPrefix": "gv0sa",
       "properties": {
@@ -4800,76 +4960,99 @@
           "description": "Object cache version."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this user agreement.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this user agreement was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this user agreement.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this user agreement was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "portable_data_hash": {
+          "description": "The portable data hash of this user agreement. This string provides a unique\nand stable reference to these contents.",
           "type": "string"
         },
         "replication_desired": {
+          "description": "The number of copies that should be made for data in this user agreement.",
           "type": "integer"
         },
         "replication_confirmed_at": {
+          "description": "The last time the cluster confirmed that it met `replication_confirmed`\nfor this user agreement. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "replication_confirmed": {
+          "description": "The number of copies of data in this user agreement that the cluster has confirmed\nexist in storage.",
           "type": "integer"
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-gv0sa-12345abcde67890`."
+          "description": "This user agreement's Arvados UUID, like `zzzzz-gv0sa-12345abcde67890`."
         },
         "manifest_text": {
+          "description": "The manifest text that describes how files are constructed from data blocks\nin this user agreement. Refer to the [manifest format][] reference for details.\n\n[manifest format]: https://doc.arvados.org/architecture/manifest-format.html\n\n",
           "type": "text"
         },
         "name": {
+          "description": "The name of this user agreement assigned by a user.",
           "type": "string"
         },
         "description": {
+          "description": "A longer description of this user agreement assigned by a user.",
           "type": "string"
         },
         "properties": {
+          "description": "A hash of arbitrary metadata for this user agreement.\nSome keys may be reserved by Arvados or defined by a configured vocabulary.\nRefer to the [metadata properties reference][] for details.\n\n[metadata properties reference]: https://doc.arvados.org/api/properties.html\n\n",
           "type": "Hash"
         },
         "delete_at": {
+          "description": "The time this user agreement will be permanently deleted. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "trash_at": {
+          "description": "The time this user agreement will be trashed. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "is_trashed": {
+          "description": "A boolean flag to indicate whether or not this user agreement is trashed.",
           "type": "boolean"
         },
         "storage_classes_desired": {
+          "description": "An array of strings identifying the storage class(es) that should be used\nfor data in this user agreement. Storage classes are configured by the cluster administrator.",
           "type": "Array"
         },
         "storage_classes_confirmed": {
+          "description": "An array of strings identifying the storage class(es) the cluster has\nconfirmed have a copy of this user agreement's data.",
           "type": "Array"
         },
         "storage_classes_confirmed_at": {
+          "description": "The last time the cluster confirmed that data was stored on the storage\nclass(es) in `storage_classes_confirmed`. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "current_version_uuid": {
+          "description": "The UUID of the current version of this user agreement.",
           "type": "string"
         },
         "version": {
+          "description": "An integer that counts which version of a user agreement this record\nrepresents. Refer to [collection versioning][] for details. This attribute is\nread-only.\n\n[collection versioning]: https://doc.arvados.org/user/topics/collection-versioning.html\n\n",
           "type": "integer"
         },
         "preserve_version": {
+          "description": "A boolean flag to indicate whether this specific version of this user agreement\nshould be persisted in cluster storage.",
           "type": "boolean"
         },
         "file_count": {
+          "description": "The number of files represented in this user agreement's `manifest_text`.\nThis attribute is read-only.",
           "type": "integer"
         },
         "file_size_total": {
+          "description": "The total size in bytes of files represented in this user agreement's `manifest_text`.\nThis attribute is read-only.",
           "type": "integer"
         }
       }
@@ -4911,7 +5094,7 @@
     },
     "VirtualMachine": {
       "id": "VirtualMachine",
-      "description": "Arvados Virtual machine.",
+      "description": "Arvados virtual machine (\"shell node\")\n\nThis resource stores information about a virtual machine or \"shell node\"\nhosted on this Arvados cluster where users can log in and use preconfigured\nArvados client tools.",
       "type": "object",
       "uuidPrefix": "2x53u",
       "properties": {
@@ -4921,21 +5104,26 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-2x53u-12345abcde67890`."
+          "description": "This virtual machine's Arvados UUID, like `zzzzz-2x53u-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this virtual machine.",
           "type": "string"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this virtual machine.",
           "type": "string"
         },
         "modified_at": {
+          "description": "The time this virtual machine was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "hostname": {
+          "description": "The DNS hostname where users should access this virtual machine.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this virtual machine was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         }
       }
@@ -4977,7 +5165,7 @@
     },
     "Workflow": {
       "id": "Workflow",
-      "description": "Arvados Workflow.",
+      "description": "Arvados workflow\n\nA workflow contains workflow definition source code that Arvados can execute\nalong with associated metadata for users.",
       "type": "object",
       "uuidPrefix": "7fd4e",
       "properties": {
@@ -4987,27 +5175,34 @@
         },
         "uuid": {
           "type": "string",
-          "description": "This object's Arvados UUID, like `zzzzz-7fd4e-12345abcde67890`."
+          "description": "This workflow's Arvados UUID, like `zzzzz-7fd4e-12345abcde67890`."
         },
         "owner_uuid": {
+          "description": "The UUID of the user or group that owns this workflow.",
           "type": "string"
         },
         "created_at": {
+          "description": "The time this workflow was created. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_at": {
+          "description": "The time this workflow was last updated. The string encodes a UTC time in ISO 8601 format.",
           "type": "datetime"
         },
         "modified_by_user_uuid": {
+          "description": "The UUID of the user that last updated this workflow.",
           "type": "string"
         },
         "name": {
+          "description": "The name of this workflow assigned by a user.",
           "type": "string"
         },
         "description": {
+          "description": "A longer description of this workflow assigned by a user.",
           "type": "text"
         },
         "definition": {
+          "description": "A string with the CWL source of this workflow.",
           "type": "text"
         }
       }

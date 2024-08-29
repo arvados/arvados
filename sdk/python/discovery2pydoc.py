@@ -340,7 +340,7 @@ def document_schema(name: str, spec: Mapping[str, Any]) -> str:
 
         field_doc: str = field_spec.get('description', '')
         if field_spec['type'] == 'datetime':
-            field_doc += "\n\nString in ISO 8601 datetime format. Pass it to `ciso8601.parse_datetime` to build a `datetime.datetime`."
+            field_doc += " Pass this to `ciso8601.parse_datetime` to build a `datetime.datetime`."
         if field_doc:
             lines.append(to_docstring(field_doc, 4))
     lines.append('\n')

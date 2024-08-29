@@ -73,6 +73,13 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
       end
     end
 
+    json_response["schemas"].each_pair do |schema_name, schema|
+      missing.check(schema_name, "description", schema)
+      schema["properties"].andand.each_pair do |prop_name, prop|
+        missing.check("#{schema_name} #{prop_name} property", "description", prop)
+      end
+    end
+
     assert_equal(
       missing, [],
       "named methods and schemas are missing documentation",
