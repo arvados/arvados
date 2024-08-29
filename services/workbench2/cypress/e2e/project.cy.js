@@ -201,7 +201,7 @@ describe("Project tests", function () {
 
         // Create subproject from context menu
         cy.get("[data-cy=project-panel]").should('exist', { timeout: 10000 });
-        cy.get("[data-cy=project-panel] tbody tr").contains(parentProjName).rightclick({ force: true });
+        cy.get("[data-cy=project-panel]").contains(parentProjName).should('exist').parent().rightclick();
         cy.get("[data-cy=context-menu]").contains("New project").click();
         cy.get("[data-cy=form-dialog]")
             .should("contain", "New Project")
