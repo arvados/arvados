@@ -132,7 +132,7 @@ describe('Project Details Card tests', function () {
                     cy.get('input').type(projName);
                 });
             });
-        cy.get('[data-cy=form-submit-btn]').click();
+        cy.get('[data-cy=form-submit-btn]').should('exist').click();
         cy.get('[data-cy=form-dialog]').should('not.exist');
 
         for (let i = 0; i < msButtonTooltips.length; i++) {
