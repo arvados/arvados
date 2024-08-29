@@ -198,10 +198,11 @@ describe("Project tests", function () {
         cy.get("[data-cy=form-submit-btn]").click();
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.go('back')
+        cy.waitForDom();
 
         // Create subproject from context menu
         cy.get("[data-cy=project-panel]").should('exist', { timeout: 10000 });
-        cy.get("[data-cy=project-panel]").contains(parentProjName).should('exist').parent().rightclick();
+        cy.get("[data-cy=project-panel]").contains(parentProjName).should('exist').parents('td').rightclick();
         cy.get("[data-cy=context-menu]").contains("New project").click();
         cy.get("[data-cy=form-dialog]")
             .should("contain", "New Project")
@@ -304,7 +305,7 @@ describe("Project tests", function () {
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
         cy.waitForDom();
         cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
-        cy.get("[data-cy=breadcrumb-last]").should("contain", subProjName);
+        cy.get("[data-cy=breadcrumb-last]").should("contain", subProjName); //here
     });
 
     it("attempts to use a preexisting name creating a project", function () {
@@ -329,7 +330,7 @@ describe("Project tests", function () {
             });
         // Error message should display, allowing editing the name
         cy.get("[data-cy=form-dialog]")
-            .should("exist")
+            .should("exist") //here
             .and("contain", "Project with the same name already exists")
             .within(() => {
                 cy.get("[data-cy=name-field]").within(() => {
