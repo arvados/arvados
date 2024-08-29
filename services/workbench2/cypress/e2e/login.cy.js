@@ -105,7 +105,7 @@ describe('Login tests', function() {
         cy.get('button[aria-label="Admin Panel"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]')
             .contains('Repositories')
-            .type('{esc}');
+            .type('{esc}', {force: true});
         cy.get('button[aria-label="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(
             `${adminUser.user.first_name} ${adminUser.user.last_name}`);
