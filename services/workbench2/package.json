@@ -135,7 +135,7 @@
     "start": "BROWSER=none node scripts/start.js",
     "build": "REACT_APP_VERSION=$VERSION REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT node scripts/build.js",
     "build-local": "node scripts/build.js",
-    "test": " yarn cypress run --component",
+    "test": "CI=true yarn cypress run --component --browser electron",
     "test-path": "yarn cypress run --component --spec",
     "lint": "tslint src/** -t verbose",
     "build-css": "node-sass src/ -o src/",
