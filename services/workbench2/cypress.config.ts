@@ -41,6 +41,7 @@ export default defineConfig({
     devServer: {
       framework: "react",
       bundler: "webpack",
+      baseUrl: "https://localhost:3000/",
       webpackConfig: {
         ...webpackConfig,
         resolve: {
