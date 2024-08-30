@@ -202,10 +202,7 @@ getMethodArguments <- function(methodMetaData)
 
         if(!arg$required)
         {
-            if(!is.null(arg$default))
-                return(paste0(argName, " = ", "\"", arg$default, "\""))
-            else
-                return(paste(argName, "=", "NULL"))
+            return(paste(argName, "=", "NULL"))
         }
 
         argName
