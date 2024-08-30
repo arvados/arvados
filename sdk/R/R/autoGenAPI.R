@@ -21,10 +21,6 @@ generateAPI <- function()
     discoveryDocument <- getAPIDocument()
 
     methodResources <- discoveryDocument$resources
-
-    # Don't emit deprecated APIs
-    methodResources <- methodResources[!(names(methodResources) %in% c("jobs", "job_tasks", "pipeline_templates", "pipeline_instances",
-	    		    "keep_disks", "nodes", "humans", "traits", "specimens"))]
     resourceNames   <- names(methodResources)
 
     methodDoc <- genMethodsDoc(methodResources, resourceNames)
