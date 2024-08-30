@@ -468,8 +468,7 @@ getMethodDescription <- function(methodMetaData)
     argsDoc <- unname(unlist(sapply(argNames, function(argName)
     {
         arg <- methodMetaData$parameters[[argName]]
-        argDescription <- arg$description
-        paste("#' @param", argName, argDescription)
+        paste("#' @param", argName, gsub("\n", "\n#' ", arg$description))
     })))
 
     c(requestDoc, argsDoc)
