@@ -32,27 +32,33 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     missing = canonical.select { |key| canonical[key].nil? }
     assert(missing.empty?, "discovery document missing required fields")
     actual_json = JSON.pretty_generate(canonical)
-
-    # Currently the Python SDK is the only component using this copy of the
-    # discovery document, and storing it with the source simplifies the build
-    # process, so it lives there. If another component wants to use it later,
-    # we might consider moving it to a more general subdirectory, but then the
-    # Python build process will need to be extended to accommodate that.
-    src_path = Rails.root.join("../../sdk/python/arvados-v1-discovery.json")
-    begin
-      expected_json = File.open(src_path) { |f| f.read }
-    rescue Errno::ENOENT
-      expected_json = "(#{src_path} not found)"
-    end
-
-    out_path = Rails.root.join("tmp", "test-arvados-v1-discovery.json")
-    if expected_json != actual_json
+    # Check committed copies of the discovery document that support code or
+    # documentation generation for other Arvados components.
+    bad_copies = [
+      "sdk/python/arvados-v1-discovery.json",
+      "sdk/R/arvados-v1-discovery.json",
+    ].filter_map do |rel_path|
+      src_path = Rails.root.join("..", "..", rel_path)
+      begin
+        expected_json = File.open(src_path) { |f| f.read }
+      rescue Errno::ENOENT
+        expected_json = "(#{src_path} not found)"
+      end
+      if expected_json == actual_json
+        nil
+      else
+        src_path
+      end
+    end.to_a
+    if bad_copies.any?
+      out_path = Rails.root.join("tmp", "test-arvados-v1-discovery.json")
       File.open(out_path, "w") { |f| f.write(actual_json) }
     end
-    assert_equal(expected_json, actual_json,
-                 "Live discovery document did not match the expected version (#{src_path}). " +
-                 "If the live version is correct, copy it to the git working directory by running:\n" +
-                 "cp #{out_path} #{src_path}\n")
+    assert_equal([], bad_copies,
+                 "Live discovery document did not match the copies at:\n" +
+                 bad_copies.map { |path| " * #{path}\n" }.join("") +
+                 "If the live version is correct, copy it to these paths by running:\n" +
+                 bad_copies.map { |path| "   cp #{out_path} #{path}\n"}.join(""))
   end
 
   test "all methods have full descriptions" do
