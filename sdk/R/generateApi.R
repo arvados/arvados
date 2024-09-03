@@ -2,11 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-getAPIDocument <- function(){
-    url <- "https://jutro.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
-    serverResponse <- httr::RETRY("GET", url = url)
+library(jsonlite)
 
-    httr::content(serverResponse, as = "parsed", type = "application/json")
+getAPIDocument <- function(loc)
+{
+    if (length(grep("^[a-z]+://", loc)) > 0) {
+        library(httr)
+        serverResponse <- httr::RETRY("GET", url = loc)
+        httr::content(serverResponse, as = "parsed", type = "application/json")
+    } else {
+        jsonlite::read_json(loc)
+    }
 }
 
 #' generateAPI
@@ -14,12 +20,8 @@ getAPIDocument <- function(){
 #' Autogenerate classes to interact with Arvados from the Arvados discovery document.
 #'
 #' @export
-generateAPI <- function()
+generateAPI <- function(discoveryDocument)
 {
-    #TODO: Consider passing discovery document URL as parameter.
-    #TODO: Consider passing location where to create new files.
-    discoveryDocument <- getAPIDocument()
-
     methodResources <- discoveryDocument$resources
     resourceNames   <- names(methodResources)
 
@@ -577,3 +579,12 @@ formatArgs <- function(prependAtStart, prependToEachSplit,
 
     argLines
 }
+
+args <- commandArgs(TRUE)
+if (length(args) == 0) {
+   loc <- "arvados-v1-discovery.json"
+} else {
+   loc <- args[[1]]
+}
+discoveryDocument <- getAPIDocument(loc)
+generateAPI(discoveryDocument)
