@@ -58,7 +58,7 @@ class RSDK
   end
 
   def self.can_build?
-    can_run?("R", "--version")
+    can_run?("make", "can_run", chdir: File.join("..", self.build_path))
   end
 end
 
@@ -142,6 +142,7 @@ file "sdk/R/arvados/index.html" do |t|
   Dir.mkdir("sdk/R")
   Dir.mkdir("sdk/R/arvados")
   cp('css/R.css', 'sdk/R/arvados')
+  raise unless system("make", "man", chdir: "../sdk/R", out: :err)
   docnames = Dir.glob("../sdk/R/man/*.Rd").map { |rd| File.basename(rd, ".Rd") }.sort
   docnames.each do |basename|
     raise unless system(
