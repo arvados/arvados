@@ -452,8 +452,7 @@ getMethodDescription <- function(methodMetaData)
         requestDoc <- unname(unlist(sapply(request$properties, function(prop)
                              {
                                  className <- sapply(prop, function(ref) ref)
-                                 objectName <- paste0(tolower(substr(className, 1, 1)),
-                                                      substr(className, 2, nchar(className)))
+                                 objectName <- tolower(className)
                                  paste("#' @param", objectName, className, "object.")
                              })))
     }
