@@ -33,7 +33,8 @@ import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-p
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 
-type CssRules = 'root'
+type CssRules =
+    'root'
     | 'button'
     | 'infoCard'
     | 'propertiesCard'

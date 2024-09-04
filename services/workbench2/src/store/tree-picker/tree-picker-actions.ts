@@ -138,6 +138,23 @@ export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>)
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODE({ id, pickerId }));
     };
 
+export const extractGroupContentsNodeData = (expandableCollections: boolean) => (item: GroupContentsResource) => (
+    item.uuid === "more-items-available"
+        ? {
+            id: item.uuid,
+            value: item,
+            status: TreeNodeStatus.LOADED
+        }
+        : {
+            id: item.uuid,
+            value: item,
+            status: item.kind === ResourceKind.PROJECT
+                ? TreeNodeStatus.INITIAL
+                : item.kind === ResourceKind.COLLECTION && expandableCollections
+                    ? TreeNodeStatus.INITIAL
+                    : TreeNodeStatus.LOADED
+        }
+);
 interface LoadProjectParamsWithId extends LoadProjectParams {
     id: string;
     pickerId: string;
@@ -200,7 +217,6 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                     definition: "",
                     ownerUuid: "",
                     createdAt: "",
-                    modifiedByClientUuid: "",
                     modifiedByUserUuid: "",
                     modifiedAt: "",
                     href: "",
@@ -222,22 +238,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
                     return true;
                 }),
-                extractNodeData: item => (
-                    item.uuid === "more-items-available" ?
-                        {
-                            id: item.uuid,
-                            value: item,
-                            status: TreeNodeStatus.LOADED
-                        }
-                        : {
-                            id: item.uuid,
-                            value: item,
-                            status: item.kind === ResourceKind.PROJECT
-                                ? TreeNodeStatus.INITIAL
-                                : includeDirectories || includeFiles
-                                    ? TreeNodeStatus.INITIAL
-                                    : TreeNodeStatus.LOADED
-                        }),
+                extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
             }));
         } catch(e) {
             console.error("Failed to load project into tree picker:", e);;
@@ -528,15 +529,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
 
                     return true;
                 }),
-                extractNodeData: item => ({
-                    id: item.uuid,
-                    value: item,
-                    status: item.kind === ResourceKind.PROJECT
-                        ? TreeNodeStatus.INITIAL
-                        : includeDirectories || includeFiles
-                            ? TreeNodeStatus.INITIAL
-                            : TreeNodeStatus.LOADED
-                }),
+                extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
             }));
         }
     };

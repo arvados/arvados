@@ -333,11 +333,6 @@ func (c *command) requestPriority(req *http.Request, queued time.Time) int64 {
 		// to send feedback to dispatchcloud ASAP to stop
 		// bringing up new containers.
 		return httpserver.MinPriority
-	case req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs"):
-		// "Create log entry" is the most harmless kind of
-		// request to drop. Negative priority is called "low"
-		// in aggregate metrics.
-		return -1
 	case req.Header.Get("Origin") != "":
 		// Handle interactive requests first. Positive
 		// priority is called "high" in aggregate metrics.

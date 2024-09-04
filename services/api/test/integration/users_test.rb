@@ -160,7 +160,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # create a token
     token = act_as_system_user do
-      ApiClientAuthorization.create!(user: User.find_by_uuid(created['uuid']), api_client: ApiClient.all.first).api_token
+      ApiClientAuthorization.create!(user: User.find_by_uuid(created['uuid'])).api_token
     end
 
     # share project and collections with the new user
@@ -252,7 +252,7 @@ class UsersTest < ActionDispatch::IntegrationTest
           "username" => "barney"
         }
       },
-      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
+      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_token(:admin)}"}
     assert_response :success
     rp = json_response
     assert_not_nil rp["uuid"]
@@ -284,7 +284,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal false, user['is_active']
 
     token = act_as_system_user do
-      ApiClientAuthorization.create!(user: User.find_by_uuid(user['uuid']), api_client: ApiClient.all.first).api_token
+      ApiClientAuthorization.create!(user: User.find_by_uuid(user['uuid'])).api_token
     end
     post("/arvados/v1/user_agreements/sign",
         params: {uuid: 'zzzzz-4zz18-t68oksiu9m80s4y'},
@@ -314,7 +314,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     token = nil
     act_as_system_user do
       user = User.create!(email: "bob@example.com", username: "bobby")
-      ap = ApiClientAuthorization.create!(user: user, api_client: ApiClient.all.first)
+      ap = ApiClientAuthorization.create!(user: user)
       token = ap.api_token
     end
 
@@ -341,7 +341,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     token = nil
     act_as_system_user do
       user = User.create!(email: "bob@example.com", username: "bobby")
-      ap = ApiClientAuthorization.create!(user: user, api_client_id: 0)
+      ap = ApiClientAuthorization.create!(user: user)
       token = ap.api_token
     end
 
@@ -380,7 +380,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Need to get a new token, the old one was invalidated by the unsetup call
     act_as_system_user do
-      ap = ApiClientAuthorization.create!(user: user, api_client_id: 0)
+      ap = ApiClientAuthorization.create!(user: user)
       token = ap.api_token
     end
 

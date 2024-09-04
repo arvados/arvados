@@ -40,7 +40,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
-	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"golang.org/x/sys/unix"
 )
 
@@ -76,7 +75,6 @@ var ErrCancelled = errors.New("Cancelled")
 type IKeepClient interface {
 	BlockWrite(context.Context, arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error)
 	ReadAt(locator string, p []byte, off int) (int, error)
-	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	LocalLocator(locator string) (string, error)
 	SetStorageClasses(sc []string)
 }
@@ -316,8 +314,8 @@ func (runner *ContainerRunner) ArvMountCmd(cmdline []string, token string) (c *e
 			})
 		},
 	}
-	c.Stdout = runner.arvMountLog
-	c.Stderr = io.MultiWriter(runner.arvMountLog, os.Stderr, &scanner)
+	c.Stdout = newTimestamper(io.MultiWriter(runner.arvMountLog, os.Stderr))
+	c.Stderr = io.MultiWriter(&scanner, newTimestamper(io.MultiWriter(runner.arvMountLog, os.Stderr)))
 
 	runner.CrunchLog.Printf("Running %v", c.Args)
 
@@ -736,7 +734,7 @@ func (runner *ContainerRunner) startHoststat() error {
 		return err
 	}
 	runner.hoststatReporter = &crunchstat.Reporter{
-		Logger: newLogWriter(runner.hoststatLogger),
+		Logger: newLogWriter(newTimestamper(runner.hoststatLogger)),
 		// Our own cgroup is the "host" cgroup, in the sense
 		// that it accounts for resource usage outside the
 		// container. It doesn't count _all_ resource usage on
@@ -762,7 +760,7 @@ func (runner *ContainerRunner) startCrunchstat() error {
 	runner.statReporter = &crunchstat.Reporter{
 		Pid:    runner.executor.Pid,
 		FS:     runner.crunchstatFakeFS,
-		Logger: newLogWriter(runner.statLogger),
+		Logger: newLogWriter(newTimestamper(runner.statLogger)),
 		MemThresholds: map[string][]crunchstat.Threshold{
 			"rss": crunchstat.NewThresholdsFromPercentages(runner.Container.RuntimeConstraints.RAM, []int64{90, 95, 99}),
 		},

@@ -14,8 +14,7 @@ export enum ContainerRequestState {
 }
 
 export interface ContainerRequestResource
-    extends Resource,
-    ResourceWithProperties {
+extends Resource, ResourceWithProperties {
     command: string[];
     containerCountMax: number;
     containerCount: number;
@@ -37,6 +36,7 @@ export interface ContainerRequestResource
     outputStorageClasses: string[];
     outputTtl: number;
     outputUuid: string | null;
+    outputGlob: string[];
     priority: number | null;
     requestingContainerUuid: string | null;
     runtimeConstraints: RuntimeConstraints;
@@ -64,7 +64,6 @@ export const containerRequestFieldsNoMounts = [
     "kind",
     "log_uuid",
     "modified_at",
-    "modified_by_client_uuid",
     "modified_by_user_uuid",
     "name",
     "output_name",
@@ -73,6 +72,7 @@ export const containerRequestFieldsNoMounts = [
     "output_storage_classes",
     "output_ttl",
     "output_uuid",
+    "output_glob",
     "owner_uuid",
     "priority",
     "properties",

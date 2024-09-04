@@ -39,6 +39,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.collection_cache_size = 256
         self.match_local_docker = False
         self.enable_preemptible = None
+        self.enable_resubmit_non_preemptible = None
         self.copy_deps = None
         self.defer_downloads = False
         self.varying_url_params = ""

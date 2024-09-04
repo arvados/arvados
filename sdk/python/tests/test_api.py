@@ -23,13 +23,15 @@ from . import run_test_server
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
 from arvados.api import (
+    ThreadSafeAPIClient,
     api_client,
     normalize_api_kwargs,
     api_kwargs_from_config,
-    OrderedJsonModel,
     _googleapiclient_log_lock,
 )
 from .arvados_testutil import fake_httplib2_response, mock_api_responses, queue_with
+
+import googleapiclient
 import httplib2.error
 
 if not mimetypes.inited:
@@ -200,21 +202,6 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
                 response = exc_check.exception.args[0]
                 self.assertEqual(response.status, code)
                 self.assertEqual(response.get('status'), str(code))
-
-    def test_ordered_json_model(self):
-        mock_responses = {
-            'arvados.collections.get': (
-                None,
-                json.dumps(collections.OrderedDict(
-                    (c, int(c, 16)) for c in string.hexdigits
-                )).encode(),
-            ),
-        }
-        req_builder = apiclient_http.RequestMockBuilder(mock_responses)
-        api = arvados.api('v1',
-                          requestBuilder=req_builder, model=OrderedJsonModel())
-        result = api.collections().get(uuid='test').execute()
-        self.assertEqual(string.hexdigits, ''.join(list(result.keys())))
 
     def test_api_is_threadsafe(self):
         api_kwargs = {
@@ -537,6 +524,62 @@ class PreCloseSocketTestCase(unittest.TestCase):
         self.api.users().create(body={}).execute()
         for c in mock_conns.values():
             self.assertEqual(c.close.call_count, expect)
+
+
+class ThreadSafeAPIClientTestCase(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+
+    def test_constructor(self):
+        env_mapping = {
+            key: value
+            for key, value in os.environ.items()
+            if key.startswith('ARVADOS_API_')
+        }
+        extra_params = {
+            'timeout': 299,
+        }
+        base_params = {
+            key[12:].lower(): value
+            for key, value in env_mapping.items()
+        }
+        try:
+            base_params['insecure'] = base_params.pop('host_insecure')
+        except KeyError:
+            pass
+        expected_keep_params = {}
+        for config, params, subtest in [
+                (None, {}, "default arguments"),
+                (None, extra_params, "extra params"),
+                (env_mapping, {}, "explicit config"),
+                (env_mapping, extra_params, "explicit config and params"),
+                ({}, base_params, "params only"),
+        ]:
+            with self.subTest(f"test constructor with {subtest}"):
+                expected_timeout = params.get('timeout', 300)
+                expected_params = dict(params)
+                keep_params = dict(expected_keep_params)
+                client = ThreadSafeAPIClient(config, keep_params, params, 'v1')
+                self.assertTrue(hasattr(client, 'localapi'), "client missing localapi method")
+                self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'])
+                self.assertEqual(client._http.timeout, expected_timeout)
+                self.assertEqual(params, expected_params,
+                                 "api_params was modified in-place")
+                self.assertEqual(keep_params, expected_keep_params,
+                                 "keep_params was modified in-place")
+
+    def test_constructor_no_args(self):
+        client = ThreadSafeAPIClient()
+        self.assertTrue(hasattr(client, 'localapi'), "client missing localapi method")
+        self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'])
+        self.assertTrue(client.insecure)
+
+    def test_constructor_bad_version(self):
+        with self.assertRaises(googleapiclient.errors.UnknownApiNameOrVersion):
+            ThreadSafeAPIClient(version='BadTestVersion')
+
+    def test_pre_v3_0_name(self):
+        from arvados.safeapi import ThreadSafeApiCache
+        self.assertIs(ThreadSafeApiCache, ThreadSafeAPIClient)
 
 
 if __name__ == '__main__':

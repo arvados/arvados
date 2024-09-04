@@ -67,9 +67,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     <Tab className={classes.tab} label="Details" />
                 </Tabs>
                 {value === 0 && <CardContent className={classes.descriptionTab}>
-                    {workflow ? <div>
-                        {workflow.description}
-                    </div> : (
+                    {workflow ? <div dangerouslySetInnerHTML={{ __html: workflow.description || '(no-description)' }}></div> : (
                         <DataTableDefaultView
                             icon={WorkflowIcon}
                             messages={['Please select a workflow to see its description.']} />
@@ -77,18 +75,18 @@ export const WorkflowDetailsCard = withStyles(styles)(
                 </CardContent>}
                 {value === 1 && <CardContent className={classes.inputTab}>
                     {workflow
-                        ? this.renderInputsTable()
-                        : <DataTableDefaultView
-                            icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its inputs.']} />
+                    ? this.renderInputsTable()
+                    : <DataTableDefaultView
+                          icon={WorkflowIcon}
+                          messages={['Please select a workflow to see its inputs.']} />
                     }
                 </CardContent>}
                 {value === 2 && <CardContent className={classes.descriptionTab}>
                     {workflow
-                        ? <WorkflowDetailsAttributes workflow={workflow} />
-                        : <DataTableDefaultView
-                            icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its details.']} />
+                    ? <WorkflowDetailsAttributes workflow={workflow} />
+                    : <DataTableDefaultView
+                          icon={WorkflowIcon}
+                          messages={['Please select a workflow to see its details.']} />
                     }
                 </CardContent>}
             </div>;

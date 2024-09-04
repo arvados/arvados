@@ -6,14 +6,13 @@ require 'safe_json'
 
 class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   accept_attribute_as_json :scopes, Array
-  before_action :current_api_client_is_trusted, :except => [:current]
+  before_action :check_issue_trusted_tokens, :except => [:current]
   before_action :admin_required, :only => :create_system_auth
   skip_before_action :render_404_if_no_object, :only => [:create_system_auth, :current]
   skip_before_action :find_object_by_uuid, :only => [:create_system_auth, :current]
 
   def self._create_system_auth_requires_parameters
     {
-      api_client_id: {type: 'integer', required: false},
       scopes: {type: 'array', required: false}
     }
   end
@@ -21,7 +20,6 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   def create_system_auth
     @object = ApiClientAuthorization.
       new(user_id: system_user.id,
-          api_client_id: params[:api_client_id] || current_api_client.andand.id,
           created_by_ip_address: remote_ip,
           scopes: SafeJSON.load(params[:scopes] || '["all"]'))
     @object.save!
@@ -41,10 +39,9 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       # translate UUID to numeric ID here.
       resource_attrs[:user_id] =
         User.where(uuid: resource_attrs.delete(:owner_uuid)).first.andand.id
-    elsif not resource_attrs[:user_id]
+    else
       resource_attrs[:user_id] = current_user.id
     end
-    resource_attrs[:api_client_id] = Thread.current[:api_client].id
     super
   end
 
@@ -81,7 +78,6 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       wanted_scopes << @where['scopes']
       @where.select! { |attr, val|
         # "where":{"uuid":"zzzzz-zzzzz-zzzzzzzzzzzzzzz"} is OK but
-        # "where":{"api_client_id":1} is not supported
         # "where":{"uuid":["contains","-"]} is not supported
         # "where":{"uuid":["uuid1","uuid2","uuid3"]} is not supported
         val.is_a?(String) && (attr == 'uuid' || attr == 'api_token')
@@ -131,7 +127,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   def find_object_by_uuid(with_lock: false)
     uuid_param = params[:uuid] || params[:id]
     if (uuid_param != current_api_client_authorization.andand.uuid &&
-        !Thread.current[:api_client].andand.is_trusted)
+        !Rails.configuration.Login.IssueTrustedTokens)
       return forbidden
     end
     @limit = 1
@@ -147,34 +143,13 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     @object = query.first
   end
 
-  def current_api_client_is_trusted
-    if Thread.current[:api_client].andand.is_trusted
-      return true
-    end
-    # A non-trusted client can do a search for its own token if it
-    # explicitly restricts the search to its own UUID or api_token.
-    # Any other kind of query must return 403, even if it matches only
-    # the current token, because that's currently how Workbench knows
-    # (after searching on scopes) the difference between "the token
-    # I'm using now *is* the only sharing token for this collection"
-    # (403) and "my token is trusted, and there is one sharing token
-    # for this collection" (200).
-    #
-    # The @filters test here also prevents a non-trusted token from
-    # filtering on its own scopes, and discovering whether any _other_
-    # equally scoped tokens exist (403=yes, 200=no).
-    return forbidden if !@objects
-    full_set = @objects.except(:limit).except(:offset) if @objects
-    if (full_set.count == 1 and
-        full_set.first.uuid == current_api_client_authorization.andand.uuid and
-        (@filters.map(&:first) & %w(uuid api_token)).any?)
-      return true
-    end
-    forbidden
+  def check_issue_trusted_tokens
+    return true if current_api_client_authorization.andand.api_token == Rails.configuration.SystemRootToken
+    return forbidden if !Rails.configuration.Login.IssueTrustedTokens
   end
 
   def forbidden
-    send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
+    send_error('Action prohibited by IssueTrustedTokens configuration.',
                status: 403)
   end
 end

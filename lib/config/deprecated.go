@@ -31,6 +31,10 @@ type deprCluster struct {
 		ProviderAppID                 *string
 		ProviderAppSecret             *string
 	}
+	Mail struct {
+		SendUserSetupNotificationEmail *bool
+		SupportEmailAddress            *string
+	}
 }
 
 type deprecatedConfig struct {
@@ -86,6 +90,14 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 		if dst, n := &cluster.API.MaxRequestAmplification, dcluster.RequestLimits.MultiClusterRequestConcurrency; n != nil && *n != *dst {
 			*dst = *n
+		}
+		if dst, addr := &cluster.Users.SupportEmailAddress, dcluster.Mail.SupportEmailAddress; addr != nil {
+			*dst = *addr
+			ldr.Logger.Warnf("using your old config key Mail.SupportEmailAddress -- but you should rename it to Users.SupportEmailAddress")
+		}
+		if dst, b := &cluster.Users.SendUserSetupNotificationEmail, dcluster.Mail.SendUserSetupNotificationEmail; b != nil {
+			*dst = *b
+			ldr.Logger.Warnf("using your old config key Mail.SendUserSetupNotificationEmail -- but you should rename it to Users.SendUserSetupNotificationEmail")
 		}
 
 		// Google* moved to Google.*

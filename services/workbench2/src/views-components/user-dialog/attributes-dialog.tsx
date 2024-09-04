@@ -63,7 +63,7 @@ export const UserAttributesDialog = compose(
     );
 
 const attributes = (user: UserResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid,
         firstName, lastName, username, email, isActive, isAdmin } = user;
     return (
         <span>
@@ -80,7 +80,6 @@ const attributes = (user: UserResource, classes: any) => {
                     {modifiedAt && <Grid item>Modified at</Grid>}
                     {ownerUuid && <Grid item>Owner uuid</Grid>}
                     {modifiedByUserUuid && <Grid item>Modified by user uuid</Grid>}
-                    {modifiedByClientUuid && <Grid item>Modified by client uuid</Grid>}
                 </Grid>
                 <Grid item xs={7} className={classes.leftContainer}>
                     <Grid item>{uuid}</Grid>
@@ -94,7 +93,6 @@ const attributes = (user: UserResource, classes: any) => {
                     <Grid item>{modifiedAt}</Grid>
                     <Grid item>{ownerUuid}</Grid>
                     <Grid item>{modifiedByUserUuid}</Grid>
-                    <Grid item>{modifiedByClientUuid}</Grid>
                 </Grid>
             </Grid>
         </span>

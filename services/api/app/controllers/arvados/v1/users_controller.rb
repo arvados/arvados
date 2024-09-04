@@ -153,9 +153,7 @@ class Arvados::V1::UsersController < ApplicationController
         return send_error("User in old_user_uuid not found", status: 422)
       end
     else
-      if !Thread.current[:api_client].andand.is_trusted
-        return send_error("supplied API token is not from a trusted client", status: 403)
-      elsif Thread.current[:api_client_authorization].scopes != ['all']
+      if Thread.current[:api_client_authorization].scopes != ['all']
         return send_error("cannot merge with a scoped token", status: 403)
       end
 
@@ -165,9 +163,7 @@ class Arvados::V1::UsersController < ApplicationController
       end
 
       if new_auth.user.uuid[0..4] == Rails.configuration.ClusterID
-        if !new_auth.api_client.andand.is_trusted
-          return send_error("supplied new_user_token is not from a trusted client", status: 403)
-        elsif new_auth.scopes != ['all']
+        if new_auth.scopes != ['all']
           return send_error("supplied new_user_token has restricted scope", status: 403)
         end
       end

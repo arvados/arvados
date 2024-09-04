@@ -159,7 +159,7 @@ export const AllProcessesPanel = withStyles(styles)(
                             onRowClick={this.handleRowClick}
                             onRowDoubleClick={this.handleRowDoubleClick}
                             onContextMenu={this.handleContextMenu}
-                            contextMenuColumn={true}
+                            contextMenuColumn={false}
                             defaultViewIcon={ProcessIcon}
                             defaultViewMessages={["Processes list empty."]}
                         />

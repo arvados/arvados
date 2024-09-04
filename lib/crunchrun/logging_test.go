@@ -17,6 +17,8 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+const reTimestamp = `....-..-..T..:..:..\..........Z`
+
 // newTestTimestamper wraps an io.Writer, inserting a predictable
 // RFC3339NanoFixed timestamp at the beginning of each line.
 func newTestTimestamper(w io.Writer) *prefixer {
@@ -59,8 +61,8 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	c.Check(api.Calls, Equals, 0)
 
 	logs := logFileContent(c, cr, "crunch-run.txt")
-	c.Check(logs, Matches, `....-..-..T..:..:..\..........Z Hello world!\n`+
-		`....-..-..T..:..:..\..........Z Goodbye\n`)
+	c.Check(logs, Matches, reTimestamp+` Hello world!\n`+
+		reTimestamp+` Goodbye\n`)
 }
 
 func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
@@ -134,8 +136,8 @@ func (s *LoggingTestSuite) TestLogUpdate(c *C) {
 		cr.CrunchLog.Print("Goodbye")
 		fmt.Fprintln(stdout, "Goodbye")
 
-		c.Check(logFileContent(c, cr, "crunch-run.txt"), Matches, `....-..-..T..:..:............Z Hello  {995}space\n`+
-			`....-..-..T..:..:............Z Goodbye\n`)
+		c.Check(logFileContent(c, cr, "crunch-run.txt"), Matches, reTimestamp+` Hello  {995}space\n`+
+			reTimestamp+` Goodbye\n`)
 		c.Check(logFileContent(c, cr, "stdout.txt"), Matches, `Goodbye\n`)
 
 		mt, err := cr.LogCollection.MarshalManifest(".")

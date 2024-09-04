@@ -7,34 +7,25 @@ This module provides functions and constants that are useful across a variety
 of Arvados resource types, or extend the Arvados API client (see `arvados.api`).
 """
 
-import dataclasses
-import enum
 import errno
 import fcntl
-import functools
 import hashlib
 import httplib2
-import itertools
-import logging
+import operator
 import os
 import random
 import re
-import shlex
-import stat
 import subprocess
 import sys
-import warnings
 
 import arvados.errors
 
-from pathlib import Path, PurePath
 from typing import (
     Any,
     Callable,
+    Container,
     Dict,
     Iterator,
-    Mapping,
-    Optional,
     TypeVar,
     Union,
 )
@@ -75,227 +66,6 @@ link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
 """Regular expression to match any Arvados link UUID"""
 user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
 """Regular expression to match any Arvados user UUID"""
-job_uuid_pattern = re.compile(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}')
-"""Regular expression to match any Arvados job UUID
-
-.. WARNING:: Deprecated
-   Arvados job resources are deprecated and will be removed in a future
-   release. Prefer the containers API instead.
-"""
-
-logger = logging.getLogger('arvados')
-
-def _deprecated(version=None, preferred=None):
-    """Mark a callable as deprecated in the SDK
-
-    This will wrap the callable to emit as a DeprecationWarning
-    and add a deprecation notice to its docstring.
-
-    If the following arguments are given, they'll be included in the
-    notices:
-
-    * preferred: str | None --- The name of an alternative that users should
-      use instead.
-
-    * version: str | None --- The version of Arvados when the callable is
-      scheduled to be removed.
-    """
-    if version is None:
-        version = ''
-    else:
-        version = f' and scheduled to be removed in Arvados {version}'
-    if preferred is None:
-        preferred = ''
-    else:
-        preferred = f' Prefer {preferred} instead.'
-    def deprecated_decorator(func):
-        fullname = f'{func.__module__}.{func.__qualname__}'
-        parent, _, name = fullname.rpartition('.')
-        if name == '__init__':
-            fullname = parent
-        warning_msg = f'{fullname} is deprecated{version}.{preferred}'
-        @functools.wraps(func)
-        def deprecated_wrapper(*args, **kwargs):
-            warnings.warn(warning_msg, DeprecationWarning, 2)
-            return func(*args, **kwargs)
-        # Get func's docstring without any trailing newline or empty lines.
-        func_doc = re.sub(r'\n\s*$', '', func.__doc__ or '')
-        match = re.search(r'\n([ \t]+)\S', func_doc)
-        indent = '' if match is None else match.group(1)
-        warning_doc = f'\n\n{indent}.. WARNING:: Deprecated\n{indent}   {warning_msg}'
-        # Make the deprecation notice the second "paragraph" of the
-        # docstring if possible. Otherwise append it.
-        docstring, count = re.subn(
-            rf'\n[ \t]*\n{indent}',
-            f'{warning_doc}\n\n{indent}',
-            func_doc,
-            count=1,
-        )
-        if not count:
-            docstring = f'{func_doc.lstrip()}{warning_doc}'
-        deprecated_wrapper.__doc__ = docstring
-        return deprecated_wrapper
-    return deprecated_decorator
-
-@dataclasses.dataclass
-class _BaseDirectorySpec:
-    """Parse base directories
-
-    A _BaseDirectorySpec defines all the environment variable keys and defaults
-    related to a set of base directories (cache, config, state, etc.). It
-    provides pure methods to parse environment settings into valid paths.
-    """
-    systemd_key: str
-    xdg_home_key: str
-    xdg_home_default: PurePath
-    xdg_dirs_key: Optional[str] = None
-    xdg_dirs_default: str = ''
-
-    @staticmethod
-    def _abspath_from_env(env: Mapping[str, str], key: str) -> Optional[Path]:
-        try:
-            path = Path(env[key])
-        except (KeyError, ValueError):
-            ok = False
-        else:
-            ok = path.is_absolute()
-        return path if ok else None
-
-    @staticmethod
-    def _iter_abspaths(value: str) -> Iterator[Path]:
-        for path_s in value.split(':'):
-            path = Path(path_s)
-            if path.is_absolute():
-                yield path
-
-    def iter_systemd(self, env: Mapping[str, str]) -> Iterator[Path]:
-        return self._iter_abspaths(env.get(self.systemd_key, ''))
-
-    def iter_xdg(self, env: Mapping[str, str], subdir: PurePath) -> Iterator[Path]:
-        yield self.xdg_home(env, subdir)
-        if self.xdg_dirs_key is not None:
-            for path in self._iter_abspaths(env.get(self.xdg_dirs_key) or self.xdg_dirs_default):
-                yield path / subdir
-
-    def xdg_home(self, env: Mapping[str, str], subdir: PurePath) -> Path:
-        return (
-            self._abspath_from_env(env, self.xdg_home_key)
-            or self.xdg_home_default_path(env)
-        ) / subdir
-
-    def xdg_home_default_path(self, env: Mapping[str, str]) -> Path:
-        return (self._abspath_from_env(env, 'HOME') or Path.home()) / self.xdg_home_default
-
-    def xdg_home_is_customized(self, env: Mapping[str, str]) -> bool:
-        xdg_home = self._abspath_from_env(env, self.xdg_home_key)
-        return xdg_home is not None and xdg_home != self.xdg_home_default_path(env)
-
-
-class _BaseDirectorySpecs(enum.Enum):
-    """Base directory specifications
-
-    This enum provides easy access to the standard base directory settings.
-    """
-    CACHE = _BaseDirectorySpec(
-        'CACHE_DIRECTORY',
-        'XDG_CACHE_HOME',
-        PurePath('.cache'),
-    )
-    CONFIG = _BaseDirectorySpec(
-        'CONFIGURATION_DIRECTORY',
-        'XDG_CONFIG_HOME',
-        PurePath('.config'),
-        'XDG_CONFIG_DIRS',
-        '/etc/xdg',
-    )
-    STATE = _BaseDirectorySpec(
-        'STATE_DIRECTORY',
-        'XDG_STATE_HOME',
-        PurePath('.local', 'state'),
-    )
-
-
-class _BaseDirectories:
-    """Resolve paths from a base directory spec
-
-    Given a _BaseDirectorySpec, this class provides stateful methods to find
-    existing files and return the most-preferred directory for writing.
-    """
-    _STORE_MODE = stat.S_IFDIR | stat.S_IWUSR
-
-    def __init__(
-            self,
-            spec: Union[_BaseDirectorySpec, _BaseDirectorySpecs, str],
-            env: Mapping[str, str]=os.environ,
-            xdg_subdir: Union[os.PathLike, str]='arvados',
-    ) -> None:
-        if isinstance(spec, str):
-            spec = _BaseDirectorySpecs[spec].value
-        elif isinstance(spec, _BaseDirectorySpecs):
-            spec = spec.value
-        self._spec = spec
-        self._env = env
-        self._xdg_subdir = PurePath(xdg_subdir)
-
-    def search(self, name: str) -> Iterator[Path]:
-        any_found = False
-        for search_path in itertools.chain(
-                self._spec.iter_systemd(self._env),
-                self._spec.iter_xdg(self._env, self._xdg_subdir),
-        ):
-            path = search_path / name
-            if path.exists():
-                yield path
-                any_found = True
-        # The rest of this function is dedicated to warning the user if they
-        # have a custom XDG_*_HOME value that prevented the search from
-        # succeeding. This should be rare.
-        if any_found or not self._spec.xdg_home_is_customized(self._env):
-            return
-        default_home = self._spec.xdg_home_default_path(self._env)
-        default_path = Path(self._xdg_subdir / name)
-        if not (default_home / default_path).exists():
-            return
-        if self._spec.xdg_dirs_key is None:
-            suggest_key = self._spec.xdg_home_key
-            suggest_value = default_home
-        else:
-            suggest_key = self._spec.xdg_dirs_key
-            cur_value = self._env.get(suggest_key, '')
-            value_sep = ':' if cur_value else ''
-            suggest_value = f'{cur_value}{value_sep}{default_home}'
-        logger.warning(
-            "\
-%s was not found under your configured $%s (%s), \
-but does exist at the default location (%s) - \
-consider running this program with the environment setting %s=%s\
-",
-            default_path,
-            self._spec.xdg_home_key,
-            self._spec.xdg_home(self._env, ''),
-            default_home,
-            suggest_key,
-            shlex.quote(suggest_value),
-        )
-
-    def storage_path(
-            self,
-            subdir: Union[str, os.PathLike]=PurePath(),
-            mode: int=0o700,
-    ) -> Path:
-        for path in self._spec.iter_systemd(self._env):
-            try:
-                mode = path.stat().st_mode
-            except OSError:
-                continue
-            if (mode & self._STORE_MODE) == self._STORE_MODE:
-                break
-        else:
-            path = self._spec.xdg_home(self._env, self._xdg_subdir)
-        path /= subdir
-        path.mkdir(parents=True, exist_ok=True, mode=mode)
-        return path
-
 
 def is_hex(s: str, *length_args: int) -> bool:
     """Indicate whether a string is a hexadecimal number
@@ -332,6 +102,7 @@ def keyset_list_all(
         order_key: str="created_at",
         num_retries: int=0,
         ascending: bool=True,
+        key_fields: Container[str]=('uuid',),
         **kwargs: Any,
 ) -> Iterator[Dict[str, Any]]:
     """Iterate all Arvados resources from an API list call
@@ -362,29 +133,41 @@ def keyset_list_all(
       all fields will be sorted in `'asc'` (ascending) order. Otherwise, all
       fields will be sorted in `'desc'` (descending) order.
 
+    * key_fields: Container[str] --- One or two fields that constitute
+      a unique key for returned items.  Normally this should be the
+      default value `('uuid',)`, unless `fn` returns
+      computed_permissions records, in which case it should be
+      `('user_uuid', 'target_uuid')`.  If two fields are given, one of
+      them must be equal to `order_key`.
+
     Additional keyword arguments will be passed directly to `fn` for each API
     call. Note that this function sets `count`, `limit`, and `order` as part of
     its work.
+
     """
+    tiebreak_keys = set(key_fields) - {order_key}
+    if len(tiebreak_keys) == 0:
+        tiebreak_key = 'uuid'
+    elif len(tiebreak_keys) == 1:
+        tiebreak_key = tiebreak_keys.pop()
+    else:
+        raise arvados.errors.ArgumentError(
+            "key_fields can have at most one entry that is not order_key")
+
     pagesize = 1000
     kwargs["limit"] = pagesize
     kwargs["count"] = 'none'
     asc = "asc" if ascending else "desc"
-    kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
+    kwargs["order"] = [f"{order_key} {asc}", f"{tiebreak_key} {asc}"]
     other_filters = kwargs.get("filters", [])
 
-    try:
-        select = set(kwargs['select'])
-    except KeyError:
-        pass
-    else:
-        select.add(order_key)
-        select.add('uuid')
-        kwargs['select'] = list(select)
+    if 'select' in kwargs:
+        kwargs['select'] = list({*kwargs['select'], *key_fields, order_key})
 
     nextpage = []
     tot = 0
     expect_full_page = True
+    key_getter = operator.itemgetter(*key_fields)
     seen_prevpage = set()
     seen_thispage = set()
     lastitem = None
@@ -409,9 +192,10 @@ def keyset_list_all(
             # In cases where there's more than one record with the
             # same order key, the result could include records we
             # already saw in the last page.  Skip them.
-            if i["uuid"] in seen_prevpage:
+            seen_key = key_getter(i)
+            if seen_key in seen_prevpage:
                 continue
-            seen_thispage.add(i["uuid"])
+            seen_thispage.add(seen_key)
             yield i
 
         firstitem = items["items"][0]
@@ -419,8 +203,8 @@ def keyset_list_all(
 
         if firstitem[order_key] == lastitem[order_key]:
             # Got a page where every item has the same order key.
-            # Switch to using uuid for paging.
-            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">" if ascending else "<", lastitem["uuid"]]]
+            # Switch to using tiebreak key for paging.
+            nextpage = [[order_key, "=", lastitem[order_key]], [tiebreak_key, ">" if ascending else "<", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = True
         else:
             # Start from the last order key seen, but skip the last
@@ -429,8 +213,50 @@ def keyset_list_all(
             # still likely we'll end up retrieving duplicate rows.
             # That's handled by tracking the "seen" rows for each page
             # so they can be skipped if they show up on the next page.
-            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
+            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]]]
+            if tiebreak_key == "uuid":
+                nextpage += [[tiebreak_key, "!=", lastitem[tiebreak_key]]]
             prev_page_all_same_order_key = False
+
+def iter_computed_permissions(
+        fn: Callable[..., 'arvados.api_resources.ArvadosAPIRequest'],
+        order_key: str='user_uuid',
+        num_retries: int=0,
+        ascending: bool=True,
+        key_fields: Container[str]=('user_uuid', 'target_uuid'),
+        **kwargs: Any,
+) -> Iterator[Dict[str, Any]]:
+    """Iterate all `computed_permission` resources
+
+    This method is the same as `keyset_list_all`, except that its
+    default arguments are suitable for the computed_permissions API.
+
+    Arguments:
+
+    * fn: Callable[..., arvados.api_resources.ArvadosAPIRequest] ---
+      see `keyset_list_all`.  Typically this is an instance of
+      `arvados.api_resources.ComputedPermissions.list`.  Given an
+      Arvados API client named `arv`, typical usage is
+      `iter_computed_permissions(arv.computed_permissions().list)`.
+
+    * order_key: str --- see `keyset_list_all`.  Default
+      `'user_uuid'`.
+
+    * num_retries: int --- see `keyset_list_all`.
+
+    * ascending: bool --- see `keyset_list_all`.
+
+    * key_fields: Container[str] --- see `keyset_list_all`. Default
+      `('user_uuid', 'target_uuid')`.
+
+    """
+    return keyset_list_all(
+        fn=fn,
+        order_key=order_key,
+        num_retries=num_retries,
+        ascending=ascending,
+        key_fields=key_fields,
+        **kwargs)
 
 def ca_certs_path(fallback: T=httplib2.CA_CERTS) -> Union[str, T]:
     """Return the path of the best available source of CA certificates
@@ -552,355 +378,3 @@ def trim_name(collectionname: str) -> str:
         collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
 
     return collectionname
-
-@_deprecated('3.0', 'arvados.util.keyset_list_all')
-def list_all(fn, num_retries=0, **kwargs):
-    # Default limit to (effectively) api server's MAX_LIMIT
-    kwargs.setdefault('limit', sys.maxsize)
-    items = []
-    offset = 0
-    items_available = sys.maxsize
-    while len(items) < items_available:
-        c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
-        items += c['items']
-        items_available = c['items_available']
-        offset = c['offset'] + len(c['items'])
-    return items
-
-@_deprecated('3.0')
-def clear_tmpdir(path=None):
-    """
-    Ensure the given directory (or TASK_TMPDIR if none given)
-    exists and is empty.
-    """
-    from arvados import current_task
-    if path is None:
-        path = current_task().tmpdir
-    if os.path.exists(path):
-        p = subprocess.Popen(['rm', '-rf', path])
-        stdout, stderr = p.communicate(None)
-        if p.returncode != 0:
-            raise Exception('rm -rf %s: %s' % (path, stderr))
-    os.mkdir(path)
-
-@_deprecated('3.0', 'subprocess.run')
-def run_command(execargs, **kwargs):
-    kwargs.setdefault('stdin', subprocess.PIPE)
-    kwargs.setdefault('stdout', subprocess.PIPE)
-    kwargs.setdefault('stderr', sys.stderr)
-    kwargs.setdefault('close_fds', True)
-    kwargs.setdefault('shell', False)
-    p = subprocess.Popen(execargs, **kwargs)
-    stdoutdata, stderrdata = p.communicate(None)
-    if p.returncode != 0:
-        raise arvados.errors.CommandFailedError(
-            "run_command %s exit %d:\n%s" %
-            (execargs, p.returncode, stderrdata))
-    return stdoutdata, stderrdata
-
-@_deprecated('3.0')
-def git_checkout(url, version, path):
-    from arvados import current_job
-    if not re.search('^/', path):
-        path = os.path.join(current_job().tmpdir, path)
-    if not os.path.exists(path):
-        run_command(["git", "clone", url, path],
-                    cwd=os.path.dirname(path))
-    run_command(["git", "checkout", version],
-                cwd=path)
-    return path
-
-@_deprecated('3.0')
-def tar_extractor(path, decompress_flag):
-    return subprocess.Popen(["tar",
-                             "-C", path,
-                             ("-x%sf" % decompress_flag),
-                             "-"],
-                            stdout=None,
-                            stdin=subprocess.PIPE, stderr=sys.stderr,
-                            shell=False, close_fds=True)
-
-@_deprecated('3.0', 'arvados.collection.Collection.open and the tarfile module')
-def tarball_extract(tarball, path):
-    """Retrieve a tarball from Keep and extract it to a local
-    directory.  Return the absolute path where the tarball was
-    extracted. If the top level of the tarball contained just one
-    file or directory, return the absolute path of that single
-    item.
-
-    tarball -- collection locator
-    path -- where to extract the tarball: absolute, or relative to job tmp
-    """
-    from arvados import current_job
-    from arvados.collection import CollectionReader
-    if not re.search('^/', path):
-        path = os.path.join(current_job().tmpdir, path)
-    lockfile = open(path + '.lock', 'w')
-    fcntl.flock(lockfile, fcntl.LOCK_EX)
-    try:
-        os.stat(path)
-    except OSError:
-        os.mkdir(path)
-    already_have_it = False
-    try:
-        if os.readlink(os.path.join(path, '.locator')) == tarball:
-            already_have_it = True
-    except OSError:
-        pass
-    if not already_have_it:
-
-        # emulate "rm -f" (i.e., if the file does not exist, we win)
-        try:
-            os.unlink(os.path.join(path, '.locator'))
-        except OSError:
-            if os.path.exists(os.path.join(path, '.locator')):
-                os.unlink(os.path.join(path, '.locator'))
-
-        for f in CollectionReader(tarball).all_files():
-            f_name = f.name()
-            if f_name.endswith(('.tbz', '.tar.bz2')):
-                p = tar_extractor(path, 'j')
-            elif f_name.endswith(('.tgz', '.tar.gz')):
-                p = tar_extractor(path, 'z')
-            elif f_name.endswith('.tar'):
-                p = tar_extractor(path, '')
-            else:
-                raise arvados.errors.AssertionError(
-                    "tarball_extract cannot handle filename %s" % f.name())
-            while True:
-                buf = f.read(2**20)
-                if len(buf) == 0:
-                    break
-                p.stdin.write(buf)
-            p.stdin.close()
-            p.wait()
-            if p.returncode != 0:
-                lockfile.close()
-                raise arvados.errors.CommandFailedError(
-                    "tar exited %d" % p.returncode)
-        os.symlink(tarball, os.path.join(path, '.locator'))
-    tld_extracts = [f for f in os.listdir(path) if f != '.locator']
-    lockfile.close()
-    if len(tld_extracts) == 1:
-        return os.path.join(path, tld_extracts[0])
-    return path
-
-@_deprecated('3.0', 'arvados.collection.Collection.open and the zipfile module')
-def zipball_extract(zipball, path):
-    """Retrieve a zip archive from Keep and extract it to a local
-    directory.  Return the absolute path where the archive was
-    extracted. If the top level of the archive contained just one
-    file or directory, return the absolute path of that single
-    item.
-
-    zipball -- collection locator
-    path -- where to extract the archive: absolute, or relative to job tmp
-    """
-    from arvados import current_job
-    from arvados.collection import CollectionReader
-    if not re.search('^/', path):
-        path = os.path.join(current_job().tmpdir, path)
-    lockfile = open(path + '.lock', 'w')
-    fcntl.flock(lockfile, fcntl.LOCK_EX)
-    try:
-        os.stat(path)
-    except OSError:
-        os.mkdir(path)
-    already_have_it = False
-    try:
-        if os.readlink(os.path.join(path, '.locator')) == zipball:
-            already_have_it = True
-    except OSError:
-        pass
-    if not already_have_it:
-
-        # emulate "rm -f" (i.e., if the file does not exist, we win)
-        try:
-            os.unlink(os.path.join(path, '.locator'))
-        except OSError:
-            if os.path.exists(os.path.join(path, '.locator')):
-                os.unlink(os.path.join(path, '.locator'))
-
-        for f in CollectionReader(zipball).all_files():
-            if not f.name().endswith('.zip'):
-                raise arvados.errors.NotImplementedError(
-                    "zipball_extract cannot handle filename %s" % f.name())
-            zip_filename = os.path.join(path, os.path.basename(f.name()))
-            zip_file = open(zip_filename, 'wb')
-            while True:
-                buf = f.read(2**20)
-                if len(buf) == 0:
-                    break
-                zip_file.write(buf)
-            zip_file.close()
-
-            p = subprocess.Popen(["unzip",
-                                  "-q", "-o",
-                                  "-d", path,
-                                  zip_filename],
-                                 stdout=None,
-                                 stdin=None, stderr=sys.stderr,
-                                 shell=False, close_fds=True)
-            p.wait()
-            if p.returncode != 0:
-                lockfile.close()
-                raise arvados.errors.CommandFailedError(
-                    "unzip exited %d" % p.returncode)
-            os.unlink(zip_filename)
-        os.symlink(zipball, os.path.join(path, '.locator'))
-    tld_extracts = [f for f in os.listdir(path) if f != '.locator']
-    lockfile.close()
-    if len(tld_extracts) == 1:
-        return os.path.join(path, tld_extracts[0])
-    return path
-
-@_deprecated('3.0', 'arvados.collection.Collection')
-def collection_extract(collection, path, files=[], decompress=True):
-    """Retrieve a collection from Keep and extract it to a local
-    directory.  Return the absolute path where the collection was
-    extracted.
-
-    collection -- collection locator
-    path -- where to extract: absolute, or relative to job tmp
-    """
-    from arvados import current_job
-    from arvados.collection import CollectionReader
-    matches = re.search(r'^([0-9a-f]+)(\+[\w@]+)*$', collection)
-    if matches:
-        collection_hash = matches.group(1)
-    else:
-        collection_hash = hashlib.md5(collection).hexdigest()
-    if not re.search('^/', path):
-        path = os.path.join(current_job().tmpdir, path)
-    lockfile = open(path + '.lock', 'w')
-    fcntl.flock(lockfile, fcntl.LOCK_EX)
-    try:
-        os.stat(path)
-    except OSError:
-        os.mkdir(path)
-    already_have_it = False
-    try:
-        if os.readlink(os.path.join(path, '.locator')) == collection_hash:
-            already_have_it = True
-    except OSError:
-        pass
-
-    # emulate "rm -f" (i.e., if the file does not exist, we win)
-    try:
-        os.unlink(os.path.join(path, '.locator'))
-    except OSError:
-        if os.path.exists(os.path.join(path, '.locator')):
-            os.unlink(os.path.join(path, '.locator'))
-
-    files_got = []
-    for s in CollectionReader(collection).all_streams():
-        stream_name = s.name()
-        for f in s.all_files():
-            if (files == [] or
-                ((f.name() not in files_got) and
-                 (f.name() in files or
-                  (decompress and f.decompressed_name() in files)))):
-                outname = f.decompressed_name() if decompress else f.name()
-                files_got += [outname]
-                if os.path.exists(os.path.join(path, stream_name, outname)):
-                    continue
-                mkdir_dash_p(os.path.dirname(os.path.join(path, stream_name, outname)))
-                outfile = open(os.path.join(path, stream_name, outname), 'wb')
-                for buf in (f.readall_decompressed() if decompress
-                            else f.readall()):
-                    outfile.write(buf)
-                outfile.close()
-    if len(files_got) < len(files):
-        raise arvados.errors.AssertionError(
-            "Wanted files %s but only got %s from %s" %
-            (files, files_got,
-             [z.name() for z in CollectionReader(collection).all_files()]))
-    os.symlink(collection_hash, os.path.join(path, '.locator'))
-
-    lockfile.close()
-    return path
-
-@_deprecated('3.0', 'pathlib.Path().mkdir(parents=True, exist_ok=True)')
-def mkdir_dash_p(path):
-    if not os.path.isdir(path):
-        try:
-            os.makedirs(path)
-        except OSError as e:
-            if e.errno == errno.EEXIST and os.path.isdir(path):
-                # It is not an error if someone else creates the
-                # directory between our exists() and makedirs() calls.
-                pass
-            else:
-                raise
-
-@_deprecated('3.0', 'arvados.collection.Collection')
-def stream_extract(stream, path, files=[], decompress=True):
-    """Retrieve a stream from Keep and extract it to a local
-    directory.  Return the absolute path where the stream was
-    extracted.
-
-    stream -- StreamReader object
-    path -- where to extract: absolute, or relative to job tmp
-    """
-    from arvados import current_job
-    if not re.search('^/', path):
-        path = os.path.join(current_job().tmpdir, path)
-    lockfile = open(path + '.lock', 'w')
-    fcntl.flock(lockfile, fcntl.LOCK_EX)
-    try:
-        os.stat(path)
-    except OSError:
-        os.mkdir(path)
-
-    files_got = []
-    for f in stream.all_files():
-        if (files == [] or
-            ((f.name() not in files_got) and
-             (f.name() in files or
-              (decompress and f.decompressed_name() in files)))):
-            outname = f.decompressed_name() if decompress else f.name()
-            files_got += [outname]
-            if os.path.exists(os.path.join(path, outname)):
-                os.unlink(os.path.join(path, outname))
-            mkdir_dash_p(os.path.dirname(os.path.join(path, outname)))
-            outfile = open(os.path.join(path, outname), 'wb')
-            for buf in (f.readall_decompressed() if decompress
-                        else f.readall()):
-                outfile.write(buf)
-            outfile.close()
-    if len(files_got) < len(files):
-        raise arvados.errors.AssertionError(
-            "Wanted files %s but only got %s from %s" %
-            (files, files_got, [z.name() for z in stream.all_files()]))
-    lockfile.close()
-    return path
-
-@_deprecated('3.0', 'os.walk')
-def listdir_recursive(dirname, base=None, max_depth=None):
-    """listdir_recursive(dirname, base, max_depth)
-
-    Return a list of file and directory names found under dirname.
-
-    If base is not None, prepend "{base}/" to each returned name.
-
-    If max_depth is None, descend into directories and return only the
-    names of files found in the directory tree.
-
-    If max_depth is a non-negative integer, stop descending into
-    directories at the given depth, and at that point return directory
-    names instead.
-
-    If max_depth==0 (and base is None) this is equivalent to
-    sorted(os.listdir(dirname)).
-    """
-    allfiles = []
-    for ent in sorted(os.listdir(dirname)):
-        ent_path = os.path.join(dirname, ent)
-        ent_base = os.path.join(base, ent) if base else ent
-        if os.path.isdir(ent_path) and max_depth != 0:
-            allfiles += listdir_recursive(
-                ent_path, base=ent_base,
-                max_depth=(max_depth-1 if max_depth else None))
-        else:
-            allfiles += [ent_base]
-    return allfiles

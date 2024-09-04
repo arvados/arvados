@@ -42,6 +42,7 @@ var (
 	EndpointCollectionDelete                = APIEndpoint{"DELETE", "arvados/v1/collections/{uuid}", ""}
 	EndpointCollectionTrash                 = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/trash", ""}
 	EndpointCollectionUntrash               = APIEndpoint{"POST", "arvados/v1/collections/{uuid}/untrash", ""}
+	EndpointComputedPermissionList          = APIEndpoint{"GET", "arvados/v1/computed_permissions", ""}
 	EndpointContainerCreate                 = APIEndpoint{"POST", "arvados/v1/containers", "container"}
 	EndpointContainerUpdate                 = APIEndpoint{"PATCH", "arvados/v1/containers/{uuid}", "container"}
 	EndpointContainerPriorityUpdate         = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/update_priority", "container"}
@@ -291,6 +292,7 @@ type API interface {
 	CollectionDelete(ctx context.Context, options DeleteOptions) (Collection, error)
 	CollectionTrash(ctx context.Context, options DeleteOptions) (Collection, error)
 	CollectionUntrash(ctx context.Context, options UntrashOptions) (Collection, error)
+	ComputedPermissionList(ctx context.Context, options ListOptions) (ComputedPermissionList, error)
 	ContainerCreate(ctx context.Context, options CreateOptions) (Container, error)
 	ContainerUpdate(ctx context.Context, options UpdateOptions) (Container, error)
 	ContainerPriorityUpdate(ctx context.Context, options UpdateOptions) (Container, error)

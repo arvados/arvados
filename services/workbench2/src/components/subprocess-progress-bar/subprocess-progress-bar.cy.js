@@ -52,6 +52,10 @@ describe("<SubprocessProgressBar />", () => {
 
     it("requests subprocess progress stats for stopped processes and displays progress", async () => {
         // when
+        const containerRequest = {
+            uuid: 'zzzzz-xvhdp-000000000000000',
+            containerUuid: 'zzzzz-dz642-000000000000000',
+        };
         const process = {
             container: {
                 state: ContainerState.COMPLETE,
@@ -113,6 +117,10 @@ describe("<SubprocessProgressBar />", () => {
     });
 
     it("dislays correct progress bar widths with different values", async () => {
+        const containerRequest = {
+            uuid: 'zzzzz-xvhdp-000000000000001',
+            containerUuid: 'zzzzz-dz642-000000000000001',
+        };
         const process = {
             container: {
                 state: ContainerState.COMPLETE,

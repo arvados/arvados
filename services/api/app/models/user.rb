@@ -171,7 +171,7 @@ SELECT 1 FROM #{PERMISSION_VIEW}
 
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
-      MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
+      ComputedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
       update_permissions self.owner_uuid_was, self.uuid, REVOKE_PERM
     end
   end
@@ -183,7 +183,7 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   end
 
   def clear_permissions
-    MaterializedPermission.where("user_uuid = ? and target_uuid != ?", uuid, uuid).delete_all
+    ComputedPermission.where("user_uuid = ? and target_uuid != ?", uuid, uuid).delete_all
   end
 
   def forget_cached_group_perms
@@ -191,7 +191,7 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   end
 
   def remove_self_from_permissions
-    MaterializedPermission.where("target_uuid = ?", uuid).delete_all
+    ComputedPermission.where("target_uuid = ?", uuid).delete_all
     check_permissions_against_full_refresh
   end
 
@@ -273,7 +273,7 @@ SELECT target_uuid, perm_level
 
     # Send welcome email
     if send_notification_email.nil?
-      send_notification_email = Rails.configuration.Mail.SendUserSetupNotificationEmail
+      send_notification_email = Rails.configuration.Users.SendUserSetupNotificationEmail
     end
 
     if newly_invited and send_notification_email and !Rails.configuration.Users.UserSetupMailText.empty?

@@ -79,6 +79,12 @@ variable "sg_id" {
   default = ""
 }
 
+variable "additional_rds_subnet_id" {
+  description = "Use existing subnet for RDS instead of creating one for the cluster"
+  type = string
+  default = ""
+}
+
 variable "private_subnet_id" {
   description = "Use existing private subnet instead of creating one for the cluster"
   type = string
@@ -95,4 +101,10 @@ variable "custom_tags" {
   description = "Apply customized tags to every resource on the cluster"
   type = map(string)
   default = {}
+}
+
+variable "use_rds" {
+  description = "Enable this to create an RDS instance as the cluster's database service"
+  type = bool
+  default = false
 }

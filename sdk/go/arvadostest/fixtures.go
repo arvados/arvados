@@ -44,9 +44,6 @@ const (
 	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
 	FooAndBarFilesInDirPDH  = "870369fc72738603c2fad16664e50e2d+58"
 
-	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
-	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
-
 	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
 	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
 
@@ -115,6 +112,24 @@ const (
 	DockerImage112PDH      = "d740a57097711e08eb9b2a93518f20ab+174"
 	DockerImage112Filename = "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar"
 )
+
+var TestCollectionUUIDToPDH = map[string]string{
+	FooCollection:           FooCollectionPDH,
+	MultilevelCollection1:   MultilevelCollection1PDH,
+	FooAndBarFilesInDirUUID: FooAndBarFilesInDirPDH,
+	BarFileCollectionUUID:   BarFileCollectionPDH,
+}
+
+var TestCollectionPDHToManifest = map[string]string{
+	FooCollectionPDH: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n",
+	MultilevelCollection1PDH: `. d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+./dir1/subdir d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+./dir2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2 0:0:file3
+`,
+	FooAndBarFilesInDirPDH: "./dir1 3858f62230ac3c915f300c664312c63f+6 3:3:bar 0:3:foo\n",
+	BarFileCollectionPDH:   ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n",
+}
 
 // PathologicalManifest : A valid manifest designed to test
 // various edge cases and parsing requirements

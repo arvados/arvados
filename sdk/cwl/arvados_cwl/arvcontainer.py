@@ -43,7 +43,7 @@ def cleanup_name_for_collection(name):
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
-    def __init__(self, runner, job_runtime,
+    def __init__(self, runner, job_runtime, globpatterns,
                  builder,   # type: Builder
                  joborder,  # type: Dict[Text, Union[Dict[Text, Any], List, Text]]
                  make_path_mapper,  # type: Callable[..., PathMapper]
@@ -57,6 +57,7 @@ class ArvadosContainer(JobBase):
         self.running = False
         self.uuid = None
         self.attempt_count = 0
+        self.globpatterns = globpatterns
 
     def update_pipeline_component(self, r):
         pass
@@ -327,6 +328,11 @@ class ArvadosContainer(JobBase):
             elif runtimeContext.enable_preemptible is None:
                 pass
 
+        if scheduling_parameters.get("preemptible") and self.may_resubmit_non_preemptible():
+            # Only make one attempt, because if it is preempted we
+            # will resubmit and ask for a non-preemptible instance.
+            container_request["container_count_max"] = 1
+
         if self.timelimit is not None and self.timelimit > 0:
             scheduling_parameters["max_run_time"] = self.timelimit
 
@@ -365,6 +371,61 @@ class ArvadosContainer(JobBase):
             else:
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
+
+        if self.arvrunner.api._rootDesc["revision"] >= "20240502" and self.globpatterns:
+            output_glob = []
+            for gb in self.globpatterns:
+                gb = self.builder.do_eval(gb)
+                if not gb:
+                    continue
+                for gbeval in aslist(gb):
+                    if gbeval.startswith(self.outdir+"/"):
+                        gbeval = gbeval[len(self.outdir)+1:]
+                    while gbeval.startswith("./"):
+                        gbeval = gbeval[2:]
+
+                    if gbeval in (self.outdir, "", "."):
+                        output_glob.append("**")
+                    elif gbeval.endswith("/"):
+                        output_glob.append(gbeval+"**")
+                    else:
+                        output_glob.append(gbeval)
+                        output_glob.append(gbeval + "/**")
+
+            if "**" in output_glob:
+                # if it's going to match all, prefer not to provide it
+                # at all.
+                output_glob.clear()
+
+            if output_glob:
+                # Tools should either use cwl.output.json or
+                # outputBinding globs. However, one CWL conformance
+                # test has both, so we need to make sure we collect
+                # cwl.output.json in this case. That test uses
+                # cwl.output.json return a string, but also uses
+                # outputBinding.
+                output_glob.append("cwl.output.json")
+
+                # It could happen that a tool creates cwl.output.json,
+                # references a file, but also uses a outputBinding
+                # glob that doesn't include the file being referenced.
+                #
+                # In this situation, output_glob will only match the
+                # pattern we know about.  If cwl.output.json referred
+                # to other files in the output, those would be
+                # missing.  We could upload the entire output, but we
+                # currently have no way of knowing at this point
+                # whether cwl.output.json will be used this way.
+                #
+                # Because this is a corner case, I'm inclined to leave
+                # this as a known issue for now.  No conformance tests
+                # do this and I'd even be inclined to have it ruled
+                # incompatible in the CWL spec if it did come up.
+                # That said, in retrospect it would have been good to
+                # require CommandLineTool to declare when it expects
+                # cwl.output.json.
+
+                container_request["output_glob"] = output_glob
 
         ram_multiplier = [1]
 
@@ -433,6 +494,30 @@ class ArvadosContainer(JobBase):
             logger.debug("Container request was %s", container_request)
             self.output_callback({}, "permanentFail")
 
+    def may_resubmit_non_preemptible(self):
+        if self.job_runtime.enable_resubmit_non_preemptible is False:
+            # explicitly disabled
+            return False
+
+        spot_instance_retry_req, _ = self.get_requirement("http://arvados.org/cwl#PreemptionBehavior")
+        if spot_instance_retry_req:
+            if spot_instance_retry_req["resubmitNonPreemptible"] is False:
+                # explicitly disabled by hint
+                return False
+        elif self.job_runtime.enable_resubmit_non_preemptible is None:
+            # default behavior is we don't retry
+            return False
+
+        # At this point, by process of elimination either
+        # resubmitNonPreemptible or enable_resubmit_non_preemptible
+        # must be True, so now check if the container was actually
+        # preempted.
+
+        return True
+
+    def spot_instance_retry(self, record, container):
+        return self.may_resubmit_non_preemptible() and bool(container["runtime_status"].get("preemptionNotice"))
+
     def out_of_memory_retry(self, record, container):
         oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
         if oom_retry_req is None:
@@ -464,10 +549,13 @@ class ArvadosContainer(JobBase):
         outputs = {}
         retried = False
         rcode = None
+        do_retry = False
+
         try:
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
+
             if container["state"] == "Complete":
                 rcode = container["exit_code"]
                 if self.successCodes and rcode in self.successCodes:
@@ -482,19 +570,39 @@ class ArvadosContainer(JobBase):
                     processStatus = "permanentFail"
 
                 if processStatus == "permanentFail" and self.attempt_count == 1 and self.out_of_memory_retry(record, container):
-                    logger.warning("%s Container failed with out of memory error, retrying with more RAM.",
+                    logger.info("%s Container failed with out of memory error.  Retrying container with more RAM.",
                                  self.arvrunner.label(self))
-                    self.job_runtime.submit_request_uuid = None
-                    self.uuid = None
-                    self.run(None)
-                    retried = True
-                    return
+                    self.job_runtime = self.job_runtime.copy()
+                    do_retry = True
 
-                if rcode == 137:
+                if rcode == 137 and not do_retry:
                     logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin' or use the arv:OutOfMemoryRetry feature.",
                                  self.arvrunner.label(self))
             else:
                 processStatus = "permanentFail"
+
+            if processStatus == "permanentFail" and self.attempt_count == 1 and self.spot_instance_retry(record, container):
+                logger.info("%s Container failed because the preemptible instance it was running on was reclaimed.  Retrying container on a non-preemptible instance.")
+                self.job_runtime = self.job_runtime.copy()
+                self.job_runtime.enable_preemptible = False
+                do_retry = True
+
+            if do_retry:
+                # Add a property indicating that this container was resubmitted.
+                updateproperties = record["properties"].copy()
+                olduuid = self.uuid
+                self.job_runtime.submit_request_uuid = None
+                self.uuid = None
+                self.run(None)
+                # this flag suppresses calling the output callback, we only want to set this
+                # when we're sure that the resubmission has happened without issue.
+                retried = True
+                # Add a property to the old container request indicating it
+                # was retried
+                updateproperties["arv:failed_container_resubmitted"] = self.uuid
+                self.arvrunner.api.container_requests().update(uuid=olduuid,
+                                                               body={"properties": updateproperties}).execute()
+                return
 
             logc = None
             if record["log_uuid"]:

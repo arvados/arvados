@@ -30,21 +30,54 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main
 
-"previous: Upgrading to 2.7.1":#v2_7_1
+"previous: Upgrading to 2.7.4":#v2_7_4
 
-h3. Debian 10, Ubuntu 18.04, and CentOS are no longer supported
+h3. Debian 10 and Ubuntu 18.04 are no longer supported
 
-Arvados 3.0 no longer supports some of the older distributions supported by Arvados 2.7: Debian 10 "buster," Ubuntu 18.04 "bionic," and CentOS 7 and 8. If you are running Arvados on any of these distributions, you must first upgrade to a supported distribution before you upgrade to Arvados 3.0.
+Arvados 3.0 no longer supports some of the older distributions supported by Arvados 2.7: Debian 10 "buster" and Ubuntu 18.04 "bionic." If you are running Arvados on any of these distributions, you must first upgrade to a supported distribution before you upgrade to Arvados 3.0.
 
-Arvados 2.7 supports Debian 11 "bullseye" and Ubuntu 20.04 "focal." If you are running Debian or Ubuntu, You can upgrade to one of those releases, then proceed to upgrade Arvados to 3.0.
-
-If you are running CentOS, Arvados 2.7 supports Red Hat Enterprise Linux 8, AlmaLinux 8, and Rocky Linux 8. Please plan a migration to one of these related distributions. Then you can upgrade to Arvados 3.0.
+Arvados 2.7 supports Debian 11 "bullseye" and Ubuntu 20.04 "focal." You can upgrade your Arvados cluster to one of those releases, then proceed to upgrade Arvados to 3.0.
 
 h3. RVM is no longer supported
 
 Some Arvados packages, most notably the Rails API server package @arvados-api-server@, would check whether RVM is installed on the system, and invoke Ruby commands through it if so. Arvados 3.0 no longer specially supports RVM. Instead, Arvados 3.0 supports all the different versions of Ruby that are packaged in our supported distributions, mitigating the need to support separate Ruby installations. Package scripts run plain @ruby@ and @gem@ commands and expect they come from a supported version.
 
 If you have a custom install that requires a different version of Ruby than the one included with your distribution, you must configure your system to ensure package scripts find that version of @ruby@ before any others. For example, you might do this on Debian-based distributions by customizing apt's @DPkg::Path@ setting.
+
+h3. Slow migration on upgrade
+
+This upgrade includes a database schema update to rebuild full text search indexes to remove UUID and portable data hash column data.  This will provide better search results to users and take less space on the databaes, but plan for the @arvados-api-server@ package upgrade to take longer than usual.
+
+h3. Legacy APIs and response fields have been removed
+
+The following APIs have been removed:
+* "api_clients":https://doc.arvados.org/v2.7/api/methods/api_clients.html
+* "humans":https://doc.arvados.org/v2.7/api/methods/humans.html
+* "jobs":https://doc.arvados.org/v2.7/api/methods/jobs.html
+* "job_tasks":https://doc.arvados.org/v2.7/api/methods/job_tasks.html
+* "nodes":https://doc.arvados.org/v2.7/api/methods/nodes.html
+* "pipeline_instances":https://doc.arvados.org/v2.7/api/methods/pipeline_instances.html
+* "pipeline_templates":https://doc.arvados.org/v2.7/api/methods/pipeline_templates.html
+* "repositories":https://doc.arvados.org/v2.7/api/methods/repositories.html, and "keep_disks":https://doc.arvados.org/v2.7/api/methods/keep_disks.html
+* "specimens":https://doc.arvados.org/v2.7/api/methods/specimens.html
+* "traits":https://doc.arvados.org/v2.7/api/methods/traits.html
+
+The following fields are no longer returned in API responses.
+* @api_client_id@, @user_id@, @default_owner_uuid@ ("api_client_authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html API)
+* @modified_by_client_uuid@ (all APIs)
+
+h3. Configuration entries have been removed or renamed
+
+The following configuration keys have been renamed or removed.  Renamed keys will still be loaded if they appear with their old names, but you should update your @/etc/arvados/config.yml@ file to avoid warnings when services start up.
+* @API.LogCreateRequestFraction@ has been removed
+* @Containers.JobsAPI.Enable@ has been removed
+* @Mail.EmailFrom@ has been removed
+* @Mail.IssueReporterEmailFrom@ has been removed
+* @Mail.IssueReporterEmailTo@ has been removed
+* @Mail.MailchimpAPIKey@ has been removed
+* @Mail.MailchimpListID@ has been removed
+* @Mail.SendUserSetupNotificationEmail@ has moved to @Users.SendUserSetupNotificationEmail@
+* @Mail.SupportEmailAddress@ has moved to @Users.SupportEmailAddress@
 
 h3. S3 volume IAMRole configuration entry has been removed
 
@@ -64,6 +97,12 @@ The following configuration keys are no longer supported. Remove them from your 
 * @Containers.Logging.SweepInterval@
 
 Any container logging content remaining in the database from the legacy system will be deleted.
+
+h3. Python SDK reorganization of internal classes and modules
+
+We have reorganized the Python SDK to make it clearer which APIs are intended to be public, and make it easier to find documentation for them. As part of this work, some modules that only included internal support code have been moved, most notably @arvados.diskcache@, @arvados.http_to_keep@, and @arvados.timer@.
+
+If you need immediate access to these modules, you can find them under @arvados._internal@, but we do not intend to support them as part of our public SDK API, so they may change or be removed entirely in future versions. If you've written client software that relies on these modules, please "file an issue":https://dev.arvados.org/projects/arvados/issues/new to let us know so we can figure out how best to support you.
 
 h3. Virtual environments inside distribution Python packages have moved
 
@@ -95,13 +134,47 @@ h3. WebDAV service uses @/var/cache@ for file content
 
 If the previously supported @MaxBlockEntries@ config is present, remove it to avoid warning messages at startup.
 
+h3. @arv-migrate-docker19@ tool removed
+
+The @arv-migrate-docker19@ tool that updates images from Docker 1.9 to be used with Docker 1.10+ (released February 2016) has been removed. In the unlikely event you still need to "run this migration":https://doc.arvados.org/v2.7/install/migrate-docker19.html, please do so before you upgrade to Arvados 3.0.
+
+h2(#v2_7_4). v2.7.4 (2024-07-08)
+
+"previous: Upgrading to 2.7.3":#v2_7_3
+
+Starting from 2.7.4, Arvados no longer supports CentOS.  CentOS users should migrate to an Arvados-supported version of Red Hat Enterprise Linux (RHEL), Rocky Linux or AlmaLinux.
+
+There are no other configuration changes requiring administrator attention in this release.
+
+h2(#v2_7_3). v2.7.3 (2024-05-24)
+
+"previous: Upgrading to 2.7.2":#v2_7_2
+
+There are no configuration changes requiring administrator attention in this release.
+
+h2(#v2_7_2). v2.7.2 (2024-04-09)
+
+"previous: Upgrading to 2.7.1":#v2_7_1
+
 h3. Check MaxGatewayTunnels config
 
 If you use the LSF or Slurm dispatcher, ensure the new @API.MaxGatewayTunnels@ config entry is high enough to support the size of your cluster. See "LSF docs":{{site.baseurl}}/install/crunch2-lsf/install-dispatch.html#MaxGatewayTunnels or "Slurm docs":{{site.baseurl}}/install/crunch2-slurm/install-dispatch.html#MaxGatewayTunnels for details.
 
-h2(#2_7_1). v2.7.1 (2023-12-12)
+h3. New LSF dispatcher config items MaxRunTimeOverhead and MaxRunTimeDefault
+
+Now supports configuration parameter @Containers.LSF.MaxRunTimeDefault@ as the default value for @max_run_time@ for containers that do not specify a time limit (using CWL @ToolTimeLimit@).
+
+Now supports configuration parameter @Containers.LSF.MaxRunTimeOverhead@ so that when @scheduling_constraints.max_run_time@ or @MaxRunTimeDefault@ are non-zero, this adds time to account for crunch-run startup/shutdown overhead.
+
+h2(#v2_7_1). v2.7.1 (2023-12-12)
 
 "previous: Upgrading to 2.7.0":#v2_7_0
+
+h3. Separate configs for MaxConcurrentRequests and MaxConcurrentRailsRequests
+
+The default configuration value @API.MaxConcurrentRequests@ (the number of concurrent requests that will be processed by a single instance of an arvados service process) is raised from 8 to 64.
+
+A new configuration key @API.MaxConcurrentRailsRequests@ (default 8) limits the number of concurrent requests processed by a RailsAPI service process.
 
 h3. Remove Workbench1 packages after upgrading the salt installer
 
@@ -831,7 +904,7 @@ This release includes several database migrations, which will be executed automa
 
 The @arvados-controller@ component now requires the /etc/arvados/config.yml file to be present.
 
-Support for the deprecated "jobs" API is broken in this release.  Users who rely on it should not upgrade.  This will be fixed in an upcoming 1.3.1 patch release, however users are "encouraged to migrate":upgrade-crunch2.html as support for the "jobs" API will be dropped in an upcoming release.  Users who are already using the "containers" API are not affected.
+Support for the deprecated "jobs" API is broken in this release.  Users who rely on it should not upgrade.  This will be fixed in an upcoming 1.3.1 patch release, however users are encouraged to migrate as support for the "jobs" API will be dropped in an upcoming release.  Users who are already using the "containers" API are not affected.
 
 h2(#v1_2_1). v1.2.1 (2018-11-26)
 

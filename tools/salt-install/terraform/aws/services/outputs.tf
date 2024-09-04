@@ -60,3 +60,24 @@ output "region_name" {
 output "ssl_password_secret_name" {
   value = aws_secretsmanager_secret.ssl_password_secret.name
 }
+
+output "database_address" {
+  value = one(aws_db_instance.postgresql_service[*].address)
+}
+
+output "database_name" {
+  value = one(aws_db_instance.postgresql_service[*].db_name)
+}
+
+output "database_username" {
+  value = one(aws_db_instance.postgresql_service[*].username)
+}
+
+output "database_password" {
+  value = one(aws_db_instance.postgresql_service[*].password)
+  sensitive = true
+}
+
+output "database_version" {
+  value = one(aws_db_instance.postgresql_service[*].engine_version_actual)
+}

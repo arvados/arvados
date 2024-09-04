@@ -15,15 +15,20 @@ module CanBeAnOwner
     ActiveRecord::Base.connection.tables.each do |t|
       next if t == base.table_name
       next if t.in?([
-                      'schema_migrations',
-                      'permission_refresh_lock',
+                      # in-use tables that should be skipped
                       'ar_internal_metadata',
+                      'permission_refresh_lock',
+                      'schema_migrations',
+                      'uuid_locks',
+                      # obsolete tables from removed APIs
+                      'api_clients',
                       'commit_ancestors',
                       'commits',
                       'humans',
                       'jobs',
                       'job_tasks',
                       'keep_disks',
+                      'materialized_permissions',
                       'nodes',
                       'pipeline_instances',
                       'pipeline_templates',

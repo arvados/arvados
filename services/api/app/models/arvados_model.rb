@@ -12,7 +12,7 @@ class ArvadosModel < ApplicationRecord
   self.abstract_class = true
 
   include ArvadosModelUpdates
-  include CurrentApiClient      # current_user, current_api_client, etc.
+  include CurrentApiClient      # current_user, current_api_client_authorization, etc.
   include DbCurrentTime
   extend RecordFilters
 
@@ -168,10 +168,6 @@ class ArvadosModel < ApplicationRecord
         false
       end
     end.map(&:name)
-  end
-
-  def self.attribute_column attr
-    self.columns.select { |col| col.name == attr.to_s }.first
   end
 
   def self.attributes_required_columns
@@ -539,7 +535,8 @@ class ArvadosModel < ApplicationRecord
 
   def self.full_text_searchable_columns
     self.columns.select do |col|
-      [:string, :text, :jsonb].include?(col.type)
+      [:string, :text, :jsonb].include?(col.type) and
+      col.name !~ /(^|_)(^container_image|hash|uuid)$/
     end.map(&:name)
   end
 
@@ -562,18 +559,6 @@ class ArvadosModel < ApplicationRecord
       "coalesce(#{column}#{cast},'')"
     end
     "to_tsvector('english', substr(#{parts.join(" || ' ' || ")}, 0, 8000))"
-  end
-
-  def self.apply_filters query, filters
-    ft = record_filters filters, self
-    if not ft[:cond_out].any?
-      return query
-    end
-    ft[:joins].each do |t|
-      query = query.joins(t)
-    end
-    query.where('(' + ft[:cond_out].join(') AND (') + ')',
-                          *ft[:param_out])
   end
 
   @_add_uuid_to_name = false
@@ -752,14 +737,13 @@ class ArvadosModel < ApplicationRecord
     current_time = db_current_time
     self.created_at ||= created_at_was || current_time
     self.updated_at = current_time
-    self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
+    self.owner_uuid ||= current_user.uuid if current_user && self.respond_to?(:owner_uuid=)
     if !anonymous_updater
       self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     end
     if !timeless_updater
       self.modified_at = current_time
     end
-    self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true
   end
 

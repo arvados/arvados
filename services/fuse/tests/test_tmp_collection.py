@@ -146,4 +146,4 @@ class TmpCollectionTest(IntegrationTest):
             f.write("b2")
         with open(os.path.join(tmpdir, "b1"), 'w') as f:
             f.write("1b")
-        self.assertRegex(current_manifest(tmpdir), "^\. ed4f3f67c70b02b29c50ce1ea26666bd\+4(\+\S+)? 0:2:b1 2:2:b2\n$")
+        self.assertRegex(current_manifest(tmpdir), r'^\. ed4f3f67c70b02b29c50ce1ea26666bd\+4(\+\S+)? 0:2:b1 2:2:b2\n$')

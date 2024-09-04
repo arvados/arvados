@@ -15,7 +15,7 @@ import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-author
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { ResourcesState } from 'store/resources/resources';
 import {
-    CommonUuid, TokenApiClientId, TokenApiToken, TokenCreatedByIpAddress, TokenDefaultOwnerUuid, TokenExpiresAt,
+    CommonUuid, TokenApiToken, TokenCreatedByIpAddress, TokenExpiresAt,
     TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
 } from 'views-components/data-explorer/renderers';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
@@ -31,10 +31,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export enum ApiClientAuthorizationPanelColumnNames {
     UUID = 'UUID',
-    API_CLIENT_ID = 'API Client ID',
     API_TOKEN = 'API Token',
     CREATED_BY_IP_ADDRESS = 'Created by IP address',
-    DEFAULT_OWNER_UUID = 'Default owner',
     EXPIRES_AT = 'Expires at',
     LAST_USED_AT = 'Last used at',
     LAST_USED_BY_IP_ADDRESS = 'Last used by IP address',
@@ -52,13 +50,6 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         render: uuid => <CommonUuid uuid={uuid} />
     },
     {
-        name: ApiClientAuthorizationPanelColumnNames.API_CLIENT_ID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <TokenApiClientId uuid={uuid} />
-    },
-    {
         name: ApiClientAuthorizationPanelColumnNames.API_TOKEN,
         selected: true,
         configurable: true,
@@ -71,13 +62,6 @@ export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAu
         configurable: true,
         filters: createTree(),
         render: uuid => <TokenCreatedByIpAddress uuid={uuid} />
-    },
-    {
-        name: ApiClientAuthorizationPanelColumnNames.DEFAULT_OWNER_UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <TokenDefaultOwnerUuid uuid={uuid} />
     },
     {
         name: ApiClientAuthorizationPanelColumnNames.EXPIRES_AT,

@@ -5,7 +5,7 @@
 import { ContextMenuActionSet, ContextMenuActionNames } from '../context-menu-action-set';
 import { DetailsIcon, AdvancedIcon, OpenIcon, Link } from 'components/icon/icon';
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 
 export const searchResultsActionSet: ContextMenuActionSet = [
@@ -27,8 +27,8 @@ export const searchResultsActionSet: ContextMenuActionSet = [
         {
             icon: DetailsIcon,
             name: ContextMenuActionNames.VIEW_DETAILS,
-            execute: (dispatch) => {
-                dispatch<any>(toggleDetailsPanel());
+            execute: (dispatch, resources) => {
+                dispatch<any>(openDetailsPanel(resources[0].uuid));
             },
         },
         {

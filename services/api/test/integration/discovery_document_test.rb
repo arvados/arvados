@@ -49,10 +49,9 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     if expected_json != actual_json
       File.open(out_path, "w") { |f| f.write(actual_json) }
     end
-    assert_equal(expected_json, actual_json, [
-                   "#{src_path} did not match the live discovery document",
-                   "Current live version saved to #{out_path}",
-                   "Commit that to #{src_path} to regenerate documentation",
-                 ].join(". "))
+    assert_equal(expected_json, actual_json,
+                 "Live discovery document did not match the expected version (#{src_path}). " +
+                 "If the live version is correct, copy it to the git working directory by running:\n" +
+                 "cp #{out_path} #{src_path}\n")
   end
 end

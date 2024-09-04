@@ -540,7 +540,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
           "is_admin" => false
         }
       },
-      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(:admin)}"}
+      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_token(:admin)}"}
     assert_response :success
 
     get '/arvados/v1/users/current',

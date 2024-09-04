@@ -684,7 +684,6 @@ class Container < ArvadosModel
       # dispatcher user, so expires_at isn't enforced by API.MaxTokenLifetime.
       self.auth = ApiClientAuthorization.
                     create!(user_id: User.find_by_uuid(self.runtime_user_uuid).id,
-                            api_client_id: 0,
                             scopes: self.runtime_auth_scopes)
     end
   end

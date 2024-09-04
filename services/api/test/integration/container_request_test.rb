@@ -29,7 +29,7 @@ class ContainerRequestIntegrationTest < ActionDispatch::IntegrationTest
         }
       }.to_json,
       headers: {
-        'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active).api_token}",
+        'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:active).api_token}",
         'CONTENT_TYPE' => 'application/json'
       }
     assert_response :success

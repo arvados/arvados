@@ -282,7 +282,7 @@ begin
           newToken = true
         end
         if newToken
-          aca_params = {owner_uuid: l[:user_uuid], api_client_id: 0}
+          aca_params = {owner_uuid: l[:user_uuid]}
           if options[:"token-lifetime"] && options[:"token-lifetime"] > 0
             aca_params.merge!(expires_at: (Time.now + options[:"token-lifetime"]))
           end

@@ -116,8 +116,8 @@ navbar:
       - api/methods/groups.html.textile.liquid
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/links.html.textile.liquid
+      - api/methods/computed_permissions.html.textile.liquid
       - api/methods/authorized_keys.html.textile.liquid
-      - api/methods/api_clients.html.textile.liquid
       - api/methods/user_agreements.html.textile.liquid
       - api/methods/virtual_machines.html.textile.liquid
     - Data management:
@@ -134,18 +134,6 @@ navbar:
       - api/methods/containers.html.textile.liquid
       - api/methods/workflows.html.textile.liquid
       - api/dispatch.html.textile.liquid
-    - Jobs engine (legacy):
-      - api/crunch-scripts.html.textile.liquid
-      - api/methods/jobs.html.textile.liquid
-      - api/methods/job_tasks.html.textile.liquid
-      - api/methods/pipeline_instances.html.textile.liquid
-      - api/methods/pipeline_templates.html.textile.liquid
-      - api/methods/nodes.html.textile.liquid
-      - api/methods/keep_disks.html.textile.liquid
-    - Metadata for bioinformatics (legacy):
-      - api/methods/humans.html.textile.liquid
-      - api/methods/specimens.html.textile.liquid
-      - api/methods/traits.html.textile.liquid
   architecture:
     - Topics:
       - architecture/index.html.textile.liquid
@@ -201,9 +189,6 @@ navbar:
     - Cloud:
       - admin/spot-instances.html.textile.liquid
       - admin/cloudtest.html.textile.liquid
-    - Other:
-      - install/migrate-docker19.html.textile.liquid
-      - admin/upgrade-crunch2.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

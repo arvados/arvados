@@ -9,7 +9,7 @@ import { updateResources } from "store/resources/resources-actions";
 import { Process } from "./process";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { projectPanelActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
 import { navigateToRunProcess } from "store/navigation/navigation-action";
 import { goToStep, runProcessPanelActions } from "store/run-process-panel/run-process-panel-actions";
 import { getResource } from "store/resources/resources";
@@ -101,7 +101,6 @@ const containerFieldsNoMounts = [
     "locked_by_uuid",
     "log",
     "modified_at",
-    "modified_by_client_uuid",
     "modified_by_user_uuid",
     "output_path",
     "output_properties",
@@ -177,10 +176,11 @@ export const reRunProcess =
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 
             const owner = getResource<ProjectResource | UserResource>(workflow.ownerUuid)(getState().resources);
-            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description, owner };
+            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, owner };
             dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
 
             const advancedInitialData: RunProcessAdvancedFormData = {
+		description: process.description,
                 output: process.outputName,
                 runtime: process.schedulingParameters.max_run_time,
                 ram: process.runtimeConstraints.ram,
@@ -329,7 +329,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
         try {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
             await services.containerRequestService.delete(process.uuid, false);
-            dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(projectPanelDataActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } catch (e) {
             const error = getCommonResourceServiceError(e);

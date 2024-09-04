@@ -22,7 +22,8 @@ import { ProcessIOCard, ProcessIOCardType } from 'views/process-panel/process-io
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
 import { WorkflowProcessesPanel } from './workflow-processes-panel';
 
-type CssRules = 'root'
+type CssRules =
+    'root'
     | 'button'
     | 'infoCard'
     | 'propertiesCard'
@@ -39,7 +40,8 @@ type CssRules = 'root'
     | 'header'
     | 'title'
     | 'avatar'
-    | 'content';
+    | 'content'
+    | 'subHeader';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -59,6 +61,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.greyL
+    },
+    subHeader: {
+        color: theme.customs.colors.greyD
     },
     tag: {
         marginRight: theme.spacing(0.5),
@@ -168,7 +173,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                             </IconButton>
                                         </Tooltip>}
 
-                                />
+                                 />
 
                                 <CardContent className={classes.content}>
                                     <WorkflowDetailsAttributes workflow={item} />

@@ -14,6 +14,7 @@ import { optional } from 'validators/optional';
 
 export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
 
+export const DESCRIPTION_FIELD = 'description';
 export const OUTPUT_FIELD = 'output';
 export const RUNTIME_FIELD = 'runtime';
 export const RAM_FIELD = 'ram';
@@ -22,6 +23,7 @@ export const KEEP_CACHE_RAM_FIELD = 'keep_cache_ram';
 export const RUNNER_IMAGE_FIELD = 'acr_container_image';
 
 export interface RunProcessAdvancedFormData {
+    [DESCRIPTION_FIELD]?: string;
     [OUTPUT_FIELD]?: string;
     [RUNTIME_FIELD]?: number;
     [RAM_FIELD]: number;

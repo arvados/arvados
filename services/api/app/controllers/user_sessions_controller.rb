@@ -76,12 +76,6 @@ class UserSessionsController < ApplicationController
     # Give the API client a token for making API calls on behalf of
     # the authenticated user
 
-    # Stub: automatically register all new API clients
-    api_client_url_prefix = callback_url.match(%r{^.*?://[^/]+})[0] + '/'
-    act_as_system_user do
-      @api_client = ApiClient.
-        find_or_create_by(url_prefix: api_client_url_prefix)
-    end
     if Rails.configuration.Login.TokenLifetime > 0
       if token_expiration == nil
         token_expiration = db_current_time + Rails.configuration.Login.TokenLifetime
@@ -92,7 +86,6 @@ class UserSessionsController < ApplicationController
 
     @api_client_auth = ApiClientAuthorization.
       new(user: user,
-          api_client: @api_client,
           created_by_ip_address: remote_ip,
           expires_at: token_expiration,
           scopes: ["all"])

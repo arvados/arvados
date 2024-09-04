@@ -18,51 +18,16 @@ describe("Process tests", function () {
             .then(function () {
                 adminUser = this.adminUser;
             });
-        cy.getUser("user", "Active", "User", false, true)
+        cy.getUser("activeuser", "Active", "User", false, true)
             .as("activeUser")
             .then(function () {
                 activeUser = this.activeUser;
             });
     });
 
-    function setupDockerImage(image_name) {
-        // Create a collection that will be used as a docker image for the tests.
-        cy.createCollection(adminUser.token, {
-            name: "docker_image",
-            manifest_text:
-                ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n",
-        })
-            .as("dockerImage")
-            .then(function (dockerImage) {
-                // Give read permissions to the active user on the docker image.
-                cy.createLink(adminUser.token, {
-                    link_class: "permission",
-                    name: "can_read",
-                    tail_uuid: activeUser.user.uuid,
-                    head_uuid: dockerImage.uuid,
-                })
-                    .as("dockerImagePermission")
-                    .then(function () {
-                        // Set-up docker image collection tags
-                        cy.createLink(activeUser.token, {
-                            link_class: "docker_image_repo+tag",
-                            name: image_name,
-                            head_uuid: dockerImage.uuid,
-                        }).as("dockerImageRepoTag");
-                        cy.createLink(activeUser.token, {
-                            link_class: "docker_image_hash",
-                            name: "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678",
-                            head_uuid: dockerImage.uuid,
-                        }).as("dockerImageHash");
-                    });
-            });
-        return cy.getAll("@dockerImage", "@dockerImageRepoTag", "@dockerImageHash", "@dockerImagePermission").then(function ([dockerImage]) {
-            return dockerImage;
-        });
-    }
 
     function createContainerRequest(user, name, docker_image, command, reuse = false, state = "Uncommitted") {
-        return setupDockerImage(docker_image).then(function (dockerImage) {
+        return cy.setupDockerImage(docker_image).then(function (dockerImage) {
             return cy.createContainerRequest(user.token, {
                 name: name,
                 command: command,
@@ -114,9 +79,10 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-attributes-modifiedby-user]").contains(`Active User (${activeUser.user.uuid})`);
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
                 cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-                cy.waitForDom()
-                cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parents('td').parent().click()
-            cy.waitForDom()
+                cy.waitForDom();
+                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+                cy.get('[data-cy=data-table-row]').contains(containerRequest.name).should('exist').parents('[data-cy=data-table-row]').click()
+                cy.waitForDom();
                 cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
                 for (let i = 0; i < msButtonTooltips.length; i++) {
                     cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
@@ -144,7 +110,22 @@ describe("Process tests", function () {
                 cy.get("[data-cy=process-details-attributes-runtime-user]").should("not.exist");
             });
 
-            // Fake submitted by another user
+            // Fake submitted by another user to test "runtime user" field.
+            //
+            // Need to override both group contents and direct get,
+            // because it displays the the cached value from
+            // 'contents' for a few moments while requesting the full
+            // object.
+            cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents?*" }, req => {
+                req.on('response', res => {
+                    if (!res.body.items) {
+                        return;
+                    }
+                    res.body.items.forEach(item => {
+                        item.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
+                    });
+                });
+            });
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                 req.on('response', res => {
                     res.body.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
@@ -222,14 +203,16 @@ describe("Process tests", function () {
                 });
             });
 
-            cy.getAll("@containerRequest").then(function ([containerRequest]) {
+            cy.getAll("@containerRequest", "@runningContainer").then(function ([containerRequest]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time");
-            });
+                cy.reload();
+                cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time")
+            }).as("retry1");
 
-            cy.getAll("@containerRequest").then(function ([containerRequest]) {
+            cy.getAll("@containerRequest", "@runningContainer", "@retry1").then(function ([containerRequest]) {
                 containerCount = 3;
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.reload();
                 cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 2 times");
             });
         });
@@ -262,7 +245,6 @@ describe("Process tests", function () {
             uuid: fakeContainerUuid,
             owner_uuid: "zzzzz-tpzed-000000000000000",
             created_at: "2023-02-13T15:55:47.308915000Z",
-            modified_by_client_uuid: "zzzzz-ozdt8-q6dzdi1lcc03155",
             modified_by_user_uuid: "zzzzz-tpzed-000000000000000",
             modified_at: "2023-02-15T19:12:45.987086000Z",
             command: [
@@ -1348,6 +1330,9 @@ describe("Process tests", function () {
                 // Add output uuid and inputs to container request
                 cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                     req.on('response', res => {
+                        if (!res.body.mounts) {
+                            return;
+                        }
                         res.body.output_uuid = testOutputCollection.uuid;
                         res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                             content: testInputs.map(param => param.input).reduce((acc, val) => Object.assign(acc, val), {}),
@@ -1480,6 +1465,9 @@ describe("Process tests", function () {
             // Add output uuid and inputs to container request
             cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
                 req.on('response', res => {
+                    if (!res.body.mounts) {
+                        return;
+                    }
                     res.body.output_uuid = fakeOutputUUID;
                     res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
                         content: {},

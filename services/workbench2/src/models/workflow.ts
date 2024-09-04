@@ -103,6 +103,10 @@ export interface Directory {
     basename?: string;
 }
 
+export interface SecretInclude {
+    $include: string;
+}
+
 export interface GenericCommandInputParameter<Type, Value> {
     id: string;
     label?: string;
@@ -111,6 +115,7 @@ export interface GenericCommandInputParameter<Type, Value> {
     type?: Type | Array<Type | CWLType.NULL>;
     value?: Value;
     disabled?: boolean;
+    secret?: boolean;
 }
 export type GenericArrayCommandInputParameter<Type, Value> = GenericCommandInputParameter<CommandInputArraySchema<Type>, Value[]>;
 
@@ -129,9 +134,11 @@ export type IntArrayCommandInputParameter = GenericArrayCommandInputParameter<CW
 export type FloatArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FLOAT, string>;
 export type FileArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.FILE, File>;
 export type DirectoryArrayCommandInputParameter = GenericArrayCommandInputParameter<CWLType.DIRECTORY, Directory>;
+export type SecretCommandInputParameter = GenericArrayCommandInputParameter<CWLType.STRING, SecretInclude>;
+
 
 export type WorkflowInputsData = {
-    [key: string]: boolean | number | string | File | Directory;
+    [key: string]: boolean | number | string | File | Directory | SecretInclude;
 };
 export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowResourceDefinition => {
     const definition = safeLoad(workflow.definition);
@@ -146,12 +153,28 @@ export const getWorkflow = (workflowDefinition: WorkflowResourceDefinition) => {
         : undefined;
 };
 
+export interface CwlSecrets {
+    class: 'http://commonwl.org/cwltool#Secrets';
+    secrets: string[];
+}
+
 export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition) { return undefined; }
-    return getWorkflow(workflowDefinition)
-        ? getWorkflow(workflowDefinition)!.inputs
-        : undefined;
+    const wf = getWorkflow(workflowDefinition);
+    if (!wf) { return undefined; }
+    const inputs = wf.inputs;
+    if (wf.hints) {
+        const secrets = wf.hints.find(item => item.class === 'http://commonwl.org/cwltool#Secrets') as CwlSecrets | undefined;
+        if (secrets?.secrets) {
+            inputs.forEach((param) => {
+                param.secret = secrets.secrets.includes(param.id);
+            });
+        }
+    }
+
+    return inputs;
 };
+
 
 export const getWorkflowOutputs = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition) { return undefined; }
@@ -211,8 +234,11 @@ export const getEnumType = (input: GenericCommandInputParameter<any, any>) => {
     return null;
 };
 
+export const isSecret = (input: GenericCommandInputParameter<any, any>) =>
+    (typeof input.value === 'object') && input.value.$include?.startsWith("/secrets/");
+
 export const stringifyInputType = ({ type }: CommandInputParameter) => {
-    if (typeof type === 'string') {
+	if (typeof type === 'string') {
         return type;
     } else if (type instanceof Array) {
         return type.join(' | ');

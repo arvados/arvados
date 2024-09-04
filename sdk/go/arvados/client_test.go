@@ -98,7 +98,7 @@ func (*clientSuite) TestCurrentUser(c *check.C) {
 	c.Check(u.UUID, check.Equals, "zzzzz-abcde-012340123401234")
 	c.Check(stub.Requests, check.Not(check.HasLen), 0)
 	hdr := stub.Requests[len(stub.Requests)-1].Header
-	c.Check(hdr.Get("Authorization"), check.Equals, "OAuth2 xyzzy")
+	c.Check(hdr.Get("Authorization"), check.Equals, "Bearer xyzzy")
 
 	client.Client.Transport = &errorTransport{}
 	u, err = client.CurrentUser()

@@ -56,7 +56,7 @@ func (s *suite) SetUpTest(c *check.C) {
 			IncludedScratch: 100 << 30,
 			Scratch:         100 << 30,
 		}}
-	s.disp = newHandler(context.Background(), cluster, arvadostest.Dispatch1Token, prometheus.NewRegistry()).(*dispatcher)
+	s.disp = newHandler(context.Background(), cluster, arvadostest.SystemRootToken, prometheus.NewRegistry()).(*dispatcher)
 	s.disp.lsfcli.stubCommand = func(string, ...string) *exec.Cmd {
 		return exec.Command("bash", "-c", "echo >&2 unimplemented stub; false")
 	}

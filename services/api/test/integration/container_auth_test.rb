@@ -31,7 +31,7 @@ class ContainerAuthTest < ActionDispatch::IntegrationTest
         :format => :json,
         :container => {:state => "Cancelled"}
       },
-      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:dispatch1).token}"}
+      headers: {'HTTP_AUTHORIZATION' => "Bearer #{api_client_authorizations(:system_user).token}"}
     assert_response :success
     get "/arvados/v1/containers/current",
       params: {:format => :json},

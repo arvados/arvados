@@ -620,10 +620,10 @@ class Operations(llfuse.Operations):
 
         self.num_retries = num_retries
 
-        self.read_counter = arvados.keep.Counter()
-        self.write_counter = arvados.keep.Counter()
-        self.read_ops_counter = arvados.keep.Counter()
-        self.write_ops_counter = arvados.keep.Counter()
+        self.read_counter = arvados.keep._Counter()
+        self.write_counter = arvados.keep._Counter()
+        self.read_ops_counter = arvados.keep._Counter()
+        self.write_ops_counter = arvados.keep._Counter()
 
         self.events = None
 

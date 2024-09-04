@@ -153,7 +153,7 @@ describe('Project Details Card tests', function () {
         const projDescription = 'Science! True daughter of Old Time thou art! Who alterest all things with thy peering eyes.';
         //a multi-line description should change the height of the card
         const multiLineProjDescription = '{enter}Why preyest thou thus upon the poet’s heart,{enter}Vulture, whose wings are dull realities?';
-        
+
         cy.loginAs(adminUser);
 
         // Create project
@@ -179,6 +179,8 @@ describe('Project Details Card tests', function () {
             cy.get('div[contenteditable=true]').click().type(projDescription);
             cy.get('[data-cy=form-submit-btn]').click();
         });
+        cy.waitForDom();
+        cy.get('[data-cy=project-panel]').should('be.visible');
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
@@ -214,7 +216,9 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
     });
 
-    it('should display key/value pairs', () => {
+    // The following test is enabled on Electron only, as Chromium and Firefox
+    // require permissions to access the clipboard.
+    it('should display key/value pairs',  { browser: 'electron' }, () => {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(adminUser);
 

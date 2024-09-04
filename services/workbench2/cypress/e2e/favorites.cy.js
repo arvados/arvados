@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+const kebabCase = require('lodash/kebabCase');
+
 describe('Favorites tests', function () {
     let activeUser;
     let adminUser;
@@ -251,5 +253,75 @@ describe('Favorites tests', function () {
                         cy.get('@chooseDirectoryDialog').find(`[data-id=${mySharedReadonlyProject.uuid}]`);
                     });
             });
+    });
+
+    it('shows the correct favorites and public favorites in the side panel', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'myFavoriteProject1',
+        }).as('myFavoriteProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'myFavoriteProject2',
+        }).as('myFavoriteProject2');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'myPublicFavoriteProject1',
+        }).as('myPublicFavoriteProject1');
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'myPublicFavoriteProject2',
+        }).as('myPublicFavoriteProject2');
+
+        cy.getAll('@myFavoriteProject1', '@myFavoriteProject2', '@myPublicFavoriteProject1', '@myPublicFavoriteProject2')
+        .then(function ([myFavoriteProject1, myFavoriteProject2, myPublicFavoriteProject1, myPublicFavoriteProject2]) {
+                cy.loginAs(adminUser);
+
+                //add two projects to favorites
+                cy.get('[data-cy=side-panel-tree]').contains('myFavoriteProject1').rightclick();
+                cy.contains('Add to favorites').click();
+                cy.get('[data-cy=side-panel-tree]').contains('myFavoriteProject2').rightclick();
+                cy.contains('Add to favorites').click();
+
+                //add two projects to public favorites
+                cy.get('[data-cy=side-panel-tree]').contains('myPublicFavoriteProject1').rightclick();
+                cy.contains('Add to public favorites').click();
+                cy.get('[data-cy=side-panel-tree]').contains('myPublicFavoriteProject2').rightclick();
+                cy.contains('Add to public favorites').click();
+
+                //close "Home Projects", which is open by default
+                cy.get(`[data-cy=tree-item-toggle-${kebabCase(adminUser.user.uuid)}]`).click();
+
+                //check if the correct favorites are displayed in the side panel
+                cy.get('span').contains('myFavoriteProject1').should('not.exist');
+                cy.get('span').contains('myFavoriteProject2').should('not.exist');
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+                cy.get('span').contains('myFavoriteProject1').should('exist');
+                cy.get('span').contains('myFavoriteProject2').should('exist');
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+
+                //check if the correct public favorites are displayed in the side panel
+                cy.get('span').contains('myPublicFavoriteProject1').should('not.exist');
+                cy.get('span').contains('myPublicFavoriteProject2').should('not.exist');
+                cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
+                cy.get('span').contains('myPublicFavoriteProject1').should('exist');
+                cy.get('span').contains('myPublicFavoriteProject2').should('exist');
+                cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
+
+                //double check both sets
+                cy.get('span').contains('myFavoriteProject1').should('not.exist');
+                cy.get('span').contains('myFavoriteProject2').should('not.exist');
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+                cy.get('span').contains('myFavoriteProject1').should('exist');
+                cy.get('span').contains('myFavoriteProject2').should('exist');
+                cy.get(`[data-cy=tree-item-toggle-my-favorites]`).click();
+
+                cy.get('span').contains('myPublicFavoriteProject1').should('not.exist');
+                cy.get('span').contains('myPublicFavoriteProject2').should('not.exist');
+                cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
+                cy.get('span').contains('myPublicFavoriteProject1').should('exist');
+                cy.get('span').contains('myPublicFavoriteProject2').should('exist');
+                cy.get(`[data-cy=tree-item-toggle-public-favorites]`).click();
+        });
     });
 });

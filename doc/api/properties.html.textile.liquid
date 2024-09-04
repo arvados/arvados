@@ -31,6 +31,7 @@ The arv:git* container properties, and the associated Git commands, primarily co
 |arv:gitPath|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the absolute path of the checkout on the filesystem|
 |arv:gitStatus|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with a machine-readable summary of files modified in the checkout since the most recent commit (the output of @git status --untracked-files=no --porcelain@)|
 |arv:workflowMain|collection of type=workflow|string|Set on a collection containing a workflow created by @arvados-cwl-runner --create-workflow@, this is a relative reference inside the collection to the entry point of the workflow.|
+|arv:failed_container_resubmitted|container request|uuid|Set on container requests that were automatically resubmitted by the workflow runner with modified run options, such as when using the @PreemptionBehavior@ or @OutOfMemoryRetry@ CWL extensions.  Set to the uuid of the new, resubmitted container request.|
 
 The following system properties predate the @arv:@ key prefix, but are still reserved and can always be set.
 

@@ -93,14 +93,14 @@ module LoadParam
         # The attr can have its table unspecified if it happens to be for the current "model_class" (the first case)
         # or it can be fully specified with the database tablename (the second case) (e.g. "collections.name").
         # NB that the security check for the second case table_name will not work if the model
-        # has used set_table_name to use an alternate table name from the Rails standard.
+        # has used table_name= to use an alternate table name from the Rails standard.
         # I could not find a perfect way to handle this well, but ActiveRecord::Base.send(:descendants)
         # would be a place to start if this ever becomes necessary.
         if (attr.match(/^[a-z][_a-z0-9]+$/) &&
             model_class.columns.collect(&:name).index(attr) &&
             ['asc','desc'].index(direction.downcase))
           if fill_table_names
-            @orders << "#{table_name}.#{attr} #{direction.downcase}"
+            @orders << "#{model_class.table_name}.#{attr} #{direction.downcase}"
           else
             @orders << "#{attr} #{direction.downcase}"
           end
@@ -159,6 +159,14 @@ module LoadParam
       rescue
         raise ArgumentError.new("Could not parse \"select\" param as an array")
       end
+    end
+
+    if @select
+      # The modified_by_client_uuid field is no longer offered. For
+      # the sake of compatibility with workbench2, ignore it when a
+      # client asks for it explicitly (rather than returning an
+      # "invalid field" error).
+      @select -= ['modified_by_client_uuid']
     end
 
     if @select && @orders

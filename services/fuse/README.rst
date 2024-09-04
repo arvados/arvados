@@ -67,12 +67,12 @@ Installing on Red Hat, AlmaLinux, and Rocky Linux
 
 Arvados publishes packages for RHEL 8 and distributions based on it. Note that these packages depend on, and will automatically enable, the Python 3.9 module. You can install the Python SDK package on any of these distributions by running the following commands::
 
-  sudo tee /etc/yum.repos.d/arvados.repo >/dev/null <<EOF
+  sudo tee /etc/yum.repos.d/arvados.repo >/dev/null <<'EOF'
   [arvados]
   name=Arvados
-  baseurl=http://rpm.arvados.org/CentOS/\$releasever/os/\$basearch/
+  baseurl=http://rpm.arvados.org/RHEL/$releasever/os/$basearch/
   gpgcheck=1
-  gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+  gpgkey=http://rpm.arvados.org/RHEL/RPM-GPG-KEY-arvados
   EOF
   sudo dnf install python3-arvados-fuse
 

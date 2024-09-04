@@ -43,7 +43,7 @@ func (getCmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 
 	id := flags.Args()[0]
 	client := arvados.NewClientFromEnv()
-	path, err := client.PathForUUID("show", id)
+	path, err := client.PathForUUID("get", id)
 	if err != nil {
 		return 1
 	}

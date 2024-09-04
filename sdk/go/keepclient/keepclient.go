@@ -314,7 +314,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 				req.Header[k] = append([]string(nil), v...)
 			}
 			if req.Header.Get("Authorization") == "" {
-				req.Header.Set("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+				req.Header.Set("Authorization", "Bearer "+kc.Arvados.ApiToken)
 			}
 			if req.Header.Get("X-Request-Id") == "" {
 				req.Header.Set("X-Request-Id", reqid)
@@ -543,7 +543,7 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+	req.Header.Add("Authorization", "Bearer "+kc.Arvados.ApiToken)
 	req.Header.Set("X-Request-Id", kc.getRequestID())
 	resp, err := kc.httpClient().Do(req)
 	if err != nil {

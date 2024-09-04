@@ -47,9 +47,6 @@ export interface ClusterConfigJSON {
             Scheme: string
         }
     };
-    Mail?: {
-        SupportEmailAddress: string;
-    };
     Services: {
         Controller: {
             ExternalURL: string;
@@ -139,6 +136,7 @@ export interface ClusterConfigJSON {
     };
     Users: {
         AnonymousUserToken: string;
+        SupportEmailAddress: string;
     };
 }
 
@@ -360,7 +358,8 @@ export const mockClusterConfigJSON = (
     },
     Volumes: {},
     Users: {
-        AnonymousUserToken: ""
+        AnonymousUserToken: "",
+        SupportEmailAddress: "arvados@example.com",
     },
     ...config,
 });

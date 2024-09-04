@@ -87,9 +87,8 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
         self.assertEqual(1, error_mock.call_count)
 
     def test_version_argument(self):
-        if sys.version_info >= (3, 0):
-            import warnings
-            warnings.simplefilter("ignore")
+        import warnings
+        warnings.simplefilter("ignore")
         with redirected_streams(stdout=StringIO, stderr=StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_ls(['--version'], None)

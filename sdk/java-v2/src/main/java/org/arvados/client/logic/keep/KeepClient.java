@@ -120,7 +120,7 @@ public class KeepClient {
     private List<String> mapNewServices(Map<String, FileTransferHandler> rootsMap, KeepLocator locator,
                                         boolean forceRebuild, boolean needWritable, Map<String, String> headers) {
 
-        headers.putIfAbsent("Authorization", String.format("OAuth2 %s", config.getApiToken()));
+        headers.putIfAbsent("Authorization", String.format("Bearer %s", config.getApiToken()));
         List<String> localRoots = weightedServiceRoots(locator, forceRebuild, needWritable);
         for (String root : localRoots) {
             FileTransferHandler keepServiceLocal = new FileTransferHandler(root, headers, config);

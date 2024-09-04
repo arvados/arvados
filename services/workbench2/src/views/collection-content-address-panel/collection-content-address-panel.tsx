@@ -163,7 +163,8 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         contextMenuColumn={true}
                         title={`Content address: ${this.props.match.params.id}`}
                         defaultViewIcon={CollectionIcon}
-                        defaultViewMessages={['Collections with this content address not found.']} />
+                        defaultViewMessages={['Collections with this content address not found.']}
+                        forceMultiSelectMode />
                     </div>
                 </div>;
             }

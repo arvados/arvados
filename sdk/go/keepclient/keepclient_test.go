@@ -142,7 +142,7 @@ func (sph *StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request
 	sph.requests = append(sph.requests, req)
 	sph.mtx.Unlock()
 	sph.c.Check(req.URL.Path, Equals, "/"+sph.expectPath)
-	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectAPIToken))
+	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("Bearer %s", sph.expectAPIToken))
 	if sph.expectStorageClass != "*" {
 		sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	}
@@ -699,7 +699,7 @@ type StubGetHandler struct {
 
 func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sgh.c.Check(req.URL.Path, Equals, "/"+sgh.expectPath)
-	sgh.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sgh.expectAPIToken))
+	sgh.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("Bearer %s", sgh.expectAPIToken))
 	resp.WriteHeader(sgh.httpStatus)
 	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(sgh.body)))
 	resp.Write(sgh.body)
@@ -1377,7 +1377,7 @@ type StubGetIndexHandler struct {
 
 func (h StubGetIndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	h.c.Check(req.URL.Path, Equals, h.expectPath)
-	h.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", h.expectAPIToken))
+	h.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("Bearer %s", h.expectAPIToken))
 	resp.WriteHeader(h.httpStatus)
 	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(h.body)))
 	resp.Write(h.body)

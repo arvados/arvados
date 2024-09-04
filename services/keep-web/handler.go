@@ -11,9 +11,12 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,6 +30,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/gotd/contrib/http_range"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/webdav"
 )
@@ -39,6 +43,14 @@ type handler struct {
 	lockMtx    sync.Mutex
 	lock       map[string]*sync.RWMutex
 	lockTidied time.Time
+
+	fileEventLogs         map[fileEventLog]time.Time
+	fileEventLogsMtx      sync.Mutex
+	fileEventLogsNextTidy time.Time
+
+	s3SecretCache         map[string]*cachedS3Secret
+	s3SecretCacheMtx      sync.Mutex
+	s3SecretCacheNextTidy time.Time
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -509,14 +521,27 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				redirkey = "redirectToDownload"
 			}
 			callback := "/c=" + collectionID + "/" + strings.Join(targetPath, "/")
-			// target.RawQuery = url.Values{redirkey:
-			// {target}}.Encode() would be the obvious
-			// thing to do here, but wb2 doesn't decode
-			// this as a query param -- it takes
-			// everything after "${redirkey}=" as the
-			// target URL. If we encode "/" as "%2F" etc.,
-			// the redirect won't work.
-			target.RawQuery = redirkey + "=" + callback
+			query := url.Values{redirkey: {callback}}
+			queryString := query.Encode()
+			// Note: Encode (and QueryEscape function) turns space
+			// into plus sign (+) rather than %20 (the plus sign
+			// becomes %2B); that is the rule for web forms data
+			// sent in URL query part via GET, but we're not
+			// emulating forms here. Client JS APIs
+			// (URLSearchParam#get, decodeURIComponent) will
+			// decode %20, but while the former also expects the
+			// form-specific encoding, the latter doesn't.
+			// Encode() almost encodes everything; RFC3986 sec. 3.4
+			// says "it is sometimes better for usability" to not
+			// encode / and ? when passing URI reference in query.
+			// This is also legal according to WHATWG URL spec and
+			// can be desirable for debugging webapp.
+			// We can let slash / appear in the encoded query, and
+			// equality-sign = too, but exempting ? is not very
+			// useful.
+			// Plus-sign, hash, and ampersand are never exempt.
+			r := strings.NewReplacer("+", "%20", "%2F", "/", "%3D", "=")
+			target.RawQuery = r.Replace(queryString)
 			w.Header().Add("Location", target.String())
 			w.WriteHeader(http.StatusSeeOther)
 			return
@@ -672,6 +697,9 @@ var dirListingTemplate = `<!DOCTYPE HTML>
     .footer p {
       font-size: 82%;
     }
+    hr {
+      border: 1px solid #808080;
+    }
     ul {
       padding: 0;
     }
@@ -687,9 +715,9 @@ var dirListingTemplate = `<!DOCTYPE HTML>
 
 <P>This collection of data files is being shared with you through
 Arvados.  You can download individual files listed below.  To download
-the entire directory tree with wget, try:</P>
+the entire directory tree with <CODE>wget</CODE>, try:</P>
 
-<PRE>$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} https://{{ .Request.Host }}{{ .Request.URL.Path }}</PRE>
+<PRE id="wget-example">$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} {{ .QuotedUrlForWget }}</PRE>
 
 <H2>File Listing</H2>
 
@@ -697,9 +725,9 @@ the entire directory tree with wget, try:</P>
 <UL>
 {{range .Files}}
 {{if .IsDir }}
-  <LI>{{" " | printf "%15s  " | nbsp}}<A href="{{print "./" .Name}}/">{{.Name}}/</A></LI>
+  <LI>{{" " | printf "%15s  " | nbsp}}<A class="item" href="{{ .Href }}/">{{ .Name }}/</A></LI>
 {{else}}
-  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{print "./" .Name}}">{{.Name}}</A></LI>
+  <LI>{{.Size | printf "%15d  " | nbsp}}<A class="item" href="{{ .Href }}">{{ .Name }}</A></LI>
 {{end}}
 {{end}}
 </UL>
@@ -707,7 +735,7 @@ the entire directory tree with wget, try:</P>
 <P>(No files; this collection is empty.)</P>
 {{end}}
 
-<HR noshade>
+<HR>
 <DIV class="footer">
   <P>
     About Arvados:
@@ -718,12 +746,42 @@ the entire directory tree with wget, try:</P>
 </DIV>
 
 </BODY>
+</HTML>
 `
 
 type fileListEnt struct {
 	Name  string
+	Href  string
 	Size  int64
 	IsDir bool
+}
+
+// Given a filesystem path like `foo/"bar baz"`, return an escaped
+// (percent-encoded) relative path like `./foo/%22bar%20%baz%22`.
+//
+// Note the result may contain html-unsafe characters like '&'. These
+// will be handled separately by the HTML templating engine as needed.
+func relativeHref(path string) string {
+	u := &url.URL{Path: path}
+	return "./" + u.EscapedPath()
+}
+
+// Return a shell-quoted URL suitable for pasting to a command line
+// ("wget ...") to repeat the given HTTP request.
+func makeQuotedUrlForWget(r *http.Request) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "http" || scheme == "https" {
+		// use protocol reported by load balancer / proxy
+	} else if r.TLS != nil {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+	p := r.URL.EscapedPath()
+	// An escaped path may still contain single quote chars, which
+	// would interfere with our shell quoting. Avoid this by
+	// escaping them as %27.
+	return fmt.Sprintf("'%s://%s%s'", scheme, r.Host, strings.Replace(p, "'", "%27", -1))
 }
 
 func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collectionName string, fs http.FileSystem, base string, recurse bool) {
@@ -752,8 +810,10 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 					return err
 				}
 			} else {
+				listingName := path + ent.Name()
 				files = append(files, fileListEnt{
-					Name:  path + ent.Name(),
+					Name:  listingName,
+					Href:  relativeHref(listingName),
 					Size:  ent.Size(),
 					IsDir: ent.IsDir(),
 				})
@@ -781,10 +841,11 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 	})
 	w.WriteHeader(http.StatusOK)
 	tmpl.Execute(w, map[string]interface{}{
-		"CollectionName": collectionName,
-		"Files":          files,
-		"Request":        r,
-		"StripParts":     strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
+		"CollectionName":   collectionName,
+		"Files":            files,
+		"Request":          r,
+		"StripParts":       strings.Count(strings.TrimRight(r.URL.Path, "/"), "/"),
+		"QuotedUrlForWget": makeQuotedUrlForWget(r),
 	})
 }
 
@@ -894,75 +955,212 @@ func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arva
 	return true
 }
 
+type fileEventLog struct {
+	requestPath  string
+	eventType    string
+	userUUID     string
+	userFullName string
+	collUUID     string
+	collPDH      string
+	collFilePath string
+	clientAddr   string
+	clientToken  string
+}
+
+func newFileEventLog(
+	h *handler,
+	r *http.Request,
+	filepath string,
+	collection *arvados.Collection,
+	user *arvados.User,
+	token string,
+) *fileEventLog {
+	var eventType string
+	switch r.Method {
+	case "POST", "PUT":
+		eventType = "file_upload"
+	case "GET":
+		eventType = "file_download"
+	default:
+		return nil
+	}
+
+	// We want to log the address of the proxy closest to keep-web—the last
+	// value in the X-Forwarded-For list—or the client address if there is no
+	// valid proxy.
+	var clientAddr string
+	// 1. Build a slice of proxy addresses from X-Forwarded-For.
+	xff := strings.Join(r.Header.Values("X-Forwarded-For"), ",")
+	addrs := strings.Split(xff, ",")
+	// 2. Reverse the slice so it's in our most preferred order for logging.
+	slices.Reverse(addrs)
+	// 3. Append the client address to that slice.
+	if addr, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		addrs = append(addrs, addr)
+	}
+	// 4. Use the first valid address in the slice.
+	for _, addr := range addrs {
+		if ip := net.ParseIP(strings.TrimSpace(addr)); ip != nil {
+			clientAddr = ip.String()
+			break
+		}
+	}
+
+	ev := &fileEventLog{
+		requestPath: r.URL.Path,
+		eventType:   eventType,
+		clientAddr:  clientAddr,
+		clientToken: token,
+	}
+
+	if user != nil {
+		ev.userUUID = user.UUID
+		ev.userFullName = user.FullName
+	} else {
+		ev.userUUID = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Cluster.ClusterID)
+	}
+
+	if collection != nil {
+		ev.collFilePath = filepath
+		// h.determineCollection populates the collection_uuid
+		// prop with the PDH, if this collection is being
+		// accessed via PDH. For logging, we use a different
+		// field depending on whether it's a UUID or PDH.
+		if len(collection.UUID) > 32 {
+			ev.collPDH = collection.UUID
+		} else {
+			ev.collPDH = collection.PortableDataHash
+			ev.collUUID = collection.UUID
+		}
+	}
+
+	return ev
+}
+
+func (ev *fileEventLog) shouldLogPDH() bool {
+	return ev.eventType == "file_download" && ev.collPDH != ""
+}
+
+func (ev *fileEventLog) asDict() arvadosclient.Dict {
+	props := arvadosclient.Dict{
+		"reqPath":              ev.requestPath,
+		"collection_uuid":      ev.collUUID,
+		"collection_file_path": ev.collFilePath,
+	}
+	if ev.shouldLogPDH() {
+		props["portable_data_hash"] = ev.collPDH
+	}
+	return arvadosclient.Dict{
+		"object_uuid": ev.userUUID,
+		"event_type":  ev.eventType,
+		"properties":  props,
+	}
+}
+
+func (ev *fileEventLog) asFields() logrus.Fields {
+	fields := logrus.Fields{
+		"collection_file_path": ev.collFilePath,
+		"collection_uuid":      ev.collUUID,
+		"user_uuid":            ev.userUUID,
+	}
+	if ev.shouldLogPDH() {
+		fields["portable_data_hash"] = ev.collPDH
+	}
+	if !strings.HasSuffix(ev.userUUID, "-tpzed-anonymouspublic") {
+		fields["user_full_name"] = ev.userFullName
+	}
+	return fields
+}
+
+func (h *handler) shouldLogEvent(
+	event *fileEventLog,
+	req *http.Request,
+	fileInfo os.FileInfo,
+	t time.Time,
+) bool {
+	if event == nil {
+		return false
+	} else if event.eventType != "file_download" ||
+		h.Cluster.Collections.WebDAVLogDownloadInterval == 0 ||
+		fileInfo == nil {
+		return true
+	}
+	td := h.Cluster.Collections.WebDAVLogDownloadInterval.Duration()
+	cutoff := t.Add(-td)
+	ev := *event
+	h.fileEventLogsMtx.Lock()
+	defer h.fileEventLogsMtx.Unlock()
+	if h.fileEventLogs == nil {
+		h.fileEventLogs = make(map[fileEventLog]time.Time)
+	}
+	shouldLog := h.fileEventLogs[ev].Before(cutoff)
+	if !shouldLog {
+		// Go's http fs server evaluates http.Request.Header.Get("Range")
+		// (as of Go 1.22) so we should do the same.
+		// Don't worry about merging multiple headers, etc.
+		ranges, err := http_range.ParseRange(req.Header.Get("Range"), fileInfo.Size())
+		if ranges == nil || err != nil {
+			// The Range header was either empty or malformed.
+			// Err on the side of logging.
+			shouldLog = true
+		} else {
+			// Log this request only if it requested the first byte
+			// (our heuristic for "starting a new download").
+			for _, reqRange := range ranges {
+				if reqRange.Start == 0 {
+					shouldLog = true
+					break
+				}
+			}
+		}
+	}
+	if shouldLog {
+		h.fileEventLogs[ev] = t
+	}
+	if t.After(h.fileEventLogsNextTidy) {
+		for key, logTime := range h.fileEventLogs {
+			if logTime.Before(cutoff) {
+				delete(h.fileEventLogs, key)
+			}
+		}
+		h.fileEventLogsNextTidy = t.Add(td)
+	}
+	return shouldLog
+}
+
 func (h *handler) logUploadOrDownload(
 	r *http.Request,
 	client *arvadosclient.ArvadosClient,
 	fs arvados.CustomFileSystem,
 	filepath string,
 	collection *arvados.Collection,
-	user *arvados.User) {
-
-	log := ctxlog.FromContext(r.Context())
-	props := make(map[string]string)
-	props["reqPath"] = r.URL.Path
-	var useruuid string
-	if user != nil {
-		log = log.WithField("user_uuid", user.UUID).
-			WithField("user_full_name", user.FullName)
-		useruuid = user.UUID
-	} else {
-		useruuid = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Cluster.ClusterID)
-	}
-	if collection == nil && fs != nil {
-		collection, filepath = h.determineCollection(fs, filepath)
-	}
-	if collection != nil {
-		log = log.WithField("collection_file_path", filepath)
-		props["collection_file_path"] = filepath
-		// h.determineCollection populates the collection_uuid
-		// prop with the PDH, if this collection is being
-		// accessed via PDH. For logging, we use a different
-		// field depending on whether it's a UUID or PDH.
-		if len(collection.UUID) > 32 {
-			log = log.WithField("portable_data_hash", collection.UUID)
-			props["portable_data_hash"] = collection.UUID
-		} else {
-			log = log.WithField("collection_uuid", collection.UUID)
-			props["collection_uuid"] = collection.UUID
+	user *arvados.User,
+) {
+	var fileInfo os.FileInfo
+	if fs != nil {
+		if collection == nil {
+			collection, filepath = h.determineCollection(fs, filepath)
+		}
+		if collection != nil {
+			// It's okay to ignore this error because shouldLogEvent will
+			// always return true if fileInfo == nil.
+			fileInfo, _ = fs.Stat(path.Join("by_id", collection.UUID, filepath))
 		}
 	}
-	if r.Method == "PUT" || r.Method == "POST" {
-		log.Info("File upload")
-		if h.Cluster.Collections.WebDAVLogEvents {
-			go func() {
-				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-					"object_uuid": useruuid,
-					"event_type":  "file_upload",
-					"properties":  props}}
-				err := client.Create("logs", lr, nil)
-				if err != nil {
-					log.WithError(err).Error("Failed to create upload log event on API server")
-				}
-			}()
-		}
-	} else if r.Method == "GET" {
-		if collection != nil && collection.PortableDataHash != "" {
-			log = log.WithField("portable_data_hash", collection.PortableDataHash)
-			props["portable_data_hash"] = collection.PortableDataHash
-		}
-		log.Info("File download")
-		if h.Cluster.Collections.WebDAVLogEvents {
-			go func() {
-				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-					"object_uuid": useruuid,
-					"event_type":  "file_download",
-					"properties":  props}}
-				err := client.Create("logs", lr, nil)
-				if err != nil {
-					log.WithError(err).Error("Failed to create download log event on API server")
-				}
-			}()
-		}
+	event := newFileEventLog(h, r, filepath, collection, user, client.ApiToken)
+	if !h.shouldLogEvent(event, r, fileInfo, time.Now()) {
+		return
+	}
+	log := ctxlog.FromContext(r.Context()).WithFields(event.asFields())
+	log.Info(strings.Replace(event.eventType, "file_", "File ", 1))
+	if h.Cluster.Collections.WebDAVLogEvents {
+		go func() {
+			logReq := arvadosclient.Dict{"log": event.asDict()}
+			err := client.Create("logs", logReq, nil)
+			if err != nil {
+				log.WithError(err).Errorf("Failed to create %s log event on API server", event.eventType)
+			}
+		}()
 	}
 }
 

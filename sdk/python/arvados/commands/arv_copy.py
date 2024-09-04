@@ -40,8 +40,8 @@ import arvados.keep
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
-import arvados.http_to_keep
 
+from arvados._internal import basedirs, http_to_keep
 from arvados._version import __version__
 
 COMMIT_HASH_RE = re.compile(r'^[0-9a-f]{1,40}$')
@@ -220,7 +220,7 @@ def api_for_instance(instance_name, num_retries):
     if '/' in instance_name:
         config_file = instance_name
     else:
-        dirs = arvados.util._BaseDirectories('CONFIG')
+        dirs = basedirs.BaseDirectories('CONFIG')
         config_file = next(dirs.search(f'{instance_name}.conf'), '')
 
     try:
@@ -342,8 +342,12 @@ def copy_workflow(wf_uuid, src, dst, args):
                "ARVADOS_API_TOKEN": src.api_token,
                "PATH": os.environ["PATH"]}
         try:
-            result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
-                                    capture_output=True, env=env)
+            result = subprocess.run(
+                ["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
+                env=env,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            )
         except FileNotFoundError:
             no_arv_copy = True
         else:
@@ -642,7 +646,7 @@ def copy_collection(obj_uuid, src, dst, args):
                 logger.debug("Getting block %s", word)
                 data = src_keep.get(word)
                 put_queue.put((word, data))
-            except e:
+            except Exception as e:
                 logger.error("Error getting block %s: %s", word, e)
                 transfer_error.append(e)
                 try:
@@ -680,7 +684,7 @@ def copy_collection(obj_uuid, src, dst, args):
                     bytes_written += loc.size
                     if progress_writer:
                         progress_writer.report(obj_uuid, bytes_written, bytes_expected)
-            except e:
+            except Exception as e:
                 logger.error("Error putting block %s (%s bytes): %s", blockhash, loc.size, e)
                 try:
                     # Drain the 'get' queue so we end early
@@ -869,15 +873,15 @@ def copy_from_http(url, src, dst, args):
     varying_url_params = args.varying_url_params
     prefer_cached_downloads = args.prefer_cached_downloads
 
-    cached = arvados.http_to_keep.check_cached_url(src, project_uuid, url, {},
-                                                   varying_url_params=varying_url_params,
-                                                   prefer_cached_downloads=prefer_cached_downloads)
+    cached = http_to_keep.check_cached_url(src, project_uuid, url, {},
+                                           varying_url_params=varying_url_params,
+                                           prefer_cached_downloads=prefer_cached_downloads)
     if cached[2] is not None:
         return copy_collection(cached[2], src, dst, args)
 
-    cached = arvados.http_to_keep.http_to_keep(dst, project_uuid, url,
-                                               varying_url_params=varying_url_params,
-                                               prefer_cached_downloads=prefer_cached_downloads)
+    cached = http_to_keep.http_to_keep(dst, project_uuid, url,
+                                       varying_url_params=varying_url_params,
+                                       prefer_cached_downloads=prefer_cached_downloads)
 
     if cached is not None:
         return {"uuid": cached[2]}

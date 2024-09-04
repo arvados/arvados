@@ -108,6 +108,10 @@ func (as *APIStub) CollectionUntrash(ctx context.Context, options arvados.Untras
 	as.appendCall(ctx, as.CollectionUntrash, options)
 	return arvados.Collection{}, as.Error
 }
+func (as *APIStub) ComputedPermissionList(ctx context.Context, options arvados.ListOptions) (arvados.ComputedPermissionList, error) {
+	as.appendCall(ctx, as.ComputedPermissionList, options)
+	return arvados.ComputedPermissionList{}, as.Error
+}
 func (as *APIStub) ContainerCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Container, error) {
 	as.appendCall(ctx, as.ContainerCreate, options)
 	return arvados.Container{}, as.Error

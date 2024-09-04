@@ -45,7 +45,9 @@ afterEach(function () {
         return;
     }
     cy.log(`Cleaning ${createdResources.length} previously created resource(s).`);
-    createdResources.forEach(function ({ suffix, uuid }) {
+    // delete them in FIFO order because later created resources may
+    // be linked to the earlier ones.
+    createdResources.reverse().forEach(function ({ suffix, uuid }) {
         // Don't fail when a resource isn't already there, some objects may have
         // been removed, directly or indirectly, from the test that created them.
         cy.deleteResource(systemToken, suffix, uuid, false);
@@ -129,29 +131,7 @@ Cypress.Commands.add("getUser", (username, first_name = "", last_name = "", is_a
                             .its("body")
                             .as("theUser")
                             .then(function () {
-                                cy.doRequest("GET", "/arvados/v1/api_clients", null, {
-                                    filters: `[["is_trusted", "=", false]]`,
-                                    order: `["created_at desc"]`,
-                                })
-                                    .its("body.items")
-                                    .as("apiClients")
-                                    .then(function () {
-                                        if (this.apiClients.length > 0) {
-                                            cy.doRequest("PUT", `/arvados/v1/api_clients/${this.apiClients[0].uuid}`, {
-                                                api_client: {
-                                                    is_trusted: true,
-                                                },
-                                            })
-                                                .its("body")
-                                                .as("updatedApiClient")
-                                                .then(function () {
-                                                    assert(this.updatedApiClient.is_trusted);
-                                                });
-                                        }
-                                    })
-                                    .then(function () {
-                                        return { user: this.theUser, token: this.userToken };
-                                    });
+                                return { user: this.theUser, token: this.userToken };
                             });
                     });
             })
@@ -499,7 +479,7 @@ function b64toBlob(b64Data, contentType = "", sliceSize = 512) {
 // From https://github.com/cypress-io/cypress/issues/7306#issuecomment-1076451070=
 // This command requires the async package (https://www.npmjs.com/package/async)
 Cypress.Commands.add("waitForDom", () => {
-    cy.window().then(
+    cy.window({ timeout: 10000 }).then(
         {
             // Don't timeout before waitForDom finishes
             timeout: 10000,
@@ -627,3 +607,54 @@ Cypress.Commands.add('waitForLocalStorage', (key, options = {}) => {
     });
   });
   
+Cypress.Commands.add("setupDockerImage", (image_name) => {
+    // Create a collection that will be used as a docker image for the tests.
+    let activeUser;
+    let adminUser;
+
+        cy.getUser("admin", "Admin", "User", true, true)
+            .as("adminUser")
+            .then(function () {
+                adminUser = this.adminUser;
+            });
+
+        cy.getUser('activeuser', 'Active', 'User', false, true)
+            .as('activeUser').then(function () {
+                activeUser = this.activeUser;
+            });
+
+    cy.getAll('@activeUser', '@adminUser').then(([activeUser, adminUser]) => {
+	cy.createCollection(adminUser.token, {
+            name: "docker_image",
+            manifest_text:
+                ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n",
+        })
+            .as("dockerImage")
+            .then(function (dockerImage) {
+                // Give read permissions to the active user on the docker image.
+                cy.createLink(adminUser.token, {
+                    link_class: "permission",
+                    name: "can_read",
+                    tail_uuid: activeUser.user.uuid,
+                    head_uuid: dockerImage.uuid,
+                })
+                    .as("dockerImagePermission")
+                    .then(function () {
+                        // Set-up docker image collection tags
+                        cy.createLink(activeUser.token, {
+                            link_class: "docker_image_repo+tag",
+                            name: image_name,
+                            head_uuid: dockerImage.uuid,
+                        }).as("dockerImageRepoTag");
+                        cy.createLink(activeUser.token, {
+                            link_class: "docker_image_hash",
+                            name: "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678",
+                            head_uuid: dockerImage.uuid,
+                        }).as("dockerImageHash");
+                    });
+            });
+    });
+    return cy.getAll("@dockerImage", "@dockerImageRepoTag", "@dockerImageHash", "@dockerImagePermission").then(function ([dockerImage]) {
+        return dockerImage;
+    });
+});

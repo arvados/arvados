@@ -575,8 +575,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
             format: :json,
           }
       assert_response :success
-      # Should not be trashed
-      assert_nil Group.find_by_uuid(groups(grp).uuid)
+      # Should be trashed
+      assert Group.find_by_uuid(groups(grp).uuid).is_trashed
     end
   end
 

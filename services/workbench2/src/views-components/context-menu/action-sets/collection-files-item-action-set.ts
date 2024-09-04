@@ -7,7 +7,10 @@ import { FileCopyIcon, FileMoveIcon, RemoveIcon, RenameIcon } from "components/i
 import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
 import { openFileRemoveDialog, openRenameFileDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { CollectionFileViewerAction } from "views-components/context-menu/actions/collection-file-viewer-action";
-import { CollectionCopyToClipboardAction } from "../actions/collection-copy-to-clipboard-action";
+import { CollectionUUIDCopyToClipboardAction,
+	 CollectionPDHCopyToClipboardAction,
+	 CollectionCWLCopyToClipboardAction
+} from "../actions/collection-copy-to-clipboard-action";
 import {
     openCollectionPartialMoveToExistingCollectionDialog,
     openCollectionPartialMoveToNewCollectionDialog,
@@ -41,8 +44,22 @@ export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [
             },
         },
         {
-            component: CollectionCopyToClipboardAction,
-            name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
+            component: CollectionUUIDCopyToClipboardAction,
+            name: ContextMenuActionNames.COPY_UUID_LINK_TO_CLIPBOARD,
+            execute: () => {
+                return;
+            },
+        },
+        {
+            component: CollectionPDHCopyToClipboardAction,
+            name: ContextMenuActionNames.COPY_PDH_LINK_TO_CLIPBOARD,
+            execute: () => {
+                return;
+            },
+        },
+        {
+            component: CollectionCWLCopyToClipboardAction,
+            name: ContextMenuActionNames.COPY_CWL_LINK_TO_CLIPBOARD,
             execute: () => {
                 return;
             },

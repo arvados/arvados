@@ -17,7 +17,6 @@ module CommonApiTemplate
       t.add :uuid
       t.add :owner_uuid
       t.add :created_at
-      t.add :modified_by_client_uuid
       t.add :modified_by_user_uuid
       t.add :modified_at
     end

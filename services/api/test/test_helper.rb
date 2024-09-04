@@ -49,6 +49,45 @@ module ArvadosTestSupport
     {'HTTP_AUTHORIZATION' => "Bearer #{api_token(api_client_auth_name)}"}
   end
 
+  def full_text_excluded_columns
+    [
+      # All the columns that contain a UUID or PDH as of June 2024/Arvados 3.0.
+      # It's okay if this list gets out-of-date, it just needs to be complete
+      # enough to test that full text indexes exclude the right columns.
+      "authorized_user_uuid",
+      "auth_uuid",
+      "cancelled_by_client_uuid",
+      "cancelled_by_user_uuid",
+      "container_image",
+      "container_uuid",
+      "current_version_uuid",
+      "for_container_uuid",
+      "frozen_by_uuid",
+      "group_uuid",
+      "head_uuid",
+      "is_locked_by_uuid",
+      "locked_by_uuid",
+      "log_uuid",
+      "modified_by_client_uuid",
+      "modified_by_user_uuid",
+      "node_uuid",
+      "object_owner_uuid",
+      "object_uuid",
+      "output_uuid",
+      "owner_uuid",
+      "perm_origin_uuid",
+      "portable_data_hash",
+      "pri_container_uuid",
+      "redirect_to_user_uuid",
+      "requesting_container_uuid",
+      "starting_uuid",
+      "tail_uuid",
+      "target_uuid",
+      "user_uuid",
+      "uuid",
+    ]
+  end
+
   def show_errors model
     return lambda { model.errors.full_messages.inspect }
   end
@@ -64,8 +103,6 @@ class ActiveSupport::TestCase
   setup do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
-    Thread.current[:api_client_uuid] = nil
-    Thread.current[:api_client] = nil
     Thread.current[:token] = nil
     Thread.current[:user] = nil
     restore_configuration
@@ -124,7 +161,6 @@ class ActiveSupport::TestCase
     client_auth = api_client_authorizations(auth_name)
     client_auth.user.forget_cached_group_perms
     Thread.current[:api_client_authorization] = client_auth
-    Thread.current[:api_client] = client_auth.api_client
     Thread.current[:user] = client_auth.user
     Thread.current[:token] = client_auth.token
   end
@@ -217,8 +253,6 @@ class ActionDispatch::IntegrationTest
   teardown do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
-    Thread.current[:api_client_uuid] = nil
-    Thread.current[:api_client] = nil
     Thread.current[:token] = nil
     Thread.current[:user] = nil
   end

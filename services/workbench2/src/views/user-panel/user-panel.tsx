@@ -153,7 +153,8 @@ export const UserPanel = compose(
                             elevation: 0,
                         }}
                         defaultViewIcon={ShareMeIcon}
-                        defaultViewMessages={['Your user list is empty.']} />
+                        defaultViewMessages={['Your user list is empty.']}
+                        forceMultiSelectMode />
                 </Paper>;
             }
 

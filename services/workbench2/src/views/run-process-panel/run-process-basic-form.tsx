@@ -10,17 +10,34 @@ import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-pa
 import { PROCESS_NAME_VALIDATION } from 'validators/validators';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
+import { WorkflowResource } from 'models/workflow';
+import { ArvadosTheme, CustomStyleRulesCallback } from 'common/custom-theme';
 
 export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
 
 export interface RunProcessBasicFormData {
     name: string;
-    description: string;
     owner?: ProjectResource | UserResource;
 }
 
+interface RunProcessBasicFormProps {
+    workflow?: WorkflowResource
+}
+
+type CssRules = 'name' | 'description';
+
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    name: {
+        overflow: "hidden",
+        color: theme.customs.colors.greyD,
+        fontSize: "1.875rem",
+    },
+    description: {
+    }
+});
+
 export const RunProcessBasicForm =
-    reduxForm<RunProcessBasicFormData>({
+    reduxForm<RunProcessBasicFormData, RunProcessBasicFormProps>({
         form: RUN_PROCESS_BASIC_FORM
     })(() =>
         <form>
@@ -41,10 +58,11 @@ export const RunProcessBasicForm =
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <ProjectInput required input={{
-                        id: "owner",
-                        label: "Project where the workflow will run"
+			id: "owner",
+			label: "Project where the workflow will run"
                     } as ProjectCommandInputParameter}
-                        options={{ showOnlyOwned: false, showOnlyWritable: true }} />
-                </Grid>
-            </Grid>
-        </form>);
+				  options={{ showOnlyOwned: false, showOnlyWritable: true }} />
+		</Grid>
+
+	    </Grid>
+	</form>);

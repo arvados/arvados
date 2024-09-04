@@ -255,11 +255,6 @@ Clusters:
       # MaxConcurrentRequests.
       MaxGatewayTunnels: 1000
 
-      # Fraction of MaxConcurrentRequests that can be "log create"
-      # messages at any given time.  This is to prevent logging
-      # updates from crowding out more important requests.
-      LogCreateRequestFraction: 0.50
-
       # Maximum number of 64MiB memory buffers per Keepstore server process, or
       # 0 for no limit. When this limit is reached, up to
       # (MaxConcurrentRequests - MaxKeepBlobBuffers) HTTP requests requiring
@@ -366,6 +361,17 @@ Clusters:
       # other admin users exist will automatically become an admin user.
       AutoAdminFirstUser: false
 
+      # Support email address to display in Workbench.
+      SupportEmailAddress: "arvados@example.com"
+
+      # Outgoing email configuration:
+      #
+      # In order to send mail, Arvados expects a default SMTP server
+      # on localhost:25.  It cannot require authentication on
+      # connections from localhost.  That server should be configured
+      # to relay mail to a "real" SMTP server that is able to send
+      # email on behalf of your domain.
+
       # Recipient for notification email sent out when a user sets a
       # profile on their account.
       UserProfileNotificationAddress: ""
@@ -408,6 +414,10 @@ Clusters:
       # user's primary email address is used for the Arvados username.
       # Currently implemented for OpenID Connect only.
       PreferDomainForUsername: ""
+
+      # Send an email to each user when their account has been set up
+      # (meaning they are able to log in).
+      SendUserSetupNotificationEmail: true
 
       # Ruby ERB template used for the email sent out to users when
       # they have been set up.
@@ -794,6 +804,15 @@ Clusters:
       # load on the API server and you don't need it.
       WebDAVLogEvents: true
 
+      # If a client requests partial content past the start of a file,
+      # and a request from the same client for the same file was logged
+      # within the past WebDAVLogDownloadInterval, do not write a new log.
+      # This throttling applies to both printed and API server logs.
+      # This reduces log output when clients like `aws s3 cp` download
+      # one file in small chunks in parallel.
+      # Set this to 0 to disable throttling and log all requests.
+      WebDAVLogDownloadInterval: 30s
+
       # Per-connection output buffer for WebDAV downloads. May improve
       # throughput for large files, particularly when storage volumes
       # have high latency.
@@ -1018,11 +1037,11 @@ Clusters:
       # Default value zero means tokens don't have expiration.
       TokenLifetime: 0s
 
-      # If true (default) tokens issued through login are allowed to create
-      # new tokens.
-      # If false, tokens issued through login are not allowed to
-      # viewing/creating other tokens.  New tokens can only be created
-      # by going through login again.
+      # If true (default), tokens are allowed to create new tokens and
+      # view existing tokens belonging to the same user.
+      # If false, tokens are not allowed to view or create other
+      # tokens. New tokens can only be created by going through login
+      # again.
       IssueTrustedTokens: true
 
       # Origins (scheme://host[:port]) of clients trusted to receive
@@ -1325,18 +1344,6 @@ Clusters:
         # Example:
         # MaxRunTimeDefault: 2h
         MaxRunTimeDefault: 0
-
-      JobsAPI:
-        # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.
-        #
-        # Note: this only enables read-only access, creating new
-        # legacy jobs and pipelines is not supported.
-        #
-        # 'auto' -- (default) enable the Jobs API only if it has been used before
-        #         (i.e., there are job records in the database)
-        # 'true' -- enable the Jobs API despite lack of existing records.
-        # 'false' -- disable the Jobs API despite presence of existing records.
-        Enable: 'auto'
 
       CloudVMs:
         # Enable the cloud scheduler.
@@ -1741,32 +1748,6 @@ Clusters:
           # should leave this alone.
           Serialize: false
 
-    Mail:
-      # In order to send mail, Arvados expects a default SMTP server
-      # on localhost:25.  It cannot require authentication on
-      # connections from localhost.  That server should be configured
-      # to relay mail to a "real" SMTP server that is able to send
-      # email on behalf of your domain.
-
-      # See also the "Users" configuration section for additional
-      # email-related options.
-
-      # When a user has been set up (meaning they are able to log in)
-      # they will receive an email using the template specified
-      # earlier in Users.UserSetupMailText
-      SendUserSetupNotificationEmail: true
-
-      # Bug/issue report notification to and from addresses
-      IssueReporterEmailFrom: "arvados@example.com"
-      IssueReporterEmailTo: "arvados@example.com"
-      SupportEmailAddress: "arvados@example.com"
-
-      # Generic issue email from
-      EmailFrom: "arvados@example.com"
-
-      # No longer supported, to be removed.
-      MailchimpAPIKey: ""
-      MailchimpListID: ""
     RemoteClusters:
       "*":
         Host: ""

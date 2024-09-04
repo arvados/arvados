@@ -42,7 +42,7 @@ export const ProjectDescriptionField = () =>
     <Field
         name='description'
         component={RichEditorTextField as any}
-        label="Description - optional" />;
+        label="Description" />;
 
 export const UsersField = () =>
         <span data-cy='users-field'><FieldArray

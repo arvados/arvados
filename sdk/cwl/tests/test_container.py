@@ -5,7 +5,6 @@
 import arvados_cwl
 import arvados_cwl.context
 import arvados_cwl.util
-#from arvados_cwl.arvdocker import arv_docker_clear_cache
 import copy
 import arvados.config
 import logging
@@ -20,6 +19,7 @@ from cwltool.update import INTERNAL_VERSION
 from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 import io
+from parameterized import parameterized
 
 from unittest import mock
 
@@ -60,7 +60,6 @@ class TestContainer(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
-        #arv_docker_clear_cache()
 
     def tearDown(self):
         root_logger = logging.getLogger('')
@@ -85,7 +84,7 @@ class TestContainer(unittest.TestCase):
              "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access),
              "loader": Loader({}),
              "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"}),
-             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__
+             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__,
              })
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
@@ -125,72 +124,73 @@ class TestContainer(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        (True,),
+        (False,),
+    ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_run(self, keepdocker):
-        for enable_reuse in (True, False):
-            #arv_docker_clear_cache()
+    def test_run(self, enable_reuse, keepdocker):
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
-            runner = mock.MagicMock()
-            runner.ignore_docker_for_reuse = False
-            runner.intermediate_output_ttl = 0
-            runner.secret_store = cwltool.secrets.SecretStore()
-            runner.api._rootDesc = {"revision": "20210628"}
-            runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
 
-            keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
-            runner.api.collections().get().execute.return_value = {
-                "portable_data_hash": "99999999999999999999999999999993+99"}
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2"
+        })
 
-            tool = cmap({
-                "inputs": [],
-                "outputs": [],
-                "baseCommand": "ls",
-                "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-                "id": "",
-                "class": "CommandLineTool",
-                "cwlVersion": "v1.2"
-            })
+        loadingContext, runtimeContext = self.helper(runner, enable_reuse)
 
-            loadingContext, runtimeContext = self.helper(runner, enable_reuse)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
 
-            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
-            arvtool.formatgraph = None
-
-            for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
-                j.run(runtimeContext)
-                runner.api.container_requests().create.assert_called_with(
-                    body=JsonDiffMatcher({
-                        'environment': {
-                            'HOME': '/var/spool/cwl',
-                            'TMPDIR': '/tmp'
-                        },
-                        'name': 'test_run_'+str(enable_reuse),
-                        'runtime_constraints': {
-                            'vcpus': 1,
-                            'ram': 268435456
-                        },
-                        'use_existing': enable_reuse,
-                        'priority': 500,
-                        'mounts': {
-                            '/tmp': {'kind': 'tmp',
-                                     "capacity": 1073741824
-                                 },
-                            '/var/spool/cwl': {'kind': 'tmp',
-                                               "capacity": 1073741824 }
-                        },
-                        'state': 'Committed',
-                        'output_name': 'Output from step test_run_'+str(enable_reuse),
-                        'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                        'output_path': '/var/spool/cwl',
-                        'output_ttl': 0,
-                        'container_image': '99999999999999999999999999999993+99',
-                        'command': ['ls', '/var/spool/cwl'],
-                        'cwd': '/var/spool/cwl',
-                        'scheduling_parameters': {},
-                        'properties': {'cwl_input': {}},
-                        'secret_mounts': {},
-                        'output_storage_classes': ["default"]
-                    }))
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_'+str(enable_reuse),
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 268435456
+                    },
+                    'use_existing': enable_reuse,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output from step test_run_'+str(enable_reuse),
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {'cwl_input': {}},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
+                }))
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -563,6 +563,7 @@ class TestContainer(unittest.TestCase):
 
         arvjob = arvados_cwl.ArvadosContainer(runner,
                                               runtimeContext,
+                                              [],
                                               mock.MagicMock(),
                                               {},
                                               None,
@@ -667,6 +668,7 @@ class TestContainer(unittest.TestCase):
 
         arvjob = arvados_cwl.ArvadosContainer(runner,
                                               runtimeContext,
+                                              [],
                                               mock.MagicMock(),
                                               {},
                                               None,
@@ -972,8 +974,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_setting_storage_class(self, keepdocker):
-        #arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -1048,8 +1048,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_setting_process_properties(self, keepdocker):
-        #arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -1144,7 +1142,6 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_cuda_requirement(self, keepdocker):
         arvados_cwl.add_arv_hints()
-        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1335,159 +1332,404 @@ class TestContainer(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        ("None, None",   None,  None,  None),
+        ("None, True",   None,  True,  True),
+        ("None, False",  None,  False, False),
+        ("False, None",  False, None,  False),
+        ("False, True",  False, True,  False),
+        ("False, False", False, False, False),
+        ("True, None",   True,  None,  True),
+        ("True, True",   True,  True,  True),
+        ("True, False",  True,  False, False),
+    ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_run_preemptible_hint(self, keepdocker):
+    def test_run_preemptible_hint(self, _, enable_preemptible, preemptible_hint,
+                                  preemptible_setting, keepdocker):
         arvados_cwl.add_arv_hints()
-        for enable_preemptible in (None, True, False):
-            for preemptible_hint in (None, True, False):
-                #arv_docker_clear_cache()
 
-                runner = mock.MagicMock()
-                runner.ignore_docker_for_reuse = False
-                runner.intermediate_output_ttl = 0
-                runner.secret_store = cwltool.secrets.SecretStore()
-                runner.api._rootDesc = {"revision": "20210628"}
-                runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
-                keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
-                runner.api.collections().get().execute.return_value = {
-                    "portable_data_hash": "99999999999999999999999999999993+99"}
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
 
-                if preemptible_hint is not None:
-                    hints = [{
-                        "class": "http://arvados.org/cwl#UsePreemptible",
-                        "usePreemptible": preemptible_hint
-                    }]
-                else:
-                    hints = []
+        if preemptible_hint is not None:
+            hints = [{
+                "class": "http://arvados.org/cwl#UsePreemptible",
+                "usePreemptible": preemptible_hint
+            }]
+        else:
+            hints = []
 
-                tool = cmap({
-                    "inputs": [],
-                    "outputs": [],
-                    "baseCommand": "ls",
-                    "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-                    "id": "",
-                    "class": "CommandLineTool",
-                    "cwlVersion": "v1.2",
-                    "hints": hints
-                })
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2",
+            "hints": hints
+        })
 
-                loadingContext, runtimeContext = self.helper(runner)
+        loadingContext, runtimeContext = self.helper(runner)
 
-                runtimeContext.name = 'test_run_enable_preemptible_'+str(enable_preemptible)+str(preemptible_hint)
-                runtimeContext.enable_preemptible = enable_preemptible
+        runtimeContext.name = 'test_run_enable_preemptible_'+str(enable_preemptible)+str(preemptible_hint)
+        runtimeContext.enable_preemptible = enable_preemptible
 
-                arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
-                arvtool.formatgraph = None
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
 
-                # Test the interactions between --enable/disable-preemptible
-                # and UsePreemptible hint
+        # Test the interactions between --enable/disable-preemptible
+        # and UsePreemptible hint
 
-                if enable_preemptible is None:
-                    if preemptible_hint is None:
-                        sched = {}
-                    else:
-                        sched = {'preemptible': preemptible_hint}
-                else:
-                    if preemptible_hint is None:
-                        sched = {'preemptible': enable_preemptible}
-                    else:
-                        sched = {'preemptible': enable_preemptible and preemptible_hint}
+        sched = {}
+        if preemptible_setting is not None:
+            sched['preemptible'] = preemptible_setting
 
-                for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
-                    j.run(runtimeContext)
-                    runner.api.container_requests().create.assert_called_with(
-                        body=JsonDiffMatcher({
-                            'environment': {
-                                'HOME': '/var/spool/cwl',
-                                'TMPDIR': '/tmp'
-                            },
-                            'name': runtimeContext.name,
-                            'runtime_constraints': {
-                                'vcpus': 1,
-                                'ram': 268435456
-                            },
-                            'use_existing': True,
-                            'priority': 500,
-                            'mounts': {
-                                '/tmp': {'kind': 'tmp',
-                                         "capacity": 1073741824
-                                     },
-                                '/var/spool/cwl': {'kind': 'tmp',
-                                                   "capacity": 1073741824 }
-                            },
-                            'state': 'Committed',
-                            'output_name': 'Output from step '+runtimeContext.name,
-                            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                            'output_path': '/var/spool/cwl',
-                            'output_ttl': 0,
-                            'container_image': '99999999999999999999999999999993+99',
-                            'command': ['ls', '/var/spool/cwl'],
-                            'cwd': '/var/spool/cwl',
-                            'scheduling_parameters': sched,
-                            'properties': {'cwl_input': {}},
-                            'secret_mounts': {},
-                            'output_storage_classes': ["default"]
-                        }))
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': runtimeContext.name,
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 268435456
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output from step '+runtimeContext.name,
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': sched,
+                    'properties': {'cwl_input': {}},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
+                }))
 
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @parameterized.expand([
+        ("None, None", None, None, False),
+        ("None, True", None, True, True),
+        ("None, False", None, False, False),
+        ("False, None", False, None, False),
+        ("False, True", False, True, False),  # command line overrides hint
+        ("False, False", False, False, False),
+        ("True, None", True, None, True),
+        ("True, True", True, True, True),
+        ("True, False", True, False, False),  # hint overrides command line
+    ])
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
-    def test_output_properties(self, keepdocker):
+    def test_spot_retry(self, _, enable_resubmit_non_preemptible,
+                        preemption_behavior_hint,
+                        expect_resubmit_behavior,
+                        keepdocker):
         arvados_cwl.add_arv_hints()
-        for rev in ["20210628", "20220510"]:
-            runner = mock.MagicMock()
-            runner.ignore_docker_for_reuse = False
-            runner.intermediate_output_ttl = 0
-            runner.secret_store = cwltool.secrets.SecretStore()
-            runner.api._rootDesc = {"revision": rev}
-            runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
-            keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
-            runner.api.collections().get().execute.return_value = {
-                "portable_data_hash": "99999999999999999999999999999993+99"}
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
-            tool = cmap({
-                "inputs": [{
-                    "id": "inp",
-                    "type": "string"
-                }],
-                "outputs": [],
-                "baseCommand": "ls",
-                "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-                "id": "",
-                "cwlVersion": "v1.2",
-                "class": "CommandLineTool",
-                "hints": [
-                    {
-                        "class": "http://arvados.org/cwl#OutputCollectionProperties",
-                        "outputProperties": {
-                            "foo": "bar",
-                            "baz": "$(inputs.inp)"
-                        }
-                    }
-                ]
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+
+        hints = [{
+            "class": "http://arvados.org/cwl#UsePreemptible",
+            "usePreemptible": True
+        }]
+
+        if preemption_behavior_hint is not None:
+            hints.append({
+                "class": "http://arvados.org/cwl#PreemptionBehavior",
+                "resubmitNonPreemptible": preemption_behavior_hint
             })
 
-            loadingContext, runtimeContext = self.helper(runner)
-            runtimeContext.name = "test_timelimit"
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2",
+            "hints": hints
+        })
 
-            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
-            arvtool.formatgraph = None
+        loadingContext, runtimeContext = self.helper(runner)
 
-            for j in arvtool.job({"inp": "quux"}, mock.MagicMock(), runtimeContext):
-                j.run(runtimeContext)
+        runtimeContext.name = 'test_spot_retry_'+str(enable_resubmit_non_preemptible)+str(preemption_behavior_hint)
+        runtimeContext.enable_resubmit_non_preemptible = enable_resubmit_non_preemptible
 
-            _, kwargs = runner.api.container_requests().create.call_args
-            if rev == "20220510":
-                self.assertEqual({"foo": "bar", "baz": "quux"}, kwargs['body'].get('output_properties'))
-            else:
-                self.assertEqual(None, kwargs['body'].get('output_properties'))
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+
+        # Test the interactions between --enable/disable-preemptible
+        # and UsePreemptible hint
+
+        expect_container_request = {
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': runtimeContext.name,
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 268435456
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output from step '+runtimeContext.name,
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {'preemptible': True},
+                    'properties': {'cwl_input': {}},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"],
+                }
+
+        expect_resubmit_container_request = expect_container_request.copy()
+        expect_resubmit_container_request['scheduling_parameters'] = {'preemptible': False}
+
+        runner.api.container_requests().create().execute.return_value = {"uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+                                                                         "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"}
+
+        if expect_resubmit_behavior:
+            expect_container_request['container_count_max'] = 1
+
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher(expect_container_request))
+        runner.api.containers().get().execute.return_value = {
+            "state":"Cancelled",
+            "output": "abc+123",
+            "exit_code": 1,
+            "log": "def+234",
+            "runtime_status": {
+                "preemptionNotice": "bye bye"
+            }
+        }
+        runner.api.container_requests().create().execute.return_value = {"uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzz2",
+                                                                         "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzz2"}
+
+        j.done({
+            "state": "Final",
+            "log_uuid": "",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "modified_at": "2017-05-26T12:01:22Z",
+            "properties": {},
+            "name": "testjob"
+        })
+        if expect_resubmit_behavior:
+            runner.api.container_requests().update.assert_any_call(
+                uuid="zzzzz-xvhdp-zzzzzzzzzzzzzzz", body={"properties": {"arv:failed_container_resubmitted": "zzzzz-xvhdp-zzzzzzzzzzzzzz2"}})
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher(expect_resubmit_container_request))
+
+    @parameterized.expand([
+        ("20210628",),
+        ("20220510",),
+    ])
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_output_properties(self, rev, keepdocker):
+        arvados_cwl.add_arv_hints()
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": rev}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [{
+                "id": "inp",
+                "type": "string"
+            }],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
+            "hints": [
+                {
+                    "class": "http://arvados.org/cwl#OutputCollectionProperties",
+                    "outputProperties": {
+                        "foo": "bar",
+                        "baz": "$(inputs.inp)"
+                    }
+                }
+            ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner)
+        runtimeContext.name = "test_timelimit"
+
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({"inp": "quux"}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+
+        _, kwargs = runner.api.container_requests().create.call_args
+        if rev == "20220510":
+            self.assertEqual({"foo": "bar", "baz": "quux"}, kwargs['body'].get('output_properties'))
+        else:
+            self.assertEqual(None, kwargs['body'].get('output_properties'))
+
+    @parameterized.expand([
+        ("20231117",),
+        ("20240502",),
+    ])
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_output_glob(self, rev, keepdocker):
+        arvados_cwl.add_arv_hints()
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": rev}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [{
+                "id": "inp",
+                "type": "string"
+            }],
+            "outputs": [
+                {
+                    "id": "o1",
+                    "type": "File",
+                    "outputBinding": {
+                        "glob": "*.txt"
+                    }
+                },
+                {
+                    "id": "o2",
+                    "type": "File",
+                    "outputBinding": {
+                        "glob": ["*.dat", "*.bat"]
+                    }
+                },
+                {
+                    "id": "o3",
+                    "type": {
+                        "type": "record",
+                        "fields": [
+                            {
+                                "name": "f1",
+                                "type": "File",
+                                "outputBinding": {
+                                    "glob": ["*.cat"]
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "o4",
+                    "type": "File",
+                    "outputBinding": {
+                        "glob": "$(inputs.inp)"
+                    }
+                },
+                {
+                    "id": "o5",
+                    "type": "File",
+                    "outputBinding": {
+                        "glob": "*.foo"
+                    },
+                    "secondaryFiles": [".goo", "^.hoo"]
+                },
+
+            ],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
+            "hints": [ ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner)
+        runtimeContext.name = "test_timelimit"
+
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({"inp": "quux"}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+
+        _, kwargs = runner.api.container_requests().create.call_args
+        if rev == "20240502":
+            self.assertEqual(['*.txt', '*.txt/**',
+                              '*.dat', '*.dat/**',
+                              '*.bat', '*.bat/**',
+                              '*.cat', '*.cat/**',
+                              'quux', 'quux/**',
+                              '*.foo', '*.foo/**',
+                              '*.foo.goo', '*.foo.goo/**',
+                              '*.hoo', '*.hoo/**',
+                              'cwl.output.json',
+                              ], kwargs['body'].get('output_glob'))
+        else:
+            self.assertEqual(None, kwargs['body'].get('output_glob'))
 
 
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
-        #arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
@@ -1507,7 +1749,8 @@ class TestWorkflow(unittest.TestCase):
              "loader": document_loader,
              "metadata": {"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"},
              "construct_tool_object": runner.arv_make_tool,
-             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__})
+             "default_docker_image": "arvados/jobs:"+arvados_cwl.__version__,
+             })
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
              "basedir": "",

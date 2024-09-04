@@ -11,7 +11,6 @@ import { Process } from "store/processes/process";
 import { SubprocessPanel } from "views/subprocess-panel/subprocess-panel";
 import { SubprocessFilterDataProps } from "components/subprocess-filter/subprocess-filter";
 import { MPVContainer, MPVPanelContent, MPVPanelState } from "components/multi-panel-view/multi-panel-view";
-import { ArvadosTheme } from "common/custom-theme";
 import { ProcessDetailsCard } from "./process-details-card";
 import { ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from "./process-io-card";
 import { ProcessResourceCard } from "./process-resource-card";
@@ -26,6 +25,7 @@ import { ProcessCmdCard } from "./process-cmd-card";
 import { ContainerRequestResource } from "models/container-request";
 import { OutputDetails, NodeInstanceType } from "store/process-panel/process-panel";
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
+import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = "root";
 
@@ -79,49 +79,48 @@ const panelsData: MPVPanelState[] = [
     { name: "Resources" },
 ];
 
-export const ProcessPanelRoot = withStyles(styles)(
-    ({
-        process,
-        auth,
-        processLogsPanel,
-        inputRaw,
-        inputParams,
-        outputData,
-        outputDefinitions,
-        outputParams,
-        nodeInfo,
-        usageReport,
-        loadInputs,
-        loadOutputs,
-        loadNodeJson,
-        loadOutputDefinitions,
-        updateOutputParams,
-        ...props
-    }: ProcessPanelRootProps) => {
-        const outputUuid = process?.containerRequest.outputUuid;
-        const containerRequest = process?.containerRequest;
-        const inputMounts = getInputCollectionMounts(process?.containerRequest);
+export const ProcessPanelRoot = ({
+    process,
+    auth,
+    processLogsPanel,
+    inputRaw,
+    inputParams,
+    outputData,
+    outputDefinitions,
+    outputParams,
+    nodeInfo,
+    usageReport,
+    loadInputs,
+    loadOutputs,
+    loadNodeJson,
+    loadOutputDefinitions,
+    updateOutputParams,
+    ...props
+}: ProcessPanelRootProps) => {
+    const outputUuid = process?.containerRequest.outputUuid;
+    const containerRequest = process?.containerRequest;
+    const inputMounts = getInputCollectionMounts(process?.containerRequest);
 
-        React.useEffect(() => {
-            if (containerRequest) {
-                // Load inputs from mounts or props
-                loadInputs(containerRequest);
-                // Fetch raw output (loads from props or keep)
-                loadOutputs(containerRequest);
-                // Loads output definitions from mounts into store
-                loadOutputDefinitions(containerRequest);
-                // load the assigned instance type from node.json in
-                // the log collection
-                loadNodeJson(containerRequest);
-            }
-        }, [containerRequest, loadInputs, loadOutputs, loadOutputDefinitions, loadNodeJson]);
+    React.useEffect(() => {
+        if (containerRequest) {
+            // Load inputs from mounts or props
+            loadInputs(containerRequest);
+            // Fetch raw output (loads from props or keep)
+            loadOutputs(containerRequest);
+            // Loads output definitions from mounts into store
+            loadOutputDefinitions(containerRequest);
+            // load the assigned instance type from node.json in
+            // the log collection
+            loadNodeJson(containerRequest);
+        }
+    }, [containerRequest, loadInputs, loadOutputs, loadOutputDefinitions, loadNodeJson]);
 
-        const maxHeight = "100%";
+    const maxHeight = "100%";
 
-        // Trigger processing output params when raw or definitions change
-        React.useEffect(() => {
-            updateOutputParams();
-        }, [outputData, outputDefinitions, updateOutputParams]);
+    // Trigger processing output params when raw or definitions change
+    React.useEffect(() => {
+        updateOutputParams();
+    }, [outputData, outputDefinitions, updateOutputParams]);
 
         return process ? (
             <MPVContainer
@@ -224,4 +223,4 @@ export const ProcessPanelRoot = withStyles(styles)(
             />
         );
     }
-);
+

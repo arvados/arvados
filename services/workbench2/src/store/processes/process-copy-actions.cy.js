@@ -34,7 +34,6 @@ describe('ProcessCopyAction', () => {
         kind: "arvados#containerRequest",
         log_uuid: "zzzzz-4zz18-a1gxqy9o6zyrdy8",
         modified_at: "2023-01-24T21:13:54.772612000Z",
-        modified_by_client_uuid: "zzzzz-ozdt8-q6dzdi1lcc03155",
         modified_by_user_uuid: "jutro-tpzed-vllbpebicy84rd5",
         mounts: {
         "/var/lib/cwl/cwl.input.json": {

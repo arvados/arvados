@@ -12,15 +12,13 @@ import arvados_cwl.util
 import arvados.commands.run
 import arvados.collection
 
-from schema_salad.sourceline import SourceLine
-
 from arvados.errors import ApiError
+from arvados._internal.http_to_keep import http_to_keep
 from cwltool.pathmapper import PathMapper, MapperEnt
 from cwltool.utils import adjustFileObjs, adjustDirObjs
 from cwltool.stdfsaccess import abspath
 from cwltool.workflow import WorkflowException
-
-from arvados.http_to_keep import http_to_keep
+from schema_salad.sourceline import SourceLine
 
 logger = logging.getLogger('arvados.cwl-runner')
 

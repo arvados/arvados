@@ -198,7 +198,7 @@ class MountArgsTest(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             args = arvados_fuse.command.ArgumentParser().parse_args(['--version'])
-        self.assertRegex(sys.stdout.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertRegex(sys.stdout.getvalue(), r'[0-9]+\.[0-9]+\.[0-9]+')
         sys.stderr.close()
         sys.stderr = origerr
         sys.stdout = origout

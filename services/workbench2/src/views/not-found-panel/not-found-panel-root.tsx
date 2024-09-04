@@ -84,8 +84,8 @@ export const NotFoundPanelRoot = withStyles(styles)(
                 <p>
                     The page you requested was not found,&nbsp;
                     {
-                        !!clusterConfig.Mail && clusterConfig.Mail.SupportEmailAddress ?
-                            getEmailLink(clusterConfig.Mail.SupportEmailAddress, classes) :
+                        !!clusterConfig.Users && clusterConfig.Users.SupportEmailAddress ?
+                            getEmailLink(clusterConfig.Users.SupportEmailAddress, classes) :
                             'email us'
                     }
                     &nbsp;if you suspect this is a bug.

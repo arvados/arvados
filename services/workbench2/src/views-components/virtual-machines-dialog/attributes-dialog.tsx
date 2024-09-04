@@ -63,7 +63,7 @@ export const VirtualMachineAttributesDialog = compose(
     );
 
 const attributes = (virtualMachine: VirtualMachinesResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, hostname } = virtualMachine;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, hostname } = virtualMachine;
     return (
         <span>
             <Grid container direction="row">
@@ -73,7 +73,6 @@ const attributes = (virtualMachine: VirtualMachinesResource, classes: any) => {
                     <Grid item>Created at</Grid>
                     <Grid item>Modified at</Grid>
                     <Grid item>Modified by user uuid</Grid>
-                    <Grid item>Modified by client uuid</Grid>
                     <Grid item>uuid</Grid>
                 </Grid>
                 <Grid item xs={7} className={classes.leftContainer}>
@@ -82,7 +81,6 @@ const attributes = (virtualMachine: VirtualMachinesResource, classes: any) => {
                     <Grid item>{createdAt}</Grid>
                     <Grid item>{modifiedAt}</Grid>
                     <Grid item>{modifiedByUserUuid}</Grid>
-                    <Grid item>{modifiedByClientUuid}</Grid>
                     <Grid item>{uuid}</Grid>
                 </Grid>
             </Grid>

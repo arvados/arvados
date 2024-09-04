@@ -78,7 +78,7 @@ export type MultiselectToolbarProps = {
     disabledButtons: Set<string>
     auth: AuthState;
     location: string;
-    isSubPanel?: boolean;
+    forceMultiSelectMode?: boolean;
     injectedStyles?: string;
     executeMulti: (action: ContextMenuAction | MultiSelectMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
@@ -105,9 +105,9 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, checkedList, iconProps, user, disabledButtons, location, isSubPanel, injectedStyles } = props;
+        const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
         const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
-        const singleResourceKind = selectedResourceUuid && !isSubPanel ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
+        const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
         const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
@@ -117,12 +117,12 @@ export const MultiselectToolbar = connect(
                 : selectActionsByKind(currentResourceKinds as string[], multiselectActionsFilters).filter((action) =>
                         selectedResourceUuid === null ? action.isForMulti : true
                     );
-                    
+
         const actions: ContextMenuAction[] | MultiSelectMenuAction[] = sortMenuItems(
             singleResourceKind && singleResourceKind.length ? (singleResourceKind[0] as ContextMenuKind) : ContextMenuKind.MULTI,
             rawActions,
             menuDirection.HORIZONTAL
-        ); 
+        );
 
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 

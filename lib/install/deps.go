@@ -203,6 +203,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libxslt1-dev",
 			"libyaml-dev",
 			"linkchecker",
+			"locales",
 			"lsof",
 			"make",
 			"net-tools",
@@ -222,6 +223,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"r-cran-xml",
 			"rsync",
 			"sudo",
+			"unzip",
 			"uuid-dev",
 			"wget",
 			"xvfb",
@@ -248,11 +250,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 				"gnupg")          // docker install recipe
 		}
 		switch {
-		case osv.Debian && osv.Major >= 10,
-			osv.Ubuntu && osv.Major >= 22:
+		case osv.Debian && osv.Major < 13,
+			osv.Ubuntu && osv.Major < 24:
 			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev")
 		case osv.Debian || osv.Ubuntu:
-			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev")
+			pkgs = append(pkgs, "g++", "libcurl4t64", "libcurl4-openssl-dev")
 		case osv.RedHat:
 			pkgs = append(pkgs, "gcc", "gcc-c++", "libcurl-devel", "postgresql-devel")
 		}
@@ -772,7 +774,6 @@ rsync -a --delete-after "$tmp/build/" "$dst/"
 			{"lib/python/bin/arv-get"},
 			{"lib/python/bin/arv-keepdocker"},
 			{"lib/python/bin/arv-ls"},
-			{"lib/python/bin/arv-migrate-docker19"},
 			{"lib/python/bin/arv-normalize"},
 			{"lib/python/bin/arv-put"},
 			{"lib/python/bin/arv-ws"},

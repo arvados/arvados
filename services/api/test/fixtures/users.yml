@@ -8,7 +8,6 @@ system_user:
   uuid: zzzzz-tpzed-000000000000000
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-11-27 06:38:21.215463000 Z
-  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-11-27 06:38:21.208036000 Z
   email: root
@@ -72,7 +71,6 @@ active:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-xurymjxw79nv3jz
   email: active-user@arvados.local
-  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   first_name: Active
   last_name: User
@@ -429,7 +427,6 @@ has_can_login_permission:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-xabcdjxw79nv3jz
   email: can-login-user@arvados.local
-  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   first_name: Can_login
   last_name: User

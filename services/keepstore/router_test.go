@@ -214,6 +214,13 @@ func (s *routerSuite) TestBlockWrite_Headers(c *C) {
 	c.Check(resp.Code, Equals, http.StatusOK)
 	c.Check(resp.Header().Get("X-Keep-Replicas-Stored"), Equals, "1")
 	c.Check(resp.Header().Get("X-Keep-Storage-Classes-Confirmed"), Equals, "testclass2=1")
+
+	resp = call(router, "PUT", "http://example/"+fooHash, arvadostest.ActiveTokenV2, []byte("foo"), http.Header{"X-Keep-Storage-Classes": []string{"testclass1, testclass2"}})
+	c.Check(resp.Code, Equals, http.StatusOK)
+	c.Check(resp.Header().Get("X-Keep-Replicas-Stored"), Equals, "2")
+	confirmed := strings.Split(resp.Header().Get("X-Keep-Storage-Classes-Confirmed"), ", ")
+	sort.Strings(confirmed)
+	c.Check(confirmed, DeepEquals, []string{"testclass1=1", "testclass2=1"})
 }
 
 func sortCommaSeparated(s string) string {

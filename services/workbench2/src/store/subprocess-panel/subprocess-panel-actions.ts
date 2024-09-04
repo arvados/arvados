@@ -6,9 +6,15 @@ import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
-import { FilterBuilder } from 'services/api/filter-builder';
-import { ProgressBarData } from 'components/subprocess-progress-bar/subprocess-progress-bar';
+import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
+import { ProgressBarStatus, ProgressBarCounts } from 'components/subprocess-progress-bar/subprocess-progress-bar';
 import { ProcessStatusFilter, buildProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
+import { Process } from 'store/processes/process';
+import { ProjectResource } from 'models/project';
+import { getResource } from 'store/resources/resources';
+import { ContainerRequestResource } from 'models/container-request';
+import { Resource } from 'models/resource';
+
 export const SUBPROCESS_PANEL_ID = "subprocessPanel";
 export const SUBPROCESS_ATTRIBUTES_DIALOG = 'subprocessAttributesDialog';
 export const subprocessPanelActions = bindDataExplorerActions(SUBPROCESS_PANEL_ID);
@@ -21,8 +27,8 @@ export const loadSubprocessPanel = () =>
 /**
  * Holds a ProgressBarData status type and process count result
  */
-type ProcessStatusBarCount = {
-    status: keyof ProgressBarData;
+type ProcessStatusCount = {
+    status: keyof ProgressBarCounts;
     count: number;
 };
 
@@ -30,7 +36,7 @@ type ProcessStatusBarCount = {
  * Associates each of the limited progress bar segment types with an array of
  * ProcessStatusFilterTypes to be combined when displayed
  */
-type ProcessStatusMap = Record<keyof ProgressBarData, ProcessStatusFilter[]>;
+type ProcessStatusMap = Record<keyof ProgressBarCounts, ProcessStatusFilter[]>;
 
 const statusMap: ProcessStatusMap = {
         [ProcessStatusFilter.COMPLETED]: [ProcessStatusFilter.COMPLETED],
@@ -47,8 +53,28 @@ type ProgressBarStatusPair = {
     processStatus: ProcessStatusFilter;
 };
 
-export const fetchSubprocessProgress = (requestingContainerUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProgressBarData | undefined> => {
+/**
+ * Type guard to distinguish Processes from other Resources
+ * @param resource The item to check
+ * @returns if the resource is a Process
+ */
+export const isProcess = <T extends Resource>(resource: T | Process | undefined): resource is Process => {
+    return !!resource && 'containerRequest' in resource;
+};
+
+/**
+ * Type guard to distinguish ContainerRequestResources from Resources
+ * @param resource The item to check
+ * @returns if the resource is a ContainerRequestResource
+ */
+const isContainerRequest = <T extends Resource>(resource: T | ContainerRequestResource | undefined): resource is ContainerRequestResource => {
+    return !!resource && 'containerUuid' in resource;
+};
+
+export const fetchProcessProgressBarStatus = (parentResourceUuid: string, typeFilter?: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<ProgressBarStatus | undefined> => {
+        const resources = getState().resources;
+        const parentResource = getResource<ProjectResource | ContainerRequestResource>(parentResourceUuid)(resources);
 
         const requestContainerStatusCount = async (fb: FilterBuilder) => {
             return await services.containerRequestService.list({
@@ -58,12 +84,24 @@ export const fetchSubprocessProgress = (requestingContainerUuid: string) =>
             });
         }
 
-        if (requestingContainerUuid) {
-            try {
-                const baseFilter = new FilterBuilder().addEqual('requesting_container_uuid', requestingContainerUuid).getFilters();
+        let baseFilter: string = "";
+        if (isContainerRequest(parentResource) && parentResource.containerUuid) {
+            // Prevent CR without containerUuid from generating baseFilter
+            baseFilter = new FilterBuilder().addEqual('requesting_container_uuid', parentResource.containerUuid).getFilters();
+        } else if (parentResource && !isContainerRequest(parentResource)) {
+            // isCR type narrowing needed since CR without container may fall through
+            baseFilter = new FilterBuilder().addEqual('owner_uuid', parentResource.uuid).getFilters();
+        }
 
+        if (parentResource && baseFilter) {
+            // Add type filters from consumers that want to sync progress stats with filters
+            if (typeFilter) {
+                baseFilter = joinFilters(baseFilter, typeFilter);
+            }
+
+            try {
                 // Create return object
-                let result: ProgressBarData = {
+                let result: ProgressBarCounts = {
                     [ProcessStatusFilter.COMPLETED]: 0,
                     [ProcessStatusFilter.RUNNING]: 0,
                     [ProcessStatusFilter.FAILED]: 0,
@@ -75,7 +113,7 @@ export const fetchSubprocessProgress = (requestingContainerUuid: string) =>
                 const promises = (Object.keys(statusMap) as Array<keyof ProcessStatusMap>)
                     // Split statusMap into pairs of progress bar status and process status
                     .reduce((acc, curr) => [...acc, ...statusMap[curr].map(processStatus => ({barStatus: curr, processStatus}))], [] as ProgressBarStatusPair[])
-                    .map(async (statusPair: ProgressBarStatusPair): Promise<ProcessStatusBarCount> => {
+                    .map(async (statusPair: ProgressBarStatusPair): Promise<ProcessStatusCount> => {
                         // For each status pair, request count and return bar status and count
                         const { barStatus, processStatus } = statusPair;
                         const filter = buildProcessStatusFilters(new FilterBuilder(baseFilter), processStatus);
@@ -87,11 +125,24 @@ export const fetchSubprocessProgress = (requestingContainerUuid: string) =>
                 (await Promise.all(promises)).forEach((singleResult) => {
                     result[singleResult.status] += singleResult.count;
                 });
-                return result;
+
+                // CR polling is handled in progress bar based on store updates
+                // This bool triggers polling without causing a final fetch when disabled
+                // The shouldPoll logic here differs slightly from shouldPollProcess:
+                //   * Process gets websocket updates through the store so using isProcessRunning
+                //     ignores Queued
+                //   * In projects, we get no websocket updates on CR state changes so we treat
+                //     Queued processes as running in order to let polling keep us up to date
+                //     when anything transitions to Running. This also means that a project with
+                //     CRs in a stopped state won't start polling if CRs are started elsewhere
+                const shouldPollProject = isContainerRequest(parentResource)
+                    ? false
+                    : (result[ProcessStatusFilter.RUNNING] + result[ProcessStatusFilter.QUEUED]) > 0;
+
+                return {counts: result, shouldPollProject};
             } catch (e) {
                 return undefined;
             }
-        } else {
-            return undefined;
         }
+        return undefined;
     };

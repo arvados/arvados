@@ -216,10 +216,13 @@ describe("Project tests", function () {
         cy.get("[data-cy=form-dialog]").should("not.exist");
 
         // open details panel and check 'owner' field
-        cy.get("[data-cy=additional-info-icon]").click();
+        cy.get('[data-cy=multiselect-button]').eq(0).trigger('mouseover');
+        cy.get('body').contains('View details').should('exist')
+        cy.get('[data-cy=multiselect-button]').eq(0).click();
         cy.waitForDom();
+
         cy.get("[data-cy=details-panel-owner]").contains(parentProjName).should("be.visible")
-        cy.get("[data-cy=additional-info-icon]").click();
+        cy.get("[data-cy=close-details-btn]").click();
     });
 
     it('shows the appropriate buttons in the multiselect toolbar', () => {
@@ -452,23 +455,6 @@ describe("Project tests", function () {
         });
     });
 
-    it("shows details panel when clicking on the info icon", () => {
-        cy.createGroup(activeUser.token, {
-            name: `Test root project ${Math.floor(Math.random() * 999999)}`,
-            group_class: "project",
-        })
-            .as("testRootProject")
-            .then(function (testRootProject) {
-                cy.loginAs(activeUser);
-
-                cy.get("[data-cy=side-panel-tree]").contains(testRootProject.name).click();
-
-                cy.get("[data-cy=additional-info-icon]").click();
-
-                cy.contains(testRootProject.uuid).should("exist");
-            });
-    });
-
     it("clears search input when changing project", () => {
         cy.createGroup(activeUser.token, {
             name: `Test root project ${Math.floor(Math.random() * 999999)}`,
@@ -675,28 +661,28 @@ describe("Project tests", function () {
         [
             {
                 name: "Name",
-                asc: "collections.name asc,container_requests.name asc,groups.name asc,container_requests.created_at desc",
-                desc: "collections.name desc,container_requests.name desc,groups.name desc,container_requests.created_at desc",
+                asc: "collections.name asc,groups.name asc,workflows.name asc,created_at desc",
+                desc: "collections.name desc,groups.name desc,workflows.name desc,created_at desc",
             },
             {
                 name: "Last Modified",
-                asc: "collections.modified_at asc,container_requests.modified_at asc,groups.modified_at asc,container_requests.created_at desc",
-                desc: "collections.modified_at desc,container_requests.modified_at desc,groups.modified_at desc,container_requests.created_at desc",
+                asc: "collections.modified_at asc,groups.modified_at asc,workflows.modified_at asc,created_at desc",
+                desc: "collections.modified_at desc,groups.modified_at desc,workflows.modified_at desc,created_at desc",
             },
             {
                 name: "Date Created",
-                asc: "collections.created_at asc,container_requests.created_at asc,groups.created_at asc,container_requests.created_at desc",
-                desc: "collections.created_at desc,container_requests.created_at desc,groups.created_at desc,container_requests.created_at desc",
+                asc: "collections.created_at asc,groups.created_at asc,workflows.created_at asc,created_at desc",
+                desc: "collections.created_at desc,groups.created_at desc,workflows.created_at desc,created_at desc",
             },
             {
                 name: "Trash at",
-                asc: "collections.trash_at asc,container_requests.trash_at asc,groups.trash_at asc,container_requests.created_at desc",
-                desc: "collections.trash_at desc,container_requests.trash_at desc,groups.trash_at desc,container_requests.created_at desc",
+                asc: "collections.trash_at asc,groups.trash_at asc,workflows.trash_at asc,created_at desc",
+                desc: "collections.trash_at desc,groups.trash_at desc,workflows.trash_at desc,created_at desc",
             },
             {
                 name: "Delete at",
-                asc: "collections.delete_at asc,container_requests.delete_at asc,groups.delete_at asc,container_requests.created_at desc",
-                desc: "collections.delete_at desc,container_requests.delete_at desc,groups.delete_at desc,container_requests.created_at desc",
+                asc: "collections.delete_at asc,groups.delete_at asc,workflows.delete_at asc,created_at desc",
+                desc: "collections.delete_at desc,groups.delete_at desc,workflows.delete_at desc,created_at desc",
             },
         ].forEach(test => {
             cy.get("[data-cy=project-panel] table thead th").contains(test.name).click();

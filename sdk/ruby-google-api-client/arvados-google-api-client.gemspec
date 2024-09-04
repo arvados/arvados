@@ -26,11 +26,8 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'addressable', '~> 2.3'
   s.add_runtime_dependency 'signet', '~> 0.16.0'
-  # faraday requires Ruby 3.0 starting with 2.9.0. If you install this gem
-  # on Ruby 2.7, the dependency resolver asks you to resolve the conflict
-  # manually. Instead of teaching all our tooling to do that, we prefer to
-  # require the latest version that supports Ruby 2.7 here. This requirement
-  # can be relaxed to '~> 2.0' when we drop support for Ruby 2.7.
+  # faraday stopped supporting Ruby 2.7 with its 2.9.0 release.
+  # Force a resolution that supports all our Rubies:
   s.add_runtime_dependency 'faraday', '~> 2.8.0'
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
   s.add_runtime_dependency 'faraday-gzip', '~> 2.0'
@@ -41,6 +38,11 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'launchy', '~> 2.4'
   s.add_runtime_dependency 'retriable', '~> 1.4'
   s.add_runtime_dependency 'activesupport', '>= 3.2', '< 8.0'
+
+  # These are indirect dependencies of the above where we force a resolution
+  # that supports all our Rubies.
+  s.add_runtime_dependency 'google-cloud-env', '~> 2.1.0'
+  s.add_runtime_dependency 'public_suffix', '~> 5.0'
 
   s.add_development_dependency 'rake', '~> 10.0'
   s.add_development_dependency 'yard', '~> 0.8'

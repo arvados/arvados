@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 Rails.application.routes.draw do
-  themes_for_rails
-
   # OPTIONS requests are not allowed at routes that use cookies.
   ['/auth/*a', '/login', '/logout'].each do |nono|
     match nono, to: 'user_sessions#cross_origin_forbidden', via: 'OPTIONS'
@@ -19,7 +17,6 @@ Rails.application.routes.draw do
         post 'create_system_auth', on: :collection
         get 'current', on: :collection
       end
-      resources :api_clients
       resources :authorized_keys
       resources :collections do
         get 'provenance', on: :member
@@ -50,7 +47,6 @@ Rails.application.routes.draw do
       end
       resources :links
       resources :logs
-      resources :workflows
       resources :user_agreements do
         get 'signatures', on: :collection
         post 'sign', on: :collection
@@ -68,6 +64,8 @@ Rails.application.routes.draw do
         get 'logins', on: :member
         get 'get_all_logins', on: :collection
       end
+      resources :workflows
+      get '/computed_permissions', to: 'computed_permissions#index'
       get '/permissions/:uuid', to: 'links#get_permissions'
     end
   end

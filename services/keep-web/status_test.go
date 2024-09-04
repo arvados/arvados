@@ -40,7 +40,7 @@ func (s *IntegrationSuite) TestNoStatusFromVHost(c *check.C) {
 		URL:        u,
 		RequestURI: u.RequestURI(),
 		Header: http.Header{
-			"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
+			"Authorization": {"Bearer " + arvadostest.ActiveToken},
 		},
 	}
 	resp := httptest.NewRecorder()
