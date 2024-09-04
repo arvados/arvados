@@ -93,8 +93,18 @@ describe("GroupsPanelMiddlewareService", () => {
         await new Promise(setImmediate);
 
         // Expect
-        expect(axiosInst.get).toHaveBeenCalledTimes(2);
-        expect(axiosInst.get).toHaveBeenCalledWith('/groups', expect.anything());
+        expect(axiosInst.get).toHaveBeenCalledTimes(3);
+        expect(axiosInst.get).toHaveBeenNthCalledWith(1, '/groups', {
+            params: expect.objectContaining({
+                count: 'none',
+            }),
+        });
+        expect(axiosInst.get).toHaveBeenNthCalledWith(2, '/groups', {
+            params: expect.objectContaining({
+                count: 'exact',
+                limit: 0,
+            }),
+        });
         expect(axiosInst.get).toHaveBeenCalledWith('/links', expect.anything());
         const group = getResource<GroupResource>(fakeUuid)(store.getState().resources);
         expect(group?.memberCount).toBe(234);
@@ -148,8 +158,18 @@ describe("GroupsPanelMiddlewareService", () => {
         await new Promise(setImmediate);
 
         // Expect
-        expect(axiosInst.get).toHaveBeenCalledTimes(2);
-        expect(axiosInst.get).toHaveBeenCalledWith('/groups', expect.anything());
+        expect(axiosInst.get).toHaveBeenCalledTimes(3);
+        expect(axiosInst.get).toHaveBeenNthCalledWith(1, '/groups', {
+            params: expect.objectContaining({
+                count: 'none',
+            }),
+        });
+        expect(axiosInst.get).toHaveBeenNthCalledWith(2, '/groups', {
+            params: expect.objectContaining({
+                count: 'exact',
+                limit: 0,
+            }),
+        });
         expect(axiosInst.get).toHaveBeenCalledWith('/links', expect.anything());
         const group = getResource<GroupResource>(fakeUuid)(store.getState().resources);
         expect(group?.memberCount).toBe(null);
