@@ -59,7 +59,7 @@ See "Glob patterns":#glob_patterns for more details.|
 |log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.
 To retrieve logs in real time while the container is running, use the log API (see below).|
 |output_uuid|string|Output collection created when the container finished successfully.|Null if the container has failed or not yet completed.|
-|filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|
+|filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|This attribute is not implemented yet. The value should always be null.|
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
 |runtime_user_uuid|string|The user permission that will be granted to this container.||
 |runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||

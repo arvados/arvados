@@ -4333,7 +4333,7 @@
           "type": "datetime"
         },
         "filters": {
-          "description": "An array of filters that limit which existing containers are eligible to\nsatisfy this container request. Refer to the [filters reference][] for details.\n\n[filters reference]: https://doc.arvados.org/api/methods.html#filters\n\n",
+          "description": "Filters that limit which existing containers are eligible to satisfy this\ncontainer request. This attribute is not implemented yet and should be null.",
           "type": "text"
         },
         "container_count": {

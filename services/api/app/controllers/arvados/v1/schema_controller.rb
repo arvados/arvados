@@ -377,12 +377,8 @@ The value is `0` if cost estimation is not available on this cluster.",
     "ContainerRequest.expires_at" =>
     "The time after which this %s will no longer be fulfilled.",
     "ContainerRequest.filters" =>
-    "An array of filters that limit which existing containers are eligible to
-satisfy this container request. Refer to the [filters reference][] for details.
-
-[filters reference]: https://doc.arvados.org/api/methods.html#filters
-
-",
+    "Filters that limit which existing containers are eligible to satisfy this
+container request. This attribute is not implemented yet and should be null.",
     "ContainerRequest.log_uuid" =>
     "The UUID of the Arvados collection that contains logs for all the
 container(s) that were dispatched to fulfill this container request.",
