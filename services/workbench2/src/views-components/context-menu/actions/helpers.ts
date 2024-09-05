@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { REDIRECT_TO_DOWNLOAD_KEY, REDIRECT_TO_PREVIEW_KEY } from "common/redirect-to";
 import { extractUuidKind, ResourceKind } from "models/resource";
 
 export const sanitizeToken = (href: string, tokenAsQueryParam = true): string => {
@@ -16,12 +15,12 @@ export const sanitizeToken = (href: string, tokenAsQueryParam = true): string =>
 
 export const replaceCollectionId = (href: string, rep: string): string => {
     const [prefix, suffix] = href.split('/c=');
-    const [uuid, ...rest] = suffix.split('/');
+    const colPath = suffix.split('/').slice(1);
 
     if (rep) {
-	return `${prefix}/c=${rep}/${rest.join('/')}`;
+	return `${prefix}/c=${rep}/${colPath.join('/')}`;
     } else {
-	return `${prefix}/${rest.join('/')}`;
+	return `${prefix}/${colPath.join('/')}`;
     }
 };
 
