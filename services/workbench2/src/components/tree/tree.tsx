@@ -21,6 +21,8 @@ import { kebabCase } from 'lodash';
 
 type CssRules = 'list'
     | 'listItem'
+    | 'childLi'
+    | 'childItemName'
     | 'active'
     | 'loader'
     | 'toggableIconContainer'
@@ -57,6 +59,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: '14px',
     },
     renderContainer: {
+        overflow: 'hidden',
         flex: 1
     },
     iconClose: {
@@ -82,6 +85,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.08)',
         }
+    },
+    childLi: {
+        display: 'flex', 
+        alignItems: 'center',
+    },
+    childItemName: {
+        fontSize: '0.875rem', 
     },
     childItemIcon: {
         marginLeft: '8px',
@@ -279,9 +289,9 @@ const FlatTree = (props: FlatTreeProps) =>
                             className={props.classes.checkbox}
                             color="primary" />}
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer} ref={item.active ? props.selectedRef : undefined}>
-                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className={props.classes.childLi}>
                             <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} headKind={item.data.headKind || null} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
-                            <span style={{ fontSize: '0.875rem' }}>
+                            <span className={props.classes.childItemName}>
                                 {item.data.name}
                             </span>
                             {
