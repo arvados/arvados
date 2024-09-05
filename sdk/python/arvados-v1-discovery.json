@@ -1785,14 +1785,14 @@
               "type": "string",
               "required": false,
               "default": "",
-              "description": "The UUID of the user or group to list owned objects.",
+              "description": "If given, limit the listing to objects owned by the\nuser or group with this UUID.",
               "location": "query"
             },
             "recursive": {
               "type": "boolean",
               "required": false,
               "default": "false",
-              "description": "Include contents from child groups recursively.",
+              "description": "If true, include contents from child groups recursively.",
               "location": "query"
             },
             "include": {
@@ -1806,6 +1806,13 @@
               "required": false,
               "default": "false",
               "description": "If true, include past versions of collections in the listing.",
+              "location": "query"
+            },
+            "exclude_home_project": {
+              "type": "boolean",
+              "required": false,
+              "default": "false",
+              "description": "If true, exclude contents of the user's home project from the listing.\nCalling this method with this flag set is how clients enumerate objects shared\nwith the current user.",
               "location": "query"
             }
           },

@@ -42,12 +42,14 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'string',
           required: false,
           default: '',
-          description: "The UUID of the user or group to list owned objects.",
+          description: "If given, limit the listing to objects owned by the
+user or group with this UUID.",
         },
         recursive: {
           type: 'boolean',
           required: false,
-          default: false, description: 'Include contents from child groups recursively.',
+          default: false,
+          description: 'If true, include contents from child groups recursively.',
         },
         include: {
           type: 'array',
@@ -64,7 +66,15 @@ class Arvados::V1::GroupsController < ApplicationController
           required: false,
           default: false,
           description: 'If true, include past versions of collections in the listing.',
-        }
+        },
+        exclude_home_project: {
+          type: "boolean",
+          required: false,
+          default: false,
+          description: "If true, exclude contents of the user's home project from the listing.
+Calling this method with this flag set is how clients enumerate objects shared
+with the current user.",
+        },
       }
     )
   end
