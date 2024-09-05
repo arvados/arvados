@@ -25,25 +25,28 @@ generateAPI <- function(discoveryDocument)
     methodResources <- discoveryDocument$resources
     resourceNames   <- names(methodResources)
 
-    methodDoc <- genMethodsDoc(methodResources, resourceNames)
     classDoc <- genAPIClassDoc(methodResources, resourceNames)
     arvadosAPIHeader <- genAPIClassHeader()
-    arvadosProjectMethods <- genProjectMethods()
     arvadosClassMethods <- genClassContent(methodResources, resourceNames)
+    arvadosProjectMethods <- genProjectMethods(methodResources)
     arvadosAPIFooter <- genAPIClassFooter()
 
-    arvadosClass <- c(methodDoc,
-                      classDoc,
+    arvadosClass <- c(classDoc,
                       arvadosAPIHeader,
-                      arvadosProjectMethods,
                       arvadosClassMethods,
+                      arvadosProjectMethods,
                       arvadosAPIFooter)
 
     fileConn <- file("./R/Arvados.R", "w")
     writeLines(c(
     "# Copyright (C) The Arvados Authors. All rights reserved.",
     "#",
-    "# SPDX-License-Identifier: Apache-2.0", ""), fileConn)
+    "# SPDX-License-Identifier: Apache-2.0",
+    "",
+    "#' Arvados",
+    "#'",
+    "#' This class implements a full REST client to the Arvados API.",
+    "#'"), fileConn)
     writeLines(unlist(arvadosClass), fileConn)
     close(fileConn)
     NULL
@@ -51,12 +54,18 @@ generateAPI <- function(discoveryDocument)
 
 genAPIClassHeader <- function()
 {
-    c("Arvados <- R6::R6Class(",
+    c("#' @export",
+      "Arvados <- R6::R6Class(",
       "",
       "\t\"Arvados\",",
       "",
       "\tpublic = list(",
       "",
+      "\t\t#' @description Create a new Arvados API client.",
+      "\t\t#' @param authToken Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.",
+      "\t\t#' @param hostName Host name. If not specified ARVADOS_API_HOST environment variable will be used.",
+      "\t\t#' @param numRetries Number which specifies how many times to retry failed service requests.",
+      "\t\t#' @return A new `Arvados` object.",
       "\t\tinitialize = function(authToken = NULL, hostName = NULL, numRetries = 0)",
       "\t\t{",
       "\t\t\tif(!is.null(hostName))",
@@ -83,38 +92,63 @@ genAPIClassHeader <- function()
       "\t\t},\n")
 }
 
-genProjectMethods <- function()
+genProjectMethods <- function(methodResources)
 {
-    c("\t\tprojects.get = function(uuid)",
+    toCallArg <- function(arg) {
+        callArg <- strsplit(arg, " *=")[[1]][1]
+        paste(callArg, callArg, sep=" = ")
+    }
+    toCallArgs <- function(argList) {
+        paste0(Map(toCallArg, argList), collapse=", ")
+    }
+    groupsMethods <- methodResources[["groups"]][["methods"]]
+    getArgs <- getMethodArguments(groupsMethods[["get"]])
+    createArgs <- getMethodArguments(groupsMethods[["create"]])
+    updateArgs <- getMethodArguments(groupsMethods[["update"]])
+    listArgs <- getMethodArguments(groupsMethods[["list"]])
+    deleteArgs <- getMethodArguments(groupsMethods[["delete"]])
+
+    c("\t\t#' @description An alias for `groups.get`.",
+      getMethodParams(groupsMethods[["get"]]),
+      "\t\t#' @return A Group object.",
+      getMethodSignature("projects.get", getArgs),
       "\t\t{",
-      "\t\t\tself$groups.get(uuid)",
+      paste("\t\t\tself$groups.get(", toCallArgs(getArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\tprojects.create = function(group, ensure_unique_name = \"false\")",
+      "\t\t#' @description A wrapper for `groups.create` that sets `group_class=\"project\"`.",
+      getMethodParams(groupsMethods[["create"]]),
+      "\t\t#' @return A Group object.",
+      getMethodSignature("projects.create", createArgs),
       "\t\t{",
       "\t\t\tgroup <- c(\"group_class\" = \"project\", group)",
-      "\t\t\tself$groups.create(group, ensure_unique_name)",
+      paste("\t\t\tself$groups.create(", toCallArgs(createArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\tprojects.update = function(group, uuid)",
+      "\t\t#' @description A wrapper for `groups.update` that sets `group_class=\"project\"`.",
+      getMethodParams(groupsMethods[["update"]]),
+      "\t\t#' @return A Group object.",
+      getMethodSignature("projects.update", updateArgs),
       "\t\t{",
       "\t\t\tgroup <- c(\"group_class\" = \"project\", group)",
-      "\t\t\tself$groups.update(group, uuid)",
+      paste("\t\t\tself$groups.update(", toCallArgs(updateArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\tprojects.list = function(filters = NULL, where = NULL,",
-      "\t\t\torder = NULL, select = NULL, distinct = NULL,",
-      "\t\t\tlimit = \"100\", offset = \"0\", count = \"exact\",",
-      "\t\t\tinclude_trash = NULL)",
+      "\t\t#' @description A wrapper for `groups.list` that adds a filter for `group_class=\"project\"`.",
+      getMethodParams(groupsMethods[["list"]]),
+      "\t\t#' @return A GroupList object.",
+      getMethodSignature("projects.list", listArgs),
       "\t\t{",
       "\t\t\tfilters[[length(filters) + 1]] <- list(\"group_class\", \"=\", \"project\")",
-      "\t\t\tself$groups.list(filters, where, order, select, distinct,",
-      "\t\t\t                 limit, offset, count, include_trash)",
+      paste("\t\t\tself$groups.list(", toCallArgs(listArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\tprojects.delete = function(uuid)",
+      "\t\t#' @description An alias for `groups.delete`.",
+      getMethodParams(groupsMethods[["delete"]]),
+      "\t\t#' @return A Group object.",
+      getMethodSignature("projects.delete", deleteArgs),
       "\t\t{",
-      "\t\t\tself$groups.delete(uuid)",
+      paste("\t\t\tself$groups.delete(", toCallArgs(deleteArgs), ")", sep=""),
       "\t\t},",
       "")
 }
@@ -134,7 +168,10 @@ genClassContent <- function(methodResources, resourceNames)
                return(NULL)
 
             methodName <- paste0(resourceName, ".", methodName)
-            createMethod(methodName, methodMetaData)
+            unlist(c(
+                   getMethodDoc(methodName, methodMetaData),
+                   createMethod(methodName, methodMetaData)
+            ))
 
         }, resource$methods, methodNames)
 
@@ -147,9 +184,19 @@ genClassContent <- function(methodResources, resourceNames)
 
 genAPIClassFooter <- function()
 {
-    c("\t\tgetHostName = function() private$host,",
+    c("\t\t#' @description Return the host name of this client's Arvados API server.",
+      "\t\t#' @return Hostname string.",
+      "\t\tgetHostName = function() private$host,",
+      "",
+      "\t\t#' @description Return the Arvados API token used by this client.",
+      "\t\t#' @return API token string.",
       "\t\tgetToken = function() private$token,",
+      "",
+      "\t\t#' @description Set the RESTService object used by this client.",
       "\t\tsetRESTService = function(newREST) private$REST <- newREST,",
+      "",
+      "\t\t#' @description Return the RESTService object used by this client.",
+      "\t\t#' @return RESTService object.",
       "\t\tgetRESTService = function() private$REST",
       "\t),",
       "",
@@ -324,59 +371,9 @@ getReturnObject <- function()
     "resource"
 }
 
-#NOTE: Arvados class documentation:
-
-genMethodsDoc <- function(methodResources, resourceNames)
-{
-    methodsDoc <- unlist(unname(Map(function(resource, resourceName)
-    {
-        methodNames <- names(resource$methods)
-
-        methodDoc <- Map(function(methodMetaData, methodName)
-        {
-            #NOTE: Index, show and destroy are aliases for the preferred names
-            # "list", "get" and "delete". Until they are removed from discovery
-            # document we will filter them here.
-            if(methodName %in% c("index", "show", "destroy"))
-               return(NULL)
-
-            methodName <- paste0(resourceName, ".", methodName)
-            getMethodDoc(methodName, methodMetaData)
-
-        }, resource$methods, methodNames)
-
-        unlist(unname(methodDoc))
-
-    }, methodResources, resourceNames)))
-
-    projectDoc <- genProjectMethodsDoc()
-
-    c(methodsDoc, projectDoc)
-}
-
 genAPIClassDoc <- function(methodResources, resourceNames)
 {
-    c("#' Arvados",
-      "#'",
-      "#' Arvados class gives users ability to access Arvados REST API.",
-      "#'" ,
-      "#' @section Usage:",
-      "#' \\preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}",
-      "#'",
-      "#' @section Arguments:",
-      "#' \\describe{",
-      "#' \t\\item{authToken}{Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.}",
-      "#' \t\\item{hostName}{Host name. If not specified ARVADOS_API_HOST environment variable will be used.}",
-      "#' \t\\item{numRetries}{Number which specifies how many times to retry failed service requests.}",
-      "#' }",
-      "#'",
-      "#' @section Methods:",
-      "#' \\describe{",
-      getAPIClassMethodList(methodResources, resourceNames),
-      "#' }",
-      "#'",
-      "#' @name Arvados",
-      "#' @examples",
+    c("#' @examples",
       "#' \\dontrun{",
       "#' arv <- Arvados$new(\"your Arvados token\", \"example.arvadosapi.com\")",
       "#'",
@@ -393,9 +390,7 @@ genAPIClassDoc <- function(methodResources, resourceNames)
       "#' createdCollection <- arv$collections.create(list(name = \"Example\",",
       "#'                                                  description = \"This is a test collection\"))",
       "#' }",
-      "NULL",
-      "",
-      "#' @export")
+      "")
 }
 
 getAPIClassMethodList <- function(methodResources, resourceNames)
@@ -416,33 +411,14 @@ getAPIClassMethodList <- function(methodResources, resourceNames)
 
 getMethodDoc <- function(methodName, methodMetaData)
 {
-    name        <- paste("#' @name", methodName)
-    usage       <- getMethodUsage(methodName, methodMetaData)
-    description <- paste("#'", methodName, "is a method defined in Arvados class.")
-    params      <- getMethodDescription(methodMetaData)
-    returnValue <- paste("#' @return", methodMetaData$response[["$ref"]], "object.")
+    description <- paste("\t\t#' @description", gsub("\n", "\n\t\t#' ", methodMetaData$description))
+    params      <- getMethodParams(methodMetaData)
+    returnValue <- paste("\t\t#' @return", methodMetaData$response[["$ref"]], "object.")
 
-    c(paste("#'", methodName),
-      "#' ",
-      description,
-      "#' ",
-      usage,
-      params,
-      returnValue,
-      name,
-      "NULL",
-      "")
+    c(description, params, returnValue)
 }
 
-getMethodUsage <- function(methodName, methodMetaData)
-{
-    lineLengthLimit <- 40
-    args <- getMethodArguments(methodMetaData)
-    c(formatArgs(paste0("#' @usage arv$", methodName,
-                        "("), "#' \t", args, ")", lineLengthLimit))
-}
-
-getMethodDescription <- function(methodMetaData)
+getMethodParams <- function(methodMetaData)
 {
     request <- methodMetaData$request
     requestDoc <- NULL
@@ -453,7 +429,7 @@ getMethodDescription <- function(methodMetaData)
                              {
                                  className <- sapply(prop, function(ref) ref)
                                  objectName <- tolower(className)
-                                 paste("#' @param", objectName, className, "object.")
+                                 paste("\t\t#' @param", objectName, className, "object.")
                              })))
     }
 
@@ -462,79 +438,10 @@ getMethodDescription <- function(methodMetaData)
     argsDoc <- unname(unlist(sapply(argNames, function(argName)
     {
         arg <- methodMetaData$parameters[[argName]]
-        paste("#' @param", argName, gsub("\n", "\n#' ", arg$description))
+        paste("\t\t#' @param", argName, gsub("\n", "\n\t\t#' ", arg$description))
     })))
 
     c(requestDoc, argsDoc)
-}
-
-genProjectMethodsDoc <- function()
-{
-    #TODO: Manually update this documentation to reflect changes in discovery document.
-    c("#' project.get",
-    "#' ",
-    "#' projects.get is equivalent to groups.get method.",
-    "#' ",
-    "#' @usage arv$projects.get(uuid)",
-    "#' @param uuid The UUID of the Group in question.",
-    "#' @return Group object.",
-    "#' @name projects.get",
-    "NULL",
-    "",
-    "#' project.create",
-    "#' ",
-    "#' projects.create wrapps groups.create method by setting group_class attribute to \"project\".",
-    "#' ",
-    "#' @usage arv$projects.create(group, ensure_unique_name = \"false\")",
-    "#' @param group Group object.",
-    "#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
-    "#' @return Group object.",
-    "#' @name projects.create",
-    "NULL",
-    "",
-    "#' project.update",
-    "#' ",
-    "#' projects.update wrapps groups.update method by setting group_class attribute to \"project\".",
-    "#' ",
-    "#' @usage arv$projects.update(group, uuid)",
-    "#' @param group Group object.",
-    "#' @param uuid The UUID of the Group in question.",
-    "#' @return Group object.",
-    "#' @name projects.update",
-    "NULL",
-    "",
-    "#' project.delete",
-    "#' ",
-    "#' projects.delete is equivalent to groups.delete method.",
-    "#' ",
-    "#' @usage arv$project.delete(uuid)",
-    "#' @param uuid The UUID of the Group in question.",
-    "#' @return Group object.",
-    "#' @name projects.delete",
-    "NULL",
-    "",
-    "#' project.list",
-    "#' ",
-    "#' projects.list wrapps groups.list method by setting group_class attribute to \"project\".",
-    "#' ",
-    "#' @usage arv$projects.list(filters = NULL,",
-    "#' 	where = NULL, order = NULL, distinct = NULL,",
-    "#' 	limit = \"100\", offset = \"0\", count = \"exact\",",
-    "#' 	include_trash = NULL, uuid = NULL, recursive = NULL)",
-    "#' @param filters ",
-    "#' @param where ",
-    "#' @param order ",
-    "#' @param distinct ",
-    "#' @param limit ",
-    "#' @param offset ",
-    "#' @param count ",
-    "#' @param include_trash Include items whose is_trashed attribute is true.",
-    "#' @param uuid ",
-    "#' @param recursive Include contents from child groups recursively.",
-    "#' @return Group object.",
-    "#' @name projects.list",
-    "NULL",
-    "")
 }
 
 #NOTE: Utility functions:
