@@ -638,18 +638,6 @@ cluster, and automatically passes most permissions checks.",
               "$ref" => k.to_s
             }
           },
-          next_link: {
-            type: "string",
-            description: "A link to the next page of #{k.to_s.pluralize}."
-          },
-          next_page_token: {
-            type: "string",
-            description: "The page token for the next page of #{k.to_s.pluralize}."
-          },
-          selfLink: {
-            type: "string",
-            description: "A link back to this list."
-          }
         }
       }
       discovery[:schemas][k.to_s] = {

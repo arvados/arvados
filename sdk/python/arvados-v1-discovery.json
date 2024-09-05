@@ -3742,18 +3742,6 @@
           "items": {
             "$ref": "ApiClientAuthorization"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of ApiClientAuthorizations."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of ApiClientAuthorizations."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -3821,18 +3809,6 @@
           "items": {
             "$ref": "AuthorizedKey"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of AuthorizedKeys."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of AuthorizedKeys."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -3908,18 +3884,6 @@
           "items": {
             "$ref": "Collection"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Collections."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Collections."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4051,18 +4015,6 @@
           "items": {
             "$ref": "ComputedPermission"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of ComputedPermissions."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of ComputedPermissions."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4105,18 +4057,6 @@
           "items": {
             "$ref": "Container"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Containers."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Containers."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4288,18 +4228,6 @@
           "items": {
             "$ref": "ContainerRequest"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of ContainerRequests."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of ContainerRequests."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4467,18 +4395,6 @@
           "items": {
             "$ref": "Group"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Groups."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Groups."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4566,18 +4482,6 @@
           "items": {
             "$ref": "KeepService"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of KeepServices."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of KeepServices."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4653,18 +4557,6 @@
           "items": {
             "$ref": "Link"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Links."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Links."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4740,18 +4632,6 @@
           "items": {
             "$ref": "Log"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Logs."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Logs."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4835,18 +4715,6 @@
           "items": {
             "$ref": "User"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Users."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Users."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -4934,18 +4802,6 @@
           "items": {
             "$ref": "UserAgreement"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of UserAgreements."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of UserAgreements."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -5077,18 +4933,6 @@
           "items": {
             "$ref": "VirtualMachine"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of VirtualMachines."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of VirtualMachines."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
@@ -5148,18 +4992,6 @@
           "items": {
             "$ref": "Workflow"
           }
-        },
-        "next_link": {
-          "type": "string",
-          "description": "A link to the next page of Workflows."
-        },
-        "next_page_token": {
-          "type": "string",
-          "description": "The page token for the next page of Workflows."
-        },
-        "selfLink": {
-          "type": "string",
-          "description": "A link back to this list."
         }
       }
     },
