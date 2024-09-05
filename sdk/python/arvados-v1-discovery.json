@@ -137,7 +137,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -380,7 +380,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -603,7 +603,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -889,7 +889,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             }
           },
@@ -990,7 +990,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -1319,7 +1319,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -1562,7 +1562,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -1758,7 +1758,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -1871,7 +1871,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -2037,7 +2037,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -2259,7 +2259,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -2488,7 +2488,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -2697,7 +2697,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -3069,7 +3069,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -3304,7 +3304,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {
@@ -3546,7 +3546,7 @@
               "type": "string",
               "required": false,
               "default": "exact",
-              "description": "A string to determine result counting behavior. Supported values are:\n\n    * `\"exact\"`: The response will include an `items_available` field that\n      counts the number of objects that matched this search criteria,\n      including ones not included in `items`.\n\n    * `\"none\"`: The response will not include an `items_avaliable`\n      field. This improves performance by returning a result as soon as enough\n      `items` have been loaded for this result.\n\n",
+              "description": "A string to determine result counting behavior. Supported values are:\n\n  * `\"exact\"`: The response will include an `items_available` field that\n    counts the number of objects that matched this search criteria,\n    including ones not included in `items`.\n\n  * `\"none\"`: The response will not include an `items_avaliable`\n    field. This improves performance by returning a result as soon as enough\n    `items` have been loaded for this result.\n\n",
               "location": "query"
             },
             "cluster_id": {

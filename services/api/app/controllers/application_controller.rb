@@ -766,13 +766,13 @@ of list calls.
         default: 'exact',
         description: "A string to determine result counting behavior. Supported values are:
 
-    * `\"exact\"`: The response will include an `items_available` field that
-      counts the number of objects that matched this search criteria,
-      including ones not included in `items`.
+  * `\"exact\"`: The response will include an `items_available` field that
+    counts the number of objects that matched this search criteria,
+    including ones not included in `items`.
 
-    * `\"none\"`: The response will not include an `items_avaliable`
-      field. This improves performance by returning a result as soon as enough
-      `items` have been loaded for this result.
+  * `\"none\"`: The response will not include an `items_avaliable`
+    field. This improves performance by returning a result as soon as enough
+    `items` have been loaded for this result.
 
 ",
       },
