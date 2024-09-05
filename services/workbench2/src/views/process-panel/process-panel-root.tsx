@@ -79,7 +79,7 @@ const panelsData: MPVPanelState[] = [
     { name: "Resources" },
 ];
 
-export const ProcessPanelRoot = ({
+export const ProcessPanelRoot = withStyles(styles)(({
     process,
     auth,
     processLogsPanel,
@@ -223,4 +223,4 @@ export const ProcessPanelRoot = ({
             />
         );
     }
-
+);
