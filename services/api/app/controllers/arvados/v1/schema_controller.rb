@@ -372,8 +372,8 @@ to dispatch a container to fulfill this container request.",
     "The UUID of the container that fulfills this container request, if any.",
     "ContainerRequest.cumulative_cost" =>
     "A float with the estimated cost of all cloud instances used to run
-container(s) to fulfill this container request. The value is `0` if cost
-estimation is not available on this cluster.",
+container(s) to fulfill this container request and their subrequests.
+The value is `0` if cost estimation is not available on this cluster.",
     "ContainerRequest.expires_at" =>
     "The time after which this %s will no longer be fulfilled.",
     "ContainerRequest.filters" =>
@@ -610,7 +610,7 @@ cluster, and automatically passes most permissions checks.",
           SchemaDescriptionMap[col.name] ||
           ""
         if k.attribute_types[col.name].type == :datetime
-          desc_fmt += " The string encodes a UTC time in ISO 8601 format."
+          desc_fmt += " The string encodes a UTC date and time in ISO 8601 format."
         end
         object_properties[col.name] = {
           description: desc_fmt % human_name,
