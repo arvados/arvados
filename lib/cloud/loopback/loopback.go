@@ -114,6 +114,10 @@ func (is *instanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
 	return ret, nil
 }
 
+func (is *instanceSet) InstanceFamily(arvados.InstanceType) cloud.InstanceFamily {
+	return ""
+}
+
 func (is *instanceSet) Stop() {
 	is.mtx.Lock()
 	defer is.mtx.Unlock()

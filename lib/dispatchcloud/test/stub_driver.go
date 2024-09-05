@@ -178,6 +178,13 @@ func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 	return r, nil
 }
 
+// InstanceFamily returns the first character of the given instance's
+// ProviderType.  Use ProviderTypes like "a1", "a2", "b1", "b2" to
+// test instance family behaviors.
+func (sis *StubInstanceSet) InstanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
+	return cloud.InstanceFamily(it.ProviderType[:1])
+}
+
 func (sis *StubInstanceSet) Stop() {
 	sis.mtx.Lock()
 	defer sis.mtx.Unlock()
@@ -201,11 +208,15 @@ type RateLimitError struct{ Retry time.Time }
 func (e RateLimitError) Error() string            { return fmt.Sprintf("rate limited until %s", e.Retry) }
 func (e RateLimitError) EarliestRetry() time.Time { return e.Retry }
 
-type CapacityError struct{ InstanceTypeSpecific bool }
+type CapacityError struct {
+	InstanceTypeSpecific   bool
+	InstanceFamilySpecific bool
+}
 
-func (e CapacityError) Error() string                { return "insufficient capacity" }
-func (e CapacityError) IsCapacityError() bool        { return true }
-func (e CapacityError) IsInstanceTypeSpecific() bool { return e.InstanceTypeSpecific }
+func (e CapacityError) Error() string                  { return "insufficient capacity" }
+func (e CapacityError) IsCapacityError() bool          { return true }
+func (e CapacityError) IsInstanceTypeSpecific() bool   { return e.InstanceTypeSpecific }
+func (e CapacityError) IsInstanceFamilySpecific() bool { return e.InstanceFamilySpecific }
 
 // StubVM is a fake server that runs an SSH service. It represents a
 // VM running in a fake cloud.

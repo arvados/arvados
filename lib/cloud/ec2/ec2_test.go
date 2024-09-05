@@ -595,17 +595,54 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 	c.Check(ok, check.Equals, true)
 
 	for _, trial := range []struct {
-		code string
-		msg  string
+		code           string
+		msg            string
+		typeSpecific   bool
+		familySpecific bool
 	}{
-		{"InsufficientInstanceCapacity", ""},
-		{"Unsupported", "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f."},
+		{
+			code:           "InsufficientInstanceCapacity",
+			msg:            "",
+			typeSpecific:   true,
+			familySpecific: false,
+		},
+		{
+			code:           "Unsupported",
+			msg:            "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f.",
+			typeSpecific:   true,
+			familySpecific: false,
+		},
+		{
+			code:           "VcpuLimitExceeded",
+			msg:            "You have requested more vCPU capacity than your current vCPU limit of 64 allows for the instance bucket that the specified instance type belongs to. Please visit http://aws.amazon.com/contact-us/ec2-request to request an adjustment to this limit.",
+			typeSpecific:   false,
+			familySpecific: true,
+		},
 	} {
 		capacityError := &ec2stubError{Code: trial.code, Message: trial.msg}
 		wrapped = wrapError(capacityError, nil)
 		caperr, ok := wrapped.(cloud.CapacityError)
 		c.Check(ok, check.Equals, true)
 		c.Check(caperr.IsCapacityError(), check.Equals, true)
-		c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
+		c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, trial.typeSpecific)
+		c.Check(caperr.IsInstanceFamilySpecific(), check.Equals, trial.familySpecific)
+	}
+}
+
+func (*EC2InstanceSetSuite) TestInstanceFamily(c *check.C) {
+	ap, _, _, _ := GetInstanceSet(c, "{}")
+
+	for _, trial := range []struct {
+		ptype  string
+		family cloud.InstanceFamily
+	}{
+		{ptype: "g1.large", family: "g"},
+		{ptype: "x1.large", family: "x"},
+		{ptype: "inf1.2xlarge", family: "inf"},
+		{ptype: "a1.small", family: "standard"},
+		{ptype: "m1.xlarge", family: "standard"},
+		{ptype: "", family: "standard"},
+	} {
+		c.Check(ap.InstanceFamily(arvados.InstanceType{ProviderType: trial.ptype}), check.Equals, trial.family)
 	}
 }

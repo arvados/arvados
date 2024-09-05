@@ -307,6 +307,7 @@ func (instanceSet *ec2InstanceSet) Create(
 
 	var rsv *ec2.RunInstancesOutput
 	var errToReturn error
+	var returningCapacityError bool
 	subnets := instanceSet.ec2config.SubnetID
 	currentSubnetIDIndex := int(atomic.LoadInt32(&instanceSet.currentSubnetIDIndex))
 	for tryOffset := 0; ; tryOffset++ {
@@ -320,11 +321,12 @@ func (instanceSet *ec2InstanceSet) Create(
 		var err error
 		rsv, err = instanceSet.client.RunInstances(context.Background(), &rii)
 		instanceSet.mInstanceStarts.WithLabelValues(trySubnet, boolLabelValue[err == nil]).Add(1)
-		if !isErrorCapacity(errToReturn) || isErrorCapacity(err) {
+		if instcap, famcap := isErrorCapacity(err); !returningCapacityError || instcap || famcap {
 			// We want to return the last capacity error,
 			// if any; otherwise the last non-capacity
 			// error.
 			errToReturn = err
+			returningCapacityError = instcap || famcap
 		}
 		if isErrorSubnetSpecific(err) &&
 			tryOffset < len(subnets)-1 {
@@ -578,6 +580,10 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 func (instanceSet *ec2InstanceSet) Stop() {
 }
 
+func (instanceSet *ec2InstanceSet) InstanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
+	return instanceFamily(it)
+}
+
 type ec2Instance struct {
 	provider         *ec2InstanceSet
 	instance         types.Instance
@@ -703,15 +709,38 @@ func (err rateLimitError) EarliestRetry() time.Time {
 
 type capacityError struct {
 	error
-	isInstanceTypeSpecific bool
+	isInstanceFamilySpecific bool
+	isInstanceTypeSpecific   bool
 }
 
 func (er *capacityError) IsCapacityError() bool {
 	return true
 }
 
+func (er *capacityError) IsInstanceFamilySpecific() bool {
+	return er.isInstanceFamilySpecific
+}
+
 func (er *capacityError) IsInstanceTypeSpecific() bool {
 	return er.isInstanceTypeSpecific
+}
+
+func instanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
+	t := strings.ToLower(it.ProviderType)
+	switch {
+	case strings.HasPrefix(t, "f"):
+		return "f"
+	case strings.HasPrefix(t, "g"):
+		return "g"
+	case strings.HasPrefix(t, "inf"):
+		return "inf"
+	case strings.HasPrefix(t, "p"):
+		return "p"
+	case strings.HasPrefix(t, "x"):
+		return "x"
+	default:
+		return "standard"
+	}
 }
 
 var isCodeQuota = map[string]bool{
@@ -720,7 +749,6 @@ var isCodeQuota = map[string]bool{
 	"InsufficientFreeAddressesInSubnet": true,
 	"InsufficientVolumeCapacity":        true,
 	"MaxSpotInstanceCountExceeded":      true,
-	"VcpuLimitExceeded":                 true,
 }
 
 // isErrorQuota returns whether the error indicates we have reached
@@ -759,18 +787,25 @@ func isErrorSubnetSpecific(err error) bool {
 			reSubnetSpecificInvalidParameterMessage.MatchString(aerr.ErrorMessage()))
 }
 
-// isErrorCapacity returns true if the error indicates lack of
-// capacity (either temporary or permanent) to run a specific instance
-// type -- i.e., retrying with a different instance type might
-// succeed.
-func isErrorCapacity(err error) bool {
+// isErrorCapacity determines whether the given error indicates lack
+// of capacity -- either temporary or permanent -- to run a specific
+// instance type (i.e., retrying with any other instance type might
+// succeed) or an entire instance family (i.e., retrying with an
+// instance type in a different instance family might succeed).
+func isErrorCapacity(err error) (instcap bool, famcap bool) {
 	var aerr smithy.APIError
 	if !errors.As(err, &aerr) {
-		return false
+		return false, false
 	}
 	code := aerr.ErrorCode()
-	return code == "InsufficientInstanceCapacity" ||
-		(code == "Unsupported" && strings.Contains(aerr.ErrorMessage(), "requested instance type"))
+	if code == "VcpuLimitExceeded" {
+		return false, true
+	}
+	if code == "InsufficientInstanceCapacity" ||
+		(code == "Unsupported" && strings.Contains(aerr.ErrorMessage(), "requested instance type")) {
+		return true, false
+	}
+	return false, false
 }
 
 type ec2QuotaError struct {
@@ -804,9 +839,13 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		throttleValue.Store(d)
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
 	} else if isErrorQuota(err) {
-		return &ec2QuotaError{err}
-	} else if isErrorCapacity(err) {
-		return &capacityError{err, true}
+		return &ec2QuotaError{error: err}
+	} else if instcap, famcap := isErrorCapacity(err); instcap || famcap {
+		return &capacityError{
+			error:                    err,
+			isInstanceTypeSpecific:   !famcap,
+			isInstanceFamilySpecific: famcap,
+		}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))
 		return err

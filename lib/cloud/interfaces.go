@@ -45,9 +45,13 @@ type CapacityError interface {
 	// If true, wait before trying to create more instances.
 	IsCapacityError() bool
 	// If true, the condition is specific to the requested
-	// instance types.  Wait before trying to create more
-	// instances of that same type.
+	// instance type.  Wait before trying to create more instances
+	// of that same type.
 	IsInstanceTypeSpecific() bool
+	// If true, the condition affects all instance types in the
+	// same instance family.  This implies
+	// IsInstanceTypeSpecific() returns false.
+	IsInstanceFamilySpecific() bool
 	error
 }
 
@@ -55,6 +59,7 @@ type SharedResourceTags map[string]string
 type InstanceSetID string
 type InstanceTags map[string]string
 type InstanceID string
+type InstanceFamily string
 type ImageID string
 
 // An Executor executes commands on an ExecutorTarget.
@@ -157,6 +162,10 @@ type InstanceSet interface {
 	// for de-duplicating the returned instances by comparing the
 	// InstanceIDs returned by the instances' ID() methods.
 	Instances(InstanceTags) ([]Instance, error)
+
+	// Return the instance family of the given instance type.
+	// See (CapacityError)IsInstanceFamilySpecific().
+	InstanceFamily(arvados.InstanceType) InstanceFamily
 
 	// Stop any background tasks and release other resources.
 	Stop()

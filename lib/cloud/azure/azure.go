@@ -708,6 +708,11 @@ func (az *azureInstanceSet) manageDisks() {
 	}
 }
 
+func (az *azureInstanceSet) InstanceFamily(arvados.InstanceType) cloud.InstanceFamily {
+	// All instance types are in one big happy family.
+	return cloud.InstanceFamily("")
+}
+
 func (az *azureInstanceSet) Stop() {
 	az.stopFunc()
 	az.stopWg.Wait()
