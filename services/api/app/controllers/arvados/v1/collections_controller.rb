@@ -36,12 +36,6 @@ class Arvados::V1::CollectionsController < ApplicationController
           default: false,
           description: "Show collection even if its `is_trashed` attribute is true.",
         },
-        include_old_versions: {
-          type: 'boolean',
-          required: false,
-          default: true,
-          description: "Include past collection versions.",
-        },
       })
   end
 
@@ -73,6 +67,9 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_object_by_uuid(with_lock: false)
+    # We are always willing to return an old version by UUID.
+    # We set the parameter so it gets used correctly by super methods.
+    params[:include_old_versions] = true
     if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
 

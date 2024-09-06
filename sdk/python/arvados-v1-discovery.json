@@ -528,13 +528,6 @@
               "default": "false",
               "description": "Show collection even if its `is_trashed` attribute is true.",
               "location": "query"
-            },
-            "include_old_versions": {
-              "type": "boolean",
-              "required": false,
-              "default": "true",
-              "description": "Include past collection versions.",
-              "location": "query"
             }
           },
           "parameterOrder": [
