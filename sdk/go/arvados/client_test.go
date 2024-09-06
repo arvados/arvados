@@ -421,7 +421,7 @@ func (s *clientRetrySuite) TestExponentialBackoff(c *check.C) {
 
 	for e := float64(1); e < 5; e += 1 {
 		ok := false
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 30; i++ {
 			t = exponentialBackoff(min, max, int(e), nil)
 			// Every returned value must be between min and min(2^e, max)
 			c.Check(t >= min, check.Equals, true)
