@@ -641,10 +641,11 @@ describe("Project tests", function () {
         cy.waitForDom();
         cy.get("[data-cy=project-panel]").contains(projectName).should("be.visible").rightclick();
         cy.get("[data-cy=context-menu]").contains("Copy link to clipboard").click();
-        cy.window().then(win =>
+        cy.window({ timeout: 10000 }).then(win =>{
+            win.focus();
             win.navigator.clipboard.readText().then(text => {
                 expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);
-            })
+            })}
         );
     });
 
