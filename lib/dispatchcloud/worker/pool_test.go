@@ -387,6 +387,9 @@ func (suite *PoolSuite) TestInstanceFamilyQuota(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer instanceSet.Stop()
 
+	// Note the stub driver uses the first character of
+	// ProviderType as the instance family, so we have two
+	// instance families here, "a" and "b".
 	typeA1 := test.InstanceType(1)
 	typeA1.ProviderType = "a1"
 	typeA2 := test.InstanceType(2)
