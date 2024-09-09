@@ -661,19 +661,19 @@ class ApplicationController < ActionController::Base
     {
       select: {
         type: 'array',
-        description: "Attributes of the new object to return in the response.",
+        description: "An array of names of attributes to return in the response.",
         required: false,
       },
       ensure_unique_name: {
         type: "boolean",
-        description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
+        description: "If the given name is already used by this owner, adjust the name to ensure uniqueness instead of returning an error.",
         location: "query",
         required: false,
         default: false
       },
       cluster_id: {
         type: 'string',
-        description: "Create object on a remote federated cluster instead of the current one.",
+        description: "Cluster ID of a federated cluster where this object should be created.",
         location: "query",
         required: false,
       },
@@ -684,7 +684,7 @@ class ApplicationController < ActionController::Base
     {
       select: {
         type: 'array',
-        description: "Attributes of the updated object to return in the response.",
+        description: "An array of names of attributes to return in the response.",
         required: false,
       },
     }
@@ -694,7 +694,7 @@ class ApplicationController < ActionController::Base
     {
       select: {
         type: 'array',
-        description: "Attributes of the object to return in the response.",
+        description: "An array of names of attributes to return in the response.",
         required: false,
       },
     }
@@ -702,28 +702,94 @@ class ApplicationController < ActionController::Base
 
   def self._index_requires_parameters
     {
-      filters: { type: 'array', required: false },
-      where: { type: 'object', required: false },
-      order: { type: 'array', required: false },
+      filters: {
+        type: 'array',
+        required: false,
+        description: "Filters to limit which objects are returned by their attributes.
+Refer to the [filters reference][] for more information about how to write filters.
+
+[filters reference]: https://doc.arvados.org/api/methods.html#filters
+",
+      },
+      where: {
+        type: 'object',
+        required: false,
+        description: "An object to limit which objects are returned by their attributes.
+The keys of this object are attribute names.
+Each value is either a single matching value or an array of matching values for that attribute.
+The `filters` parameter is more flexible and preferred.
+",
+      },
+      order: {
+        type: 'array',
+        required: false,
+        description: "An array of strings to set the order in which matching objects are returned.
+Each string has the format `<ATTRIBUTE> <DIRECTION>`.
+`DIRECTION` can be `asc` or omitted for ascending, or `desc` for descending.
+",
+      },
       select: {
         type: 'array',
-        description: "Attributes of each object to return in the response.",
+        description: "An array of names of attributes to return from each matching object.",
         required: false,
       },
-      distinct: { type: 'boolean', required: false, default: false },
-      limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
-      offset: { type: 'integer', required: false, default: 0 },
-      count: { type: 'string', required: false, default: 'exact' },
+      distinct: {
+        type: 'boolean',
+        required: false,
+        default: false,
+        description: "If this is true, and multiple objects have the same values
+for the attributes that you specify in the `select` parameter, then each unique
+set of values will only be returned once in the result set.
+",
+      },
+      limit: {
+        type: 'integer',
+        required: false,
+        default: DEFAULT_LIMIT,
+        description: "The maximum number of objects to return in the result.
+Note that the API may return fewer results than this if your request hits other
+limits set by the administrator.
+",
+      },
+      offset: {
+        type: 'integer',
+        required: false,
+        default: 0,
+        description: "Return matching objects starting from this index.
+Note that result indexes may change if objects are modified in between a series
+of list calls.
+",
+      },
+      count: {
+        type: 'string',
+        required: false,
+        default: 'exact',
+        description: "A string to determine result counting behavior. Supported values are:
+
+  * `\"exact\"`: The response will include an `items_available` field that
+    counts the number of objects that matched this search criteria,
+    including ones not included in `items`.
+
+  * `\"none\"`: The response will not include an `items_avaliable`
+    field. This improves performance by returning a result as soon as enough
+    `items` have been loaded for this result.
+
+",
+      },
       cluster_id: {
         type: 'string',
-        description: "List objects on a remote federated cluster instead of the current one.",
+        description: "Cluster ID of a federated cluster to return objects from",
         location: "query",
         required: false,
       },
       bypass_federation: {
         type: 'boolean',
         required: false,
-        description: 'bypass federation behavior, list items from local instance database only'
+        default: false,
+        description: "If true, do not return results from other clusters in the
+federation, only the cluster that received the request.
+You must be an administrator to use this flag.
+",
       }
     }
   end

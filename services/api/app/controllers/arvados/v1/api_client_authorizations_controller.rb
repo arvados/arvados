@@ -11,10 +11,26 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   skip_before_action :render_404_if_no_object, :only => [:create_system_auth, :current]
   skip_before_action :find_object_by_uuid, :only => [:create_system_auth, :current]
 
+  def self._create_system_auth_method_description
+    "Create a token for the system (\"root\") user."
+  end
+
   def self._create_system_auth_requires_parameters
     {
-      scopes: {type: 'array', required: false}
+      scopes: {
+        type: 'array',
+        required: false,
+        default: ["all"],
+        description: "An array of strings defining the scope of resources this token will be allowed to access. Refer to the [scopes reference][] for details.
+
+[scopes reference]: https://doc.arvados.org/api/tokens.html#scopes
+",
+      }
     }
+  end
+
+  def self._current_method_description
+    "Return all metadata for the token used to authorize this request."
   end
 
   def create_system_auth

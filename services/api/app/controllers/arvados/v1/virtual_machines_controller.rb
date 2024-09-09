@@ -10,8 +10,16 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
 
   # Get all login permissons (user uuid, login account, SSH key) for a
   # single VM
+  def self._logins_method_description
+    "List login permission links for a given virtual machine."
+  end
+  
   def logins
     render_logins_for VirtualMachine.where(uuid: @object.uuid)
+  end
+
+  def self._get_all_logins_method_description
+    "List login permission links for all virtual machines."
   end
 
   # Get all login permissons for all VMs
