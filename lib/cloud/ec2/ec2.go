@@ -726,21 +726,38 @@ func (er *capacityError) IsInstanceTypeSpecific() bool {
 }
 
 func instanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
+	// https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-quotas.html
+	// 2024-09-09
 	t := strings.ToLower(it.ProviderType)
+	var f cloud.InstanceFamily
 	switch {
+	case strings.HasPrefix(t, "dl"):
+		f = "dl"
 	case strings.HasPrefix(t, "f"):
-		return "f"
-	case strings.HasPrefix(t, "g"):
-		return "g"
+		f = "f"
+	case strings.HasPrefix(t, "g"), strings.HasPrefix(t, "vt"):
+		f = "g"
+	case strings.HasPrefix(t, "hpc"):
+		f = "hpc"
 	case strings.HasPrefix(t, "inf"):
-		return "inf"
+		f = "inf"
 	case strings.HasPrefix(t, "p"):
-		return "p"
+		f = "p"
+	case strings.HasPrefix(t, "trn"):
+		f = "trn"
+	case strings.HasPrefix(t, "u"): // "High Memory"
+		f = "u"
 	case strings.HasPrefix(t, "x"):
-		return "x"
+		f = "x"
 	default:
-		return "standard"
+		f = "standard"
 	}
+	if it.Preemptible {
+		// Spot instance quotas are separate from demand
+		// quotas.
+		f += "-spot"
+	}
+	return f
 }
 
 var isCodeQuota = map[string]bool{

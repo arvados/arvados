@@ -634,6 +634,7 @@ func (*EC2InstanceSetSuite) TestInstanceFamily(c *check.C) {
 
 	for _, trial := range []struct {
 		ptype  string
+		spot   bool
 		family cloud.InstanceFamily
 	}{
 		{ptype: "g1.large", family: "g"},
@@ -641,8 +642,15 @@ func (*EC2InstanceSetSuite) TestInstanceFamily(c *check.C) {
 		{ptype: "inf1.2xlarge", family: "inf"},
 		{ptype: "a1.small", family: "standard"},
 		{ptype: "m1.xlarge", family: "standard"},
+		{ptype: "m1.xlarge", spot: true, family: "standard-spot"},
+		{ptype: "t3.2xlarge", family: "standard"},
+		{ptype: "trn1.2xlarge", family: "trn"},
+		{ptype: "trn1.2xlarge", spot: true, family: "trn-spot"},
 		{ptype: "", family: "standard"},
 	} {
-		c.Check(ap.InstanceFamily(arvados.InstanceType{ProviderType: trial.ptype}), check.Equals, trial.family)
+		c.Check(ap.InstanceFamily(arvados.InstanceType{
+			ProviderType: trial.ptype,
+			Preemptible:  trial.spot,
+		}), check.Equals, trial.family)
 	}
 }
