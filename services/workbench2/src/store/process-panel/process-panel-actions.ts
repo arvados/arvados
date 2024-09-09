@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { getInputs, getOutputParameters, getRawInputs, getRawOutputs, loadProcess } from "store/processes/processes-actions";
+import { getInputs, getOutputParameters, getRawInputs, getRawOutputs } from "store/processes/processes-actions";
 import { Dispatch } from "redux";
-import { ProcessStatus } from "store/processes/process";
+import { Process, ProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { navigateTo } from "store/navigation/navigation-action";
@@ -14,7 +14,7 @@ import { SnackbarKind } from "../snackbar/snackbar-actions";
 import { loadSubprocessPanel, subprocessPanelActions } from "../subprocess-panel/subprocess-panel-actions";
 import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
 import { CollectionFile } from "models/collection-file";
-import { ContainerRequestResource } from "models/container-request";
+import { ContainerRequestResource, ContainerStatus } from "models/container-request";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { CommandInputParameter, getIOParamId, WorkflowInputsData } from "models/workflow";
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
@@ -22,6 +22,8 @@ import { OutputDetails, NodeInstanceType, NodeInfo, UsageReport } from "./proces
 import { AuthState } from "store/auth/auth-reducer";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { OutputDataUpdate } from "./process-panel-reducer";
+import { updateResources } from "store/resources/resources-actions";
+import { ContainerResource } from "models/container";
 
 export const processPanelActions = unionize({
     RESET_PROCESS_PANEL: ofType<{}>(),
@@ -35,11 +37,58 @@ export const processPanelActions = unionize({
     SET_OUTPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
     SET_NODE_INFO: ofType<NodeInfo>(),
     SET_USAGE_REPORT: ofType<UsageReport>(),
+    SET_CONTAINER_STATUS: ofType<ContainerStatus>(),
 });
 
 export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
 
 export const toggleProcessPanelFilter = processPanelActions.TOGGLE_PROCESS_PANEL_FILTER;
+
+export const loadContainerStatus =
+    (containerRequestUuid: string) =>
+        (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            services.containerRequestService.containerStatus(containerRequestUuid, false).then(containerStatus =>
+                dispatch<any>(processPanelActions.SET_CONTAINER_STATUS(containerStatus))).catch(() => {});
+        };
+
+export const loadProcess =
+    (containerRequestUuid: string) =>
+        async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
+            let containerRequest: ContainerRequestResource | undefined = undefined;
+            try {
+                containerRequest = await services.containerRequestService.get(containerRequestUuid);
+                dispatch<any>(updateResources([containerRequest]));
+            } catch {
+                return undefined;
+            }
+
+            dispatch<any>(loadContainerStatus(containerRequestUuid));
+
+            if (containerRequest.outputUuid) {
+                try {
+                    const collection = await services.collectionService.get(containerRequest.outputUuid, false);
+                    dispatch<any>(updateResources([collection]));
+                } catch {}
+            }
+
+            if (containerRequest.containerUuid) {
+                let container: ContainerResource | undefined = undefined;
+                try {
+                    container = await services.containerService.get(containerRequest.containerUuid, false);
+                    dispatch<any>(updateResources([container]));
+                } catch {}
+
+                try {
+                    if (container && container.runtimeUserUuid) {
+                        const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
+                        dispatch<any>(updateResources([runtimeUser]));
+                    }
+                } catch {}
+
+                return { containerRequest, container };
+            }
+            return { containerRequest };
+        };
 
 export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState) => {
     // Reset subprocess data explorer if navigating to new process

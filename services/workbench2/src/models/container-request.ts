@@ -83,3 +83,9 @@ export const containerRequestFieldsNoMounts = [
     "use_existing",
     "uuid",
 ];
+
+export interface ContainerStatus {
+    uuid: string;
+    state: string;
+    schedulingStatus: string;
+};
