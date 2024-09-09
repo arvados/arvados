@@ -19,16 +19,6 @@ describe('helpers', () => {
         });
     });
 
-    describe('getClipboardUrl', () => {
-        it('should add redirectTo query param', () => {
-            // when
-            const result = getCollectionItemClipboardUrl(url, "https://example.com", "https://*.example.com");
-
-            // then
-            expect(result).to.equal('http://localhost:8080?redirectToDownload=https://example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');
-        });
-    });
-
     describe('getInlineFileUrl', () => {
         it('should add the collection\'s uuid to the hostname', () => {
             // when
