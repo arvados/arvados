@@ -13,7 +13,7 @@ describe('FileViewerAction', () => {
     beforeEach(() => {
         props = {
             onClick: cy.stub().as('onClick'),
-            href: 'https://collections.example.com/c=zzzzz-4zz18-k0hamvtwyit6q56/t=xxxxxxx/LIMS/1.html',
+            href: 'https://example.com',
         };
     });
 
