@@ -38,6 +38,27 @@ from typing import (
     Sequence,
 )
 
+RESOURCE_SCHEMA_MAP = {
+    # Special cases for iter_resource_schemas that can't be generated
+    # automatically. Note these schemas may not actually be defined.
+    'sys': 'Sys',
+    'vocabularies': 'Vocabulary',
+}
+
+def iter_resource_schemas(name: str) -> Iterator[str]:
+    try:
+        schema_name = RESOURCE_SCHEMA_MAP[name]
+    except KeyError:
+        # Remove trailing 's'
+        schema_name = name[:-1]
+    schema_name = re.sub(
+        r'(^|_)(\w)',
+        lambda match: match.group(2).capitalize(),
+        schema_name,
+    )
+    yield schema_name
+    yield f'{schema_name}List'
+
 LOWERCASE = operator.methodcaller('lower')
 NAME_KEY = operator.attrgetter('name')
 STDSTREAM_PATH = pathlib.Path('-')
@@ -56,10 +77,11 @@ _DEPRECATED_NOTICE = '''
 # _DEPRECATED_RESOURCES contains string keys of resources in the discovery
 # document that are currently deprecated.
 _DEPRECATED_RESOURCES = frozenset()
-_DEPRECATED_SCHEMAS = frozenset([
-    *(name[:-1] for name in _DEPRECATED_RESOURCES),
-    *(f'{name[:-1]}List' for name in _DEPRECATED_RESOURCES),
-])
+_DEPRECATED_SCHEMAS = frozenset(
+    schema_name
+    for resource_name in _DEPRECATED_RESOURCES
+    for schema_name in iter_resource_schemas(resource_name)
+)
 
 _LIST_PYDOC = '''
 
@@ -413,13 +435,19 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
         sep='\n', file=args.out_file,
     )
 
-    schemas = sorted(discovery_document['schemas'].items())
-    for name, schema_spec in schemas:
-        print(document_schema(name, schema_spec), file=args.out_file)
-
+    schemas = dict(discovery_document['schemas'])
     resources = sorted(discovery_document['resources'].items())
     for name, resource_spec in resources:
+        for schema_name in iter_resource_schemas(name):
+            try:
+                schema_spec = schemas.pop(schema_name)
+            except KeyError:
+                pass
+            else:
+                print(document_schema(schema_name, schema_spec), file=args.out_file)
         print(document_resource(name, resource_spec), file=args.out_file)
+    for name, schema_spec in sorted(schemas.items()):
+        print(document_schema(name, schema_spec), file=args.out_file)
 
     print(
         _REQUEST_CLASS,
