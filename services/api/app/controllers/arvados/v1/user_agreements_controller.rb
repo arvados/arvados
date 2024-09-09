@@ -36,6 +36,10 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     super
   end
 
+  def self._signatures_method_description
+    "List all user agreement signature links from a user."
+  end
+
   def signatures
     current_user_uuid = (current_user.andand.is_admin && params[:uuid]) ||
       current_user.uuid
@@ -51,6 +55,10 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     render_list
   end
 
+  def self._sign_method_description
+    "Create a signature link from the current user for a given user agreement."
+  end
+
   def sign
     current_user_uuid = current_user.uuid
     act_as_system_user do
@@ -63,10 +71,6 @@ class Arvados::V1::UserAgreementsController < ApplicationController
   end
 
   def create
-    usage_error
-  end
-  
-  def new
     usage_error
   end
 

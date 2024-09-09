@@ -32,10 +32,32 @@ import urllib.request
 from typing import (
     Any,
     Callable,
+    Iterator,
     Mapping,
     Optional,
     Sequence,
 )
+
+RESOURCE_SCHEMA_MAP = {
+    # Special cases for iter_resource_schemas that can't be generated
+    # automatically. Note these schemas may not actually be defined.
+    'sys': 'Sys',
+    'vocabularies': 'Vocabulary',
+}
+
+def iter_resource_schemas(name: str) -> Iterator[str]:
+    try:
+        schema_name = RESOURCE_SCHEMA_MAP[name]
+    except KeyError:
+        # Remove trailing 's'
+        schema_name = name[:-1]
+    schema_name = re.sub(
+        r'(^|_)(\w)',
+        lambda match: match.group(2).capitalize(),
+        schema_name,
+    )
+    yield schema_name
+    yield f'{schema_name}List'
 
 LOWERCASE = operator.methodcaller('lower')
 NAME_KEY = operator.attrgetter('name')
@@ -52,21 +74,14 @@ _DEPRECATED_NOTICE = '''
 .. WARNING:: Deprecated
    This resource is deprecated in the Arvados API.
 '''
-_DEPRECATED_RESOURCES = frozenset([
-    'Humans',
-    'JobTasks',
-    'Jobs',
-    'KeepDisks',
-    'Nodes',
-    'PipelineInstances',
-    'PipelineTemplates',
-    'Specimens'
-    'Traits',
-])
-_DEPRECATED_SCHEMAS = frozenset([
-    *(name[:-1] for name in _DEPRECATED_RESOURCES),
-    *(f'{name[:-1]}List' for name in _DEPRECATED_RESOURCES),
-])
+# _DEPRECATED_RESOURCES contains string keys of resources in the discovery
+# document that are currently deprecated.
+_DEPRECATED_RESOURCES = frozenset()
+_DEPRECATED_SCHEMAS = frozenset(
+    schema_name
+    for resource_name in _DEPRECATED_RESOURCES
+    for schema_name in iter_resource_schemas(resource_name)
+)
 
 _LIST_PYDOC = '''
 
@@ -106,11 +121,7 @@ import googleapiclient.discovery
 import googleapiclient.http
 import httplib2
 import sys
-from typing import Any, Dict, Generic, List, Optional, TypeVar
-if sys.version_info < (3, 8):
-    from typing_extensions import TypedDict
-else:
-    from typing import TypedDict
+from typing import Any, Dict, Generic, List, Literal, Optional, TypedDict, TypeVar
 
 # ST represents an API response type
 ST = TypeVar('ST', bound=TypedDict)
@@ -204,6 +215,24 @@ class Parameter(inspect.Parameter):
             default=inspect.Parameter.empty,
         )
 
+    @classmethod
+    def from_request(cls, spec: Mapping[str, Any]) -> 'Parameter':
+        try:
+            # Unpack the single key and value out of properties
+            (key, val_spec), = spec['properties'].items()
+        except (KeyError, ValueError):
+            # ValueError if there was not exactly one property
+            raise NotImplementedError(
+                "only exactly one request parameter is currently supported",
+            ) from None
+        val_type = get_type_annotation(val_spec['$ref'])
+        return cls('body', {
+            'description': f"""A dictionary with a single item `{key!r}`.
+Its value is a `{val_type}` dictionary defining the attributes to set.""",
+            'required': spec['required'],
+            'type': f'Dict[Literal[{key!r}], {val_type}]',
+        })
+
     def default_value(self) -> object:
         try:
             src_value: str = self._spec['default']
@@ -252,8 +281,7 @@ class Method:
         self._annotate = annotate
         self._required_params = []
         self._optional_params = []
-        for param_name, param_spec in spec['parameters'].items():
-            param = Parameter(param_name, param_spec)
+        for param in self._iter_parameters():
             if param.is_required():
                 param_list = self._required_params
             else:
@@ -261,6 +289,16 @@ class Method:
             param_list.append(param)
         self._required_params.sort(key=NAME_KEY)
         self._optional_params.sort(key=NAME_KEY)
+
+    def _iter_parameters(self) -> Iterator[Parameter]:
+        try:
+            body = self._spec['request']
+        except KeyError:
+            pass
+        else:
+            yield Parameter.from_request(body)
+        for name, spec in self._spec['parameters'].items():
+            yield Parameter(name, spec)
 
     def signature(self) -> inspect.Signature:
         parameters = [
@@ -324,7 +362,7 @@ def document_schema(name: str, spec: Mapping[str, Any]) -> str:
 
         field_doc: str = field_spec.get('description', '')
         if field_spec['type'] == 'datetime':
-            field_doc += "\n\nString in ISO 8601 datetime format. Pass it to `ciso8601.parse_datetime` to build a `datetime.datetime`."
+            field_doc += " Pass this to `ciso8601.parse_datetime` to build a `datetime.datetime`."
         if field_doc:
             lines.append(to_docstring(field_doc, 4))
     lines.append('\n')
@@ -342,7 +380,7 @@ def document_resource(name: str, spec: Mapping[str, Any]) -> str:
     ]
     return f'''class {class_name}:
 {to_docstring(docstring, 4)}
-{''.join(method.doc(slice(1)) for method in sorted(methods, key=NAME_KEY))}
+{''.join(method.doc() for method in sorted(methods, key=NAME_KEY))}
 '''
 
 def parse_arguments(arglist: Optional[Sequence[str]]) -> argparse.Namespace:
@@ -394,19 +432,25 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
     print(
         to_docstring(_MODULE_PYDOC, indent=0),
         _MODULE_PRELUDE,
+        _REQUEST_CLASS,
         sep='\n', file=args.out_file,
     )
 
-    schemas = sorted(discovery_document['schemas'].items())
-    for name, schema_spec in schemas:
-        print(document_schema(name, schema_spec), file=args.out_file)
-
+    schemas = dict(discovery_document['schemas'])
     resources = sorted(discovery_document['resources'].items())
     for name, resource_spec in resources:
+        for schema_name in iter_resource_schemas(name):
+            try:
+                schema_spec = schemas.pop(schema_name)
+            except KeyError:
+                pass
+            else:
+                print(document_schema(schema_name, schema_spec), file=args.out_file)
         print(document_resource(name, resource_spec), file=args.out_file)
+    for name, schema_spec in sorted(schemas.items()):
+        print(document_schema(name, schema_spec), file=args.out_file)
 
     print(
-        _REQUEST_CLASS,
         '''class ArvadosAPIClient(googleapiclient.discovery.Resource):''',
         sep='\n', file=args.out_file,
     )

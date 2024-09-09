@@ -218,7 +218,8 @@ describe("Collection panel tests", function () {
                     .should("contain", this.testCollection.name)
                     .and("not.contain", "Color: Magenta")
                     .and("not.contain", "Size: S");
-                cy.get("[data-cy=additional-info-icon]").click();
+                cy.get("[data-cy=collection-panel-options-btn]").click();
+                cy.get("[data-cy=context-menu]").contains("View details").click();
 
                 cy.get("[data-cy=details-panel]").within(() => {
                     cy.get("[data-cy=details-panel-edit-btn]").click();
@@ -351,7 +352,8 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy link to clipboard")
+                                .and("contain", "Copy link to latest version")
+                                .and("contain", "Copy link to immutable version")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu
@@ -359,7 +361,8 @@ describe("Collection panel tests", function () {
                             cy.get("[data-cy=context-menu]")
                                 .should("not.contain", "Download")
                                 .and("contain", "Open in new tab")
-                                .and("contain", "Copy link to clipboard")
+                                .and("contain", "Copy link to latest version")
+                                .and("contain", "Copy link to immutable version")
                                 .and(`${isWritable ? "" : "not."}contain`, "Rename")
                                 .and(`${isWritable ? "" : "not."}contain`, "Remove");
                             cy.get("body").click(); // Collapse the menu

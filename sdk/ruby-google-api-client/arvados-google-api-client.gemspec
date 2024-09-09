@@ -25,9 +25,6 @@ Gem::Specification.new do |s|
   s.summary = "Fork of google-api-client used by Ruby-based Arvados components."
 
   s.add_runtime_dependency 'addressable', '~> 2.3'
-  # addressable depends on public_suffix, which stopped supporting Ruby 2.7
-  # with its 6.0 release. Force a resolution that supports all our Rubies:
-  s.add_runtime_dependency 'public_suffix', '~> 5.0'
   s.add_runtime_dependency 'signet', '~> 0.16.0'
   # faraday stopped supporting Ruby 2.7 with its 2.9.0 release.
   # Force a resolution that supports all our Rubies:
@@ -41,6 +38,11 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'launchy', '~> 2.4'
   s.add_runtime_dependency 'retriable', '~> 1.4'
   s.add_runtime_dependency 'activesupport', '>= 3.2', '< 8.0'
+
+  # These are indirect dependencies of the above where we force a resolution
+  # that supports all our Rubies.
+  s.add_runtime_dependency 'google-cloud-env', '~> 2.1.0'
+  s.add_runtime_dependency 'public_suffix', '~> 5.0'
 
   s.add_development_dependency 'rake', '~> 10.0'
   s.add_development_dependency 'yard', '~> 0.8'

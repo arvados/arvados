@@ -10,7 +10,7 @@ import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
 import { CollectionName, ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
-import { Process, getProcess, getProcessStatus } from "store/processes/process";
+import { Process, getProcess, getProcessStatus, ProcessProperties } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
@@ -24,6 +24,9 @@ import { filterResources } from "store/resources/resources";
 import { JSONMount } from 'models/mount-types';
 import { getCollectionUrl } from 'models/collection';
 import { useAsyncInterval } from 'common/use-async-interval';
+import { Link } from "react-router-dom";
+import { getResourceUrl } from "routes/routes";
+import WarningIcon from '@material-ui/icons/Warning';
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -125,6 +128,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
             let schedulingStatus = props.schedulingStatus;
+            const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
 
             useAsyncInterval(() => (
                 props.pollSchedulingStatus(containerRequest.uuid)
@@ -140,6 +144,12 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             </Grid>
             {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
+            </Grid>}
+            {resubmittedUrl && <Grid item xs={12}>
+                <Typography>
+                    <WarningIcon />
+                    This process failed but was automatically resubmitted.  <Link to={resubmittedUrl}> Click here to go to the resubmitted process.</Link>
+                </Typography>
             </Grid>}
             <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
@@ -196,10 +206,9 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 <DetailsAttribute label='Cost' value={
                 `${hasTotalCost ? formatCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatCost(container.cost) : 'not available'} for this container`
                 } />
-
-                {container && workflowCollection && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Workflow code' link={getCollectionUrl(workflowCollection)} value={workflowPath} />
-                </Grid>}
+            </Grid>}
+            {container && workflowCollection && <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute label='Workflow code' link={getCollectionUrl(workflowCollection)} value={workflowPath} />
             </Grid>}
             {containerRequest.properties.template_uuid &&
              <Grid item xs={12} md={mdSize}>

@@ -43,7 +43,7 @@ export const CollectionDescriptionField = () =>
         name='description'
         component={TextField as any}
         validate={COLLECTION_DESCRIPTION_VALIDATION}
-        label="Description - optional" />;
+        label="Description" />;
 
 export const CollectionProjectPickerField = (props: PickerIdProp) =>
     <Field

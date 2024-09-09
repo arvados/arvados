@@ -15,7 +15,7 @@ import { toggleProjectTrashed } from "store/trash/trash-actions";
 import { ShareIcon } from "components/icon/icon";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
-import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
+import { openDetailsPanel } from "store/details-panel/details-panel-action";
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 import { ToggleLockAction } from "../actions/lock-action";
@@ -51,7 +51,7 @@ export const viewDetailsAction = {
     icon: DetailsIcon,
     name: ContextMenuActionNames.VIEW_DETAILS,
     execute: (dispatch, resources) => {
-        dispatch(toggleDetailsPanel(resources[0].uuid));
+        dispatch(openDetailsPanel(resources[0].uuid));
     },
 };
 
