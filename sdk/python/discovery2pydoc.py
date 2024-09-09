@@ -432,6 +432,7 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
     print(
         to_docstring(_MODULE_PYDOC, indent=0),
         _MODULE_PRELUDE,
+        _REQUEST_CLASS,
         sep='\n', file=args.out_file,
     )
 
@@ -450,7 +451,6 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
         print(document_schema(name, schema_spec), file=args.out_file)
 
     print(
-        _REQUEST_CLASS,
         '''class ArvadosAPIClient(googleapiclient.discovery.Resource):''',
         sep='\n', file=args.out_file,
     )
