@@ -95,8 +95,6 @@ describe("run-process-panel-actions", () => {
 
             // then
             expect(services.containerRequestService.create).to.be.calledWithMatch(testCreateArgs);
-
-            // expect(dispatch).to.be.calledWith(newProcessUUID);
             expect(dispatch).to.be.calledWithMatch(navigateTo(newProcessUUID));
         });
     });
@@ -260,16 +258,19 @@ const testMounts = {
 const testCreateArgs = {
     command: [
         'arvados-cwl-runner',
-        '--api=containers',
         '--local',
+        '--api=containers',
+        "--no-log-timestamps",
+        "--disable-color",
         '--project-uuid=zzzzz-tpzed-yid70bw31f51234',
         '/var/lib/cwl/workflow.json#main',
         '/var/lib/cwl/cwl.input.json',
     ],
     containerImage: 'arvados/jobs:2.0.4',
     cwd: '/var/spool/cwl',
-    description: 'basicFormTestDescription',
+    description: undefined,
     mounts: testMounts,
+    secretMounts: undefined,
     name: 'basicFormTestName',
     outputName: 'Output from basicFormTestName',
     outputPath: '/var/spool/cwl',
