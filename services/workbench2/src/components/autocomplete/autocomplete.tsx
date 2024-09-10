@@ -38,7 +38,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     category?: AutocompleteCat;
 }
 
-type AutocompleteClasses = 'sharingList' | 'emptyList' | 'listSubHeader' | 'numFound';
+type AutocompleteClasses = 'sharingList' | 'emptyList' | 'listSubHeader' | 'numFound' | 'tabbedListStyles';
 
 const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
     sharingList: {
@@ -70,6 +70,9 @@ const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
         fontStyle: 'italic',
         fontSize: '0.8rem',
     },
+    tabbedListStyles: {
+        maxHeight: '12rem',
+    }
 });
 
 export enum AutocompleteCat {
@@ -202,21 +205,21 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     renderTabbedSuggestions() {
-        const { suggestions = [] } = this.props;
+        const { suggestions = [], classes } = this.props;
         const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
         const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
 
-        const parsedSugggestions = [{label: 'Users', items: users}, {label: 'Groups', items: groups}];
+        const parsedSugggestions = [{label: 'Groups', items: groups}, {label: 'Users', items: users}];
         
         return (
             <Popper
                 open={this.isSuggestionBoxOpen()}
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}
-                style={{ height: '4rem'}}
+                style={{ width: this.getSuggestionsWidth()}}
             >
                 <Paper onMouseDown={this.preventBlur}>
-                    <TabbedList tabbedListContents={parsedSugggestions} renderListItem={this.renderSharingSuggestion}/>
+                    <TabbedList tabbedListContents={parsedSugggestions} renderListItem={this.renderSharingSuggestion} injectedStyles={classes.tabbedListStyles}/>
                 </Paper>
             </Popper>
         );
