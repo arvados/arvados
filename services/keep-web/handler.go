@@ -680,7 +680,23 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			if len(dsttarget) == len(dsturl.Path) {
 				http.Error(w, "destination path not supported", http.StatusBadRequest)
 			}
-			replace[strings.TrimSuffix(dsttarget, "/")] = "current/" + colltarget
+			dsttarget = strings.TrimSuffix(dsttarget, "/")
+			if r.Method == "COPY" && strings.HasSuffix(dsturl.Path, "/") && r.Header.Get("Depth") == "0" {
+				// rfc4918 9.8.3: A COPY of "Depth: 0"
+				// only instructs that the collection
+				// and its properties, but not
+				// resources identified by its
+				// internal member URLs, are to be
+				// copied.
+				//
+				// rfc4918 9.9.2: A client MUST NOT
+				// submit a Depth header on a MOVE on
+				// a collection with any value but
+				// "infinity".
+				replace[dsttarget] = "manifest_text/"
+			} else {
+				replace[dsttarget] = "current/" + colltarget
+			}
 			if r.Method == "MOVE" {
 				replace["/"+colltarget] = ""
 			}
