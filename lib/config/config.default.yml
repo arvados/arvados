@@ -1565,6 +1565,31 @@ Clusters:
           # price of $0.10/GiB and can be entered here as 0.10.
           EBSPrice: 0.10
 
+          # (ec2) Mapping of alphabetic instance type prefix to
+          # instance family. Any prefix not listed here will be
+          # treated as a distinct instance family. For example,
+          # "trn1.2xlarge" will implicitly belong to instance family
+          # "trn".
+          #
+          # Knowing that multiple instance types belong to the same
+          # family enables the dispatcher to minimize futile attempts
+          # to create new instances when an instance family quota has
+          # been reached.
+          #
+          # All keys must be lowercase.
+          InstanceTypeFamilies:
+            a: standard
+            c: standard
+            d: standard
+            h: standard
+            i: standard
+            m: standard
+            r: standard
+            t: standard
+            z: standard
+            vt: g
+            p5: p5
+
           # (azure) Credentials.
           SubscriptionID: ""
           ClientID: ""

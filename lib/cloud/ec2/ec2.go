@@ -21,6 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
 
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -55,6 +56,7 @@ type ec2InstanceSetConfig struct {
 	EBSPrice                float64
 	IAMInstanceProfile      string
 	SpotPriceUpdateInterval arvados.Duration
+	InstanceTypeFamilies    map[string]string
 }
 
 type sliceOrSingleString []string
@@ -581,7 +583,33 @@ func (instanceSet *ec2InstanceSet) Stop() {
 }
 
 func (instanceSet *ec2InstanceSet) InstanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
-	return instanceFamily(it)
+	// https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-quotas.html
+	// 2024-09-09
+	var family string
+	pt := strings.ToLower(it.ProviderType)
+	for i, c := range pt {
+		if !unicode.IsLower(c) && family == "" {
+			// Fall back to the alphabetic prefix of
+			// ProviderType.
+			family = pt[:i]
+		}
+		if conf := instanceSet.ec2config.InstanceTypeFamilies[pt[:i]]; conf != "" && family != "" {
+			// Prefer the longest prefix of ProviderType
+			// that is listed explicitly in config.
+			//
+			// (But don't look up a too-short prefix --
+			// for an instance type like "trn1.234", use
+			// the config for "trn" or "trn1" but not
+			// "t".)
+			family = conf
+		}
+	}
+	if it.Preemptible {
+		// Spot instance quotas are separate from demand
+		// quotas.
+		family += "-spot"
+	}
+	return cloud.InstanceFamily(family)
 }
 
 type ec2Instance struct {
@@ -723,41 +751,6 @@ func (er *capacityError) IsInstanceFamilySpecific() bool {
 
 func (er *capacityError) IsInstanceTypeSpecific() bool {
 	return er.isInstanceTypeSpecific
-}
-
-func instanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
-	// https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-quotas.html
-	// 2024-09-09
-	t := strings.ToLower(it.ProviderType)
-	var f cloud.InstanceFamily
-	switch {
-	case strings.HasPrefix(t, "dl"):
-		f = "dl"
-	case strings.HasPrefix(t, "f"):
-		f = "f"
-	case strings.HasPrefix(t, "g"), strings.HasPrefix(t, "vt"):
-		f = "g"
-	case strings.HasPrefix(t, "hpc"):
-		f = "hpc"
-	case strings.HasPrefix(t, "inf"):
-		f = "inf"
-	case strings.HasPrefix(t, "p"):
-		f = "p"
-	case strings.HasPrefix(t, "trn"):
-		f = "trn"
-	case strings.HasPrefix(t, "u"): // "High Memory"
-		f = "u"
-	case strings.HasPrefix(t, "x"):
-		f = "x"
-	default:
-		f = "standard"
-	}
-	if it.Preemptible {
-		// Spot instance quotas are separate from demand
-		// quotas.
-		f += "-spot"
-	}
-	return f
 }
 
 var isCodeQuota = map[string]bool{

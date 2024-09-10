@@ -630,7 +630,14 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestInstanceFamily(c *check.C) {
-	ap, _, _, _ := GetInstanceSet(c, "{}")
+	ap, _, _, _ := GetInstanceSet(c, `{
+  "InstanceTypeFamilies": {
+    "a": "standard",
+    "m": "standard",
+    "t": "standard",
+    "p5": "p5"
+  }
+}`)
 
 	for _, trial := range []struct {
 		ptype  string
@@ -643,10 +650,13 @@ func (*EC2InstanceSetSuite) TestInstanceFamily(c *check.C) {
 		{ptype: "a1.small", family: "standard"},
 		{ptype: "m1.xlarge", family: "standard"},
 		{ptype: "m1.xlarge", spot: true, family: "standard-spot"},
+		{ptype: "p4.xlarge", spot: true, family: "p-spot"},
+		{ptype: "p5.xlarge", spot: true, family: "p5-spot"},
 		{ptype: "t3.2xlarge", family: "standard"},
 		{ptype: "trn1.2xlarge", family: "trn"},
 		{ptype: "trn1.2xlarge", spot: true, family: "trn-spot"},
-		{ptype: "", family: "standard"},
+		{ptype: "imaginary9.5xlarge", family: "imaginary"},
+		{ptype: "", family: ""},
 	} {
 		c.Check(ap.InstanceFamily(arvados.InstanceType{
 			ProviderType: trial.ptype,
