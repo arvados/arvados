@@ -197,7 +197,7 @@ describe("Project tests", function () {
             });
         cy.get("[data-cy=form-submit-btn]").click();
         cy.get("[data-cy=form-dialog]").should("not.exist");
-        cy.go('back')
+        cy.get("button").contains('Home Projects').click();
         cy.waitForDom();
 
         // Create subproject from context menu
