@@ -196,6 +196,7 @@ describe("Project tests", function () {
                 });
             });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("button").contains('Home Projects').click();
         cy.waitForDom();
@@ -340,6 +341,7 @@ describe("Project tests", function () {
                     cy.get("input").type(" renamed");
                 });
                 cy.get("[data-cy=form-submit-btn]").click();
+                cy.waitForDom();
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
     });
@@ -633,6 +635,7 @@ describe("Project tests", function () {
                     cy.get("input").type(projectName);
                 });
                 cy.get("[data-cy=form-submit-btn]").click();
+                cy.waitForDom();
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=snackbar]").contains("created");
