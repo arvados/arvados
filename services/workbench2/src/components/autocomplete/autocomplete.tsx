@@ -8,13 +8,14 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip, Typography
+    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip, Typography, Tabs, Tab
 } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
 import { noop } from 'lodash';
 import { isGroup } from 'common/isGroup';
 import { sortByKey } from 'common/objects';
+import { TabbedList } from 'components/tabbedList/tabbed-list';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -98,7 +99,8 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                     {this.renderLabel()}
                     {this.renderInput()}
                     {this.renderHelperText()}
-                    {this.props.category === AutocompleteCat.SHARING ? this.renderSharingSuggestions() : this.renderSuggestions()}
+                    {this.props.category === AutocompleteCat.SHARING ? this.renderTabbedSuggestions() : this.renderSuggestions()}
+                    {/* {this.props.category === AutocompleteCat.SHARING ? this.renderSharingSuggestions() : this.renderSuggestions()} */}
                 </FormControl>
             </RootRef>
         );
@@ -194,6 +196,27 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                 </ListItem>
                         )}
                     </List> 
+                </Paper>
+            </Popper>
+        );
+    }
+
+    renderTabbedSuggestions() {
+        const { suggestions = [] } = this.props;
+        const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
+        const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
+
+        const parsedSugggestions = [{label: 'Users', items: users}, {label: 'Groups', items: groups}];
+        
+        return (
+            <Popper
+                open={this.isSuggestionBoxOpen()}
+                anchorEl={this.inputRef.current}
+                key={suggestions.length}
+                style={{ height: '4rem'}}
+            >
+                <Paper onMouseDown={this.preventBlur}>
+                    <TabbedList tabbedListContents={parsedSugggestions} renderListItem={this.renderSharingSuggestion}/>
                 </Paper>
             </Popper>
         );
