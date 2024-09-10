@@ -2318,13 +2318,22 @@ func (s *IntegrationSuite) TestLogThrottleDifferentSources(c *check.C) {
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
-	lockTidyInterval = time.Second
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveTokenV2
+	var handler http.Handler = s.handler
+	// handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.handler)) // ...to enable request logging in test output
+
+	// Each file we upload will consist of some unique content
+	// followed by 2 MiB of filler content.
+	filler := "."
+	for i := 0; i < 21; i++ {
+		filler += filler
+	}
+
 	// Start small, and increase concurrency (2^2, 4^2, ...)
 	// only until hitting failure. Avoids unnecessarily long
 	// failure reports.
-	for n := 2; n < 16 && !c.Failed(); n = n * 2 {
+	for n := 2; n < 32 && !c.Failed(); n = n * 2 {
 		c.Logf("%s: n=%d", c.TestName(), n)
 
 		var coll arvados.Collection
@@ -2343,7 +2352,7 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 				req, err := http.NewRequest("MKCOL", u.String(), nil)
 				c.Assert(err, check.IsNil)
 				req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-				s.handler.ServeHTTP(resp, req)
+				handler.ServeHTTP(resp, req)
 				c.Assert(resp.Code, check.Equals, http.StatusCreated)
 				for j := 0; j < n && !c.Failed(); j++ {
 					j := j
@@ -2354,10 +2363,10 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 						u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
 
 						resp := httptest.NewRecorder()
-						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content))
+						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content+filler))
 						c.Assert(err, check.IsNil)
 						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-						s.handler.ServeHTTP(resp, req)
+						handler.ServeHTTP(resp, req)
 						c.Check(resp.Code, check.Equals, http.StatusCreated)
 
 						time.Sleep(time.Second)
@@ -2365,9 +2374,9 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 						req, err = http.NewRequest("GET", u.String(), nil)
 						c.Assert(err, check.IsNil)
 						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-						s.handler.ServeHTTP(resp, req)
+						handler.ServeHTTP(resp, req)
 						c.Check(resp.Code, check.Equals, http.StatusOK)
-						c.Check(resp.Body.String(), check.Equals, content)
+						c.Check(strings.TrimSuffix(resp.Body.String(), filler), check.Equals, content)
 					}()
 				}
 			}()

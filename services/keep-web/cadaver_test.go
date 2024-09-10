@@ -52,7 +52,7 @@ func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
 }
 
 func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string), skip func(string) bool) {
-	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
+	testdata := "the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand"
 
 	tempdir, err := ioutil.TempDir("", "keep-web-test-")
 	c.Assert(err, check.IsNil)
@@ -60,7 +60,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 
 	localfile, err := ioutil.TempFile(tempdir, "localfile")
 	c.Assert(err, check.IsNil)
-	localfile.Write(testdata)
+	localfile.Write([]byte(testdata))
 
 	emptyfile, err := ioutil.TempFile(tempdir, "emptyfile")
 	c.Assert(err, check.IsNil)
@@ -79,10 +79,11 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	matchToday := time.Now().Format("Jan +2")
 
 	type testcase struct {
-		path  string
-		cmd   string
-		match string
-		data  []byte
+		path           string
+		cmd            string
+		match          string
+		data           string
+		checkemptydata bool
 	}
 	for _, trial := range []testcase{
 		{
@@ -116,10 +117,10 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			match: `(?ms).*Uploading .* succeeded.*`,
 		},
 		{
-			path:  writePath,
-			cmd:   "get emptyfile '" + checkfile.Name() + "'\n",
-			match: `(?ms).*Downloading .* succeeded.*`,
-			data:  []byte{},
+			path:           writePath,
+			cmd:            "get emptyfile '" + checkfile.Name() + "'\n",
+			match:          `(?ms).*Downloading .* succeeded.*`,
+			checkemptydata: true,
 		},
 		{
 			path:  writePath,
@@ -292,14 +293,14 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		stdout := s.runCadaver(c, password, trial.path, trial.cmd)
 		c.Check(stdout, check.Matches, trial.match)
 
-		if trial.data == nil {
+		if trial.data == "" && !trial.checkemptydata {
 			continue
 		}
 		checkfile, err = os.Open(checkfile.Name())
 		c.Assert(err, check.IsNil)
 		checkfile.Seek(0, os.SEEK_SET)
 		got, err := ioutil.ReadAll(checkfile)
-		c.Check(got, check.DeepEquals, trial.data)
+		c.Check(string(got), check.Equals, trial.data)
 		c.Check(err, check.IsNil)
 	}
 }
