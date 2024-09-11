@@ -268,7 +268,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     handleNavigationKeyPress = (ev: React.KeyboardEvent<HTMLInputElement>) => {
         this.setState({ keypress: { key: ev.key } });
-        if (ev.key === 'Tab') {
+        if (ev.key === 'Tab' && this.isSuggestionBoxOpen()) {
             ev.preventDefault();
         }
         if (ev.key === 'ArrowUp') {
