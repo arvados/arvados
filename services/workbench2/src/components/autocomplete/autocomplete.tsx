@@ -219,7 +219,12 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                 style={{ width: this.getSuggestionsWidth()}}
             >
                 <Paper onMouseDown={this.preventBlur}>
-                    <TabbedList tabbedListContents={parsedSugggestions} renderListItem={this.renderSharingSuggestion} injectedStyles={classes.tabbedListStyles}/>
+                    <TabbedList 
+                        tabbedListContents={parsedSugggestions} 
+                        renderListItem={this.renderSharingSuggestion} 
+                        injectedStyles={classes.tabbedListStyles}
+                        selectedIndex={this.state.selectedSuggestionIndex}
+                        />
                 </Paper>
             </Popper>
         );

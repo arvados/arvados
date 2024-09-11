@@ -31,19 +31,20 @@ type SingleTabProps<T> = {
     items: T[];
 };
 
+type TabPanelProps = {
+  children: React.ReactNode;
+  value: number;
+  index: number;
+};
+
 type TabbedListProps<T> = {
     tabbedListContents: SingleTabProps<T>[];
     renderListItem?: (item: T) => React.ReactNode;
     injectedStyles?: string;
+    selectedIndex?: number;
 };
 
-type TabPanelProps = {
-    children: React.ReactNode;
-    value: number;
-    index: number;
-};
-
-export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, selectedIndex, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const [tabNr, setTabNr] = React.useState(0);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -69,8 +70,12 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                 index={tabNr}
             >
                 <List className={classes.list}>
-                    {tabbedListContents[tabNr].items.map((item) => (
-                        <ListItem>{renderListItem ? renderListItem(item) : JSON.stringify(item) }</ListItem>
+                    {tabbedListContents[tabNr].items.map((item, i) => (
+                        <ListItem
+                        selected={i === selectedIndex}
+                        >
+                          {renderListItem ? renderListItem(item) : JSON.stringify(item)}
+                        </ListItem>
                     ))}
                 </List>
             </TabPanel>
