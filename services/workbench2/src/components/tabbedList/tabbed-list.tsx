@@ -12,28 +12,28 @@ type TabbedListClasses = 'root' | 'tabs' | 'list';
 
 const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
-      overflowY: 'auto',
+        overflowY: 'auto',
     },
     tabs: {
         backgroundColor: theme.palette.background.paper,
         position: 'sticky',
         top: 0,
         zIndex: 1,
-        borderBotton: '1px solid lightgrey'
+        borderBottom: '1px solid lightgrey',
     },
     list: {
         overflowY: 'scroll',
     },
 });
 
-type SingleTabProps = {
+type SingleTabProps<T> = {
     label: string;
-    items: any[];
+    items: T[];
 };
 
-type TabbedListProps = {
-    tabbedListContents: SingleTabProps[];
-    renderListItem?: (item: any) => React.ReactNode;
+type TabbedListProps<T> = {
+    tabbedListContents: SingleTabProps<T>[];
+    renderListItem?: (item: T) => React.ReactNode;
     injectedStyles?: string;
 };
 
@@ -43,14 +43,10 @@ type TabPanelProps = {
     index: number;
 };
 
-const TabPanel = ({ children, value, index }: TabPanelProps) => {
-    return <div hidden={value !== index}>{value === index && children}</div>;
-};
-
-export const TabbedList = withStyles(tabbedListStyles)(({ tabbedListContents, renderListItem, injectedStyles, classes }: TabbedListProps & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const [tabNr, setTabNr] = React.useState(0);
 
-    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         event.preventDefault();
         setTabNr(newValue);
     };
@@ -60,7 +56,7 @@ export const TabbedList = withStyles(tabbedListStyles)(({ tabbedListContents, re
             <div className={classes.tabs}>
                 <Tabs
                     value={tabNr}
-                    onChange={handleChange}
+                    onChange={handleTabChange}
                     fullWidth
                 >
                     {tabbedListContents.map((tab) => (
@@ -72,8 +68,16 @@ export const TabbedList = withStyles(tabbedListStyles)(({ tabbedListContents, re
                 value={tabNr}
                 index={tabNr}
             >
-                <List className={classes.list}>{tabbedListContents[tabNr].items.map((item) => (renderListItem ? renderListItem(item) : <ListItem>{item}</ListItem>))}</List>
+                <List className={classes.list}>
+                    {tabbedListContents[tabNr].items.map((item) => (
+                        <ListItem>{renderListItem ? renderListItem(item) : JSON.stringify(item) }</ListItem>
+                    ))}
+                </List>
             </TabPanel>
         </div>
     );
 });
+
+const TabPanel = ({ children, value, index }: TabPanelProps) => {
+    return <div hidden={value !== index}>{value === index && children}</div>;
+};
