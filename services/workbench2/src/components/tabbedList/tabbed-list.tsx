@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Tabs, Tab, List, ListItem, StyleRulesCallback, withStyles } from '@material-ui/core';
 import { WithStyles } from '@material-ui/core';
 import classNames from 'classnames';
@@ -50,10 +50,17 @@ type TabbedListProps<T> = {
 
 export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, selectedIndex, keypress, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const [tabNr, setTabNr] = useState(0);
+    const listRefs = useRef<HTMLDivElement[]>([]);
 
     useEffect(() => {
       if (keypress) handleKeyPress(keypress.key);
     }, [keypress]);
+
+    useEffect(() => {
+        if (selectedIndex !== undefined && listRefs.current[selectedIndex]) {
+            listRefs.current[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [selectedIndex]);
 
     const handleKeyPress = (keypress: string) => {
         const numTabs = tabbedListContents.length;
@@ -86,12 +93,14 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
             >
                 <List className={classes.list}>
                     {tabbedListContents[tabNr].items.map((item, i) => (
+                      <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
                         <ListItem
                         className={classes.listItem}
                         selected={i === selectedIndex}
                         >
                           {renderListItem ? renderListItem(item) : JSON.stringify(item)}
                         </ListItem>
+                      </div>
                     ))}
                 </List>
             </TabPanel>
