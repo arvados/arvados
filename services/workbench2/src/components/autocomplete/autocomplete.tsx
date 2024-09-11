@@ -82,6 +82,7 @@ export enum AutocompleteCat {
 export interface AutocompleteState {
     suggestionsOpen: boolean;
     selectedSuggestionIndex: number;
+    keypress: { key: string };
 }
 
 export const Autocomplete = withStyles(autocompleteStyles)(
@@ -90,6 +91,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     state = {
         suggestionsOpen: false,
         selectedSuggestionIndex: 0,
+        keypress: { key: '' }
     };
 
     containerRef = React.createRef<HTMLDivElement>();
@@ -224,6 +226,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         renderListItem={this.renderSharingSuggestion} 
                         injectedStyles={classes.tabbedListStyles}
                         selectedIndex={this.state.selectedSuggestionIndex}
+                        keypress={this.state.keypress}
                         />
                 </Paper>
             </Popper>
@@ -263,10 +266,14 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         }
     }
 
-    handleNavigationKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
-        if (key === 'ArrowUp') {
+    handleNavigationKeyPress = (ev: React.KeyboardEvent<HTMLInputElement>) => {
+        this.setState({ keypress: { key: ev.key } });
+        if (ev.key === 'Tab') {
+            ev.preventDefault();
+        }
+        if (ev.key === 'ArrowUp') {
             this.updateSelectedSuggestionIndex(-1);
-        } else if (key === 'ArrowDown') {
+        } else if (ev.key === 'ArrowDown') {
             this.updateSelectedSuggestionIndex(1);
         }
     }

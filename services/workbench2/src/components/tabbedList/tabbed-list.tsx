@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, Tab, List, ListItem, StyleRulesCallback, withStyles } from '@material-ui/core';
 import { WithStyles } from '@material-ui/core';
 import classNames from 'classnames';
@@ -41,11 +41,23 @@ type TabbedListProps<T> = {
     tabbedListContents: SingleTabProps<T>[];
     renderListItem?: (item: T) => React.ReactNode;
     injectedStyles?: string;
+    keypress?: { key: string };
     selectedIndex?: number;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, selectedIndex, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
-    const [tabNr, setTabNr] = React.useState(0);
+export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, selectedIndex, keypress, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+    const [tabNr, setTabNr] = useState(0);
+
+    useEffect(() => {
+      if (keypress) handleKeyPress(keypress.key);
+    }, [keypress]);
+
+    const handleKeyPress = (keypress: string) => {
+        const numTabs = tabbedListContents.length;
+        if (keypress === 'Tab') {
+            setTabNr((tabNr + 1) % numTabs);
+        }
+    };
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         event.preventDefault();
