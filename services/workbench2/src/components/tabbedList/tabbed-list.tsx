@@ -8,7 +8,7 @@ import { WithStyles } from '@material-ui/core';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type TabbedListClasses = 'root' | 'tabs' | 'list';
+type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem';
 
 const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -23,6 +23,9 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
     },
     list: {
         overflowY: 'scroll',
+    },
+    listItem: {
+        cursor: 'pointer',
     },
 });
 
@@ -84,6 +87,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                 <List className={classes.list}>
                     {tabbedListContents[tabNr].items.map((item, i) => (
                         <ListItem
+                        className={classes.listItem}
                         selected={i === selectedIndex}
                         >
                           {renderListItem ? renderListItem(item) : JSON.stringify(item)}

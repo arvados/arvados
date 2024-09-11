@@ -71,7 +71,7 @@ const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
         fontSize: '0.8rem',
     },
     tabbedListStyles: {
-        maxHeight: '12rem',
+        maxHeight: '18rem',
     }
 });
 
