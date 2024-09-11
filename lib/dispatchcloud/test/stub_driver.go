@@ -178,11 +178,11 @@ func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 	return r, nil
 }
 
-// InstanceFamily returns the first character of the given instance's
-// ProviderType.  Use ProviderTypes like "a1", "a2", "b1", "b2" to
-// test instance family behaviors.
-func (sis *StubInstanceSet) InstanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
-	return cloud.InstanceFamily(it.ProviderType[:1])
+// InstanceQuotaGroup returns the first character of the given
+// instance's ProviderType.  Use ProviderTypes like "a1", "a2", "b1",
+// "b2" to test instance quota group behaviors.
+func (sis *StubInstanceSet) InstanceQuotaGroup(it arvados.InstanceType) cloud.InstanceQuotaGroup {
+	return cloud.InstanceQuotaGroup(it.ProviderType[:1])
 }
 
 func (sis *StubInstanceSet) Stop() {
@@ -209,14 +209,14 @@ func (e RateLimitError) Error() string            { return fmt.Sprintf("rate lim
 func (e RateLimitError) EarliestRetry() time.Time { return e.Retry }
 
 type CapacityError struct {
-	InstanceTypeSpecific   bool
-	InstanceFamilySpecific bool
+	InstanceTypeSpecific       bool
+	InstanceQuotaGroupSpecific bool
 }
 
-func (e CapacityError) Error() string                  { return "insufficient capacity" }
-func (e CapacityError) IsCapacityError() bool          { return true }
-func (e CapacityError) IsInstanceTypeSpecific() bool   { return e.InstanceTypeSpecific }
-func (e CapacityError) IsInstanceFamilySpecific() bool { return e.InstanceFamilySpecific }
+func (e CapacityError) Error() string                      { return "insufficient capacity" }
+func (e CapacityError) IsCapacityError() bool              { return true }
+func (e CapacityError) IsInstanceTypeSpecific() bool       { return e.InstanceTypeSpecific }
+func (e CapacityError) IsInstanceQuotaGroupSpecific() bool { return e.InstanceQuotaGroupSpecific }
 
 // StubVM is a fake server that runs an SSH service. It represents a
 // VM running in a fake cloud.

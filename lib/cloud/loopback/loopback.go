@@ -114,7 +114,7 @@ func (is *instanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
 	return ret, nil
 }
 
-func (is *instanceSet) InstanceFamily(arvados.InstanceType) cloud.InstanceFamily {
+func (is *instanceSet) InstanceQuotaGroup(arvados.InstanceType) cloud.InstanceQuotaGroup {
 	return ""
 }
 

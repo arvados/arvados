@@ -386,8 +386,8 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 				var capKey interface{} = it.ProviderType
 				if err.IsInstanceTypeSpecific() {
 					capKey = it.ProviderType
-				} else if err.IsInstanceFamilySpecific() {
-					capKey = wp.instanceSet.InstanceFamily(it)
+				} else if err.IsInstanceQuotaGroupSpecific() {
+					capKey = wp.instanceSet.InstanceQuotaGroup(it)
 				} else {
 					capKey = ""
 				}
@@ -415,9 +415,9 @@ func (wp *Pool) AtCapacity(it arvados.InstanceType) bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
 	for _, capKey := range []interface{}{
-		"",                                // all instance types
-		wp.instanceSet.InstanceFamily(it), // instance family
-		it.ProviderType,                   // just this instance type
+		"",                                    // all instance types
+		wp.instanceSet.InstanceQuotaGroup(it), // instance quota group
+		it.ProviderType,                       // just this instance type
 	} {
 		if t, ok := wp.atCapacityUntil[capKey]; ok && time.Now().Before(t) {
 			return true

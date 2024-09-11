@@ -56,7 +56,7 @@ type ec2InstanceSetConfig struct {
 	EBSPrice                float64
 	IAMInstanceProfile      string
 	SpotPriceUpdateInterval arvados.Duration
-	InstanceTypeFamilies    map[string]string
+	InstanceTypeQuotaGroups map[string]string
 }
 
 type sliceOrSingleString []string
@@ -323,12 +323,12 @@ func (instanceSet *ec2InstanceSet) Create(
 		var err error
 		rsv, err = instanceSet.client.RunInstances(context.Background(), &rii)
 		instanceSet.mInstanceStarts.WithLabelValues(trySubnet, boolLabelValue[err == nil]).Add(1)
-		if instcap, famcap := isErrorCapacity(err); !returningCapacityError || instcap || famcap {
+		if instcap, groupcap := isErrorCapacity(err); !returningCapacityError || instcap || groupcap {
 			// We want to return the last capacity error,
 			// if any; otherwise the last non-capacity
 			// error.
 			errToReturn = err
-			returningCapacityError = instcap || famcap
+			returningCapacityError = instcap || groupcap
 		}
 		if isErrorSubnetSpecific(err) &&
 			tryOffset < len(subnets)-1 {
@@ -582,18 +582,18 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 func (instanceSet *ec2InstanceSet) Stop() {
 }
 
-func (instanceSet *ec2InstanceSet) InstanceFamily(it arvados.InstanceType) cloud.InstanceFamily {
+func (instanceSet *ec2InstanceSet) InstanceQuotaGroup(it arvados.InstanceType) cloud.InstanceQuotaGroup {
 	// https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-quotas.html
 	// 2024-09-09
-	var family string
+	var quotaGroup string
 	pt := strings.ToLower(it.ProviderType)
 	for i, c := range pt {
-		if !unicode.IsLower(c) && family == "" {
+		if !unicode.IsLower(c) && quotaGroup == "" {
 			// Fall back to the alphabetic prefix of
 			// ProviderType.
-			family = pt[:i]
+			quotaGroup = pt[:i]
 		}
-		if conf := instanceSet.ec2config.InstanceTypeFamilies[pt[:i]]; conf != "" && family != "" {
+		if conf := instanceSet.ec2config.InstanceTypeQuotaGroups[pt[:i]]; conf != "" && quotaGroup != "" {
 			// Prefer the longest prefix of ProviderType
 			// that is listed explicitly in config.
 			//
@@ -601,15 +601,15 @@ func (instanceSet *ec2InstanceSet) InstanceFamily(it arvados.InstanceType) cloud
 			// for an instance type like "trn1.234", use
 			// the config for "trn" or "trn1" but not
 			// "t".)
-			family = conf
+			quotaGroup = conf
 		}
 	}
 	if it.Preemptible {
 		// Spot instance quotas are separate from demand
 		// quotas.
-		family += "-spot"
+		quotaGroup += "-spot"
 	}
-	return cloud.InstanceFamily(family)
+	return cloud.InstanceQuotaGroup(quotaGroup)
 }
 
 type ec2Instance struct {
@@ -737,16 +737,16 @@ func (err rateLimitError) EarliestRetry() time.Time {
 
 type capacityError struct {
 	error
-	isInstanceFamilySpecific bool
-	isInstanceTypeSpecific   bool
+	isInstanceQuotaGroupSpecific bool
+	isInstanceTypeSpecific       bool
 }
 
 func (er *capacityError) IsCapacityError() bool {
 	return true
 }
 
-func (er *capacityError) IsInstanceFamilySpecific() bool {
-	return er.isInstanceFamilySpecific
+func (er *capacityError) IsInstanceQuotaGroupSpecific() bool {
+	return er.isInstanceQuotaGroupSpecific
 }
 
 func (er *capacityError) IsInstanceTypeSpecific() bool {
@@ -800,9 +800,9 @@ func isErrorSubnetSpecific(err error) bool {
 // isErrorCapacity determines whether the given error indicates lack
 // of capacity -- either temporary or permanent -- to run a specific
 // instance type (i.e., retrying with any other instance type might
-// succeed) or an entire instance family (i.e., retrying with an
-// instance type in a different instance family might succeed).
-func isErrorCapacity(err error) (instcap bool, famcap bool) {
+// succeed) or an instance quota group (i.e., retrying with an
+// instance type in a different instance quota group might succeed).
+func isErrorCapacity(err error) (instcap bool, groupcap bool) {
 	var aerr smithy.APIError
 	if !errors.As(err, &aerr) {
 		return false, false
@@ -850,11 +850,11 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
 	} else if isErrorQuota(err) {
 		return &ec2QuotaError{error: err}
-	} else if instcap, famcap := isErrorCapacity(err); instcap || famcap {
+	} else if instcap, groupcap := isErrorCapacity(err); instcap || groupcap {
 		return &capacityError{
-			error:                    err,
-			isInstanceTypeSpecific:   !famcap,
-			isInstanceFamilySpecific: famcap,
+			error:                        err,
+			isInstanceTypeSpecific:       !groupcap,
+			isInstanceQuotaGroupSpecific: groupcap,
 		}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))

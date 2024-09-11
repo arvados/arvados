@@ -1566,18 +1566,18 @@ Clusters:
           EBSPrice: 0.10
 
           # (ec2) Mapping of alphabetic instance type prefix to
-          # instance family. Any prefix not listed here will be
-          # treated as a distinct instance family. For example,
-          # "trn1.2xlarge" will implicitly belong to instance family
-          # "trn".
+          # instance quota group. Any prefix not listed here will be
+          # treated as a distinct instance quota group. For example,
+          # "trn1.2xlarge" will implicitly belong to instance quota
+          # group "trn".
           #
           # Knowing that multiple instance types belong to the same
-          # family enables the dispatcher to minimize futile attempts
-          # to create new instances when an instance family quota has
-          # been reached.
+          # quota group enables the dispatcher to minimize futile
+          # attempts to create new instances when a quota has been
+          # reached.
           #
           # All keys must be lowercase.
-          InstanceTypeFamilies:
+          InstanceTypeQuotaGroups:
             a: standard
             c: standard
             d: standard

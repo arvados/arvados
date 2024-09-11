@@ -51,7 +51,7 @@ type CapacityError interface {
 	// If true, the condition affects all instance types in the
 	// same instance family.  This implies
 	// IsInstanceTypeSpecific() returns false.
-	IsInstanceFamilySpecific() bool
+	IsInstanceQuotaGroupSpecific() bool
 	error
 }
 
@@ -59,7 +59,7 @@ type SharedResourceTags map[string]string
 type InstanceSetID string
 type InstanceTags map[string]string
 type InstanceID string
-type InstanceFamily string
+type InstanceQuotaGroup string
 type ImageID string
 
 // An Executor executes commands on an ExecutorTarget.
@@ -163,9 +163,9 @@ type InstanceSet interface {
 	// InstanceIDs returned by the instances' ID() methods.
 	Instances(InstanceTags) ([]Instance, error)
 
-	// Return the instance family of the given instance type.
-	// See (CapacityError)IsInstanceFamilySpecific().
-	InstanceFamily(arvados.InstanceType) InstanceFamily
+	// Return the instance quota group of the given instance type.
+	// See (CapacityError)IsInstanceQuotaGroupSpecific().
+	InstanceQuotaGroup(arvados.InstanceType) InstanceQuotaGroup
 
 	// Stop any background tasks and release other resources.
 	Stop()

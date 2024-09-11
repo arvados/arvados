@@ -381,7 +381,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	})
 }
 
-func (suite *PoolSuite) TestInstanceFamilyQuota(c *check.C) {
+func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
 	driver := test.StubDriver{}
 	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger, nil)
 	c.Assert(err, check.IsNil)
@@ -414,7 +414,7 @@ func (suite *PoolSuite) TestInstanceFamilyQuota(c *check.C) {
 
 	// Arrange for the driver to fail when the pool calls
 	// instanceSet.Create().
-	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceFamilySpecific: true} }
+	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceQuotaGroupSpecific: true} }
 	// pool.Create() returns true when it starts a goroutine to
 	// call instanceSet.Create() in the background.
 	c.Check(pool.Create(typeA1), check.Equals, true)
