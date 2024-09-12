@@ -108,47 +108,47 @@ genProjectMethods <- function(methodResources)
     listArgs <- getMethodArguments(groupsMethods[["list"]])
     deleteArgs <- getMethodArguments(groupsMethods[["delete"]])
 
-    c("\t\t#' @description An alias for `groups.get`.",
+    c("\t\t#' @description An alias for `groups_get`.",
       getMethodParams(groupsMethods[["get"]]),
       "\t\t#' @return A Group object.",
-      getMethodSignature("projects.get", getArgs),
+      getMethodSignature("project_get", getArgs),
       "\t\t{",
-      paste("\t\t\tself$groups.get(", toCallArgs(getArgs), ")", sep=""),
+      paste("\t\t\tself$groups_get(", toCallArgs(getArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\t#' @description A wrapper for `groups.create` that sets `group_class=\"project\"`.",
+      "\t\t#' @description A wrapper for `groups_create` that sets `group_class=\"project\"`.",
       getMethodParams(groupsMethods[["create"]]),
       "\t\t#' @return A Group object.",
-      getMethodSignature("projects.create", createArgs),
+      getMethodSignature("project_create", createArgs),
       "\t\t{",
       "\t\t\tgroup <- c(\"group_class\" = \"project\", group)",
-      paste("\t\t\tself$groups.create(", toCallArgs(createArgs), ")", sep=""),
+      paste("\t\t\tself$groups_create(", toCallArgs(createArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\t#' @description A wrapper for `groups.update` that sets `group_class=\"project\"`.",
+      "\t\t#' @description A wrapper for `groups_update` that sets `group_class=\"project\"`.",
       getMethodParams(groupsMethods[["update"]]),
       "\t\t#' @return A Group object.",
-      getMethodSignature("projects.update", updateArgs),
+      getMethodSignature("project_update", updateArgs),
       "\t\t{",
       "\t\t\tgroup <- c(\"group_class\" = \"project\", group)",
-      paste("\t\t\tself$groups.update(", toCallArgs(updateArgs), ")", sep=""),
+      paste("\t\t\tself$groups_update(", toCallArgs(updateArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\t#' @description A wrapper for `groups.list` that adds a filter for `group_class=\"project\"`.",
+      "\t\t#' @description A wrapper for `groups_list` that adds a filter for `group_class=\"project\"`.",
       getMethodParams(groupsMethods[["list"]]),
       "\t\t#' @return A GroupList object.",
-      getMethodSignature("projects.list", listArgs),
+      getMethodSignature("project_list", listArgs),
       "\t\t{",
       "\t\t\tfilters[[length(filters) + 1]] <- list(\"group_class\", \"=\", \"project\")",
-      paste("\t\t\tself$groups.list(", toCallArgs(listArgs), ")", sep=""),
+      paste("\t\t\tself$groups_list(", toCallArgs(listArgs), ")", sep=""),
       "\t\t},",
       "",
-      "\t\t#' @description An alias for `groups.delete`.",
+      "\t\t#' @description An alias for `groups_delete`.",
       getMethodParams(groupsMethods[["delete"]]),
       "\t\t#' @return A Group object.",
-      getMethodSignature("projects.delete", deleteArgs),
+      getMethodSignature("project_delete", deleteArgs),
       "\t\t{",
-      paste("\t\t\tself$groups.delete(", toCallArgs(deleteArgs), ")", sep=""),
+      paste("\t\t\tself$groups_delete(", toCallArgs(deleteArgs), ")", sep=""),
       "\t\t},",
       "")
 }
@@ -167,7 +167,7 @@ genClassContent <- function(methodResources, resourceNames)
             if(methodName %in% c("index", "show", "destroy"))
                return(NULL)
 
-            methodName <- paste0(resourceName, ".", methodName)
+            methodName <- paste0(resourceName, "_", methodName)
             unlist(c(
                    getMethodDoc(methodName, methodMetaData),
                    createMethod(methodName, methodMetaData)
@@ -224,6 +224,14 @@ createMethod <- function(name, methodMetaData)
       "\t\t},\n")
 }
 
+normalizeParamName <- function(name)
+{
+    # Downcase the first letter
+    name <- sub("^(\\w)", "\\L\\1", name, perl=TRUE)
+    # Convert snake_case to camelCase
+    gsub("_(uuid\\b|id\\b|\\w)", "\\U\\1", name, perl=TRUE)
+}
+
 getMethodArguments <- function(methodMetaData)
 {
     request <- methodMetaData$request
@@ -231,7 +239,7 @@ getMethodArguments <- function(methodMetaData)
 
     if(!is.null(request))
     {
-        resourceName <- tolower(request$properties[[1]][[1]])
+        resourceName <- normalizeParamName(request$properties[[1]][[1]])
 
         if(request$required)
             requestArgs <- resourceName
@@ -244,6 +252,7 @@ getMethodArguments <- function(methodMetaData)
     args <- sapply(argNames, function(argName)
     {
         arg <- methodMetaData$parameters[[argName]]
+        argName <- normalizeParamName(argName)
 
         if(!arg$required)
         {
@@ -318,7 +327,10 @@ getRequestQueryList <- function(methodMetaData)
     if(length(queryArgs) == 0)
         return("queryArgs <- NULL")
 
-    queryArgs <- sapply(queryArgs, function(arg) paste0(arg, " = ", arg))
+    queryArgs <- sapply(queryArgs, function(arg) {
+        arg <- normalizeParamName(arg)
+        paste(arg, "=", arg)
+    })
     collapsedArgs <- paste0(queryArgs, collapse = ", ")
 
     lineLengthLimit <- 40
@@ -337,7 +349,7 @@ getRequestBody <- function(methodMetaData)
     if(is.null(request) || !request$required)
         return("body <- NULL")
 
-    resourceName <- tolower(request$properties[[1]][[1]])
+    resourceName <- normalizeParamName(request$properties[[1]][[1]])
 
     requestParameterName <- names(request$properties)[1]
 
@@ -428,7 +440,7 @@ getMethodParams <- function(methodMetaData)
         requestDoc <- unname(unlist(sapply(request$properties, function(prop)
                              {
                                  className <- sapply(prop, function(ref) ref)
-                                 objectName <- tolower(className)
+                                 objectName <- normalizeParamName(className)
                                  paste("\t\t#' @param", objectName, className, "object.")
                              })))
     }
@@ -438,7 +450,10 @@ getMethodParams <- function(methodMetaData)
     argsDoc <- unname(unlist(sapply(argNames, function(argName)
     {
         arg <- methodMetaData$parameters[[argName]]
-        paste("\t\t#' @param", argName, gsub("\n", "\n\t\t#' ", arg$description))
+        paste("\t\t#' @param",
+              normalizeParamName(argName),
+              gsub("\n", "\n\t\t#' ", arg$description)
+        )
     })))
 
     c(requestDoc, argsDoc)
