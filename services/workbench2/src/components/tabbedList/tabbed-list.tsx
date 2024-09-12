@@ -29,10 +29,12 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
     },
 });
 
-type SingleTabProps<T> = {
-    label: string;
-    items: T[];
-};
+// type SingleTabProps<T> = {
+//     label: string;
+//     items: T[];
+// };
+
+type SingleTabProps<T> = Record<string, T[]>;
 
 type TabPanelProps = {
   children: React.ReactNode;
@@ -41,7 +43,7 @@ type TabPanelProps = {
 };
 
 type TabbedListProps<T> = {
-    tabbedListContents: SingleTabProps<T>[];
+    tabbedListContents: SingleTabProps<T>;
     renderListItem?: (item: T) => React.ReactNode;
     injectedStyles?: string;
     keypress?: { key: string };
@@ -51,6 +53,7 @@ type TabbedListProps<T> = {
 export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, selectedIndex, keypress, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const [tabNr, setTabNr] = useState(0);
     const listRefs = useRef<HTMLDivElement[]>([]);
+    const tabLabels = Object.keys(tabbedListContents);
 
     useEffect(() => {
       if (keypress) handleKeyPress(keypress.key);
@@ -63,7 +66,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
     }, [selectedIndex]);
 
     const handleKeyPress = (keypress: string) => {
-        const numTabs = tabbedListContents.length;
+        const numTabs = tabLabels.length;
         if (keypress === 'Tab') {
             setTabNr((tabNr + 1) % numTabs);
         }
@@ -82,8 +85,8 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                     onChange={handleTabChange}
                     fullWidth
                 >
-                    {tabbedListContents.map((tab) => (
-                        <Tab label={tab.label} />
+                    {tabLabels.map((label) => (
+                        <Tab label={label} />
                     ))}
                 </Tabs>
             </div>
@@ -92,7 +95,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                 index={tabNr}
             >
                 <List className={classes.list}>
-                    {tabbedListContents[tabNr].items.map((item, i) => (
+                    {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
                       <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
                         <ListItem
                         className={classes.listItem}

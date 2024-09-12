@@ -91,7 +91,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     state = {
         suggestionsOpen: false,
         selectedSuggestionIndex: 0,
-        keypress: { key: '' }
+        keypress: { key: '' },
     };
 
     componentDidUpdate(prevProps: AutocompleteProps<Value, Suggestion>, prevState: AutocompleteState) {
@@ -218,7 +218,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
         const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
 
-        const parsedSugggestions = [{label: 'Groups', items: groups}, {label: 'Users', items: users}];
+        const parsedSugggestions = { Groups: groups, Users: users };
         
         return (
             <Popper
