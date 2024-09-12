@@ -81,8 +81,8 @@ export enum AutocompleteCat {
 
 export interface AutocompleteState {
     suggestionsOpen: boolean;
+    selectedTab: number;
     selectedSuggestionIndex: number;
-    keypress: { key: string };
     tabbedListContents: Record<string, any[]>;
 }
 
@@ -91,8 +91,8 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     state = {
         suggestionsOpen: false,
+        selectedTab: 0,
         selectedSuggestionIndex: 0,
-        keypress: { key: '' },
         tabbedListContents: {},
     };
 
@@ -101,10 +101,15 @@ export const Autocomplete = withStyles(autocompleteStyles)(
             if( prevProps.suggestions?.length === 0 && suggestions.length > 0) {
                 this.setState({ selectedSuggestionIndex: 0 });
             }
-            if (category === AutocompleteCat.SHARING && prevProps.suggestions !== suggestions) {
-                const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
-                const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
-                this.setState({ tabbedListContents: { Groups: groups, Users: users } });
+            if (category === AutocompleteCat.SHARING) {
+                if (prevProps.suggestions !== suggestions) {
+                    const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
+                    const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
+                    this.setState({ tabbedListContents: { Groups: groups, Users: users } });
+                }
+                if (prevState.selectedTab !== this.state.selectedTab) {
+                    this.setState({ selectedSuggestionIndex: 0 });
+                }
             }
     }
 
@@ -222,6 +227,11 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     renderTabbedSuggestions() {
         const { suggestions = [], classes } = this.props;
+
+        const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+            event.preventDefault();
+            this.setState({ selectedTab: newValue });
+        };
         
         return (
             <Popper
@@ -236,7 +246,8 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         renderListItem={this.renderSharingSuggestion} 
                         injectedStyles={classes.tabbedListStyles}
                         selectedIndex={this.state.selectedSuggestionIndex}
-                        keypress={this.state.keypress}
+                        selectedTab={this.state.selectedTab}
+                        handleTabChange={handleTabChange}
                         />
                 </Paper>
             </Popper>
@@ -279,9 +290,10 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     handleNavigationKeyPress = (ev: React.KeyboardEvent<HTMLInputElement>) => {
-        this.setState({ keypress: { key: ev.key } });
         if (ev.key === 'Tab' && this.isSuggestionBoxOpen()) {
             ev.preventDefault();
+            // Cycle through tabs, or loop back to the first tab
+            this.setState({ selectedTab: ((this.state.selectedTab + 1) % Object.keys(this.state.tabbedListContents).length)} || 0)
         }
         if (ev.key === 'ArrowUp') {
             this.updateSelectedSuggestionIndex(-1);

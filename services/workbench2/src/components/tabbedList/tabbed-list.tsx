@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Tabs, Tab, List, ListItem, StyleRulesCallback, withStyles } from '@material-ui/core';
 import { WithStyles } from '@material-ui/core';
 import classNames from 'classnames';
@@ -37,38 +37,23 @@ type TabPanelProps = {
 
 type TabbedListProps<T> = {
     tabbedListContents: Record<string, T[]>;
-    renderListItem?: (item: T) => React.ReactNode;
     injectedStyles?: string;
-    keypress?: { key: string };
     selectedIndex?: number;
+    selectedTab?: number;
+    renderListItem?: (item: T) => React.ReactNode;
+    handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, renderListItem, selectedIndex, keypress, injectedStyles, classes }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
-    const [tabNr, setTabNr] = useState(0);
+export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, renderListItem, handleTabChange }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+    const tabNr = selectedTab || 0;
     const listRefs = useRef<HTMLDivElement[]>([]);
     const tabLabels = Object.keys(tabbedListContents);
-
-    useEffect(() => {
-      if (keypress) handleKeyPress(keypress.key);
-    }, [keypress]);
 
     useEffect(() => {
         if (selectedIndex !== undefined && listRefs.current[selectedIndex]) {
             listRefs.current[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }, [selectedIndex]);
-
-    const handleKeyPress = (keypress: string) => {
-        const numTabs = tabLabels.length;
-        if (keypress === 'Tab') {
-            setTabNr((tabNr + 1) % numTabs);
-        }
-    };
-
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        event.preventDefault();
-        setTabNr(newValue);
-    };
 
     return (
         <div className={classNames(classes.root, injectedStyles)}>
