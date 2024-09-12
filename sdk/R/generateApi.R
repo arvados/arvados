@@ -428,7 +428,7 @@ getMethodBody <- function(methodMetaData)
     requestBody      <- getRequestBody(methodMetaData)
     request          <- getRequest(methodMetaData)
     response         <- getResponse(methodMetaData)
-    errorCheck       <- getErrorCheckingCode()
+    errorCheck       <- getErrorCheckingCode(methodMetaData)
     returnStatement  <- getReturnObject()
 
     body <- c(url,
@@ -510,10 +510,18 @@ getResponse <- function(methodMetaData)
     "resource <- private$REST$httpParser$parseJSONResponse(response)"
 }
 
-getErrorCheckingCode <- function()
+getErrorCheckingCode <- function(methodMetaData)
 {
-    c("if(!is.null(resource$errors))",
-      "\tstop(resource$errors)")
+    if ("ensure_unique_name" %in% names(methodMetaData$parameters)) {
+        body <- c("\tif (identical(sub('Entity:.*', '', resource$errors), '//railsapi.internal/arvados/v1/collections: 422 Unprocessable ')) {",
+                  "\t\tresource <- cat(format('An object with the given name already exists with this owner. If you want to update it use the update method instead'))",
+                  "\t} else {",
+                  "\t\tstop(resource$errors)",
+                  "\t}")
+    } else {
+        body <- "\tstop(resource$errors)"
+    }
+    c("if(!is.null(resource$errors)) {", body, "}")
 }
 
 getReturnObject <- function()
