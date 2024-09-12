@@ -150,6 +150,18 @@ genProjectMethods <- function(methodResources)
       "\t\t{",
       paste("\t\t\tself$groups_delete(", toCallArgs(deleteArgs), ")", sep=""),
       "\t\t},",
+      "",
+      "\t\t#' @description Test whether or not a project exists.",
+      getMethodParams(groupsMethods[["get"]]),
+      getMethodSignature("project_exist", getArgs),
+      "\t\t{",
+      paste("\t\t\tresult <- try(self$groups_get(", toCallArgs(getArgs), "))", sep=""),
+      "\t\t\tif(inherits(result, \"try-error\"))",
+      "\t\t\t\texists <- FALSE",
+      "\t\t\telse",
+      "\t\t\t\texists <- result['group_class'] == \"project\"",
+      "\t\t\tcat(format(exists))",
+      "\t\t},",
       "")
 }
 
