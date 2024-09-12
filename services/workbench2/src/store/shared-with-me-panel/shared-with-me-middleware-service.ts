@@ -47,7 +47,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
             api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));
             api.dispatch(updateResources(response.items));
-            await api.dispatch<any>(loadMissingProcessesInformation(response.items));
+            api.dispatch(updateResources(response.included));
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(couldNotFetchSharedItems());
@@ -80,6 +80,7 @@ export const getParams = (dataExplorer: DataExplorer, authState: AuthState): Con
     filters: getFilters(dataExplorer, authState),
     excludeHomeProject: true,
     count: "none",
+    include: ["owner_uuid", "container_uuid"]
 });
 
 const getCountParams = (dataExplorer: DataExplorer, authState: AuthState): ContentsArguments => ({

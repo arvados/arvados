@@ -42,6 +42,7 @@ export const deleteResource = (id: string) =>
         return newState;
     };
 
+// XXX This seems egregiously inefficient.
 export const filterResources = (filter: (resource: Resource) => boolean) =>
     (state: ResourcesState) =>
         Object

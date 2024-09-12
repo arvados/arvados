@@ -56,6 +56,7 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
             order: getOrder<ProcessResource>(dataExplorer),
             select: containerRequestFieldsNoMounts,
             count: 'none',
+            include: ["owner_uuid", "container_uuid"]
         };
     }
 
@@ -68,7 +69,6 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
             filters,
             limit: 0,
             count: 'exact',
-            include: ["owner_uuid", "container_uuid"]
         };
     }
 
@@ -124,8 +124,8 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
         if (criteriaChanged && countParams !== null) {
             // Get itemsAvailable
-            return this.services.containerRequestService.list(countParams)
-                .then((results: ListResults<ContainerRequestResource>) => {
+            return this.services.groupsService.contents('', countParams)
+                       .then((results: ListResults<ContainerRequestResource>) => {
                     console.log(results);
                     if (results.itemsAvailable !== undefined) {
                         api.dispatch<any>(this.actions.SET_ITEMS_AVAILABLE(results.itemsAvailable));

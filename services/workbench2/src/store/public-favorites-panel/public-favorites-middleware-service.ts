@@ -78,26 +78,16 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                 const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, publicProjectUuid));
                 const uuids = responseLinks.items.map(it => it.headUuid);
 
-                const groupItems = await this.services.groupsService.list({
+                const orderedItems = await this.services.groupsService.contents("", {
                     filters: this.getResourceFilters(dataExplorer, uuids),
-                });
-                const collectionItems = await this.services.collectionService.list({
-                    filters: this.getResourceFilters(dataExplorer, uuids),
-                });
-                const processItems = await this.services.containerRequestService.list({
-                    filters: this.getResourceFilters(dataExplorer, uuids),
+                    include: ["owner_uuid", "container_uuid"],
                 });
 
-                const orderedItems = [
-                    ...groupItems.items,
-                    ...collectionItems.items,
-                    ...processItems.items
-                ];
-
-                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems));
+                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.items));
+                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
                 api.dispatch(publicFavoritePanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(responseLinks),
-                    items: orderedItems.map((resource: any) => resource.uuid),
+                    items: orderedItems.items.map((resource: any) => resource.uuid),
                 }));
                 api.dispatch<any>(updatePublicFavorites(uuids));
             } catch (e) {
