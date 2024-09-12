@@ -29,13 +29,6 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
     },
 });
 
-// type SingleTabProps<T> = {
-//     label: string;
-//     items: T[];
-// };
-
-type SingleTabProps<T> = Record<string, T[]>;
-
 type TabPanelProps = {
   children: React.ReactNode;
   value: number;
@@ -43,7 +36,7 @@ type TabPanelProps = {
 };
 
 type TabbedListProps<T> = {
-    tabbedListContents: SingleTabProps<T>;
+    tabbedListContents: Record<string, T[]>;
     renderListItem?: (item: T) => React.ReactNode;
     injectedStyles?: string;
     keypress?: { key: string };

@@ -83,6 +83,7 @@ export interface AutocompleteState {
     suggestionsOpen: boolean;
     selectedSuggestionIndex: number;
     keypress: { key: string };
+    tabbedListContents: Record<string, any[]>;
 }
 
 export const Autocomplete = withStyles(autocompleteStyles)(
@@ -92,12 +93,18 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         suggestionsOpen: false,
         selectedSuggestionIndex: 0,
         keypress: { key: '' },
+        tabbedListContents: {},
     };
 
     componentDidUpdate(prevProps: AutocompleteProps<Value, Suggestion>, prevState: AutocompleteState) {
-        const { suggestions = [] } = this.props;
+        const { suggestions = [], category } = this.props;
             if( prevProps.suggestions?.length === 0 && suggestions.length > 0) {
                 this.setState({ selectedSuggestionIndex: 0 });
+            }
+            if (category === AutocompleteCat.SHARING && prevProps.suggestions !== suggestions) {
+                const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
+                const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
+                this.setState({ tabbedListContents: { Groups: groups, Users: users } });
             }
     }
 
@@ -215,10 +222,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     renderTabbedSuggestions() {
         const { suggestions = [], classes } = this.props;
-        const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
-        const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
-
-        const parsedSugggestions = { Groups: groups, Users: users };
         
         return (
             <Popper
@@ -229,7 +232,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
             >
                 <Paper onMouseDown={this.preventBlur}>
                     <TabbedList 
-                        tabbedListContents={parsedSugggestions} 
+                        tabbedListContents={this.state.tabbedListContents} 
                         renderListItem={this.renderSharingSuggestion} 
                         injectedStyles={classes.tabbedListStyles}
                         selectedIndex={this.state.selectedSuggestionIndex}
