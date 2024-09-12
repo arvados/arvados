@@ -94,6 +94,13 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         keypress: { key: '' }
     };
 
+    componentDidUpdate(prevProps: AutocompleteProps<Value, Suggestion>, prevState: AutocompleteState) {
+        const { suggestions = [] } = this.props;
+            if( prevProps.suggestions?.length === 0 && suggestions.length > 0) {
+                this.setState({ selectedSuggestionIndex: 0 });
+            }
+    }
+
     containerRef = React.createRef<HTMLDivElement>();
     inputRef = React.createRef<HTMLInputElement>();
 
