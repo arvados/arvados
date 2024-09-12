@@ -14,6 +14,8 @@ import { CollectionResource } from 'models/collection';
 import { ProjectResource } from 'models/project';
 import { ProcessResource } from 'models/process';
 import { WorkflowResource } from 'models/workflow';
+import { ContainerResource } from 'models/container';
+import { UserResource } from 'models/user';
 import { TrashableResourceService } from 'services/common-service/trashable-resource-service';
 import { ApiActions } from 'services/api/api-actions';
 import { GroupResource } from 'models/group';
@@ -29,6 +31,7 @@ export interface ContentsArguments {
     excludeHomeProject?: boolean;
     select?: string[];
     count?: 'exact' | 'none';
+    include?: string | string[];
 }
 
 export interface SharedArguments extends ListArguments {
@@ -41,25 +44,37 @@ export type GroupContentsResource =
     | ProcessResource
     | WorkflowResource;
 
+export type GroupContentsIncludedResource =
+    | UserResource
+    | ProjectResource
+    | ContainerResource;
+
+export interface GroupContentsListResults extends ListResults<GroupContentsResource> {
+    included?: GroupContentsIncludedResource[];
+}
+
 export class GroupsService<
-    T extends GroupResource = GroupResource
-    > extends TrashableResourceService<T> {
+T extends GroupResource = GroupResource
+> extends TrashableResourceService<T> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {
         super(serverApi, 'groups', actions);
     }
 
-    async contents(uuid: string, args: ContentsArguments = {}, session?: Session, cancelToken?: CancelToken): Promise<ListResults<GroupContentsResource>> {
-        const { filters, order, select, ...other } = args;
+    async contents(uuid: string, args: ContentsArguments = {}, session?: Session, cancelToken?: CancelToken):
+    Promise<GroupContentsListResults>
+    {
+        const { filters, order, select, include, ...other } = args;
         const params = {
             ...other,
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined,
             select: select
-                ? JSON.stringify(select.map(sel => {
-                    const sp = sel.split(".");
-                    return sp.length === 2 ? (sp[0] + "." + snakeCase(sp[1])) : snakeCase(sel);
-                }))
-                : undefined
+                  ? JSON.stringify(select.map(sel => {
+                      const sp = sel.split(".");
+                      return sp.length === 2 ? (sp[0] + "." + snakeCase(sp[1])) : snakeCase(sel);
+                  }))
+                  : undefined,
+            include: include ? JSON.stringify(include) : undefined
         };
         const pathUrl = (uuid !== '') ? `/${uuid}/contents` : '/contents';
         const cfg: AxiosRequestConfig = {

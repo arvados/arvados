@@ -53,42 +53,59 @@ export const loadContainerStatus =
 
 export const loadProcess =
     (containerRequestUuid: string) =>
-        async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
-            let containerRequest: ContainerRequestResource | undefined = undefined;
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
+        let containerRequest: ContainerRequestResource | undefined = undefined;
+        let container: ContainerResource | undefined = undefined;
+
+        dispatch<any>(loadContainerStatus(containerRequestUuid));
+
+        try {
+            const containerRequestResult = await services.groupsService.contents(
+                '', {
+                    filters: new FilterBuilder().addIsA('uuid', 'arvados#containerRequest').
+                                                 addEqual('uuid', containerRequestUuid).
+                                                 getFilters(),
+                    include: ["container_uuid"]
+            });
+            if (containerRequestResult.items.length === 1) {
+                containerRequest = containerRequestResult.items[0] as ContainerRequestResource;
+                dispatch<any>(updateResources(containerRequestResult.items));
+
+                if (containerRequestResult.included?.length === 1) {
+                    container = containerRequestResult.included[0] as ContainerResource;
+                    dispatch<any>(updateResources(containerRequestResult.included));
+                }
+            }
+        } catch { }
+
+        if (!containerRequest) {
+            return undefined;
+        }
+
+        if (!container && containerRequest.containerUuid) {
+            // Get the container the old fashioned way
             try {
-                containerRequest = await services.containerRequestService.get(containerRequestUuid);
-                dispatch<any>(updateResources([containerRequest]));
-            } catch {
-                return undefined;
-            }
+                container = await services.containerService.get(containerRequest.containerUuid, false);
+                dispatch<any>(updateResources([container]));
+            } catch {}
+        }
 
-            dispatch<any>(loadContainerStatus(containerRequestUuid));
+        if (container && container.runtimeUserUuid) {
+            try {
+                const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
+                dispatch<any>(updateResources([runtimeUser]));
+            } catch {}
+        }
 
-            if (containerRequest.outputUuid) {
-                try {
-                    const collection = await services.collectionService.get(containerRequest.outputUuid, false);
-                    dispatch<any>(updateResources([collection]));
-                } catch {}
-            }
+        if (containerRequest.outputUuid) {
+            try {
+                const collection = await services.collectionService.get(containerRequest.outputUuid, false);
+                dispatch<any>(updateResources([collection]));
+            } catch {}
+        }
 
-            if (containerRequest.containerUuid) {
-                let container: ContainerResource | undefined = undefined;
-                try {
-                    container = await services.containerService.get(containerRequest.containerUuid, false);
-                    dispatch<any>(updateResources([container]));
-                } catch {}
-
-                try {
-                    if (container && container.runtimeUserUuid) {
-                        const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
-                        dispatch<any>(updateResources([runtimeUser]));
-                    }
-                } catch {}
-
-                return { containerRequest, container };
-            }
-            return { containerRequest };
-        };
+        return { containerRequest, container };
+    };
 
 export const loadProcessPanel = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState) => {
     // Reset subprocess data explorer if navigating to new process

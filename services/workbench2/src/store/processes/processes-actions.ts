@@ -141,7 +141,7 @@ export const reRunProcess =
             dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
 
             const advancedInitialData: RunProcessAdvancedFormData = {
-		description: process.description,
+                description: process.description,
                 output: process.outputName,
                 runtime: process.schedulingParameters.max_run_time,
                 ram: process.runtimeConstraints.ram,

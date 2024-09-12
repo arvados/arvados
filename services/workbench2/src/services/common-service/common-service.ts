@@ -60,7 +60,7 @@ export class CommonService<T> {
                         .map(key => [key, mapFn(key)])
                         .reduce((newValue, [key, newKey]) => ({
                             ...newValue,
-                            [newKey]: (key === 'items') ? CommonService.mapKeys(mapFn)(value[key]) : value[key]
+                            [newKey]: (key === 'items' || key === 'included') ? CommonService.mapKeys(mapFn)(value[key]) : value[key]
                         }), {});
                 case isArray(value):
                     return value.map(CommonService.mapKeys(mapFn));
