@@ -98,9 +98,14 @@ Clusters:
 	c.Check(arv1.Cluster, check.NotNil)
 	kc, err := MakeKeepClient(arv1)
 	c.Assert(err, check.IsNil)
+	// Note the default rendezvous string is generated based on
+	// the MD5 of the keepstore URL and that URL *must* have a
+	// trailing slash in order to match the RailsAPI behavior --
+	// meanwhile, the keepstore URL given in the localRoots map
+	// *must not* have a trailing slash.
 	c.Check(kc.localRoots, check.DeepEquals, map[string]string{
-		"zzzzz-bi6l4-abcdefghijklmno":                                                "https://[::1]:12345/",
-		fmt.Sprintf("zzzzz-bi6l4-%x", md5.Sum([]byte("xyz")))[:27]:                   "https://[::1]:54321/",
-		fmt.Sprintf("zzzzz-bi6l4-%x", md5.Sum([]byte("http://0.0.0.0:54321/")))[:27]: "http://0.0.0.0:54321/",
+		"zzzzz-bi6l4-abcdefghijklmno":                                                "https://[::1]:12345",
+		fmt.Sprintf("zzzzz-bi6l4-%x", md5.Sum([]byte("xyz")))[:27]:                   "https://[::1]:54321",
+		fmt.Sprintf("zzzzz-bi6l4-%x", md5.Sum([]byte("http://0.0.0.0:54321/")))[:27]: "http://0.0.0.0:54321",
 	})
 }
