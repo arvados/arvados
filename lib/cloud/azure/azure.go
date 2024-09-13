@@ -708,6 +708,11 @@ func (az *azureInstanceSet) manageDisks() {
 	}
 }
 
+func (az *azureInstanceSet) InstanceQuotaGroup(arvados.InstanceType) cloud.InstanceQuotaGroup {
+	// All instance types share one quota.
+	return ""
+}
+
 func (az *azureInstanceSet) Stop() {
 	az.stopFunc()
 	az.stopWg.Wait()
