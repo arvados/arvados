@@ -26,6 +26,9 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
     },
     listItem: {
         cursor: 'pointer',
+        '&:hover': {
+            backgroundColor: theme.palette.grey[200],
+        }
     },
     notFoundLabel: {
         padding: theme.spacing.unit,
