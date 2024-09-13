@@ -248,6 +248,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         selectedIndex={this.state.selectedSuggestionIndex}
                         selectedTab={this.state.selectedTab}
                         handleTabChange={handleTabChange}
+                        handleSelect={this.handleSelect}
                         />
                 </Paper>
             </Popper>
@@ -360,7 +361,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         }
     }
 
-    handleSelect(suggestion: Suggestion) {
+    handleSelect = (suggestion: Suggestion) => {
         return () => {
             const { onSelect = noop } = this.props;
             const { current } = this.inputRef;

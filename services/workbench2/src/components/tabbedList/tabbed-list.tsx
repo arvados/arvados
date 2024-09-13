@@ -40,11 +40,12 @@ type TabbedListProps<T> = {
     injectedStyles?: string;
     selectedIndex?: number;
     selectedTab?: number;
+    handleSelect?: (selection: T) => React.MouseEventHandler<HTMLElement> | undefined;
     renderListItem?: (item: T) => React.ReactNode;
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, renderListItem, handleTabChange }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, handleSelect, renderListItem, handleTabChange }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabNr = selectedTab || 0;
     const listRefs = useRef<HTMLDivElement[]>([]);
     const tabLabels = Object.keys(tabbedListContents);
@@ -78,6 +79,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                         <ListItem
                         className={classes.listItem}
                         selected={i === selectedIndex}
+                        onClick={handleSelect && handleSelect(item)}
                         >
                           {renderListItem ? renderListItem(item) : JSON.stringify(item)}
                         </ListItem>
