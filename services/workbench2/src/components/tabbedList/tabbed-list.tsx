@@ -54,7 +54,7 @@ type TabbedListProps<T> = {
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, handleSelect, renderListItem, handleTabChange }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, handleSelect, renderListItem, handleTabChange }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabNr = selectedTab || 0;
     const listRefs = useRef<HTMLDivElement[]>([]);
     const tabLabels = Object.keys(tabbedListContents);
@@ -74,7 +74,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                     fullWidth
                 >
                     {tabLabels.map((label) => (
-                        <Tab label={label} />
+                        <Tab data-cy={`${label}-tab-label`} label={label} />
                     ))}
                 </Tabs>
             </div>

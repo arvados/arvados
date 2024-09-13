@@ -8,7 +8,7 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip, Typography, Tabs, Tab
+    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip, Typography,
 } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';

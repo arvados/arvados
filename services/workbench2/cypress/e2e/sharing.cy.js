@@ -70,6 +70,8 @@ describe('Sharing tests', function () {
             cy.contains('Write').click();
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
+            cy.get('[data-cy="users-tab-label"]').click();
+            cy.waitForDom();
             cy.get('[data-cy=sharing-suggestion]').click();
             cy.get('@sharingDialog').within(() => {
                 cy.get('[data-cy=add-invited-people]').click();
@@ -88,6 +90,8 @@ describe('Sharing tests', function () {
             });
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
+            cy.get('[data-cy="users-tab-label"]').click();
+            cy.waitForDom();
             cy.get('[data-cy=sharing-suggestion]').click();
             cy.get('@sharingDialog').within(() => {
                 cy.get('[data-cy=add-invited-people]').click();
@@ -164,6 +168,8 @@ describe('Sharing tests', function () {
                 cy.get('[data-cy=context-menu]').contains('Share').click({ waitForAnimations: false });
                 cy.get('button').get('[data-cy=add-invited-people]').should('be.disabled');
                 cy.get('[data-cy=invite-people-field] input').type('Anonymous');
+                cy.get('[data-cy="users-tab-label"]').click();
+                cy.waitForDom();
                 cy.get('[data-cy=sharing-suggestion]').contains('Anonymous').click();
                 cy.get('button').get('[data-cy=add-invited-people]').should('not.be.disabled');
                 cy.get('[data-cy=invite-people-field] div[role=button]').contains('anonymous').parent().find('svg').click();
