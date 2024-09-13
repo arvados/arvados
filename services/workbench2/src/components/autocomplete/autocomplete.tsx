@@ -99,7 +99,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     componentDidUpdate(prevProps: AutocompleteProps<Value, Suggestion>, prevState: AutocompleteState) {
         const { suggestions = [], category } = this.props;
             if( prevProps.suggestions?.length === 0 && suggestions.length > 0) {
-                this.setState({ selectedSuggestionIndex: 0 });
+                this.setState({ selectedSuggestionIndex: 0, selectedTab: 0 });
             }
             if (category === AutocompleteCat.SHARING) {
                 if (prevProps.suggestions !== suggestions) {
@@ -277,12 +277,16 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const { onCreate = noop, onSelect = noop, suggestions = [] } = this.props;
-        const { selectedSuggestionIndex } = this.state;
+        const { selectedSuggestionIndex, selectedTab } = this.state;
         if (event.key === 'Enter') {
             if (this.isSuggestionBoxOpen() && selectedSuggestionIndex < suggestions.length) {
                 // prevent form submissions when selecting a suggestion
                 event.preventDefault();
-                onSelect(suggestions[selectedSuggestionIndex]);
+                if(this.props.category === AutocompleteCat.SHARING) {
+                    onSelect(this.state.tabbedListContents[Object.keys(this.state.tabbedListContents)[selectedTab]][selectedSuggestionIndex]);
+                } else {
+                    onSelect(suggestions[selectedSuggestionIndex]);
+                }
             } else if (this.props.value.length > 0) {
                 onCreate();
             }
