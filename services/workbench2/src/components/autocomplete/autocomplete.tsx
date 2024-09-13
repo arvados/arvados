@@ -38,38 +38,9 @@ export interface AutocompleteProps<Item, Suggestion> {
     category?: AutocompleteCat;
 }
 
-type AutocompleteClasses = 'sharingList' | 'emptyList' | 'listSubHeader' | 'numFound' | 'tabbedListStyles';
+type AutocompleteClasses = 'tabbedListStyles';
 
 const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
-    sharingList: {
-        maxHeight: '10rem', 
-        overflowY: 'scroll',
-        scrollbarColor: 'rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0)',
-        '&::-webkit-scrollbar': {
-            width: '0.4em',
-        },
-        '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: '4px',
-        },
-        '&::-webkit-scrollbar-track': {
-            backgroundColor: 'rgba(0, 0, 0, 0)',
-        },
-    },
-    emptyList: {
-        padding: '0.5rem',
-        fontStyle: 'italic',
-    },
-    listSubHeader: {
-        padding: '0.5rem',
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-    },
-    numFound: {
-        fontStyle: 'italic',
-        fontSize: '0.8rem',
-    },
     tabbedListStyles: {
         maxHeight: '18rem',
     }
@@ -124,7 +95,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                     {this.renderInput()}
                     {this.renderHelperText()}
                     {this.props.category === AutocompleteCat.SHARING ? this.renderTabbedSuggestions() : this.renderSuggestions()}
-                    {/* {this.props.category === AutocompleteCat.SHARING ? this.renderSharingSuggestions() : this.renderSuggestions()} */}
                 </FormControl>
             </RootRef>
         );
@@ -174,52 +144,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                                 </ListItem>
                         )}
                     </List>
-                </Paper>
-            </Popper>
-        );
-    }
-
-    renderSharingSuggestions() {
-        const { suggestions = [], classes } = this.props;
-        const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
-        const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
-
-        return (
-            <Popper
-                open={this.isSuggestionBoxOpen()}
-                anchorEl={this.inputRef.current}
-                key={suggestions.length}>
-                <Paper onMouseDown={this.preventBlur}>
-                    <div className={classes.listSubHeader}>
-                        Groups {<span className={classes.numFound}>{groups.length} {groups.length === 1 ? 'match' : 'matches'} found</span>}
-                    </div>
-                    <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
-                        {groups.map(
-                            (suggestion, index) =>
-                                <ListItem
-                                    button
-                                    id={`groups-${index}`}
-                                    key={`groups-${index}`}
-                                    onClick={this.handleSelect(suggestion)}>
-                                    {this.renderSharingSuggestion(suggestion)}
-                                </ListItem>
-                        )}
-                    </List> 
-                    <div className={classes.listSubHeader}>
-                        Users {<span className={classes.numFound}>{users.length} {users.length === 1 ? 'match' : 'matches'} found</span>}
-                    </div>
-                    <List dense className={classes.sharingList} style={{width: this.getSuggestionsWidth()}}>
-                        {users.map(
-                            (suggestion, index) =>
-                                <ListItem
-                                    button
-                                    id={`users-${index}`}
-                                    key={`users-${index}`}
-                                    onClick={this.handleSelect(suggestion)}>
-                                    {this.renderSharingSuggestion(suggestion)}
-                                </ListItem>
-                        )}
-                    </List> 
                 </Paper>
             </Popper>
         );

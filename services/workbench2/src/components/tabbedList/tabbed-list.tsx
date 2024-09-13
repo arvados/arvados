@@ -31,6 +31,7 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
         }
     },
     notFoundLabel: {
+        cursor: 'default',
         padding: theme.spacing.unit,
         color: theme.palette.grey[700],
         textAlign: 'center',
