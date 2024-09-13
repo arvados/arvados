@@ -169,7 +169,7 @@ func (kc *KeepClient) discoverServices() error {
 				rvz = fmt.Sprintf("%x", md5.Sum([]byte(rvz)))[:15]
 			}
 			uuid := kc.Arvados.Cluster.ClusterID + "-bi6l4-" + rvz
-			roots[uuid] = url.String()
+			roots[uuid] = strings.TrimSuffix(url.String(), "/")
 		}
 		kc.setServiceRoots(roots, roots, nil)
 		return nil
