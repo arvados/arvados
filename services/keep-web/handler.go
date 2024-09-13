@@ -612,7 +612,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	fstarget := fsprefix + strings.Join(targetPath, "/")
 	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, nil, tokenUser)
 
-	if webdavPrefix == "" {
+	if webdavPrefix == "" && stripParts > 0 {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
 	}
 
@@ -676,33 +676,47 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				http.Error(w, "destination host mismatch", http.StatusBadGateway)
 				return
 			}
-			dsttarget := strings.TrimPrefix(dsturl.Path, webdavPrefix)
-			if len(dsttarget) == len(dsturl.Path) {
-				http.Error(w, "destination path not supported", http.StatusBadRequest)
-			}
-			dsttarget = strings.TrimSuffix(dsttarget, "/")
-			if r.Method == "COPY" && strings.HasSuffix(dsturl.Path, "/") && r.Header.Get("Depth") == "0" {
-				// rfc4918 9.8.3: A COPY of "Depth: 0"
-				// only instructs that the collection
-				// and its properties, but not
-				// resources identified by its
-				// internal member URLs, are to be
-				// copied.
-				//
-				// rfc4918 9.9.2: A client MUST NOT
-				// submit a Depth header on a MOVE on
-				// a collection with any value but
-				// "infinity".
-				replace[dsttarget] = "manifest_text/"
+			var dsttarget string
+			if webdavPrefix == "" {
+				dsttarget = dsturl.Path
 			} else {
-				replace[dsttarget] = "current/" + colltarget
+				dsttarget = strings.TrimPrefix(dsturl.Path, webdavPrefix)
+				if len(dsttarget) == len(dsturl.Path) {
+					http.Error(w, "destination path not supported", http.StatusBadRequest)
+					return
+				}
 			}
+
+			srcspec := "current/" + colltarget
+			// rfc4918 9.8.3: A COPY of "Depth: 0" only
+			// instructs that the collection and its
+			// properties, but not resources identified by
+			// its internal member URLs, are to be copied.
+			//
+			// ...meaning we will be creating an empty
+			// directory.
+			//
+			// rfc4918 9.9.2: A client MUST NOT submit a
+			// Depth header on a MOVE on a collection with
+			// any value but "infinity".
+			//
+			// ...meaning we only need to consider this
+			// case for COPY, not for MOVE.
+			if fi, err := tmpfs.Stat(colltarget); err == nil && fi.IsDir() && r.Method == "COPY" && r.Header.Get("Depth") == "0" {
+				srcspec = "manifest_text/"
+			}
+
+			replace[strings.TrimSuffix(dsttarget, "/")] = srcspec
 			if r.Method == "MOVE" {
 				replace["/"+colltarget] = ""
 			}
 		case "MKCOL":
 			replace["/"+colltarget] = "manifest_text/"
 		case "DELETE":
+			if depth := r.Header.Get("Depth"); depth != "" && depth != "infinity" {
+				http.Error(w, "invalid depth header, see rfc4918 9.6.1", http.StatusBadRequest)
+				return
+			}
 			replace["/"+colltarget] = ""
 		case "PUT":
 			// changes will be applied by updateOnSuccess
