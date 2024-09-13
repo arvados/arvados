@@ -20,6 +20,8 @@ import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ArvadosTheme } from 'common/custom-theme';
+import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
+import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 
 type CssRules = "root";
 
@@ -66,13 +68,21 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = {
-    onContextMenu: openContextMenu,
-    onNewGroup: openCreateGroupDialog,
+const mapDispatchToProps = (dispatch: any) => {
+    return {
+        onContextMenu: (ev, resource) => dispatch(openContextMenu(ev, resource)),
+        onNewGroup: () => dispatch(openCreateGroupDialog()),
+        handleRowClick: (uuid: string) => {
+            dispatch(toggleOne(uuid))
+            dispatch(deselectAllOthers(uuid))
+            dispatch(loadDetailsPanel(uuid));
+        }
+    };
 };
 
 export interface GroupsPanelProps {
     onNewGroup: () => void;
+    handleRowClick: (uuid: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     resources: ResourcesState;
 }
@@ -87,7 +97,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                 <div className={this.props.classes.root}><DataExplorer
                     id={GROUPS_PANEL_ID}
                     data-cy="groups-panel-data-explorer"
-                    onRowClick={noop}
+                    onRowClick={this.props.handleRowClick}
                     onRowDoubleClick={noop}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}

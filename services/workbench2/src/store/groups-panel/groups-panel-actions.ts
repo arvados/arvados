@@ -17,6 +17,7 @@ import { PermissionService } from 'services/permission-service/permission-servic
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
 import { PROJECT_CREATE_FORM_NAME } from 'store/projects/project-create-actions';
+import { selectedToArray, isGroupResource } from 'components/multiselect-toolbar/MultiselectToolbar';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 
@@ -50,19 +51,26 @@ export const openGroupAttributes = (uuid: string) =>
 
 export const removeGroup = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
-        await services.groupsService.delete(uuid);
-        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        const { multiselect, resources } = getState();
+        const groupsToRemove = selectedToArray(multiselect.checkedList).filter(uuid => isGroupResource(uuid, resources));
+        if (!groupsToRemove.length) groupsToRemove.push(uuid);
+        for (const group of groupsToRemove) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
+            await services.groupsService.delete(group);
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        }
         dispatch<any>(loadGroupsPanel());
     };
 
-export const openRemoveGroupDialog = (uuid: string) =>
+export const openRemoveGroupDialog = (uuid: string, numOfGroups = 1) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const titleText = numOfGroups > 1 ? 'Remove groups' : 'Remove group';
+        const confirmationText = numOfGroups > 1 ? `Are you sure you want to remove these ${numOfGroups} groups?` : 'Are you sure you want to remove this group?';
         dispatch(dialogActions.OPEN_DIALOG({
             id: GROUP_REMOVE_DIALOG,
             data: {
-                title: 'Remove group',
-                text: 'Are you sure you want to remove this group?',
+                title: titleText,
+                text: confirmationText,
                 confirmButtonLabel: 'Remove',
                 uuid
             }

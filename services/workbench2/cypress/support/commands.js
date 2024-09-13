@@ -385,7 +385,7 @@ Cypress.Commands.add("doSearch", searchTerm => {
 });
 
 Cypress.Commands.add("goToPath", path => {
-    return cy.window().its("appHistory").invoke("push", path);
+    return cy.visit(path);
 });
 
 Cypress.Commands.add("getAll", (...elements) => {
