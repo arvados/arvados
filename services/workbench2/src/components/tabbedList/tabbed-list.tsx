@@ -8,7 +8,7 @@ import { WithStyles } from '@material-ui/core';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem';
+type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem' | 'notFoundLabel';
 
 const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -26,6 +26,11 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
     },
     listItem: {
         cursor: 'pointer',
+    },
+    notFoundLabel: {
+        padding: theme.spacing.unit,
+        color: theme.palette.grey[700],
+        textAlign: 'center',
     },
 });
 
@@ -74,6 +79,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T, _>({ tabbedListConten
                 index={tabNr}
             >
                 <List className={classes.list}>
+                  {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
                     {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
                       <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
                         <ListItem

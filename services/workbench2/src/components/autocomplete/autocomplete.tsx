@@ -105,7 +105,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                 if (prevProps.suggestions !== suggestions) {
                     const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
                     const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
-                    this.setState({ tabbedListContents: { Groups: groups, Users: users } });
+                    this.setState({ tabbedListContents: { groups: groups, users: users } });
                 }
                 if (prevState.selectedTab !== this.state.selectedTab) {
                     this.setState({ selectedSuggestionIndex: 0 });
