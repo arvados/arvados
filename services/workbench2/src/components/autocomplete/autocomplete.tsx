@@ -232,9 +232,13 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     updateSelectedSuggestionIndex(value: -1 | 1) {
-        const { suggestions = [] } = this.props;
+        const { suggestions = [], category } = this.props;
+        const { tabbedListContents, selectedTab } = this.state;
+        const tabLabels = Object.keys(tabbedListContents);
         this.setState(({ selectedSuggestionIndex }) => ({
-            selectedSuggestionIndex: (selectedSuggestionIndex + value) % suggestions.length
+            selectedSuggestionIndex: (selectedSuggestionIndex + value) % (category === AutocompleteCat.SHARING 
+                    ? tabbedListContents[tabLabels[selectedTab]].length 
+                    : suggestions.length)
         }));
     }
 
