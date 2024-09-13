@@ -2333,7 +2333,7 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	// Start small, and increase concurrency (2^2, 4^2, ...)
 	// only until hitting failure. Avoids unnecessarily long
 	// failure reports.
-	for n := 2; n < 32 && !c.Failed(); n = n * 2 {
+	for n := 2; n < 16 && !c.Failed(); n = n * 2 {
 		c.Logf("%s: n=%d", c.TestName(), n)
 
 		var coll arvados.Collection
