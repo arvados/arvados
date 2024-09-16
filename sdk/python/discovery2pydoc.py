@@ -485,7 +485,7 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
                 '$ref': class_name,
             },
         }
-        print(Method(name, method_spec).doc(), file=args.out_file)
+        print(Method(name, method_spec).doc(), end='', file=args.out_file)
 
     args.out_file.close()
     return os.EX_OK
