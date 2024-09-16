@@ -44,7 +44,7 @@ export const deleteResource = (id: string) =>
 
 export const filterResources = (filter: (resource: Resource) => boolean) =>
     (state: ResourcesState) => {
-        let items = [];
+        const items: Resource[] = [];
         for (const id in state) {
             const resource = state[id];
             if (resource && filter(resource)) {
