@@ -197,13 +197,18 @@ describe("Process tests", function () {
 
             // Force container_count for testing
             let containerCount = 2;
-            cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
+            cy.intercept({ method: "GET", url: "**/arvados/v1/groups/contents?*" }, req => {
                 req.on('response', res => {
-                    res.body.container_count = containerCount;
+                    if (!res.body.items) {
+                        return;
+                    }
+                    res.body.items.forEach(item => {
+                        item.container_count = containerCount;
+                    });
                 });
-            });
+            }).as("intercept1");
 
-            cy.getAll("@containerRequest", "@runningContainer").then(function ([containerRequest]) {
+            cy.getAll("@containerRequest", "@runningContainer", "@intercept1").then(function ([containerRequest]) {
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.reload();
                 cy.get("[data-cy=process-runtime-status-retry-warning]", { timeout: 7000 }).should("contain", "Process retried 1 time")
