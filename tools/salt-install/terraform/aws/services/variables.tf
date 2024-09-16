@@ -106,3 +106,9 @@ variable "rds_postgresql_version" {
   type = string
   default = "15"
 }
+
+variable "cmk_arn" {
+  description = "Customer-managed Key ARN to use for volume encryption."
+  type = string
+  default = ""
+}
