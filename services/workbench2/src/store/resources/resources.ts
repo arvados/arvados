@@ -42,18 +42,17 @@ export const deleteResource = (id: string) =>
         return newState;
     };
 
-// XXX This seems egregiously inefficient.
 export const filterResources = (filter: (resource: Resource) => boolean) =>
-    (state: ResourcesState) =>
-        Object
-            .keys(state)
-            .reduce((resources, id) => {
-                const resource = getResource(id)(state);
-                return resource
-                    ? [...resources, resource]
-                    : resources;
-            }, [])
-            .filter(filter);
+    (state: ResourcesState) => {
+        let items = [];
+        for (const id in state) {
+            const resource = state[id];
+            if (resource && filter(resource)) {
+                items.push(resource);
+            }
+        }
+        return items;
+    };
 
 export const filterResourcesByKind = (kind: ResourceKind) =>
     (state: ResourcesState) =>
