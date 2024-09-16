@@ -81,7 +81,6 @@ type CssRules =
     | "tableWrapper"
     | "paramTableRoot"
     | "paramTableCellText"
-    | "mountsTableRoot"
     | "jsonWrapper"
     | "keepLink"
     | "collectionLink"
@@ -123,7 +122,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
-    // Applies to table tab and collection table content
+    // Applies to parameters and input collection virtual lists and output collection DE
     tableWrapper: {
         height: "auto",
         maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
@@ -134,8 +133,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: "stretch", // Stretches output collection to full width
 
     },
-
-    // Param table virtual list styles
+    // Parameters / input collection virtual list table styles
     paramTableRoot: {
         display: "flex",
         flexDirection: "column",
@@ -196,16 +194,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             margin: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
-        },
-    },
-    mountsTableRoot: {
-        width: "100%",
-        "& thead th": {
-            verticalAlign: "bottom",
-            paddingBottom: "10px",
-        },
-        "& td, & th": {
-            paddingRight: "25px",
         },
     },
     // JSON tab wrapper
@@ -617,37 +605,63 @@ type ProcessInputMountsProps = ProcessInputMountsDataProps & WithStyles<CssRules
 const ProcessInputMounts = withStyles(styles)(
     connect((state: RootState) => ({
         auth: state.auth,
-    }))(({ mounts, hidden, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
-        <Table
-            className={classes.mountsTableRoot}
-            aria-label="Process Input Mounts"
-            hidden={hidden}
-        >
-            <TableHead>
-                <TableRow>
-                    <TableCell>Path</TableCell>
-                    <TableCell>Portable Data Hash</TableCell>
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {mounts.map(mount => (
-                    <TableRow key={mount.path}>
-                        <TableCell>
+    }))(({ mounts, hidden, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => {
+
+        const RenderRow = ({index, style}) => {
+            const mount = mounts[index];
+
+            return <TableRow
+                key={mount.path}
+                style={style}>
+                <TableCell>
+                    <Tooltip title={mount.path}>
+                        <Typography className={classes.paramTableCellText}>
                             <pre>{mount.path}</pre>
-                        </TableCell>
-                        <TableCell>
-                            <RouterLink
-                                to={getNavUrl(mount.pdh, auth)}
-                                className={classes.keepLink}
-                            >
-                                {mount.pdh}
-                            </RouterLink>
-                        </TableCell>
+                        </Typography>
+                    </Tooltip>
+                </TableCell>
+                <TableCell>
+                    <Tooltip title={mount.pdh}>
+                        <RouterLink
+                            to={getNavUrl(mount.pdh, auth)}
+                            className={classes.keepLink}
+                        >
+                            {mount.pdh}
+                        </RouterLink>
+                    </Tooltip>
+                </TableCell>
+            </TableRow>;
+        };
+
+        return <div className={classes.tableWrapper} hidden={hidden}>
+            <Table
+                className={classes.paramTableRoot}
+                aria-label="Process Input Mounts"
+                hidden={hidden}
+            >
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Path</TableCell>
+                        <TableCell>Portable Data Hash</TableCell>
                     </TableRow>
-                ))}
-            </TableBody>
-        </Table>
-    ))
+                </TableHead>
+                <TableBody>
+                    <AutoSizer>
+                        {({ height, width }) =>
+                            <FixedSizeList
+                                height={height}
+                                itemCount={mounts.length}
+                                itemSize={40}
+                                width={width}
+                            >
+                                {RenderRow}
+                            </FixedSizeList>
+                        }
+                    </AutoSizer>
+                </TableBody>
+            </Table>
+        </div>;
+    })
 );
 
 export interface ProcessOutputCollectionActionProps {
