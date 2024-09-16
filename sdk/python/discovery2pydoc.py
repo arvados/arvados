@@ -247,13 +247,9 @@ Its value is a `{val_type}` dictionary defining the attributes to set.""",
             src_value: str = self._spec['default']
         except KeyError:
             return None
-        if src_value == 'true':
-            return True
-        elif src_value == 'false':
-            return False
-        elif src_value.isdigit():
-            return int(src_value)
-        else:
+        try:
+            return json.loads(src_value)
+        except ValueError:
             return src_value
 
     def is_required(self) -> bool:
