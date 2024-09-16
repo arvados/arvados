@@ -210,18 +210,18 @@ class Parameter(inspect.Parameter):
         self._spec = spec
         if keyword.iskeyword(name):
             name += '_'
+        annotation = get_type_annotation(self._spec['type'])
+        if self.is_required():
+            default = inspect.Parameter.empty
+        else:
+            default = self.default_value()
+            if default is None:
+                annotation = f'Optional[{annotation}]'
         super().__init__(
             name,
             inspect.Parameter.KEYWORD_ONLY,
-            annotation=get_type_annotation(self._spec['type']),
-            # In normal Python the presence of a default tells you whether or
-            # not an argument is required. In the API the `required` flag tells
-            # us that, and defaults are specified inconsistently. Don't show
-            # defaults in the signature: it adds noise and makes things more
-            # confusing for the reader about what's required and what's
-            # optional. The docstring can explain in better detail, including
-            # the default value.
-            default=inspect.Parameter.empty,
+            annotation=annotation,
+            default=default,
         )
 
     @classmethod
@@ -260,11 +260,10 @@ Its value is a `{val_type}` dictionary defining the attributes to set.""",
         return self._spec['required']
 
     def doc(self) -> str:
-        default_value = self.default_value()
-        if default_value is None:
+        if self.default is None or self.default is inspect.Parameter.empty:
             default_doc = ''
         else:
-            default_doc = f"Default {default_value!r}."
+            default_doc = f"Default `{self.default!r}`."
         description = self._spec['description']
         doc_parts = [f'{self.api_name}: {self.annotation}']
         if description or default_doc:
