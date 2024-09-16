@@ -264,16 +264,24 @@ Its value is a `{val_type}` dictionary defining the attributes to set.""",
             default_doc = ''
         else:
             default_doc = f"Default `{self.default!r}`."
-        description = self._spec['description']
-        doc_parts = [f'{self.api_name}: {self.annotation}']
-        if description or default_doc:
-            doc_parts.append('---')
-            if description:
-                doc_parts.append(description)
-            if default_doc:
-                doc_parts.append(default_doc)
+        description = self._spec['description'].rstrip()
+        # Does the description contain multiple paragraphs of real text
+        # (excluding, e.g., hyperlink targets)?
+        if re.search(r'\n\s*\n\s*[\w*]', description):
+            # Yes: append the default doc as a separate paragraph.
+            description += f'\n\n{default_doc}'
+        else:
+            # No: append the default doc to the first (and only) paragraph.
+            description = re.sub(
+                r'(\n\s*\n|\s*$)',
+                rf' {default_doc}\1',
+                description,
+                count=1,
+            )
+        # Align all lines with the list bullet we're formatting it in.
+        description = re.sub(r'\n(\S)', r'\n  \1', description)
         return f'''
-* {' '.join(doc_parts)}
+* {self.api_name}: {self.annotation} --- {description}
 '''
 
 
