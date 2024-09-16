@@ -79,8 +79,10 @@ type CssRules =
     | "avatar"
     | "iconHeader"
     | "tableWrapper"
-    | "paramTableRoot"
-    | "paramTableCellText"
+    | "virtualListTableRoot"
+    | "parameterTableRoot"
+    | "inputMountTableRoot"
+    | "virtualListCellText"
     | "jsonWrapper"
     | "keepLink"
     | "collectionLink"
@@ -122,7 +124,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
-    // Applies to parameters and input collection virtual lists and output collection DE
+    // Applies to parameters / input collection virtual lists and output collection DE
     tableWrapper: {
         height: "auto",
         maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
@@ -134,7 +136,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
     },
     // Parameters / input collection virtual list table styles
-    paramTableRoot: {
+    virtualListTableRoot: {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -158,13 +160,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 flexBasis: 0,
                 overflow: "hidden",
             },
-            // Column width overrides
-            "& th:nth-of-type(1), & td:nth-of-type(1)": {
-                flexGrow: 0.7,
-            },
-            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
-                flexGrow: 2,
-            },
         },
         // Flex body rows
         "& tbody tr": {
@@ -180,8 +175,34 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             },
         },
     },
+    // Parameter tab table column widths
+    parameterTableRoot: {
+        "& thead tr, & > tbody tr": {
+            // ID
+            "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                flexGrow: 0.7,
+            },
+            // Collection
+            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
+                flexGrow: 2,
+            },
+        },
+    },
+    // Input collection tab table column widths
+    inputMountTableRoot: {
+        "& thead tr, & > tbody tr": {
+            // Path
+            "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                flexGrow: 1,
+            },
+            // PDH
+            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
+                flexGrow: 0.8,
+            },
+        },
+    },
     // Param value cell typography styles
-    paramTableCellText: {
+    virtualListCellText: {
         overflow: "hidden",
         display: "flex",
         // Every cell contents requires a wrapper for the ellipsis
@@ -506,7 +527,7 @@ const ProcessIOPreview = memo(
                 data-cy={isMainRow(param) ? "process-io-param" : ""}>
                 <TableCell>
                     <Tooltip title={param.id}>
-                        <Typography className={classes.paramTableCellText}>
+                        <Typography className={classes.virtualListCellText}>
                             <span>
                                 {param.id}
                             </span>
@@ -515,7 +536,7 @@ const ProcessIOPreview = memo(
                 </TableCell>
                 {showLabel && <TableCell>
                     <Tooltip title={param.label}>
-                        <Typography className={classes.paramTableCellText}>
+                        <Typography className={classes.virtualListCellText}>
                             <span>
                                 {param.label}
                             </span>
@@ -528,7 +549,7 @@ const ProcessIOPreview = memo(
                     />
                 </TableCell>
                 <TableCell>
-                    <Typography className={classes.paramTableCellText}>
+                    <Typography className={classes.virtualListCellText}>
                         {/** Collection is an anchor so doesn't require wrapper element */}
                         {param.value.collection}
                     </Typography>
@@ -538,7 +559,7 @@ const ProcessIOPreview = memo(
 
         return <div className={classes.tableWrapper} hidden={hidden}>
             <Table
-                className={classes.paramTableRoot}
+                className={classNames(classes.virtualListTableRoot, classes.parameterTableRoot)}
                 aria-label="Process IO Preview"
             >
                 <TableHead>
@@ -573,7 +594,7 @@ interface ProcessValuePreviewProps {
 }
 
 const ProcessValuePreview = withStyles(styles)(({ value, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
-    <Typography className={classNames(classes.paramTableCellText, value.secondary && classes.secondaryVal)}>
+    <Typography className={classNames(classes.virtualListCellText, value.secondary && classes.secondaryVal)}>
         {value.display}
     </Typography>
 ));
@@ -615,19 +636,21 @@ const ProcessInputMounts = withStyles(styles)(
                 style={style}>
                 <TableCell>
                     <Tooltip title={mount.path}>
-                        <Typography className={classes.paramTableCellText}>
+                        <Typography className={classes.virtualListCellText}>
                             <pre>{mount.path}</pre>
                         </Typography>
                     </Tooltip>
                 </TableCell>
                 <TableCell>
                     <Tooltip title={mount.pdh}>
-                        <RouterLink
-                            to={getNavUrl(mount.pdh, auth)}
-                            className={classes.keepLink}
-                        >
-                            {mount.pdh}
-                        </RouterLink>
+                        <Typography className={classes.virtualListCellText}>
+                            <RouterLink
+                                to={getNavUrl(mount.pdh, auth)}
+                                className={classes.keepLink}
+                            >
+                                {mount.pdh}
+                            </RouterLink>
+                        </Typography>
                     </Tooltip>
                 </TableCell>
             </TableRow>;
@@ -635,7 +658,7 @@ const ProcessInputMounts = withStyles(styles)(
 
         return <div className={classes.tableWrapper} hidden={hidden}>
             <Table
-                className={classes.paramTableRoot}
+                className={classNames(classes.virtualListTableRoot, classes.inputMountTableRoot)}
                 aria-label="Process Input Mounts"
                 hidden={hidden}
             >
