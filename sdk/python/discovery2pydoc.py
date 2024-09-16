@@ -83,11 +83,20 @@ _DEPRECATED_SCHEMAS = frozenset(
     for schema_name in iter_resource_schemas(resource_name)
 )
 
-_LIST_PYDOC = '''
+_LIST_UTIL_METHODS = {
+    'ComputedPermissionList': 'arvados.util.iter_computed_permissions',
+    'ComputedPermissions': 'arvados.util.iter_computed_permissions',
+}
+_LIST_METHOD_PYDOC = '''
+This method returns a single page of `{cls_name}` objects that match your search
+criteria. If you just want to iterate all objects that match your search
+criteria, consider using `{list_util_func}`.
+'''
+_LIST_SCHEMA_PYDOC = '''
 
 This is the dictionary object returned when you call `{cls_name}s.list`.
 If you just want to iterate all objects that match your search criteria,
-consider using `arvados.util.keyset_list_all`.
+consider using `{list_util_func}`.
 If you work with this raw object, the keys of the dictionary are documented
 below, along with their types. The `items` key maps to a list of matching
 `{cls_name}` objects.
@@ -274,10 +283,12 @@ class Method:
             self,
             name: str,
             spec: Mapping[str, Any],
+            cls_name: Optional[str]=None,
             annotate: Callable[[Annotation], Annotation]=str,
     ) -> None:
         self.name = name
         self._spec = spec
+        self.cls_name = cls_name
         self._annotate = annotate
         self._required_params = []
         self._optional_params = []
@@ -317,6 +328,15 @@ class Method:
         doc_lines = self._spec['description'].splitlines(keepends=True)[doc_slice]
         if not doc_lines[-1].endswith('\n'):
             doc_lines.append('\n')
+        try:
+            returns_list = self._spec['response']['$ref'].endswith('List')
+        except KeyError:
+            returns_list = False
+        if returns_list and self.cls_name is not None:
+            doc_lines.append(_LIST_METHOD_PYDOC.format(
+                cls_name=self.cls_name[:-1],
+                list_util_func=_LIST_UTIL_METHODS.get(self.cls_name, 'arvados.util.keyset_list_all'),
+            ))
         if self._required_params:
             doc_lines.append("\nRequired parameters:\n")
             doc_lines.extend(param.doc() for param in self._required_params)
@@ -334,12 +354,12 @@ def document_schema(name: str, spec: Mapping[str, Any]) -> str:
     if name in _DEPRECATED_SCHEMAS:
         description += _DEPRECATED_NOTICE
     if name.endswith('List'):
-        desc_fmt = _LIST_PYDOC
-        cls_name = name[:-4]
+        description += _LIST_SCHEMA_PYDOC.format(
+            cls_name=name[:-4],
+            list_util_func=_LIST_UTIL_METHODS.get(name, 'arvados.util.keyset_list_all'),
+        )
     else:
-        desc_fmt = _SCHEMA_PYDOC
-        cls_name = name
-    description += desc_fmt.format(cls_name=cls_name)
+        description += _SCHEMA_PYDOC.format(cls_name=name)
     lines = [
         f"class {name}(TypedDict, total=False):",
         to_docstring(description, 4),
@@ -374,7 +394,7 @@ def document_resource(name: str, spec: Mapping[str, Any]) -> str:
     if class_name in _DEPRECATED_RESOURCES:
         docstring += _DEPRECATED_NOTICE
     methods = [
-        Method(key, meth_spec, 'ArvadosAPIRequest[{}]'.format)
+        Method(key, meth_spec, class_name, 'ArvadosAPIRequest[{}]'.format)
         for key, meth_spec in spec['methods'].items()
         if key not in _ALIASED_METHODS
     ]
