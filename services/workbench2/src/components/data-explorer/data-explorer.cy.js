@@ -152,7 +152,7 @@ describe("<DataExplorer />", () => {
         );
         //check if the pagination is rendered
         cy.get('[data-cy=table-pagination]').should('exist');
-        cy.get('[data-cy=table-pagination]').contains('1–50 of 100').should('exist');
+        cy.get('[data-cy=table-pagination]').contains('1-50 of 100').should('exist');
         cy.get('p').contains('Rows per page:').should('exist');
         //check onPageChange
         cy.get('button[title="Go to next page"]').should('exist').click();
