@@ -24,12 +24,14 @@ export interface DataExplorer {
     columns: DataColumns<any, any>;
     items: any[];
     itemsAvailable: number;
+    loadingItemsAvailable: boolean;
     page: number;
     rowsPerPage: number;
     rowsPerPageOptions: number[];
     searchValue: string;
     working?: boolean;
     requestState: DataTableRequestState;
+    countRequestState: DataTableRequestState;
     isNotFound: boolean;
 }
 
@@ -38,11 +40,13 @@ export const initialDataExplorer: DataExplorer = {
     columns: [],
     items: [],
     itemsAvailable: 0,
+    loadingItemsAvailable: false,
     page: 0,
     rowsPerPage: 50,
     rowsPerPageOptions: [10, 20, 50, 100, 200, 500],
     searchValue: '',
     requestState: DataTableRequestState.IDLE,
+    countRequestState: DataTableRequestState.IDLE,
     isNotFound: false,
 };
 
@@ -76,12 +80,13 @@ export const dataExplorerReducer = (
             update(state, id, (explorer) => {
                 // Reject updates to pages other than current,
                 //  DataExplorer middleware should retry
+                // Also reject update if DE is pending, reduces flicker and appearance of race
                 const updatedPage = page || 0;
-                if (explorer.page === updatedPage) {
+                if (explorer.page === updatedPage && explorer.requestState === DataTableRequestState.PENDING) {
                     return {
                         ...explorer,
                         items,
-                        itemsAvailable,
+                        itemsAvailable: itemsAvailable || explorer.itemsAvailable,
                         page: updatedPage,
                         rowsPerPage,
                     }
@@ -91,14 +96,34 @@ export const dataExplorerReducer = (
             })
         ),
 
+        SET_LOADING_ITEMS_AVAILABLE: ({ id, loadingItemsAvailable }) =>
+            update(state, id, (explorer) => ({
+                ...explorer,
+                loadingItemsAvailable,
+            })),
+
+        SET_ITEMS_AVAILABLE: ({ id, itemsAvailable }) =>
+            update(state, id, (explorer) => {
+                // Ignore itemsAvailable updates if another countRequest is requested
+                if (explorer.countRequestState === DataTableRequestState.PENDING) {
+                    return {
+                        ...explorer,
+                        itemsAvailable,
+                        loadingItemsAvailable: false,
+                    };
+                } else {
+                    return explorer;
+                }
+            }),
+
         RESET_ITEMS_AVAILABLE: ({ id }) =>
             update(state, id, (explorer) => ({ ...explorer, itemsAvailable: 0 })),
 
         APPEND_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
             update(state, id, (explorer) => ({
                 ...explorer,
-                items: state[id].items.concat(items),
-                itemsAvailable: state[id].itemsAvailable + itemsAvailable,
+                items: explorer.items.concat(items),
+                itemsAvailable: explorer.itemsAvailable + (itemsAvailable || 0),
                 page,
                 rowsPerPage,
             })),
@@ -117,6 +142,9 @@ export const dataExplorerReducer = (
 
         SET_REQUEST_STATE: ({ id, requestState }) =>
             update(state, id, (explorer) => ({ ...explorer, requestState })),
+
+        SET_COUNT_REQUEST_STATE: ({ id, countRequestState }) =>
+            update(state, id, (explorer) => ({ ...explorer, countRequestState })),
 
         TOGGLE_SORT: ({ id, columnName }) =>
             update(state, id, mapColumns(toggleSort(columnName))),

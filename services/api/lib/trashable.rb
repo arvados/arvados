@@ -99,6 +99,17 @@ module Trashable
 end
 
 module TrashableController
+  def self.included(base)
+    def base._trash_method_description
+      match = name.match(/\b(\w+)Controller$/)
+      "Trash a #{match[1].singularize.underscore.humanize.downcase}."
+    end
+    def base._untrash_method_description
+      match = name.match(/\b(\w+)Controller$/)
+      "Untrash a #{match[1].singularize.underscore.humanize.downcase}."
+    end
+  end
+
   def destroy
     if !@object.is_trashed
       @object.update!(trash_at: db_current_time)
@@ -136,5 +147,4 @@ module TrashableController
 
     show
   end
-
 end

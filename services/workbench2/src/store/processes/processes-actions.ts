@@ -6,7 +6,6 @@ import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { updateResources } from "store/resources/resources-actions";
-import { Process } from "./process";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
@@ -21,50 +20,12 @@ import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutpu
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
-import { ContainerResource } from "models/container";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { ContainerRequestState } from "models/container-request";
 import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
-
-export const loadProcess =
-    (containerRequestUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
-        let containerRequest: ContainerRequestResource | undefined = undefined;
-        try {
-            containerRequest = await services.containerRequestService.get(containerRequestUuid);
-            dispatch<any>(updateResources([containerRequest]));
-        } catch {
-            return undefined;
-        }
-
-        if (containerRequest.outputUuid) {
-            try {
-                const collection = await services.collectionService.get(containerRequest.outputUuid, false);
-                dispatch<any>(updateResources([collection]));
-            } catch {}
-        }
-
-        if (containerRequest.containerUuid) {
-            let container: ContainerResource | undefined = undefined;
-            try {
-                container = await services.containerService.get(containerRequest.containerUuid, false);
-                dispatch<any>(updateResources([container]));
-            } catch {}
-
-            try {
-                if (container && container.runtimeUserUuid) {
-                    const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
-                    dispatch<any>(updateResources([runtimeUser]));
-                }
-            } catch {}
-
-            return { containerRequest, container };
-        }
-        return { containerRequest };
-    };
 
 export const loadContainers =
     (containerUuids: string[], loadMounts: boolean = true) =>

@@ -47,13 +47,12 @@ import * as projectUpdateActions from "store/projects/project-update-actions";
 import * as collectionCreateActions from "store/collections/collection-create-actions";
 import * as collectionCopyActions from "store/collections/collection-copy-actions";
 import * as collectionMoveActions from "store/collections/collection-move-actions";
-import * as processesActions from "store/processes/processes-actions";
 import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
 import { trashPanelColumns } from "views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
-import { loadProcessPanel } from "store/process-panel/process-panel-actions";
+import { loadProcess as loadProcessResources, loadProcessPanel } from "store/process-panel/process-panel-actions";
 import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
 import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-panel";
 import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
@@ -555,7 +554,7 @@ export const loadProcess = (uuid: string) =>
         try {
             dispatch(progressIndicatorActions.START_WORKING(uuid));
             dispatch<any>(loadProcessPanel(uuid));
-            const process = await dispatch<any>(processesActions.loadProcess(uuid));
+            const process = await dispatch<any>(loadProcessResources(uuid));
             if (process) {
                 await dispatch<any>(finishLoadingProject(process.containerRequest.ownerUuid));
                 await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
@@ -810,6 +809,7 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(async (dispatch: 
 });
 
 export const loadGroupsPanel = handleFirstTimeLoad((dispatch: Dispatch<any>) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.GROUPS));
     dispatch(setGroupsBreadcrumbs());
     dispatch(groupPanelActions.loadGroupsPanel());
 });

@@ -661,7 +661,14 @@ describe("Project tests", function () {
         cy.get("div[role=presentation] ul > div[role=button]").contains("Delete at").click();
         cy.get("div[role=presentation] > div[aria-hidden=true]").click();
 
-        cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents*" }).as("filteredQuery");
+        cy.intercept({
+            method: "GET",
+            url: "**/arvados/v1/groups/*/contents*",
+            query: {
+                // Ignore the count=exact itemsavailable request
+                count: "none"
+            },
+        }).as("filteredQuery");
         [
             {
                 name: "Name",

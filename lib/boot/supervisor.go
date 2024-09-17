@@ -317,6 +317,9 @@ func (super *Supervisor) runCluster() error {
 		super.prependEnv("PATH", super.tempdir+"/bin:")
 	}
 	super.setEnv("ARVADOS_SERVER_ADDRESS", super.ListenHost)
+	if super.ClusterType == "test" {
+		super.setEnv("ARVADOS_USE_KEEP_ACCESSIBLE_API", "true")
+	}
 
 	// Now that we have the config, replace the bootstrap logger
 	// with a new one according to the logging config.

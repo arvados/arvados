@@ -29,6 +29,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } f
 import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
+import { InlinePulser } from "components/loading/inline-pulser";
 
 type CssRules =
     | 'titleWrapper'
@@ -145,6 +146,7 @@ interface DataExplorerDataProps<T> {
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
+    loadingItemsAvailable: boolean;
     columns: DataColumns<T, any>;
     searchLabel?: string;
     searchValue: string;
@@ -161,7 +163,7 @@ interface DataExplorerDataProps<T> {
     hideSearchInput?: boolean;
     title?: React.ReactNode;
     progressBar?: React.ReactNode;
-    paperKey?: string;
+    path?: string;
     currentRouteUuid: string;
     selectedResourceUuid: string;
     elementPath?: string;
@@ -189,6 +191,7 @@ interface DataExplorerActionProps<T> {
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     setSelectedUuid: (uuid: string) => void;
+    usesDetailsCard: (uuid: string) => boolean;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -209,10 +212,10 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
-            const { selectedResourceUuid, currentRouteUuid } = this.props;
+            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 this.setState({
-                    hideToolbar: selectedResourceUuid === this.props.currentRouteUuid,
+                    hideToolbar: usesDetailsCard(path || '') ? selectedResourceUuid === this.props.currentRouteUuid : false,
                 })
             }
             if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
@@ -238,6 +241,7 @@ export const DataExplorer = withStyles(styles)(
                 onSearch,
                 items,
                 itemsAvailable,
+                loadingItemsAvailable,
                 onRowClick,
                 onRowDoubleClick,
                 classes,
@@ -247,7 +251,7 @@ export const DataExplorer = withStyles(styles)(
                 actions,
                 paperProps,
                 hideSearchInput,
-                paperKey,
+                path,
                 fetchMode,
                 selectedResourceUuid,
                 title,
@@ -269,7 +273,7 @@ export const DataExplorer = withStyles(styles)(
                 <Paper
                     className={classNames(classes.root, paperClassName)}
                     {...paperProps}
-                    key={paperKey}
+                    key={path}
                     data-cy={this.props["data-cy"]}
                 >
                     <Grid
@@ -379,7 +383,7 @@ export const DataExplorer = withStyles(styles)(
                                 extractKey={extractKey}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
-                                currentRoute={paperKey}
+                                currentRoute={path}
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
@@ -413,8 +417,8 @@ export const DataExplorer = withStyles(styles)(
                                             page={this.props.page}
                                             onPageChange={this.changePage}
                                             onRowsPerPageChange={this.changeRowsPerPage}
-                                            // Disable next button on empty lists since that's not default behavior
-                                            nextIconButtonProps={itemsAvailable > 0 ? {} : { disabled: true }}
+                                            labelDisplayedRows={renderPaginationLabel(loadingItemsAvailable)}
+                                            nextIconButtonProps={getPaginiationButtonProps(itemsAvailable, loadingItemsAvailable)}
                                             component="div"
                                             classes={{ 
                                                 root: classes.paginationRoot,
@@ -490,4 +494,18 @@ export const DataExplorer = withStyles(styles)(
             render: this.renderContextMenuTrigger,
         };
     }
+);
+
+const renderPaginationLabel = (loading: boolean) => ({ from, to, count }) => (
+    loading ?
+        <InlinePulser/>
+        : <>{from}-{to} of {count}</>
+);
+
+const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => (
+    loading
+        ? { disabled: false } // Always allow paging while loading total
+        : itemsAvailable > 0
+            ? { }
+            : { disabled: true } // Disable next button on empty lists since that's not default behavior
 );

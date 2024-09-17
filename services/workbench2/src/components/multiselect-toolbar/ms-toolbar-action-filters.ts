@@ -16,6 +16,7 @@ import {
 import { msProcessActionSet, msCommonProcessActionFilter, msAdminProcessActionFilter, msRunningProcessActionFilter } from 'views-components/multiselect-toolbar/ms-process-action-set';
 import { msWorkflowActionSet, msWorkflowActionFilter, msReadOnlyWorkflowActionFilter } from 'views-components/multiselect-toolbar/ms-workflow-action-set';
 import { UserDetailsActionSet } from 'views-components/multiselect-toolbar/ms-user-details-action-set';
+import { msGroupActionSet } from 'views-components/multiselect-toolbar/ms-group-action-set';
 import { ResourceKind } from 'models/resource';
 import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 
@@ -36,6 +37,7 @@ const {
     READONLY_PROJECT,
     FILTER_GROUP,
     FILTER_GROUP_ADMIN,
+    GROUPS,
     WORKFLOW,
     READONLY_WORKFLOW,
 } = ContextMenuKind;
@@ -65,6 +67,8 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     
     [FILTER_GROUP]: [msProjectActionSet, msFilterGroupActionFilter],
     [FILTER_GROUP_ADMIN]: [msProjectActionSet, msAdminFilterGroupActionFilter],
+
+    [GROUPS]: [msGroupActionSet, allActionNames(msGroupActionSet)],
     
     [WORKFLOW]: [msWorkflowActionSet, msWorkflowActionFilter],
     [READONLY_WORKFLOW]: [msWorkflowActionSet, msReadOnlyWorkflowActionFilter],

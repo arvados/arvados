@@ -31,6 +31,19 @@ export abstract class DataExplorerMiddlewareService {
         return getDataExplorerColumnFilters(columns, columnName);
     }
 
+    /**
+     * Consumers can use this method to request
+     * total count separately and in parallel
+     * @param api
+     * @param criteriaChanged
+     * @param background
+     */
+    abstract requestCount(
+        api: MiddlewareAPI<Dispatch, RootState>,
+        criteriaChanged?: boolean,
+        background?: boolean
+    ): Promise<void>;
+
     abstract requestItems(
         api: MiddlewareAPI<Dispatch, RootState>,
         criteriaChanged?: boolean,
@@ -69,11 +82,17 @@ export const getOrder = <T extends Resource = Resource>(dataExplorer: DataExplor
     }
 };
 
+export type DataExplorerMeta = {
+    itemsAvailable?: number;
+    page: number;
+    rowsPerPage: number;
+}
+
 export const listResultsToDataExplorerItemsMeta = <R>({
     itemsAvailable,
     offset,
     limit,
-}: ListResults<R>) => ({
+}: ListResults<R>): DataExplorerMeta => ({
     itemsAvailable,
     page: Math.floor(offset / limit),
     rowsPerPage: limit,

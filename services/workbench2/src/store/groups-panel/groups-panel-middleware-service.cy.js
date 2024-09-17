@@ -83,11 +83,21 @@ describe("GroupsPanelMiddlewareService", () => {
         await new Promise(setImmediate);
 
         // Expect
-        expect(axiosInst.get).to.be.calledTwice;
-        expect(axiosInst.get).to.be.calledWith('/groups', Cypress.sinon.match.any);
-        expect(axiosInst.get).to.be.calledWith('/links', Cypress.sinon.match.any);
-        const group = getResource(fakeUuid)(store.getState().resources);
-        expect(group?.memberCount).to.equal(234);
+        expect(axiosInst.get).toHaveBeenCalledTimes(3);
+        expect(axiosInst.get).toHaveBeenNthCalledWith(1, '/groups', {
+            params: expect.objectContaining({
+                count: 'none',
+            }),
+        });
+        expect(axiosInst.get).toHaveBeenNthCalledWith(2, '/groups', {
+            params: expect.objectContaining({
+                count: 'exact',
+                limit: 0,
+            }),
+        });
+        expect(axiosInst.get).toHaveBeenCalledWith('/links', expect.anything());
+        const group = getResource<GroupResource>(fakeUuid)(store.getState().resources);
+        expect(group?.memberCount).toBe(234);
     });
 
     it('requests group member count and stores null on failure', async () => {
@@ -138,11 +148,21 @@ describe("GroupsPanelMiddlewareService", () => {
         await new Promise(setImmediate);
 
         // Expect
-        expect(axiosInst.get).to.be.calledTwice;
-        expect(axiosInst.get).to.be.calledWith('/groups', Cypress.sinon.match.any);
-        expect(axiosInst.get).to.be.calledWith('/links', Cypress.sinon.match.any);
-        const group = getResource(fakeUuid)(store.getState().resources);
-        expect(group?.memberCount).to.be.null;
+        expect(axiosInst.get).toHaveBeenCalledTimes(3);
+        expect(axiosInst.get).toHaveBeenNthCalledWith(1, '/groups', {
+            params: expect.objectContaining({
+                count: 'none',
+            }),
+        });
+        expect(axiosInst.get).toHaveBeenNthCalledWith(2, '/groups', {
+            params: expect.objectContaining({
+                count: 'exact',
+                limit: 0,
+            }),
+        });
+        expect(axiosInst.get).toHaveBeenCalledWith('/links', expect.anything());
+        const group = getResource<GroupResource>(fakeUuid)(store.getState().resources);
+        expect(group?.memberCount).toBe(null);
     });
 
 });

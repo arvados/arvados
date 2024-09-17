@@ -114,7 +114,7 @@ describe("DataExplorerMiddleware", () => {
         const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_FILTERS({ id: service.getId(), columnName: "", filters: createTree() }));
-        expect(api.dispatch).to.be.calledTwice;
+        expect(api.dispatch).toHaveBeenCalledTimes(3);
     });
 
     it("handles SET_ROWS_PER_PAGE action", () => {
@@ -168,7 +168,7 @@ describe("DataExplorerMiddleware", () => {
         const next = cy.stub();
         const middleware = dataExplorerMiddleware(service)(api)(next);
         middleware(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id: service.getId(), searchValue: "" }));
-        expect(api.dispatch).to.be.calledTwice;
+        expect(api.dispatch).toHaveBeenCalledTimes(3);
     });
 
     it("forwards other actions", () => {
@@ -207,4 +207,6 @@ class ServiceMock extends DataExplorerMiddlewareService {
         this.config.requestItems(api);
         return Promise.resolve();
     }
+
+    async requestCount() {}
 }

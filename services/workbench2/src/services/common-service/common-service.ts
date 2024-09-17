@@ -22,7 +22,7 @@ export interface ListArguments {
     order?: string;
     select?: string[];
     distinct?: boolean;
-    count?: string;
+    count?: 'exact' | 'none';
     includeOldVersions?: boolean;
 }
 
@@ -32,7 +32,7 @@ export interface ListResults<T> {
     offset: number;
     limit: number;
     items: T[];
-    itemsAvailable: number;
+    itemsAvailable?: number;
 }
 
 export class CommonService<T> {

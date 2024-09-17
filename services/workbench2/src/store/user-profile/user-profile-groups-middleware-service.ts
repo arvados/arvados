@@ -23,55 +23,61 @@ export class UserProfileGroupsMiddlewareService extends DataExplorerMiddlewareSe
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const state = api.getState();
         const userUuid = getCurrentUserProfilePanelUuid(state.properties);
-        try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+        if (userUuid) {
+            try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
 
-            // Get user
-            const user = await this.services.userService.get(userUuid || '');
-            api.dispatch(updateResources([user]));
+                // Get user
+                const user = await this.services.userService.get(userUuid);
+                api.dispatch(updateResources([user]));
 
-            // Get user's group memberships
-            const groupMembershipLinks = await this.services.permissionService.list({
-                filters: new FilterBuilder()
-                    .addEqual('tail_uuid', userUuid)
-                    .addEqual('link_class', LinkClass.PERMISSION)
-                    .addEqual('head_kind', ResourceKind.GROUP)
-                    .getFilters()
-            });
-            // Update resources, includes "project" groups
-            api.dispatch(updateResources(groupMembershipLinks.items));
+                // Get user's group memberships
+                const groupMembershipLinks = await this.services.permissionService.list({
+                    filters: new FilterBuilder()
+                        .addEqual('tail_uuid', userUuid)
+                        .addEqual('link_class', LinkClass.PERMISSION)
+                        .addEqual('head_kind', ResourceKind.GROUP)
+                        .getFilters()
+                });
+                // Update resources, includes "project" groups
+                api.dispatch(updateResources(groupMembershipLinks.items));
 
-            // Get user's groups details and filter to role groups
-            const groups = await this.services.groupsService.list({
-                filters: new FilterBuilder()
-                    .addIn('uuid', groupMembershipLinks.items
-                        .map(item => item.headUuid))
-                    .addEqual('group_class', GroupClass.ROLE)
-                    .getFilters(),
-                count: "none"
-            });
-            api.dispatch(updateResources(groups.items));
+                // Get user's groups details and filter to role groups
+                const groups = await this.services.groupsService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', groupMembershipLinks.items
+                            .map(item => item.headUuid))
+                        .addEqual('group_class', GroupClass.ROLE)
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(updateResources(groups.items));
 
-            // Get permission links for only role groups
-            const roleGroupMembershipLinks = await this.services.permissionService.list({
-                filters: new FilterBuilder()
-                    .addIn('head_uuid', groups.items.map(item => item.uuid))
-                    .addEqual('tail_uuid', userUuid)
-                    .addEqual('link_class', LinkClass.PERMISSION)
-                    .addEqual('head_kind', ResourceKind.GROUP)
-                    .getFilters()
-            });
+                // Get permission links for only role groups
+                const roleGroupMembershipLinks = await this.services.permissionService.list({
+                    filters: new FilterBuilder()
+                        .addIn('head_uuid', groups.items.map(item => item.uuid))
+                        .addEqual('tail_uuid', userUuid)
+                        .addEqual('link_class', LinkClass.PERMISSION)
+                        .addEqual('head_kind', ResourceKind.GROUP)
+                        .getFilters()
+                });
 
-            api.dispatch(UserProfileGroupsActions.SET_ITEMS({
-                ...listResultsToDataExplorerItemsMeta(roleGroupMembershipLinks),
-                items: roleGroupMembershipLinks.items.map(item => item.uuid),
-            }));
-        } catch {
-            api.dispatch(couldNotFetchGroups());
-        } finally {
-            api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
+                api.dispatch(UserProfileGroupsActions.SET_ITEMS({
+                    ...listResultsToDataExplorerItemsMeta(roleGroupMembershipLinks),
+                    items: roleGroupMembershipLinks.items.map(item => item.uuid),
+                }));
+            } catch {
+                api.dispatch(couldNotFetchGroups());
+            } finally {
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
+            }
         }
     }
+
+    // Groups are filtered from a list request
+    // and cannot currently support separate count requests
+    async requestCount() {}
 }
 
 const couldNotFetchGroups = () =>

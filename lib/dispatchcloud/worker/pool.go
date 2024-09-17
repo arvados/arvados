@@ -184,7 +184,7 @@ type Pool struct {
 	atQuotaUntilFewerInstances int
 	atQuotaUntil               time.Time
 	atQuotaErr                 cloud.QuotaError
-	atCapacityUntil            map[string]time.Time
+	atCapacityUntil            map[interface{}]time.Time
 	stop                       chan bool
 	mtx                        sync.RWMutex
 	setupOnce                  sync.Once
@@ -383,14 +383,16 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 				}
 			}
 			if err, ok := err.(cloud.CapacityError); ok && err.IsCapacityError() {
-				capKey := it.ProviderType
-				if !err.IsInstanceTypeSpecific() {
-					// set capacity flag for all
-					// instance types
+				var capKey interface{} = it.ProviderType
+				if err.IsInstanceTypeSpecific() {
+					capKey = it.ProviderType
+				} else if err.IsInstanceQuotaGroupSpecific() {
+					capKey = wp.instanceSet.InstanceQuotaGroup(it)
+				} else {
 					capKey = ""
 				}
 				if wp.atCapacityUntil == nil {
-					wp.atCapacityUntil = map[string]time.Time{}
+					wp.atCapacityUntil = map[interface{}]time.Time{}
 				}
 				wp.atCapacityUntil[capKey] = time.Now().Add(capacityErrorTTL)
 				time.AfterFunc(capacityErrorTTL, wp.notify)
@@ -412,13 +414,14 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 func (wp *Pool) AtCapacity(it arvados.InstanceType) bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	if t, ok := wp.atCapacityUntil[it.ProviderType]; ok && time.Now().Before(t) {
-		// at capacity for this instance type
-		return true
-	}
-	if t, ok := wp.atCapacityUntil[""]; ok && time.Now().Before(t) {
-		// at capacity for all instance types
-		return true
+	for _, capKey := range []interface{}{
+		"",                                    // all instance types
+		wp.instanceSet.InstanceQuotaGroup(it), // instance quota group
+		it.ProviderType,                       // just this instance type
+	} {
+		if t, ok := wp.atCapacityUntil[capKey]; ok && time.Now().Before(t) {
+			return true
+		}
 	}
 	return false
 }

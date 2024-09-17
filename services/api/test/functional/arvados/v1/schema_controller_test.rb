@@ -78,14 +78,16 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     get :index
     assert_response :success
 
-    discovery_doc = JSON.parse(@response.body)
+    groups_methods = JSON.parse(@response.body)['resources']['groups']['methods']
+    group_index_params = groups_methods['list']['parameters'].each_pair.to_a
+    group_contents_params = groups_methods['contents']['parameters'].each_pair.to_a
 
-    group_index_params = discovery_doc['resources']['groups']['methods']['list']['parameters']
-    group_contents_params = discovery_doc['resources']['groups']['methods']['contents']['parameters']
+    assert_equal(
+      group_contents_params & group_index_params, group_index_params,
+      "group contents methods does not take all the same parameters index does",
+    )
 
-    assert_equal group_contents_params.keys.sort, (group_index_params.keys + ['uuid', 'recursive', 'include', 'include_old_versions']).sort
-
-    recursive_param = group_contents_params['recursive']
+    recursive_param = groups_methods['contents']['parameters']['recursive']
     assert_equal 'boolean', recursive_param['type']
     assert_equal false, recursive_param['required']
     assert_equal 'query', recursive_param['location']

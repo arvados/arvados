@@ -59,6 +59,10 @@ class Arvados::V1::LinksController < ApplicationController
     super
   end
 
+  def self._get_permissions_method_description
+    "List permissions granted on an Arvados object."
+  end
+
   def get_permissions
     if current_user.andand.can?(manage: @object)
       # find all links and return them
