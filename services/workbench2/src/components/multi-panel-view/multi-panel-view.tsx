@@ -15,7 +15,6 @@ import classNames from 'classnames';
 
 type CssRules =
     | 'root'
-    | 'buttonRow'
     | 'gridContainerRoot'
     | 'exclusiveGridContainerRoot'
     | 'gridItemRoot'
@@ -24,17 +23,17 @@ type CssRules =
     | 'buttonIcon'
     | 'content'
     | 'exclusiveContentPaper'
+    | 'exclusiveContent'
+    | 'buttonBarGridContainer'
     | 'tabs';
 
 const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
         marginTop: '0',
     },
-    buttonRow: {
-        marginBottom: '15px',
-    },
     gridContainerRoot: {
-        marginTop: '10px',
+        margin: '10px -4px -4px',
+        width: 'calc(100% + 8px) !important',
     },
     exclusiveGridContainerRoot: {
         marginTop: 0,
@@ -58,10 +57,18 @@ const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     },
     content: {
         overflow: 'auto',
-        maxWidth: 'initial',
+        margin: '-4px',
+        padding: '4px !important',
+    },
+    exclusiveContent: {
+        overflow: 'auto',
+        margin: 0,
     },
     exclusiveContentPaper: {
         boxShadow: 'none',
+    },
+    buttonBarGridContainer: {
+        padding: '4px !important',
     },
     tabs: {
         flexGrow: 1,
@@ -141,7 +148,7 @@ export const MPVPanelContent = ({ doHidePanel, doMaximizePanel, doUnMaximizePane
         ? '100%'
         : maxHeight;
 
-    return <Grid item style={{ maxHeight: maxH, minHeight }} {...props}>
+    return <Grid item style={{ maxHeight: maxH, minHeight, padding: '4px' }} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{ height: '100%' }} elevation={panelIlluminated ? 8 : 0}>
             {forwardProps
@@ -277,12 +284,12 @@ const MPVContainerComponent = ({ children, panelStates, classes, ...props }: MPV
             <Tabs value={currentSelectedPanel} onChange={(e, val) => showFn(val)()} data-cy={"mpv-tabs"}>
                 {tabs.map((tgl, idx) => <Tab className={classes.tabs} key={idx} label={tgl} />)}
             </Tabs> :
-            <Grid container item direction="row">
+            <Grid container item direction="row" className={classes.buttonBarGridContainer}>
                 {buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>)}
             </Grid>;
     };
 
-    const content = <Grid container item {...props} xs className={classes.content}
+    const content = <Grid container item {...props} xs className={props.mutuallyExclusive ? classes.exclusiveContent : classes.content}
         onScroll={() => setSelectedPanel(-1)}>
         {panelVisibility.includes(true)
             ? panels
