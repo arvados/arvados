@@ -1,16 +1,18 @@
 Package: ArvadosR
 Type: Package
 Title: Arvados R SDK
-Version: 2.6.0
+Version: 3.0.0
 Authors@R: c(person("Fuad", "Muhic", role = c("aut", "ctr"), email = "fmuhic@capeannenterprises.com"),
              person("Peter", "Amstutz", role = c("cre"), email = "peter.amstutz@curii.com"),
              person("Piotr", "Nowosielski", role = c("aut"), email = "piotr.nowosielski@contractors.roche.com"),
-             person("Aneta", "Stanczyk", role = c("aut"), email = "aneta.stanczyk@contractors.roche.com"))
+             person("Aneta", "Stanczyk", role = c("aut"), email = "aneta.stanczyk@contractors.roche.com"),
+             person("Brett", "Smith", role = c("aut"), email = "brett.smith@curii.com"))
 Description: This is the Arvados R SDK
 URL: http://doc.arvados.org
 License: Apache-2.0
 Encoding: UTF-8
 LazyData: true
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
     R6,
