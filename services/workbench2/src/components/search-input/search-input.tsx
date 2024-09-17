@@ -87,7 +87,7 @@ export const SearchInput = (props: SearchInputProps) => {
                     value={value}
                     onChange={handleChange}
                     endAdornment={
-                        <InputAdornment position="end">
+                        <InputAdornment position="end" style={{marginRight: '-0.6rem'}}>
                             <Tooltip title='Search'>
                                 <IconButton onClick={handleSubmit} size="large">
                                     <SearchIcon />
