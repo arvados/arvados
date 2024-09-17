@@ -31,7 +31,7 @@ import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
-import { CustomTheme } from "common/custom-theme";
+import { CustomTheme, ArvadosTheme } from "common/custom-theme";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -81,7 +81,7 @@ type CssRules =
     | "arrowButton"
     | "tableCellWorkflows";
 
-const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: "100%",
     },
@@ -125,7 +125,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: Theme) => ({
     tableCell: {
         wordWrap: "break-word",
         paddingRight: "24px",
-        color: "#737373",
     },
     firstTableCell: {
         paddingLeft: "5px",

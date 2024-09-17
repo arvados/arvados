@@ -59,6 +59,7 @@ import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
+import { CustomTheme } from "common/custom-theme";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -79,7 +80,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             wrap="nowrap"
             spacing={2}
         >
-            <Grid item>{renderIcon(item)}</Grid>
+            <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(item)}</Grid>
             <Grid item>
                 <Typography
                     color="primary"
