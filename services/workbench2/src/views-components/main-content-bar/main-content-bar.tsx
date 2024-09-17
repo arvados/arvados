@@ -77,17 +77,5 @@ export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withS
                     props.onRefreshButtonClick(props.projectUuid);
                 }} />
             </Grid>
-            <Grid item>
-                {props.buttonVisible && <Tooltip title="Additional Info" disableFocusListener>
-                    <IconButton
-                        data-cy="additional-info-icon"
-                        color="inherit"
-                        className={props.classes.infoTooltip}
-                        onClick={()=>props.onDetailsPanelToggle(props.projectUuid)}
-                        size="large">
-                        <DetailsIcon />
-                    </IconButton>
-                </Tooltip>}
-            </Grid>
         </Grid></Toolbar>
 ));
