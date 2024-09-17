@@ -12,7 +12,7 @@ import { updateResources } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { SortDirection } from 'components/data-table/data-column';
 import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
-import { ListResults } from 'services/common-service/common-service';
+import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { userBindedActions } from 'store/users/users-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { UserResource } from 'models/user';
@@ -20,22 +20,23 @@ import { UserPanelColumnNames } from 'views/user-panel/user-panel';
 import { BuiltinGroups, getBuiltinGroupUuid } from 'models/group';
 import { LinkClass } from 'models/link';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class UserMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const users = await this.services.userService.list(getParams(dataExplorer));
             api.dispatch(updateResources(users.items));
             api.dispatch(setItems(users));
 
-            // Get "all users" group memberships
+            // Get "all users" group memberships for account status
             const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
             const allUserMemberships = await this.services.permissionService.list({
                 filters: new FilterBuilder()
@@ -50,14 +51,42 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
+
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.userService.list(getCountParams(dataExplorer))
+                .then((results: ListResults<UserResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(userBindedActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
+    }
 }
 
-const getParams = (dataExplorer: DataExplorer) => ({
-    ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
-    filters: new FilterBuilder()
+const getFilters = (dataExplorer: DataExplorer) => (
+    new FilterBuilder()
         .addFullTextSearch(dataExplorer.searchValue)
         .getFilters()
+);
+
+const getParams = (dataExplorer: DataExplorer): ListArguments => ({
+    ...dataExplorerToListParams(dataExplorer),
+    order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer),
+    count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer): ListArguments => ({
+    limit: 0,
+    count: 'exact',
+    filters: getFilters(dataExplorer),
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {

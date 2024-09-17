@@ -2,9 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams, getDataExplorerColumnFilters } from '../data-explorer/data-explorer-middleware-service';
-import { ServiceRepository } from 'services/services';
-import { MiddlewareAPI, Dispatch } from 'redux';
+import {
+    DataExplorerMiddlewareService,
+    listResultsToDataExplorerItemsMeta,
+    dataExplorerToListParams,
+    getDataExplorerColumnFilters,
+} from "../data-explorer/data-explorer-middleware-service";
+import { ServiceRepository } from "services/services";
+import { MiddlewareAPI, Dispatch } from "redux";
 import { RootState } from 'store/store';
 import { getDataExplorer, DataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateFavorites } from 'store/favorites/favorites-actions';
@@ -13,7 +18,7 @@ import { loadMissingProcessesInformation } from 'store/project-panel/project-pan
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from 'services/common-service/common-service';
-import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
 import { SortDirection } from 'components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
@@ -25,17 +30,18 @@ import { AuthState } from 'store/auth/auth-reducer';
 import { SharedWithMePanelColumnNames } from 'views/shared-with-me-panel/shared-with-me-panel';
 import { buildProcessStatusFilters, serializeResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { DataColumns } from 'components/data-table/data-table';
+import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
             const response = await this.services.groupsService
                 .contents('', getParams(dataExplorer, state.auth));
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
@@ -49,15 +55,37 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
         }
     }
+
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.groupsService.contents('', getCountParams(dataExplorer, state.auth))
+                .then((results: ListResults<GroupContentsResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(sharedWithMePanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                })
+        }
+    }
 }
 
-export const getParams = (dataExplorer: DataExplorer, authState: AuthState) => ({
+export const getParams = (dataExplorer: DataExplorer, authState: AuthState): ContentsArguments => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
-    filters: joinFilters(
-        getFilters(dataExplorer),
-        new FilterBuilder().addDistinct('uuid', `${authState.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters(),
-    ),
+    filters: getFilters(dataExplorer, authState),
+    excludeHomeProject: true,
+    count: "none",
+});
+
+const getCountParams = (dataExplorer: DataExplorer, authState: AuthState): ContentsArguments => ({
+    limit: 0,
+    count: 'exact',
+    filters: getFilters(dataExplorer, authState),
     excludeHomeProject: true,
 });
 
@@ -81,7 +109,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
     }
 };
 
-const getFilters = (dataExplorer: DataExplorer) => {
+const getFilters = (dataExplorer: DataExplorer, authState: AuthState) => {
     const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SharedWithMePanelColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, "Status");
@@ -97,7 +125,10 @@ const getFilters = (dataExplorer: DataExplorer) => {
     // Filter by container status
     const statusFilters = buildProcessStatusFilters(new FilterBuilder(), activeStatusFilter || "", GroupContentsResourcePrefix.PROCESS).getFilters();
 
-    return joinFilters(statusFilters, typeFilters, nameFilters);
+    // Filter public favorites
+    const favoritesFilter = new FilterBuilder().addDistinct('uuid', `${authState.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters()
+
+    return joinFilters(statusFilters, typeFilters, nameFilters, favoritesFilter);
 };
 
 

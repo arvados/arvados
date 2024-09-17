@@ -810,6 +810,7 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(async (dispatch: 
 });
 
 export const loadGroupsPanel = handleFirstTimeLoad((dispatch: Dispatch<any>) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.GROUPS));
     dispatch(setGroupsBreadcrumbs());
     dispatch(groupPanelActions.loadGroupsPanel());
 });

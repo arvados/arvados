@@ -208,7 +208,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: itemLimit });
             dispatch<any>(updateResources(items));
 
-            if (itemsAvailable > itemLimit) {
+            if (itemsAvailable !== undefined && itemsAvailable > itemLimit) {
                 items.push({
                     uuid: "more-items-available",
                     kind: ResourceKind.WORKFLOW,

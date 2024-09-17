@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { dataExplorerReducer, initialDataExplorer } from "./data-explorer-reducer";
-import { dataExplorerActions } from "./data-explorer-action";
+import { dataExplorerActions, DataTableRequestState } from "./data-explorer-action";
 import { DataTableFilterItem } from "../../components/data-table-filters/data-table-filters";
 import { DataColumns } from "../../components/data-table/data-table";
 import { SortDirection } from "../../components/data-table/data-column";
@@ -65,7 +65,12 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should set items', () => {
-        const state = dataExplorerReducer({},
+        let state = dataExplorerReducer({},
+            dataExplorerActions.SET_REQUEST_STATE({
+                id: "Data explorer",
+                requestState: DataTableRequestState.PENDING
+            }));
+        state = dataExplorerReducer(state,
             dataExplorerActions.SET_ITEMS({
                 id: "Data explorer",
                 items: ["Item 1", "Item 2"],
