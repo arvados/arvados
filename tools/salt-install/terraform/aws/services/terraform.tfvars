@@ -46,3 +46,6 @@
 
 # Instance AMI to use for service nodes. Default: latest from Debian 11
 # instance_ami = "ami-0481e8ba7f486bd99"
+
+# Customer-managed Key to use for volume encryption.
+# cmk_arn = "arn:aws:kms:...."
