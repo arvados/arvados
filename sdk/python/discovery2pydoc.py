@@ -83,11 +83,20 @@ _DEPRECATED_SCHEMAS = frozenset(
     for schema_name in iter_resource_schemas(resource_name)
 )
 
-_LIST_PYDOC = '''
+_LIST_UTIL_METHODS = {
+    'ComputedPermissionList': 'arvados.util.iter_computed_permissions',
+    'ComputedPermissions': 'arvados.util.iter_computed_permissions',
+}
+_LIST_METHOD_PYDOC = '''
+This method returns a single page of `{cls_name}` objects that match your search
+criteria. If you just want to iterate all objects that match your search
+criteria, consider using `{list_util_func}`.
+'''
+_LIST_SCHEMA_PYDOC = '''
 
 This is the dictionary object returned when you call `{cls_name}s.list`.
 If you just want to iterate all objects that match your search criteria,
-consider using `arvados.util.keyset_list_all`.
+consider using `{list_util_func}`.
 If you work with this raw object, the keys of the dictionary are documented
 below, along with their types. The `items` key maps to a list of matching
 `{cls_name}` objects.
@@ -201,18 +210,18 @@ class Parameter(inspect.Parameter):
         self._spec = spec
         if keyword.iskeyword(name):
             name += '_'
+        annotation = get_type_annotation(self._spec['type'])
+        if self.is_required():
+            default = inspect.Parameter.empty
+        else:
+            default = self.default_value()
+            if default is None:
+                annotation = f'Optional[{annotation}]'
         super().__init__(
             name,
             inspect.Parameter.KEYWORD_ONLY,
-            annotation=get_type_annotation(self._spec['type']),
-            # In normal Python the presence of a default tells you whether or
-            # not an argument is required. In the API the `required` flag tells
-            # us that, and defaults are specified inconsistently. Don't show
-            # defaults in the signature: it adds noise and makes things more
-            # confusing for the reader about what's required and what's
-            # optional. The docstring can explain in better detail, including
-            # the default value.
-            default=inspect.Parameter.empty,
+            annotation=annotation,
+            default=default,
         )
 
     @classmethod
@@ -238,34 +247,37 @@ Its value is a `{val_type}` dictionary defining the attributes to set.""",
             src_value: str = self._spec['default']
         except KeyError:
             return None
-        if src_value == 'true':
-            return True
-        elif src_value == 'false':
-            return False
-        elif src_value.isdigit():
-            return int(src_value)
-        else:
+        try:
+            return json.loads(src_value)
+        except ValueError:
             return src_value
 
     def is_required(self) -> bool:
         return self._spec['required']
 
     def doc(self) -> str:
-        default_value = self.default_value()
-        if default_value is None:
+        if self.default is None or self.default is inspect.Parameter.empty:
             default_doc = ''
         else:
-            default_doc = f"Default {default_value!r}."
-        description = self._spec['description']
-        doc_parts = [f'{self.api_name}: {self.annotation}']
-        if description or default_doc:
-            doc_parts.append('---')
-            if description:
-                doc_parts.append(description)
-            if default_doc:
-                doc_parts.append(default_doc)
+            default_doc = f"Default `{self.default!r}`."
+        description = self._spec['description'].rstrip()
+        # Does the description contain multiple paragraphs of real text
+        # (excluding, e.g., hyperlink targets)?
+        if re.search(r'\n\s*\n\s*[\w*]', description):
+            # Yes: append the default doc as a separate paragraph.
+            description += f'\n\n{default_doc}'
+        else:
+            # No: append the default doc to the first (and only) paragraph.
+            description = re.sub(
+                r'(\n\s*\n|\s*$)',
+                rf' {default_doc}\1',
+                description,
+                count=1,
+            )
+        # Align all lines with the list bullet we're formatting it in.
+        description = re.sub(r'\n(\S)', r'\n  \1', description)
         return f'''
-* {' '.join(doc_parts)}
+* {self.api_name}: {self.annotation} --- {description}
 '''
 
 
@@ -274,10 +286,12 @@ class Method:
             self,
             name: str,
             spec: Mapping[str, Any],
+            cls_name: Optional[str]=None,
             annotate: Callable[[Annotation], Annotation]=str,
     ) -> None:
         self.name = name
         self._spec = spec
+        self.cls_name = cls_name
         self._annotate = annotate
         self._required_params = []
         self._optional_params = []
@@ -317,6 +331,15 @@ class Method:
         doc_lines = self._spec['description'].splitlines(keepends=True)[doc_slice]
         if not doc_lines[-1].endswith('\n'):
             doc_lines.append('\n')
+        try:
+            returns_list = self._spec['response']['$ref'].endswith('List')
+        except KeyError:
+            returns_list = False
+        if returns_list and self.cls_name is not None:
+            doc_lines.append(_LIST_METHOD_PYDOC.format(
+                cls_name=self.cls_name[:-1],
+                list_util_func=_LIST_UTIL_METHODS.get(self.cls_name, 'arvados.util.keyset_list_all'),
+            ))
         if self._required_params:
             doc_lines.append("\nRequired parameters:\n")
             doc_lines.extend(param.doc() for param in self._required_params)
@@ -334,12 +357,12 @@ def document_schema(name: str, spec: Mapping[str, Any]) -> str:
     if name in _DEPRECATED_SCHEMAS:
         description += _DEPRECATED_NOTICE
     if name.endswith('List'):
-        desc_fmt = _LIST_PYDOC
-        cls_name = name[:-4]
+        description += _LIST_SCHEMA_PYDOC.format(
+            cls_name=name[:-4],
+            list_util_func=_LIST_UTIL_METHODS.get(name, 'arvados.util.keyset_list_all'),
+        )
     else:
-        desc_fmt = _SCHEMA_PYDOC
-        cls_name = name
-    description += desc_fmt.format(cls_name=cls_name)
+        description += _SCHEMA_PYDOC.format(cls_name=name)
     lines = [
         f"class {name}(TypedDict, total=False):",
         to_docstring(description, 4),
@@ -374,7 +397,7 @@ def document_resource(name: str, spec: Mapping[str, Any]) -> str:
     if class_name in _DEPRECATED_RESOURCES:
         docstring += _DEPRECATED_NOTICE
     methods = [
-        Method(key, meth_spec, 'ArvadosAPIRequest[{}]'.format)
+        Method(key, meth_spec, class_name, 'ArvadosAPIRequest[{}]'.format)
         for key, meth_spec in spec['methods'].items()
         if key not in _ALIASED_METHODS
     ]
@@ -466,7 +489,7 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
                 '$ref': class_name,
             },
         }
-        print(Method(name, method_spec).doc(), file=args.out_file)
+        print(Method(name, method_spec).doc(), end='', file=args.out_file)
 
     args.out_file.close()
     return os.EX_OK
