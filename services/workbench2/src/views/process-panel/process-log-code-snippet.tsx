@@ -38,7 +38,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     logText: {
         color: '#fff',
-        paddingY: theme.spacing(0.5),
+        paddingY: theme.spacing(0, 0.5),
+        display: 'block',
     },
     wordWrapOn: {
         overflowWrap: 'anywhere',
