@@ -6,7 +6,6 @@ import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
 import { updateResources } from "store/resources/resources-actions";
-import { Process } from "./process";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
@@ -21,8 +20,7 @@ import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutpu
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
-import { ContainerResource } from "models/container";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { ContainerRequestState } from "models/container-request";
 import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { Resource, ResourceKind } from "models/resource";

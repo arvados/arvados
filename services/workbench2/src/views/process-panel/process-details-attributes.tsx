@@ -10,7 +10,7 @@ import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
 import { CollectionName, ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
-import { Process, getProcess, getProcessStatus, ProcessProperties } from "store/processes/process";
+import { getProcess, getProcessStatus, ProcessProperties } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
@@ -134,7 +134,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 props.pollSchedulingStatus(containerRequest.uuid)
             ), isProcessScheduling(container) ? 5000 : null);
 
-            if (containerRequest.state == ContainerRequestState.UNCOMMITTED) {
+            if (containerRequest.state === ContainerRequestState.UNCOMMITTED) {
                 schedulingStatus = "In draft state, not ready to run";
             }
 
