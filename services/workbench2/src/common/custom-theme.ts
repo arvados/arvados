@@ -131,7 +131,8 @@ export const themeOptions: ArvadosThemeOptions = {
         MuiListItemIcon: {
             root: {
                 fontSize: '1.25rem',
-                marginRight: '-18px'
+                minWidth: 0,
+                marginRight: '16px'
             }
         },
         MuiCardHeader: {
