@@ -4,10 +4,9 @@
 
 import React from "react";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Toolbar, IconButton, Tooltip, Grid } from "@mui/material";
+import { Toolbar, Grid } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
-import { DetailsIcon } from "components/icon/icon";
 import { Breadcrumbs } from "views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';

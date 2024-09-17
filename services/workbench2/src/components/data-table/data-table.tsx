@@ -11,7 +11,6 @@ import {
     TableCell,
     TableHead,
     TableSortLabel,
-    Theme,
     IconButton,
     Tooltip,
 } from "@mui/material";
