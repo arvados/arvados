@@ -199,7 +199,7 @@ resource "aws_iam_policy_attachment" "compute_node_cmk_access_attachment" {
 
 resource "aws_iam_policy_attachment" "dispatcher_cmk_access_attachment" {
   count = var.cmk_arn == "" ? 0 : 1
-  name = "${local.cluster_name}_dispatchercmk_access_attachment"
+  name = "${local.cluster_name}_dispatcher_cmk_access_attachment"
   roles = [ aws_iam_role.cloud_dispatcher_iam_role.name ]
   policy_arn = aws_iam_policy.cmk_access[0].arn
 }
