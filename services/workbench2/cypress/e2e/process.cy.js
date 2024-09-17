@@ -327,28 +327,28 @@ describe("Process tests", function () {
 
             // Queued container
             const crQueued = `Test process ${Math.floor(Math.random() * 999999)}`;
-            const fakeCrUuid = "zzzzz-dz642-000000000000001";
+            const fakeCtrUuid = "zzzzz-dz642-000000000000001";
             createContainerRequest(activeUser, crQueued, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
                 containerRequest
             ) {
                 // Fake container uuid
-                cy.intercept({ method: "GET", url: `**/arvados/v1/container_requests/${containerRequest.uuid}` }, req => {
+                cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*${containerRequest.uuid}*` }, req => {
                     req.on('response', res => {
-                        res.body.output_uuid = fakeCrUuid;
-                        res.body.priority = 500;
-                        res.body.state = "Committed";
+                        if (!res.body.items) {
+                            return;
+                        }
+                        res.body.items.forEach(item => {
+                            item.container_uuid = fakeCtrUuid;
+                            item.priority = 500;
+                            item.state = "Committed";
+                        });
+                        if (!res.body.included) {
+                            return;
+                        }
+                        const container = getFakeContainer(fakeCtrUuid);
+                        res.body.included = [{ ...container, state: "Queued", priority: 500 }];
                     });
                 });
-
-                // Fake container
-                const container = getFakeContainer(fakeCrUuid);
-                cy.intercept(
-                    { method: "GET", url: `**/arvados/v1/container/${fakeCrUuid}` },
-                    {
-                        statusCode: 200,
-                        body: { ...container, state: "Queued", priority: 500 },
-                    }
-                );
 
                 // Navigate to process and verify cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -359,28 +359,28 @@ describe("Process tests", function () {
 
             // Locked container
             const crLocked = `Test process ${Math.floor(Math.random() * 999999)}`;
-            const fakeCrLockedUuid = "zzzzz-dz642-000000000000002";
+            const fakeCtrLockedUuid = "zzzzz-dz642-000000000000002";
             createContainerRequest(activeUser, crLocked, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
                 containerRequest
             ) {
                 // Fake container uuid
-                cy.intercept({ method: "GET", url: `**/arvados/v1/container_requests/${containerRequest.uuid}` }, req => {
+                cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*${containerRequest.uuid}*` }, req => {
                     req.on('response', res => {
-                        res.body.output_uuid = fakeCrLockedUuid;
-                        res.body.priority = 500;
-                        res.body.state = "Committed";
+                        if (!res.body.items) {
+                            return;
+                        }
+                        res.body.items.forEach(item => {
+                            item.container_uuid = fakeCtrLockedUuid;
+                            item.priority = 500;
+                            item.state = "Committed";
+                        });
+                        if (!res.body.included) {
+                            return;
+                        }
+                        const container = getFakeContainer(fakeCtrLockedUuid);
+                        res.body.included = [{ ...container, state: "Locked", priority: 500 }];
                     });
                 });
-
-                // Fake container
-                const container = getFakeContainer(fakeCrLockedUuid);
-                cy.intercept(
-                    { method: "GET", url: `**/arvados/v1/container/${fakeCrLockedUuid}` },
-                    {
-                        statusCode: 200,
-                        body: { ...container, state: "Locked", priority: 500 },
-                    }
-                );
 
                 // Navigate to process and verify cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -391,28 +391,28 @@ describe("Process tests", function () {
 
             // On Hold container
             const crOnHold = `Test process ${Math.floor(Math.random() * 999999)}`;
-            const fakeCrOnHoldUuid = "zzzzz-dz642-000000000000003";
+            const fakeCtrOnHoldUuid = "zzzzz-dz642-000000000000003";
             createContainerRequest(activeUser, crOnHold, "arvados/jobs", ["echo", "hello world"], false, "Committed").then(function (
                 containerRequest
             ) {
                 // Fake container uuid
-                cy.intercept({ method: "GET", url: `**/arvados/v1/container_requests/${containerRequest.uuid}` }, req => {
+                cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*${containerRequest.uuid}*` }, req => {
                     req.on('response', res => {
-                        res.body.output_uuid = fakeCrOnHoldUuid;
-                        res.body.priority = 0;
-                        res.body.state = "Committed";
+                        if (!res.body.items) {
+                            return;
+                        }
+                        res.body.items.forEach(item => {
+                            item.container_uuid = fakeCtrOnHoldUuid;
+                            item.priority = 0;
+                            item.state = "Committed";
+                        });
+                        if (!res.body.included) {
+                            return;
+                        }
+                        const container = getFakeContainer(fakeCtrOnHoldUuid);
+                        res.body.included = [{ ...container, state: "Queued", priority: 0 }];
                     });
                 });
-
-                // Fake container
-                const container = getFakeContainer(fakeCrOnHoldUuid);
-                cy.intercept(
-                    { method: "GET", url: `**/arvados/v1/container/${fakeCrOnHoldUuid}` },
-                    {
-                        statusCode: 200,
-                        body: { ...container, state: "Queued", priority: 0 },
-                    }
-                );
 
                 // Navigate to process and verify cancel button
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
@@ -426,9 +426,13 @@ describe("Process tests", function () {
 
     describe("Logs panel", function () {
         it("shows live process logs", function () {
-            cy.intercept({ method: "GET", url: "**/arvados/v1/containers/*" }, req => {
+            // Fake container uuid
+            cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*` }, req => {
                 req.on('response', res => {
-                    res.body.state = ContainerState.RUNNING;
+                    if (!res.body.included || res.body.included.length === 0) {
+                        return;
+                    }
+                    res.body.included[0].state = ContainerState.RUNNING;
                 });
             });
 
@@ -1334,16 +1338,20 @@ describe("Process tests", function () {
             // Get updated collection pdh
             cy.getAll("@testOutputCollection").then(([testOutputCollection]) => {
                 // Add output uuid and inputs to container request
-                cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
+                cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*` }, req => {
                     req.on('response', res => {
-                        if (!res.body.mounts) {
+                        if (res.body.included && res.body.included.length > 0) {
+                            res.body.included[0].state = ContainerState.RUNNING;
+                        }
+                        const body = res.body.items ? res.body.items[0] : res.body;
+                        if (!body || !body.mounts) {
                             return;
                         }
-                        res.body.output_uuid = testOutputCollection.uuid;
-                        res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
+                        body.output_uuid = testOutputCollection.uuid;
+                        body.mounts["/var/lib/cwl/cwl.input.json"] = {
                             content: testInputs.map(param => param.input).reduce((acc, val) => Object.assign(acc, val), {}),
                         };
-                        res.body.mounts["/var/lib/cwl/workflow.json"] = {
+                        body.mounts["/var/lib/cwl/workflow.json"] = {
                             content: {
                                 $graph: [
                                     {
@@ -1469,16 +1477,17 @@ describe("Process tests", function () {
             cy.loginAs(activeUser);
 
             // Add output uuid and inputs to container request
-            cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
+            cy.intercept({ method: "GET", url: `**/arvados/v1/groups/contents?*` }, req => {
                 req.on('response', res => {
-                    if (!res.body.mounts) {
+                    const body = res.body.items ? res.body.items[0] : res.body;
+                    if (!body || !body.mounts) {
                         return;
                     }
-                    res.body.output_uuid = fakeOutputUUID;
-                    res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
+                    body.output_uuid = fakeOutputUUID;
+                    body.mounts["/var/lib/cwl/cwl.input.json"] = {
                         content: {},
                     };
-                    res.body.mounts["/var/lib/cwl/workflow.json"] = {
+                    body.mounts["/var/lib/cwl/workflow.json"] = {
                         content: {
                             $graph: [
                                 {

@@ -46,7 +46,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const mapStateToProps = (state: RootState, props: { request: ProcessResource }) => {
+const mapStateToProps = (state: RootState, props: { request: ProcessResource, container?: ContainerResource }) => {
     const process = getProcess(props.request.uuid)(state.resources);
 
     let workflowCollection = "";
