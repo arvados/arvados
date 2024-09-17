@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { MenuItem, Divider } from "@mui/material";
+import { MenuItem } from "@mui/material";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
@@ -81,7 +81,6 @@ export const AccountMenuComponent =
                     {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
                 {user.isActive && accountMenuItems}
-                <Divider />
                 <MenuItem data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
