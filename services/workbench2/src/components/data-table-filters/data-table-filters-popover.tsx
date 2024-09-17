@@ -110,7 +110,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
             const { name, classes, defaultSelection = SelectionMode.ALL, children } = this.props;
             const isActive = getNodeDescendants('')(this.state.filters).some((f) => (defaultSelection === SelectionMode.ALL ? !f.selected : f.selected));
             return <>
-                <Tooltip disableFocusListener title='Filters'>
+                <Tooltip title='Filters'>
                     <ButtonBase className={classnames([classes.root, { [classes.active]: isActive }])} component='span' onClick={this.open} disableRipple>
                         {children}
                         <IconButton
