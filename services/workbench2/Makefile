@@ -89,7 +89,7 @@ yarn-install:
 	yarn install
 
 unit-tests: yarn-install
-	yarn test --no-watchAll --bail --ci
+	yarn test
 
 integration-tests: yarn-install check-arvados-directory
 	yarn run cypress install

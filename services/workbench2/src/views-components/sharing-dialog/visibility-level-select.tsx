@@ -3,25 +3,28 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { MenuItem, Select, withStyles, StyleRulesCallback } from '@material-ui/core';
-import Lock from '@material-ui/icons/Lock';
-import People from '@material-ui/icons/People';
-import Public from '@material-ui/icons/Public';
-import { WithStyles } from '@material-ui/core/styles';
-import { SelectProps } from '@material-ui/core/Select';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { MenuItem, Select } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import Lock from '@mui/icons-material/Lock';
+import People from '@mui/icons-material/People';
+import Public from '@mui/icons-material/Public';
+import { WithStyles } from '@mui/styles';
+import { SelectProps } from '@mui/material/Select';
 import { SelectItem } from './select-item';
 import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 
 type VisibilityLevelSelectClasses = 'root';
 
-const VisibilityLevelSelectStyles: StyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
+const VisibilityLevelSelectStyles: CustomStyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
     root: {
     }
 });
 export const VisibilityLevelSelect = withStyles(VisibilityLevelSelectStyles)(
     ({ classes, includePublic, ...props }: { includePublic: boolean } & SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
         <Select
+            variant="standard"
             {...props}
             renderValue={renderPermissionItem}
             inputProps={{ classes }}>

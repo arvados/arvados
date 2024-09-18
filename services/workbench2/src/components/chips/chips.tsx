@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Chip, Grid, StyleRulesCallback, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Chip, Grid } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
 import {
     DragSource,
     DragSourceSpec,
@@ -15,7 +17,7 @@ import {
     ConnectDropTarget
 } from 'react-dnd';
 import { compose } from 'lodash/fp';
-import { WithStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
 interface ChipsProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
@@ -28,16 +30,16 @@ interface ChipsProps<Value> {
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = ({ spacing }) => ({
+const styles: CustomStyleRulesCallback<CssRules> = ({ spacing }) => ({
     root: {
-        margin: `0px -${spacing.unit / 2}px`,
+        margin: `0px ${spacing(0.5)}`,
     },
 });
 export const Chips = withStyles(styles)(
     class Chips<Value> extends React.Component<ChipsProps<Value> & WithStyles<CssRules>> {
         render() {
             const { values, filler } = this.props;
-            return <Grid container spacing={8} className={this.props.classes.root}>
+            return <Grid container spacing={1} className={this.props.classes.root}>
                 {values && values.map(this.renderChip)}
                 {filler && <Grid item xs>{filler}</Grid>}
             </Grid>;

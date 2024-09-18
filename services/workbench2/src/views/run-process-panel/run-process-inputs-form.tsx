@@ -13,7 +13,10 @@ import { BooleanInput } from './inputs/boolean-input';
 import { FileInput } from './inputs/file-input';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
-import { Grid, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { EnumInput } from './inputs/enum-input';
 import { DirectoryInput } from './inputs/directory-input';
 import { StringArrayInput } from './inputs/string-array-input';
@@ -52,7 +55,7 @@ export const RunProcessInputsForm = compose(
     }))(
         (props: InjectedFormProps & RunProcessInputFormProps) =>
             <form>
-                <Grid container spacing={32}>
+                <Grid container spacing={4}>
                     {props.inputs.map(input =>
                         <InputItem input={input} key={input.id} />)}
                 </Grid>
@@ -60,9 +63,9 @@ export const RunProcessInputsForm = compose(
 
 type CssRules = 'inputItem';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     inputItem: {
-        marginBottom: theme.spacing.unit * 2,
+        marginBottom: theme.spacing(2),
     }
 });
 

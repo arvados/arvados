@@ -3,18 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, withStyles, StyleRulesCallback } from '@material-ui/core';
-import { WithStyles } from '@material-ui/core/styles';
-import { SvgIconProps } from '@material-ui/core/SvgIcon';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import { SvgIconProps } from '@mui/material/SvgIcon';
 
 type SelectItemClasses = 'value' | 'icon';
 
-const permissionItemStyles: StyleRulesCallback<SelectItemClasses> = theme => ({
+const permissionItemStyles: CustomStyleRulesCallback<SelectItemClasses> = theme => ({
     value: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
     },
     icon: {
-        margin: `-${theme.spacing.unit / 2}px 0`
+        margin: `${theme.spacing(0.5)} 0`
     }
 });
 

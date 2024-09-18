@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Input } from '@material-ui/core';
-import { InputProps } from '@material-ui/core/Input';
+import { Input } from '@mui/material';
+import { InputProps } from '@mui/material/Input';
 
 export class FloatInput extends React.Component<InputProps> {
     state = {

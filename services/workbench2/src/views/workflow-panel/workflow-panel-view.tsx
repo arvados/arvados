@@ -16,7 +16,7 @@ import {
 import { SortDirection } from 'components/data-table/data-column';
 import { DataColumns } from 'components/data-table/data-table';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
-import { Grid, Paper } from '@material-ui/core';
+import { Grid, Paper } from '@mui/material';
 import { WorkflowDetailsCard } from './workflow-description-card';
 import { WorkflowResource } from 'models/workflow';
 import { createTree } from 'models/tree';
@@ -122,7 +122,7 @@ export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
 ];
 
 export const WorkflowPanelView = (props: WorkflowPanelProps) => {
-    return <Grid container spacing={16} style={{ minHeight: '500px' }}>
+    return <Grid container spacing={2} style={{ minHeight: '500px' }}>
         <Grid item xs={6}>
             <DataExplorer
                 id={WORKFLOW_PANEL_ID}

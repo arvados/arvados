@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     SearchBarRecentQueries,
     SearchBarRecentQueriesActionProps
@@ -16,23 +19,23 @@ import {
 
 type CssRules = 'advanced' | 'label' | 'root';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
+const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         root: {
             color: theme.palette.common.black,
-            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+            borderRadius: `0 0 ${theme.spacing(0.5)} ${theme.spacing(0.5)}`
         },
         advanced: {
             display: 'flex',
             justifyContent: 'flex-end',
-            padding: theme.spacing.unit,
+            padding: theme.spacing(1),
             fontSize: '0.875rem',
             cursor: 'pointer',
             color: theme.palette.primary.main
         },
         label: {
             fontSize: '0.775rem',
-            padding: `${theme.spacing.unit}px ${theme.spacing.unit}px `,
+            padding: `${theme.spacing(1)} ${theme.spacing(1)} `,
             color: theme.palette.grey["900"],
             background: 'white',
             textAlign: 'right',

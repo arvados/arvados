@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import { withDialog } from "store/dialog/with-dialog";
 import { dialogActions } from "store/dialog/dialog-actions";
 

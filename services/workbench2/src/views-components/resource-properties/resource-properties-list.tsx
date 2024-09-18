@@ -5,11 +5,9 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-import {
-    withStyles,
-    StyleRulesCallback,
-    WithStyles,
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
@@ -18,10 +16,10 @@ import { formValueSelector } from 'redux-form';
 
 type CssRules = 'tag';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
-        marginRight: theme.spacing.unit,
-        marginBottom: theme.spacing.unit
+        marginRight: theme.spacing(1),
+        marginBottom: theme.spacing(1)
     }
 });
 

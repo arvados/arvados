@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Tooltip, IconButton } from '@material-ui/core';
+import { Tooltip, IconButton } from '@mui/material';
 import { connect } from 'react-redux';
 import { toggleSidePanel } from "store/side-panel/side-panel-action";
 import { RootState } from 'store/store';
@@ -31,16 +31,22 @@ const SidePanelToggle = (props: collapseButtonProps) => {
         },
     }
 
-    return <Tooltip disableFocusListener title="Toggle Side Panel">
-        <IconButton data-cy="side-panel-toggle" style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
-            <div>
-                {props.isCollapsed ?
-                    <img style={{...collapseButtonIconStyles.icon, marginLeft:'0.25rem'}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>
-                    :
-                    <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)"}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>}
-            </div>
-        </IconButton>
-    </Tooltip>
+    return (
+        <Tooltip disableFocusListener title="Toggle Side Panel">
+            <IconButton
+                data-cy="side-panel-toggle"
+                style={collapseButtonIconStyles.root}
+                onClick={() => { props.toggleSidePanel(props.isCollapsed) }}
+                size="large">
+                <div>
+                    {props.isCollapsed ?
+                        <img style={{...collapseButtonIconStyles.icon, marginLeft:'0.25rem'}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>
+                        :
+                        <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)"}} src='/mui-start-icon.svg' alt='an arrow pointing right'/>}
+                </div>
+            </IconButton>
+        </Tooltip>
+    );
 };
 
 const mapStateToProps = (state: RootState) => {

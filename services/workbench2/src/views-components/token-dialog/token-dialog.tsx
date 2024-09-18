@@ -3,17 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    Dialog,
-    DialogActions,
-    DialogTitle,
-    DialogContent,
-    WithStyles,
-    withStyles,
-    StyleRulesCallback,
-    Button,
-    Typography
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogActions, DialogTitle, DialogContent, Button, Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
 import { withDialog } from 'store/dialog/with-dialog';
@@ -32,15 +25,15 @@ import moment from 'moment';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         color: theme.palette.primary.main,
         textDecoration: 'none',
         margin: '0px 4px'
     },
     paper: {
-        padding: theme.spacing.unit,
-        marginBottom: theme.spacing.unit * 2,
+        padding: theme.spacing(1),
+        marginBottom: theme.spacing(2),
         backgroundColor: theme.palette.grey["200"],
         border: `1px solid ${theme.palette.grey["300"]}`
     },
@@ -50,9 +43,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     actionButton: {
         boxShadow: 'none',
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
-        marginRight: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
+        marginRight: theme.spacing(2),
     },
     codeBlock: {
         fontSize: '0.8125rem',

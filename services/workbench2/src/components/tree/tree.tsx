@@ -3,11 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useCallback, useState } from 'react';
-import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
-import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
+import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@mui/material";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, ProcessIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
-import CircularProgress from '@material-ui/core/CircularProgress';
+import CircularProgress from '@mui/material/CircularProgress';
 import classnames from "classnames";
 
 import { ArvadosTheme } from 'common/custom-theme';
@@ -19,6 +21,8 @@ import { kebabCase } from 'lodash';
 
 type CssRules = 'list'
     | 'listItem'
+    | 'childLi'
+    | 'childItemName'
     | 'active'
     | 'loader'
     | 'toggableIconContainer'
@@ -32,7 +36,7 @@ type CssRules = 'list'
     | 'frozenIcon'
     | 'indentSpacer';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
         padding: '3px 0px'
     },
@@ -52,8 +56,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toggableIcon: {
         fontSize: '14px',
+        minWidth: '14px',
     },
     renderContainer: {
+        overflow: 'hidden',
         flex: 1
     },
     iconClose: {
@@ -64,9 +70,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         transform: 'rotate(90deg)',
     },
     checkbox: {
-        width: theme.spacing.unit * 3,
-        height: theme.spacing.unit * 3,
-        margin: `0 ${theme.spacing.unit}px`,
+        width: theme.spacing(3),
+        height: theme.spacing(3),
+        margin: `0 ${theme.spacing(1)}`,
         padding: 0,
         color: theme.palette.grey["500"],
     },
@@ -79,6 +85,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.08)',
         }
+    },
+    childLi: {
+        display: 'flex', 
+        alignItems: 'center',
+    },
+    childItemName: {
+        fontSize: '0.875rem', 
     },
     childItemIcon: {
         marginLeft: '8px',
@@ -276,9 +289,9 @@ const FlatTree = (props: FlatTreeProps) =>
                             className={props.classes.checkbox}
                             color="primary" />}
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer} ref={item.active ? props.selectedRef : undefined}>
-                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className={props.classes.childLi}>
                             <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} headKind={item.data.headKind || null} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
-                            <span style={{ fontSize: '0.875rem' }}>
+                            <span className={props.classes.childItemName}>
                                 {item.data.name}
                             </span>
                             {
@@ -350,6 +363,7 @@ export const Tree = withStyles(styles)(
                 }
                 return <div key={`item/${level}/${it.id}`}>
                     <ListItem button className={listItem}
+                        data-cy="tree-li"
                         style={{
                             paddingLeft: (level + 1) * levelIndentation,
                             paddingRight: itemRightPadding,

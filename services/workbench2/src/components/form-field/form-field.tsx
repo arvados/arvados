@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { WrappedFieldProps, WrappedFieldInputProps } from 'redux-form';
-import { FormGroup, FormLabel, FormHelperText } from '@material-ui/core';
+import { FormGroup, FormLabel, FormHelperText } from '@mui/material';
 
 interface FormFieldCustomProps {
     children: <P>(props: WrappedFieldInputProps) => React.ReactElement<P>;

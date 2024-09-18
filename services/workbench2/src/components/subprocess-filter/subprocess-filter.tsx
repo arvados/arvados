@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { Typography, Switch } from '@material-ui/core';
+import { Typography, Switch } from '@mui/material';
 
 type CssRules = 'container' | 'label' | 'value';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
         display: 'flex',
         alignItems: 'center',
@@ -22,7 +24,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     value: {
         width: '24px',
-        paddingLeft: theme.spacing.unit,
+        paddingLeft: theme.spacing(1),
     }
 });
 

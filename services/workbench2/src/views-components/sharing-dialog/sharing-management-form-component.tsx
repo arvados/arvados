@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, StyleRulesCallback, Divider, IconButton, Typography, Tooltip } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Divider, IconButton, Typography, Tooltip } from '@mui/material';
 import {
     Field,
     WrappedFieldProps,
@@ -13,8 +14,8 @@ import {
     InjectedFormProps
 } from 'redux-form';
 import { PermissionSelect, formatPermissionLevel, parsePermissionLevel } from './permission-select';
-import { WithStyles } from '@material-ui/core/styles';
-import withStyles from '@material-ui/core/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CloseIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
 
@@ -22,7 +23,7 @@ export interface SaveProps {
     onSave: () => void;
 }
 
-const headerStyles: StyleRulesCallback<'heading'> = (theme: ArvadosTheme) => ({
+const headerStyles: CustomStyleRulesCallback<'heading'> = (theme: ArvadosTheme) => ({
     heading: {
         fontSize: '1.25rem',
     }
@@ -42,22 +43,22 @@ const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } 
         <PermissionManagementRow key={field} {...{ field, index, fields }} onSave={onSave} />)}
     </div>;
 
-const permissionManagementRowStyles: StyleRulesCallback<'root'> = theme => ({
+const permissionManagementRowStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
-        padding: `${theme.spacing.unit}px 0`,
+        padding: `${theme.spacing(1)} 0`,
     }
 });
 
 const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
     ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }>, onSave: () => void; } & WithStyles<'root'>) =>
         <>
-            <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
+            <Grid container alignItems='center' spacing={1} wrap='nowrap' className={classes.root}>
                 <Grid item xs={7}>
                     <Typography noWrap variant='subtitle1'>{fields.get(index).email}</Typography>
                 </Grid>
                 <Grid item xs={1} container wrap='nowrap'>
                     <Tooltip title='Remove access'>
-                        <IconButton onClick={() => { fields.remove(index); onSave(); }}>
+                        <IconButton onClick={() => { fields.remove(index); onSave(); }} size="large">
                             <CloseIcon />
                         </IconButton>
                     </Tooltip>

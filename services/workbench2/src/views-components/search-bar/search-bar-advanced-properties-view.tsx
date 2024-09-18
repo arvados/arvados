@@ -6,7 +6,10 @@ import React from 'react';
 import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
-import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RootState } from 'store/store';
 import {
     SEARCH_BAR_ADVANCED_FORM_NAME,
@@ -24,7 +27,7 @@ import { isEqual } from 'lodash';
 
 type CssRules = 'label' | 'button';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
         color: theme.palette.grey["500"],
         fontSize: '0.8125rem',
@@ -94,7 +97,7 @@ export const SearchBarAdvancedPropertiesView = compose(
     connect(mapStateToProps, mapDispatchToProps))(
     withStyles(styles)(
         ({ classes, fields, propertyValues, setProps, addProp, getAllFields, vocabulary }: SearchBarAdvancedPropertiesViewProps) =>
-            <Grid container item xs={12} spacing={16}>
+            <Grid container item xs={12} spacing={2}>
                 <Grid item xs={2} className={classes.label}>Properties</Grid>
                 <Grid item xs={4}>
                     <SearchBarKeyField />
@@ -102,7 +105,7 @@ export const SearchBarAdvancedPropertiesView = compose(
                 <Grid item xs={4}>
                     <SearchBarValueField />
                 </Grid>
-                <Grid container item xs={2} justify='flex-end' alignItems="center">
+                <Grid container item xs={2} justifyContent='flex-end' alignItems="center">
                     <Button className={classes.button} onClick={() => addProp(propertyValues, getAllFields(fields))}
                         color="primary"
                         size='small'
@@ -112,7 +115,7 @@ export const SearchBarAdvancedPropertiesView = compose(
                     </Button>
                 </Grid>
                 <Grid item xs={2} />
-                <Grid container item xs={10} spacing={8}>
+                <Grid container item xs={10} spacing={1}>
                     <Chips values={getAllFields(fields)}
                         deletable
                         onChange={setProps}

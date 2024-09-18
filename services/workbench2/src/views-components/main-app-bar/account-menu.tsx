@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { MenuItem, Divider } from "@material-ui/core";
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { MenuItem } from "@mui/material";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { User, getUserDisplayName } from "models/user";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "components/icon/icon";
@@ -41,7 +43,7 @@ const mapStateToProps = (state: RootState): AccountMenuProps => ({
 
 type CssRules = 'link';
 
-const styles: StyleRulesCallback<CssRules> = () => ({
+const styles: CustomStyleRulesCallback<CssRules> = () => ({
     link: {
         textDecoration: 'none',
         color: 'inherit'
@@ -79,7 +81,6 @@ export const AccountMenuComponent =
                     {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
                 {user.isActive && accountMenuItems}
-                <Divider />
                 <MenuItem data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout

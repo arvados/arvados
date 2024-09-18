@@ -4,7 +4,10 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Button } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
@@ -25,7 +28,7 @@ import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-acti
 
 type CssRules = "root";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
     }
@@ -103,7 +106,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                     contextMenuColumn={true}
                     hideColumnSelector
                     actions={
-                        <Grid container justify='flex-end'>
+                        <Grid container justifyContent='flex-end'>
                             <Button
                                 data-cy="groups-panel-new-group"
                                 variant="contained"

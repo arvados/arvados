@@ -4,7 +4,7 @@
 
 import React from "react";
 import { ErrorIcon } from "components/icon/icon";
-import { Tooltip } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
 import { disallowSlash } from "validators/valid-name";
 import { connect } from "react-redux";
 import { RootState } from "store/store";

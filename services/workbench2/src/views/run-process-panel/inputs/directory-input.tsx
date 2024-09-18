@@ -6,7 +6,10 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { memoize } from 'lodash/fp';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     isRequiredInput,
     DirectoryCommandInputParameter,
@@ -122,13 +125,13 @@ const DirectoryInputComponent = connect(null, mapDispatchToProps)(
                 {...this.props} />;
         }
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',
             },
             pickerWrapper: {
-                flexBasis: `${spacing.unit * 8}vh`,
+                flexBasis: `${spacing(8)}vh`,
                 flexShrink: 1,
                 minHeight: 0,
                 display: 'flex',

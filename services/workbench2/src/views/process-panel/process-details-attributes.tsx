@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, StyleRulesCallback, withStyles, Typography } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, Typography } from "@mui/material";
+import withStyles from '@mui/styles/withStyles';
 import { Dispatch } from 'redux';
 import { formatCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
@@ -26,11 +28,11 @@ import { getCollectionUrl } from 'models/collection';
 import { useAsyncInterval } from 'common/use-async-interval';
 import { Link } from "react-router-dom";
 import { getResourceUrl } from "routes/routes";
-import WarningIcon from '@material-ui/icons/Warning';
+import WarningIcon from '@mui/icons-material/Warning';
 
 type CssRules = 'link' | 'propertyTag';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         fontSize: '0.875rem',
         color: theme.palette.primary.main,
@@ -39,8 +41,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     propertyTag: {
-        marginRight: theme.spacing.unit / 2,
-        marginBottom: theme.spacing.unit / 2
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5)
     },
 });
 

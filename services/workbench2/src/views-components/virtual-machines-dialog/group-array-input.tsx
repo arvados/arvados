@@ -8,7 +8,9 @@ import { Field, GenericField } from 'redux-form';
 import { GenericInputProps } from 'views/run-process-panel/inputs/generic-input';
 import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity } from 'lodash';
-import { withStyles, WithStyles, FormGroup, Input, InputLabel, FormControl, FormHelperText } from '@material-ui/core';
+import { FormGroup, Input, InputLabel, FormControl, FormHelperText } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
 import { ArvadosTheme } from 'common/custom-theme';
 
@@ -56,12 +58,14 @@ export const GroupArrayInput = ({name, input, setPartialGroupInput, hasPartialGr
 }
 
 const GroupArrayInputComponent = (props: GenericInputProps & GroupArrayDataProps) => {
-  return <FormGroup>
-        <FormControl fullWidth error={props.meta.error}>
-          <InputLabel shrink={props.meta.active || props.input.value.length > 0}>{props.commandInput.id}</InputLabel>
-          <StyledInputComponent {...props} />
-        </FormControl>
-    </FormGroup>;
+  return (
+      <FormGroup>
+            <FormControl variant="standard" fullWidth error={props.meta.error}>
+              <InputLabel shrink={props.meta.active || props.input.value.length > 0}>{props.commandInput.id}</InputLabel>
+              <StyledInputComponent {...props} />
+            </FormControl>
+        </FormGroup>
+  );
     };
 
 const StyledInputComponent = withStyles(styles)(

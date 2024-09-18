@@ -4,10 +4,12 @@
 
 import React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core/styles';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import { Button, Card, CardContent, TextField, CardActions } from '@material-ui/core';
-import { green } from '@material-ui/core/colors';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import CircularProgress from '@mui/material/CircularProgress';
+import { Button, Card, CardContent, TextField, CardActions } from '@mui/material';
+import { green } from '@mui/material/colors';
 import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
 import { saveApiToken } from 'store/auth/auth-action';
@@ -17,23 +19,23 @@ import { PasswordLoginResponse } from 'views/login-panel/login-panel';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     root: {
         display: 'flex',
         flexWrap: 'wrap',
         width: '100%',
-        margin: `${theme.spacing.unit} auto`
+        margin: `${theme.spacing(1)} auto`
     },
     loginBtn: {
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
         flexGrow: 1
     },
     card: {
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
         width: '100%'
     },
     wrapper: {
-        margin: theme.spacing.unit,
+        margin: theme.spacing(1),
         position: 'relative',
     },
     progress: {
@@ -127,21 +129,29 @@ export const LoginForm = withStyles(styles)(
                         <div className={classes.wrapper}>
                             <CardContent>
                                 <TextField
+                                    variant="standard"
                                     inputRef={userInput}
                                     disabled={isSubmitting}
-                                    error={error} fullWidth id="username" type="email"
-                                    label="Username" margin="normal"
+                                    error={error}
+                                    fullWidth
+                                    id="username"
+                                    type="email"
+                                    label="Username"
+                                    margin="normal"
                                     onChange={(e) => setUsername(e.target.value)}
-                                    onKeyPress={(e) => handleKeyPress(e)}
-                                />
+                                    onKeyPress={(e) => handleKeyPress(e)} />
                                 <TextField
+                                    variant="standard"
                                     disabled={isSubmitting}
-                                    error={error} fullWidth id="password" type="password"
-                                    label="Password" margin="normal"
+                                    error={error}
+                                    fullWidth
+                                    id="password"
+                                    type="password"
+                                    label="Password"
+                                    margin="normal"
                                     helperText={helperText}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    onKeyPress={(e) => handleKeyPress(e)}
-                                />
+                                    onKeyPress={(e) => handleKeyPress(e)} />
                             </CardContent>
                             <CardActions>
                                 <Button variant="contained" size="large" color="primary"

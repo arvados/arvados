@@ -5,11 +5,15 @@
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
-import { StyleRulesCallback, WithStyles, withStyles, FormControl, InputLabel, Select, FormHelperText } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { FormControl, InputLabel, Select, FormHelperText } from '@mui/material';
+
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 
 type CssRules = 'formControl' | 'selectWrapper' | 'select' | 'option';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     formControl: {
         width: '100%',
     },
@@ -40,8 +44,9 @@ interface NativeSelectFieldProps {
 }
 
 export const NativeSelectField = withStyles(styles)((props: WrappedFieldProps & NativeSelectFieldProps & WithStyles<CssRules> & { items: any[] }) => (
-    <FormControl className={props.classes.formControl}>
+    <FormControl variant="standard" className={props.classes.formControl}>
         <Select
+            variant="standard"
             className={props.classes.selectWrapper}
             native
             value={props.input.value}
@@ -71,17 +76,18 @@ interface SelectFieldProps {
 
 type SelectFieldCssRules = 'formControl';
 
-const selectFieldStyles: StyleRulesCallback<SelectFieldCssRules> = (theme: ArvadosTheme) => ({
+const selectFieldStyles: CustomStyleRulesCallback<SelectFieldCssRules> = (theme: ArvadosTheme) => ({
     formControl: {
-        marginBottom: theme.spacing.unit * 3,
+        marginBottom: theme.spacing(3),
     },
 });
 export const SelectField = withStyles(selectFieldStyles)((props: WrappedFieldProps & SelectFieldProps & WithStyles<SelectFieldCssRules>) => (
     <FormControl
+        variant="standard"
         error={props.meta.invalid}
         className={props.classes.formControl}>
         <InputLabel>{props.label}</InputLabel>
-        <Select {...props.input}>{props.children}</Select>
+        <Select variant="standard" {...props.input}>{props.children}</Select>
         <FormHelperText>{props.meta.error}</FormHelperText>
     </FormControl>
 ));

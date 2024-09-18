@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CommandInputParameter } from 'models/workflow';
-import { TextField } from '@material-ui/core';
+import { TextField } from '@mui/material';
 import { required } from 'components/workflow-inputs-form/validators';
 
 export interface WorkflowInputProps {
@@ -12,6 +12,7 @@ export interface WorkflowInputProps {
 }
 export const WorkflowInput = ({ input }: WorkflowInputProps) =>
     <TextField
+        variant="standard"
         label={`${input.label || input.id}${required(input)() ? '*' : ''}`}
         name={input.id}
         helperText={input.doc}

@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Typography, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Card, CardContent, Typography, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ResourceIcon } from 'components/icon/icon';
 import { RootState } from 'store/store';
@@ -16,7 +19,7 @@ import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code
 
 type CssRules = 'root' | 'infoBox' | 'instanceType';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
        width: "calc(100% + 20px)",
        margin: "0 -10px",

@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect } from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Grid, LinearProgress } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, LinearProgress } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { User } from "models/user";
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkbenchPanel } from 'views/workbench/workbench';
@@ -15,7 +18,7 @@ import { Routes } from 'routes/routes';
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         overflow: 'hidden',
         width: '100vw',

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Table,
     TableBody,
@@ -10,13 +11,11 @@ import {
     TableCell,
     TableHead,
     TableSortLabel,
-    StyleRulesCallback,
-    Theme,
-    WithStyles,
-    withStyles,
     IconButton,
     Tooltip,
-} from "@material-ui/core";
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
 import { DataColumn, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
@@ -25,12 +24,13 @@ import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/d
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty } from "models/tree";
 import { IconType } from "components/icon/icon";
-import { SvgIconProps } from "@material-ui/core/SvgIcon";
-import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
+import { SvgIconProps } from "@mui/material/SvgIcon";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { createTree } from "models/tree";
 import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
+import { CustomTheme, ArvadosTheme } from "common/custom-theme";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -72,11 +72,15 @@ type CssRules =
     | "checkBox"
     | "firstTableCell"
     | "tableCell"
+    | "firstTableHead"
+    | "tableHead"
+    | "selected"
+    | "hovered"
     | "arrow"
     | "arrowButton"
     | "tableCellWorkflows";
 
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: "100%",
     },
@@ -86,10 +90,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper,
+        overflow: "auto",
     },
     noItemsInfo: {
         textAlign: "center",
-        padding: theme.spacing.unit,
+        padding: theme.spacing(1),
     },
     checkBoxHead: {
         padding: "0",
@@ -97,10 +102,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: '2rem',
         height: "1.5rem",
         paddingLeft: '0.9rem',
-        marginRight: '0.5rem'
+        marginRight: '0.5rem',
+        backgroundColor: theme.palette.background.paper,
     },
     checkBoxCell: {
         padding: "0",
+        backgroundColor: theme.palette.background.paper,
     },
     clickBox: {
         display: 'flex',
@@ -117,10 +124,25 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     tableCell: {
         wordWrap: "break-word",
         paddingRight: "24px",
-        color: "#737373",
     },
     firstTableCell: {
         paddingLeft: "5px",
+    },
+    firstTableHead: {
+        paddingLeft: "5px",
+    },
+    tableHead: {
+        wordWrap: "break-word",
+        paddingRight: "24px",
+        color: "#737373",
+        fontSize: "0.8125rem",
+        backgroundColor: theme.palette.background.paper,
+    },
+    selected: {
+        backgroundColor: `${CustomTheme.palette.grey['300']} !important`
+    },
+    hovered: {
+        backgroundColor: `${CustomTheme.palette.grey['100']} !important`
     },
     tableCellWorkflows: {
         "&:nth-last-child(2)": {
@@ -146,6 +168,7 @@ export type TCheckedList = Record<string, boolean>;
 type DataTableState = {
     isSelected: boolean;
     isLoaded: boolean;
+    hoveredIndex: number | null;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -155,14 +178,12 @@ export const DataTable = withStyles(styles)(
         state: DataTableState = {
             isSelected: false,
             isLoaded: false,
+            hoveredIndex: null,
         };
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
-            // If table is initialized loaded but empty
-            // isLoaded won't be set true by componentDidUpdate later
-            // So we set it to true here
-            if (!this.props.working) {
+            if((this.props.items.length > 0) && !this.state.isLoaded) {
                 this.setState({ isLoaded: true });
             }
         }
@@ -262,6 +283,7 @@ export const DataTable = withStyles(styles)(
 
         isAnySelected = (): boolean => {
             const { checkedList } = this.props;
+            if (!checkedList) return false;
             if (!Object.keys(checkedList).length) return false;
             for (const key in checkedList) {
                 if (checkedList[key] === true) return true;
@@ -322,7 +344,7 @@ export const DataTable = withStyles(styles)(
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
-                        <Table>
+                        <Table data-cy="data-table" stickyHeader>
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
                             </TableHead>
@@ -391,7 +413,7 @@ export const DataTable = withStyles(styles)(
                 </TableCell>
             ) : (
                 <TableCell
-                    className={index === 1 ? classes.firstTableCell : classes.tableCell}
+                    className={classnames(classes.tableHead, index === 1 ? classes.firstTableHead : '')}
                     key={key || index}>
                     {renderHeader ? (
                         renderHeader()
@@ -421,9 +443,11 @@ export const DataTable = withStyles(styles)(
 
         ArrowIcon = ({ className, ...props }: SvgIconProps) => (
             <IconButton
+                data-cy="sort-button"
                 component="span"
                 className={this.props.classes.arrowButton}
-                tabIndex={-1}>
+                tabIndex={-1}
+                size="large">
                 <ArrowDownwardIcon
                     {...props}
                     className={classnames(className, this.props.classes.arrow)}
@@ -433,6 +457,18 @@ export const DataTable = withStyles(styles)(
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, selectedResourceUuid, currentRoute } = this.props;
+            const { hoveredIndex } = this.state;
+            const isRowSelected = item === selectedResourceUuid;
+            const getClassnames = (colIndex: number) => {
+                if(currentRoute === '/workflows') return classes.tableCellWorkflows;
+                if(colIndex === 0) return classnames(classes.checkBoxCell, isRowSelected ? classes.selected : index === hoveredIndex ? classes.hovered : "");
+                if(colIndex === 1) return classnames(classes.tableCell, classes.firstTableCell, isRowSelected ? classes.selected : "");
+                return classnames(classes.tableCell, isRowSelected ? classes.selected : "");
+            };
+            const handleHover = (index: number | null) => {
+                this.setState({ hoveredIndex: index });
+            }
+
             return (
                 <TableRow
                     data-cy={'data-table-row'}
@@ -441,17 +477,16 @@ export const DataTable = withStyles(styles)(
                     onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
                     onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={item === selectedResourceUuid}>
-                    {this.mapVisibleColumns((column, index) => (
+                    selected={isRowSelected}
+                    className={isRowSelected ? classes.selected : ""}
+                    onMouseEnter={()=>handleHover(index)}
+                    onMouseLeave={()=>handleHover(null)}
+                >
+                    {this.mapVisibleColumns((column, colIndex) => (
                         <TableCell
-                            key={column.key || index}
-                            className={
-                                currentRoute === "/workflows"
-                                    ? classes.tableCellWorkflows
-                                    : index === 0
-                                    ? classes.checkBoxCell
-                                    : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ""}`
-                            }>
+                            key={column.key || colIndex}
+                            data-cy={column.key || colIndex}
+                            className={getClassnames(colIndex)}>
                             {column.render(item)}
                         </TableCell>
                     ))}

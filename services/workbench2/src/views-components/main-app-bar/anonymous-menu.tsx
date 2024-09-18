@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Button } from '@material-ui/core';
+import { Button } from '@mui/material';
 import { DispatchProp, connect } from 'react-redux';
 import { login } from 'store/auth/auth-action';
 

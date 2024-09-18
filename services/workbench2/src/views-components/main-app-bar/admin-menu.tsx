@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { MenuItem } from "@material-ui/core";
+import { MenuItem } from "@mui/material";
 import { User } from "models/user";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { AdminMenuIcon } from "components/icon/icon";

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { reduxForm, change } from 'redux-form';
-import { withStyles } from '@material-ui/core';
+import withStyles from '@mui/styles/withStyles';
 import {
     COLLECTION_CREATE_PROPERTIES_FORM_NAME,
     COLLECTION_CREATE_FORM_NAME

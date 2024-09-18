@@ -8,10 +8,18 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip
-} from '@material-ui/core';
-import { PopperProps } from '@material-ui/core/Popper';
-import { WithStyles } from '@material-ui/core/styles';
+    FormControl,
+    InputLabel,
+    ListItemText,
+    ListItem,
+    List,
+    FormHelperText,
+    Tooltip,
+} from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { PopperProps } from '@mui/material/Popper';
+import { WithStyles } from '@mui/styles';
 import { noop } from 'lodash';
 
 export interface AutocompleteProps<Item, Suggestion> {
@@ -50,17 +58,15 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
     inputRef = React.createRef<HTMLInputElement>();
 
     render() {
-        return (
-            <RootRef rootRef={this.containerRef}>
-                <FormControl fullWidth error={this.props.error}>
-                    {this.renderLabel()}
-                    {this.renderInput()}
-                    {this.renderHelperText()}
-                    {this.renderSuggestions()}
-                </FormControl>
-            </RootRef>
-        );
-    }
+        return <div ref={this.containerRef}>
+                    <FormControl variant="standard" fullWidth error={this.props.error}>
+                        {this.renderLabel()}
+                        {this.renderInput()}
+                        {this.renderHelperText()}
+                        {this.renderSuggestions()}
+                    </FormControl>
+               </div>
+        }
 
     renderLabel() {
         const { label } = this.props;
@@ -231,10 +237,10 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
 type ChipClasses = 'root';
 
-const chipStyles: StyleRulesCallback<ChipClasses> = theme => ({
+const chipStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
-        marginRight: theme.spacing.unit / 4,
-        height: theme.spacing.unit * 3,
+        marginRight: theme.spacing(0.25),
+        height: theme.spacing(3),
     }
 });
 
@@ -242,7 +248,7 @@ const Chip = withStyles(chipStyles)(MuiChip);
 
 type PopperClasses = 'root';
 
-const popperStyles: StyleRulesCallback<ChipClasses> = theme => ({
+const popperStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
         zIndex: theme.zIndex.modal,
     }
@@ -255,7 +261,7 @@ const Popper = withStyles(popperStyles)(
 
 type InputClasses = 'root';
 
-const inputStyles: StyleRulesCallback<InputClasses> = () => ({
+const inputStyles: CustomStyleRulesCallback<InputClasses> = () => ({
     root: {
         display: 'flex',
         flexWrap: 'wrap',

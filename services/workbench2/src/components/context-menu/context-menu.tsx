@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 import React from "react";
-import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
+import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@mui/material";
 import { DefaultTransformOrigin } from "../popover/helpers";
 import { IconType } from "../icon/icon";
 import { RootState } from "store/store";

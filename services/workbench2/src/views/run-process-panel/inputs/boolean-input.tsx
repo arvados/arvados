@@ -6,7 +6,7 @@ import React from 'react';
 import { memoize } from 'lodash/fp';
 import { BooleanCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
-import { Switch } from '@material-ui/core';
+import { Switch } from '@mui/material';
 import { GenericInputProps, GenericInput } from './generic-input';
 
 export interface BooleanInputProps {

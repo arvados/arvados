@@ -30,7 +30,7 @@ describe("Virtual machine login manage tests", function () {
         cy.createVirtualMachine(adminUser.token, { hostname: vmHost });
 
         // Navigate to VM admin
-        cy.get('header button[title="Admin Panel"]').click();
+        cy.get('header button[aria-label="Admin Panel"]').click();
         cy.get("#admin-menu").contains("Shell Access").click();
 
         // Add login permission to admin
@@ -38,7 +38,7 @@ describe("Virtual machine login manage tests", function () {
             .contains(vmHost)
             .parents("tr")
             .within(() => {
-                cy.get('button[title="Add Login Permission"]').click();
+                cy.get('button[aria-label="Add Login Permission"]').click();
             });
         cy.get("[data-cy=form-dialog]")
             .should("contain", "Add login permission")
@@ -88,7 +88,7 @@ describe("Virtual machine login manage tests", function () {
             .contains(vmHost)
             .parents("tr")
             .within(() => {
-                cy.get('button[title="Add Login Permission"]').click();
+                cy.get('button[aria-label="Add Login Permission"]').click();
             });
         cy.get("[data-cy=form-dialog]")
             .should("contain", "Add login permission")
@@ -113,7 +113,7 @@ describe("Virtual machine login manage tests", function () {
             });
 
         // Check admin's vm page for login
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get("#account-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-user-table]")
@@ -128,7 +128,7 @@ describe("Virtual machine login manage tests", function () {
 
         // Check activeUser's vm page for login
         cy.loginAs(activeUser);
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get("#account-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-user-table]")
@@ -143,7 +143,7 @@ describe("Virtual machine login manage tests", function () {
 
         // Edit login permissions
         cy.loginAs(adminUser);
-        cy.get('header button[title="Admin Panel"]').click();
+        cy.get('header button[aria-label="Admin Panel"]').click();
         cy.get("#admin-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-admin-table]").contains("admin"); // Wait for page to finish
@@ -192,7 +192,7 @@ describe("Virtual machine login manage tests", function () {
 
         // Verify new login permissions
         // Check admin's vm page for login
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get("#account-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-user-table]")
@@ -208,7 +208,7 @@ describe("Virtual machine login manage tests", function () {
         // Verify new login permissions
         // Check activeUser's vm page for login
         cy.loginAs(activeUser);
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get("#account-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-user-table]")
@@ -223,7 +223,7 @@ describe("Virtual machine login manage tests", function () {
 
         // Remove login permissions
         cy.loginAs(adminUser);
-        cy.get('header button[title="Admin Panel"]').click();
+        cy.get('header button[aria-label="Admin Panel"]').click();
         cy.get("#admin-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-admin-table]").contains("user"); // Wait for page to finish
@@ -257,14 +257,14 @@ describe("Virtual machine login manage tests", function () {
             });
 
         // Check admin's vm page for login
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get("#account-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-user-panel]").should("not.contain", vmHost);
 
         // Check activeUser's vm page for login
         cy.loginAs(activeUser);
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get("#account-menu").contains("Shell Access").click();
 
         cy.get("[data-cy=vm-user-panel]").should("not.contain", vmHost);

@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@mui/material";
 import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
 import { GroupResource } from "models/group";
@@ -14,20 +16,20 @@ import { GROUP_ATTRIBUTES_DIALOG } from "store/groups-panel/groups-panel-actions
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 
-const styles = withStyles<CssRules>((theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rightContainer: {
         textAlign: 'right',
-        paddingRight: theme.spacing.unit * 2,
+        paddingRight: theme.spacing(2),
         color: theme.palette.grey["500"]
     },
     leftContainer: {
         textAlign: 'left',
-        paddingLeft: theme.spacing.unit * 2
+        paddingLeft: theme.spacing(2)
     },
     spacing: {
-        paddingTop: theme.spacing.unit * 2
+        paddingTop: theme.spacing(2)
     },
-}));
+});
 
 interface GroupAttributesDataProps {
     data: GroupResource;
@@ -37,7 +39,7 @@ type GroupAttributesProps = GroupAttributesDataProps & WithStyles<CssRules>;
 
 export const GroupAttributesDialog = compose(
     withDialog(GROUP_ATTRIBUTES_DIALOG),
-    styles)(
+    withStyles(styles))(
         (props: WithDialogProps<GroupAttributesProps> & GroupAttributesProps) =>
             <Dialog open={props.open}
                 onClose={props.closeDialog}

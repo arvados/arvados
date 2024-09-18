@@ -84,7 +84,8 @@ describe('User profile tests', function() {
             cy.get('[role=button]').should(login ? 'contain' : 'not.contain', 'Login as user');
             cy.get('[role=button]').should(setup ? 'contain' : 'not.contain', 'Setup user');
         });
-        cy.get('div[role=presentation]').click();
+        //de-select the context menu
+        cy.get('body').click();
     }
 
     beforeEach(function() {
@@ -113,7 +114,7 @@ describe('User profile tests', function() {
     it('non-admin can edit own profile', function() {
         cy.loginAs(activeUser);
 
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get('#account-menu').contains('My account').click();
 
         // Admin actions should be hidden, no account menu
@@ -203,7 +204,7 @@ describe('User profile tests', function() {
     it('admin can edit own profile', function() {
         cy.loginAs(adminUser);
 
-        cy.get('header button[title="Account Management"]').click();
+        cy.get('header button[aria-label="Account Management"]').click();
         cy.get('#account-menu').contains('My account').click();
 
         // Admin actions should be visible, no account menu

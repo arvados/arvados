@@ -4,22 +4,25 @@
 
 import React from 'react';
 import { Location } from 'history';
-import { StyleRulesCallback, WithStyles, withStyles, Paper, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ClusterConfigJSON } from 'common/config';
 
 export type CssRules = 'root' | 'title' | 'active';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         overflow: 'hidden',
         width: '100vw',
         height: '100vh'
     },
     title: {
-        paddingLeft: theme.spacing.unit * 3,
-        paddingTop: theme.spacing.unit * 3,
-        paddingBottom: theme.spacing.unit * 3,
+        paddingLeft: theme.spacing(3),
+        paddingTop: theme.spacing(3),
+        paddingBottom: theme.spacing(3),
         fontSize: '18px'
     },
     active: {
@@ -74,7 +77,7 @@ const getEmailLink = (email: string, classes: Record<CssRules, string>) => {
 export const NotFoundPanelRoot = withStyles(styles)(
     ({ classes, clusterConfig, location, notWrapped }: NotFoundPanelRootProps) => {
 
-        const content = <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+        const content = <Grid container justifyContent="space-between" wrap="nowrap" alignItems="center">
             <div data-cy="not-found-content" className={classes.title}>
                 <h2>Not Found</h2>
                 {getAdditionalMessage(location)}

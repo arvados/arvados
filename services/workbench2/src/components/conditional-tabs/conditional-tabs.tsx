@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { ReactElement, useEffect, useState } from "react";
-import { Tabs, Tab } from "@material-ui/core";
-import { TabsProps } from "@material-ui/core/Tabs";
+import { Tabs, Tab } from "@mui/material";
+import { TabsProps } from "@mui/material/Tabs";
 
 interface ComponentWithHidden {
     hidden: boolean;
@@ -40,7 +40,7 @@ export const ConditionalTabs = ({ tabs: tabData, ...props }: Omit<TabsProps, 'va
             {...props}
             value={tabState}
             onChange={handleTabChange} >
-            {visibleTabs.map(tab => <Tab key={tab.label} label={tab.label} />)}
+            {visibleTabs.map(tab => <Tab key={tab.label} label={tab.label} data-cy='conditional-tab' />)}
         </Tabs>
 
         {visibleTabs.map((tab, i) => (

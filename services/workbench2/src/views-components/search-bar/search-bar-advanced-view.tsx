@@ -5,7 +5,10 @@
 import React from 'react';
 import { reduxForm, InjectedFormProps, reset } from 'redux-form';
 import { compose, Dispatch } from 'redux';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, Button, Grid, IconButton, CircularProgress } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper, Button, Grid, IconButton, CircularProgress } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     SEARCH_BAR_ADVANCED_FORM_NAME, SEARCH_BAR_ADVANCED_FORM_PICKER_ID,
     searchAdvancedData,
@@ -24,9 +27,9 @@ import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
     | 'button' | 'circularProgress' | 'searchView' | 'selectGrid';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     container: {
-        padding: theme.spacing.unit * 2,
+        padding: theme.spacing(2),
         borderBottom: `1px solid ${theme.palette.grey["200"]}`,
         position: 'relative',
     },
@@ -58,10 +61,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     searchView: {
         color: theme.palette.common.black,
-        borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+        borderRadius: `0 0 ${theme.spacing(0.5)} ${theme.spacing(0.5)}`
     },
     selectGrid: {
-        marginBottom: theme.spacing.unit * 2
+        marginBottom: theme.spacing(2)
     }
 });
 
@@ -116,7 +119,7 @@ export const SearchBarAdvancedView = compose(
         ({ classes, closeAdvanceView, handleSubmit, submitting, invalid, pristine, tags, saveQuery }: SearchBarAdvancedViewFormProps) =>
             <Paper className={classes.searchView}>
                 <form onSubmit={handleSubmit}>
-                    <Grid container direction="column" justify="flex-start" alignItems="flex-start">
+                    <Grid container direction="column" justifyContent="flex-start" alignItems="flex-start">
                         <Grid item xs={12} container className={classes.container}>
                             <Grid item container xs={12} className={classes.selectGrid}>
                                 <Grid item xs={2} className={classes.label}>Type</Grid>
@@ -145,11 +148,11 @@ export const SearchBarAdvancedView = compose(
                                     <SearchBarPastVersionsField />
                                 </Grid>
                             </Grid>
-                            <IconButton onClick={closeAdvanceView} className={classes.closeIcon}>
+                            <IconButton onClick={closeAdvanceView} className={classes.closeIcon} size="large">
                                 <CloseIcon />
                             </IconButton>
                         </Grid>
-                        <Grid container item xs={12} className={classes.container} spacing={16}>
+                        <Grid container item xs={12} className={classes.container} spacing={2}>
                             <Grid item xs={2} className={classes.label}>Date modified</Grid>
                             <Grid item xs={4}>
                                 <SearchBarDateFromField />
@@ -160,7 +163,7 @@ export const SearchBarAdvancedView = compose(
                         </Grid>
                         <Grid container item xs={12} className={classes.container}>
                             <SearchBarPropertiesField />
-                            <Grid container item xs={12} justify="flex-start" alignItems="center" spacing={16}>
+                            <Grid container item xs={12} justifyContent="flex-start" alignItems="center" spacing={2}>
                                 <Grid item xs={2} className={classes.label} />
                                 <Grid item xs={4}>
                                     <SearchBarSaveSearchField />
@@ -169,7 +172,7 @@ export const SearchBarAdvancedView = compose(
                                     {saveQuery && <SearchBarQuerySearchField />}
                                 </Grid>
                             </Grid>
-                            <Grid container item xs={12} justify='flex-end'>
+                            <Grid container item xs={12} justifyContent='flex-end'>
                                 <div className={classes.buttonWrapper}>
                                     <Button type="submit" className={classes.button}
                                         // ToDo: create easier condition

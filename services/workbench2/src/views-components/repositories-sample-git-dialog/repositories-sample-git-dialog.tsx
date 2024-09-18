@@ -3,20 +3,22 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from "@mui/material";
 import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
 import { REPOSITORIES_SAMPLE_GIT_DIALOG } from "store/repositories/repositories-actions";
 import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
 
 type CssRules = 'codeSnippet' | 'link' | 'spacing';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     codeSnippet: {
-        borderRadius: theme.spacing.unit * 0.5,
+        borderRadius: theme.spacing(0.5),
         border: '1px solid',
         borderColor: theme.palette.grey["400"],
     },
@@ -29,7 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     spacing: {
-        paddingTop: theme.spacing.unit * 2
+        paddingTop: theme.spacing(2)
     }
 });
 

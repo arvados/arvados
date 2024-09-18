@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, Typography, withStyles, Tooltip, IconButton } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Typography, Tooltip, IconButton } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
@@ -19,12 +22,12 @@ import { Dispatch } from "redux";
 
 type CssRules = 'root' | 'space' | 'content' | 'copyButton' ;
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
-        padding: theme.spacing.unit,
+        padding: theme.spacing(1),
     },
     space: {
         marginLeft: '15px',
@@ -93,6 +96,7 @@ export const VirtualCodeSnippet = withStyles(styles)(connect(mapStateToProps, ma
 
         return <Typography
             component="div"
+            data-cy="virtual-code-snippet"
             className={classNames([classes.root, className])}>
             {copyButton && <span className={classes.copyButton}>
                 <Tooltip title="Copy text to clipboard" disableFocusListener>

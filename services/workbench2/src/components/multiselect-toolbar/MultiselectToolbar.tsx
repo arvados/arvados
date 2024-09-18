@@ -4,7 +4,10 @@
 
 import React from "react";
 import { connect } from "react-redux";
-import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Toolbar, Tooltip, IconButton } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
@@ -39,7 +42,7 @@ import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/
 
 type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",
@@ -156,7 +159,7 @@ export const MultiselectToolbar = connect(
                                             disabled={disabledButtons.has(name)}
                                             onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
                                             className={classes.icon}
-                                        >
+                                            size="large">
                                             {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                         </IconButton>
                                     </span>
@@ -175,7 +178,7 @@ export const MultiselectToolbar = connect(
                                             onClick={() => {
                                                 props.executeMulti(action, targetResources, iconProps.resources)}}
                                             className={classes.icon}
-                                        >
+                                            size="large">
                                             {action.icon({})}
                                         </IconButton>
                                     </span>
@@ -188,7 +191,7 @@ export const MultiselectToolbar = connect(
                     )}
                 </Toolbar>
             </React.Fragment>
-        )
+        );
     })
 );
 

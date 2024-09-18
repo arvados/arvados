@@ -4,8 +4,10 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@mui/material';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-machines/virtual-machines-actions';
@@ -24,13 +26,13 @@ type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 
 
 const EXTRA_TOKEN = "exraToken";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
-        marginTop: theme.spacing.unit,
-        marginBottom: theme.spacing.unit
+        marginTop: theme.spacing(1),
+        marginBottom: theme.spacing(1)
     },
     codeSnippet: {
-        borderRadius: theme.spacing.unit * 0.5,
+        borderRadius: theme.spacing(0.5),
         border: '1px solid',
         borderColor: theme.palette.grey["400"],
     },
@@ -59,13 +61,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     icon: {
         textAlign: "right",
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing(1)
     },
     chipsRoot: {
-        margin: `0px -${theme.spacing.unit / 2}px`,
+        margin: `0px -${theme.spacing(0.5)}`,
     },
     copyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
         color: theme.palette.grey["500"],
         cursor: 'pointer',
         display: 'inline',
@@ -139,7 +141,7 @@ export const VirtualMachineUserPanel = compose(
             render() {
                 const { virtualMachines, links } = this.props;
                 return (
-                    <Grid container spacing={16} data-cy="vm-user-panel">
+                    <Grid container spacing={2} data-cy="vm-user-panel">
                         {virtualMachines.items.length === 0 && <CardContentWithoutVirtualMachines {...this.props} />}
                         {virtualMachines.items.length > 0 && links.items.length > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {<CardSSHSection {...this.props} />}
@@ -226,7 +228,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
                             <TableCell>
-                                <Grid container spacing={8} className={props.classes.chipsRoot}>
+                                <Grid container spacing={1} className={props.classes.chipsRoot}>
                                     {
                                         (lk.properties.groups || []).map((group, i) => (
                                             <Grid item key={i}>

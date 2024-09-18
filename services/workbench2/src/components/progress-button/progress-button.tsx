@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import Button, { ButtonProps } from '@material-ui/core/Button';
-import { CircularProgress, withStyles } from '@material-ui/core';
-import { CircularProgressProps } from '@material-ui/core/CircularProgress';
+import Button, { ButtonProps } from '@mui/material/Button';
+import { CircularProgress } from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { CircularProgressProps } from '@mui/material/CircularProgress';
 
 interface ProgressButtonProps extends ButtonProps {
     loading?: boolean;

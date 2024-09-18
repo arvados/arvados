@@ -10,20 +10,23 @@ import { FormDialog } from 'components/form-dialog/form-dialog';
 import { ProjectNameField, ProjectDescriptionField, UsersField } from 'views-components/form-fields/project-form-fields';
 import { CreateProjectPropertiesForm } from 'views-components/project-properties/create-project-properties-form';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
-import { FormGroup, FormLabel, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { FormGroup, FormLabel } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 import { GroupClass } from 'models/group';
 
 type CssRules = 'propertiesForm' | 'description';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     propertiesForm: {
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
     },
     description: {
-        marginTop: theme.spacing.unit * 2,
-        marginBottom: theme.spacing.unit * 2,
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
     },
 });
 

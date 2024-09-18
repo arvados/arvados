@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import withStyles from '@material-ui/core/styles/withStyles';
+import withStyles from '@mui/styles/withStyles';
 import { DispatchProp, connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router';
-import { StyleRulesCallback, WithStyles } from '@material-ui/core';
+import { WithStyles } from '@mui/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { Resource } from 'models/resource';
 import { ResourcesState, getResource } from 'store/resources/resources';
@@ -28,14 +29,14 @@ import { ProjectPanelRun } from './project-panel-run';
 
 type CssRules = 'root' | 'button' | 'mpvRoot' | 'dataExplorer';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
     },
     button: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
     },
     mpvRoot: {
         flexGrow: 1,

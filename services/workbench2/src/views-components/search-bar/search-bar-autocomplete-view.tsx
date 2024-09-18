@@ -3,24 +3,27 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Paper, StyleRulesCallback, withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Paper, List, ListItem, ListItemText } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
 import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
 
 type CssRules = 'searchView' | 'list' | 'listItem';
 
-const styles: StyleRulesCallback<CssRules> = theme => {
+const styles: CustomStyleRulesCallback<CssRules> = theme => {
     return {
         searchView: {
-            borderRadius: `0 0 ${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px`
+            borderRadius: `0 0 ${theme.spacing(0.5)} ${theme.spacing(0.5)}`
         },
         list: {
             padding: 0
         },
         listItem: {
-            paddingLeft: theme.spacing.unit,
-            paddingRight: theme.spacing.unit * 2,
+            paddingLeft: theme.spacing(1),
+            paddingRight: theme.spacing(2),
         }
     };
 };
