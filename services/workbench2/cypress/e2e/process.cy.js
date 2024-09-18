@@ -498,6 +498,7 @@ describe("Process tests", function () {
                 cy.getAll("@stdoutLogs", "@nodeInfoLogs", "@crunchRunLogs").then(function () {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/processes/${containerRequest.uuid}`);
+                    cy.waitForDom();
                     // Should show main logs by default
                     cy.get("[data-cy=process-logs-filter]", { timeout: 7000 }).should("contain", "Main logs");
                     cy.get("[data-cy=process-logs]")
