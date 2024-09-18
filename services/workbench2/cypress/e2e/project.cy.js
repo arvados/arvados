@@ -287,6 +287,7 @@ describe("Project tests", function () {
                     });
                 });
             cy.get("[data-cy=form-submit-btn]").click();
+            cy.waitForDom();
         };
 
         cy.loginAs(activeUser);
@@ -635,10 +636,10 @@ describe("Project tests", function () {
                     cy.get("input").type(projectName);
                 });
                 cy.get("[data-cy=form-submit-btn]").click();
-                cy.waitForDom();
             });
+        cy.contains("Project has been successfully created");
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
-        cy.get("[data-cy=snackbar]").contains("created");
         cy.get("[data-cy=snackbar]").should("not.exist");
         cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
         cy.waitForDom();
