@@ -108,7 +108,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     renderInput() {
         return <Input
             disabled={this.props.disabled}
-            autoFocus={this.isInputAutoFocused()}
+            autoFocus={this.props.autofocus}
             inputRef={this.inputRef}
             value={this.props.value}
             startAdornment={this.renderChips()}
@@ -173,6 +173,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         selectedTab={this.state.selectedTab}
                         handleTabChange={handleTabChange}
                         handleSelect={this.handleSelect}
+                        includeContentsLength={true}
                         />
                 </Paper>
             </Popper>
@@ -183,8 +184,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         const { suggestions = [] } = this.props;
         return this.state.suggestionsOpen && suggestions.length > 0;
     }
-
-    isInputAutoFocused = () => this.props.autofocus || this.props.category === AutocompleteCat.SHARING
 
     handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
         const { onFocus = noop } = this.props;

@@ -49,12 +49,13 @@ type TabbedListProps<T> = {
     injectedStyles?: string;
     selectedIndex?: number;
     selectedTab?: number;
+    includeContentsLength: boolean;
     handleSelect?: (selection: T) => React.MouseEventHandler<HTMLElement> | undefined;
     renderListItem?: (item: T) => React.ReactNode;
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, handleSelect, renderListItem, handleTabChange }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabNr = selectedTab || 0;
     const listRefs = useRef<HTMLDivElement[]>([]);
     const tabLabels = Object.keys(tabbedListContents);
@@ -74,7 +75,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                     fullWidth
                 >
                     {tabLabels.map((label) => (
-                        <Tab data-cy={`${label}-tab-label`} label={label} />
+                        <Tab data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
                     ))}
                 </Tabs>
             </div>
