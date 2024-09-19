@@ -9,10 +9,13 @@ import { WithStyles, withStyles } from '@mui/styles';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem' | 'selected' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'notFoundLabel';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
         overflowY: 'auto',
     },
     tabs: {
@@ -21,9 +24,6 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         top: 0,
         zIndex: 1,
         borderBottom: '1px solid lightgrey',
-    },
-    list: {
-        overflowY: 'scroll',
     },
     listItem: {
         cursor: 'pointer',
@@ -87,7 +87,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 value={tabNr}
                 index={tabNr}
             >
-                <List className={classes.list}>
+                <List>
                   {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
                     {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
                       <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
@@ -107,5 +107,5 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
 });
 
 const TabPanel = ({ children, value, index }: TabPanelProps) => {
-    return <div hidden={value !== index}>{value === index && children}</div>;
+    return <div style={{overflowY: 'scroll'}} hidden={value !== index}>{value === index && children}</div>;
 };
