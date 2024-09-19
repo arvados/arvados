@@ -179,6 +179,11 @@ server {
 
   passenger_enabled on;
   passenger_preload_bundler on;
+  passenger_load_shell_envvars off;
+  # The API server needs to find `arvados-server` in $PATH to read the cluster
+  # configuration. If you have installed `arvados-server` in a nonstandard
+  # location, add that directory to the PATH value here.
+  passenger_env_var PATH /usr/bin:/usr/local/bin;
 
   # This value effectively limits the size of API objects users can
   # create, especially collections.  If you change this, you should
