@@ -88,7 +88,7 @@ export const ParticipantSelect = connect()(
                     onCreate={this.handleCreate}
                     onSelect={this.handleSelect}
                     onDelete={this.props.onDelete && !this.props.disabled ? this.handleDelete : undefined}
-                    onFocus={this.props.onFocus}
+                    onFocus={this.props.onFocus || this.onFocus}
                     onBlur={this.onBlur}
                     renderChipValue={this.renderChipValue}
                     renderChipTooltip={this.renderChipTooltip}
@@ -96,6 +96,10 @@ export const ParticipantSelect = connect()(
                     category={this.props.category}
                     disabled={this.props.disabled} />
             );
+        }
+
+        onFocus = (e) => {
+            this.getSuggestions();
         }
 
         onBlur = (e) => {
