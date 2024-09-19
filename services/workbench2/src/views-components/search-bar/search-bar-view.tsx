@@ -4,9 +4,12 @@
 
 import React from "react";
 import { compose } from "redux";
-import { IconButton, Paper, StyleRulesCallback, withStyles, WithStyles, Tooltip, InputAdornment, Input } from "@material-ui/core";
-import SearchIcon from "@material-ui/icons/Search";
-import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { IconButton, Paper, Tooltip, InputAdornment, Input } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import SearchIcon from "@mui/icons-material/Search";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { ArvadosTheme } from "common/custom-theme";
 import { SearchView } from "store/search-bar/search-bar-reducer";
 import { SearchBarBasicView, SearchBarBasicViewDataProps, SearchBarBasicViewActionProps } from "views-components/search-bar/search-bar-basic-view";
@@ -28,18 +31,18 @@ import { Session } from "models/session";
 
 type CssRules = "container" | "containerSearchViewOpened" | "input" | "view";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => {
     return {
         container: {
             position: "relative",
             width: "100%",
-            borderRadius: theme.spacing.unit / 2,
+            borderRadius: theme.spacing(0.5),
             zIndex: theme.zIndex.modal,
         },
         containerSearchViewOpened: {
             position: "relative",
             width: "100%",
-            borderRadius: `${theme.spacing.unit / 2}px ${theme.spacing.unit / 2}px 0 0`,
+            borderRadius: `${theme.spacing(0.5)} ${theme.spacing(0.5)} 0 0`,
             zIndex: theme.zIndex.modal,
         },
         input: {
@@ -180,48 +183,46 @@ export const SearchBarView = compose(
         render() {
             const { children, ...props } = this.props;
             const { classes, isPopoverOpen } = this.props;
-            return (
-                <>
-                    {isPopoverOpen && <Backdrop onClick={props.closeView} />}
+            return <>
+                {isPopoverOpen && <Backdrop onClick={props.closeView} />}
 
-                    <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container}>
-                        <form
-                            data-cy="searchbar-parent-form"
-                            onSubmit={this.handleSubmit}>
-                            <Input
-                                data-cy="searchbar-input-field"
-                                className={classes.input}
-                                onChange={this.handleChange}
-                                placeholder="Search"
-                                value={props.searchValue}
-                                fullWidth={true}
-                                disableUnderline={true}
-                                onClick={e => handleInputClick(e, props)}
-                                onKeyDown={e => handleKeyDown(e, props)}
-                                startAdornment={
-                                    <InputAdornment position="start">
-                                        <Tooltip title="Search">
-                                            <IconButton type="submit">
-                                                <SearchIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </InputAdornment>
-                                }
-                                endAdornment={
-                                    <InputAdornment position="end">
-                                        <Tooltip title="Advanced search">
-                                            <IconButton onClick={e => handleDropdownClick(e, props)}>
-                                                <ArrowDropDownIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </InputAdornment>
-                                }
-                            />
-                        </form>
-                        <div className={classes.view}>{isPopoverOpen && getView({ ...props })}</div>
-                    </Paper>
-                </>
-            );
+                <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container}>
+                    <form
+                        data-cy="searchbar-parent-form"
+                        onSubmit={this.handleSubmit}>
+                        <Input
+                            data-cy="searchbar-input-field"
+                            className={classes.input}
+                            onChange={this.handleChange}
+                            placeholder="Search"
+                            value={props.searchValue}
+                            fullWidth={true}
+                            disableUnderline={true}
+                            onClick={e => handleInputClick(e, props)}
+                            onKeyDown={e => handleKeyDown(e, props)}
+                            startAdornment={
+                                <InputAdornment position="start">
+                                    <Tooltip title="Search">
+                                        <IconButton type="submit" size="large">
+                                            <SearchIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </InputAdornment>
+                            }
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <Tooltip title="Advanced search">
+                                        <IconButton onClick={e => handleDropdownClick(e, props)} size="large">
+                                            <ArrowDropDownIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </InputAdornment>
+                            }
+                        />
+                    </form>
+                    <div className={classes.view}>{isPopoverOpen && getView({ ...props })}</div>
+                </Paper>
+            </>;
         }
     }
 );
@@ -260,7 +261,7 @@ const getView = (props: SearchBarViewProps) => {
     }
 };
 
-const Backdrop = withStyles<"backdrop">(theme => ({
+const backdropStyles: CustomStyleRulesCallback<"backdrop"> = theme => ({
     backdrop: {
         position: "fixed",
         top: 0,
@@ -269,7 +270,9 @@ const Backdrop = withStyles<"backdrop">(theme => ({
         left: 0,
         zIndex: theme.zIndex.modal,
     },
-}))(({ classes, ...props }: WithStyles<"backdrop"> & React.HTMLProps<HTMLDivElement>) => (
+});
+
+const Backdrop = compose(withStyles(backdropStyles))(({ classes, ...props }: WithStyles<"backdrop"> & React.HTMLProps<HTMLDivElement>) => (
     <div
         className={classes.backdrop}
         {...props}

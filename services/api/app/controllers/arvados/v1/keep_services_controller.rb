@@ -14,6 +14,10 @@ class Arvados::V1::KeepServicesController < ApplicationController
     super
   end
 
+  def self._accessible_method_description
+    "List Keep services that the current client can access."
+  end
+
   def accessible
     if request.headers['X-External-Client'] == '1'
       @objects = KeepService.where('service_type=?', 'proxy')

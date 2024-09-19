@@ -114,6 +114,10 @@ func (is *instanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, error) {
 	return ret, nil
 }
 
+func (is *instanceSet) InstanceQuotaGroup(arvados.InstanceType) cloud.InstanceQuotaGroup {
+	return ""
+}
+
 func (is *instanceSet) Stop() {
 	is.mtx.Lock()
 	defer is.mtx.Unlock()

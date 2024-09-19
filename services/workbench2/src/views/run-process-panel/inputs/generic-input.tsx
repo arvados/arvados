@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { FormGroup, FormLabel, FormHelperText } from '@material-ui/core';
+import { FormGroup, FormLabel, FormHelperText } from '@mui/material';
 import { GenericCommandInputParameter, getInputLabel, isRequiredInput } from 'models/workflow';
 
 export type GenericInputProps = WrappedFieldProps & {

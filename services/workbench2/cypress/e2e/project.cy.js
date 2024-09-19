@@ -70,6 +70,9 @@ describe("Project tests", function () {
 
         // Create project and confirm the properties' real values.
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.get("[data-cy=form-dialog]").should("not.exist");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });        
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         cy.doRequest("GET", "/arvados/v1/groups", null, {
             filters: `[["name", "=", "${projName}"], ["group_class", "=", "project"]]`,
@@ -97,10 +100,10 @@ describe("Project tests", function () {
         // Add another property
         cy.get("[data-cy=resource-properties-form]").within(() => {
             cy.get("[data-cy=property-field-key]").within(() => {
-                cy.get("input").type("Animal").blur();
+                cy.get("input").type("Medium").blur();
             });
             cy.get("[data-cy=property-field-value]").within(() => {
-                cy.get("input").type("Dog").blur();
+                cy.get("input").type("Egg").blur();
             });
             cy.get("[data-cy=property-add-btn]").click();
         });
@@ -113,7 +116,7 @@ describe("Project tests", function () {
                 cy.get("div[role=button]").contains("Color: Magenta");
                 cy.get("div[role=button]").contains("Color: Pink");
                 cy.get("div[role=button]").contains("Color: Yellow");
-                cy.get("div[role=button]").contains("Animal: Dog");
+                cy.get("div[role=button]").contains("Medium: Egg");
             });
         });
     });
@@ -193,12 +196,14 @@ describe("Project tests", function () {
                 });
             });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
-        cy.go('back')
+        cy.get("button").contains('Home Projects').click();
         cy.waitForDom();
 
         // Create subproject from context menu
-        cy.get("[data-cy=project-panel] tbody tr").contains(parentProjName).rightclick({ force: true });
+        cy.get("[data-cy=project-panel]").should('exist', { timeout: 10000 });
+        cy.get("[data-cy=project-panel]").contains(parentProjName).should('exist').parents('td').rightclick();
         cy.get("[data-cy=context-menu]").contains("New project").click();
         cy.get("[data-cy=form-dialog]")
             .should("contain", "New Project")
@@ -253,8 +258,8 @@ describe("Project tests", function () {
         cy.waitForDom()
         cy.go('back')
 
-        cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parent().parent().parent().click()
-        cy.waitForDom()
+            cy.get('[data-cy=data-table-row]').contains(projName).should('exist').parents('td').click()
+            cy.waitForDom()
         cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
@@ -282,6 +287,7 @@ describe("Project tests", function () {
                     });
                 });
             cy.get("[data-cy=form-submit-btn]").click();
+            cy.waitForDom();
         };
 
         cy.loginAs(activeUser);
@@ -294,13 +300,17 @@ describe("Project tests", function () {
         // Confirm that the user was taken to the newly created thing
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", projName);
         // Create a subproject
         const subProjName = `Test project (${Math.floor(999999 * Math.random())})`;
         createProject(subProjName, projName);
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
-        cy.get("[data-cy=breadcrumb-last]").should("contain", subProjName);
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
+        cy.get("[data-cy=breadcrumb-last]").should("contain", subProjName); //here
     });
 
     it("attempts to use a preexisting name creating a project", function () {
@@ -325,13 +335,14 @@ describe("Project tests", function () {
             });
         // Error message should display, allowing editing the name
         cy.get("[data-cy=form-dialog]")
-            .should("exist")
+            .should("exist") //here
             .and("contain", "Project with the same name already exists")
             .within(() => {
                 cy.get("[data-cy=name-field]").within(() => {
                     cy.get("input").type(" renamed");
                 });
                 cy.get("[data-cy=form-submit-btn]").click();
+                cy.waitForDom();
             });
         cy.get("[data-cy=form-dialog]").should("not.exist");
     });
@@ -355,10 +366,14 @@ describe("Project tests", function () {
             // Go to subproject and trash it.
             cy.goToPath(`/projects/${testSubProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("contain", testSubProject.name);
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testSubProject.name).rightclick();
             cy.get("[data-cy=context-menu]").contains("Move to trash").click();
 
             // Confirm that the parent project should be displayed.
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testRootProject.name);
             cy.url().should("contain", `/projects/${testRootProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("not.contain", testSubProject.name);
@@ -388,8 +403,8 @@ describe("Project tests", function () {
         cy.get("[data-cy=project-panel]").should("contain", fooProjectNameA).and("contain", fooProjectNameB).and("not.contain", barProjectNameA);
 
         // Click on the table row to select it, search should remain the same.
-        cy.get(`p:contains(${fooProjectNameA})`).parent().parent().parent().parent().click();
-        cy.get("[data-cy=search-input] input").should("have.value", "foo");
+            cy.get(`p:contains(${fooProjectNameA})`).should('exist').parents('td').click()
+            cy.get("[data-cy=search-input] input").should("have.value", "foo");
 
         // Click to navigate to the project, search should be reset
         cy.get(`p:contains(${fooProjectNameA})`).click();
@@ -423,11 +438,15 @@ describe("Project tests", function () {
             // Go to innermost project and trash its parent.
             cy.goToPath(`/projects/${testSubSubProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("contain", testSubSubProject.name);
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testSubSubProject.name);
             cy.get("[data-cy=side-panel-tree]").contains(testSubProject.name).rightclick();
             cy.get("[data-cy=context-menu]").contains("Move to trash").click();
 
             // Confirm that the trashed project's parent should be displayed.
+            cy.waitForDom();
+            cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
             cy.get("[data-cy=breadcrumb-last]").should("contain", testRootProject.name);
             cy.url().should("contain", `/projects/${testRootProject.uuid}`);
             cy.get("[data-cy=side-panel-tree]").should("not.contain", testSubProject.name);
@@ -618,30 +637,39 @@ describe("Project tests", function () {
                 });
                 cy.get("[data-cy=form-submit-btn]").click();
             });
+        cy.contains("Project has been successfully created");
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
-        cy.get("[data-cy=snackbar]").contains("created");
         cy.get("[data-cy=snackbar]").should("not.exist");
         cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
         cy.waitForDom();
         cy.get("[data-cy=project-panel]").contains(projectName).should("be.visible").rightclick();
         cy.get("[data-cy=context-menu]").contains("Copy link to clipboard").click();
-        cy.window().then(win =>
+        cy.window({ timeout: 10000 }).then(win =>{
+            win.focus();
             win.navigator.clipboard.readText().then(text => {
                 expect(text).to.match(/https\:\/\/127\.0\.0\.1\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/);
-            })
+            })}
         );
     });
 
     it("sorts displayed items correctly", () => {
         cy.loginAs(activeUser);
 
-        cy.get('[data-cy=project-panel] button[title="Select columns"]').click();
+        cy.get('[data-cy=project-panel] button[aria-label="Select columns"]').click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Date Created").click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Trash at").click();
         cy.get("div[role=presentation] ul > div[role=button]").contains("Delete at").click();
         cy.get("div[role=presentation] > div[aria-hidden=true]").click();
 
-        cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents*" }).as("filteredQuery");
+        cy.intercept({
+            method: "GET",
+            url: "**/arvados/v1/groups/*/contents*",
+            query: {
+                // Ignore the count=exact itemsavailable request
+                count: "none"
+            },
+        }).as("filteredQuery");
         [
             {
                 name: "Name",

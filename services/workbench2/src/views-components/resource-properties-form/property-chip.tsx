@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Chip } from '@material-ui/core';
+import { Chip } from '@mui/material';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import CopyToClipboard from 'react-copy-to-clipboard';

@@ -5,12 +5,15 @@
 import React, { useState, useMemo, ReactElement, JSXElementConstructor } from 'react';
 import { DoubleRightArrows } from 'components/icon/icon';
 import classnames from 'classnames';
-import { IconButton, Menu, MenuItem, StyleRulesCallback, Tooltip, WithStyles, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'inOverflowMenu' | 'openMenuButton' | 'menu' | 'menuItem' | 'menuElement';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inOverflowMenu: {
         '&:hover': {
             backgroundColor: 'transparent',
@@ -70,7 +73,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                     onClick={handleClick}
                     className={classes.openMenuButton}
                     data-cy='overflow-menu-button'
-                >
+                    size="large">
                         <DoubleRightArrows />
                 </IconButton>
             </Tooltip>

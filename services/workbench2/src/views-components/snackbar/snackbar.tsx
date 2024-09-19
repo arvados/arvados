@@ -6,17 +6,20 @@ import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { Button, IconButton, StyleRulesCallback, WithStyles, withStyles, SnackbarContent } from '@material-ui/core';
-import MaterialSnackbar, { SnackbarOrigin } from "@material-ui/core/Snackbar";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, IconButton, SnackbarContent } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import MaterialSnackbar, { SnackbarOrigin } from "@mui/material/Snackbar";
 import { snackbarActions, SnackbarKind, SnackbarMessage } from "store/snackbar/snackbar-actions";
 import { navigateTo } from 'store/navigation/navigation-action';
-import WarningIcon from '@material-ui/icons/Warning';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-import ErrorIcon from '@material-ui/icons/Error';
-import InfoIcon from '@material-ui/icons/Info';
-import CloseIcon from '@material-ui/icons/Close';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';
 import { ArvadosTheme } from "common/custom-theme";
-import { amber, green } from "@material-ui/core/colors";
+import { amber, green } from "@mui/material/colors";
 import classNames from 'classnames';
 
 interface SnackbarDataProps {
@@ -58,7 +61,7 @@ const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
 
 type CssRules = "success" | "error" | "info" | "warning" | "icon" | "iconVariant" | "message" | "linkButton" | "snackbarContent";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     success: {
         backgroundColor: green[600]
     },
@@ -76,7 +79,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     iconVariant: {
         opacity: 0.9,
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing(1)
     },
     message: {
         display: 'flex',
@@ -105,9 +108,13 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
 
         return (
             <MaterialSnackbar
+                TransitionProps={
+                    {
+                        onExited: props.onExited
+                    }
+                }
                 open={props.open}
                 onClose={props.onClose}
-                onExited={props.onExited}
                 anchorOrigin={props.anchorOrigin}
                 autoHideDuration={props.autoHideDuration}>
                 <div data-cy="snackbar">
@@ -145,7 +152,8 @@ const actions = (props: SnackbarMessage, onClick, onClose, classes, index, autoH
             key="close"
             aria-label="Close"
             color="inherit"
-            onClick={e => onClose && onClose(e, '', index)}>
+            onClick={e => onClose && onClose(e, '', index)}
+            size="large">
             <CloseIcon className={classes.icon} />
         </IconButton>
     ];

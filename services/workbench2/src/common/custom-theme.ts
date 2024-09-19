@@ -2,15 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createMuiTheme } from '@material-ui/core/styles';
-import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
-import blue from '@material-ui/core/colors/blue';
-import grey from '@material-ui/core/colors/grey';
-import green from '@material-ui/core/colors/green';
-import yellow from '@material-ui/core/colors/yellow';
-import red from '@material-ui/core/colors/red';
+import { createTheme, adaptV4Theme } from '@mui/material/styles';
+import { StyleRulesCallback } from '@mui/styles';
+import { DeprecatedThemeOptions, Theme } from '@mui/material/styles';
+import { blue, grey, green, yellow, red } from '@mui/material/colors';
 
-export interface ArvadosThemeOptions extends ThemeOptions {
+export interface ArvadosThemeOptions extends DeprecatedThemeOptions {
     customs: any;
 }
 
@@ -19,6 +16,9 @@ export interface ArvadosTheme extends Theme {
         colors: Colors
     };
 }
+
+export type CustomStyleRulesCallback<ClassKey extends string = string> = 
+    StyleRulesCallback<Theme, {}, ClassKey>
 
 interface Colors {
     green700: string;
@@ -35,19 +35,21 @@ interface Colors {
     grey700: string;
     grey900: string;
     purple: string;
-    orange: string; 
+    orange: string;
+    darkOrange: string;
     greyL: string;
     greyD: string;
     darkblue: string;
 }
 
 /**
-* arvadosGreyLight is the hex equivalent of rgba(0,0,0,0.87) on #fafafa background and arvadosGreyDark is the hex equivalent of rgab(0,0,0,0.54) on #fafafa background  
+* arvadosGreyLight is the hex equivalent of rgba(0,0,0,0.87) on #fafafa background and arvadosGreyDark is the hex equivalent of rgab(0,0,0,0.54) on #fafafa background
 */
 
 const arvadosDarkBlue = '#052a3c';
-const arvadosGreyLight = '#737373'; 
-const arvadosGreyDark = '#212121'; 
+const arvadosGreyLight = '#737373';
+const arvadosGreyVeryLight = '#fafafa';
+const arvadosGreyDark = '#212121';
 const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
@@ -55,9 +57,6 @@ const grey800 = grey["800"];
 const grey900 = grey["900"];
 
 export const themeOptions: ArvadosThemeOptions = {
-    typography: {
-        useNextVariants: true,
-    },
     customs: {
         colors: {
             green700: green["700"],
@@ -76,14 +75,21 @@ export const themeOptions: ArvadosThemeOptions = {
             grey900: grey900,
             darkblue: arvadosDarkBlue,
             orange: '#f0ad4e',
+            darkOrange: '#9A6E31',
             greyL: arvadosGreyLight,
             greyD: arvadosGreyDark,
         }
     },
     overrides: {
+        MuiTableCell: {
+            root: {
+                paddingTop: '12px',
+                paddingBottom: '12px',
+            },
+        },
         MuiTypography: {
             body1: {
-                fontSize: '0.8125rem'
+                fontSize: '0.875rem'
             }
         },
         MuiAppBar: {
@@ -111,14 +117,22 @@ export const themeOptions: ArvadosThemeOptions = {
                 color: grey900
             }
         },
+        MuiListItem: {
+            root: {
+                color: grey900
+            }
+        },
         MuiListItemText: {
             root: {
-                padding: 0
+                padding: 0,
+                paddingBottom: '2px',
             }
         },
         MuiListItemIcon: {
             root: {
                 fontSize: '1.25rem',
+                minWidth: 0,
+                marginRight: '16px'
             }
         },
         MuiCardHeader: {
@@ -127,22 +141,22 @@ export const themeOptions: ArvadosThemeOptions = {
                 alignItems: 'center'
             },
             title: {
-                color: arvadosGreyDark, 
+                color: arvadosGreyDark,
                 fontSize: '1.25rem'
             }
         },
-        MuiExpansionPanel: {
-            expanded: {
-                marginTop: '8px',
-            }
+        MuiAccordion: {
+            root: {
+                backgroundColor: arvadosGreyVeryLight,
+              },
         },
-        MuiExpansionPanelDetails: {
+        MuiAccordionDetails: {
             root: {
                 marginBottom: 0,
                 paddingBottom: '4px',
-            }
+            },
         },
-        MuiExpansionPanelSummary: {
+        MuiAccordionSummary: {
             content: {
                 '&$expanded': {
                     margin: 0,
@@ -151,7 +165,6 @@ export const themeOptions: ArvadosThemeOptions = {
                 fontSize: '1.25rem',
                 margin: 0,
             },
-            expanded: {},
         },
         MuiMenuItem: {
             root: {
@@ -190,7 +203,12 @@ export const themeOptions: ArvadosThemeOptions = {
                     color: 'inherited'
                 },
             }
-        }
+        },
+        MuiLinearProgress: {
+            barColorSecondary: {
+                backgroundColor: red['700']
+            }
+        },
     },
     mixins: {
         toolbar: {
@@ -203,8 +221,11 @@ export const themeOptions: ArvadosThemeOptions = {
             dark: '#015272',
             light: '#82cffd',
             contrastText: '#fff'
-        }
+        },
+        background: {
+            default: '#fafafa',
+        },
     },
 };
 
-export const CustomTheme = createMuiTheme(themeOptions);
+export const CustomTheme = createTheme(adaptV4Theme(themeOptions));

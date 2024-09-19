@@ -3,16 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import {
-    Dialog, 
-    DialogTitle, 
-    DialogContent, 
-    DialogActions, 
-    Button,
-    StyleRulesCallback,
-    WithStyles,
-    withStyles
-} from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
@@ -21,7 +15,7 @@ import RichTextEditor from 'react-rte';
 
 type CssRules = 'rte';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rte: {
         fontFamily: 'Arial',
         '& a': {

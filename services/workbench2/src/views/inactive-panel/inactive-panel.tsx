@@ -5,8 +5,10 @@
 import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { Grid, Typography, Button } from '@mui/material';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { navigateToLinkAccount } from 'store/navigation/navigation-action';
 import { RootState } from 'store/store';
@@ -14,7 +16,7 @@ import { sanitizeHTML } from 'common/html-sanitize';
 
 export type CssRules = 'root' | 'ontop' | 'title';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         position: 'relative',
         backgroundColor: theme.palette.grey["200"],
@@ -25,7 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         zIndex: 10
     },
     title: {
-        marginBottom: theme.spacing.unit * 6,
+        marginBottom: theme.spacing(6),
         color: theme.palette.grey["800"]
     }
 });
@@ -53,7 +55,7 @@ export interface InactivePanelStateProps {
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
 
 export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isLoginClusterFederation }: InactivePanelProps) =>
-    <Grid container justify="center" alignItems="center" direction="column" spacing={24}
+    <Grid container justifyContent="center" alignItems="center" direction="column" spacing={3}
         className={classes.root}
         style={{ marginTop: 56, height: "100%" }}>
         <Grid item>

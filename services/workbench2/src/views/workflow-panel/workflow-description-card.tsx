@@ -3,19 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    StyleRulesCallback,
-    WithStyles,
-    withStyles,
-    CardContent,
-    Tab,
-    Tabs,
-    Table,
-    TableHead,
-    TableCell,
-    TableBody,
-    TableRow,
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { CardContent, Tab, Tabs, Table, TableHead, TableCell, TableBody, TableRow } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowIcon } from 'components/icon/icon';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
@@ -24,7 +15,7 @@ import { WorkflowDetailsCardDataProps, WorkflowDetailsAttributes } from 'views-c
 
 export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         height: '100%'
     },
@@ -34,20 +25,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inputTab: {
         overflow: 'auto',
         maxHeight: '300px',
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing(1)
     },
     graphTab: {
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
     },
     graphTabWithChosenWorkflow: {
         overflow: 'auto',
         height: '450px',
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
     },
     descriptionTab: {
         overflow: 'auto',
         maxHeight: '300px',
-        marginTop: theme.spacing.unit,
+        marginTop: theme.spacing(1),
     },
     inputsTable: {
         tableLayout: 'fixed',

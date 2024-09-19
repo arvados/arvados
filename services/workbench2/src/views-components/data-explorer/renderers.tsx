@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox, Chip, withTheme } from "@material-ui/core";
+import { Grid, Typography, Tooltip, IconButton, Checkbox, Chip } from "@mui/material";
+import withStyles from '@mui/styles/withStyles';
+import withTheme from '@mui/styles/withTheme';
 import { FavoriteStar, PublicFavoriteStar } from "../favorite-star/favorite-star";
 import { Resource, ResourceKind, TrashableResource } from "models/resource";
 import {
@@ -57,6 +59,7 @@ import { ServiceRepository } from "services/services";
 import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
+import { CustomTheme } from "common/custom-theme";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -75,9 +78,9 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             container
             alignItems="center"
             wrap="nowrap"
-            spacing={16}
+            spacing={2}
         >
-            <Grid item>{renderIcon(item)}</Grid>
+            <Grid item style={{color: CustomTheme.palette.grey['600'] }}>{renderIcon(item)}</Grid>
             <Grid item>
                 <Typography
                     color="primary"
@@ -167,7 +170,7 @@ const renderWorkflowName = (item: WorkflowResource) => (
         container
         alignItems="center"
         wrap="nowrap"
-        spacing={16}
+        spacing={2}
     >
         <Grid item>{renderIcon(item)}</Grid>
         <Grid item>
@@ -196,7 +199,7 @@ const resourceShare = (dispatch: Dispatch, uuidPrefix: string, ownerUuid?: strin
         <div>
             {!isPublic && uuid && (
                 <Tooltip title="Share">
-                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))}>
+                    <IconButton onClick={() => dispatch<any>(openSharingDialog(uuid))} size="large">
                         <ShareIcon />
                     </IconButton>
                 </Tooltip>
@@ -299,7 +302,7 @@ const renderAccountStatus = (props: { status: UserAccountStatus }) => (
         container
         alignItems="center"
         wrap="nowrap"
-        spacing={8}
+        spacing={1}
         data-cy="account-status"
     >
         <Grid item>
@@ -591,16 +594,13 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
                 <IconButton
                     data-cy="resource-delete-button"
                     onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}
-                >
+                    size="large">
                     <RemoveIcon />
                 </IconButton>
             </Typography>
         ) : (
             <Typography noWrap>
-                <IconButton
-                    disabled
-                    data-cy="resource-delete-button"
-                >
+                <IconButton disabled data-cy="resource-delete-button" size="large">
                     <RemoveIcon />
                 </IconButton>
             </Typography>
@@ -642,7 +642,7 @@ const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage
                 <IconButton
                     data-cy="edit-permission-button"
                     onClick={event => dispatch<any>(openPermissionEditContextMenu(event, link))}
-                >
+                    size="large">
                     <RenameIcon />
                 </IconButton>
             ) : (
@@ -688,7 +688,7 @@ const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {
         <div>
             {uuid && (
                 <Tooltip title="Run process">
-                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))}>
+                    <IconButton onClick={() => dispatch<any>(openRunProcess(uuid))} size="large">
                         <ProcessIcon />
                     </IconButton>
                 </Tooltip>
@@ -910,7 +910,7 @@ const _resourceWithName = withStyles(
         return (
             <Typography
                 style={{ color: theme.palette.primary.main }}
-                inline
+                display="inline"
             >
                 {uuid}
             </Typography>
@@ -920,7 +920,7 @@ const _resourceWithName = withStyles(
     return (
         <Typography
             style={{ color: theme.palette.primary.main }}
-            inline
+            display="inline"
         >
             {userFullname} ({uuid})
         </Typography>
@@ -939,7 +939,7 @@ const _resourceWithNameLink = withStyles(
     return (
         <Typography
             style={{ color: theme.palette.primary.main, cursor: 'pointer' }}
-            inline
+            display="inline"
             noWrap
             onClick={() => dispatch<any>(navigateTo(uuid))}
         >
@@ -1011,7 +1011,7 @@ export const ResponsiblePerson = compose(
         return (
             <Typography
                 style={{ color: theme.palette.primary.main }}
-                inline
+                display="inline"
                 noWrap
             >
                 {uuid}
@@ -1022,7 +1022,7 @@ export const ResponsiblePerson = compose(
     return (
         <Typography
             style={{ color: theme.palette.primary.main }}
-            inline
+            display="inline"
             noWrap
         >
             {responsiblePersonName} ({uuid})
@@ -1086,13 +1086,14 @@ export const ProcessStatus = compose(
 )((props: { process?: Process; theme: ArvadosTheme }) =>
     props.process ? (
         <Chip
+            data-cy="process-status-chip"
             label={getProcessStatus(props.process)}
             style={{
-                height: props.theme.spacing.unit * 3,
-                width: props.theme.spacing.unit * 12,
+                height: props.theme.spacing(3),
+                width: props.theme.spacing(12),
                 ...getProcessStatusStyles(getProcessStatus(props.process), props.theme),
                 fontSize: "0.875rem",
-                borderRadius: props.theme.spacing.unit * 0.625,
+                borderRadius: props.theme.spacing(0.625),
             }}
         />
     ) : (
@@ -1164,7 +1165,7 @@ export const GroupMembersCount = connect(
         };
 
     }
-)(withTheme()((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
+)(withTheme((props: {value: number | null | undefined, theme:ArvadosTheme}) => {
     if (props.value === undefined) {
         // Loading
         return <Typography component={"div"}>

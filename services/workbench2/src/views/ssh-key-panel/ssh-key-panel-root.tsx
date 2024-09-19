@@ -3,14 +3,30 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Button, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import {
+    Card,
+    CardContent,
+    Button,
+    Typography,
+    Grid,
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableBody,
+    Tooltip,
+    IconButton,
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SshKeyResource } from 'models/ssh-key';
 import { AddIcon, MoreVerticalIcon, KeyIcon } from 'components/icon/icon';
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' | 'keyIcon';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'
@@ -24,7 +40,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'right'
     },
     table: {
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing(1)
     },
     tableRow: {
         '& td, th': {
@@ -95,14 +111,16 @@ export const SshKeyPanelRoot = withStyles(styles)(
                                     <TableCell>{sshKey.keyType}</TableCell>
                                     <TableCell>
                                         <Tooltip title="Public Key" disableFocusListener>
-                                            <IconButton onClick={() => openPublicKeyDialog(sshKey.name, sshKey.publicKey)}>
+                                            <IconButton
+                                                onClick={() => openPublicKeyDialog(sshKey.name, sshKey.publicKey)}
+                                                size="large">
                                                 <KeyIcon className={classes.keyIcon} />
                                             </IconButton>
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell>
                                         <Tooltip title="More options" disableFocusListener>
-                                            <IconButton onClick={event => openRowOptions(event, sshKey)}>
+                                            <IconButton onClick={event => openRowOptions(event, sshKey)} size="large">
                                                 <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>

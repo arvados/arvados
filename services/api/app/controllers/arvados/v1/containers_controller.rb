@@ -15,6 +15,10 @@ class Arvados::V1::ContainersController < ApplicationController
   skip_before_action :find_object_by_uuid, only: [:current]
   skip_before_action :render_404_if_no_object, only: [:current]
 
+  def self._auth_method_description
+    "Get the API client authorization token associated with this container."
+  end
+
   def auth
     if @object.locked_by_uuid != Thread.current[:api_client_authorization].uuid
       raise ArvadosModel::PermissionDeniedError.new("Not locked by your token")
@@ -65,9 +69,17 @@ class Arvados::V1::ContainersController < ApplicationController
     end
   end
 
+  def self._lock_method_description
+    "Lock a container (for a dispatcher to begin running it)."
+  end
+
   def lock
     @object.lock
     show
+  end
+
+  def self._unlock_method_description
+    "Unlock a container (for a dispatcher to stop running it)."
   end
 
   def unlock
@@ -75,9 +87,17 @@ class Arvados::V1::ContainersController < ApplicationController
     show
   end
 
+  def self._update_priority_method_description
+    "Recalculate and return the priority of a given container."
+  end
+
   def update_priority
     @object.update_priority!
     show
+  end
+
+  def self._current_method_description
+    "Return the container record associated with the API token authorizing this request."
   end
 
   def current
@@ -91,6 +111,10 @@ class Arvados::V1::ContainersController < ApplicationController
         show
       end
     end
+  end
+
+  def self._secret_mounts_method_description
+    "Return secret mount information for the container associated with the API token authorizing this request."
   end
 
   def secret_mounts

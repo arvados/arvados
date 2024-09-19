@@ -155,10 +155,11 @@ type Cluster struct {
 
 		WebDAVCache WebDAVCacheConfig
 
-		KeepproxyPermission UploadDownloadRolePermissions
-		WebDAVPermission    UploadDownloadRolePermissions
-		WebDAVLogEvents     bool
-		WebDAVOutputBuffer  ByteSize
+		KeepproxyPermission       UploadDownloadRolePermissions
+		WebDAVPermission          UploadDownloadRolePermissions
+		WebDAVLogEvents           bool
+		WebDAVLogDownloadInterval Duration
+		WebDAVOutputBuffer        ByteSize
 	}
 	Login struct {
 		LDAP struct {

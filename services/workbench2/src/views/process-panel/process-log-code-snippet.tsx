@@ -3,37 +3,43 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    MuiThemeProvider,
-    createMuiTheme,
-    StyleRulesCallback,
-    withStyles,
-    WithStyles
-} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { ThemeProvider, Theme, StyledEngineProvider, createTheme, adaptV4Theme } from '@mui/material/styles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { Link, Typography } from '@material-ui/core';
+import { Link, Typography } from '@mui/material';
 import { navigationNotAvailable } from 'store/navigation/navigation-action';
 import { Dispatch } from 'redux';
 import { connect, DispatchProp } from 'react-redux';
 import classNames from 'classnames';
 import { FederationConfig, getNavUrl } from 'routes/routes';
 import { RootState } from 'store/store';
+import { grey } from '@mui/material/colors';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 type CssRules = 'root' | 'wordWrapOn' | 'wordWrapOff' | 'logText';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',
         backgroundColor: '#000',
-        height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
+        height: `calc(100% - ${theme.spacing(4)})`, // so that horizontal scollbar is visible
         "& a": {
             color: theme.palette.primary.main,
         },
     },
     logText: {
-        padding: `0 ${theme.spacing.unit * 0.5}px`,
+        color: '#fff',
+        padding: theme.spacing(0, 0.5),
+        display: 'block',
     },
     wordWrapOn: {
         overflowWrap: 'anywhere',
@@ -43,7 +49,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-const theme = createMuiTheme({
+const theme = createTheme(adaptV4Theme({
     overrides: {
         MuiTypography: {
             body2: {
@@ -53,9 +59,8 @@ const theme = createMuiTheme({
     },
     typography: {
         fontFamily: 'monospace',
-        useNextVariants: true,
     }
-});
+}));
 
 interface ProcessLogCodeSnippetProps {
     lines: string[];
@@ -111,22 +116,26 @@ export const ProcessLogCodeSnippet = withStyles(styles)(connect(mapStateToProps)
             }
         }, [followMode, lines, scrollRef]);
 
-        return <MuiThemeProvider theme={theme}>
-            <div ref={scrollRef} className={classes.root}
-                onScroll={(e) => {
-                    const elem = e.target as HTMLDivElement;
-                    if (elem.scrollTop + (elem.clientHeight * 1.1) >= elem.scrollHeight) {
-                        setFollowMode(true);
-                    } else {
-                        setFollowMode(false);
-                    }
-                }}>
-                {lines.map((line: string, index: number) =>
-                    <Typography key={index} component="span"
-                        className={classNames(classes.logText, wordWrap ? classes.wordWrapOn : classes.wordWrapOff)}>
-                        {renderLinks(fontSize, auth, dispatch)(line)}
-                    </Typography>
-                )}
-            </div>
-        </MuiThemeProvider>
+        return (
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={theme}>
+                    <div ref={scrollRef} className={classes.root}
+                        onScroll={(e) => {
+                            const elem = e.target as HTMLDivElement;
+                            if (elem.scrollTop + (elem.clientHeight * 1.1) >= elem.scrollHeight) {
+                                setFollowMode(true);
+                            } else {
+                                setFollowMode(false);
+                            }
+                        }}>
+                        {lines.map((line: string, index: number) =>
+                            <Typography key={index} component="span"
+                                className={classNames(classes.logText, wordWrap ? classes.wordWrapOn : classes.wordWrapOff)}>
+                                {renderLinks(fontSize, auth, dispatch)(line)}
+                            </Typography>
+                        )}
+                    </div>
+                </ThemeProvider>
+            </StyledEngineProvider>
+        );
     }));

@@ -4,8 +4,10 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@mui/material';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Link } from 'react-router-dom';
 import { Dispatch, compose } from 'redux';
@@ -19,7 +21,7 @@ import { Routes } from 'routes/routes';
 
 type CssRules = 'link' | 'button' | 'icon' | 'iconRow' | 'moreOptionsButton' | 'moreOptions' | 'cloneUrls';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         textDecoration: 'none',
         color: theme.palette.primary.main,
@@ -41,7 +43,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     iconRow: {
-        paddingTop: theme.spacing.unit * 2,
+        paddingTop: theme.spacing(2),
         textAlign: 'right'
     },
     moreOptionsButton: {
@@ -115,7 +117,10 @@ export const RepositoriesPanel = compose(
                             <Grid item xs={12}>
                                 <div className={classes.iconRow}>
                                     <Tooltip title="Sample git quick start">
-                                        <IconButton className={classes.moreOptionsButton} onClick={openRepositoriesSampleGitDialog}>
+                                        <IconButton
+                                            className={classes.moreOptionsButton}
+                                            onClick={openRepositoriesSampleGitDialog}
+                                            size="large">
                                             <HelpIcon className={classes.icon} />
                                         </IconButton>
                                     </Tooltip>
@@ -137,7 +142,10 @@ export const RepositoriesPanel = compose(
                                                 <TableCell className={classes.cloneUrls}>{repository.cloneUrls.join("\n")}</TableCell>
                                                 <TableCell className={classes.moreOptions}>
                                                     <Tooltip title="More options" disableFocusListener>
-                                                        <IconButton onClick={event => onOptionsMenuOpen(event, repository)} className={classes.moreOptionsButton}>
+                                                        <IconButton
+                                                            onClick={event => onOptionsMenuOpen(event, repository)}
+                                                            className={classes.moreOptionsButton}
+                                                            size="large">
                                                             <MoreVerticalIcon />
                                                         </IconButton>
                                                     </Tooltip>

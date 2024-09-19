@@ -536,7 +536,7 @@ class ArvadosModel < ApplicationRecord
   def self.full_text_searchable_columns
     self.columns.select do |col|
       [:string, :text, :jsonb].include?(col.type) and
-      col.name !~ /(^|_)(hash|uuid)$/
+      col.name !~ /(^|_)(^container_image|hash|uuid)$/
     end.map(&:name)
   end
 

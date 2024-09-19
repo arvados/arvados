@@ -15,59 +15,41 @@ import { FilterBuilder } from "services/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
+import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { TrashPanelColumnNames } from "views/trash-panel/trash-panel";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { DataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { DataExplorer, getDataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
 import { CollectionResource } from "models/collection";
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { removeDisabledButton } from "store/multiselect/multiselect-actions";
+import { couldNotFetchItemsAvailable } from "store/data-explorer/data-explorer-action";
+import { ListResults } from "services/common-service/common-service";
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
         super(id);
     }
 
-    async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
-        const dataExplorer = api.getState().dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
-
-        const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, TrashPanelColumnNames.TYPE));
-
-        const otherFilters = new FilterBuilder()
-            .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
-            // .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROCESS)
-            .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
-            .addEqual("is_trashed", true)
-            .getFilters();
-
-        const filters = joinFilters(
-            typeFilters,
-            otherFilters,
-        );
+    async requestItems(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         const userUuid = getUserUuid(api.getState());
         if (!userUuid) { return; }
         try {
-            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+            if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
+
+            // Get items
             const listResults = await this.services.groupsService
-                .contents('', {
-                    ...dataExplorerToListParams(dataExplorer),
-                    order: getOrder(dataExplorer),
-                    filters,
-                    recursive: true,
-                    includeTrash: true
-                });
-            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
+                .contents('', getParams(dataExplorer));
 
             const items = listResults.items.map(it => it.uuid);
-
             api.dispatch(trashPanelActions.SET_ITEMS({
                 ...listResultsToDataExplorerItemsMeta(listResults),
                 items
@@ -76,7 +58,6 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch<any>(updatePublicFavorites(items));
             api.dispatch(updateResources(listResults.items));
         } catch (e) {
-            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(trashPanelActions.SET_ITEMS({
                 items: [],
                 itemsAvailable: 0,
@@ -84,8 +65,27 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
                 rowsPerPage: dataExplorer.rowsPerPage
             }));
             api.dispatch(couldNotFetchTrashContents());
+        } finally {
+            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
         }
         api.dispatch<any>(removeDisabledButton(ContextMenuActionNames.MOVE_TO_TRASH))
+    }
+
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+
+        if (criteriaChanged) {
+            // Get itemsAvailable
+            return this.services.groupsService.contents('', getCountParams(dataExplorer))
+                .then((results: ListResults<GroupContentsResource>) => {
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(trashPanelActions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
+        }
     }
 }
 
@@ -107,6 +107,39 @@ const getOrder = (dataExplorer: DataExplorer) => {
         return order.getOrder();
     }
 };
+
+const getFilters = (dataExplorer: DataExplorer) => {
+    const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
+    const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, TrashPanelColumnNames.TYPE));
+
+    const otherFilters = new FilterBuilder()
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.COLLECTION)
+        .addILike("name", dataExplorer.searchValue, GroupContentsResourcePrefix.PROJECT)
+        .addEqual("is_trashed", true)
+        .getFilters();
+
+    return joinFilters(
+        typeFilters,
+        otherFilters,
+    );
+};
+
+const getParams = (dataExplorer: DataExplorer): ContentsArguments => ({
+    ...dataExplorerToListParams(dataExplorer),
+    order: getOrder(dataExplorer),
+    filters: getFilters(dataExplorer),
+    recursive: true,
+    includeTrash: true,
+    count: 'none',
+});
+
+const getCountParams = (dataExplorer: DataExplorer): ContentsArguments => ({
+    filters: getFilters(dataExplorer),
+    recursive: true,
+    includeTrash: true,
+    limit: 0,
+    count: 'exact',
+});
 
 const couldNotFetchTrashContents = () =>
     snackbarActions.OPEN_SNACKBAR({

@@ -5,20 +5,17 @@
 import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { ArvadosTheme } from 'common/custom-theme';
-import {
-    TextField as MaterialTextField,
-    StyleRulesCallback,
-    WithStyles,
-    withStyles,
-    PropTypes
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { TextField as MaterialTextField, FormControlOwnProps } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import RichTextEditor from 'react-rte';
 
 type CssRules = 'textField' | 'rte';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     textField: {
-        marginBottom: theme.spacing.unit
+        marginBottom: theme.spacing(1)
     },
     rte: {
         fontFamily: 'Arial',
@@ -36,10 +33,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const TextField = withStyles(styles)((props: TextFieldProps & {
-    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: PropTypes.Margin, placeholder?: string,
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: FormControlOwnProps["margin"], placeholder?: string,
     helperText?: string, type?: string,
 }) =>
     <MaterialTextField
+        variant="standard"
         helperText={(props.meta.touched && props.meta.error) || props.helperText}
         className={props.classes.textField}
         label={props.label}
@@ -54,8 +52,7 @@ export const TextField = withStyles(styles)((props: TextFieldProps & {
         margin={props.margin}
         placeholder={props.placeholder}
         type={props.type}
-        {...props.input}
-    />);
+        {...props.input} />);
 
 
 interface RichEditorTextFieldData {
@@ -92,6 +89,7 @@ export const RichEditorTextField = withStyles(styles)(
 export const DateTextField = withStyles(styles)
     ((props: TextFieldProps) =>
         <MaterialTextField
+            variant="standard"
             type="date"
             disabled={props.meta.submitting}
             helperText={props.meta.error}
@@ -102,6 +100,5 @@ export const DateTextField = withStyles(styles)
             }}
             name={props.input.name}
             onChange={props.input.onChange}
-            value={props.input.value}
-        />
+            value={props.input.value} />
     );

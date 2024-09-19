@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useState } from "react";
-import { StyleRulesCallback, Tooltip, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Tooltip } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CProgressStacked, CProgress } from '@coreui/react';
 import { useAsyncInterval } from "common/use-async-interval";
 import { Process, isProcessRunning } from "store/processes/process";
@@ -21,7 +24,12 @@ import { DataColumns } from "components/data-table/data-table";
 
 type CssRules = 'progressStacked';
 
-const styles: StyleRulesCallback<CssRules> = (theme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
+    progressWrapper: {
+        margin: "28px 0 0",
+        flexGrow: 1,
+        flexBasis: "100px",
+    },
     progressStacked: {
         border: "1px solid gray",
         height: "10px",

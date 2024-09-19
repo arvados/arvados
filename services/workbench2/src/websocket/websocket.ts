@@ -8,7 +8,7 @@ import { Config } from "common/config";
 import { WebSocketService } from "./websocket-service";
 import { ResourceEventMessage } from "./resource-event-message";
 import { ResourceKind } from "models/resource";
-import { loadProcess } from "store/processes/processes-actions";
+import { loadProcess } from "store/process-panel/process-panel-actions";
 import { getProcess, getSubprocesses } from "store/processes/process";
 import { LogEventType } from "models/log";
 import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";

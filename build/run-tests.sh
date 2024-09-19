@@ -941,8 +941,7 @@ test_sdk/ruby-google-api-client() {
 
 test_sdk/R() {
   if [[ "$NEED_SDK_R" = true ]]; then
-    cd "$WORKSPACE/sdk/R" \
-        && Rscript --vanilla run_test.R
+    env -C "$WORKSPACE/sdk/R" make test
   fi
 }
 

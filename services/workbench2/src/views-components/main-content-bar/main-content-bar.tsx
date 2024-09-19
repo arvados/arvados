@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-
-import { Toolbar, StyleRulesCallback, Grid, WithStyles, withStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Toolbar, Grid } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { Breadcrumbs } from "views-components/breadcrumbs/breadcrumbs";
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
@@ -15,7 +17,7 @@ import { Dispatch } from "redux";
 
 type CssRules = 'mainBar' | 'breadcrumbContainer';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     mainBar: {
         flexWrap: 'nowrap',
     },

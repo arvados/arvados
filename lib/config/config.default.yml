@@ -804,6 +804,15 @@ Clusters:
       # load on the API server and you don't need it.
       WebDAVLogEvents: true
 
+      # If a client requests partial content past the start of a file,
+      # and a request from the same client for the same file was logged
+      # within the past WebDAVLogDownloadInterval, do not write a new log.
+      # This throttling applies to both printed and API server logs.
+      # This reduces log output when clients like `aws s3 cp` download
+      # one file in small chunks in parallel.
+      # Set this to 0 to disable throttling and log all requests.
+      WebDAVLogDownloadInterval: 30s
+
       # Per-connection output buffer for WebDAV downloads. May improve
       # throughput for large files, particularly when storage volumes
       # have high latency.
@@ -1555,6 +1564,31 @@ Clusters:
           # GiB, so an advertised price $0.10/GB indicates a real
           # price of $0.10/GiB and can be entered here as 0.10.
           EBSPrice: 0.10
+
+          # (ec2) Mapping of alphabetic instance type prefix to
+          # instance quota group. Any prefix not listed here will be
+          # treated as a distinct instance quota group. For example,
+          # "trn1.2xlarge" will implicitly belong to instance quota
+          # group "trn".
+          #
+          # Knowing that multiple instance types belong to the same
+          # quota group enables the dispatcher to minimize futile
+          # attempts to create new instances when a quota has been
+          # reached.
+          #
+          # All keys must be lowercase.
+          InstanceTypeQuotaGroups:
+            a: standard
+            c: standard
+            d: standard
+            h: standard
+            i: standard
+            m: standard
+            r: standard
+            t: standard
+            z: standard
+            vt: g
+            p5: p5
 
           # (azure) Credentials.
           SubscriptionID: ""

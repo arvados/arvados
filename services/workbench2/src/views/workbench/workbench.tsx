@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useState } from "react";
-import { StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core/styles";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
 import { DetailsPanel } from "views-components/details-panel/details-panel";
@@ -41,7 +43,7 @@ import { PartialMoveToSeparateCollectionsDialog } from "views-components/dialog-
 import { RemoveProcessDialog } from "views-components/process-remove-dialog/process-remove-dialog";
 import { RemoveWorkflowDialog } from "views-components/workflow-remove-dialog/workflow-remove-dialog";
 import { MainContentBar } from "views-components/main-content-bar/main-content-bar";
-import { Grid } from "@material-ui/core";
+import { Grid } from "@mui/material";
 import { TrashPanel } from "views/trash-panel/trash-panel";
 import { SharedWithMePanel } from "views/shared-with-me-panel/shared-with-me-panel";
 import { RunProcessPanel } from "views/run-process-panel/run-process-panel";
@@ -111,9 +113,9 @@ import { InstanceTypesPanel } from "views/instance-types-panel/instance-types-pa
 
 type CssRules = "root" | "container" | "splitter" | "asidePanel" | "contentWrapper" | "content";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        paddingTop: theme.spacing.unit * 7,
+        paddingTop: theme.spacing(7),
         background: theme.palette.background.default,
     },
     container: {
@@ -129,19 +131,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
     },
     asidePanel: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
         height: "100%",
     },
     contentWrapper: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
         minWidth: 0,
     },
     content: {
         minWidth: 0,
-        paddingLeft: theme.spacing.unit * 3,
-        paddingRight: theme.spacing.unit * 3,
+        paddingLeft: theme.spacing(3),
+        paddingRight: theme.spacing(3),
         // Reserve vertical space for app bar + MainContentBar
-        minHeight: `calc(100vh - ${theme.spacing.unit * 16}px)`,
+        minHeight: `calc(100vh - ${theme.spacing(16)})`,
         display: "flex",
     },
 });
@@ -353,7 +355,6 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                 >
                     {isUserActive && isNotLinking && (
                         <Grid
-                            container
                             item
                             xs
                             component="aside"
@@ -372,13 +373,11 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
                         className={classes.contentWrapper}
                     >
                         <Grid
-                            item
                             xs
                         >
                             {isNotLinking && <MainContentBar />}
                         </Grid>
                         <Grid
-                            item
                             xs
                             className={classes.content}
                         >

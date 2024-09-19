@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from 'components/icon/icon';
 import { SearchBarAdvancedFormData } from 'models/search-bar';
@@ -12,13 +15,13 @@ import { getQueryFromAdvancedData } from "store/search-bar/search-bar-actions";
 
 type CssRules = 'root' | 'listItem' | 'listItemText' | 'button';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         padding: '0px'
     },
     listItem: {
-        paddingLeft: theme.spacing.unit,
-        paddingRight: theme.spacing.unit * 2
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(2)
     },
     listItemText: {
         fontSize: '0.8125rem',
@@ -26,7 +29,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         padding: '6px',
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing(1)
     }
 });
 
@@ -56,12 +59,20 @@ export const SearchBarSavedQueries = withStyles(styles)(
                         className={classes.listItemText} />
                     <ListItemSecondaryAction>
                         <Tooltip title="Edit">
-                            <IconButton aria-label="Edit" onClick={() => editSavedQuery(query, index)} className={classes.button}>
+                            <IconButton
+                                aria-label="Edit"
+                                onClick={() => editSavedQuery(query, index)}
+                                className={classes.button}
+                                size="large">
                                 <EditSavedQueryIcon />
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Remove">
-                            <IconButton aria-label="Remove" onClick={() => deleteSavedQuery(index)} className={classes.button}>
+                            <IconButton
+                                aria-label="Remove"
+                                onClick={() => deleteSavedQuery(index)}
+                                className={classes.button}
+                                size="large">
                                 <RemoveIcon />
                             </IconButton>
                         </Tooltip>

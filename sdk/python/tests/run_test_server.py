@@ -262,6 +262,13 @@ def _logfilename(label):
     _detachedSubprocesses.append(sed)
     return fifo
 
+def _service_environ():
+    """Return an environment mapping suitable for running an arvados
+    service process."""
+    env = dict(os.environ)
+    env['ARVADOS_USE_KEEP_ACCESSIBLE_API'] = 'true'
+    return env
+
 def run(leave_running_atexit=False):
     """Ensure an API server is running, and ARVADOS_API_* env vars have
     admin credentials for it.
@@ -342,7 +349,7 @@ def run(leave_running_atexit=False):
         f.write(newtemplate)
 
     port = internal_port_from_config("RailsAPI")
-    env = os.environ.copy()
+    env = _service_environ()
     env['RAILS_ENV'] = 'test'
     env['ARVADOS_RAILS_LOG_TO_STDOUT'] = '1'
     env.pop('ARVADOS_WEBSOCKETS', None)
@@ -363,7 +370,10 @@ def run(leave_running_atexit=False):
          '--ssl',
          '--ssl-certificate', 'tmp/self-signed.pem',
          '--ssl-certificate-key', 'tmp/self-signed.key'],
-        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
+        env=env,
+        stdin=open('/dev/null'),
+        stdout=logf,
+        stderr=logf)
     _detachedSubprocesses.append(railsapi)
 
     if not leave_running_atexit:
@@ -441,7 +451,11 @@ def run_controller():
     port = internal_port_from_config("Controller")
     controller = subprocess.Popen(
         ["arvados-server", "controller"],
-        stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        env=_service_environ(),
+        stdin=open('/dev/null'),
+        stdout=logf,
+        stderr=logf,
+        close_fds=True)
     _detachedSubprocesses.append(controller)
     with open(_pidfile('controller'), 'w') as f:
         f.write(str(controller.pid))
@@ -461,7 +475,11 @@ def run_ws():
     logf = open(_logfilename('ws'), WRITE_MODE)
     ws = subprocess.Popen(
         ["arvados-server", "ws"],
-        stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        env=_service_environ(),
+        stdin=open('/dev/null'),
+        stdout=logf,
+        stderr=logf,
+        close_fds=True)
     _detachedSubprocesses.append(ws)
     with open(_pidfile('ws'), 'w') as f:
         f.write(str(ws.pid))
@@ -495,7 +513,12 @@ def _start_keep(n, blob_signing=False):
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
         with open('/dev/null') as _stdin:
             child = subprocess.Popen(
-                keep_cmd, stdin=_stdin, stdout=logf, stderr=logf, close_fds=True)
+                keep_cmd,
+                env=_service_environ(),
+                stdin=_stdin,
+                stdout=logf,
+                stderr=logf,
+                close_fds=True)
             _detachedSubprocesses.append(child)
 
     print('child.pid is %d'%child.pid, file=sys.stderr)
@@ -553,11 +576,16 @@ def run_keep_proxy():
     stop_keep_proxy()
 
     port = internal_port_from_config("Keepproxy")
-    env = os.environ.copy()
+    env = _service_environ()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keepproxy'), WRITE_MODE)
     kp = subprocess.Popen(
-        ['arvados-server', 'keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        ['arvados-server', 'keepproxy'],
+        env=env,
+        stdin=open('/dev/null'),
+        stdout=logf,
+        stderr=logf,
+        close_fds=True)
     _detachedSubprocesses.append(kp)
 
     with open(_pidfile('keepproxy'), 'w') as f:
@@ -593,11 +621,13 @@ def run_keep_web():
     stop_keep_web()
 
     keepwebport = internal_port_from_config("WebDAV")
-    env = os.environ.copy()
     logf = open(_logfilename('keep-web'), WRITE_MODE)
     keepweb = subprocess.Popen(
         ['arvados-server', 'keep-web'],
-        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
+        env=_service_environ(),
+        stdin=open('/dev/null'),
+        stdout=logf,
+        stderr=logf)
     _detachedSubprocesses.append(keepweb)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
@@ -946,6 +976,7 @@ if __name__ == "__main__":
             print("export ARVADOS_API_TOKEN={}".format(shlex.quote(token)))
             print("export ARVADOS_API_HOST={}".format(shlex.quote(host)))
             print("export ARVADOS_API_HOST_INSECURE=true")
+            print("export ARVADOS_USE_KEEP_ACCESSIBLE_API=true")
         else:
             print(host)
     elif args.action == 'stop':

@@ -3,29 +3,31 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@material-ui/core";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@mui/material";
 import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
 import { REPOSITORY_ATTRIBUTES_DIALOG } from "store/repositories/repositories-actions";
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
 import { RepositoryResource } from "models/repositories";
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     rightContainer: {
         textAlign: 'right',
-        paddingRight: theme.spacing.unit * 2,
+        paddingRight: theme.spacing(2),
         color: theme.palette.grey["500"]
     },
     leftContainer: {
         textAlign: 'left',
-        paddingLeft: theme.spacing.unit * 2
+        paddingLeft: theme.spacing(2)
     },
     spacing: {
-        paddingTop: theme.spacing.unit * 2
+        paddingTop: theme.spacing(2)
     },
 });
 

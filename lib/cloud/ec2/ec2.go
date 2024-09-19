@@ -21,6 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
 
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -55,6 +56,7 @@ type ec2InstanceSetConfig struct {
 	EBSPrice                float64
 	IAMInstanceProfile      string
 	SpotPriceUpdateInterval arvados.Duration
+	InstanceTypeQuotaGroups map[string]string
 }
 
 type sliceOrSingleString []string
@@ -307,6 +309,7 @@ func (instanceSet *ec2InstanceSet) Create(
 
 	var rsv *ec2.RunInstancesOutput
 	var errToReturn error
+	var returningCapacityError bool
 	subnets := instanceSet.ec2config.SubnetID
 	currentSubnetIDIndex := int(atomic.LoadInt32(&instanceSet.currentSubnetIDIndex))
 	for tryOffset := 0; ; tryOffset++ {
@@ -320,11 +323,12 @@ func (instanceSet *ec2InstanceSet) Create(
 		var err error
 		rsv, err = instanceSet.client.RunInstances(context.Background(), &rii)
 		instanceSet.mInstanceStarts.WithLabelValues(trySubnet, boolLabelValue[err == nil]).Add(1)
-		if !isErrorCapacity(errToReturn) || isErrorCapacity(err) {
+		if instcap, groupcap := isErrorCapacity(err); !returningCapacityError || instcap || groupcap {
 			// We want to return the last capacity error,
 			// if any; otherwise the last non-capacity
 			// error.
 			errToReturn = err
+			returningCapacityError = instcap || groupcap
 		}
 		if isErrorSubnetSpecific(err) &&
 			tryOffset < len(subnets)-1 {
@@ -578,6 +582,36 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 func (instanceSet *ec2InstanceSet) Stop() {
 }
 
+func (instanceSet *ec2InstanceSet) InstanceQuotaGroup(it arvados.InstanceType) cloud.InstanceQuotaGroup {
+	// https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-quotas.html
+	// 2024-09-09
+	var quotaGroup string
+	pt := strings.ToLower(it.ProviderType)
+	for i, c := range pt {
+		if !unicode.IsLower(c) && quotaGroup == "" {
+			// Fall back to the alphabetic prefix of
+			// ProviderType.
+			quotaGroup = pt[:i]
+		}
+		if conf := instanceSet.ec2config.InstanceTypeQuotaGroups[pt[:i]]; conf != "" && quotaGroup != "" {
+			// Prefer the longest prefix of ProviderType
+			// that is listed explicitly in config.
+			//
+			// (But don't look up a too-short prefix --
+			// for an instance type like "trn1.234", use
+			// the config for "trn" or "trn1" but not
+			// "t".)
+			quotaGroup = conf
+		}
+	}
+	if it.Preemptible {
+		// Spot instance quotas are separate from demand
+		// quotas.
+		quotaGroup += "-spot"
+	}
+	return cloud.InstanceQuotaGroup(quotaGroup)
+}
+
 type ec2Instance struct {
 	provider         *ec2InstanceSet
 	instance         types.Instance
@@ -703,11 +737,16 @@ func (err rateLimitError) EarliestRetry() time.Time {
 
 type capacityError struct {
 	error
-	isInstanceTypeSpecific bool
+	isInstanceQuotaGroupSpecific bool
+	isInstanceTypeSpecific       bool
 }
 
 func (er *capacityError) IsCapacityError() bool {
 	return true
+}
+
+func (er *capacityError) IsInstanceQuotaGroupSpecific() bool {
+	return er.isInstanceQuotaGroupSpecific
 }
 
 func (er *capacityError) IsInstanceTypeSpecific() bool {
@@ -720,7 +759,6 @@ var isCodeQuota = map[string]bool{
 	"InsufficientFreeAddressesInSubnet": true,
 	"InsufficientVolumeCapacity":        true,
 	"MaxSpotInstanceCountExceeded":      true,
-	"VcpuLimitExceeded":                 true,
 }
 
 // isErrorQuota returns whether the error indicates we have reached
@@ -759,18 +797,25 @@ func isErrorSubnetSpecific(err error) bool {
 			reSubnetSpecificInvalidParameterMessage.MatchString(aerr.ErrorMessage()))
 }
 
-// isErrorCapacity returns true if the error indicates lack of
-// capacity (either temporary or permanent) to run a specific instance
-// type -- i.e., retrying with a different instance type might
-// succeed.
-func isErrorCapacity(err error) bool {
+// isErrorCapacity determines whether the given error indicates lack
+// of capacity -- either temporary or permanent -- to run a specific
+// instance type (i.e., retrying with any other instance type might
+// succeed) or an instance quota group (i.e., retrying with an
+// instance type in a different instance quota group might succeed).
+func isErrorCapacity(err error) (instcap bool, groupcap bool) {
 	var aerr smithy.APIError
 	if !errors.As(err, &aerr) {
-		return false
+		return false, false
 	}
 	code := aerr.ErrorCode()
-	return code == "InsufficientInstanceCapacity" ||
-		(code == "Unsupported" && strings.Contains(aerr.ErrorMessage(), "requested instance type"))
+	if code == "VcpuLimitExceeded" {
+		return false, true
+	}
+	if code == "InsufficientInstanceCapacity" ||
+		(code == "Unsupported" && strings.Contains(aerr.ErrorMessage(), "requested instance type")) {
+		return true, false
+	}
+	return false, false
 }
 
 type ec2QuotaError struct {
@@ -804,9 +849,13 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		throttleValue.Store(d)
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
 	} else if isErrorQuota(err) {
-		return &ec2QuotaError{err}
-	} else if isErrorCapacity(err) {
-		return &capacityError{err, true}
+		return &ec2QuotaError{error: err}
+	} else if instcap, groupcap := isErrorCapacity(err); instcap || groupcap {
+		return &capacityError{
+			error:                        err,
+			isInstanceTypeSpecific:       !groupcap,
+			isInstanceQuotaGroupSpecific: groupcap,
+		}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))
 		return err

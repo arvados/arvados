@@ -3,18 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { MenuItem, Typography } from "@material-ui/core";
+import { MenuItem, Typography } from "@mui/material";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
 import { ImportContactsIcon, HelpIcon } from "components/icon/icon";
 import { ArvadosTheme } from 'common/custom-theme';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RootState } from "store/store";
 import { compose } from "redux";
 import { connect } from "react-redux";
 
 type CssRules = 'link' | 'icon' | 'title' | 'linkTitle';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
         textDecoration: 'none',
         color: 'inherit',
@@ -26,13 +28,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '16px'
     },
     title: {
-        paddingBottom: theme.spacing.unit * 0.5,
-        paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingBottom: theme.spacing(0.5),
+        paddingLeft: theme.spacing(2),
+        paddingTop: theme.spacing(0.5),
         outline: 'none',
     },
     linkTitle: {
-        marginLeft: theme.spacing.unit
+        marginLeft: theme.spacing(1)
     },
 });
 

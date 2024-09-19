@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useRef, useEffect } from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelTree, SidePanelTreeProps } from 'views-components/side-panel-tree/side-panel-tree';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { navigateFromSidePanel, setCurrentSideWidth } from 'store/side-panel/side-panel-action';
-import { Grid } from '@material-ui/core';
+import { Grid } from '@mui/material';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
 import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggle';
@@ -19,7 +21,7 @@ const DRAWER_WIDTH = 240;
 
 type CssRules = 'root' | 'topButtonContainer';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         background: theme.palette.background.paper,
         borderRight: `1px solid ${theme.palette.divider}`,
@@ -82,24 +84,22 @@ export const SidePanel = withStyles(styles)(
 
             return (
                 <Grid item xs>
-                        {props.isCollapsed ? 
-                            <div ref={splitPaneRef}>
-                                <>
-                                    <SidePanelToggle />
-                                    <SidePanelCollapsed />
-                                </>
+                    {props.isCollapsed ? 
+                        <div ref={splitPaneRef}>
+                            <div>
+                                <SidePanelToggle />
+                                <SidePanelCollapsed />
                             </div>
+                        </div>
                             :
-                            <>
-                                <div ref={splitPaneRef}>
-                                    <Grid className={classes.topButtonContainer}>
-                                        <SidePanelButton key={props.currentRoute} />
-                                        <SidePanelToggle/>
-                                    </Grid>
-                                    <SidePanelTree {...props} />
-                                </div>
-                            </>
-                        }
-                    </Grid>
+                        <div ref={splitPaneRef}>
+                            <div className={classes.topButtonContainer}>
+                                <SidePanelButton key={props.currentRoute} />
+                                <SidePanelToggle/>
+                            </div>
+                            <SidePanelTree {...props} />
+                        </div>
+                    }
+                </Grid>
         )}
     ));

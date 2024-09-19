@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, Card, CardHeader, WithStyles, withStyles, Typography, CardContent, Tooltip, Collapse, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Card, CardHeader, Typography, CardContent, Tooltip, Collapse, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { connect } from 'react-redux';
@@ -39,7 +42,7 @@ type CssRules =
     | 'description'
     | 'toolbarStyles';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         marginBottom: '1rem',
@@ -243,7 +246,7 @@ export const ProjectCard = connect(
                                 <Collapse
                                     in={showDescription}
                                     timeout='auto'
-                                    collapsedHeight='1.25rem'
+                                    collapsedSize='1.25rem'
                                 >
                                     <Typography
                                         className={classes.description}
@@ -273,7 +276,7 @@ export const ProjectCard = connect(
                                 <Collapse
                                     in={showProperties}
                                     timeout='auto'
-                                    collapsedHeight='35px'
+                                    collapsedSize='35px'
                                 >
                                     <div
                                         className={classes.description}

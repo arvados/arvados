@@ -8,11 +8,15 @@
     "@coreui/coreui": "^4.3.2",
     "@coreui/react": "^4.11.0",
     "@date-io/date-fns": "1",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
     "@fortawesome/fontawesome-svg-core": "1.2.28",
     "@fortawesome/free-solid-svg-icons": "5.13.0",
     "@fortawesome/react-fontawesome": "0.1.9",
-    "@material-ui/core": "3.9.3",
-    "@material-ui/icons": "3.0.1",
+    "@mui/icons-material": "^5.15.20",
+    "@mui/material": "^5.15.20",
+    "@mui/styles": "^5.15.20",
+    "@mui/x-date-pickers": "^7.7.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "@svgr/webpack": "^5.5.0",
     "@types/debounce": "3.0.0",
@@ -23,7 +27,7 @@
     "@types/jszip": "3.1.5",
     "@types/lodash": "4.14.116",
     "@types/react": "17.0.11",
-    "@types/react-copy-to-clipboard": "5.0.0",
+    "@types/react-copy-to-clipboard": "^5.0.7",
     "@types/react-dropzone": "4.2.2",
     "@types/react-highlight-words": "0.12.0",
     "@types/react-virtualized-auto-sizer": "1.0.0",
@@ -31,7 +35,6 @@
     "@types/redux-form": "7.4.12",
     "@types/shell-escape": "^0.2.0",
     "axios": "^0.28.1",
-    "babel-jest": "^27.4.2",
     "babel-loader": "^8.2.3",
     "babel-plugin-named-asset-import": "^0.3.8",
     "babel-preset-react-app": "^10.0.1",
@@ -45,7 +48,8 @@
     "css-loader": "^6.5.1",
     "css-minimizer-webpack-plugin": "^3.2.0",
     "cwlts": "1.15.29",
-    "cypress-fail-fast": "^7.1.0",
+    "cypress-fail-fast": "^7.1.1",
+    "cypress-plugin-tab": "^1.0.5",
     "date-fns": "^2.28.0",
     "debounce": "1.2.0",
     "dompurify": "^3.0.6",
@@ -62,9 +66,6 @@
     "html-webpack-plugin": "^5.5.0",
     "identity-obj-proxy": "^3.0.0",
     "is-image": "3.0.0",
-    "jest": "^27.4.3",
-    "jest-resolve": "^27.4.2",
-    "jest-watch-typeahead": "^1.0.0",
     "js-yaml": "3.13.1",
     "jssha": "2.3.1",
     "jszip": "^3.10.1",
@@ -72,7 +73,6 @@
     "lodash-es": "^4.17.21",
     "lodash.mergewith": "4.6.2",
     "lodash.template": "4.5.0",
-    "material-ui-pickers": "^2.2.4",
     "mem": "4.0.0",
     "mime": "^4.0.3",
     "mini-css-extract-plugin": "^2.4.5",
@@ -87,9 +87,9 @@
     "prompts": "^2.4.2",
     "prop-types": "15.7.2",
     "query-string": "6.9.0",
-    "react": "16.14.0",
+    "react": "^17.0.0",
     "react-app-polyfill": "^3.0.0",
-    "react-copy-to-clipboard": "5.0.3",
+    "react-copy-to-clipboard": "^5.1.0",
     "react-dev-utils": "^12.0.0",
     "react-dnd": "5.0.0",
     "react-dnd-html5-backend": "5.0.1",
@@ -98,7 +98,7 @@
     "react-highlight-words": "0.14.0",
     "react-idle-timer": "4.3.6",
     "react-loader-spinner": "^6.1.6",
-    "react-redux": "5.0.7",
+    "react-redux": "5.1.0",
     "react-refresh": "^0.11.0",
     "react-router": "4.3.1",
     "react-router-dom": "4.3.1",
@@ -136,8 +136,8 @@
     "start": "BROWSER=none node scripts/start.js",
     "build": "REACT_APP_VERSION=$VERSION REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT node scripts/build.js",
     "build-local": "node scripts/build.js",
-    "test": "CI=true node scripts/test.js",
-    "test-local": "node scripts/test.js",
+    "test": "yarn cypress run --component",
+    "test-path": "yarn cypress run --component --spec",
     "lint": "tslint src/** -t verbose",
     "build-css": "node-sass src/ -o src/",
     "watch-css": "npm run build-css && node-sass src/ -o src/ --watch --recursive"
@@ -145,10 +145,7 @@
   "devDependencies": {
     "@sinonjs/fake-timers": "^10.3.0",
     "@types/classnames": "2.2.6",
-    "@types/enzyme": "3.1.14",
-    "@types/enzyme-adapter-react-16": "1.0.3",
     "@types/is-image": "3.0.0",
-    "@types/jest": "26.0.23",
     "@types/node": "15.12.4",
     "@types/react-dom": "17.0.8",
     "@types/react-redux": "6.0.9",
@@ -162,9 +159,6 @@
     "axios-mock-adapter": "1.17.0",
     "cypress": "^13.6.6",
     "cypress-wait-until": "^3.0.1",
-    "enzyme": "3.11.0",
-    "enzyme-adapter-react-16": "1.15.6",
-    "jest-localstorage-mock": "2.2.0",
     "node-sass": "^9.0.0",
     "redux-devtools": "3.4.1",
     "redux-mock-store": "1.5.4",
@@ -172,7 +166,7 @@
     "tslint": "5.20.0",
     "tslint-etc": "1.6.0",
     "typescript": "4.3.4",
-    "wait-on": "^7.2.0",
+    "wait-on": "^4",
     "yamljs": "0.3.0"
   },
   "browserslist": {
@@ -190,61 +184,8 @@
   "packageManager": "yarn@3.2.0",
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
-  },
-  "jest": {
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "collectCoverageFrom": [
-      "src/**/*.{js,jsx,ts,tsx}",
-      "!src/**/*.d.ts"
-    ],
-    "setupFiles": [
-      "react-app-polyfill/jsdom"
-    ],
-    "setupFilesAfterEnv": [],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}",
-      "<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}"
-    ],
-    "testEnvironment": "jsdom",
-    "testRunner": "jest-jasmine2",
-    "transform": {
-      "^.+\\.(js|jsx|mjs|cjs|ts|tsx)$": "<rootDir>/config/jest/babelTransform.js",
-      "^.+\\.css$": "<rootDir>/config/jest/cssTransform.js",
-      "^(?!.*\\.(js|jsx|mjs|cjs|ts|tsx|css|json)$)": "<rootDir>/config/jest/fileTransform.js"
-    },
-    "transformIgnorePatterns": [
-      "node_modules/(?!(mime|tippy.js)/)",
-      "^.+\\.module\\.(css|sass|scss)$"
-    ],
-    "modulePaths": [
-      "<rootDir>/src"
-    ],
-    "moduleNameMapper": {
-      "^react-native$": "react-native-web",
-      "^.+\\.module\\.(css|sass|scss)$": "identity-obj-proxy"
-    },
-    "moduleFileExtensions": [
-      "web.js",
-      "js",
-      "web.ts",
-      "ts",
-      "web.tsx",
-      "tsx",
-      "json",
-      "web.jsx",
-      "jsx",
-      "node"
-    ],
-    "watchPlugins": [
-      "jest-watch-typeahead/filename",
-      "jest-watch-typeahead/testname"
-    ],
-    "resetMocks": true
   },
   "babel": {
     "presets": [

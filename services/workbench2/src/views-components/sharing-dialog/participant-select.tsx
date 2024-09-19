@@ -8,7 +8,7 @@ import { connect, DispatchProp } from 'react-redux';
 import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
-import { ListItemText, Typography } from '@material-ui/core';
+import { ListItemText, Typography } from '@mui/material';
 import { noop } from 'lodash/fp';
 import { GroupClass, GroupResource } from 'models/group';
 import { getUserDetailsString, getUserDisplayName, UserResource } from 'models/user';

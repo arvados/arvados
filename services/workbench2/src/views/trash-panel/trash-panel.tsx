@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { IconButton, StyleRulesCallback, WithStyles, withStyles, Tooltip } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { IconButton, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
@@ -39,13 +42,13 @@ import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-acti
 
 type CssRules = "toolbar" | "button" | "root";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
-        paddingBottom: theme.spacing.unit * 3,
+        paddingBottom: theme.spacing(3),
         textAlign: "right"
     },
     button: {
-        marginLeft: theme.spacing.unit
+        marginLeft: theme.spacing(1)
     },
     root: {
         width: '100%',
@@ -70,16 +73,18 @@ export const ResourceRestore =
         return { resource, dispatch: props.dispatch };
     })((props: { resource?: TrashableResource, dispatch?: Dispatch<any> }) =>
         <Tooltip title="Restore">
-            <IconButton style={{ padding: '0' }} onClick={() => {
-                if (props.resource && props.dispatch) {
-                    props.dispatch(toggleTrashed(
-                        props.resource.kind,
-                        props.resource.uuid,
-                        props.resource.ownerUuid,
-                        props.resource.isTrashed
-                    ));
-                }}}
-            >
+            <IconButton
+                style={{ padding: '0' }}
+                onClick={() => {
+                    if (props.resource && props.dispatch) {
+                        props.dispatch(toggleTrashed(
+                            props.resource.kind,
+                            props.resource.uuid,
+                            props.resource.ownerUuid,
+                            props.resource.isTrashed
+                        ));
+                    }}}
+                size="large">
                 <RestoreFromTrashIcon />
             </IconButton>
         </Tooltip>

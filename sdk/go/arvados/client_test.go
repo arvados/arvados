@@ -255,10 +255,29 @@ func (*clientSuite) TestLoadConfig(c *check.C) {
 	// Environment variables override settings.conf
 	os.Setenv("ARVADOS_API_HOST", "[::]:3")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "0")
+	os.Setenv("ARVADOS_KEEP_SERVICES", "http://[::]:12345")
 	client = NewClientFromEnv()
 	c.Check(client.AuthToken, check.Equals, "token_from_settings_file2")
 	c.Check(client.APIHost, check.Equals, "[::]:3")
 	c.Check(client.Insecure, check.Equals, false)
+	c.Check(client.KeepServiceURIs, check.DeepEquals, []string{"http://[::]:12345"})
+
+	// ARVADOS_KEEP_SERVICES environment variable overrides
+	// cluster config, but ARVADOS_API_HOST/TOKEN do not.
+	os.Setenv("ARVADOS_KEEP_SERVICES", "http://[::]:12345")
+	os.Setenv("ARVADOS_API_HOST", "wronghost.example")
+	os.Setenv("ARVADOS_API_TOKEN", "wrongtoken")
+	cfg := Cluster{}
+	cfg.Services.Controller.ExternalURL = URL{Scheme: "https", Host: "ctrl.example:55555", Path: "/"}
+	cfg.Services.Keepstore.InternalURLs = map[URL]ServiceInstance{
+		URL{Scheme: "https", Host: "keep0.example:55555", Path: "/"}: ServiceInstance{},
+	}
+	client, err := NewClientFromConfig(&cfg)
+	c.Check(err, check.IsNil)
+	c.Check(client.AuthToken, check.Equals, "")
+	c.Check(client.APIHost, check.Equals, "ctrl.example:55555")
+	c.Check(client.Insecure, check.Equals, false)
+	c.Check(client.KeepServiceURIs, check.DeepEquals, []string{"http://[::]:12345"})
 }
 
 var _ = check.Suite(&clientRetrySuite{})
@@ -402,7 +421,7 @@ func (s *clientRetrySuite) TestExponentialBackoff(c *check.C) {
 
 	for e := float64(1); e < 5; e += 1 {
 		ok := false
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 30; i++ {
 			t = exponentialBackoff(min, max, int(e), nil)
 			// Every returned value must be between min and min(2^e, max)
 			c.Check(t >= min, check.Equals, true)

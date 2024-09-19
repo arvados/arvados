@@ -4,7 +4,10 @@
 
 import React from "react";
 import { compose } from 'redux';
-import { withStyles, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, WithStyles, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
 import { SSH_KEY_ATTRIBUTES_DIALOG } from 'store/auth/auth-action-ssh';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -12,7 +15,7 @@ import { SshKeyResource } from "models/ssh-key";
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         fontSize: '0.875rem',
         '& div:nth-child(odd)': {
@@ -36,7 +39,7 @@ export const AttributesSshKeyDialog = compose(
                 maxWidth='sm'>
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    {data.sshKey && <Grid container direction="row" spacing={16} className={classes.root}>
+                    {data.sshKey && <Grid container direction="row" spacing={2} className={classes.root}>
                         <Grid item xs={5}>Name</Grid>
                         <Grid item xs={7}>{data.sshKey.name}</Grid>
                         <Grid item xs={5}>uuid</Grid>

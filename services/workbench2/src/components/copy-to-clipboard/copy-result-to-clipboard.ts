@@ -3,12 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { ReactElementLike } from 'prop-types';
 import copy from 'copy-to-clipboard';
 
 interface CopyToClipboardProps {
   getText: (() => string);
-  children: ReactElementLike;
+  children: any
   onCopy?(text: string, result: boolean): void;
   options?: {
     debug?: boolean;

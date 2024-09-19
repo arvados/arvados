@@ -80,6 +80,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	instanceSetID := cloud.InstanceSetID("test-instance-set-id")
 	is, err := driver.InstanceSet(nil, instanceSetID, nil, suite.logger, nil)
 	c.Assert(err, check.IsNil)
+	defer is.Stop()
 
 	newExecutor := func(cloud.Instance) Executor {
 		return &stubExecutor{
@@ -159,6 +160,7 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 	driver := test.StubDriver{}
 	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger, nil)
 	c.Assert(err, check.IsNil)
+	defer instanceSet.Stop()
 
 	ac := arvados.NewClientFromEnv()
 
@@ -212,6 +214,7 @@ func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
 	driver := test.StubDriver{HoldCloudOps: true}
 	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger, nil)
 	c.Assert(err, check.IsNil)
+	defer instanceSet.Stop()
 
 	type1 := test.InstanceType(1)
 	pool := &Pool{
@@ -252,6 +255,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	driver := test.StubDriver{HoldCloudOps: true}
 	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger, nil)
 	c.Assert(err, check.IsNil)
+	defer instanceSet.Stop()
 
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}
 	type2 := arvados.InstanceType{Name: "a2m", ProviderType: "a2.medium", VCPUs: 2, RAM: 2 * GiB, Price: .02}
@@ -375,6 +379,67 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 		pool.getInstancesAndSync()
 		return len(pool.Instances()) == 0
 	})
+}
+
+func (suite *PoolSuite) TestInstanceQuotaGroup(c *check.C) {
+	driver := test.StubDriver{}
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger, nil)
+	c.Assert(err, check.IsNil)
+	defer instanceSet.Stop()
+
+	// Note the stub driver uses the first character of
+	// ProviderType as the instance family, so we have two
+	// instance families here, "a" and "b".
+	typeA1 := test.InstanceType(1)
+	typeA1.ProviderType = "a1"
+	typeA2 := test.InstanceType(2)
+	typeA2.ProviderType = "a2"
+	typeB3 := test.InstanceType(3)
+	typeB3.ProviderType = "b3"
+	typeB4 := test.InstanceType(4)
+	typeB4.ProviderType = "b4"
+
+	pool := &Pool{
+		logger:      suite.logger,
+		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
+		cluster:     suite.testCluster,
+		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
+		instanceTypes: arvados.InstanceTypeMap{
+			typeA1.Name: typeA1,
+			typeA2.Name: typeA2,
+			typeB3.Name: typeB3,
+			typeB4.Name: typeB4,
+		},
+	}
+
+	// Arrange for the driver to fail when the pool calls
+	// instanceSet.Create().
+	driver.SetupVM = func(*test.StubVM) error { return test.CapacityError{InstanceQuotaGroupSpecific: true} }
+	// pool.Create() returns true when it starts a goroutine to
+	// call instanceSet.Create() in the background.
+	c.Check(pool.Create(typeA1), check.Equals, true)
+	// Wait for the pool to start reporting that the provider is
+	// at capacity for instance type A1.
+	for deadline := time.Now().Add(time.Second); !pool.AtCapacity(typeA1); time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			c.Fatal("timed out waiting for pool to report quota")
+		}
+	}
+
+	// The pool should now report AtCapacity for the affected
+	// instance family (A1, A2) and refuse to call
+	// instanceSet.Create() for those types -- but other types
+	// (B3, B4) are still usable.
+	driver.SetupVM = func(*test.StubVM) error { return nil }
+	c.Check(pool.AtCapacity(typeA1), check.Equals, true)
+	c.Check(pool.AtCapacity(typeA2), check.Equals, true)
+	c.Check(pool.AtCapacity(typeB3), check.Equals, false)
+	c.Check(pool.AtCapacity(typeB4), check.Equals, false)
+	c.Check(pool.Create(typeA2), check.Equals, false)
+	c.Check(pool.Create(typeB3), check.Equals, true)
+	c.Check(pool.Create(typeB4), check.Equals, true)
+	c.Check(pool.Create(typeA2), check.Equals, false)
+	c.Check(pool.Create(typeA1), check.Equals, false)
 }
 
 func (suite *PoolSuite) instancesByType(pool *Pool, it arvados.InstanceType) []InstanceView {

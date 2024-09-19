@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, Button } from '@material-ui/core';
+import { Grid, Button } from '@mui/material';
 import { RunProcessBasicForm, RUN_PROCESS_BASIC_FORM } from './run-process-basic-form';
 import { RunProcessInputsForm } from 'views/run-process-panel/run-process-inputs-form';
 import { CommandInputParameter, WorkflowResource } from 'models/workflow';
@@ -55,7 +55,7 @@ const mapStateToProps = createStructuredSelector({
 export type RunProcessSecondStepFormProps = RunProcessSecondStepFormDataProps & RunProcessSecondStepFormActionProps;
 export const RunProcessSecondStepForm = connect(mapStateToProps, { onPresetChange: selectPreset })(
     ({ inputs, workflow, selectedPreset, presets, onPresetChange, valid, goBack, runProcess }: RunProcessSecondStepFormProps) =>
-        <Grid container spacing={16} data-cy="new-process-panel">
+        <Grid container spacing={2} data-cy="new-process-panel">
             <Grid item xs={12}>
                 <RunProcessBasicForm workflow={workflow} />
                 <RunProcessInputsForm inputs={inputs} />

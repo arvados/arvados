@@ -35,7 +35,7 @@ The default policy allows anyone to upload or download.
 
 h2. WebDAV and S3 API Permissions
 
-Permitting @WebDAV@ makes it possible to use WebDAV, S3 API, and upload/download with Workbench 2.  It works in terms of individual files.  It prints a log each time a user uploads or downloads a file.  When @WebDAVLogEvents@ (default true) is enabled, it also adds an entry into the API server @logs@ table.
+Permitting @WebDAV@ makes it possible to use WebDAV, S3 API, and upload/download with Workbench 2.  It works in terms of individual files.  It prints a log each time a user uploads or downloads a file ("subject to throttling discussed below":#throttling).  When @WebDAVLogEvents@ (default true) is enabled, it also adds an entry into the API server @logs@ table.
 
 When a user attempts to upload or download from a service without permission, they will receive a @403 Forbidden@ response.  This only applies to file content.
 
@@ -55,7 +55,8 @@ The default policy allows anyone to upload or download.
           Download: true
           Upload: true
       WebDAVLogEvents: true
-      </pre>
+      WebDAVLogDownloadInterval: 30s
+</pre>
 
 When a user or admin creates a sharing link, a custom scoped token is embedded in that link. This effectively allows anonymous user access to the associated data via that link. These custom scoped tokens are always treated as user tokens for the purposes of restricting download access, even when created by an admin user. In other words, these custom scoped tokens, when used in a sharing link, are always subject to the value of the @WebDAVPermission/User/Download@ configuration setting.
 
@@ -73,7 +74,7 @@ You set separate permissions for @WebDAV@ and @Keepproxy@, with separate policie
 
 These policies apply to only access from outside the cluster, using Workbench or Arvados CLI tools.
 
-The @WebDAVLogEvents@ option should be enabled if you intend to the run the "User Activity Report":user-activity.html .  If you don't need audits, or you are running a site that is mostly serving public data to anonymous downloaders, you can disable in to avoid the extra API server request.
+The @WebDAVLogEvents@ option should be enabled if you intend to the run the "User Activity Report":user-activity.html.  If you don't need audits, or you are running a site that is mostly serving public data to anonymous downloaders, you can disable it to avoid the extra API server request.
 
 h3. Audited downloads
 
@@ -167,3 +168,7 @@ Jul 20 15:03:38 keep.xxxx1.arvadosapi.com keepproxy[63828]: {"level":"info","loc
 </pre>
 
 It is possible to do a reverse lookup from the locator to find all matching collections: the @manifest_text@ field of a collection lists all the block locators that are part of the collection. The @manifest_text@ field also provides the relevant filename in the collection. Because this lookup is rather involved and there is no automated tool to do it, we recommend disabling @KeepproxyPermission.User.Download@ and @KeepproxyPermission.User.Upload@ for sites where the audit log is important and @arv-get@ and @arv-put@ are not essential.
+
+h3(#throttling). WebDAV download log throttling
+
+If a client requests partial content past the start of a file, and a request from the same client for the same file was logged within the last time interval configured by @WebDAVLogDownloadInterval@, @keep-web@ will not write a new log. This throttling applies to both printed and API server logs. The default value of 30 seconds reduces log output when clients like @aws s3 cp@ download one file in small chunks in parallel. Administrators can set this setting to @0@ to disable log throttling. This setting lets administrators choose how they want to balance full auditability against logging overhead: a shorter interval means more download requests are logged, with all the overhead that entails.

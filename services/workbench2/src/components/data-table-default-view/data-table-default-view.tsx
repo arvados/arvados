@@ -3,17 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DefaultViewDataProps, DefaultView } from 'components/default-view/default-view';
 import { ArvadosTheme } from 'common/custom-theme';
 import { DetailsIcon } from 'components/icon/icon';
 
 type CssRules = 'classRoot';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     classRoot: {
-        marginTop: theme.spacing.unit * 4,
-        marginBottom: theme.spacing.unit * 4,
+        marginTop: theme.spacing(4),
+        marginBottom: theme.spacing(4),
     },
 });
 type DataTableDefaultViewDataProps = Partial<Pick<DefaultViewDataProps, 'icon' | 'messages' | 'filtersApplied'>>;

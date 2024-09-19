@@ -8,10 +8,19 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip, Typography,
-} from '@material-ui/core';
-import { PopperProps } from '@material-ui/core/Popper';
-import { WithStyles } from '@material-ui/core/styles';
+    FormControl,
+    InputLabel,
+    ListItemText,
+    ListItem,
+    List,
+    FormHelperText,
+    Tooltip,
+    Typography,
+} from '@mui/material';
+import withStyles from '@mui/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { PopperProps } from '@mui/material/Popper';
+import { WithStyles } from '@mui/styles';
 import { noop } from 'lodash';
 import { isGroup } from 'common/isGroup';
 import { sortByKey } from 'common/objects';
@@ -40,7 +49,7 @@ export interface AutocompleteProps<Item, Suggestion> {
 
 type AutocompleteClasses = 'tabbedListStyles';
 
-const autocompleteStyles: StyleRulesCallback<AutocompleteClasses> = theme => ({
+const autocompleteStyles: CustomStyleRulesCallback<AutocompleteClasses> = theme => ({
     tabbedListStyles: {
         maxHeight: '18rem',
     }
@@ -88,17 +97,15 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     inputRef = React.createRef<HTMLInputElement>();
 
     render() {
-        return (
-            <RootRef rootRef={this.containerRef}>
-                <FormControl fullWidth error={this.props.error}>
-                    {this.renderLabel()}
-                    {this.renderInput()}
-                    {this.renderHelperText()}
-                    {this.props.category === AutocompleteCat.SHARING ? this.renderTabbedSuggestions() : this.renderSuggestions()}
-                </FormControl>
-            </RootRef>
-        );
-    }
+        return <div ref={this.containerRef}>
+                    <FormControl variant="standard" fullWidth error={this.props.error}>
+                        {this.renderLabel()}
+                        {this.renderInput()}
+                        {this.renderHelperText()}
+                        {this.props.category === AutocompleteCat.SHARING ? this.renderTabbedSuggestions() : this.renderSuggestions()}
+                    </FormControl>
+               </div>
+        }
 
     renderLabel() {
         const { label } = this.props;
@@ -327,10 +334,10 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
 type ChipClasses = 'root';
 
-const chipStyles: StyleRulesCallback<ChipClasses> = theme => ({
+const chipStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
-        marginRight: theme.spacing.unit / 4,
-        height: theme.spacing.unit * 3,
+        marginRight: theme.spacing(0.25),
+        height: theme.spacing(3),
     }
 });
 
@@ -338,7 +345,7 @@ const Chip = withStyles(chipStyles)(MuiChip);
 
 type PopperClasses = 'root';
 
-const popperStyles: StyleRulesCallback<PopperClasses> = theme => ({
+const popperStyles: CustomStyleRulesCallback<ChipClasses> = theme => ({
     root: {
         zIndex: theme.zIndex.modal,
     }
@@ -351,7 +358,7 @@ const Popper = withStyles(popperStyles)(
 
 type InputClasses = 'root';
 
-const inputStyles: StyleRulesCallback<InputClasses> = () => ({
+const inputStyles: CustomStyleRulesCallback<InputClasses> = () => ({
     root: {
         display: 'flex',
         flexWrap: 'wrap',

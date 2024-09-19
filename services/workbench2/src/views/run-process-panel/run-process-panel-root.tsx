@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Stepper, Step, StepLabel, StepContent, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Stepper, Step, StepLabel, StepContent } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { RunProcessFirstStepDataProps, RunProcessFirstStepActionProps, RunProcessFirstStep } from 'views/run-process-panel/run-process-first-step';
 import { RunProcessSecondStepForm } from './run-process-second-step';
 
@@ -19,7 +22,7 @@ type RunProcessPanelRootProps = RunProcessPanelRootDataProps & RunProcessPanelRo
 
 type CssRules = 'stepper';
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: CustomStyleRulesCallback<CssRules> = theme => ({
     stepper: {
         overflow: "scroll",
     }

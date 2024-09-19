@@ -4,8 +4,10 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@mui/material';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { loadVirtualMachinesAdminData, openAddVirtualMachineLoginDialog, openRemoveVirtualMachineLoginDialog, openEditVirtualMachineLoginDialog } from 'store/virtual-machines/virtual-machines-actions';
@@ -18,7 +20,7 @@ import { ResourceUuid, VirtualMachineHostname, VirtualMachineLogin } from 'views
 
 type CssRules = 'moreOptionsButton' | 'moreOptions' | 'chipsRoot' | 'vmTableWrapper';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     moreOptionsButton: {
         padding: 0
     },
@@ -29,7 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     chipsRoot: {
-        margin: `0px -${theme.spacing.unit / 2}px`,
+        margin: `0px -${theme.spacing(0.5)}`,
     },
     vmTableWrapper: {
         overflowX: 'auto',
@@ -87,8 +89,8 @@ export const VirtualMachineAdminPanel = compose(
             render() {
                 const { virtualMachines } = this.props;
                 return (
-                    <Grid container spacing={16}>
-                        {virtualMachines.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
+                    <Grid container spacing={2}>
+                        {virtualMachines.items.length > 0 && <CardContentWithVirtualMachines {...this.props} />}
                     </Grid>
                 );
             }
@@ -121,7 +123,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     <TableCell><ResourceUuid uuid={machine.uuid} /></TableCell>
                     <TableCell><VirtualMachineHostname uuid={machine.uuid} /></TableCell>
                     <TableCell>
-                        <Grid container spacing={8} className={props.classes.chipsRoot}>
+                        <Grid container spacing={1} className={props.classes.chipsRoot}>
                             {props.links.items.filter((link) => (link.headUuid === machine.uuid)).map((permission, i) => (
                                 <Grid item key={i}>
                                     <Chip label={<VirtualMachineLogin linkUuid={permission.uuid} />} onDelete={event => props.onDeleteLogin(permission.uuid)} onClick={event => props.onLoginEdit(permission.uuid)} />
@@ -131,14 +133,20 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     </TableCell>
                     <TableCell>
                         <Tooltip title="Add Login Permission" disableFocusListener>
-                            <IconButton onClick={event => props.onAddLogin(machine.uuid)} className={props.classes.moreOptionsButton}>
+                            <IconButton
+                                onClick={event => props.onAddLogin(machine.uuid)}
+                                className={props.classes.moreOptionsButton}
+                                size="large">
                                 <AddUserIcon />
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                     <TableCell className={props.classes.moreOptions}>
                         <Tooltip title="More options" disableFocusListener>
-                            <IconButton onClick={event => props.onOptionsMenuOpen(event, machine)} className={props.classes.moreOptionsButton}>
+                            <IconButton
+                                onClick={event => props.onOptionsMenuOpen(event, machine)}
+                                className={props.classes.moreOptionsButton}
+                                size="large">
                                 <MoreVerticalIcon />
                             </IconButton>
                         </Tooltip>

@@ -11,7 +11,17 @@ import {
 } from 'models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, WithStyles, Typography } from '@material-ui/core';
+import {
+    Input,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Divider,
+    Typography,
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
@@ -20,11 +30,12 @@ import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware
 import { createSelector, createStructuredSelector } from 'reselect';
 import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity, values, noop } from 'lodash';
-import { InputProps } from '@material-ui/core/Input';
+import { InputProps } from '@mui/material/Input';
 import { TreePicker } from 'store/tree-picker/tree-picker';
 import { RootState } from 'store/store';
 import { Chips } from 'components/chips/chips';
-import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withStyles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import withStyles from '@mui/styles/withStyles';
 import { CollectionResource } from 'models/collection';
 import { PORTABLE_DATA_HASH_PATTERN, ResourceKind } from 'models/resource';
 import { Dispatch } from 'redux';
@@ -229,7 +240,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
                 onBlur={this.props.input.onBlur}
                 disabled={this.props.commandInput.disabled} />
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',
@@ -237,7 +248,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
             pickerWrapper: {
                 display: 'flex',
                 flexDirection: 'column',
-                flexBasis: `${spacing.unit * 8}vh`,
+                flexBasis: `${spacing(8)}vh`,
                 flexShrink: 1,
                 minHeight: 0,
             },
@@ -246,12 +257,12 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
                 overflow: 'auto',
             },
             divider: {
-                margin: `${spacing.unit}px 0`,
+                margin: `${spacing(1)} 0`,
             },
             chips: {
                 flex: 1,
                 overflow: 'auto',
-                padding: `${spacing.unit}px 0`,
+                padding: `${spacing(1)} 0`,
                 overflowX: 'hidden',
             },
         });

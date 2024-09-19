@@ -3,22 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    withStyles,
-    WithStyles,
-    StyleRulesCallback,
-    FormControl,
-    Select,
-    MenuItem,
-    Input
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { FormControl, Select, MenuItem, Input } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = 'formControl';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     formControl: {
-        minWidth: theme.spacing.unit * 15,
+        minWidth: theme.spacing(15),
     }
 });
 
@@ -41,10 +36,11 @@ type ProcessLogFormProps = ProcessLogFormDataProps & ProcessLogFormActionProps &
 export const ProcessLogForm = withStyles(styles)(
     ({ classes, selectedFilter, onChange, filters }: ProcessLogFormProps) =>
         <form autoComplete="off" data-cy="process-logs-filter">
-            <FormControl className={classes.formControl}>
+            <FormControl variant="standard" className={classes.formControl}>
                 <Select
+                    variant="standard"
                     value={selectedFilter.value}
-                    onChange={({ target }) => onChange({ label: target.innerText, value: target.value })}
+                    onChange={(ev: any) => onChange({ label: ev.target.innerText, value: ev.target.value})}
                     input={<Input name="eventType" id="log-label-placeholder" />}
                     name="eventType">
                     {

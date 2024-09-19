@@ -16,8 +16,8 @@ import { withDialog } from "store/dialog/with-dialog";
 import { compose } from "redux";
 import { propertiesActions } from "store/properties/properties-actions";
 import { DispatchProp, connect } from 'react-redux';
-import { MenuItem } from "@material-ui/core";
-import { Card, CardContent, Typography } from "@material-ui/core";
+import { MenuItem } from "@mui/material";
+import { Card, CardContent, Typography } from "@mui/material";
 
 // This is the name of the dialog box.  It in store actions that
 // open/close the dialog box.

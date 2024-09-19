@@ -64,6 +64,365 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 	}
 }
 
+func newCollection(collID string) *arvados.Collection {
+	coll := &arvados.Collection{UUID: collID}
+	manifestKey := collID
+	if pdh, ok := arvadostest.TestCollectionUUIDToPDH[collID]; ok {
+		coll.PortableDataHash = pdh
+		manifestKey = pdh
+	}
+	if mtext, ok := arvadostest.TestCollectionPDHToManifest[manifestKey]; ok {
+		coll.ManifestText = mtext
+	}
+	return coll
+}
+
+func newRequest(method, urlStr string) *http.Request {
+	u := mustParseURL(urlStr)
+	return &http.Request{
+		Method:     method,
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		RemoteAddr: "10.20.30.40:56789",
+		Header:     http.Header{},
+	}
+}
+
+func newLoggerAndContext() (*bytes.Buffer, context.Context) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	return &logbuf, ctxlog.Context(context.Background(), logger)
+}
+
+func (s *UnitSuite) TestLogEventTypes(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	for method, expected := range map[string]string{
+		"GET":  "file_download",
+		"POST": "file_upload",
+		"PUT":  "file_upload",
+	} {
+		filePath := "/" + method
+		req := newRequest(method, collURL+filePath)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.eventType, check.Equals, expected)
+	}
+}
+
+func (s *UnitSuite) TestUnloggedEventTypes(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	for _, method := range []string{"DELETE", "HEAD", "OPTIONS", "PATCH"} {
+		filePath := "/" + method
+		req := newRequest(method, collURL+filePath)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		c.Check(actual, check.IsNil,
+			check.Commentf("%s request made a log event", method))
+	}
+}
+
+func (s *UnitSuite) TestLogFilePath(c *check.C) {
+	coll := newCollection(arvadostest.FooCollection)
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	for _, filePath := range []string{"/foo", "/Foo", "/foo/bar"} {
+		req := newRequest("GET", collURL+filePath)
+		actual := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.collFilePath, check.Equals, filePath)
+	}
+}
+
+func (s *UnitSuite) TestLogRemoteAddr(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+
+	for _, addr := range []string{"10.20.30.55", "192.168.144.120", "192.0.2.4"} {
+		req.RemoteAddr = addr + ":57914"
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, addr)
+	}
+
+	for _, addr := range []string{"100::20:30:40", "2001:db8::90:100", "3fff::30"} {
+		req.RemoteAddr = fmt.Sprintf("[%s]:57916", addr)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, addr)
+	}
+}
+
+func (s *UnitSuite) TestLogXForwardedFor(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	for xff, expected := range map[string]string{
+		"10.20.30.55":                          "10.20.30.55",
+		"192.168.144.120, 10.20.30.120":        "10.20.30.120",
+		"192.0.2.4, 192.0.2.6, 192.0.2.8":      "192.0.2.8",
+		"192.0.2.4,192.168.2.4":                "192.168.2.4",
+		"10.20.30.60,192.168.144.40,192.0.2.4": "192.0.2.4",
+		"100::20:30:50":                        "100::20:30:50",
+		"2001:db8::80:90, 100::100":            "100::100",
+		"3fff::ff, 3fff::ee, 3fff::fe":         "3fff::fe",
+		"3fff::3f,100::1000":                   "100::1000",
+		"2001:db8::88,100::88,3fff::88":        "3fff::88",
+		"10.20.30.60, 2001:db8::60":            "2001:db8::60",
+		"2001:db8::20,10.20.30.20":             "10.20.30.20",
+		", 10.20.30.123, 100::123":             "100::123",
+		",100::321,10.30.20.10":                "10.30.20.10",
+	} {
+		req.Header.Set("X-Forwarded-For", xff)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, expected)
+	}
+}
+
+func (s *UnitSuite) TestLogXForwardedForMalformed(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	for _, xff := range []string{"", ",", "10.20,30.40", "foo, bar"} {
+		req.Header.Set("X-Forwarded-For", xff)
+		actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.clientAddr, check.Equals, "10.20.30.40")
+	}
+}
+
+func (s *UnitSuite) TestLogXForwardedForMultivalue(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	req.Header.Set("X-Forwarded-For", ", ")
+	req.Header.Add("X-Forwarded-For", "2001:db8::db9:dbd")
+	req.Header.Add("X-Forwarded-For", "10.20.30.90")
+	actual := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+	c.Assert(actual, check.NotNil)
+	c.Check(actual.clientAddr, check.Equals, "10.20.30.90")
+}
+
+func (s *UnitSuite) TestLogClientAddressCanonicalization(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	expected := "2001:db8::12:0"
+
+	req.RemoteAddr = "[2001:db8::012:0000]:57918"
+	a := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+	c.Assert(a, check.NotNil)
+	c.Check(a.clientAddr, check.Equals, expected)
+
+	req.RemoteAddr = "10.20.30.40:57919"
+	req.Header.Set("X-Forwarded-For", "2001:db8:0::0:12:00")
+	b := newFileEventLog(s.handler, req, filePath, nil, nil, "")
+	c.Assert(b, check.NotNil)
+	c.Check(b.clientAddr, check.Equals, expected)
+}
+
+func (s *UnitSuite) TestLogAnonymousUser(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	filePath := "/foo"
+	req := newRequest("GET", collURL+filePath)
+	actual := newFileEventLog(s.handler, req, filePath, nil, nil, arvadostest.AnonymousToken)
+	c.Assert(actual, check.NotNil)
+	c.Check(actual.userUUID, check.Equals, s.handler.Cluster.ClusterID+"-tpzed-anonymouspublic")
+	c.Check(actual.userFullName, check.Equals, "")
+	c.Check(actual.clientToken, check.Equals, arvadostest.AnonymousToken)
+}
+
+func (s *UnitSuite) TestLogUser(c *check.C) {
+	collURL := "http://keep-web.example/c=" + arvadostest.FooCollection
+	for _, trial := range []struct{ uuid, fullName, token string }{
+		{arvadostest.ActiveUserUUID, "Active User", arvadostest.ActiveToken},
+		{arvadostest.SpectatorUserUUID, "Spectator User", arvadostest.SpectatorToken},
+	} {
+		filePath := "/" + trial.uuid
+		req := newRequest("GET", collURL+filePath)
+		user := &arvados.User{
+			UUID:     trial.uuid,
+			FullName: trial.fullName,
+		}
+		actual := newFileEventLog(s.handler, req, filePath, nil, user, trial.token)
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.userUUID, check.Equals, trial.uuid)
+		c.Check(actual.userFullName, check.Equals, trial.fullName)
+		c.Check(actual.clientToken, check.Equals, trial.token)
+	}
+}
+
+func (s *UnitSuite) TestLogCollectionByUUID(c *check.C) {
+	for collUUID, collPDH := range arvadostest.TestCollectionUUIDToPDH {
+		collURL := "http://keep-web.example/c=" + collUUID
+		filePath := "/" + collUUID
+		req := newRequest("GET", collURL+filePath)
+		coll := newCollection(collUUID)
+		actual := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.collUUID, check.Equals, collUUID)
+		c.Check(actual.collPDH, check.Equals, collPDH)
+	}
+}
+
+func (s *UnitSuite) TestLogCollectionByPDH(c *check.C) {
+	for _, collPDH := range arvadostest.TestCollectionUUIDToPDH {
+		collURL := "http://keep-web.example/c=" + collPDH
+		filePath := "/PDHFile"
+		req := newRequest("GET", collURL+filePath)
+		coll := newCollection(collPDH)
+		actual := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+		if !c.Check(actual, check.NotNil) {
+			continue
+		}
+		c.Check(actual.collPDH, check.Equals, collPDH)
+		c.Check(actual.collUUID, check.Equals, "")
+	}
+}
+
+func (s *UnitSuite) TestLogGETUUIDAsDict(c *check.C) {
+	filePath := "/foo"
+	reqPath := "/c=" + arvadostest.FooCollection + filePath
+	req := newRequest("GET", "http://keep-web.example"+reqPath)
+	coll := newCollection(arvadostest.FooCollection)
+	logEvent := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+	c.Assert(logEvent, check.NotNil)
+	c.Check(logEvent.asDict(), check.DeepEquals, arvadosclient.Dict{
+		"event_type":  "file_download",
+		"object_uuid": s.handler.Cluster.ClusterID + "-tpzed-anonymouspublic",
+		"properties": arvadosclient.Dict{
+			"reqPath":              reqPath,
+			"collection_uuid":      arvadostest.FooCollection,
+			"collection_file_path": filePath,
+			"portable_data_hash":   arvadostest.FooCollectionPDH,
+		},
+	})
+}
+
+func (s *UnitSuite) TestLogGETPDHAsDict(c *check.C) {
+	filePath := "/Foo"
+	reqPath := "/c=" + arvadostest.FooCollectionPDH + filePath
+	req := newRequest("GET", "http://keep-web.example"+reqPath)
+	coll := newCollection(arvadostest.FooCollectionPDH)
+	user := &arvados.User{
+		UUID:     arvadostest.ActiveUserUUID,
+		FullName: "Active User",
+	}
+	logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+	c.Assert(logEvent, check.NotNil)
+	c.Check(logEvent.asDict(), check.DeepEquals, arvadosclient.Dict{
+		"event_type":  "file_download",
+		"object_uuid": arvadostest.ActiveUserUUID,
+		"properties": arvadosclient.Dict{
+			"reqPath":              reqPath,
+			"portable_data_hash":   arvadostest.FooCollectionPDH,
+			"collection_uuid":      "",
+			"collection_file_path": filePath,
+		},
+	})
+}
+
+func (s *UnitSuite) TestLogUploadAsDict(c *check.C) {
+	coll := newCollection(arvadostest.FooCollection)
+	user := &arvados.User{
+		UUID:     arvadostest.ActiveUserUUID,
+		FullName: "Active User",
+	}
+	for _, method := range []string{"POST", "PUT"} {
+		filePath := "/" + method + "File"
+		reqPath := "/c=" + arvadostest.FooCollection + filePath
+		req := newRequest(method, "http://keep-web.example"+reqPath)
+		logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+		if !c.Check(logEvent, check.NotNil) {
+			continue
+		}
+		c.Check(logEvent.asDict(), check.DeepEquals, arvadosclient.Dict{
+			"event_type":  "file_upload",
+			"object_uuid": arvadostest.ActiveUserUUID,
+			"properties": arvadosclient.Dict{
+				"reqPath":              reqPath,
+				"collection_uuid":      arvadostest.FooCollection,
+				"collection_file_path": filePath,
+			},
+		})
+	}
+}
+
+func (s *UnitSuite) TestLogGETUUIDAsFields(c *check.C) {
+	filePath := "/foo"
+	reqPath := "/c=" + arvadostest.FooCollection + filePath
+	req := newRequest("GET", "http://keep-web.example"+reqPath)
+	coll := newCollection(arvadostest.FooCollection)
+	logEvent := newFileEventLog(s.handler, req, filePath, coll, nil, "")
+	c.Assert(logEvent, check.NotNil)
+	c.Check(logEvent.asFields(), check.DeepEquals, logrus.Fields{
+		"user_uuid":            s.handler.Cluster.ClusterID + "-tpzed-anonymouspublic",
+		"collection_uuid":      arvadostest.FooCollection,
+		"collection_file_path": filePath,
+		"portable_data_hash":   arvadostest.FooCollectionPDH,
+	})
+}
+
+func (s *UnitSuite) TestLogGETPDHAsFields(c *check.C) {
+	filePath := "/Foo"
+	reqPath := "/c=" + arvadostest.FooCollectionPDH + filePath
+	req := newRequest("GET", "http://keep-web.example"+reqPath)
+	coll := newCollection(arvadostest.FooCollectionPDH)
+	user := &arvados.User{
+		UUID:     arvadostest.ActiveUserUUID,
+		FullName: "Active User",
+	}
+	logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+	c.Assert(logEvent, check.NotNil)
+	c.Check(logEvent.asFields(), check.DeepEquals, logrus.Fields{
+		"user_uuid":            arvadostest.ActiveUserUUID,
+		"user_full_name":       "Active User",
+		"collection_uuid":      "",
+		"collection_file_path": filePath,
+		"portable_data_hash":   arvadostest.FooCollectionPDH,
+	})
+}
+
+func (s *UnitSuite) TestLogUploadAsFields(c *check.C) {
+	coll := newCollection(arvadostest.FooCollection)
+	user := &arvados.User{
+		UUID:     arvadostest.ActiveUserUUID,
+		FullName: "Active User",
+	}
+	for _, method := range []string{"POST", "PUT"} {
+		filePath := "/" + method + "File"
+		reqPath := "/c=" + arvadostest.FooCollection + filePath
+		req := newRequest(method, "http://keep-web.example"+reqPath)
+		logEvent := newFileEventLog(s.handler, req, filePath, coll, user, "")
+		if !c.Check(logEvent, check.NotNil) {
+			continue
+		}
+		c.Check(logEvent.asFields(), check.DeepEquals, logrus.Fields{
+			"user_uuid":            arvadostest.ActiveUserUUID,
+			"user_full_name":       "Active User",
+			"collection_uuid":      arvadostest.FooCollection,
+			"collection_file_path": filePath,
+		})
+	}
+}
+
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	h := s.handler
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
@@ -213,6 +572,7 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 	// Ensure we start with an empty cache
 	defer os.Setenv("HOME", os.Getenv("HOME"))
 	os.Setenv("HOME", c.MkDir())
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(0)
 
 	for _, trial := range []struct {
 		dataExists    bool
@@ -1714,6 +2074,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 
 	s.handler.Cluster.Collections.TrustAllContent = true
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(0)
 
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
@@ -1835,6 +2196,124 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				arvadostest.ActiveUserUUID, coll.UUID, "", "bar")
 		}
 	}
+}
+
+func (s *IntegrationSuite) serveAndLogRequests(c *check.C, reqs *map[*http.Request]int) *bytes.Buffer {
+	logbuf, ctx := newLoggerAndContext()
+	var wg sync.WaitGroup
+	for req, expectStatus := range *reqs {
+		req := req.WithContext(ctx)
+		expectStatus := expectStatus
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp := httptest.NewRecorder()
+			s.handler.ServeHTTP(resp, req)
+			c.Check(resp.Result().StatusCode, check.Equals, expectStatus)
+		}()
+	}
+	wg.Wait()
+	return logbuf
+}
+
+func countLogMatches(c *check.C, logbuf *bytes.Buffer, pattern string, matchCount int) bool {
+	search, err := regexp.Compile(pattern)
+	if !c.Check(err, check.IsNil, check.Commentf("failed to compile regexp: %v", err)) {
+		return false
+	}
+	matches := search.FindAll(logbuf.Bytes(), -1)
+	return c.Check(matches, check.HasLen, matchCount,
+		check.Commentf("%d matching log messages: %+v", len(matches), matches))
+}
+
+func (s *IntegrationSuite) TestLogThrottling(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	fooURL := "http://" + arvadostest.FooCollection + ".keep-web.example/foo"
+	req := newRequest("GET", fooURL)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	pattern := `\bmsg="File download".* collection_file_path=foo\b`
+
+	// All these requests get byte zero and should be logged.
+	reqs := make(map[*http.Request]int)
+	reqs[req] = http.StatusOK
+	for _, byterange := range []string{"0-2", "0-1", "0-", "-3"} {
+		req := req.Clone(context.Background())
+		req.Header.Set("Range", "bytes="+byterange)
+		reqs[req] = http.StatusPartialContent
+	}
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, pattern, len(reqs))
+
+	// None of these requests get byte zero so they should all be throttled
+	// (now that we've made at least one request for byte zero).
+	reqs = make(map[*http.Request]int)
+	for _, byterange := range []string{"1-2", "1-", "2-", "-1", "-2"} {
+		req := req.Clone(context.Background())
+		req.Header.Set("Range", "bytes="+byterange)
+		reqs[req] = http.StatusPartialContent
+	}
+	logbuf = s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, pattern, 0)
+}
+
+func (s *IntegrationSuite) TestLogThrottleInterval(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Nanosecond)
+	logbuf, ctx := newLoggerAndContext()
+	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req = req.WithContext(ctx)
+
+	re := regexp.MustCompile(`\bmsg="File download".* collection_file_path=foo\b`)
+	for expected := 1; expected < 4; expected++ {
+		time.Sleep(2 * time.Nanosecond)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Assert(resp.Result().StatusCode, check.Equals, http.StatusOK)
+		matches := re.FindAll(logbuf.Bytes(), -1)
+		c.Assert(matches, check.HasLen, expected,
+			check.Commentf("%d matching log messages: %+v", len(matches), matches))
+	}
+}
+
+func (s *IntegrationSuite) TestLogThrottleDifferentTokens(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
+	reqs := make(map[*http.Request]int)
+	for _, token := range []string{arvadostest.ActiveToken, arvadostest.AdminToken} {
+		req := req.Clone(context.Background())
+		req.Header.Set("Authorization", "Bearer "+token)
+		reqs[req] = http.StatusOK
+	}
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_file_path=foo\b`, len(reqs))
+}
+
+func (s *IntegrationSuite) TestLogThrottleDifferentFiles(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	baseURL := "http://" + arvadostest.MultilevelCollection1 + ".keep-web.example/"
+	reqs := make(map[*http.Request]int)
+	for _, filename := range []string{"file1", "file2", "file3"} {
+		req := newRequest("GET", baseURL+filename)
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		reqs[req] = http.StatusOK
+	}
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_uuid=`+arvadostest.MultilevelCollection1+`\b`, len(reqs))
+}
+
+func (s *IntegrationSuite) TestLogThrottleDifferentSources(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVLogDownloadInterval = arvados.Duration(time.Hour)
+	req := newRequest("GET", "http://"+arvadostest.FooCollection+".keep-web.example/foo")
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	reqs := make(map[*http.Request]int)
+	reqs[req] = http.StatusOK
+	for _, xff := range []string{"10.22.33.44", "100::123"} {
+		req := req.Clone(context.Background())
+		req.Header.Set("X-Forwarded-For", xff)
+		reqs[req] = http.StatusOK
+	}
+	logbuf := s.serveAndLogRequests(c, &reqs)
+	countLogMatches(c, logbuf, `\bmsg="File download".* collection_file_path=foo\b`, len(reqs))
 }
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {

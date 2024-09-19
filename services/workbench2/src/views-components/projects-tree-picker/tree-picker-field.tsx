@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Typography } from "@material-ui/core";
+import { Typography } from "@mui/material";
 import { TreeItem } from "components/tree/tree";
 import { WrappedFieldProps } from 'redux-form';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';

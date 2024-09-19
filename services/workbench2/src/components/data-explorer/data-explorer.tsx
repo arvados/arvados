@@ -3,7 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button, Typography } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import {
+    Grid,
+    Paper,
+    Toolbar,
+    TablePagination,
+    IconButton,
+    Tooltip,
+    Button,
+    Typography,
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
@@ -14,13 +26,33 @@ import { TCheckedList } from "components/data-table/data-table";
 import { createTree } from "models/tree";
 import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
-import { PaperProps } from "@material-ui/core/Paper";
+import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import classNames from "classnames";
+import { InlinePulser } from "components/loading/inline-pulser";
 
-type CssRules = "titleWrapper" | "msToolbarStyles" | "subToolbarWrapper" | "searchBox" | "headerMenu" | "toolbar" | "footer"| "loadMoreContainer" | "numResults" | "root" | "moreOptionsButton" | "title" | 'subProcessTitle' | 'progressWrapper' | 'progressWrapperNoTitle' | "dataTable" | "container";
+type CssRules =
+    | 'titleWrapper'
+    | 'msToolbarStyles'
+    | 'searchBox'
+    | 'headerMenu'
+    | 'toolbar'
+    | 'footer'
+    | 'loadMoreContainer'
+    | 'numResults'
+    | 'root'
+    | 'moreOptionsButton'
+    | 'title'
+    | 'subProcessTitle'
+    | 'dataTable'
+    | 'container'
+    | 'paginationLabel'
+    | 'paginationRoot'
+    | "subToolbarWrapper" 
+    | 'progressWrapper' 
+    | 'progressWrapperNoTitle';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
@@ -40,7 +72,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     toolbar: {
         paddingTop: 0,
-        paddingRight: theme.spacing.unit,
+        paddingRight: theme.spacing(1),
         paddingLeft: "10px",
     },
     footer: {
@@ -66,15 +98,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         display: "inline-block",
-        paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 2,
+        paddingLeft: theme.spacing(2),
+        paddingTop: theme.spacing(2),
         fontSize: "18px",
         paddingRight: "10px",
     },
     subProcessTitle: {
         display: "inline-block",
-        paddingLeft: theme.spacing.unit * 2,
-        paddingTop: theme.spacing.unit * 2,
+        paddingLeft: theme.spacing(2),
+        paddingTop: theme.spacing(2),
         fontSize: "18px",
         flexGrow: 0,
         paddingRight: "10px",
@@ -89,7 +121,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     dataTable: {
         height: "100%",
-        overflow: "auto",
+        overflowY: "auto",
     },
     container: {
         height: "100%",
@@ -99,12 +131,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexBasis: "initial",
         flexGrow: 0,
     },
+    paginationLabel: {
+        margin: 0,
+        padding: 0,
+        fontSize: '0.75rem',
+    },
+    paginationRoot: {
+        fontSize: '0.75rem',
+        color: theme.palette.grey["600"],
+    },
 });
 
 interface DataExplorerDataProps<T> {
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
+    loadingItemsAvailable: boolean;
     columns: DataColumns<T, any>;
     searchLabel?: string;
     searchValue: string;
@@ -121,7 +163,7 @@ interface DataExplorerDataProps<T> {
     hideSearchInput?: boolean;
     title?: React.ReactNode;
     progressBar?: React.ReactNode;
-    paperKey?: string;
+    path?: string;
     currentRouteUuid: string;
     selectedResourceUuid: string;
     elementPath?: string;
@@ -142,13 +184,14 @@ interface DataExplorerActionProps<T> {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
     onSortToggle: (column: DataColumn<T, any>) => void;
     onFiltersChange: (filters: DataTableFilters, column: DataColumn<T, any>) => void;
-    onChangePage: (page: number) => void;
+    onPageChange: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
     extractKey?: (item: T) => React.Key;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     setSelectedUuid: (uuid: string) => void;
+    usesDetailsCard: (uuid: string) => boolean;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -169,10 +212,10 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
-            const { selectedResourceUuid, currentRouteUuid } = this.props;
+            const { selectedResourceUuid, currentRouteUuid, path, usesDetailsCard } = this.props;
             if(selectedResourceUuid !== prevProps.selectedResourceUuid || currentRouteUuid !== prevProps.currentRouteUuid) {
                 this.setState({
-                    hideToolbar: selectedResourceUuid === this.props.currentRouteUuid,
+                    hideToolbar: usesDetailsCard(path || '') ? selectedResourceUuid === this.props.currentRouteUuid : false,
                 })
             }
             if (this.props.itemsAvailable !== prevProps.itemsAvailable) {
@@ -198,6 +241,7 @@ export const DataExplorer = withStyles(styles)(
                 onSearch,
                 items,
                 itemsAvailable,
+                loadingItemsAvailable,
                 onRowClick,
                 onRowDoubleClick,
                 classes,
@@ -207,7 +251,7 @@ export const DataExplorer = withStyles(styles)(
                 actions,
                 paperProps,
                 hideSearchInput,
-                paperKey,
+                path,
                 fetchMode,
                 selectedResourceUuid,
                 title,
@@ -229,7 +273,7 @@ export const DataExplorer = withStyles(styles)(
                 <Paper
                     className={classNames(classes.root, paperClassName)}
                     {...paperProps}
-                    key={paperKey}
+                    key={path}
                     data-cy={this.props["data-cy"]}
                 >
                     <Grid
@@ -262,7 +306,7 @@ export const DataExplorer = withStyles(styles)(
                                     xs
                                 >
                                     <Toolbar className={classes.toolbar}>
-                                        <Grid container justify="space-between" wrap="nowrap" alignItems="center">
+                                        <Grid container justifyContent="space-between" wrap="nowrap" alignItems="center">
                                             {!hideSearchInput && (
                                                 <div className={classes.searchBox}>
                                                     {!hideSearchInput && (
@@ -288,7 +332,7 @@ export const DataExplorer = withStyles(styles)(
                                                 title={`Unmaximize ${panelName || "panel"}`}
                                                 disableFocusListener
                                             >
-                                                <IconButton onClick={doUnMaximizePanel}>
+                                                <IconButton onClick={doUnMaximizePanel} size="large">
                                                     <UnMaximizeIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -298,7 +342,7 @@ export const DataExplorer = withStyles(styles)(
                                                 title={`Maximize ${panelName || "panel"}`}
                                                 disableFocusListener
                                             >
-                                                <IconButton onClick={doMaximizePanel}>
+                                                <IconButton onClick={doMaximizePanel} size="large">
                                                     <MaximizeIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -308,10 +352,7 @@ export const DataExplorer = withStyles(styles)(
                                                 title={`Close ${panelName || "panel"}`}
                                                 disableFocusListener
                                             >
-                                                <IconButton
-                                                    disabled={panelMaximized}
-                                                    onClick={doHidePanel}
-                                                >
+                                                <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
                                                     <CloseIcon />
                                                 </IconButton>
                                             </Tooltip>
@@ -329,7 +370,6 @@ export const DataExplorer = withStyles(styles)(
                         }
                         <Grid
                             item
-                            xs="auto"
                             className={classes.dataTable}
                         >
                             <DataTable
@@ -343,7 +383,7 @@ export const DataExplorer = withStyles(styles)(
                                 extractKey={extractKey}
                                 defaultViewIcon={defaultViewIcon}
                                 defaultViewMessages={defaultViewMessages}
-                                currentRoute={paperKey}
+                                currentRoute={path}
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
                                 checkedList={checkedList}
@@ -366,19 +406,25 @@ export const DataExplorer = withStyles(styles)(
                                 )}
                                 <Grid
                                     container={!elementPath}
-                                    justify="flex-end"
+                                    justifyContent="flex-end"
                                 >
                                     {fetchMode === DataTableFetchMode.PAGINATED ? (
                                         <TablePagination
+                                        data-cy="table-pagination"
                                             count={itemsAvailable}
                                             rowsPerPage={rowsPerPage}
                                             rowsPerPageOptions={rowsPerPageOptions}
                                             page={this.props.page}
-                                            onChangePage={this.changePage}
-                                            onChangeRowsPerPage={this.changeRowsPerPage}
-                                            // Disable next button on empty lists since that's not default behavior
-                                            nextIconButtonProps={itemsAvailable > 0 ? {} : { disabled: true }}
+                                            onPageChange={this.changePage}
+                                            onRowsPerPageChange={this.changeRowsPerPage}
+                                            labelDisplayedRows={renderPaginationLabel(loadingItemsAvailable)}
+                                            nextIconButtonProps={getPaginiationButtonProps(itemsAvailable, loadingItemsAvailable)}
                                             component="div"
+                                            classes={{ 
+                                                root: classes.paginationRoot,
+                                                selectLabel: classes.paginationLabel, 
+                                                displayedRows: classes.paginationLabel,
+                                            }}
                                         />
                                     ) : (
                                         <Grid className={classes.loadMoreContainer}>
@@ -406,7 +452,7 @@ export const DataExplorer = withStyles(styles)(
         }
 
         changePage = (event: React.MouseEvent<HTMLButtonElement>, page: number) => {
-            this.props.onChangePage(page);
+            this.props.onPageChange(page);
         };
 
         changeRowsPerPage: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement> = event => {
@@ -420,7 +466,7 @@ export const DataExplorer = withStyles(styles)(
         renderContextMenuTrigger = (item: T) => (
             <Grid
                 container
-                justify="center"
+                justifyContent="center"
             >
                 <Tooltip
                     title="More options"
@@ -432,7 +478,7 @@ export const DataExplorer = withStyles(styles)(
                             event.stopPropagation()
                             this.props.onContextMenu(event, item)
                         }}
-                    >
+                        size="large">
                         <MoreVerticalIcon />
                     </IconButton>
                 </Tooltip>
@@ -448,4 +494,18 @@ export const DataExplorer = withStyles(styles)(
             render: this.renderContextMenuTrigger,
         };
     }
+);
+
+const renderPaginationLabel = (loading: boolean) => ({ from, to, count }) => (
+    loading ?
+        <InlinePulser/>
+        : <>{from}-{to} of {count}</>
+);
+
+const getPaginiationButtonProps = (itemsAvailable: number, loading: boolean) => (
+    loading
+        ? { disabled: false } // Always allow paging while loading total
+        : itemsAvailable > 0
+            ? { }
+            : { disabled: true } // Disable next button on empty lists since that's not default behavior
 );
