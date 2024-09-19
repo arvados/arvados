@@ -147,6 +147,7 @@ export const ParticipantSelect = connect()(
         }
 
         handleSelect = (selection: ParticipantResource) => {
+            if (!selection) return;
             const { uuid } = selection;
             const { onSelect = noop } = this.props;
             this.setState({ value: '', suggestions: [] });
