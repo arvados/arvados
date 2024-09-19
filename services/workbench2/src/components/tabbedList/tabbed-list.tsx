@@ -9,7 +9,7 @@ import { WithStyles, withStyles } from '@mui/styles';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'tabPanel' | 'listItem' | 'selected' | 'notFoundLabel';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -24,6 +24,9 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         top: 0,
         zIndex: 1,
         borderBottom: '1px solid lightgrey',
+    },
+    tabPanel: {
+        overflowY: 'scroll',
     },
     listItem: {
         cursor: 'pointer',
@@ -70,6 +73,10 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
         }
     }, [selectedIndex]);
 
+    const TabPanel = ({ children, value, index }: TabPanelProps) => {
+        return <div className={classes.tabPanel} hidden={value !== index}>{value === index && children}</div>;
+    };
+
     return (
         <div className={classNames(classes.root, injectedStyles)}>
             <div className={classes.tabs}>
@@ -105,7 +112,3 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
         </div>
     );
 });
-
-const TabPanel = ({ children, value, index }: TabPanelProps) => {
-    return <div style={{overflowY: 'scroll'}} hidden={value !== index}>{value === index && children}</div>;
-};
