@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useRef } from 'react';
-import { Tabs, Tab, List, ListItem, StyleRulesCallback, withStyles } from '@material-ui/core';
-import { WithStyles } from '@material-ui/core';
+import { Tabs, Tab, List, ListItemButton } from '@mui/material';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles, withStyles } from '@mui/styles';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem' | 'selected' | 'notFoundLabel';
 
-const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
+const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
         overflowY: 'auto',
     },
@@ -30,9 +31,12 @@ const tabbedListStyles: StyleRulesCallback<TabbedListClasses> = (theme: ArvadosT
             backgroundColor: theme.palette.grey[200],
         }
     },
+    selected: {
+        backgroundColor: `${theme.palette.grey['300']} !important`
+    },
     notFoundLabel: {
         cursor: 'default',
-        padding: theme.spacing.unit,
+        padding: theme.spacing(1),
         color: theme.palette.grey[700],
         textAlign: 'center',
     },
@@ -72,7 +76,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 <Tabs
                     value={tabNr}
                     onChange={handleTabChange}
-                    fullWidth
+                    variant='fullWidth'
                 >
                     {tabLabels.map((label) => (
                         <Tab data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
@@ -87,13 +91,13 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                   {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
                     {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
                       <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
-                        <ListItem
-                        className={classes.listItem}
+                        <ListItemButton
+                        className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
                         selected={i === selectedIndex}
                         onClick={handleSelect && handleSelect(item)}
                         >
                           {renderListItem ? renderListItem(item) : JSON.stringify(item)}
-                        </ListItem>
+                        </ListItemButton>
                       </div>
                     ))}
                 </List>
