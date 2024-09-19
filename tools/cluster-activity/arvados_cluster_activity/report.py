@@ -138,9 +138,16 @@ class ClusterActivityReport(object):
 
         self.label = "Cluster report for %s from %s to %s" % (self.cluster, since.date(), to.date())
 
-        # If we already produced a CSV report we have summary stats
-        # and don't need to fetch everything all over again.
         if not self.summary_fetched:
+            # If we haven't done it already, need to fetch everything
+            # from the API to collect summary stats (report_from_api
+            # calls collect_summary_stats on each row).
+            #
+            # Because it is a Python generator, we need call it in a
+            # loop to process all the rows.  This method also yields
+            # each row which is used by a different function to create
+            # the CSV report, but for the HTML report we just discard
+            # them.
             for row in self.report_from_api(since, to, include_workflow_steps, exclude):
                 pass
 
@@ -189,7 +196,6 @@ class ClusterActivityReport(object):
         if workbench.endswith("/"):
             workbench = workbench[:-1]
 
-        print(to.date(), self.today())
         if to.date() == self.today():
             # The deduplication ratio overstates things a bit, you can
             # have collections which reference a small slice of a large
@@ -229,6 +235,24 @@ class ClusterActivityReport(object):
                        workbench=workbench,
                        data_rows=data_rows))
 
+        # We have a couple of options for getting total container hours
+        #
+        # total_hours=container_cumulative_hours
+        #
+        # calculates the sum from prometheus metrics
+        #
+        # total_hours=self.total_hours
+        #
+        # calculates the sum of the containers that were fetched
+        #
+        # The problem is these numbers tend not to match, especially
+        # if the report generation was not called with "include
+        # workflow steps".
+        #
+        # I decided to use the sum from containers fetched, because it
+        # will match the sum of compute time for each project listed
+        # in the report.
+
         cards.append("""<h2>Activity and cost over the {reporting_days} day period {since} to {to}</h2>
         <table class='aggtable'><tbody>
         <tr><th>Active users</th> <td>{active_users}</td></tr>
@@ -241,7 +265,6 @@ class ClusterActivityReport(object):
         <p>See <a href="#prices">note on usage and cost calculations</a> for details on how costs are calculated.</p>
         """.format(active_users=len(self.active_users),
                    total_users=self.total_users,
-                   #total_hours=container_cumulative_hours,
                    total_hours=self.total_hours,
                    total_cost=self.total_cost,
                    total_workflows=self.total_workflows,
@@ -308,14 +331,7 @@ class ClusterActivityReport(object):
                 {wfsum}
                 </tbody></table>
                 """.format(name=prj.name,
-                           users=", ".join(prj.users),
-                           cost=prj.cost,
-                           hours=prj.hours,
                            wfsum=" ".join(wfsum),
-                           earliest=prj.earliest.date(),
-                           latest=prj.latest.date(),
-                           activity=prj.activityspan,
-                           userplural='s' if len(prj.users) > 1 else '',
                            projectrow=prj.tablerow,
                            workbench=workbench,
                            uuid=prj.uuid)

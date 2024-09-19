@@ -22,7 +22,7 @@ inputs:
 
 requirements:
   DockerRequirement:
-    dockerPull: 'arvados/cluster-activity:2.8.0.dev20240702194009'
+    dockerPull: 'arvados/cluster-activity'
 
   InitialWorkDirRequirement:
     listing:

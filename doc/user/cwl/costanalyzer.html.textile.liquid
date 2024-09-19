@@ -13,15 +13,42 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 {% include 'notebox_begin' %}
 
-Cost information is generally only available when Arvados runs in a cloud environment and @arvados-dispatch-cloud@ is used to dispatch @crunch@ jobs. The per node-hour price for each defined InstanceType most be supplied in "config.yml":{{site.baseurl}}/admin/config.html.  The @arv-cluster-activity@ program can still be used to collect and report on other workflow statistics, such as runtime.
+Cost information is generally only available when Arvados runs in a cloud environment and @arvados-dispatch-cloud@ is used to dispatch containers. The per node-hour price for each defined InstanceType must be supplied in "config.yml":{{site.baseurl}}/admin/config.html.
 
 {% include 'notebox_end' %}
 
-The @arv-cluster-activity@ program can be used to analyze cluster usage and cost over a time period. It can be installed from packages (@apt install arvados-cluster-activity@, @dnf install arvados-cluster-activity@ or @pip install arvados-cluster-activity@).
+The @arv-cluster-activity@ program can be used to analyze cluster usage and cost over a time period.
+
+h2. Installation
+
+The @arv-cluster-activity@ tool can be installed from a distribution package or PyPI.
+
+h2. Option 1: Install from distribution packages
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/packages.html.
+
+{% assign arvados_component = 'python3-arvados-cluster-activity' %}
+
+{% include 'install_packages' %}
+
+h2. Option 2: Install with pip
+
+Run @pip install arvados-cluster-activity[prometheus]@ in an appropriate installation environment, such as a virtualenv.
+
+Note:
+
+Support for fetching Prometheus metrics depends on Pandas and NumPy.  If these dependencies pose a problem, you can install the cluster activity tool without Prometheus support by omitting it from @pip install@.
+
+The Cluster Activity report uses the Arvados Python SDK, which uses @pycurl@, which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian-based distributions you can install them by running:
+
+<notextile>
+<pre><code># <span class="userinput">apt install git build-essential python3-dev libcurl4-openssl-dev libssl-dev</span>
+</code></pre>
+</notextile>
 
 h2(#syntax). Syntax
 
-The @arvados-client costanalyzer@ tool has a number of command line arguments:
+The @arv-cluster-activity@ tool has a number of command line arguments:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-cluster-activity --help</span>
@@ -37,7 +64,8 @@ options:
                         Export cost report to specified CSV file
   --include-workflow-steps
                         Include individual workflow steps (optional)
-  --columns COLUMNS     Cost report columns (optional), must be comma separated with no spaces between column names. Available columns are: Project, ProjectUUID, Workflow,
+  --columns COLUMNS     Cost report columns (optional), must be comma separated with no spaces between column names. Available columns are:
+                        Project, ProjectUUID, Workflow,
                         WorkflowUUID, Step, StepUUID, Sample, SampleUUID, User, UserUUID, Submitted, Started, Runtime, Cost
   --exclude EXCLUDE     Exclude workflows containing this substring (may be a regular expression)
   --html-report-file HTML_REPORT_FILE
@@ -48,3 +76,38 @@ options:
                         Authorization file with prometheus info
 </code></pre>
 </notextile>
+
+h2(#Credentials). Credentials
+
+To access the Arvados host, the tool will read default credentials from @~/.config/aravdos/settings.conf@ or use the standard @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables.
+
+The cluster report tool will also fetch metrics from Prometheus, if available.  This can be passed in an environment file using @--prometheus-auth@, or set as environment variables.
+
+<pre>
+PROMETHEUS_HOST=https://your.prometheus.server.example.com
+PROMETHEUS_USER=admin
+PROMETHEUS_PASSWORD=password
+</pre>
+
+@PROMETHEUS_USER@ and @PROMETHEUS_PASSWORD@ will be passed in an @Authorization@ header using HTTP Basic authentication.
+
+Alternately, instead of @PROMETHEUS_USER@ and @PROMETHEUS_PASSWORD@ you can provide @PROMETHEUS_APIKEY@.  This will be passed in as a Bearer token (@Authorization: Bearer <APIKEY>@).
+
+h2(#example). Example usage
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-cluster-activity \
+    --days 90
+    --include-workflow-steps \
+    --prometheus-auth prometheus.env \
+    --cost-report-file report.csv \
+    --html-report-file report.html</span>
+INFO:root:Exporting workflow runs 0 - 5
+INFO:root:Getting workflow steps
+INFO:root:Got workflow steps 0 - 2
+INFO:root:Getting container hours time series
+INFO:root:Getting data usage time series
+</code></pre>
+</notextile>
+
+!sample-cluster-activity-report.png!
