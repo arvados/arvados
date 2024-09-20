@@ -43,6 +43,7 @@ interface ParticipantSelectProps {
 interface ParticipantSelectState {
     value: string;
     suggestions: ParticipantResource[];
+    isWorking: boolean;
 }
 
 const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) => {
@@ -71,7 +72,8 @@ export const ParticipantSelect = connect()(
     class ParticipantSelect extends React.Component<ParticipantSelectProps & DispatchProp, ParticipantSelectState> {
         state: ParticipantSelectState = {
             value: '',
-            suggestions: []
+            suggestions: [],
+            isWorking: false,
         };
 
         render() {
@@ -94,6 +96,7 @@ export const ParticipantSelect = connect()(
                     renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
                     category={this.props.category}
+                    isWorking={this.state.isWorking}
                     disabled={this.props.disabled} />
             );
         }
@@ -162,6 +165,7 @@ export const ParticipantSelect = connect()(
         getSuggestions = debounce(() => this.props.dispatch<any>(this.requestSuggestions), 500);
 
         requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
+            this.setState({ isWorking: true });
             const { value } = this.state;
             const limit = 10; // FIXME: Does this provide a good UX?
 
@@ -182,7 +186,8 @@ export const ParticipantSelect = connect()(
             this.setState({
                 suggestions: this.props.onlyPeople
                     ? userItems.items
-                    : userItems.items.concat(groupItems.items)
+                    : userItems.items.concat(groupItems.items),
+                isWorking: false,
             });
         }
     });

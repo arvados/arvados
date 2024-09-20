@@ -8,8 +8,9 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles, withStyles } from '@mui/styles';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
+import { InlinePulser } from 'components/loading/inline-pulser';
 
-type TabbedListClasses = 'root' | 'tabs' | 'tabPanel' | 'listItem' | 'selected' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'tabPanel' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -37,6 +38,12 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
     selected: {
         backgroundColor: `${theme.palette.grey['300']} !important`
     },
+    spinner: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '4rem',
+    },
     notFoundLabel: {
         cursor: 'default',
         padding: theme.spacing(1),
@@ -57,12 +64,13 @@ type TabbedListProps<T> = {
     selectedIndex?: number;
     selectedTab?: number;
     includeContentsLength: boolean;
+    isWorking?: boolean;
     handleSelect?: (selection: T) => React.MouseEventHandler<HTMLElement> | undefined;
     renderListItem?: (item: T) => React.ReactNode;
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex, selectedTab, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex, selectedTab, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabNr = selectedTab || 0;
     const listRefs = useRef<HTMLDivElement[]>([]);
     const tabLabels = Object.keys(tabbedListContents);
@@ -94,20 +102,22 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 value={tabNr}
                 index={tabNr}
             >
-                <List>
-                  {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
-                    {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
-                      <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
-                        <ListItemButton
-                        className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
-                        selected={i === selectedIndex}
-                        onClick={handleSelect && handleSelect(item)}
-                        >
-                          {renderListItem ? renderListItem(item) : JSON.stringify(item)}
-                        </ListItemButton>
-                      </div>
-                    ))}
-                </List>
+                {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
+                    <List>
+                    {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
+                        {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
+                        <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
+                            <ListItemButton
+                            className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
+                            selected={i === selectedIndex}
+                            onClick={handleSelect && handleSelect(item)}
+                            >
+                            {renderListItem ? renderListItem(item) : JSON.stringify(item)}
+                            </ListItemButton>
+                        </div>
+                        ))}
+                    </List>
+                }
             </TabPanel>
         </div>
     );

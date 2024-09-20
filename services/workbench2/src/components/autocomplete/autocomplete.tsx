@@ -45,6 +45,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     renderChipTooltip?: (item: Item) => string;
     renderSuggestion?: (suggestion: Suggestion) => React.ReactNode;
     category?: AutocompleteCat;
+    isWorking?: boolean;
 }
 
 type AutocompleteClasses = 'tabbedListStyles';
@@ -181,6 +182,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         handleTabChange={handleTabChange}
                         handleSelect={this.handleSelect}
                         includeContentsLength={true}
+                        isWorking={this.props.isWorking}
                         />
                 </Paper>
             </Popper>
