@@ -236,8 +236,10 @@ export const Autocomplete = withStyles(autocompleteStyles)(
             this.setState({ selectedTab: ((this.state.selectedTab + 1) % Object.keys(this.state.tabbedListContents).length)} || 0)
         }
         if (ev.key === 'ArrowUp') {
+            ev.preventDefault();
             this.updateSelectedSuggestionIndex(-1);
         } else if (ev.key === 'ArrowDown') {
+            ev.preventDefault();
             this.updateSelectedSuggestionIndex(1);
         }
     }

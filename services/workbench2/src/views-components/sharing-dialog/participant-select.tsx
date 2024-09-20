@@ -151,7 +151,7 @@ export const ParticipantSelect = connect()(
             if (!selection) return;
             const { uuid } = selection;
             const { onSelect = noop } = this.props;
-            this.setState({ value: '', suggestions: [] });
+            if(this.props.category !== AutocompleteCat.SHARING) this.setState({ value: '', suggestions: [] });
             onSelect({
                 name: getDisplayName(selection, false),
                 tooltip: getDisplayTooltip(selection),
