@@ -102,6 +102,7 @@ export const ParticipantSelect = connect()(
         }
 
         onFocus = (e) => {
+            this.setState({ isWorking: true });
             this.getSuggestions();
         }
 

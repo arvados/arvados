@@ -83,6 +83,9 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                 this.setState({ selectedSuggestionIndex: 0, selectedTab: 0 });
             }
             if (category === AutocompleteCat.SHARING) {
+                if (Object.keys(this.state.tabbedListContents).length === 0) {
+                    this.setState({ tabbedListContents: { groups: [], users: [] } });
+                }
                 if (prevProps.suggestions !== suggestions) {
                     const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
                     const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
@@ -167,7 +170,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         
         return (
             <Popper
-                open={this.isSuggestionBoxOpen()}
+                open={this.state.suggestionsOpen}
                 anchorEl={this.inputRef.current}
                 key={suggestions.length}
                 style={{ width: this.getSuggestionsWidth()}}
