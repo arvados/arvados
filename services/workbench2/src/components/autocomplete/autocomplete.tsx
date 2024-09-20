@@ -171,7 +171,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
         return (
             <Popper
                 open={this.state.suggestionsOpen}
-                anchorEl={this.inputRef.current}
+                anchorEl={this.containerRef.current}
                 key={suggestions.length}
                 style={{ width: this.getSuggestionsWidth()}}
             >
