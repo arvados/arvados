@@ -137,7 +137,7 @@ func (kc *KeepClient) discoverServices() error {
 		kc.replicasPerService = 0
 		roots := make(map[string]string)
 		for i, uri := range kc.Arvados.KeepServiceURIs {
-			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
+			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = strings.TrimSuffix(uri, "/")
 		}
 		kc.setServiceRoots(roots, roots, roots)
 		return nil
