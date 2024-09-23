@@ -70,14 +70,15 @@ type TabbedListProps<T> = {
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex, selectedTab, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabNr = selectedTab || 0;
-    const listRefs = useRef<HTMLDivElement[]>([]);
     const tabLabels = Object.keys(tabbedListContents);
+    const listRefs = useRef<Record<string, HTMLElement[]>>(tabLabels.reduce((acc, label) => ({ ...acc, [label]: [] }), {}));
+    const selectedTabLabel = tabLabels[tabNr];
 
     useEffect(() => {
-        if (selectedIndex !== undefined && listRefs.current[selectedIndex]) {
-            listRefs.current[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (selectedIndex !== undefined && listRefs.current[selectedTabLabel][selectedIndex]) {
+            listRefs.current[selectedTabLabel][selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }, [selectedIndex]);
 
@@ -105,8 +106,8 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
                     <List dense>
                     {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
-                        {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
-                        <div ref={(el) => { if (!!el) listRefs.current[i] = el}} key={i}>
+                        {tabbedListContents[tabLabels[tabNr]]?.map((item, i) => (
+                        <div ref={(el) => { if (el) listRefs.current[selectedTabLabel][i] = el}} key={i}>
                             <ListItemButton
                             className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
                             selected={i === selectedIndex}
