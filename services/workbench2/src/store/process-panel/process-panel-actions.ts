@@ -76,7 +76,17 @@ export const loadProcess =
                     dispatch<any>(updateResources(containerRequestResult.included));
                 }
             }
-        } catch { }
+        } catch (e) {
+            if (!containerRequest) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            }
+        }
 
         if (!containerRequest) {
             return undefined;
