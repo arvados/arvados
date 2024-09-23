@@ -103,7 +103,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 index={tabNr}
             >
                 {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
-                    <List>
+                    <List dense>
                     {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
                         {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
                         <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
