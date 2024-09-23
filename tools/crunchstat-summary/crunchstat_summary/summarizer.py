@@ -259,16 +259,16 @@ class Summarizer(object):
             self._recommend_gen(lambda x: "#!! "+x))) + "\n"
 
     def html_report(self):
-        tophtml = """{}\n<table class='aggtable'><tbody>{}</tbody></table>\n""".format(
+        tophtml = """<h2>Summary</h2>{}\n<table class='aggtable'><tbody>{}</tbody></table>\n""".format(
             "\n".join(self._recommend_gen(lambda x: "<p>{}</p>".format(x))),
             "\n".join(self._text_report_agg_gen(lambda x: "<tr><th>{}</th><td>{}{}</td></tr>".format(*x))))
 
-        bottomhtml = """<table class='metricstable'><tbody>{}</tbody></table>\n""".format(
+        bottomhtml = """<h2>Metrics</h2><table class='metricstable'><tbody>{}</tbody></table>\n""".format(
             "\n".join(self._text_report_table_gen(lambda x: "<tr><th>{}</th><th>{}</th><th>{}</th><th>{}</th><th>{}</th></tr>".format(*x),
                                                         lambda x: "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(*x))))
         label = self.long_label()
 
-        return WEBCHART_CLASS(label, [self]).html(tophtml, bottomhtml)
+        return WEBCHART_CLASS(label, [self], [tophtml], [bottomhtml]).html()
 
     def _text_report_table_gen(self, headerformat, rowformat):
         yield headerformat(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
@@ -683,7 +683,7 @@ class MultiSummarizer(object):
                                                             lambda x: "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(*x))))
             label = summarizer.long_label()
 
-        return WEBCHART_CLASS(label, iter(self._descendants().values())).html(tophtml, bottomhtml)
+        return WEBCHART_CLASS(label, iter(self._descendants().values()), [tophtml], [bottomhtml]).html()
 
 
 class ContainerRequestTreeSummarizer(MultiSummarizer):

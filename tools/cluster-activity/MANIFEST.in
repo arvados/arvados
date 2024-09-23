@@ -1,0 +1,9 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+include agpl-3.0.txt
+include arvados_version.py
+include arvados_cluster_activity/dygraphs.js
+include arvados_cluster_activity/synchronizer.js
+include arvados_cluster_activity/sortable.js

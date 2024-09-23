@@ -123,6 +123,7 @@ tools/crunchstat-summary
 tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
+tools/cluster-activity
 
 EOF
 
@@ -879,6 +880,7 @@ pythonstuff=(
     sdk/cwl
     services/dockercleaner
     services/fuse
+    tools/cluster-activity
 )
 
 declare -a gostuff

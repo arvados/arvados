@@ -252,6 +252,7 @@ if test -z "$packages" ; then
         python3-arvados-fuse
         python3-arvados-python-client
         python3-arvados-user-activity
+        python3-arvados-cluster-activity
         python3-crunchstat-summary"
 fi
 
