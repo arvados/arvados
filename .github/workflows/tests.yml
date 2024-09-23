@@ -36,5 +36,5 @@ jobs:
           options: -v ${{github.workspace}}:/usr/src/arvados -w /usr/src/arvados/services/workbench2
           run: |
             yarn install
-            yarn test --no-watchAll --bail --ci || exit $?
+            yarn test || exit $?
             tools/run-integration-tests.sh -a /usr/src/arvados
