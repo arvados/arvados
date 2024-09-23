@@ -95,6 +95,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
     loadNodeJson,
     loadOutputDefinitions,
     updateOutputParams,
+    pollProcessLogs,
     ...props
 }: ProcessPanelRootProps) => {
     const outputUuid = process?.containerRequest.outputUuid;
@@ -159,7 +160,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                         filters={processLogsPanel.filters.map(filter => ({ label: filter, value: filter }))}
                         onLogFilterChange={props.onLogFilterChange}
                         navigateToLog={props.navigateToLog}
-                        pollProcessLogs={props.pollProcessLogs}
+                        pollProcessLogs={pollProcessLogs}
                     />
                 </MPVPanelContent>
                 <MPVPanelContent

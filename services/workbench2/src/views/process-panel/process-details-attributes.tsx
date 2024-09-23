@@ -17,7 +17,7 @@ import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
 import { ContainerResource, ContainerState } from "models/container";
-import { navigateToOutput, openWorkflow, loadContainerStatus } from "store/process-panel/process-panel-actions";
+import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
@@ -51,15 +51,8 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 
     let workflowCollection = "";
     let workflowPath = "";
-    let schedulingStatus = "";
     if (process?.containerRequest?.mounts && process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW]) {
         const wf = process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
-
-        if (process?.container &&
-            state.processPanel.containerStatus?.uuid === process?.container?.uuid)
-        {
-            schedulingStatus = state.processPanel.containerStatus.schedulingStatus;
-        }
 
         if (wf.content["$graph"] &&
             wf.content["$graph"].length > 0 &&
@@ -80,7 +73,6 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
         container: process?.container,
         workflowCollection,
         workflowPath,
-        schedulingStatus,
         subprocesses: filterResources((resource: ContainerRequestResource) =>
             (resource.kind === ResourceKind.CONTAINER_REQUEST &&
              resource.requestingContainerUuid === process?.containerRequest.containerUuid)
@@ -91,18 +83,12 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 interface ProcessDetailsAttributesActionProps {
     navigateToOutput: (resource: ContainerRequestResource) => void;
     openWorkflow: (uuid: string) => void;
-    pollSchedulingStatus: (uuid: string) => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionProps => ({
     navigateToOutput: (resource) => dispatch<any>(navigateToOutput(resource)),
     openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
-    pollSchedulingStatus: (uuid) => dispatch<any>(loadContainerStatus(uuid)),
 });
-
-const isProcessScheduling = (container?: ContainerResource): boolean => (
-    container?.state === ContainerState.QUEUED || container?.state === ContainerState.LOCKED
-);
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
@@ -112,10 +98,8 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             subprocesses: ContainerRequestResource[],
             workflowCollection,
             workflowPath,
-            schedulingStatus,
             twoCol?: boolean,
             hideProcessPanelRedundantFields?: boolean,
-            pollSchedulingStatus: (processUuid: string) => Promise<void>,
             classes: Record<CssRules, string>
         } & ProcessDetailsAttributesActionProps) => {
             const containerRequest = props.request;
@@ -129,20 +113,11 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                                                .filter(k => (typeof containerRequest.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
             const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
-            let schedulingStatus = props.schedulingStatus;
             const resubmittedUrl = containerRequest && getResourceUrl(containerRequest.properties[ProcessProperties.FAILED_CONTAINER_RESUBMITTED]);
-
-            useAsyncInterval(() => (
-                props.pollSchedulingStatus(containerRequest.uuid)
-            ), isProcessScheduling(container) ? 5000 : null);
-
-            if (containerRequest.state === ContainerRequestState.UNCOMMITTED) {
-                schedulingStatus = "In draft state, not ready to run";
-            }
 
             return <Grid container>
             <Grid item xs={12}>
-                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} schedulingStatus={schedulingStatus} />
+                <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
             </Grid>
             {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                 <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />

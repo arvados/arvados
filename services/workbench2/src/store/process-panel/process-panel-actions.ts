@@ -14,7 +14,7 @@ import { SnackbarKind } from "../snackbar/snackbar-actions";
 import { loadSubprocessPanel, subprocessPanelActions } from "../subprocess-panel/subprocess-panel-actions";
 import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
 import { CollectionFile } from "models/collection-file";
-import { ContainerRequestResource, ContainerStatus } from "models/container-request";
+import { ContainerRequestResource } from "models/container-request";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { CommandInputParameter, getIOParamId, WorkflowInputsData } from "models/workflow";
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
@@ -37,19 +37,11 @@ export const processPanelActions = unionize({
     SET_OUTPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
     SET_NODE_INFO: ofType<NodeInfo>(),
     SET_USAGE_REPORT: ofType<UsageReport>(),
-    SET_CONTAINER_STATUS: ofType<ContainerStatus>(),
 });
 
 export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
 
 export const toggleProcessPanelFilter = processPanelActions.TOGGLE_PROCESS_PANEL_FILTER;
-
-export const loadContainerStatus =
-    (containerRequestUuid: string) =>
-        (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-            services.containerRequestService.containerStatus(containerRequestUuid, false).then(containerStatus =>
-                dispatch<any>(processPanelActions.SET_CONTAINER_STATUS(containerStatus))).catch(() => {});
-        };
 
 export const loadProcess =
     (containerRequestUuid: string) =>
@@ -61,8 +53,6 @@ export const loadProcess =
             } catch {
                 return undefined;
             }
-
-            dispatch<any>(loadContainerStatus(containerRequestUuid));
 
             if (containerRequest.outputUuid) {
                 try {
