@@ -31,6 +31,7 @@ import { progressIndicatorActions } from 'store/progress-indicator/progress-indi
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { Session } from 'models/session';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
+import { GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION } from 'common/app-info';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -75,7 +76,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             //this prevents double fetching of the same search results when a new session is logged in
             api.dispatch<any>(setSearchOffsets(session.clusterId, params.offset || 0));
 
-            if (session.apiRevision >= 20240627) {
+            if (session.apiRevision >= GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
                 params.include = ["owner_uuid", "container_uuid"];
             } else {
                 params.include = "owner_uuid";
@@ -97,7 +98,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     }
                     // Request all containers for process status to be available
                     // Required when contacting legacy API servers (pre-Arvados 3.0)
-                    if (session.apiRevision < 20240627) {
+                    if (session.apiRevision < GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
                         const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
                         const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
                         containerUuids.length && this.services.containerService
@@ -138,7 +139,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
             return;
         }
 
-        if (session.apiRevision >= 20240627) {
+        if (session.apiRevision >= GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
             params.include = ["owner_uuid", "container_uuid"];
         } else {
             params.include = "owner_uuid";
@@ -155,7 +156,7 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
                     }
                     dispatch(appendItems(response));
                     // Request all containers for process status to be available
-                    if (session.apiRevision < 20240627) {
+                    if (session.apiRevision < GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
                         const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
                         const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
                         containerUuids.length && services.containerService

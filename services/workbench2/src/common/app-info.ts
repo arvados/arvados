@@ -11,3 +11,7 @@ export const getBuildInfo = (): string => {
       return getBuildNumber + " / " + getGitCommit;
     }
 };
+
+export const PROPERTY_CONTAINS_VALUE_MIN_API_REVISION = 20200212;
+
+export const GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION = 20240627;
