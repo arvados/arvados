@@ -2480,10 +2480,10 @@ func (s *IntegrationSuite) TestDepthHeader(c *check.C) {
 		}
 		s.handler.ServeHTTP(resp, req)
 		if trial.expectCode != 0 {
-			c.Check(resp.Code, check.Equals, trial.expectCode)
+			c.Assert(resp.Code, check.Equals, trial.expectCode)
 		} else {
-			c.Check(resp.Code >= 200, check.Equals, true, check.Commentf("got code %d", resp.Code))
-			c.Check(resp.Code < 300, check.Equals, true, check.Commentf("got code %d", resp.Code))
+			c.Assert(resp.Code >= 200, check.Equals, true, check.Commentf("got code %d", resp.Code))
+			c.Assert(resp.Code < 300, check.Equals, true, check.Commentf("got code %d", resp.Code))
 		}
 		c.Logf("resp.Body: %q", resp.Body.String())
 	}
