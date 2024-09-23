@@ -15,12 +15,11 @@ import { updateResources } from 'store/resources/resources-actions';
 import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { ContentsArguments } from 'services/groups-service/groups-service';
 import { ProcessResource } from 'models/process';
-import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
+import { FilterBuilder } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
-import { loadMissingProcessesInformation } from '../project-panel/project-panel-run-middleware-service';
 import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
     export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
