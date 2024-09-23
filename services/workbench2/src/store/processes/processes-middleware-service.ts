@@ -92,9 +92,6 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
                     api.dispatch(updateResources(containerRequests.included));
                 }
 
-                // This is the one
-                //await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
-
                 api.dispatch(this.actions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(containerRequests),
                     items: containerRequests.items.map(resource => resource.uuid),
