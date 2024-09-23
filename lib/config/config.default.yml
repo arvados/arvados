@@ -867,8 +867,8 @@ Clusters:
         # itself in its config response ("isser" key). If the
         # configured value is "https://example" and the provider
         # returns "https://example:443" or "https://example/" then
-        # login will fail, even though those URLs are equivalent
-        # (RFC3986).
+        # login will fail, even though those URLs are equivalent (RFC
+        # 3986).
         Issuer: ""
 
         # Your client ID and client secret (supplied by the provider).
@@ -995,7 +995,7 @@ Clusters:
         # entries that have the SearchAttribute present.
         #
         # Special characters in assertion values must be escaped (see
-        # RFC4515).
+        # RFC 4515).
         #
         # Example: "(objectClass=person)"
         SearchFilters: ""

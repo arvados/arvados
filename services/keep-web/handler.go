@@ -556,7 +556,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// (URLSearchParam#get, decodeURIComponent) will
 			// decode %20, but while the former also expects the
 			// form-specific encoding, the latter doesn't.
-			// Encode() almost encodes everything; RFC3986 sec. 3.4
+			// Encode() almost encodes everything; RFC 3986 3.4
 			// says "it is sometimes better for usability" to not
 			// encode / and ? when passing URI reference in query.
 			// This is also legal according to WHATWG URL spec and
@@ -688,7 +688,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			}
 
 			srcspec := "current/" + colltarget
-			// rfc4918 9.8.3: A COPY of "Depth: 0" only
+			// RFC 4918 9.8.3: A COPY of "Depth: 0" only
 			// instructs that the collection and its
 			// properties, but not resources identified by
 			// its internal member URLs, are to be copied.
@@ -696,7 +696,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// ...meaning we will be creating an empty
 			// directory.
 			//
-			// rfc4918 9.9.2: A client MUST NOT submit a
+			// RFC 4918 9.9.2: A client MUST NOT submit a
 			// Depth header on a MOVE on a collection with
 			// any value but "infinity".
 			//
@@ -714,7 +714,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			replace["/"+colltarget] = "manifest_text/"
 		case "DELETE":
 			if depth := r.Header.Get("Depth"); depth != "" && depth != "infinity" {
-				http.Error(w, "invalid depth header, see rfc4918 9.6.1", http.StatusBadRequest)
+				http.Error(w, "invalid depth header, see RFC 4918 9.6.1", http.StatusBadRequest)
 				return
 			}
 			replace["/"+colltarget] = ""
