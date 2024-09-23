@@ -595,17 +595,72 @@ func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
 	c.Check(ok, check.Equals, true)
 
 	for _, trial := range []struct {
-		code string
-		msg  string
+		code               string
+		msg                string
+		typeSpecific       bool
+		quotaGroupSpecific bool
 	}{
-		{"InsufficientInstanceCapacity", ""},
-		{"Unsupported", "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f."},
+		{
+			code:               "InsufficientInstanceCapacity",
+			msg:                "",
+			typeSpecific:       true,
+			quotaGroupSpecific: false,
+		},
+		{
+			code:               "Unsupported",
+			msg:                "Your requested instance type (t3.micro) is not supported in your requested Availability Zone (us-east-1e). Please retry your request by not specifying an Availability Zone or choosing us-east-1a, us-east-1b, us-east-1c, us-east-1d, us-east-1f.",
+			typeSpecific:       true,
+			quotaGroupSpecific: false,
+		},
+		{
+			code:               "VcpuLimitExceeded",
+			msg:                "You have requested more vCPU capacity than your current vCPU limit of 64 allows for the instance bucket that the specified instance type belongs to. Please visit http://aws.amazon.com/contact-us/ec2-request to request an adjustment to this limit.",
+			typeSpecific:       false,
+			quotaGroupSpecific: true,
+		},
 	} {
 		capacityError := &ec2stubError{Code: trial.code, Message: trial.msg}
 		wrapped = wrapError(capacityError, nil)
 		caperr, ok := wrapped.(cloud.CapacityError)
 		c.Check(ok, check.Equals, true)
 		c.Check(caperr.IsCapacityError(), check.Equals, true)
-		c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, true)
+		c.Check(caperr.IsInstanceTypeSpecific(), check.Equals, trial.typeSpecific)
+		c.Check(caperr.IsInstanceQuotaGroupSpecific(), check.Equals, trial.quotaGroupSpecific)
+	}
+}
+
+func (*EC2InstanceSetSuite) TestInstanceQuotaGroup(c *check.C) {
+	ap, _, _, _ := GetInstanceSet(c, `{
+  "InstanceTypeQuotaGroups": {
+    "a": "standard",
+    "m": "standard",
+    "t": "standard",
+    "p5": "p5"
+  }
+}`)
+
+	for _, trial := range []struct {
+		ptype      string
+		spot       bool
+		quotaGroup cloud.InstanceQuotaGroup
+	}{
+		{ptype: "g1.large", quotaGroup: "g"},
+		{ptype: "x1.large", quotaGroup: "x"},
+		{ptype: "inf1.2xlarge", quotaGroup: "inf"},
+		{ptype: "a1.small", quotaGroup: "standard"},
+		{ptype: "m1.xlarge", quotaGroup: "standard"},
+		{ptype: "m1.xlarge", spot: true, quotaGroup: "standard-spot"},
+		{ptype: "p4.xlarge", spot: true, quotaGroup: "p-spot"},
+		{ptype: "p5.xlarge", spot: true, quotaGroup: "p5-spot"},
+		{ptype: "t3.2xlarge", quotaGroup: "standard"},
+		{ptype: "trn1.2xlarge", quotaGroup: "trn"},
+		{ptype: "trn1.2xlarge", spot: true, quotaGroup: "trn-spot"},
+		{ptype: "imaginary9.5xlarge", quotaGroup: "imaginary"},
+		{ptype: "", quotaGroup: ""},
+	} {
+		c.Check(ap.InstanceQuotaGroup(arvados.InstanceType{
+			ProviderType: trial.ptype,
+			Preemptible:  trial.spot,
+		}), check.Equals, trial.quotaGroup)
 	}
 }

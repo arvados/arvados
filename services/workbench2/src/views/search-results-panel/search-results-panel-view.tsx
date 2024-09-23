@@ -25,7 +25,9 @@ import { getInitialSearchTypeFilters } from 'store/resource-type-filters/resourc
 import { SearchResultsPanelProps } from "./search-results-panel";
 import { Routes } from 'routes/routes';
 import { Link } from 'react-router-dom';
-import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getSearchSessions } from 'store/search-bar/search-bar-actions';
 import { camelCase } from 'lodash';
@@ -43,12 +45,12 @@ export enum SearchResultsPanelColumnNames {
 
 export type CssRules = 'siteManagerLink' | 'searchResults';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchResults: {
         width: '100%'
     },
     siteManagerLink: {
-        marginRight: theme.spacing.unit * 2,
+        marginRight: theme.spacing(2),
         float: 'right'
     }
 });

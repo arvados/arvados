@@ -6,7 +6,7 @@ import React from 'react';
 import { Field } from 'redux-form';
 import { memoize } from 'lodash/fp';
 import { fieldRequire } from 'validators/require';
-import { Select, MenuItem } from '@material-ui/core';
+import { Select, MenuItem } from '@mui/material';
 import { EnumCommandInputParameter, CommandInputEnumSchema, isRequiredInput, getEnumType } from 'models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
 
@@ -45,15 +45,18 @@ const EnumInputComponent = (props: GenericInputProps) =>
 
 const Input = (props: GenericInputProps) => {
     const type = getEnumType(props.commandInput) as CommandInputEnumSchema;
-    return <Select
-        value={props.input.value}
-        onChange={props.input.onChange}
-        disabled={props.commandInput.disabled} >
-        {(isRequiredInput(props.commandInput) ? [] : [<MenuItem key={'_empty'} value={''} />]).concat(type.symbols.map(symbol =>
-            <MenuItem key={symbol} value={extractValue(symbol)}>
-                {extractValue(symbol)}
-            </MenuItem>))}
-    </Select>;
+    return (
+        <Select
+            variant="standard"
+            value={props.input.value}
+            onChange={props.input.onChange}
+            disabled={props.commandInput.disabled}>
+            {(isRequiredInput(props.commandInput) ? [] : [<MenuItem key={'_empty'} value={''} />]).concat(type.symbols.map(symbol =>
+                <MenuItem key={symbol} value={extractValue(symbol)}>
+                    {extractValue(symbol)}
+                </MenuItem>))}
+        </Select>
+    );
 };
 
 /**

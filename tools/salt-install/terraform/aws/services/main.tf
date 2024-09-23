@@ -157,6 +157,53 @@ resource "aws_iam_policy_attachment" "compute_node_ebs_autoscaler_attachment" {
   policy_arn = aws_iam_policy.compute_node_ebs_autoscaler.arn
 }
 
+
+resource "aws_iam_policy" "cmk_access" {
+  count = var.cmk_arn == "" ? 0 : 1
+  name = "${local.cluster_name}_cmk_access"
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Statement: [{
+      Effect: "Allow",
+      Action: [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:GenerateDataKey*"
+      ],
+      Resource: [
+        var.cmk_arn
+      ]
+    },
+    {
+      Effect: "Allow",
+      Action: "kms:CreateGrant",
+      Resource: [
+        var.cmk_arn
+      ],
+      Condition: {
+        Bool: {
+          "kms:GrantIsForAWSResource": true
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_policy_attachment" "compute_node_cmk_access_attachment" {
+  count = var.cmk_arn == "" ? 0 : 1
+  name = "${local.cluster_name}_compute_node_cmk_access_attachment"
+  roles = [ local.compute_node_iam_role_name ]
+  policy_arn = aws_iam_policy.cmk_access[0].arn
+}
+
+resource "aws_iam_policy_attachment" "dispatcher_cmk_access_attachment" {
+  count = var.cmk_arn == "" ? 0 : 1
+  name = "${local.cluster_name}_dispatcher_cmk_access_attachment"
+  roles = [ aws_iam_role.cloud_dispatcher_iam_role.name ]
+  policy_arn = aws_iam_policy.cmk_access[0].arn
+}
+
 resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
   name = "${local.cluster_name}_cloud_dispatcher_ec2_access"
   policy = jsonencode({

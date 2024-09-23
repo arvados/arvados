@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, Typography, withStyles, Link } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Typography, Link } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 import { connect, DispatchProp } from 'react-redux';
@@ -14,11 +17,11 @@ import { navigationNotAvailable } from 'store/navigation/navigation-action';
 
 type CssRules = 'root' | 'inlineRoot' | 'space' | 'inline';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         boxSizing: 'border-box',
         overflow: 'auto',
-        padding: theme.spacing.unit,
+        padding: theme.spacing(1),
     },
     inlineRoot: {
         padding: "3px",

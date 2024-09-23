@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { MenuItem, Select } from '@material-ui/core';
-import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
-import Edit from '@material-ui/icons/Edit';
-import Computer from '@material-ui/icons/Computer';
-import { SelectProps } from '@material-ui/core/Select';
+import { MenuItem, Select } from '@mui/material';
+import RemoveRedEye from '@mui/icons-material/RemoveRedEye';
+import Edit from '@mui/icons-material/Edit';
+import Computer from '@mui/icons-material/Computer';
+import { SelectProps } from '@mui/material/Select';
 import { SelectItem } from './select-item';
 import { PermissionLevel } from '../../models/permission';
 
@@ -46,8 +46,10 @@ export const formatPermissionLevel = (value: PermissionLevel) => {
 
 export const PermissionSelect = (props: SelectProps) =>
     <Select
+        variant="standard"
         {...props}
         disableUnderline
+        data-cy="permission-select"
         renderValue={renderPermissionItem}>
         <MenuItem value={PermissionSelectValue.READ}>
             {renderPermissionItem(PermissionSelectValue.READ)}

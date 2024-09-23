@@ -4,18 +4,19 @@
 
 import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
-import { Grid, FormControl, InputLabel, StyleRulesCallback } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Grid, FormControl, InputLabel } from '@mui/material';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { ParticipantSelect, Participant } from './participant-select';
-import { WithStyles } from '@material-ui/core/styles';
-import withStyles from '@material-ui/core/styles/withStyles';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type SharingStyles = 'root';
 
-const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
     root: {
-        padding: `${theme.spacing.unit}px 0`,
+        padding: `${theme.spacing(1)} 0`,
     },
 });
 
@@ -25,7 +26,7 @@ export default SharingInvitationFormComponent;
 
 const StyledSharingInvitationFormComponent = withStyles(styles)(
     ({ classes }: { onSave: () => void } & WithStyles<SharingStyles>) =>
-        <Grid container spacing={8} wrap='nowrap' className={classes.root} >
+        <Grid container spacing={1} wrap='nowrap' className={classes.root} >
             <Grid data-cy="invite-people-field" item xs={8}>
                 <InvitedPeopleField />
             </Grid>
@@ -54,7 +55,7 @@ const PermissionSelectField = () =>
         parse={parsePermissionLevel} />;
 
 const PermissionSelectComponent = ({ input }: WrappedFieldProps) =>
-    <FormControl fullWidth>
+    <FormControl variant="standard" fullWidth>
         <InputLabel>Authorization</InputLabel>
         <PermissionSelect {...input} />
     </FormControl>;

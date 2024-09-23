@@ -35,7 +35,7 @@ export class AncestorService {
                     return [resource];
                 } else {
                     return [
-                        ...await this._ancestors(resource.ownerUuid, endUuid, startUuid),
+                        ...(await this._ancestors(resource.ownerUuid, endUuid, startUuid)),
                         resource
                     ];
                 }

@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WithStyles, withStyles, Paper, Typography } from '@material-ui/core';
+import { Paper, Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
@@ -26,20 +28,21 @@ import { UserResource } from 'models/user';
 import { ShareMeIcon } from 'components/icon/icon';
 import { USERS_PANEL_ID, openUserCreateDialog } from 'store/users/users-actions';
 import { noop } from 'lodash';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 
 type UserPanelRules = "button" | 'root';
 
-const styles = withStyles<UserPanelRules>(theme => ({
+const styles: CustomStyleRulesCallback<UserPanelRules> = (theme) => ({
     button: {
-        marginTop: theme.spacing.unit,
-        marginRight: theme.spacing.unit * 2,
+        marginTop: theme.spacing(1),
+        marginRight: theme.spacing(2),
         textAlign: 'right',
         alignSelf: 'center'
     },
     root: {
         width: '100%',
     },
-}));
+});
 
 export enum UserPanelColumnNames {
     NAME = "Name",
@@ -125,7 +128,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 type UserPanelProps = UserPanelDataProps & UserPanelActionProps & DispatchProp & WithStyles<UserPanelRules>;
 
 export const UserPanel = compose(
-    styles,
+    withStyles(styles),
     connect(mapStateToProps, mapDispatchToProps))(
         class extends React.Component<UserPanelProps> {
             render() {

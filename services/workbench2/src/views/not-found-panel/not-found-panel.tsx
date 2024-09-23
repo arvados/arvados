@@ -6,7 +6,7 @@ import { RootState } from 'store/store';
 import React from 'react';
 import { connect } from 'react-redux';
 import { NotFoundPanelRoot, NotFoundPanelRootDataProps } from 'views/not-found-panel/not-found-panel-root';
-import { Grid } from '@material-ui/core';
+import { Grid } from '@mui/material';
 import { DefaultView } from "components/default-view/default-view";
 import { IconType } from 'components/icon/icon';
 
@@ -36,7 +36,7 @@ export const NotFoundView =
         <Grid
             container
             alignItems="center"
-            justify="center"
+            justifyContent="center"
             style={{ minHeight: "100%" }}
             data-cy="not-found-view">
             <DefaultView

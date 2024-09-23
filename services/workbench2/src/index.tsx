@@ -16,7 +16,7 @@ import { ApiToken } from "views-components/api-token/api-token";
 import { AddSession } from "views-components/add-session/add-session";
 import { initAuth, logout } from "store/auth/auth-action";
 import { createServices } from "services/services";
-import { MuiThemeProvider } from "@material-ui/core/styles";
+import { ThemeProvider, Theme, StyledEngineProvider } from "@mui/material/styles";
 import { CustomTheme } from "common/custom-theme";
 import { fetchConfig } from "common/config";
 import servicesProvider from "common/service-provider";
@@ -95,6 +95,13 @@ import { searchResultsActionSet } from "views-components/context-menu/action-set
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@coreui/coreui/dist/css/coreui.min.css';
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -202,32 +209,34 @@ fetchConfig().then(({ config, apiHost }) => {
     const MainPanelComponent = (props: any) => <MainPanel {...props} />;
 
     const App = () => (
-        <MuiThemeProvider theme={CustomTheme}>
-            <DragDropContextProvider backend={HTML5Backend}>
-                <Provider store={store}>
-                    <ConnectedRouter history={history}>
-                        <Switch>
-                            <Route
-                                path={Routes.TOKEN}
-                                component={TokenComponent}
-                            />
-                            <Route
-                                path={Routes.FED_LOGIN}
-                                component={FedTokenComponent}
-                            />
-                            <Route
-                                path={Routes.ADD_SESSION}
-                                component={AddSessionComponent}
-                            />
-                            <Route
-                                path={Routes.ROOT}
-                                component={MainPanelComponent}
-                            />
-                        </Switch>
-                    </ConnectedRouter>
-                </Provider>
-            </DragDropContextProvider>
-        </MuiThemeProvider>
+        <StyledEngineProvider injectFirst>
+            <ThemeProvider theme={CustomTheme}>
+                <DragDropContextProvider backend={HTML5Backend}>
+                    <Provider store={store}>
+                        <ConnectedRouter history={history}>
+                            <Switch>
+                                <Route
+                                    path={Routes.TOKEN}
+                                    component={TokenComponent}
+                                />
+                                <Route
+                                    path={Routes.FED_LOGIN}
+                                    component={FedTokenComponent}
+                                />
+                                <Route
+                                    path={Routes.ADD_SESSION}
+                                    component={AddSessionComponent}
+                                />
+                                <Route
+                                    path={Routes.ROOT}
+                                    component={MainPanelComponent}
+                                />
+                            </Switch>
+                        </ConnectedRouter>
+                    </Provider>
+                </DragDropContextProvider>
+            </ThemeProvider>
+        </StyledEngineProvider>
     );
 
     ReactDOM.render(<App />, document.getElementById("root") as HTMLElement);
@@ -244,6 +253,15 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
             addRouteChangeHandlers(history, store);
             // ToDo: move to searchBar component
             store.dispatch(initAdvancedFormProjectsTree());
+            //expose store for cypress tests
+            if ((window as any).Cypress) {
+                console.log("setting redux store to localstorage");
+                window.localStorage.setItem("arvadosStore", JSON.stringify(store.getState()));
+                (window as any).store = store;
+                store.subscribe(() => {
+                    window.localStorage.setItem("arvadosStore", JSON.stringify(store.getState()));
+                });
+            }
         }
     };
 };

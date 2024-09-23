@@ -129,6 +129,7 @@ services/workbench2/.npmrc
 services/workbench2/src/lib/cwl-svg/*
 services/workbench2/tools/arvados_config.yml
 services/workbench2/cypress/fixtures/files/5mb.bin
+services/workbench2/cypress/fixtures/files/15mb.bin
 services/workbench2/cypress/fixtures/files/cat.png
 services/workbench2/cypress/fixtures/files/banner.html
 services/workbench2/cypress/fixtures/files/tooltips.txt

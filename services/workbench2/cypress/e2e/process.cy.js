@@ -224,8 +224,7 @@ describe("Process tests", function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 cy.get("[data-cy=process-details]").should("contain", crName);
-
-                cy.get("[data-cy=process-details]").find('button[title="More options"]').click();
+                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
                 cy.get("ul[data-cy=context-menu]").contains("Copy and re-run process").click();
             });
 
@@ -499,6 +498,7 @@ describe("Process tests", function () {
                 cy.getAll("@stdoutLogs", "@nodeInfoLogs", "@crunchRunLogs").then(function () {
                     cy.loginAs(activeUser);
                     cy.goToPath(`/processes/${containerRequest.uuid}`);
+                    cy.waitForDom();
                     // Should show main logs by default
                     cy.get("[data-cy=process-logs-filter]", { timeout: 7000 }).should("contain", "Main logs");
                     cy.get("[data-cy=process-logs]")

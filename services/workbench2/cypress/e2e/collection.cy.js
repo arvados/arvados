@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 const path = require("path");
+require('cypress-plugin-tab')
 
 describe("Collection panel tests", function () {
     let activeUser;
@@ -57,14 +58,12 @@ describe("Collection panel tests", function () {
             });
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
             cy.waitForDom()
-            cy.get('[data-cy=data-table-row]').contains(name).should('exist').parent().parent().parent().parent().click()
+            cy.get('[data-cy=data-table-row]').contains(name).should('exist').parents('td').click()
             cy.waitForDom()
             cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
-            for (let i = 0; i < msButtonTooltips.length; i++) {
-                cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
-                cy.get('body').contains(msButtonTooltips[i]).should('exist')
-                cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
-            }
+            msButtonTooltips.forEach((tooltip, index) => {
+                cy.get('[data-cy=multiselect-button]').eq(index).parent().should('have.attr', 'aria-label', tooltip)
+            })
     })
 
     it("allows to download mountain duck config for a collection", () => {
@@ -248,9 +247,9 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=property-field-value]").within(() => {
                         cy.get("input").type("sMaLL");
                     });
-                    // Cannot "type()" TAB on Cypress so let's click another field
-                    // to trigger the onBlur event.
-                    cy.get("[data-cy=property-field-key]").click();
+                    // simulate tabbing out of the value field
+                    cy.focused().tab();
+                    cy.waitForDom();
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
@@ -463,7 +462,7 @@ describe("Collection panel tests", function () {
                     cy.get("[data-cy=collection-files-panel]").contains(subdir).click();
 
                     // Rename 'subdir/foo' to 'bar'
-                    cy.wait(1000);
+                    cy.waitForDom();
                     cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
                     cy.get("[data-cy=context-menu]").contains("Rename").click();
                     cy.get("[data-cy=form-dialog]")
@@ -478,7 +477,7 @@ describe("Collection panel tests", function () {
 
                     cy.waitForDom().get("[data-cy=collection-files-panel]").contains("Home").click();
 
-                    cy.wait(2000);
+                    cy.waitForDom();
                     cy.get("[data-cy=collection-files-panel]")
                         .should("contain", subdir) // empty dir kept
                         .and("contain", "bar");
@@ -1167,6 +1166,8 @@ describe("Collection panel tests", function () {
         // Confirm that the user was taken to the newly created collection
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
+        cy.waitForDom();
+        cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
         cy.get("[data-cy=breadcrumb-last]").should("contain", collName);
         cy.get("[data-cy=collection-info-panel]")
             .should("contain", "default")
@@ -1303,19 +1304,19 @@ describe("Collection panel tests", function () {
 
                 // Confirm initial collection state.
                 cy.get("[data-cy=collection-files-panel]").contains("bar").should("exist");
-                cy.get("[data-cy=collection-files-panel]").contains("5mb_a.bin").should("not.exist");
-                cy.get("[data-cy=collection-files-panel]").contains("5mb_b.bin").should("not.exist");
+                cy.get("[data-cy=collection-files-panel]").contains("15mb_a.bin").should("not.exist");
+                cy.get("[data-cy=collection-files-panel]").contains("15mb_b.bin").should("not.exist");
 
                 cy.get("[data-cy=upload-button]").click();
 
-                cy.fixture("files/5mb.bin", "base64").then(content => {
-                    cy.get("[data-cy=drag-and-drop]").upload(content, "5mb_a.bin");
-                    cy.get("[data-cy=drag-and-drop]").upload(content, "5mb_b.bin");
+                cy.fixture("files/15mb.bin", "base64").then(content => {
+                    cy.get("[data-cy=drag-and-drop]").upload(content, "15mb_a.bin");
+                    cy.get("[data-cy=drag-and-drop]").upload(content, "15mb_b.bin");
 
                     cy.get("[data-cy=form-submit-btn]").click();
-
+                    
                     cy.get("button[aria-label=Remove]").should("exist").click({ multiple: true});
-
+                    
                     cy.get("[data-cy=form-submit-btn]").should("not.exist");
 
                     // Confirm final collection state.

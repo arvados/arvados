@@ -4,10 +4,8 @@
 
 import React, { ReactElement, memo } from "react";
 import { Dispatch } from "redux";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
-    StyleRulesCallback,
-    WithStyles,
-    withStyles,
     Card,
     CardHeader,
     IconButton,
@@ -23,7 +21,9 @@ import {
     Grid,
     Chip,
     CircularProgress,
-} from "@material-ui/core";
+} from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
 import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
@@ -56,7 +56,7 @@ import mime from "mime";
 import { DefaultView } from "components/default-view/default-view";
 import { getNavUrl } from "routes/routes";
 import { Link as RouterLink } from "react-router-dom";
-import { Link as MuiLink } from "@material-ui/core";
+import { Link as MuiLink } from "@mui/material";
 import { InputCollectionMount } from "store/processes/processes-actions";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
@@ -68,7 +68,7 @@ import { DefaultVirtualCodeSnippet } from "components/default-code-snippet/defau
 import { KEEP_URL_REGEX } from "models/resource";
 import { FixedSizeList } from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
-import { LinkProps } from "@material-ui/core/Link";
+import { LinkProps } from "@mui/material/Link";
 import { ConditionalTabs } from "components/conditional-tabs/conditional-tabs";
 
 type CssRules =
@@ -79,9 +79,10 @@ type CssRules =
     | "avatar"
     | "iconHeader"
     | "tableWrapper"
-    | "paramTableRoot"
-    | "paramTableCellText"
-    | "mountsTableRoot"
+    | "virtualListTableRoot"
+    | "parameterTableRoot"
+    | "inputMountTableRoot"
+    | "virtualListCellText"
     | "jsonWrapper"
     | "keepLink"
     | "collectionLink"
@@ -91,12 +92,12 @@ type CssRules =
     | "symmetricTabs"
     | "wrapTooltip";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: "100%",
     },
     header: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
         paddingBottom: 0,
     },
     iconHeader: {
@@ -105,28 +106,28 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     avatar: {
         alignSelf: "flex-start",
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
     },
     // Card content
     content: {
-        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
-        padding: theme.spacing.unit * 1.0,
+        height: `calc(100% - ${theme.spacing(6)})`,
+        padding: theme.spacing(1),
         paddingTop: 0,
         "&:last-child": {
-            paddingBottom: theme.spacing.unit * 1,
+            paddingBottom: theme.spacing(1),
         },
     },
     // Card title
     title: {
         overflow: "hidden",
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
         color: theme.customs.colors.greyD,
         fontSize: "1.875rem",
     },
-    // Applies to table tab and collection table content
+    // Applies to parameters / input collection virtual lists and output collection DE
     tableWrapper: {
         height: "auto",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 6}px)`,
+        maxHeight: `calc(100% - ${theme.spacing(6)})`,
         overflow: "auto",
         // Use flexbox to keep scrolling at the virtual list level
         display: "flex",
@@ -134,9 +135,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: "stretch", // Stretches output collection to full width
 
     },
-
-    // Param table virtual list styles
-    paramTableRoot: {
+    // Parameters / input collection virtual list table styles
+    virtualListTableRoot: {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -160,13 +160,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
                 flexBasis: 0,
                 overflow: "hidden",
             },
-            // Column width overrides
-            "& th:nth-of-type(1), & td:nth-of-type(1)": {
-                flexGrow: 0.7,
-            },
-            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
-                flexGrow: 2,
-            },
         },
         // Flex body rows
         "& tbody tr": {
@@ -182,8 +175,34 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             },
         },
     },
+    // Parameter tab table column widths
+    parameterTableRoot: {
+        "& thead tr, & > tbody tr": {
+            // ID
+            "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                flexGrow: 0.7,
+            },
+            // Collection
+            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
+                flexGrow: 2,
+            },
+        },
+    },
+    // Input collection tab table column widths
+    inputMountTableRoot: {
+        "& thead tr, & > tbody tr": {
+            // Path
+            "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                flexGrow: 1,
+            },
+            // PDH
+            "& th:nth-last-of-type(1), & td:nth-last-of-type(1)": {
+                flexGrow: 0.8,
+            },
+        },
+    },
     // Param value cell typography styles
-    paramTableCellText: {
+    virtualListCellText: {
         overflow: "hidden",
         display: "flex",
         // Every cell contents requires a wrapper for the ellipsis
@@ -198,19 +217,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             textOverflow: "ellipsis",
         },
     },
-    mountsTableRoot: {
-        width: "100%",
-        "& thead th": {
-            verticalAlign: "bottom",
-            paddingBottom: "10px",
-        },
-        "& td, & th": {
-            paddingRight: "25px",
-        },
-    },
     // JSON tab wrapper
     jsonWrapper: {
-        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
+        height: `calc(100% - ${theme.spacing(6)})`,
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -331,7 +340,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     title={`Unmaximize ${panelName || "panel"}`}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={doUnMaximizePanel}>
+                                    <IconButton onClick={doUnMaximizePanel} size="large">
                                         <UnMaximizeIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -341,7 +350,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     title={`Maximize ${panelName || "panel"}`}
                                     disableFocusListener
                                 >
-                                    <IconButton onClick={doMaximizePanel}>
+                                    <IconButton onClick={doMaximizePanel} size="large">
                                         <MaximizeIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -351,10 +360,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     title={`Close ${panelName || "panel"}`}
                                     disableFocusListener
                                 >
-                                    <IconButton
-                                        disabled={panelMaximized}
-                                        onClick={doHidePanel}
-                                    >
+                                    <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
                                         <CloseIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -371,9 +377,9 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
-                                    <CircularProgress />
+                                    <CircularProgress data-cy="process-io-circular-progress" />
                                 </Grid>
                             )}
                             {/* Once loaded, either raw or params may still be empty
@@ -412,7 +418,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
                                     <DefaultView messages={["No parameters found"]} />
                                 </Grid>
@@ -426,9 +432,9 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
-                                    <CircularProgress />
+                                    <CircularProgress data-cy="subprocess-circular-progress"/>
                                 </Grid>
                             ) : !subProcessLoading && (hasInputMounts || hasOutputCollecton || isRawLoaded) ? (
                                 <ConditionalTabs
@@ -457,7 +463,7 @@ export const ProcessIOCard = withStyles(styles)(
                                     container
                                     item
                                     alignItems="center"
-                                    justify="center"
+                                    justifyContent="center"
                                 >
                                     <DefaultView messages={["No data to display"]} />
                                 </Grid>
@@ -518,7 +524,7 @@ const ProcessIOPreview = memo(
                 data-cy={isMainRow(param) ? "process-io-param" : ""}>
                 <TableCell>
                     <Tooltip title={param.id}>
-                        <Typography className={classes.paramTableCellText}>
+                        <Typography className={classes.virtualListCellText}>
                             <span>
                                 {param.id}
                             </span>
@@ -527,7 +533,7 @@ const ProcessIOPreview = memo(
                 </TableCell>
                 {showLabel && <TableCell>
                     <Tooltip title={param.label}>
-                        <Typography className={classes.paramTableCellText}>
+                        <Typography className={classes.virtualListCellText}>
                             <span>
                                 {param.label}
                             </span>
@@ -540,7 +546,7 @@ const ProcessIOPreview = memo(
                     />
                 </TableCell>
                 <TableCell>
-                    <Typography className={classes.paramTableCellText}>
+                    <Typography className={classes.virtualListCellText}>
                         {/** Collection is an anchor so doesn't require wrapper element */}
                         {param.value.collection}
                     </Typography>
@@ -550,7 +556,7 @@ const ProcessIOPreview = memo(
 
         return <div className={classes.tableWrapper} hidden={hidden}>
             <Table
-                className={classes.paramTableRoot}
+                className={classNames(classes.virtualListTableRoot, classes.parameterTableRoot)}
                 aria-label="Process IO Preview"
             >
                 <TableHead>
@@ -585,7 +591,7 @@ interface ProcessValuePreviewProps {
 }
 
 const ProcessValuePreview = withStyles(styles)(({ value, classes }: ProcessValuePreviewProps & WithStyles<CssRules>) => (
-    <Typography className={classNames(classes.paramTableCellText, value.secondary && classes.secondaryVal)}>
+    <Typography className={classNames(classes.virtualListCellText, value.secondary && classes.secondaryVal)}>
         {value.display}
     </Typography>
 ));
@@ -617,37 +623,65 @@ type ProcessInputMountsProps = ProcessInputMountsDataProps & WithStyles<CssRules
 const ProcessInputMounts = withStyles(styles)(
     connect((state: RootState) => ({
         auth: state.auth,
-    }))(({ mounts, hidden, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
-        <Table
-            className={classes.mountsTableRoot}
-            aria-label="Process Input Mounts"
-            hidden={hidden}
-        >
-            <TableHead>
-                <TableRow>
-                    <TableCell>Path</TableCell>
-                    <TableCell>Portable Data Hash</TableCell>
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {mounts.map(mount => (
-                    <TableRow key={mount.path}>
-                        <TableCell>
+    }))(({ mounts, hidden, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => {
+
+        const RenderRow = ({index, style}) => {
+            const mount = mounts[index];
+
+            return <TableRow
+                key={mount.path}
+                style={style}>
+                <TableCell>
+                    <Tooltip title={mount.path}>
+                        <Typography className={classes.virtualListCellText}>
                             <pre>{mount.path}</pre>
-                        </TableCell>
-                        <TableCell>
+                        </Typography>
+                    </Tooltip>
+                </TableCell>
+                <TableCell>
+                    <Tooltip title={mount.pdh}>
+                        <Typography className={classes.virtualListCellText}>
                             <RouterLink
                                 to={getNavUrl(mount.pdh, auth)}
                                 className={classes.keepLink}
                             >
                                 {mount.pdh}
                             </RouterLink>
-                        </TableCell>
+                        </Typography>
+                    </Tooltip>
+                </TableCell>
+            </TableRow>;
+        };
+
+        return <div className={classes.tableWrapper} hidden={hidden}>
+            <Table
+                className={classNames(classes.virtualListTableRoot, classes.inputMountTableRoot)}
+                aria-label="Process Input Mounts"
+                hidden={hidden}
+            >
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Path</TableCell>
+                        <TableCell>Portable Data Hash</TableCell>
                     </TableRow>
-                ))}
-            </TableBody>
-        </Table>
-    ))
+                </TableHead>
+                <TableBody>
+                    <AutoSizer>
+                        {({ height, width }) =>
+                            <FixedSizeList
+                                height={height}
+                                itemCount={mounts.length}
+                                itemSize={40}
+                                width={width}
+                            >
+                                {RenderRow}
+                            </FixedSizeList>
+                        }
+                    </AutoSizer>
+                </TableBody>
+            </Table>
+        </div>;
+    })
 );
 
 export interface ProcessOutputCollectionActionProps {
@@ -664,7 +698,7 @@ const ProcessOutputCollection = withStyles(styles)(connect(null, mapNavigateToPr
     <div className={classes.tableWrapper} hidden={hidden}>
         <>
             {outputUuid && (
-                <Typography className={classes.collectionLink}>
+                <Typography className={classes.collectionLink} data-cy="output-uuid-display">
                     Output Collection:{" "}
                     <MuiLink
                         className={classes.keepLink}
@@ -845,12 +879,14 @@ const KeepUrlBase = withStyles(styles)(({ auth, res, pdh, classes }: KeepUrlProp
     const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ? (
         <Tooltip title={<>View collection in Workbench<br />{pdhUrl}</>}>
-            <RouterLink
-                to={pdhWbPath}
-                className={classes.keepLink}
-            >
-                {pdhUrl}
-            </RouterLink>
+            <div>
+                <RouterLink
+                    to={pdhWbPath}
+                    className={classes.keepLink}
+                    >
+                    {pdhUrl}
+                </RouterLink>
+            </div>
         </Tooltip>
     ) : (
         <></>

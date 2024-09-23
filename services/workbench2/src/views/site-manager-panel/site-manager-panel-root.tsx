@@ -3,25 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
 import {
     Card,
     CardContent,
     CircularProgress,
     Grid,
     IconButton,
-    StyleRulesCallback,
     Table,
     TableBody,
     TableCell,
     TableHead,
     TableRow,
     Typography,
-    WithStyles,
-    withStyles
-} from '@material-ui/core';
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Session, SessionStatus } from "models/session";
-import Button from "@material-ui/core/Button";
+import Button from "@mui/material/Button";
 import { compose, Dispatch } from "redux";
 import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } from "redux-form";
 import { TextField } from "components/text-field/text-field";
@@ -35,7 +35,7 @@ type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
     'statusCell';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'
@@ -49,7 +49,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'right'
     },
     table: {
-        marginTop: theme.spacing.unit
+        marginTop: theme.spacing(1)
     },
     tableRow: {
         '& td, th': {
@@ -64,10 +64,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     buttonAdd: {
         marginLeft: 10,
-        marginTop: theme.spacing.unit * 3
+        marginTop: theme.spacing(3),
     },
     buttonLoggedIn: {
-        minHeight: theme.spacing.unit,
+        minHeight: theme.spacing(1),
         padding: 5,
         color: '#fff',
         backgroundColor: '#009966',
@@ -76,7 +76,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     buttonLoggedOut: {
-        minHeight: theme.spacing.unit,
+        minHeight: theme.spacing(1),
         padding: 5,
         color: '#000',
         backgroundColor: '#FFC414',
@@ -146,32 +146,34 @@ export const SiteManagerPanelRoot = compose(
                         <TableBody>
                             {sessions.map((session, index) => {
                                 const validating = session.status === SessionStatus.BEING_VALIDATED;
-                                return <TableRow key={index} className={classes.tableRow}>
-                                    <TableCell>{remoteHostsConfig[session.clusterId] ?
-                                        <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId} /></a>
-                                        : session.clusterId}</TableCell>
-                                    <TableCell>{session.remoteHost}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
-                                    <TableCell>{validating ? <CircularProgress size={20} /> : session.uuid}</TableCell>
-                                    <TableCell className={classes.statusCell}>
-                                        <Button fullWidth
-                                            disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
-                                            className={session.loggedIn ? classes.buttonLoggedIn : classes.buttonLoggedOut}
-                                            onClick={() => toggleSession(session)}>
-                                            {validating ? "Validating"
-                                                : (session.loggedIn ?
-                                                    (session.userIsActive ? "Logged in" : "Inactive")
-                                                    : "Logged out")}
-                                        </Button>
-                                    </TableCell>
-                                    <TableCell>
-                                        {session.clusterId !== localClusterConfig.uuidPrefix &&
-                                            !localClusterConfig.clusterConfig.RemoteClusters[session.clusterId] &&
-                                            <IconButton onClick={() => removeSession(session)}>
-                                                <TrashIcon />
-                                            </IconButton>}
-                                    </TableCell>
-                                </TableRow>;
+                                return (
+                                    <TableRow key={index} className={classes.tableRow}>
+                                        <TableCell>{remoteHostsConfig[session.clusterId] ?
+                                            <a href={remoteHostsConfig[session.clusterId].workbench2Url} style={{ textDecoration: 'none' }}> <ResourceCluster uuid={session.clusterId} /></a>
+                                            : session.clusterId}</TableCell>
+                                        <TableCell>{session.remoteHost}</TableCell>
+                                        <TableCell>{validating ? <CircularProgress size={20} /> : session.email}</TableCell>
+                                        <TableCell>{validating ? <CircularProgress size={20} /> : session.uuid}</TableCell>
+                                        <TableCell className={classes.statusCell}>
+                                            <Button fullWidth
+                                                disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
+                                                className={session.loggedIn ? classes.buttonLoggedIn : classes.buttonLoggedOut}
+                                                onClick={() => toggleSession(session)}>
+                                                {validating ? "Validating"
+                                                    : (session.loggedIn ?
+                                                        (session.userIsActive ? "Logged in" : "Inactive")
+                                                        : "Logged out")}
+                                            </Button>
+                                        </TableCell>
+                                        <TableCell>
+                                            {session.clusterId !== localClusterConfig.uuidPrefix &&
+                                                !localClusterConfig.clusterConfig.RemoteClusters[session.clusterId] &&
+                                                <IconButton onClick={() => removeSession(session)} size="large">
+                                                    <TrashIcon />
+                                                </IconButton>}
+                                        </TableCell>
+                                    </TableRow>
+                                );
                             })}
                         </TableBody>
                     </Table>}

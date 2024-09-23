@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { AppBar, Toolbar, Typography, Grid } from "@material-ui/core";
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { AppBar, Toolbar, Typography, Grid } from "@mui/material";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { Link } from "react-router-dom";
 import { User } from "models/user";
 import { SearchBar } from "views-components/search-bar/search-bar";
@@ -19,7 +21,7 @@ import { sanitizeHTML } from "common/html-sanitize";
 
 type CssRules = 'toolbar' | 'link';
 
-const styles: StyleRulesCallback<CssRules> = () => ({
+const styles: CustomStyleRulesCallback<CssRules> = () => ({
     link: {
         textDecoration: 'none',
         color: 'inherit'
@@ -42,48 +44,50 @@ export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
 
 export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
-        return <AppBar position="absolute">
-            <Toolbar className={props.classes.toolbar}>
-                <Grid container justify="space-between">
-                    {pluginConfig.appBarLeft || <Grid container item xs={3} direction="column" justify="center">
-                        <Typography variant='h6' color="inherit" noWrap>
-                            <Link to={Routes.ROOT} className={props.classes.link}>
-                                <span dangerouslySetInnerHTML={{ __html: sanitizeHTML(props.siteBanner) }} /> ({props.uuidPrefix})
-                </Link>
-                        </Typography>
-                        <Typography variant="caption" color="inherit">
-                            
-                            {props.buildInfo}</Typography>
-                    </Grid>}
-                    <Grid
-                        item
-                        xs={6}
-                        container
-                        alignItems="center">
-                        {pluginConfig.appBarMiddle || (props.user && props.user.isActive && <SearchBar />)}
+        return (
+            <AppBar position="absolute">
+                <Toolbar className={props.classes.toolbar}>
+                    <Grid container justifyContent="space-between">
+                        {pluginConfig.appBarLeft || <Grid container item xs={3} direction="column" justifyContent="center">
+                            <Typography variant='h6' color="inherit" noWrap>
+                                <Link to={Routes.ROOT} className={props.classes.link}>
+                                    <span dangerouslySetInnerHTML={{ __html: sanitizeHTML(props.siteBanner) }} /> ({props.uuidPrefix})
+                    </Link>
+                            </Typography>
+                            <Typography variant="caption" color="inherit">
+                                
+                                {props.buildInfo}</Typography>
+                        </Grid>}
+                        <Grid
+                            item
+                            xs={6}
+                            container
+                            alignItems="center">
+                            {pluginConfig.appBarMiddle || (props.user && props.user.isActive && <SearchBar />)}
+                        </Grid>
+                        <Grid
+                            item
+                            xs={3}
+                            container
+                            alignItems="center"
+                            justifyContent="flex-end"
+                            wrap="nowrap">
+                            {props.user ? <>
+                                <NotificationsMenu />
+                                <AccountMenu />
+                                {pluginConfig.appBarRight ||
+                                    <>
+                                        {props.user.isAdmin && <AdminMenu />}
+                                        <HelpMenu />
+                                    </>}
+                            </> :
+                                pluginConfig.appBarRight || <HelpMenu />
+                            }
+                        </Grid>
                     </Grid>
-                    <Grid
-                        item
-                        xs={3}
-                        container
-                        alignItems="center"
-                        justify="flex-end"
-                        wrap="nowrap">
-                        {props.user ? <>
-                            <NotificationsMenu />
-                            <AccountMenu />
-                            {pluginConfig.appBarRight ||
-                                <>
-                                    {props.user.isAdmin && <AdminMenu />}
-                                    <HelpMenu />
-                                </>}
-                        </> :
-                            pluginConfig.appBarRight || <HelpMenu />
-                        }
-                    </Grid>
-                </Grid>
-            </Toolbar>
-            {props.children}
-        </AppBar>;
+                </Toolbar>
+                {props.children}
+            </AppBar>
+        );
     }
 );

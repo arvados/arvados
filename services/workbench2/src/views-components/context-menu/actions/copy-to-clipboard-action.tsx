@@ -4,7 +4,7 @@
 
 import React from "react";
 import copy from 'copy-to-clipboard';
-import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
+import { ListItemIcon, ListItemText, ListItem } from "@mui/material";
 import { Link } from "components/icon/icon";
 
 interface CopyToClipboardActionProps {

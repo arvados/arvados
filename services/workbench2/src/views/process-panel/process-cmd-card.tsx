@@ -3,18 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    StyleRulesCallback,
-    WithStyles,
-    withStyles,
-    Card,
-    CardHeader,
-    IconButton,
-    CardContent,
-    Tooltip,
-    Typography,
-    Grid,
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Card, CardHeader, IconButton, CardContent, Tooltip, Typography, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, CommandIcon, CopyIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -25,12 +17,12 @@ import CopyResultToClipboard from 'components/copy-to-clipboard/copy-result-to-c
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: '100%'
     },
     header: {
-        paddingTop: theme.spacing.unit,
+        paddingTop: theme.spacing(1),
         paddingBottom: 0,
     },
     iconHeader: {
@@ -39,19 +31,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     avatar: {
         alignSelf: 'flex-start',
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing(0.5)
     },
     content: {
-        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
-        padding: theme.spacing.unit * 1.0,
+        height: `calc(100% - ${theme.spacing(6)})`,
+        padding: theme.spacing(1),
         paddingTop: 0,
         '&:last-child': {
-            paddingBottom: theme.spacing.unit * 1,
+            paddingBottom: theme.spacing(1),
         }
     },
     title: {
         overflow: 'hidden',
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: theme.spacing(0.5),
         color: theme.customs.colors.greyD,
         fontSize: '1.875rem'
     },
@@ -107,7 +99,7 @@ export const ProcessCmdCard = withStyles(styles)(
             <Grid container direction="row" alignItems="center">
               <Grid item>
                 <Tooltip title="Copy link to clipboard" disableFocusListener>
-                  <IconButton>
+                  <IconButton size="large">
                     <CopyResultToClipboard
                       getText={formatClipboardText(process.containerRequest.command)}
                       onCopy={() => onCopy("Command copied to clipboard")}
@@ -123,7 +115,7 @@ export const ProcessCmdCard = withStyles(styles)(
                     title={`Close Command Panel`}
                     disableFocusListener
                   >
-                    <IconButton onClick={doHidePanel}>
+                    <IconButton onClick={doHidePanel} size="large">
                       <CloseIcon />
                     </IconButton>
                   </Tooltip>

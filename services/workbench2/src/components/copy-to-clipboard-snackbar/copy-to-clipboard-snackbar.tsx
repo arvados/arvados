@@ -4,7 +4,10 @@
 
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { StyleRulesCallback, Tooltip, WithStyles, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
@@ -12,9 +15,9 @@ import { CopyIcon } from 'components/icon/icon';
 
 type CssRules = 'copyIcon';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     copyIcon: {
-        marginLeft: theme.spacing.unit,
+        marginLeft: theme.spacing(1),
         color: theme.palette.grey['500'],
         cursor: 'pointer',
         display: 'inline',

@@ -12,7 +12,10 @@ import { resourceLabel } from 'common/labels';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
-import { withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Dispatch } from 'redux';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
@@ -38,13 +41,13 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
 
 type CssRules = 'tag' | 'editIcon' | 'editButton';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
-        marginRight: theme.spacing.unit / 2,
-        marginBottom: theme.spacing.unit / 2,
+        marginRight: theme.spacing(0.5),
+        marginBottom: theme.spacing(0.5),
     },
     editIcon: {
-        paddingRight: theme.spacing.unit / 2,
+        paddingRight: theme.spacing(0.5),
         fontSize: '1.125rem',
     },
     editButton: {

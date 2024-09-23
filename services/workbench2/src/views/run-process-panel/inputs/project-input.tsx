@@ -5,7 +5,10 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import {
     GenericCommandInputParameter
 } from 'models/workflow';
@@ -52,7 +55,7 @@ interface ProjectInputComponentState {
 
 interface HasUserUuid {
     userUuid: string;
-};
+}
 
 const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
 
@@ -115,13 +118,13 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 {...this.props} />;
         }
 
-        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+        dialogContentStyles: CustomStyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',
             },
             pickerWrapper: {
-                flexBasis: `${spacing.unit * 8}vh`,
+                flexBasis: `${spacing(8)}vh`,
                 flexShrink: 1,
                 minHeight: 0,
                 display: 'flex',

@@ -7,7 +7,7 @@ import { Field } from "redux-form";
 import { TextField } from "components/text-field/text-field";
 import { USER_EMAIL_VALIDATION, CHOOSE_VM_VALIDATION } from "validators/validators";
 import { NativeSelectField } from "components/select-field/select-field";
-import { InputLabel } from "@material-ui/core";
+import { InputLabel } from "@mui/material";
 import { VirtualMachinesResource } from "models/virtual-machines";
 import { VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD } from "store/virtual-machines/virtual-machines-actions";
 import { GroupArrayInput } from "views-components/virtual-machines-dialog/group-array-input";

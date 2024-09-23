@@ -3,15 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { Grid, CircularProgress } from '@material-ui/core';
+import { Grid, CircularProgress } from '@mui/material';
 
 type CssRules = 'root' | 'img';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     img: {
-        marginBottom: theme.spacing.unit * 4
+        marginBottom: theme.spacing(4)
     },
     root: {
         background: theme.palette.background.default,
@@ -25,7 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export const WorkbenchLoadingScreen = withStyles(styles)(({ classes }: WithStyles<CssRules>) =>
-    <Grid container direction="column" alignItems='center' justify='center' className={classes.root}>
+    <Grid container direction="column" alignItems='center' justifyContent='center' className={classes.root}>
         <img src='/arvados_logo.png' alt='Arvados logo' className={classes.img} />
         <CircularProgress data-cy='loading-spinner' />
     </Grid>

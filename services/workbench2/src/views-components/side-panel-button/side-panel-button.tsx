@@ -6,8 +6,11 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
 import { ArvadosTheme } from 'common/custom-theme';
-import { PopoverOrigin } from '@material-ui/core/Popover';
-import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, MenuItem, Menu } from '@material-ui/core';
+import { PopoverOrigin } from '@mui/material/Popover';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Toolbar, Grid, Button, MenuItem, Menu } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from 'components/icon/icon';
 import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 import { openCollectionCreateDialog } from 'store/collections/collection-create-actions';
@@ -25,7 +28,7 @@ import { ProjectResource } from 'models/project';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         boxShadow: 'none',
         padding: '2px 10px 2px 5px',
@@ -36,7 +39,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.palette.grey["700"]
     },
     icon: {
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing(1)
     }
 });
 
@@ -121,29 +124,31 @@ export const SidePanelButton = withStyles(styles)(
                 menuItems = React.createElement(React.Fragment, null,
                     pluginConfig.newButtonMenuList.reduce(reduceItemsFn, React.Children.toArray(menuItems.props.children)));
 
-                return <Toolbar style={{paddingRight: 0}}>
-                    <Grid container>
-                        <Grid container item xs alignItems="center" justify="flex-start">
-                            <Button data-cy="side-panel-button" variant="contained" disabled={!enabled}
-                                color="primary" size="small" className={classes.button}
-                                aria-owns={anchorEl ? 'aside-menu-list' : undefined}
-                                aria-haspopup="true"
-                                onClick={this.handleOpen}>
-                                <AddIcon />
-                                New
-                            </Button>
-                            <Menu
-                                id='aside-menu-list'
-                                anchorEl={anchorEl}
-                                open={Boolean(anchorEl)}
-                                onClose={this.handleClose}
-                                onClick={this.handleClose}
-                                transformOrigin={transformOrigin}>
-                                {menuItems}
-                            </Menu>
+                return (
+                    <Toolbar style={{paddingRight: 0}}>
+                        <Grid container>
+                            <Grid container item xs alignItems="center" justifyContent="flex-start">
+                                <Button data-cy="side-panel-button" variant="contained" disabled={!enabled}
+                                    color="primary" size="small" className={classes.button}
+                                    aria-owns={anchorEl ? 'aside-menu-list' : undefined}
+                                    aria-haspopup="true"
+                                    onClick={this.handleOpen}>
+                                    <AddIcon />
+                                    New
+                                </Button>
+                                <Menu
+                                    id='aside-menu-list'
+                                    anchorEl={anchorEl}
+                                    open={Boolean(anchorEl)}
+                                    onClose={this.handleClose}
+                                    onClick={this.handleClose}
+                                    transformOrigin={transformOrigin}>
+                                    {menuItems}
+                                </Menu>
+                            </Grid>
                         </Grid>
-                    </Grid>
-                </Toolbar>;
+                    </Toolbar>
+                );
             }
 
             handleNewProjectClick = () => {

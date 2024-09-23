@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, Card, CardHeader, WithStyles, withStyles, Typography, Grid } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Card, CardHeader, Typography, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { UserResource } from 'models/user';
 import { connect } from 'react-redux';
@@ -20,7 +23,7 @@ import { ProjectResource } from 'models/project';
 
 type CssRules = 'root' | 'cardHeaderContainer' | 'cardHeader' | 'userNameContainer' | 'accountStatusSection';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         marginBottom: '1rem',

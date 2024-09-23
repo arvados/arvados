@@ -4,10 +4,10 @@
 
 import React from "react";
 import { compose } from 'redux';
-import {
-    withStyles, Dialog, DialogTitle, DialogContent, DialogActions,
-    Button, StyleRulesCallback, WithStyles, Grid
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
 import { KEEP_SERVICE_ATTRIBUTES_DIALOG } from 'store/keep-services/keep-services-actions';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -15,7 +15,7 @@ import { KeepServiceResource } from 'models/keep-services';
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         fontSize: '0.875rem',
         '& div:nth-child(odd)': {
@@ -36,7 +36,7 @@ export const AttributesKeepServiceDialog = compose(
             <Dialog open={open} onClose={closeDialog} fullWidth maxWidth='sm'>
                 <DialogTitle>Attributes</DialogTitle>
                 <DialogContent>
-                    {data.keepService && <Grid container direction="row" spacing={16} className={classes.root}>
+                    {data.keepService && <Grid container direction="row" spacing={2} className={classes.root}>
                         <Grid item xs={5}>UUID</Grid>
                         <Grid item xs={7}>{data.keepService.uuid}</Grid>
                         <Grid item xs={5}>Read only</Grid>

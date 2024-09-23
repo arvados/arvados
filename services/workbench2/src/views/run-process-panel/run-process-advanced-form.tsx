@@ -3,15 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { ExpansionPanel, ExpansionPanelDetails, ExpansionPanelSummary } from '@material-ui/core';
+import { Accordion, AccordionDetails, AccordionSummary } from '@mui/material';
 import { reduxForm, Field } from 'redux-form';
-import { Grid } from '@material-ui/core';
+import { Grid } from '@mui/material';
 import { TextField } from 'components/text-field/text-field';
 import { ExpandIcon } from 'components/icon/icon';
 import * as IntInput from './inputs/int-input';
 import { min } from 'validators/min';
 import { optional } from 'validators/optional';
-import { PROCESS_NAME_VALIDATION } from 'validators/validators';
 
 export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
 
@@ -38,18 +37,12 @@ export const RunProcessAdvancedForm =
         form: RUN_PROCESS_ADVANCED_FORM,
     })(() =>
         <form>
-            <ExpansionPanel elevation={0}>
-                <ExpansionPanelSummary style={{ padding: 0 }} expandIcon={<ExpandIcon />}>
+            <Accordion elevation={0}>
+                <AccordionSummary style={{ padding: 0 }} expandIcon={<ExpandIcon />}>
                     Advanced
-                </ExpansionPanelSummary>
-                <ExpansionPanelDetails style={{ padding: 0 }}>
-                    <Grid container spacing={32}>
-			<Grid item xs={12} md={6}>
-			    <Field
-				name={DESCRIPTION_FIELD}
-				     component={TextField as any}
-				     label="Optional description" />
-			</Grid>
+                </AccordionSummary>
+                <AccordionDetails style={{ padding: 0 }}>
+                    <Grid container spacing={4}>
                         <Grid item xs={12} md={6}>
                             <Field
                                 name={OUTPUT_FIELD}
@@ -111,8 +104,8 @@ export const RunProcessAdvancedForm =
                                 helperText='The container image with arvados-cwl-runner that will execute this workflow.' />
                         </Grid>
                     </Grid>
-                </ExpansionPanelDetails>
-            </ExpansionPanel>
+                </AccordionDetails>
+            </Accordion>
         </form >);
 
 const ramValidation = [min(0)];

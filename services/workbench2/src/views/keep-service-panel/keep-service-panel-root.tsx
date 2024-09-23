@@ -3,14 +3,29 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton, Checkbox } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import {
+    Card,
+    CardContent,
+    Grid,
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableBody,
+    Tooltip,
+    IconButton,
+    Checkbox,
+} from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { MoreVerticalIcon } from 'components/icon/icon';
 import { KeepServiceResource } from 'models/keep-services';
 
 type CssRules = 'root' | 'tableRow';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'
@@ -72,7 +87,7 @@ export const KeepServicePanelRoot = withStyles(styles)(
                                         <TableCell>{keepService.serviceType}</TableCell>
                                         <TableCell>
                                             <Tooltip title="More options" disableFocusListener>
-                                                <IconButton onClick={event => openRowOptions(event, keepService)}>
+                                                <IconButton onClick={event => openRowOptions(event, keepService)} size="large">
                                                     <MoreVerticalIcon />
                                                 </IconButton>
                                             </Tooltip>

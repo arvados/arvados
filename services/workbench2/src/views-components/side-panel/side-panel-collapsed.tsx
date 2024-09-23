@@ -6,8 +6,10 @@ import React, { ReactElement } from 'react'
 import { connect } from 'react-redux'
 import { ProjectsIcon, ProcessIcon, FavoriteIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, ResourceIcon } from 'components/icon/icon'
 import { TerminalIcon } from 'components/icon/icon'
-import { IconButton, List, ListItem, Tooltip } from '@material-ui/core'
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles'
+import { IconButton, List, ListItem, Tooltip } from '@mui/material'
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme'
 import { navigateTo, navigateToInstanceTypes } from 'store/navigation/navigation-action'
 import { RootState } from 'store/store'
@@ -26,7 +28,7 @@ import { User } from 'models/user'
 
 type CssRules = 'button' | 'unselected' | 'selected'
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         width: '40px',
         height: '40px',
@@ -132,7 +134,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 }
 
 export const SidePanelCollapsed = withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles & SidePanelCollapsedProps) => {
+    connect(mapStateToProps, mapDispatchToProps)(({ classes, user, selectedPath, navToHome, navTo }: WithStyles<CssRules> & SidePanelCollapsedProps) => {
 
         const handleClick = (cat: TCollapsedCategory) => {
             if (cat.name === SidePanelCollapsedCategory.PROJECTS) navToHome(user.uuid)
@@ -153,7 +155,7 @@ export const SidePanelCollapsed = withStyles(styles)(
                             title={cat.name}
                             disableFocusListener
                             >
-                            <IconButton className={button}>{cat.icon}</IconButton>
+                            <IconButton className={button} size="large">{cat.icon}</IconButton>
                         </Tooltip>
                     </ListItem>
                 ))}

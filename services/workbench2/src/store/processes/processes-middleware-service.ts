@@ -10,9 +10,9 @@ import {
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
-import { BoundDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { BoundDataExplorerActions, couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 import { updateResources } from 'store/resources/resources-actions';
-import { ListArguments } from 'services/common-service/common-service';
+import { ListArguments, ListResults } from 'services/common-service/common-service';
 import { ProcessResource } from 'models/process';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
@@ -43,14 +43,28 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
     }
 
     getParams(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): ListArguments | null {
-        const filters = this.getFilters(api, dataExplorer)
+        const filters = this.getFilters(api, dataExplorer);
         if (filters === null) {
             return null;
         }
         return {
             ...dataExplorerToListParams(dataExplorer),
+            filters,
             order: getOrder<ProcessResource>(dataExplorer),
-            filters
+            select: containerRequestFieldsNoMounts,
+            count: 'none',
+        };
+    }
+
+    getCountParams(api: MiddlewareAPI<Dispatch, RootState>, dataExplorer: DataExplorer): ListArguments | null {
+        const filters = this.getFilters(api, dataExplorer);
+        if (filters === null) {
+            return null;
+        }
+        return {
+            filters,
+            limit: 0,
+            count: 'exact',
         };
     }
 
@@ -60,15 +74,11 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
 
         try {
             if (!background) { api.dispatch(progressIndicatorActions.START_WORKING(this.getId())); }
-
             const params = this.getParams(api, dataExplorer);
 
+            // Get items
             if (params !== null) {
-                const containerRequests = await this.services.containerRequestService.list(
-                    {
-                        ...this.getParams(api, dataExplorer),
-                        select: containerRequestFieldsNoMounts
-                    });
+                const containerRequests = await this.services.containerRequestService.list(params);
                 api.dispatch(updateResources(containerRequests.items));
                 await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
                 api.dispatch(this.actions.SET_ITEMS({
@@ -83,13 +93,32 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
                     items: [],
                 }));
             }
-            if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
         } catch {
             api.dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: 'Could not fetch process list.',
                 kind: SnackbarKind.ERROR
             }));
+        } finally {
             if (!background) { api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId())); }
+        }
+    }
+
+    async requestCount(api: MiddlewareAPI<Dispatch, RootState>, criteriaChanged?: boolean, background?: boolean) {
+        const state = api.getState();
+        const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
+        const countParams = this.getCountParams(api, dataExplorer);
+
+        if (criteriaChanged && countParams !== null) {
+            // Get itemsAvailable
+            return this.services.containerRequestService.list(countParams)
+                .then((results: ListResults<ContainerRequestResource>) => {
+                    console.log(results);
+                    if (results.itemsAvailable !== undefined) {
+                        api.dispatch<any>(this.actions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
+                    } else {
+                        couldNotFetchItemsAvailable();
+                    }
+                });
         }
     }
 }

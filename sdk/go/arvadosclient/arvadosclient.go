@@ -124,6 +124,13 @@ type ArvadosClient struct {
 
 	// X-Request-Id for outgoing requests
 	RequestID string
+
+	// Cluster config from the arvados.Client passed to New(), if
+	// any. If non-nil, its keep services configuration is used
+	// instead of requesting a server list from controller. Note
+	// this is disabled by default in test suites via
+	// ARVADOS_FORCE_KEEP_SERVICES_TABLE environment variable.
+	Cluster *arvados.Cluster
 }
 
 // MakeTLSConfig sets up TLS configuration for communicating with
@@ -156,6 +163,7 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 		DiskCacheSize:     c.DiskCacheSize,
 		Logger:            c.Logger,
 		lastClosedIdlesAt: time.Now(),
+		Cluster:           c.Cluster,
 	}
 
 	return ac, nil

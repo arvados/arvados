@@ -47,7 +47,6 @@ import * as projectUpdateActions from "store/projects/project-update-actions";
 import * as collectionCreateActions from "store/collections/collection-create-actions";
 import * as collectionCopyActions from "store/collections/collection-copy-actions";
 import * as collectionMoveActions from "store/collections/collection-move-actions";
-import * as processesActions from "store/processes/processes-actions";
 import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
@@ -810,6 +809,7 @@ export const loadApiClientAuthorizations = handleFirstTimeLoad(async (dispatch: 
 });
 
 export const loadGroupsPanel = handleFirstTimeLoad((dispatch: Dispatch<any>) => {
+    dispatch<any>(activateSidePanelTreeItem(SidePanelTreeCategory.GROUPS));
     dispatch(setGroupsBreadcrumbs());
     dispatch(groupPanelActions.loadGroupsPanel());
 });

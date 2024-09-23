@@ -17,7 +17,10 @@ import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { ResourcesState } from 'store/resources/resources';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import { StyleRulesCallback, Typography, WithStyles, withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Typography } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessResource } from 'models/process';
 import { SubprocessProgressBar } from 'components/subprocess-progress-bar/subprocess-progress-bar';
@@ -25,11 +28,11 @@ import { Process } from 'store/processes/process';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.greyL,
-        marginRight: theme.spacing.unit * 2,
+        marginRight: theme.spacing(2),
     },
     cardHeader: {
         display: 'flex',

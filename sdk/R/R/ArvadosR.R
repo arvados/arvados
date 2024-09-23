@@ -14,7 +14,8 @@
 #' \item Fuad Muhic
 #' \item Peter Amstutz
 #' \item Aneta Stanczyk
-#' \item Piotr Nowosielski}
+#' \item Piotr Nowosielski
+#' \item Brett Smith}
 #'
 #' @seealso \itemize{
 #' \item https://arvados.org

@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    StyleRulesCallback, WithStyles, withStyles
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
@@ -22,7 +22,7 @@ import { ApiClientAuthorization } from 'models/api-client-authorization';
 
 type CssRules = 'root';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
     }

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { PopoverOrigin } from "@material-ui/core/Popover";
+import { PopoverOrigin } from "@mui/material/Popover";
 
 export const createAnchorAt = (position: {x: number, y: number}) => {
     const el = document.createElement('div');

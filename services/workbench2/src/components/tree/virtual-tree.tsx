@@ -4,14 +4,16 @@
 
 import React from 'react';
 import classnames from "classnames";
-import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ReactElement } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 import { ArvadosTheme } from 'common/custom-theme';
 import { TreeItem, TreeProps, TreeItemStatus } from './tree';
-import { ListItem, Radio, Checkbox, CircularProgress, ListItemIcon } from '@material-ui/core';
+import { ListItem, Radio, Checkbox, CircularProgress, ListItemIcon } from '@mui/material';
 import { SidePanelRightArrowIcon } from '../icon/icon';
 
 type CssRules = 'list'
@@ -27,7 +29,7 @@ type CssRules = 'list'
     | 'virtualFileTree'
     | 'virtualizedList';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
         padding: '3px 0px',
     },
@@ -69,9 +71,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         transform: 'rotate(90deg)',
     },
     checkbox: {
-        width: theme.spacing.unit * 3,
-        height: theme.spacing.unit * 3,
-        margin: `0 ${theme.spacing.unit}px`,
+        width: theme.spacing(3),
+        height: theme.spacing(3),
+        margin: `0 ${theme.spacing(1)}`,
         padding: 0,
         color: theme.palette.grey["500"],
     }

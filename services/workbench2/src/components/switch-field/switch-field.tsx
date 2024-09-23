@@ -4,8 +4,8 @@
 
 import React from 'react';
 import { FormFieldProps, FormField } from 'components/form-field/form-field';
-import { Switch } from '@material-ui/core';
-import { SwitchProps } from '@material-ui/core/Switch';
+import { Switch } from '@mui/material';
+import { SwitchProps } from '@mui/material/Switch';
 
 export const SwitchField = ({ switchProps, ...props }: FormFieldProps & { switchProps: SwitchProps }) =>
     <FormField {...props}>

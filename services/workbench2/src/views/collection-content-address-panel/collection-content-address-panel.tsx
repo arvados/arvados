@@ -3,12 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    StyleRulesCallback,
-    WithStyles,
-    withStyles,
-    Button
-} from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { CollectionIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
 import { BackIcon } from 'components/icon/icon';
@@ -38,25 +36,25 @@ import { CollectionResource } from 'models/collection';
 
 type CssRules = 'backLink' | 'backIcon' | 'root' | 'content';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backLink: {
         fontSize: '12px',
         fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
-        padding: theme.spacing.unit,
-        marginBottom: theme.spacing.unit,
+        padding: theme.spacing(1),
+        marginBottom: theme.spacing(1),
         color: theme.palette.grey["500"],
     },
     backIcon: {
-        marginRight: theme.spacing.unit
+        marginRight: theme.spacing(1),
     },
     root: {
         width: '100%',
     },
     content: {
         // reserve space for the content address bar
-        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
+        height: `calc(100% - ${theme.spacing(7)})`,
     },
 });
 

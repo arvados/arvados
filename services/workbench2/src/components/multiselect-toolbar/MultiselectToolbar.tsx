@@ -4,7 +4,10 @@
 
 import React from "react";
 import { connect } from "react-redux";
-import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Toolbar, Tooltip, IconButton } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
 import { RootState } from "store/store";
 import { Dispatch } from "redux";
@@ -39,7 +42,7 @@ import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/
 
 type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",
@@ -86,15 +89,12 @@ type IconProps = {
     publicFavorites: PublicFavoritesState;
 }
 
-const disallowedPaths = [
-    "/favorites",
-    "/public-favorites",
-    "/trash",
-    "/group",
+const detailsCardPaths = [
+    '/projects',
 ]
 
-const isPathDisallowed = (location: string): boolean => {
-    return disallowedPaths.some(path => location.includes(path))
+export const usesDetailsCard = (location: string): boolean => {
+    return detailsCardPaths.some(path => location.includes(path))
 }
 
 export const MultiselectToolbar = connect(
@@ -103,9 +103,10 @@ export const MultiselectToolbar = connect(
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         const { classes, checkedList, iconProps, user, disabledButtons, location, forceMultiSelectMode, injectedStyles } = props;
-        const selectedResourceUuid = isPathDisallowed(location) ? null : props.selectedResourceUuid;
+        const selectedResourceArray = selectedToArray(checkedList);
+        const selectedResourceUuid = usesDetailsCard(location) ? props.selectedResourceUuid : selectedResourceArray.length === 1 ? selectedResourceArray[0] : null;
         const singleResourceKind = selectedResourceUuid && !forceMultiSelectMode ? [resourceToMsResourceKind(selectedResourceUuid, iconProps.resources, user)] : null
-        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList));
+        const currentResourceKinds = singleResourceKind ? singleResourceKind : Array.from(selectedToKindSet(checkedList, iconProps.resources));
         const currentPathIsTrash = window.location.pathname === "/trash";
 
         const rawActions =
@@ -158,7 +159,7 @@ export const MultiselectToolbar = connect(
                                             disabled={disabledButtons.has(name)}
                                             onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
                                             className={classes.icon}
-                                        >
+                                            size="large">
                                             {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
                                         </IconButton>
                                     </span>
@@ -177,7 +178,7 @@ export const MultiselectToolbar = connect(
                                             onClick={() => {
                                                 props.executeMulti(action, targetResources, iconProps.resources)}}
                                             className={classes.icon}
-                                        >
+                                            size="large">
                                             {action.icon({})}
                                         </IconButton>
                                     </span>
@@ -190,7 +191,7 @@ export const MultiselectToolbar = connect(
                     )}
                 </Toolbar>
             </React.Fragment>
-        )
+        );
     })
 );
 
@@ -204,22 +205,29 @@ export function selectedToArray(checkedList: TCheckedList): Array<string> {
     return arrayifiedSelectedList;
 }
 
-export function selectedToKindSet(checkedList: TCheckedList): Set<string> {
+export function selectedToKindSet(checkedList: TCheckedList, resources: ResourcesState = {}): Set<string> {
     const setifiedList = new Set<string>();
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {
-            setifiedList.add(extractUuidKind(key) as string);
+            isGroupResource(key, resources) ? setifiedList.add(ContextMenuKind.GROUPS) : setifiedList.add(extractUuidKind(key) as string);
         }
     }
     return setifiedList;
 }
 
+export const isGroupResource = (uuid: string, resources: ResourcesState): boolean => {
+    const resource = getResource(uuid)(resources);
+    if(!resource) return false;
+    return resource.kind === ResourceKind.PROJECT && (resource as GroupResource).groupClass === GroupClass.ROLE;
+};
+
 function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
     const result = {};
     selectedToArray(checkedList).forEach(uuid => {
         const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
-        if (!result[resource.kind]) result[resource.kind] = [];
-        result[resource.kind].push(resource);
+        const kind = isGroupResource(uuid, resources) ? ContextMenuKind.GROUPS : resource.kind;
+        if (!result[kind]) result[kind] = [];
+        result[kind].push(resource);
     });
     return result;
 }
@@ -243,11 +251,17 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
                 return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
             }
 
-            return isAdmin && !readonly
-                ? resource && resource.groupClass !== GroupClass.FILTER
-                    ? ContextMenuKind.PROJECT_ADMIN
-                    : ContextMenuKind.FILTER_GROUP_ADMIN
-                : isEditable
+            if (isAdmin && !readonly) {
+                if (resource?.groupClass === GroupClass.FILTER) {
+                    return ContextMenuKind.FILTER_GROUP_ADMIN;
+                }
+                if (resource?.groupClass === GroupClass.ROLE) {
+                    return ContextMenuKind.GROUPS;
+                }
+                return ContextMenuKind.PROJECT_ADMIN;
+            }
+
+            return isEditable
                 ? resource && resource.groupClass !== GroupClass.FILTER
                     ? ContextMenuKind.PROJECT
                     : ContextMenuKind.FILTER_GROUP
@@ -349,9 +363,11 @@ function mapDispatchToProps(dispatch: Dispatch) {
             switch (selectedAction.name) {
                 case ContextMenuActionNames.MOVE_TO:
                 case ContextMenuActionNames.REMOVE:
-                    const firstResource = getResource(currentList[0])(resources) as ContainerRequestResource | Resource;
-                    const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
-                    if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
+                    const firstResourceKind = isGroupResource(currentList[0], resources) 
+                        ? ContextMenuKind.GROUPS 
+                        : (getResource(currentList[0])(resources) as ContainerRequestResource | Resource).kind;
+                    const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResourceKind]);
+                    if (action) action.execute(dispatch, kindGroups[firstResourceKind]);
                     break;
                 case ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD:
                     const selectedResources = currentList.map(uuid => getResource(uuid)(resources));

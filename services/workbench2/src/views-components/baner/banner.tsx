@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState, useCallback, useEffect } from "react";
-import { Dialog, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from "@material-ui/core";
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Dialog, DialogContent, DialogActions, Button } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import bannerActions from "store/banner/banner-action";
@@ -14,7 +17,7 @@ import { sanitizeHTML } from "common/html-sanitize";
 
 type CssRules = "dialogContent" | "dialogContentIframe";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     dialogContent: {
         minWidth: "550px",
         minHeight: "500px",

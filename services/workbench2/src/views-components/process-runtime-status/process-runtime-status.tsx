@@ -3,17 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import {
-    ExpansionPanel,
-    ExpansionPanelDetails,
-    ExpansionPanelSummary,
-    Paper,
-    StyleRulesCallback,
-    Typography,
-    withStyles,
-    WithStyles
-} from "@material-ui/core";
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Accordion, AccordionDetails, AccordionSummary, Paper, Typography } from "@mui/material";
+import { WithStyles } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { RuntimeStatus } from "models/runtime-status";
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
@@ -32,23 +26,23 @@ type CssRules = 'root'
               | 'schedulingStatus'
               | 'schedulingText';
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        marginBottom: theme.spacing.unit * 1,
+        marginBottom: theme.spacing(1),
     },
     heading: {
         fontSize: '1rem',
     },
     summary: {
-        paddingLeft: theme.spacing.unit * 1,
-        paddingRight: theme.spacing.unit * 1,
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
     },
     summaryText: {
         whiteSpace: 'pre-line',
     },
     details: {
-        paddingLeft: theme.spacing.unit * 1,
-        paddingRight: theme.spacing.unit * 1,
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
     },
     detailsText: {
         fontSize: '0.8rem',
@@ -77,11 +71,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: '8px',
     },
     schedulingText: {
-        paddingTop: theme.spacing.unit * 1,
-        paddingBottom: theme.spacing.unit * 1,
+        paddingTop: theme.spacing(1),
+        paddingBottom: theme.spacing(1),
     },
     paperRoot: {
-        minHeight: theme.spacing.unit * 6,
+        minHeight: theme.spacing(6),
         display: 'flex',
         alignItems: 'center',
     },
@@ -105,32 +99,32 @@ export const ProcessRuntimeStatus = withStyles(styles)(
           </div>
         }
         { runtimeStatus?.error &&
-          <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
-              <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
+          <div data-cy='process-runtime-status-error'><Accordion className={classes.error} elevation={0}>
+              <AccordionSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                   <Typography className={classNames(classes.heading, classes.errorColor)}>
                       {`Error: ${runtimeStatus.error }`}
                   </Typography>
-              </ExpansionPanelSummary>
-              <ExpansionPanelDetails className={classes.details}>
+              </AccordionSummary>
+              <AccordionDetails className={classes.details}>
                   <Typography className={classNames(classes.errorColor, classes.detailsText)}>
                       {runtimeStatus?.errorDetail || 'No additional error details available'}
                   </Typography>
-              </ExpansionPanelDetails>
-          </ExpansionPanel></div>
+              </AccordionDetails>
+          </Accordion></div>
         }
             { runtimeStatus?.warning &&
-              <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0}>
-                  <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
+              <div data-cy='process-runtime-status-warning' ><Accordion className={classes.warning} elevation={0}>
+                  <AccordionSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                       <Typography className={classNames(classes.heading, classes.warningColor)}>
                           {`Warning: ${runtimeStatus.warning }`}
                       </Typography>
-                  </ExpansionPanelSummary>
-                  <ExpansionPanelDetails className={classes.details}>
+                  </AccordionSummary>
+                  <AccordionDetails className={classes.details}>
                       <Typography className={classNames(classes.warningColor, classes.detailsText)}>
                           {runtimeStatus?.warningDetail || 'No additional warning details available'}
                       </Typography>
-                  </ExpansionPanelDetails>
-              </ExpansionPanel></div>
+                  </AccordionDetails>
+              </Accordion></div>
             }
             { containerCount > 1 &&
               <div data-cy='process-runtime-status-retry-warning' >

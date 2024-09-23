@@ -58,7 +58,7 @@ class RSDK
   end
 
   def self.can_build?
-    can_run?("R", "--version")
+    can_run?("make", "can_run", chdir: File.join("..", self.build_path))
   end
 end
 
@@ -139,26 +139,21 @@ end
 
 file "sdk/R/arvados/index.html" do |t|
   next unless $build_sdks.include?(RSDK)
-  tgt = Dir.pwd
   Dir.mkdir("sdk/R")
   Dir.mkdir("sdk/R/arvados")
-  puts("tgt", tgt)
   cp('css/R.css', 'sdk/R/arvados')
-  docfiles = []
-  Dir.chdir("../sdk/R/") do
-    Dir.entries("man").each do |rd|
-      if rd[-3..-1] == ".Rd"
-        htmlfile = "#{rd[0..-4]}.html"
-        `R CMD Rdconv -t html man/#{rd} > #{tgt}/sdk/R/arvados/#{htmlfile}`
-        docfiles << htmlfile
-      end
-    end
+  raise unless system("make", "man", chdir: "../sdk/R", out: :err)
+  docnames = Dir.glob("../sdk/R/man/*.Rd").map { |rd| File.basename(rd, ".Rd") }.sort
+  docnames.each do |basename|
+    raise unless system(
+                   "R", "CMD", "Rdconv", "--type=html", "man/#{basename}.Rd",
+                   chdir: "../sdk/R",
+                   out: ["sdk/R/arvados/#{basename}.html", "w"],
+                 )
   end
-  raise if $? != 0
 
-  File.open("../sdk/R/README.md", "r") do |rd|
-    File.open("sdk/R/index.html.md", "w") do |fn|
-      fn.write(<<-EOF
+  File.open("sdk/R/index.html.md", "w") do |fn|
+    fn.write(<<-EOF
 ---
 layout: default
 navsection: sdk
@@ -166,9 +161,10 @@ navmenu: R
 title: "R SDK Overview"
 ...
 
-#{rd.read}
 EOF
-              )
+            )
+    File.open("../sdk/R/README.md", "r") do |rd|
+      fn.write(rd.read)
     end
   end
 
@@ -188,8 +184,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 EOF
             )
-    docfiles.sort.each do |d|
-      fn.write("* \"#{d[0..-6]}\":#{d}\n")
+    docnames.each do |basename|
+      fn.printf("* \"%s\":%s.html\n", basename, basename)
     end
   end
 end

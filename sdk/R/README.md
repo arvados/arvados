@@ -353,8 +353,8 @@ subcollection$copy("destination/folder")
 
 ## Building the ArvadosR package
 
-```r
-cd arvados/sdk && R CMD build R
+```
+make package
 ```
 
 This will create a tarball of the ArvadosR package in the current directory.

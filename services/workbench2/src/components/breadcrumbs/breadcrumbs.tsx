@@ -3,17 +3,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import { withStyles } from '@material-ui/core';
+import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { Button, Grid, Typography, Tooltip } from '@mui/material';
+import { WithStyles } from '@mui/styles';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import withStyles from '@mui/styles/withStyles';
 import { IllegalNamingWarning } from '../warning/warning';
 import { IconType, FreezeIcon } from 'components/icon/icon';
-import grey from '@material-ui/core/colors/grey';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupClass } from "models/group";
 import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
+import { grey } from '@mui/material/colors';
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
@@ -22,7 +24,7 @@ export interface Breadcrumb {
 
 type CssRules = "item" | "chevron" | "label" | "buttonLabel" | "icon" | "frozenIcon";
 
-const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
         borderRadius: '16px',
         height: '32px',
@@ -44,6 +46,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     buttonLabel: {
         overflow: 'hidden',
         justifyContent: 'flex-start',
+        display: 'inherit',
+        alignItems: 'inherit',
     },
     icon: {
         fontSize: 20,
@@ -90,22 +94,21 @@ export const Breadcrumbs = withStyles(styles)(
                                 isLastItem ? null : 'parentItem',
                                 classes.item
                             )}
-                            classes={{
-                                label: classes.buttonLabel
-                            }}
                             color="inherit"
                             onClick={() => onClick(navFunc, item)}
                             onContextMenu={event => onContextMenu(event, item)}>
-                            <Icon className={classes.icon} />
-                            <Typography
-                                noWrap
-                                color="inherit"
-                                className={classes.label}>
-                                {item.label}
-                            </Typography>
-                            {
-                                (resources[item.uuid] as any)?.frozenByUuid ? <FreezeIcon className={classes.frozenIcon} /> : null
-                            }
+                            <span className={classes.buttonLabel}>
+                                <Icon className={classes.icon} />
+                                <Typography
+                                    noWrap
+                                    color="inherit"
+                                    className={classes.label}>
+                                    {item.label}
+                                </Typography>
+                                {
+                                    (resources[item.uuid] as any)?.frozenByUuid ? <FreezeIcon className={classes.frozenIcon} /> : null
+                                }
+                            </span>
                         </Button>
                     </Tooltip>
                     {!isLastItem && <ChevronRightIcon color="inherit" className={classNames('parentItem', classes.chevron)} />}
