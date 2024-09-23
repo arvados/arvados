@@ -162,11 +162,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     renderTabbedSuggestions() {
         const { suggestions = [], classes } = this.props;
-
-        const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-            event.preventDefault();
-            this.setState({ selectedTab: newValue });
-        };
         
         return (
             <Popper
@@ -182,7 +177,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         injectedStyles={classes.tabbedListStyles}
                         selectedIndex={this.state.selectedSuggestionIndex}
                         selectedTab={this.state.selectedTab}
-                        handleTabChange={handleTabChange}
+                        handleTabChange={this.handleTabChange}
                         handleSelect={this.handleSelect}
                         includeContentsLength={true}
                         isWorking={this.props.isWorking}
@@ -210,6 +205,12 @@ export const Autocomplete = withStyles(autocompleteStyles)(
             onBlur(event);
         });
     }
+
+    handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        console.log('handleTabChange', event, newValue);
+        event.preventDefault();
+        this.setState({ selectedTab: newValue });
+    };
 
     handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const { onCreate = noop, onSelect = noop, suggestions = [] } = this.props;
