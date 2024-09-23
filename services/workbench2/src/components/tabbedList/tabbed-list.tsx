@@ -94,7 +94,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                     variant='fullWidth'
                 >
                     {tabLabels.map((label) => (
-                        <Tab data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
+                        <Tab key={label} data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
                     ))}
                 </Tabs>
             </div>
@@ -106,7 +106,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                     <List dense>
                     {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
                         {tabbedListContents[tabLabels[tabNr]].map((item, i) => (
-                        <div ref={(el) => { if (!!el) listRefs.current[i] = el}}>
+                        <div ref={(el) => { if (!!el) listRefs.current[i] = el}} key={i}>
                             <ListItemButton
                             className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
                             selected={i === selectedIndex}
