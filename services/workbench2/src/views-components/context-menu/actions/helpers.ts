@@ -18,9 +18,9 @@ export const replaceCollectionId = (href: string, rep: string): string => {
     const colPath = suffix.split('/').slice(1);
 
     if (rep) {
-	return `${prefix}/c=${rep}/${colPath.join('/')}`;
+        return `${prefix}/c=${rep}/${colPath.join('/')}`;
     } else {
-	return `${prefix}/${colPath.join('/')}`;
+        return `${prefix}/${colPath.join('/')}`;
     }
 };
 
