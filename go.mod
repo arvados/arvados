@@ -25,7 +25,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/creack/pty v1.1.21
-	github.com/docker/docker v26.1.3+incompatible
+	github.com/docker/docker v26.1.5+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/ghodss/yaml v1.0.0
@@ -33,6 +33,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/mux v1.8.0
+	github.com/gotd/contrib v0.20.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/yamux v0.1.1
@@ -46,10 +47,10 @@ require (
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.53.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/crypto v0.23.0
-	golang.org/x/net v0.25.0
+	golang.org/x/crypto v0.24.0
+	golang.org/x/net v0.26.0
 	golang.org/x/oauth2 v0.20.0
-	golang.org/x/sys v0.20.0
+	golang.org/x/sys v0.21.0
 	google.golang.org/api v0.181.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/go-jose/go-jose.v2 v2.6.3
@@ -104,7 +105,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
-	github.com/gotd/contrib v0.20.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -127,11 +127,11 @@ require (
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
-	golang.org/x/tools v0.11.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528155852-a33235495d66 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
+	google.golang.org/grpc v1.64.1 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
