@@ -55,10 +55,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		// the incoming request has a double slash. Some
 		// clients (including the Go standard library) change
 		// the request method to GET when following a 301
-		// redirect if the original method was not HEAD
-		// (RFC7231 6.4.2 specifically allows this in the case
-		// of POST). Thus "POST //foo" gets misdirected to
-		// "GET /foo". To avoid this, eliminate double slashes
+		// redirect if the original method was not HEAD (RFC
+		// 7231 6.4.2 specifically allows this in the case of
+		// POST). Thus "POST //foo" gets misdirected to "GET
+		// /foo". To avoid this, eliminate double slashes
 		// before passing the request to ServeMux.
 		for strings.Contains(req.URL.Path, "//") {
 			req.URL.Path = strings.Replace(req.URL.Path, "//", "/", -1)

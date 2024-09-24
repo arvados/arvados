@@ -132,7 +132,7 @@ func (readEOF) Read(p []byte) (int, error) {
 // First, it allows keep-web to use one locker for all collections
 // even though coll1.vhost/foo and coll2.vhost/foo have the same path
 // but represent different resources. Additionally, it returns valid
-// tokens (rfc2518 specifies that tokens are represented as URIs and
+// tokens (RFC 2518 specifies that tokens are represented as URIs and
 // are unique across all resources for all time), which might improve
 // client compatibility.
 //

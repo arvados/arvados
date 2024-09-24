@@ -2318,9 +2318,18 @@ func (s *IntegrationSuite) TestLogThrottleDifferentSources(c *check.C) {
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
-	lockTidyInterval = time.Second
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveTokenV2
+	var handler http.Handler = s.handler
+	// handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.handler)) // ...to enable request logging in test output
+
+	// Each file we upload will consist of some unique content
+	// followed by 2 MiB of filler content.
+	filler := "."
+	for i := 0; i < 21; i++ {
+		filler += filler
+	}
+
 	// Start small, and increase concurrency (2^2, 4^2, ...)
 	// only until hitting failure. Avoids unnecessarily long
 	// failure reports.
@@ -2343,7 +2352,7 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 				req, err := http.NewRequest("MKCOL", u.String(), nil)
 				c.Assert(err, check.IsNil)
 				req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-				s.handler.ServeHTTP(resp, req)
+				handler.ServeHTTP(resp, req)
 				c.Assert(resp.Code, check.Equals, http.StatusCreated)
 				for j := 0; j < n && !c.Failed(); j++ {
 					j := j
@@ -2354,10 +2363,10 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 						u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
 
 						resp := httptest.NewRecorder()
-						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content))
+						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content+filler))
 						c.Assert(err, check.IsNil)
 						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-						s.handler.ServeHTTP(resp, req)
+						handler.ServeHTTP(resp, req)
 						c.Check(resp.Code, check.Equals, http.StatusCreated)
 
 						time.Sleep(time.Second)
@@ -2365,9 +2374,9 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 						req, err = http.NewRequest("GET", u.String(), nil)
 						c.Assert(err, check.IsNil)
 						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
-						s.handler.ServeHTTP(resp, req)
+						handler.ServeHTTP(resp, req)
 						c.Check(resp.Code, check.Equals, http.StatusOK)
-						c.Check(resp.Body.String(), check.Equals, content)
+						c.Check(strings.TrimSuffix(resp.Body.String(), filler), check.Equals, content)
 					}()
 				}
 			}()
@@ -2382,5 +2391,100 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 			s.handler.ServeHTTP(resp, req)
 			c.Assert(resp.Code, check.Equals, http.StatusMultiStatus)
 		}
+	}
+}
+
+func (s *IntegrationSuite) TestDepthHeader(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveTokenV2
+
+	var coll arvados.Collection
+	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
+	c.Assert(err, check.IsNil)
+	defer client.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+	base := "http://" + coll.UUID + ".collections.example.com/"
+
+	for _, trial := range []struct {
+		method      string
+		path        string
+		destination string
+		depth       string
+		expectCode  int // 0 means expect 2xx
+	}{
+		// setup...
+		{method: "MKCOL", path: "dir"},
+		{method: "PUT", path: "dir/file"},
+		{method: "MKCOL", path: "dir/dir2"},
+		// delete with no depth = OK
+		{method: "DELETE", path: "dir/dir2", depth: ""},
+		// delete with depth other than infinity = fail
+		{method: "DELETE", path: "dir", depth: "0", expectCode: 400},
+		{method: "DELETE", path: "dir", depth: "1", expectCode: 400},
+		// delete with depth infinity = OK
+		{method: "DELETE", path: "dir", depth: "infinity"},
+
+		// setup...
+		{method: "MKCOL", path: "dir"},
+		{method: "PUT", path: "dir/file"},
+		{method: "MKCOL", path: "dir/dir2"},
+		// move with depth other than infinity = fail
+		{method: "MOVE", path: "dir", destination: "moved", depth: "0", expectCode: 400},
+		{method: "MOVE", path: "dir", destination: "moved", depth: "1", expectCode: 400},
+		// move with depth infinity = OK
+		{method: "MOVE", path: "dir", destination: "moved", depth: "infinity"},
+		{method: "DELETE", path: "moved"},
+
+		// setup...
+		{method: "MKCOL", path: "dir"},
+		{method: "PUT", path: "dir/file"},
+		{method: "MKCOL", path: "dir/dir2"},
+		// copy with depth 0 = create empty destination dir
+		{method: "COPY", path: "dir/", destination: "copied-empty/", depth: "0"},
+		{method: "DELETE", path: "copied-empty/file", expectCode: 404},
+		{method: "DELETE", path: "copied-empty"},
+		// copy with depth 0 = create empty destination dir
+		// (destination dir has no trailing slash this time)
+		{method: "COPY", path: "dir/", destination: "copied-empty-noslash", depth: "0"},
+		{method: "DELETE", path: "copied-empty-noslash/file", expectCode: 404},
+		{method: "DELETE", path: "copied-empty-noslash"},
+		// copy with depth 0 = create empty destination dir
+		// (source dir has no trailing slash this time)
+		{method: "COPY", path: "dir", destination: "copied-empty-noslash", depth: "0"},
+		{method: "DELETE", path: "copied-empty-noslash/file", expectCode: 404},
+		{method: "DELETE", path: "copied-empty-noslash"},
+		// copy with depth 1 = fail
+		{method: "COPY", path: "dir", destination: "copied", depth: "1", expectCode: 400},
+		// copy with depth infinity = copy entire subtree
+		{method: "COPY", path: "dir/", destination: "copied", depth: "infinity"},
+		{method: "DELETE", path: "copied/file"},
+		{method: "DELETE", path: "copied"},
+		// copy with depth infinity = copy entire subtree
+		// (source dir has no trailing slash this time)
+		{method: "COPY", path: "dir", destination: "copied", depth: "infinity"},
+		{method: "DELETE", path: "copied/file"},
+		{method: "DELETE", path: "copied"},
+		// cleanup
+		{method: "DELETE", path: "dir"},
+	} {
+		c.Logf("trial %+v", trial)
+		resp := httptest.NewRecorder()
+		req, err := http.NewRequest(trial.method, base+trial.path, strings.NewReader(""))
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+		if trial.destination != "" {
+			req.Header.Set("Destination", base+trial.destination)
+		}
+		if trial.depth != "" {
+			req.Header.Set("Depth", trial.depth)
+		}
+		s.handler.ServeHTTP(resp, req)
+		if trial.expectCode != 0 {
+			c.Assert(resp.Code, check.Equals, trial.expectCode)
+		} else {
+			c.Assert(resp.Code >= 200, check.Equals, true, check.Commentf("got code %d", resp.Code))
+			c.Assert(resp.Code < 300, check.Equals, true, check.Commentf("got code %d", resp.Code))
+		}
+		c.Logf("resp.Body: %q", resp.Body.String())
 	}
 }

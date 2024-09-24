@@ -40,10 +40,6 @@ type handler struct {
 	Cluster *arvados.Cluster
 	metrics *metrics
 
-	lockMtx    sync.Mutex
-	lock       map[string]*sync.RWMutex
-	lockTidied time.Time
-
 	fileEventLogs         map[fileEventLog]time.Time
 	fileEventLogsMtx      sync.Mutex
 	fileEventLogsNextTidy time.Time
@@ -135,7 +131,6 @@ var (
 		"MOVE":      true,
 		"PROPPATCH": true,
 		"PUT":       true,
-		"RMCOL":     true,
 		"UNLOCK":    true,
 	}
 	webdavMethod = map[string]bool{
@@ -220,6 +215,16 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// webdavPrefix is the leading portion of r.URL.Path that
+	// should be ignored by the webdav handler, if any.
+	//
+	// req "/c={id}/..." -> webdavPrefix "/c={id}"
+	// req "/by_id/..." -> webdavPrefix ""
+	//
+	// Note: in the code immediately below, we set webdavPrefix
+	// only if it was explicitly set by the client. Otherwise, it
+	// gets set later, after checking the request path for cases
+	// like "/c={id}/...".
 	webdavPrefix := ""
 	arvPath := r.URL.Path
 	if prefix := r.Header.Get("X-Webdav-Prefix"); prefix != "" {
@@ -356,6 +361,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		stripParts++
 	}
 
+	// fsprefix is the path from sitefs root to the sitefs
+	// directory (implicitly or explicitly) indicated by the
+	// leading / in the request path.
+	//
+	// Request "/by_id/..." -> fsprefix ""
+	// Request "/c={id}/..." -> fsprefix "/by_id/{id}/"
 	fsprefix := ""
 	if useSiteFS {
 		if writeMethod[r.Method] {
@@ -376,6 +387,19 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if src := r.Header.Get("X-Webdav-Source"); strings.HasPrefix(src, "/") && !strings.Contains(src, "//") && !strings.Contains(src, "/../") {
+		// Clients (specifically, the container log gateway)
+		// use X-Webdav-Source to specify that although the
+		// request path (and other webdav fields in the
+		// request) refer to target "/abc", the intended
+		// target is actually
+		// "{x-webdav-source-value}/abc".
+		//
+		// This, combined with X-Webdav-Prefix, enables the
+		// container log gateway to effectively alter the
+		// target path when proxying a request, without
+		// needing to rewrite all the other webdav
+		// request/response fields that might mention the
+		// target path.
 		fsprefix += src[1:]
 	}
 
@@ -407,6 +431,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var token string
 	var tokenUser *arvados.User
 	var sessionFS arvados.CustomFileSystem
+	var targetFS arvados.FileSystem
 	var session *cachedSession
 	var collectionDir arvados.File
 	for _, token = range tokens {
@@ -531,7 +556,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// (URLSearchParam#get, decodeURIComponent) will
 			// decode %20, but while the former also expects the
 			// form-specific encoding, the latter doesn't.
-			// Encode() almost encodes everything; RFC3986 sec. 3.4
+			// Encode() almost encodes everything; RFC 3986 3.4
 			// says "it is sometimes better for usability" to not
 			// encode / and ? when passing URI reference in query.
 			// This is also legal according to WHATWG URL spec and
@@ -584,38 +609,158 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fsprefix+strings.Join(targetPath, "/"), nil, tokenUser)
+	fstarget := fsprefix + strings.Join(targetPath, "/")
+	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fstarget, nil, tokenUser)
+
+	if webdavPrefix == "" && stripParts > 0 {
+		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
+	}
 
 	writing := writeMethod[r.Method]
-	locker := h.collectionLock(collectionID, writing)
-	defer locker.Unlock()
-
 	if writing {
-		// Save the collection only if/when all
-		// webdav->filesystem operations succeed --
-		// and send a 500 error if the modified
-		// collection can't be saved.
+		// We implement write operations by writing to a
+		// temporary collection, then applying the change to
+		// the real collection using the replace_files option
+		// in a collection update request.  This lets us do
+		// the slow part (i.e., receive the file data from the
+		// client and write it to Keep) without worrying about
+		// side effects of other read/write operations.
 		//
-		// Perform the write in a separate sitefs, so
-		// concurrent read operations on the same
-		// collection see the previous saved
-		// state. After the write succeeds and the
-		// collection record is updated, we reset the
-		// session so the updates are visible in
-		// subsequent read requests.
+		// Collection update requests for a given collection
+		// are serialized by the controller, so we don't need
+		// to do any locking for that part either.
+
+		// collprefix is the subdirectory in the target
+		// collection which (according to X-Webdav-Source) we
+		// should pretend is "/" for this request.
+		collprefix := strings.TrimPrefix(fsprefix, "by_id/"+collectionID+"/")
+		if len(collprefix) == len(fsprefix) {
+			http.Error(w, "internal error: writing to anything other than /by_id/{collectionID}", http.StatusInternalServerError)
+			return
+		}
+		colltarget := strings.Join(pathParts[stripParts:], "/")
+		colltarget = strings.TrimSuffix(colltarget, "/")
+
+		// Create a temporary collection filesystem for webdav
+		// to operate on.
+		var tmpcoll arvados.Collection
 		client := session.client.WithRequestID(r.Header.Get("X-Request-Id"))
-		sessionFS = client.SiteFileSystem(session.keepclient)
-		writingDir, err := sessionFS.OpenFile(fsprefix, os.O_RDONLY, 0)
+		tmpfs, err := tmpcoll.FileSystem(client, session.keepclient)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer writingDir.Close()
+		snap, err := arvados.Snapshot(sessionFS, "by_id/"+collectionID+"/")
+		if err != nil {
+			http.Error(w, "snapshot: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		err = arvados.Splice(tmpfs, "/", snap)
+		if err != nil {
+			http.Error(w, "splice: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		targetFS = tmpfs
+		fsprefix = collprefix
+		replace := make(map[string]string)
+
+		switch r.Method {
+		case "COPY", "MOVE":
+			dsturl, err := url.Parse(r.Header.Get("Destination"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if dsturl.Host != "" && dsturl.Host != r.Host {
+				http.Error(w, "destination host mismatch", http.StatusBadGateway)
+				return
+			}
+			var dsttarget string
+			if webdavPrefix == "" {
+				dsttarget = dsturl.Path
+			} else {
+				dsttarget = strings.TrimPrefix(dsturl.Path, webdavPrefix)
+				if len(dsttarget) == len(dsturl.Path) {
+					http.Error(w, "destination path not supported", http.StatusBadRequest)
+					return
+				}
+			}
+
+			srcspec := "current/" + colltarget
+			// RFC 4918 9.8.3: A COPY of "Depth: 0" only
+			// instructs that the collection and its
+			// properties, but not resources identified by
+			// its internal member URLs, are to be copied.
+			//
+			// ...meaning we will be creating an empty
+			// directory.
+			//
+			// RFC 4918 9.9.2: A client MUST NOT submit a
+			// Depth header on a MOVE on a collection with
+			// any value but "infinity".
+			//
+			// ...meaning we only need to consider this
+			// case for COPY, not for MOVE.
+			if fi, err := tmpfs.Stat(colltarget); err == nil && fi.IsDir() && r.Method == "COPY" && r.Header.Get("Depth") == "0" {
+				srcspec = "manifest_text/"
+			}
+
+			replace[strings.TrimSuffix(dsttarget, "/")] = srcspec
+			if r.Method == "MOVE" {
+				replace["/"+colltarget] = ""
+			}
+		case "MKCOL":
+			replace["/"+colltarget] = "manifest_text/"
+		case "DELETE":
+			if depth := r.Header.Get("Depth"); depth != "" && depth != "infinity" {
+				http.Error(w, "invalid depth header, see RFC 4918 9.6.1", http.StatusBadRequest)
+				return
+			}
+			replace["/"+colltarget] = ""
+		case "PUT":
+			// changes will be applied by updateOnSuccess
+			// update func below
+		case "LOCK", "UNLOCK", "PROPPATCH":
+			// no changes
+		default:
+			http.Error(w, "method missing", http.StatusInternalServerError)
+			return
+		}
+
+		// Save the collection only if/when all
+		// webdav->filesystem operations succeed using our
+		// temporary collection -- and send a 500 error if the
+		// updates can't be saved.
+		logger := ctxlog.FromContext(r.Context())
 		w = &updateOnSuccess{
 			ResponseWriter: w,
-			logger:         ctxlog.FromContext(r.Context()),
+			logger:         logger,
 			update: func() error {
-				err := writingDir.Sync()
+				var manifest string
+				var snap *arvados.Subtree
+				var err error
+				if r.Method == "PUT" {
+					snap, err = arvados.Snapshot(tmpfs, colltarget)
+					if err != nil {
+						return fmt.Errorf("snapshot tmpfs: %w", err)
+					}
+					tmpfs, err = (&arvados.Collection{}).FileSystem(client, session.keepclient)
+					err = arvados.Splice(tmpfs, "file", snap)
+					if err != nil {
+						return fmt.Errorf("splice tmpfs: %w", err)
+					}
+					manifest, err = tmpfs.MarshalManifest(".")
+					if err != nil {
+						return fmt.Errorf("marshal tmpfs: %w", err)
+					}
+					replace["/"+colltarget] = "manifest_text/file"
+				} else if len(replace) == 0 {
+					return nil
+				}
+				err = client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+collectionID, nil, map[string]interface{}{
+					"replace_files": replace,
+					"collection":    map[string]interface{}{"manifest_text": manifest}})
 				var te arvados.TransactionError
 				if errors.As(err, &te) {
 					err = te
@@ -623,13 +768,23 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					return err
 				}
-				// Sync the changes to the persistent
-				// sessionfs for this token.
-				snap, err := writingDir.Snapshot()
-				if err != nil {
-					return err
+
+				// We want subsequent reqs to account
+				// for this change.  Sync() can be
+				// expensive on a large collection, so
+				// in the simple (and common) case of
+				// uploading a single file, we just
+				// splice the new file into sessionFS
+				// instead.
+				if r.Method == "PUT" {
+					err = arvados.Splice(sessionFS, fstarget, snap)
+					if err != nil {
+						logger.WithError(err).Warn("splice failed")
+						collectionDir.Sync()
+					}
+				} else {
+					collectionDir.Sync()
 				}
-				collectionDir.Splice(snap)
 				return nil
 			}}
 	} else {
@@ -641,17 +796,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// and processing more requests even if a slow client
 		// takes a long time to download a large file.
 		releaseSession()
+		targetFS = sessionFS
 	}
 	if r.Method == http.MethodGet {
 		applyContentDispositionHdr(w, r, basename, attachment)
 	}
-	if webdavPrefix == "" {
-		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
-	}
 	wh := &webdav.Handler{
 		Prefix: webdavPrefix,
 		FileSystem: &webdavfs.FS{
-			FileSystem:    sessionFS,
+			FileSystem:    targetFS,
 			Prefix:        fsprefix,
 			Writing:       writeMethod[r.Method],
 			AlwaysReadEOF: r.Method == "PROPFIND",
@@ -1188,41 +1341,6 @@ func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) 
 		}
 	}
 	return nil, ""
-}
-
-var lockTidyInterval = time.Minute * 10
-
-// Lock the specified collection for reading or writing. Caller must
-// call Unlock() on the returned Locker when the operation is
-// finished.
-func (h *handler) collectionLock(collectionID string, writing bool) sync.Locker {
-	h.lockMtx.Lock()
-	defer h.lockMtx.Unlock()
-	if time.Since(h.lockTidied) > lockTidyInterval {
-		// Periodically delete all locks that aren't in use.
-		h.lockTidied = time.Now()
-		for id, locker := range h.lock {
-			if locker.TryLock() {
-				locker.Unlock()
-				delete(h.lock, id)
-			}
-		}
-	}
-	locker := h.lock[collectionID]
-	if locker == nil {
-		locker = new(sync.RWMutex)
-		if h.lock == nil {
-			h.lock = map[string]*sync.RWMutex{}
-		}
-		h.lock[collectionID] = locker
-	}
-	if writing {
-		locker.Lock()
-		return locker
-	} else {
-		locker.RLock()
-		return locker.RLocker()
-	}
 }
 
 func ServeCORSPreflight(w http.ResponseWriter, header http.Header) bool {
