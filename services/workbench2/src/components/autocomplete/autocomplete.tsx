@@ -207,7 +207,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        console.log('handleTabChange', event, newValue);
         event.preventDefault();
         this.setState({ selectedTab: newValue });
     };

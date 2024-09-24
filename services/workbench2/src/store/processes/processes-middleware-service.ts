@@ -112,7 +112,6 @@ export class ProcessesMiddlewareService extends DataExplorerMiddlewareService {
             // Get itemsAvailable
             return this.services.containerRequestService.list(countParams)
                 .then((results: ListResults<ContainerRequestResource>) => {
-                    console.log(results);
                     if (results.itemsAvailable !== undefined) {
                         api.dispatch<any>(this.actions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
                     } else {
