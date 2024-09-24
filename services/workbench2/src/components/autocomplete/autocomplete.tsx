@@ -52,7 +52,7 @@ type AutocompleteClasses = 'tabbedListStyles';
 
 const autocompleteStyles: CustomStyleRulesCallback<AutocompleteClasses> = theme => ({
     tabbedListStyles: {
-        maxHeight: '18rem',
+        maxHeight: '17.25rem',
     }
 });
 
