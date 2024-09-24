@@ -10,7 +10,7 @@ import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { InlinePulser } from 'components/loading/inline-pulser';
 
-type TabbedListClasses = 'root' | 'tabs' | 'tabPanel' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -18,6 +18,10 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         flexDirection: 'column',
         height: '100%',
         overflowY: 'auto',
+        scrollbarWidth: 'none',
+        '&::-webkit-scrollbar': {
+            display: 'none',
+        },
     },
     tabs: {
         backgroundColor: theme.palette.background.paper,
@@ -25,9 +29,6 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         top: 0,
         zIndex: 1,
         borderBottom: '1px solid lightgrey',
-    },
-    tabPanel: {
-        overflowY: 'scroll',
     },
     listItem: {
         cursor: 'pointer',
@@ -85,7 +86,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
     }, [selectedIndex]);
 
     const TabPanel = ({ children, value, index }: TabPanelProps) => {
-        return <div className={classes.tabPanel} hidden={value !== index}>{value === index && children}</div>;
+        return <div hidden={value !== index}>{value === index && children}</div>;
     };
 
     return (
@@ -113,7 +114,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                             <ListItemButton
                                 className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
                                 selected={i === selectedIndex}
-                                onClick={()=>handleSelect && handleSelect(item)}
+                                onClick={handleSelect && handleSelect(item)}
                                 >
                                 {renderListItem ? renderListItem(item) : JSON.stringify(item)}
                             </ListItemButton>
