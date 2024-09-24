@@ -100,6 +100,36 @@ func (s *routerSuite) TestBlockRead_Token(c *C) {
 	checkCORSHeaders(c, resp.Header())
 }
 
+// Previous versions responded to "GET //locator" with a 301 redirect
+// to "/locator".  To preserve compatibility with
+// clients/configurations that depended on this, we now accept "GET
+// //locator" as a synonym of "GET /locator", i.e., we respond with
+// the data instead of a redirect.
+//
+// More generally, requests with double slashes are not accepted (see
+// TestBadRequest).
+func (s *routerSuite) TestBlockRead_DoubleSlash(c *C) {
+	router, cancel := testRouter(c, s.cluster, nil)
+	defer cancel()
+
+	err := router.keepstore.mountsW[0].BlockWrite(context.Background(), fooHash, []byte("foo"))
+	c.Assert(err, IsNil)
+	locSigned := router.keepstore.signLocator(arvadostest.ActiveTokenV2, fooHash+"+3")
+	c.Assert(locSigned, Not(Equals), fooHash+"+3")
+
+	resp := call(router, "GET", "http://example//"+locSigned, arvadostest.ActiveTokenV2, nil, nil)
+	c.Check(resp.Code, Equals, http.StatusOK)
+	c.Check(resp.Body.String(), Equals, "foo")
+	checkCORSHeaders(c, resp.Header())
+
+	// HEAD
+	resp = call(router, "HEAD", "http://example//"+locSigned, arvadostest.ActiveTokenV2, nil, nil)
+	c.Check(resp.Code, Equals, http.StatusOK)
+	c.Check(resp.Result().ContentLength, Equals, int64(3))
+	c.Check(resp.Body.String(), Equals, "")
+	checkCORSHeaders(c, resp.Header())
+}
+
 // As a special case we allow HEAD requests that only provide a hash
 // without a size hint. This accommodates uses of keep-block-check
 // where it's inconvenient to attach size hints to known hashes.
@@ -319,6 +349,9 @@ func (s *routerSuite) TestBadRequest(c *C) {
 		"GET /pull",
 		"GET /debug.json",  // old endpoint, no longer exists
 		"GET /status.json", // old endpoint, no longer exists
+		"GET //mounts",
+		"GET //index",
+		"PUT //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		"POST /",
 		"POST /aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		"POST /trash",

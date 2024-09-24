@@ -20,7 +20,7 @@ import (
 )
 
 func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
-	defer os.Setenv("ARVADOS_KEEP_SERVICES", "")
+	defer os.Unsetenv("ARVADOS_KEEP_SERVICES")
 
 	data := []byte("TestOverrideDiscovery")
 	hash := fmt.Sprintf("%x+%d", md5.Sum(data), len(data))
@@ -55,6 +55,45 @@ func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
 
 	_, _, _, err = kc1.Get(hash)
 	c.Check(err, check.NotNil)
+	_, _, _, err = kc2.Get(hash)
+	c.Check(err, check.IsNil)
+}
+
+func (s *ServerRequiredSuite) TestDoubleSlash(c *check.C) {
+	defer os.Unsetenv("ARVADOS_KEEP_SERVICES")
+
+	data := []byte("TestDoubleSlash")
+	hash := fmt.Sprintf("%x+%d", md5.Sum(data), len(data))
+
+	os.Setenv("ARVADOS_KEEP_SERVICES", "")
+	arv1, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.IsNil)
+	arv1.ApiToken = arvadostest.ActiveToken
+	kc1, err := MakeKeepClient(arv1)
+	c.Assert(err, check.IsNil)
+
+	// Use kc1's config to set up a new client kc2, but add an
+	// extra trailing slash to each URL.
+	var svcs string
+	for _, url := range kc1.LocalRoots() {
+		svcs += url + "/ "
+	}
+	c.Assert(svcs, check.Not(check.HasLen), 0)
+	os.Setenv("ARVADOS_KEEP_SERVICES", svcs)
+
+	arv2, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.IsNil)
+	arv2.ApiToken = arvadostest.ActiveToken
+	kc2, err := MakeKeepClient(arv2)
+	c.Assert(err, check.IsNil)
+
+	// Check that trailing slashes were trimmed.
+	for _, url := range kc2.LocalRoots() {
+		c.Assert(url, check.Not(check.Matches), `.*/$`)
+	}
+
+	_, _, err = kc2.PutB(data)
+	c.Assert(err, check.IsNil)
 	_, _, _, err = kc2.Get(hash)
 	c.Check(err, check.IsNil)
 }

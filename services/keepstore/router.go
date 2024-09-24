@@ -41,9 +41,16 @@ func newRouter(keepstore *keepstore, puller *puller, trasher *trasher) service.H
 	}
 
 	r := mux.NewRouter()
+	// Without SkipClean(true), the gorilla/mux package responds
+	// to "PUT //foo" with a 301 redirect to "/foo", which causes
+	// a (Fetch Standard compliant) client to repeat the request
+	// as "GET /foo", which is clearly inappropriate in this case.
+	// It's less confusing if we just return 400.
+	r.SkipClean(true)
 	locatorPath := `/{locator:[0-9a-f]{32}.*}`
 	get := r.Methods(http.MethodGet, http.MethodHead).Subrouter()
 	get.HandleFunc(locatorPath, rtr.handleBlockRead)
+	get.HandleFunc("/"+locatorPath, rtr.handleBlockRead) // for compatibility -- see TestBlockRead_DoubleSlash
 	get.HandleFunc(`/index`, adminonly(rtr.handleIndex))
 	get.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, adminonly(rtr.handleIndex))
 	get.HandleFunc(`/mounts`, adminonly(rtr.handleMounts))

@@ -186,9 +186,9 @@ func (kc *KeepClient) loadDefaultClasses() error {
 	return nil
 }
 
-// MakeKeepClient creates a new KeepClient, loads default storage classes, calls
-// DiscoverKeepServices(), and returns when the client is ready to
-// use.
+// MakeKeepClient creates a new KeepClient, loads default storage
+// classes, calls discoverServices(), and returns when the client is
+// ready to use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 	kc := New(arv)
 	return kc, kc.discoverServices()
