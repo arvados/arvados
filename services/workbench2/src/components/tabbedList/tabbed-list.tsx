@@ -71,6 +71,8 @@ type TabbedListProps<T> = {
 };
 
 export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+    
+    
     const tabNr = selectedTab || 0;
     const tabLabels = Object.keys(tabbedListContents);
     const listRefs = useRef<Record<string, HTMLElement[]>>(tabLabels.reduce((acc, label) => ({ ...acc, [label]: [] }), {}));
@@ -109,11 +111,11 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                         {tabbedListContents[tabLabels[tabNr]]?.map((item, i) => (
                         <div ref={(el) => { if (el) listRefs.current[selectedTabLabel][i] = el}} key={i}>
                             <ListItemButton
-                            className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
-                            selected={i === selectedIndex}
-                            onClick={handleSelect && handleSelect(item)}
-                            >
-                            {renderListItem ? renderListItem(item) : JSON.stringify(item)}
+                                className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
+                                selected={i === selectedIndex}
+                                onClick={()=>handleSelect && handleSelect(item)}
+                                >
+                                {renderListItem ? renderListItem(item) : JSON.stringify(item)}
                             </ListItemButton>
                         </div>
                         ))}
