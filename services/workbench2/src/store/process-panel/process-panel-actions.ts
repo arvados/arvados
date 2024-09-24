@@ -24,6 +24,7 @@ import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { OutputDataUpdate } from "./process-panel-reducer";
 import { updateResources } from "store/resources/resources-actions";
 import { ContainerResource } from "models/container";
+import { FilterBuilder } from "services/api/filter-builder";
 
 export const processPanelActions = unionize({
     RESET_PROCESS_PANEL: ofType<{}>(),
