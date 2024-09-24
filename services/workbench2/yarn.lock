@@ -6284,8 +6284,6 @@ __metadata:
     jszip: ^3.10.1
     lodash: ^4.17.21
     lodash-es: ^4.17.21
-    lodash.mergewith: 4.6.2
-    lodash.template: 4.5.0
     mem: 4.0.0
     mime: ^4.0.3
     mini-css-extract-plugin: ^2.4.5
@@ -12142,13 +12140,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash._reinterpolate@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "lodash._reinterpolate@npm:3.0.0"
-  checksum: 06d2d5f33169604fa5e9f27b6067ed9fb85d51a84202a656901e5ffb63b426781a601508466f039c720af111b0c685d12f1a5c14ff8df5d5f27e491e562784b2
-  languageName: node
-  linkType: hard
-
 "lodash.debounce@npm:^4.0.8":
   version: 4.0.8
   resolution: "lodash.debounce@npm:4.0.8"
@@ -12177,13 +12168,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash.mergewith@npm:4.6.2":
-  version: 4.6.2
-  resolution: "lodash.mergewith@npm:4.6.2"
-  checksum: a6db2a9339752411f21b956908c404ec1e088e783a65c8b29e30ae5b3b6384f82517662d6f425cc97c2070b546cc2c7daaa8d33f78db7b6e9be06cd834abdeb8
-  languageName: node
-  linkType: hard
-
 "lodash.once@npm:^4.1.1":
   version: 4.1.1
   resolution: "lodash.once@npm:4.1.1"
@@ -12195,25 +12179,6 @@ __metadata:
   version: 4.7.0
   resolution: "lodash.sortby@npm:4.7.0"
   checksum: db170c9396d29d11fe9a9f25668c4993e0c1331bcb941ddbd48fb76f492e732add7f2a47cfdf8e9d740fa59ac41bbfaf931d268bc72aab3ab49e9f89354d718c
-  languageName: node
-  linkType: hard
-
-"lodash.template@npm:4.5.0":
-  version: 4.5.0
-  resolution: "lodash.template@npm:4.5.0"
-  dependencies:
-    lodash._reinterpolate: ^3.0.0
-    lodash.templatesettings: ^4.0.0
-  checksum: ca64e5f07b6646c9d3dbc0fe3aaa995cb227c4918abd1cef7a9024cd9c924f2fa389a0ec4296aa6634667e029bc81d4bbdb8efbfde11df76d66085e6c529b450
-  languageName: node
-  linkType: hard
-
-"lodash.templatesettings@npm:^4.0.0":
-  version: 4.2.0
-  resolution: "lodash.templatesettings@npm:4.2.0"
-  dependencies:
-    lodash._reinterpolate: ^3.0.0
-  checksum: 863e025478b092997e11a04e9d9e735875eeff1ffcd6c61742aa8272e3c2cddc89ce795eb9726c4e74cef5991f722897ff37df7738a125895f23fc7d12a7bb59
   languageName: node
   linkType: hard
 
