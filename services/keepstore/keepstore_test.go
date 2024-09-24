@@ -328,7 +328,17 @@ func (s *keepstoreSuite) TestBlockWrite_MultipleStorageClasses(c *C) {
 			})
 			c.Check(err, IsNil)
 		}
-		c.Check(stubLog.String(), Equals, trial.expectLog)
+		// The "nextmnt" loop in BlockWrite first starts the
+		// goroutine that writes to mount 121, then the
+		// goroutine that writes to mount 111.  Most of the
+		// time, mount 121 will log first, but occasionally
+		// mount 111 will log first.  In that case we swap the
+		// log entries. (The order of the rest of the log
+		// entries is meaningful -- just not these two.)
+		gotLog := strings.Replace(stubLog.String(),
+			"111 write d85\n121 write d85\n",
+			"121 write d85\n111 write d85\n", 1)
+		c.Check(gotLog, Equals, trial.expectLog)
 	}
 }
 
