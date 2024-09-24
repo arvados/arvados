@@ -112,11 +112,10 @@ describe("Process tests", function () {
 
             // Fake submitted by another user to test "runtime user" field.
             //
-            // Need to override both group contents and direct get,
-            // because it displays the the cached value from
-            // 'contents' for a few moments while requesting the full
-            // object.
-            cy.intercept({ method: "GET", url: "**/arvados/v1/groups/*/contents?*" }, req => {
+            // Need to override group contents because we use group
+            // contents to fetch both the container_request and
+            // container record in a single API call.
+            cy.intercept({ method: "GET", url: "**/arvados/v1/groups/contents?*" }, req => {
                 req.on('response', res => {
                     if (!res.body.items) {
                         return;
@@ -124,11 +123,6 @@ describe("Process tests", function () {
                     res.body.items.forEach(item => {
                         item.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
                     });
-                });
-            });
-            cy.intercept({ method: "GET", url: "**/arvados/v1/container_requests/*" }, req => {
-                req.on('response', res => {
-                    res.body.modified_by_user_uuid = "zzzzz-tpzed-000000000000000";
                 });
             });
 
