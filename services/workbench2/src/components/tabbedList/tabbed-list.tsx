@@ -62,15 +62,27 @@ type TabbedListProps<T> = {
     selectedTab?: number;
     includeContentsLength: boolean;
     isWorking?: boolean;
+    maxLength?: number;
     handleSelect?: (selection: T) => React.MouseEventHandler<HTMLElement> | undefined;
     renderListItem?: (item: T) => React.ReactNode;
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab = 0, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab = 0, isWorking, maxLength, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabLabels = Object.keys(tabbedListContents);
     const selectedTabLabel = tabLabels[selectedTab];
     const listContents = tabbedListContents[selectedTabLabel] || [];
+
+    const getTabLabel = (label: string) => {
+        if (includeContentsLength) { 
+            if (maxLength && tabbedListContents[label].length > maxLength) {
+                return `${label} (${maxLength}+)`;
+            }
+            return `${label} (${tabbedListContents[label].length})`;
+        } else {
+            return label;
+        }
+    };
 
     const TabPanel = ({ children, value, index }: TabPanelProps) => {
         return <div hidden={value !== index}>{value === index && children}</div>;
@@ -85,7 +97,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 variant='fullWidth'
             >
                 {tabLabels.map((label) => (
-                    <Tab key={label} data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
+                    <Tab key={label} data-cy={`${label}-tab-label`} label={getTabLabel(label)} />
                 ))}
             </Tabs>
             <TabPanel
@@ -95,7 +107,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
                     <List dense>
                     {listContents.length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[selectedTab]} found</div>}
-                        {listContents.map((item, i) => (
+                        {listContents.slice(0, maxLength).map((item, i) => (
                         <div key={`${selectedTabLabel}-${i}`}>
                             <ListItemButton
                                 className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}

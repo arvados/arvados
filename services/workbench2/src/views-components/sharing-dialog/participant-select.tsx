@@ -97,6 +97,7 @@ export const ParticipantSelect = connect()(
                     renderSuggestion={this.renderSuggestion}
                     category={this.props.category}
                     isWorking={this.state.isWorking}
+                    maxLength={this.props.category === AutocompleteCat.SHARING ? 10 : undefined}
                     disabled={this.props.disabled} />
             );
         }
@@ -168,7 +169,8 @@ export const ParticipantSelect = connect()(
         requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
             this.setState({ isWorking: true });
             const { value } = this.state;
-            const limit = 10; // FIXME: Does this provide a good UX?
+            // +1 to see if there are more than 10 results
+            const limit = 11;
 
             const filterUsers = new FilterBuilder()
                 .addILike('any', value)

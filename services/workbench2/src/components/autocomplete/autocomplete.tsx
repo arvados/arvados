@@ -46,6 +46,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     renderSuggestion?: (suggestion: Suggestion) => React.ReactNode;
     category?: AutocompleteCat;
     isWorking?: boolean;
+    maxLength?: number;
 }
 
 type AutocompleteClasses = 'listItemStyle';
@@ -182,6 +183,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                         handleSelect={this.handleSelect}
                         includeContentsLength={true}
                         isWorking={this.props.isWorking}
+                        maxLength={this.props.maxLength}
                         />
                 </Paper>
             </Popper>
