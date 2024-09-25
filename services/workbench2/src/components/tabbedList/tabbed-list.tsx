@@ -124,7 +124,7 @@ export const TabbedList = withStyles(tabbedListStyles)(
                 value={selectedTab}
                 index={selectedTab}
             >
-                {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
+                {isWorking ? <div data-cy="loading-spinner" className={classes.spinner}><InlinePulser /></div> :
                     <List dense>
                     {listContents.length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[selectedTab]} found</div>}
                         {listContents.slice(0, maxLength).map((item, i) => (

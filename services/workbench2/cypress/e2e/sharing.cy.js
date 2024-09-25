@@ -70,8 +70,8 @@ describe('Sharing tests', function () {
             cy.contains('Write').click();
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
+            cy.get('[data-cy="loading-spinner"]').should('not.exist');
             cy.get('[data-cy="users-tab-label"]').click();
-            cy.waitForDom();
             cy.get('[data-cy=sharing-suggestion]').click();
             cy.get('@sharingDialog').within(() => {
                 cy.get('[data-cy=add-invited-people]').click();
@@ -90,8 +90,8 @@ describe('Sharing tests', function () {
             });
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
+            cy.get('[data-cy="loading-spinner"]').should('not.exist');
             cy.get('[data-cy="users-tab-label"]').click();
-            cy.waitForDom();
             cy.get('[data-cy=sharing-suggestion]').click();
             cy.get('@sharingDialog').within(() => {
                 cy.get('[data-cy=add-invited-people]').click();

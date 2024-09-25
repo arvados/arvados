@@ -67,8 +67,7 @@ describe('Group manage tests', function() {
             .within(() => {
                 cy.get('[data-cy=invite-people-field] input').type("other");
             });
-        /// wait for the suggestion to appear
-        cy.wait(1000);
+        cy.get('[data-cy="loading-spinner"]').should('not.exist');
         cy.get('[data-cy="users-tab-label"]').click();
         cy.get('[data-cy=sharing-suggestion]').click();
         // Add admin to the group
@@ -77,8 +76,9 @@ describe('Group manage tests', function() {
             .within(() => {
                 cy.get('[data-cy=invite-people-field] input').clear().type("admin");
             });
+        cy.get('[data-cy="loading-spinner"]').should('not.exist');
+        cy.wait(1000);
         cy.get('[data-cy="users-tab-label"]').click();
-        cy.waitForDom();
         cy.get('[data-cy=sharing-suggestion]').click();
         cy.get('.sharing-dialog').get('[data-cy=add-invited-people]').click();
         cy.get('.sharing-dialog').contains('Close').click();
