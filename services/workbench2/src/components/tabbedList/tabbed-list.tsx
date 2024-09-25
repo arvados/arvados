@@ -10,7 +10,7 @@ import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { InlinePulser } from 'components/loading/inline-pulser';
 
-type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -30,10 +30,8 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         zIndex: 1,
         borderBottom: '1px solid lightgrey',
     },
-    list: {
-        padding: 0,
-    },
     listItem: {
+        height: '2rem',
         cursor: 'pointer',
         '&:hover': {
             backgroundColor: theme.palette.grey[200],
@@ -79,6 +77,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
     const tabLabels = Object.keys(tabbedListContents);
     const listRefs = useRef<Record<string, HTMLElement[]>>(tabLabels.reduce((acc, label) => ({ ...acc, [label]: [] }), {}));
     const selectedTabLabel = tabLabels[tabNr];
+    const listContents = tabbedListContents[tabLabels[tabNr]] || [];
 
     useEffect(() => {
         if (selectedIndex !== undefined && listRefs.current[selectedTabLabel][selectedIndex]) {
@@ -107,9 +106,9 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 index={tabNr}
             >
                 {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
-                    <List dense className={classes.list}>
-                    {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
-                        {tabbedListContents[tabLabels[tabNr]]?.map((item, i) => (
+                    <List dense>
+                    {listContents.length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
+                        {listContents.map((item, i) => (
                         <div ref={(el) => { if (el) listRefs.current[selectedTabLabel][i] = el}} key={i}>
                             <ListItemButton
                                 className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}

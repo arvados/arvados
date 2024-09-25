@@ -48,12 +48,14 @@ export interface AutocompleteProps<Item, Suggestion> {
     isWorking?: boolean;
 }
 
-type AutocompleteClasses = 'tabbedListStyles';
+type AutocompleteClasses = 'listItemStyle';
 
 const autocompleteStyles: CustomStyleRulesCallback<AutocompleteClasses> = theme => ({
-    tabbedListStyles: {
-        maxHeight: '16.75rem',
-    }
+    listItemStyle: {
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+    },
 });
 
 export enum AutocompleteCat {
@@ -174,7 +176,6 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                     <TabbedList 
                         tabbedListContents={this.state.tabbedListContents} 
                         renderListItem={this.renderSharingSuggestion} 
-                        injectedStyles={classes.tabbedListStyles}
                         selectedIndex={this.state.selectedSuggestionIndex}
                         selectedTab={this.state.selectedTab}
                         handleTabChange={this.handleTabChange}
@@ -323,15 +324,15 @@ export const Autocomplete = withStyles(autocompleteStyles)(
             : <ListItemText>{JSON.stringify(suggestion)}</ListItemText>;
     }
 
-    renderSharingSuggestion(suggestion: Suggestion) {
+    renderSharingSuggestion = (suggestion: Suggestion) => {
         if (isGroup(suggestion)) {
             return <ListItemText>
-                        <Typography noWrap data-cy="sharing-suggestion">
+                        <Typography className={this.props.classes.listItemStyle} data-cy="sharing-suggestion">
                             {(suggestion as any).name}
                         </Typography>
                     </ListItemText>;}
         return <ListItemText>
-                    <Typography data-cy="sharing-suggestion">
+                    <Typography className={this.props.classes.listItemStyle} data-cy="sharing-suggestion">
                         {`${(suggestion as any).fullName} (${(suggestion as any).username})`}
                     </Typography>
                 </ListItemText>;
