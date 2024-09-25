@@ -11,7 +11,7 @@ import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer
 import { updateResources } from 'store/resources/resources-actions';
 import { SortDirection } from 'components/data-table/data-column';
 import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
-import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
+import { GroupContentsResource, GroupContentsResourcePrefix, ContentsArguments } from "services/groups-service/groups-service";
 import { ListResults } from 'services/common-service/common-service';
 import { searchResultsPanelActions } from 'store/search-results-panel/search-results-panel-actions';
 import {
@@ -31,6 +31,7 @@ import { progressIndicatorActions } from 'store/progress-indicator/progress-indi
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { Session } from 'models/session';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
+import { GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION } from 'common/app-info';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -71,13 +72,22 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
         api.dispatch(resetItemsAvailable());
 
         sessions.forEach(session => {
-            const params = getParams(dataExplorer, searchValue, session.apiRevision);
+            const params: ContentsArguments = getParams(dataExplorer, searchValue, session.apiRevision);
             //this prevents double fetching of the same search results when a new session is logged in
-            api.dispatch<any>(setSearchOffsets(session.clusterId, params.offset ));
+            api.dispatch<any>(setSearchOffsets(session.clusterId, params.offset || 0));
+
+            if (session.apiRevision >= GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
+                params.include = ["owner_uuid", "container_uuid"];
+            } else {
+                params.include = "owner_uuid";
+            }
 
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
                     api.dispatch(updateResources(response.items));
+                    if (response.included) {
+                        api.dispatch(updateResources(response.included));
+                    }
                     api.dispatch(appendItems(response));
                     numberOfResolvedResponses++;
                     // Used to determine if all results are empty, so items.length works as well as itemsAvailable
@@ -87,22 +97,25 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                         if(totalNumItemsAvailable === 0) api.dispatch(dataExplorerActions.SET_IS_NOT_FOUND({ id: this.id, isNotFound: true }))
                     }
                     // Request all containers for process status to be available
-                    const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
-                    const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
-                    containerUuids.length && this.services.containerService
-                        .list({
-                            filters: new FilterBuilder()
-                                .addIn('uuid', containerUuids)
-                                .getFilters()
-                        }, false)
-                        .then((containers) => {
-                            api.dispatch(updateResources(containers.items));
-                        });
-                    }).catch(() => {
-                        api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                        api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
-                    });
-            }
+                    // Required when contacting legacy API servers (pre-Arvados 3.0)
+                    if (session.apiRevision < GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
+                        const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
+                        const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
+                        containerUuids.length && this.services.containerService
+                                                     .list({
+                                                         filters: new FilterBuilder()
+                                                             .addIn('uuid', containerUuids)
+                                                             .getFilters()
+                                                     }, false)
+                                                     .then((containers) => {
+                                                         api.dispatch(updateResources(containers.items));
+                                                     });
+                    }
+                }).catch(() => {
+                    api.dispatch(couldNotFetchSearchResults(session.clusterId));
+                    api.dispatch(progressIndicatorActions.STOP_WORKING(this.id))
+                });
+        }
         );
     }
 
@@ -119,38 +132,49 @@ export const searchSingleCluster = (session: Session, searchValue: string) =>
             return;
         }
 
-        const params = getParams(dataExplorer, searchValue, session.apiRevision);
+        const params: ContentsArguments = getParams(dataExplorer, searchValue, session.apiRevision);
 
         // If the clusterId & search offset has already been fetched, we don't need to fetch the results again
         if(state.searchBar.searchOffsets[session.clusterId] === params.offset) {
             return;
         }
 
+        if (session.apiRevision >= GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
+            params.include = ["owner_uuid", "container_uuid"];
+        } else {
+            params.include = "owner_uuid";
+        }
+
         dispatch(progressIndicatorActions.START_WORKING(SEARCH_RESULTS_PANEL_ID))
 
         services.groupsService.contents('', params, session)
-            .then((response) => {
-                dispatch<any>(setSearchOffsets(session.clusterId, params.offset ));
-                dispatch(updateResources(response.items));
-                dispatch(appendItems(response));
-                // Request all containers for process status to be available
-                const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
-                const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
-                containerUuids.length && services.containerService
-                    .list({
-                        filters: new FilterBuilder()
-                            .addIn('uuid', containerUuids)
-                            .getFilters()
-                    }, false)
-                    .then((containers) => {
-                        dispatch(updateResources(containers.items));
-                    });
+                .then((response) => {
+                    dispatch<any>(setSearchOffsets(session.clusterId, params.offset || 0));
+                    dispatch(updateResources(response.items));
+                    if (response.included) {
+                        dispatch(updateResources(response.included));
+                    }
+                    dispatch(appendItems(response));
+                    // Request all containers for process status to be available
+                    if (session.apiRevision < GROUP_CONTENTS_INCLUDE_CONTAINER_UUID_MIN_API_REVISION) {
+                        const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
+                        const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
+                        containerUuids.length && services.containerService
+                                                         .list({
+                                                             filters: new FilterBuilder()
+                                                                 .addIn('uuid', containerUuids)
+                                                                 .getFilters()
+                                                         }, false)
+                                                         .then((containers) => {
+                                                             dispatch(updateResources(containers.items));
+                                                         });
+                    }
                 }).catch(() => {
                     dispatch(couldNotFetchSearchResults(session.clusterId));
                     dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
                 });
         dispatch(progressIndicatorActions.STOP_WORKING(SEARCH_RESULTS_PANEL_ID))
-}
+    }
 
 const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, SearchResultsPanelColumnNames.TYPE));
 
@@ -162,7 +186,7 @@ export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision
     ),
     order: getOrder(dataExplorer),
     includeTrash: getAdvancedDataFromQuery(query).inTrash,
-    includeOldVersions: getAdvancedDataFromQuery(query).pastVersions
+    includeOldVersions: getAdvancedDataFromQuery(query).pastVersions,
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {

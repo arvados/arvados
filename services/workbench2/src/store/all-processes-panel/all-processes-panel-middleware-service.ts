@@ -27,7 +27,7 @@ export class AllProcessesPanelMiddlewareService extends ProcessesMiddlewareServi
         if (sup === null) { return null; }
         const columns = dataExplorer.columns as DataColumns<string, ContainerRequestResource>;
 
-        const typeFilters = serializeOnlyProcessTypeFilters(getDataExplorerColumnFilters(columns, AllProcessesPanelColumnNames.TYPE));
+        const typeFilters = serializeOnlyProcessTypeFilters(true)(getDataExplorerColumnFilters(columns, AllProcessesPanelColumnNames.TYPE));
         return joinFilters(sup, typeFilters);
     }
 }

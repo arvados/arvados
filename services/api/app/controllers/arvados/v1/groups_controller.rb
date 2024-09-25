@@ -280,8 +280,14 @@ with the current user.",
     klasses = avail_klasses.keys
 
     request_filters.each do |col, op, val|
-      if col.index('.') && !table_names.values.include?(col.split('.', 2)[0])
-        raise ArgumentError.new("Invalid attribute '#{col}' in filter")
+      if col.index('.')
+        filter_table = col.split('.', 2)[0]
+        # singular "container" is valid as a special case for
+        # filtering container requests by their associated
+        # container_uuid
+        if filter_table != "container" && !table_names.values.include?(filter_table)
+          raise ArgumentError.new("Invalid attribute '#{col}' in filter")
+        end
       end
     end
 
@@ -363,8 +369,10 @@ with the current user.",
       @filters = request_filters.map do |col, op, val|
         if !col.index('.')
           [col, op, val]
-        elsif (col = col.split('.', 2))[0] == klass.table_name
-          [col[1], op, val]
+        elsif (colsp = col.split('.', 2))[0] == klass.table_name
+          [colsp[1], op, val]
+        elsif klass == ContainerRequest && colsp[0] == "container"
+          [col, op, val]
         else
           nil
         end

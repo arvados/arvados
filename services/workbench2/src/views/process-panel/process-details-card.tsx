@@ -106,27 +106,27 @@ export const ProcessDetailsCard = withStyles(styles)(
                     action={
                         <div>
                             {runAction !== undefined &&
-                                <Button
-                                    data-cy="process-run-button"
-                                    variant="contained"
-                                    size="small"
-                                    color="primary"
-                                    className={classes.actionButton}
-                                    onClick={() => runAction && runAction(process.containerRequest.uuid)}>
-                                    <StartIcon />
-                                    Run
-                                </Button>}
+                             <Button
+                                 data-cy="process-run-button"
+                                 variant="contained"
+                                 size="small"
+                                 color="primary"
+                                 className={classes.actionButton}
+                                 onClick={() => runAction && runAction(process.containerRequest.uuid)}>
+                                 <StartIcon />
+                                 Run
+                             </Button>}
                             {isProcessCancelable(process) &&
-                                <Button
-                                    data-cy="process-cancel-button"
-                                    variant="contained"
-                                    size="small"
-                                    color="primary"
-                                    className={classNames(classes.actionButton, classes.cancelButton)}
-                                    onClick={() => cancelProcess(process.containerRequest.uuid)}>
-                                    <StopIcon />
-                                    Cancel
-                                </Button>}
+                             <Button
+                                 data-cy="process-cancel-button"
+                                 variant="contained"
+                                 size="small"
+                                 color="primary"
+                                 className={classNames(classes.actionButton, classes.cancelButton)}
+                                 onClick={() => cancelProcess(process.containerRequest.uuid)}>
+                                 <StopIcon />
+                                 Cancel
+                             </Button>}
                             <ProcessStatus uuid={process.containerRequest.uuid} />
                             <Tooltip title="More options" disableFocusListener>
                                 <IconButton
@@ -137,14 +137,14 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 </IconButton>
                             </Tooltip>
                             {doHidePanel &&
-                                <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                    <IconButton onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                                </Tooltip>}
+                             <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                 <IconButton onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
+                             </Tooltip>}
                         </div>
                     } />
-                <CardContent className={classes.content}>
-                    <ProcessDetailsAttributes request={process.containerRequest} twoCol hideProcessPanelRedundantFields />
-                </CardContent>
+            <CardContent className={classes.content}>
+                <ProcessDetailsAttributes request={process.containerRequest} container={process.container} twoCol hideProcessPanelRedundantFields />
+            </CardContent>
             </Card>
         );
     }

@@ -16,7 +16,6 @@ import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { DataExplorer, getDataExplorer } from "store/data-explorer/data-explorer-reducer";
-import { loadMissingProcessesInformation } from "store/project-panel/project-panel-run-middleware-service";
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { ResourceKind } from "models/resource";
@@ -83,27 +82,16 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 const responseLinks = await this.services.linkService.list(this.getLinkParams(dataExplorer, uuid));
                 const uuids = responseLinks.items.map(it => it.headUuid);
 
-                const groupItems = await this.services.groupsService.list({
+                const orderedItems = await this.services.groupsService.contents("", {
                     filters: this.getResourceFilters(dataExplorer, uuids),
-                });
-                const collectionItems = await this.services.collectionService.list({
-                    filters: this.getResourceFilters(dataExplorer, uuids),
-                });
-                const processItems = await this.services.containerRequestService.list({
-                    filters: this.getResourceFilters(dataExplorer, uuids),
+                    include: ["owner_uuid", "container_uuid"],
                 });
 
-                const orderedItems = [
-                    ...groupItems.items,
-                    ...collectionItems.items,
-                    ...processItems.items
-                ];
-
-                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems));
-                await api.dispatch<any>(loadMissingProcessesInformation(processItems.items));
+                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.items));
+                api.dispatch(resourcesActions.SET_RESOURCES(orderedItems.included));
                 api.dispatch(favoritePanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(responseLinks),
-                    items: orderedItems.map((resource: any) => resource.uuid),
+                    items: orderedItems.items.map((resource: any) => resource.uuid),
                 }));
                 api.dispatch<any>(updateFavorites(uuids));
             } catch (e) {

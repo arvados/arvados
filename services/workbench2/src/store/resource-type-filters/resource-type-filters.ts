@@ -371,13 +371,13 @@ export const serializeDataResourceTypeFilters = pipe(
     ({ fb }) => fb.getFilters(),
 );
 
-export const serializeOnlyProcessTypeFilters = pipe(
+export const serializeOnlyProcessTypeFilters = (use_prefix: boolean) => pipe(
     createFiltersBuilder,
     ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
         () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
         filters => filters,
         mappedFilters => ({
-            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix: false }),
+            fb: buildProcessTypeFilters({ fb, filters: mappedFilters, use_prefix }),
             selectedFilters
         })
     )(),

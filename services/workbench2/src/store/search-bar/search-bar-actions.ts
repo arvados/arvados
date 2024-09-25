@@ -25,6 +25,7 @@ import { ListResults } from "services/common-service/common-service";
 import * as parser from './search-query/arv-parser';
 import { Keywords } from './search-query/arv-parser';
 import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "models/vocabulary";
+import { PROPERTY_CONTAINS_VALUE_MIN_API_REVISION } from 'common/app-info';
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),
@@ -378,7 +379,7 @@ export const queryToFilters = (query: string, apiRevision: number) => {
 
     data.properties.forEach(p => {
         if (p.value) {
-            if (apiRevision < 20200212) {
+            if (apiRevision < PROPERTY_CONTAINS_VALUE_MIN_API_REVISION) {
                 filter
                     .addEqual(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
                     .addEqual(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION)

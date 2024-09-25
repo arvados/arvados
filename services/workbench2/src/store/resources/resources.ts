@@ -43,16 +43,16 @@ export const deleteResource = (id: string) =>
     };
 
 export const filterResources = (filter: (resource: Resource) => boolean) =>
-    (state: ResourcesState) =>
-        Object
-            .keys(state)
-            .reduce((resources, id) => {
-                const resource = getResource(id)(state);
-                return resource
-                    ? [...resources, resource]
-                    : resources;
-            }, [])
-            .filter(filter);
+    (state: ResourcesState) => {
+        const items: Resource[] = [];
+        for (const id in state) {
+            const resource = state[id];
+            if (resource && filter(resource)) {
+                items.push(resource);
+            }
+        }
+        return items;
+    };
 
 export const filterResourcesByKind = (kind: ResourceKind) =>
     (state: ResourcesState) =>
