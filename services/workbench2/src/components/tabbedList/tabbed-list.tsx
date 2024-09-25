@@ -17,11 +17,6 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        overflowY: 'auto',
-        scrollbarWidth: 'none',
-        '&::-webkit-scrollbar': {
-            display: 'none',
-        },
     },
     tabs: {
         backgroundColor: theme.palette.background.paper,
@@ -72,18 +67,10 @@ type TabbedListProps<T> = {
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
-    const tabNr = selectedTab || 0;
+export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab = 0, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabLabels = Object.keys(tabbedListContents);
-    const listRefs = useRef<Record<string, HTMLElement[]>>(tabLabels.reduce((acc, label) => ({ ...acc, [label]: [] }), {}));
-    const selectedTabLabel = tabLabels[tabNr];
-    const listContents = tabbedListContents[tabLabels[tabNr]] || [];
-
-    useEffect(() => {
-        if (selectedIndex !== undefined && listRefs.current[selectedTabLabel][selectedIndex]) {
-            listRefs.current[selectedTabLabel][selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }, [selectedIndex]);
+    const selectedTabLabel = tabLabels[selectedTab];
+    const listContents = tabbedListContents[selectedTabLabel] || [];
 
     const TabPanel = ({ children, value, index }: TabPanelProps) => {
         return <div hidden={value !== index}>{value === index && children}</div>;
@@ -93,7 +80,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
         <div className={classNames(classes.root, injectedStyles)}>
             <Tabs
                 className={classes.tabs}
-                value={tabNr}
+                value={selectedTab}
                 onChange={handleTabChange}
                 variant='fullWidth'
             >
@@ -102,14 +89,14 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                 ))}
             </Tabs>
             <TabPanel
-                value={tabNr}
-                index={tabNr}
+                value={selectedTab}
+                index={selectedTab}
             >
                 {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
                     <List dense>
-                    {listContents.length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
+                    {listContents.length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[selectedTab]} found</div>}
                         {listContents.map((item, i) => (
-                        <div ref={(el) => { if (el) listRefs.current[selectedTabLabel][i] = el}} key={i}>
+                        <div key={`${selectedTabLabel}-${i}`}>
                             <ListItemButton
                                 className={classNames(classes.listItem, { [classes.selected]: i === selectedIndex })}
                                 selected={i === selectedIndex}
