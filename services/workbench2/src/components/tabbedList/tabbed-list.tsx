@@ -10,7 +10,7 @@ import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { InlinePulser } from 'components/loading/inline-pulser';
 
-type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'list' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -29,6 +29,9 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         top: 0,
         zIndex: 1,
         borderBottom: '1px solid lightgrey',
+    },
+    list: {
+        padding: 0,
     },
     listItem: {
         cursor: 'pointer',
@@ -72,8 +75,6 @@ type TabbedListProps<T> = {
 };
 
 export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab, isWorking, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
-    
-    
     const tabNr = selectedTab || 0;
     const tabLabels = Object.keys(tabbedListContents);
     const listRefs = useRef<Record<string, HTMLElement[]>>(tabLabels.reduce((acc, label) => ({ ...acc, [label]: [] }), {}));
@@ -91,23 +92,22 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
 
     return (
         <div className={classNames(classes.root, injectedStyles)}>
-            <div className={classes.tabs}>
-                <Tabs
-                    value={tabNr}
-                    onChange={handleTabChange}
-                    variant='fullWidth'
-                >
-                    {tabLabels.map((label) => (
-                        <Tab key={label} data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
-                    ))}
-                </Tabs>
-            </div>
+            <Tabs
+                className={classes.tabs}
+                value={tabNr}
+                onChange={handleTabChange}
+                variant='fullWidth'
+            >
+                {tabLabels.map((label) => (
+                    <Tab key={label} data-cy={`${label}-tab-label`} label={includeContentsLength ? `${label} (${tabbedListContents[label].length})` : label} />
+                ))}
+            </Tabs>
             <TabPanel
                 value={tabNr}
                 index={tabNr}
             >
                 {isWorking ? <div className={classes.spinner}><InlinePulser /></div> :
-                    <List dense>
+                    <List dense className={classes.list}>
                     {tabbedListContents[tabLabels[tabNr]].length === 0 && <div className={classes.notFoundLabel}>no matching {tabLabels[tabNr]} found</div>}
                         {tabbedListContents[tabLabels[tabNr]]?.map((item, i) => (
                         <div ref={(el) => { if (el) listRefs.current[selectedTabLabel][i] = el}} key={i}>
