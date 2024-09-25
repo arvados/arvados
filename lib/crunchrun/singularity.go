@@ -366,8 +366,11 @@ func (e *singularityExecutor) Start() error {
 }
 
 func (e *singularityExecutor) Pid() int {
-	// see https://dev.arvados.org/issues/17244#note-21
-	return 0
+	childproc, err := e.containedProcess()
+	if err != nil {
+		return 0
+	}
+	return childproc
 }
 
 func (e *singularityExecutor) Stop() error {
