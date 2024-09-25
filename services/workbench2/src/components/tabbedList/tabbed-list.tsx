@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Tabs, Tab, List, ListItemButton } from '@mui/material';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles, withStyles } from '@mui/styles';

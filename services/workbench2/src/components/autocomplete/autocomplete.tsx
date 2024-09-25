@@ -164,7 +164,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     renderTabbedSuggestions() {
-        const { suggestions = [], classes } = this.props;
+        const { suggestions = [] } = this.props;
         
         return (
             <Popper
