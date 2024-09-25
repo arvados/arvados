@@ -190,10 +190,10 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
         const state = getState();
 
+        filterB = filterB.addNotIn("collections.properties.type", ["intermediate", "log"]);
+
         if (state.treePickerSearch.collectionFilterValues[pickerId]) {
             filterB = filterB.addFullTextSearch(state.treePickerSearch.collectionFilterValues[pickerId], 'collections');
-        } else {
-            filterB = filterB.addNotIn("collections.properties.type", ["intermediate", "log"]);
         }
 
         if (searchProjects && state.treePickerSearch.projectSearchValues[pickerId]) {
@@ -202,17 +202,32 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
         const filters = filterB.getFilters();
 
+        // Must be under 1000
         const itemLimit = 200;
 
         try {
-            const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: itemLimit });
-            dispatch<any>(updateResources(items));
 
-            if (itemsAvailable !== undefined && itemsAvailable > itemLimit) {
+
+            //select: ["name", "description", "owner_uuid", "created_at",
+                     //"modified_by_user_uuid", "modified_at", "properties"]
+
+            const { items, included } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id,
+                                                                              { filters,
+                                                                                excludeHomeProject: loadShared || undefined,
+                                                                                limit: itemLimit+1,
+                                                                                count: "none",
+                                                                                include: "owner_uuid",
+            });
+            dispatch<any>(updateResources(items));
+            if (included) {
+                dispatch<any>(updateResources(included));
+            }
+
+            if (items.length > itemLimit) {
                 items.push({
                     uuid: "more-items-available",
                     kind: ResourceKind.WORKFLOW,
-                    name: `*** Not all items listed (${items.length} out of ${itemsAvailable}), reduce item count with search or filter ***`,
+                    name: `*** Not all items listed, reduce item count with search or filter ***`,
                     description: "",
                     definition: "",
                     ownerUuid: "",
