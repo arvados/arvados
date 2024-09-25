@@ -325,15 +325,9 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     renderSharingSuggestion = (suggestion: Suggestion) => {
-        if (isGroup(suggestion)) {
-            return <ListItemText>
-                        <Typography className={this.props.classes.listItemStyle} data-cy="sharing-suggestion">
-                            {(suggestion as any).name}
-                        </Typography>
-                    </ListItemText>;}
         return <ListItemText>
                     <Typography className={this.props.classes.listItemStyle} data-cy="sharing-suggestion">
-                        {`${(suggestion as any).fullName} (${(suggestion as any).username})`}
+                        { isGroup(suggestion) ? (suggestion as any).name : `${(suggestion as any).fullName} (${(suggestion as any).username})` }
                     </Typography>
                 </ListItemText>;
     }
