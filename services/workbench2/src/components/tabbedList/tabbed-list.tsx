@@ -10,7 +10,7 @@ import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { InlinePulser } from 'components/loading/inline-pulser';
 
-type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel';
+type TabbedListClasses = 'root' | 'tabs' | 'listItem' | 'selected' | 'spinner' | 'notFoundLabel' | 'moreResults';
 
 const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: ArvadosTheme) => ({
     root: {
@@ -47,6 +47,13 @@ const tabbedListStyles: CustomStyleRulesCallback<TabbedListClasses> = (theme: Ar
         color: theme.palette.grey[700],
         textAlign: 'center',
     },
+    moreResults: {
+        padding: 0,
+        color: theme.palette.grey[700],
+        textAlign: 'center',
+        fontStyle: 'italic',
+        fontSize: '0.8rem',
+    },
 });
 
 type TabPanelProps = {
@@ -68,7 +75,20 @@ type TabbedListProps<T> = {
     handleTabChange?: (event: React.SyntheticEvent, newValue: number) => void;
 };
 
-export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents, selectedIndex = 0, selectedTab = 0, isWorking, maxLength, injectedStyles, classes, handleSelect, renderListItem, handleTabChange, includeContentsLength }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
+export const TabbedList = withStyles(tabbedListStyles)(
+    <T,>({
+        tabbedListContents,
+        selectedIndex = 0,
+        selectedTab = 0,
+        isWorking,
+        maxLength,
+        injectedStyles,
+        classes,
+        handleSelect,
+        renderListItem,
+        handleTabChange,
+        includeContentsLength,
+    }: TabbedListProps<T> & WithStyles<TabbedListClasses>) => {
     const tabLabels = Object.keys(tabbedListContents);
     const selectedTabLabel = tabLabels[selectedTab];
     const listContents = tabbedListContents[selectedTabLabel] || [];
@@ -118,6 +138,7 @@ export const TabbedList = withStyles(tabbedListStyles)(<T,>({ tabbedListContents
                             </ListItemButton>
                         </div>
                         ))}
+                        {maxLength && listContents.length > maxLength && <div className={classes.moreResults}>{'keep typing to refine search results'}</div>}
                     </List>
                 }
             </TabPanel>

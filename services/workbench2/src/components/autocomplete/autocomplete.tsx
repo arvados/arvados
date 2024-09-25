@@ -197,7 +197,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
 
     handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
         const { onFocus = noop } = this.props;
-        this.setState({ suggestionsOpen: true });
+        this.setState({ suggestionsOpen: true, selectedTab: 0 });
         onFocus(event);
     }
 
