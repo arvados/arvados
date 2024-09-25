@@ -67,14 +67,15 @@ describe('Group manage tests', function() {
             .within(() => {
                 cy.get('[data-cy=invite-people-field] input').type("other");
             });
+        /// wait for the suggestion to appear
+        cy.wait(1000);
         cy.get('[data-cy="users-tab-label"]').click();
-        cy.waitForDom();
         cy.get('[data-cy=sharing-suggestion]').click();
         // Add admin to the group
         cy.get('.sharing-dialog')
             .should('contain', 'Sharing settings')
             .within(() => {
-                cy.get('[data-cy=invite-people-field] input').type("admin");
+                cy.get('[data-cy=invite-people-field] input').clear().type("admin");
             });
         cy.get('[data-cy="users-tab-label"]').click();
         cy.waitForDom();
