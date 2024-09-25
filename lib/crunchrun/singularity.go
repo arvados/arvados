@@ -275,6 +275,12 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")
 	}
+	if e.spec.VCPUs > 0 {
+		args = append(args, "--cpus", fmt.Sprintf("%d", e.spec.VCPUs))
+	}
+	if e.spec.RAM > 0 {
+		args = append(args, "--memory", fmt.Sprintf("%d", e.spec.RAM))
+	}
 
 	readonlyflag := map[bool]string{
 		false: "rw",
@@ -325,6 +331,12 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	// want. See https://github.com/sylabs/singularity/pull/704
 	// and https://dev.arvados.org/issues/19081
 	env = append(env, "SINGULARITY_NO_EVAL=1")
+
+	// If we don't propagate XDG_RUNTIME_DIR, singularity resource
+	// limits fail with "FATAL: container creation failed: while
+	// applying cgroups config: system configuration does not
+	// support cgroup management"
+	env = append(env, "XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"))
 
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)

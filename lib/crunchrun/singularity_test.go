@@ -73,10 +73,12 @@ func (s *singularityStubSuite) TestSingularityExecArgs(c *C) {
 		BindMounts:      map[string]bindmount{"/mnt": {HostPath: "/hostpath", ReadOnly: true}},
 		EnableNetwork:   false,
 		CUDADeviceCount: 3,
+		VCPUs:           2,
+		RAM:             12345678,
 	})
 	c.Check(err, IsNil)
 	e.imageFilename = "/fake/image.sif"
 	cmd := e.execCmd("./singularity")
-	c.Check(cmd.Args, DeepEquals, []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd=/WorkingDir", "--net", "--network=none", "--nv", "--bind", "/hostpath:/mnt:ro", "/fake/image.sif"})
-	c.Check(cmd.Env, DeepEquals, []string{"SINGULARITYENV_FOO=bar", "SINGULARITY_NO_EVAL=1"})
+	c.Check(cmd.Args, DeepEquals, []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd=/WorkingDir", "--net", "--network=none", "--nv", "--cpus", "2", "--memory", "12345678", "--bind", "/hostpath:/mnt:ro", "/fake/image.sif"})
+	c.Check(cmd.Env, DeepEquals, []string{"SINGULARITYENV_FOO=bar", "SINGULARITY_NO_EVAL=1", "XDG_RUNTIME_DIR=" + os.Getenv("XDG_RUNTIME_DIR")})
 }
