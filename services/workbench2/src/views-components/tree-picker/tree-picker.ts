@@ -78,9 +78,10 @@ const treePickerToTreeItems = <T>(tree: Tree<T>, resources: ResourcesState) =>
                     name: typeof node.value === "string"
                         ? node.value
                         : typeof (node.value as any).name === "string"
-                            ? (node.value as any).name
-                            : ""
-                  }
+                        ? (node.value as any).name
+                        : "",
+                    weight: (node.value as any).weight
+                }
                 : node.value,
             id: node.id,
             items: items.length > 0 ? items : undefined,

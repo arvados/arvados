@@ -20,21 +20,23 @@ import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-act
 import { kebabCase } from 'lodash';
 
 type CssRules = 'list'
-    | 'listItem'
-    | 'childLi'
-    | 'childItemName'
-    | 'active'
-    | 'loader'
-    | 'toggableIconContainer'
-    | 'iconClose'
-    | 'renderContainer'
-    | 'iconOpen'
-    | 'toggableIcon'
-    | 'checkbox'
-    | 'childItem'
-    | 'childItemIcon'
-    | 'frozenIcon'
-    | 'indentSpacer';
+              | 'listItem'
+              | 'childLi'
+              | 'childItemName'
+              | 'childItemNameDark'
+              | 'childItemNameLight'
+              | 'active'
+              | 'loader'
+              | 'toggableIconContainer'
+              | 'iconClose'
+              | 'renderContainer'
+              | 'iconOpen'
+              | 'toggableIcon'
+              | 'checkbox'
+              | 'childItem'
+              | 'childItemIcon'
+              | 'frozenIcon'
+              | 'indentSpacer';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
@@ -87,11 +89,19 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     childLi: {
-        display: 'flex', 
+        display: 'flex',
         alignItems: 'center',
     },
     childItemName: {
-        fontSize: '0.875rem', 
+        fontSize: '0.875rem',
+    },
+    childItemNameLight: {
+        fontSize: '0.875rem',
+        color: theme.customs.colors.greyL,
+    },
+    childItemNameDark: {
+        fontSize: '0.875rem',
+        color: "black",
     },
     childItemIcon: {
         marginLeft: '8px',
@@ -267,31 +277,35 @@ const FlatTree = (props: FlatTreeProps) =>
         {
             (props.it.items || [])
                 .map((item: any, index: number) => <div key={item.id || index} data-id={item.id}
-                    className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
-                    style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
-                    {isInFavoritesTree(props.it) ? 
-                        <div className={props.classes.indentSpacer} />
-                        :
-                        <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
-                            <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
-                                {props.getProperArrowAnimation(item.status, item.items!)}
-                            </ListItemIcon> 
-                        </i>}
+                                                            className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
+                                                            style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
+                    {isInFavoritesTree(props.it) ?
+                     <div className={props.classes.indentSpacer} />
+                    :
+                     <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
+                         <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
+                             {props.getProperArrowAnimation(item.status, item.items!)}
+                         </ListItemIcon>
+                     </i>}
                     {props.showSelection(item) && !props.useRadioButtons &&
-                        <Checkbox
-                            checked={item.selected}
-                            className={props.classes.checkbox}
-                            color="primary"
-                            onClick={props.handleCheckboxChange(item)} />}
+                     <Checkbox
+                         checked={item.selected}
+                         className={props.classes.checkbox}
+                         color="primary"
+                         onClick={props.handleCheckboxChange(item)} />}
                     {props.showSelection(item) && props.useRadioButtons &&
-                        <Radio
-                            checked={item.selected}
-                            className={props.classes.checkbox}
-                            color="primary" />}
+                     <Radio
+                         checked={item.selected}
+                         className={props.classes.checkbox}
+                         color="primary" />}
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer} ref={item.active ? props.selectedRef : undefined}>
                         <span className={props.classes.childLi}>
                             <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} headKind={item.data.headKind || null} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
-                            <span className={props.classes.childItemName}>
+                            <span className={item.data.weight === 1 ?
+                                             props.classes.childItemNameLight :
+                                             (item.data.weight === 2 ?
+                                              props.classes.childItemNameDark :
+                                              props.classes.childItemName)}>
                                 {item.data.name}
                             </span>
                             {

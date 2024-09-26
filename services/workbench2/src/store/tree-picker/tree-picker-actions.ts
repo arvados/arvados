@@ -188,32 +188,27 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
         let includeOwners: string|undefined = undefined;
 
+        if (id.startsWith("search-")) {
+            return;
+        }
+
         if (searching) {
             // opening top level search
             if (projectFilter) {
                 includeOwners = "owner_uuid";
-
-                if (includeCollections) {
-                    filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION]);
-                } else {
-                    filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
-                }
+                filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
 
                 const objtype = extractUuidObjectType(projectFilter);
-                if (objtype === ResourceObjectType.GROUP || objtype === ResourceObjectType.USER ||
-                    (includeCollections && objtype === ResourceObjectType.COLLECTION))
-                {
+                if (objtype === ResourceObjectType.GROUP || objtype === ResourceObjectType.USER) {
                         filterB = filterB.addEqual('uuid', projectFilter);
                 }
                 else {
                     filterB = filterB.addFullTextSearch(projectFilter, 'groups');
-                    if (includeCollections) {
-                        filterB = filterB.addFullTextSearch(projectFilter, 'collections');
-                    }
                 }
+
             } else if (collectionFilter) {
-                filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION]);
                 includeOwners = "owner_uuid";
+                filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION]);
 
                 const objtype = extractUuidObjectType(collectionFilter);
                 if (objtype === ResourceObjectType.COLLECTION) {
@@ -226,13 +221,17 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             }
         } else {
             // opening a folder below the top level
-            if (collectionFilter) {
-                filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION])
-                                 .addFullTextSearch(collectionFilter, 'collections');
-            } else if (includeCollections) {
+            if (includeCollections) {
                 filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION]);
             } else {
                 filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
+            }
+
+            if (projectFilter) {
+                filterB = filterB.addFullTextSearch(projectFilter, 'groups');
+            }
+            if (collectionFilter) {
+                filterB = filterB.addFullTextSearch(collectionFilter, 'collections');
             }
         }
 
@@ -245,11 +244,6 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         // Must be under 1000
         const itemLimit = 200;
 
-        if (includeOwners) {
-            dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId }));
-            dispatch<any>(initSearchProject(pickerId));
-        }
-
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
         try {
@@ -261,6 +255,10 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                                                                                 include: includeOwners,
             });
 
+            if (!included) {
+                includeOwners = undefined;
+            }
+
             //let rootItems: GroupContentsResource[] | GroupContentsIncludedResource[] = items;
             let rootItems: any[] = items;
 
@@ -271,7 +269,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                     if (seen.hasOwnProperty(item.uuid)) {
                         return false;
                     } else {
-                        seen[item.uuid] = true;
+                        seen[item.uuid] = item;
                         return true;
                     }
                 });
@@ -284,7 +282,10 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                 if (seen.hasOwnProperty(item.uuid)) {
                     return false;
                 } else {
-                    seen[item.uuid] = true;
+                    seen[item.uuid] = item;
+                    if (!seen[item.ownerUuid] && includeOwners) {
+                        rootItems.push(item);
+                    }
                     return true;
                 }
             });
@@ -317,14 +318,20 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                     if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
                         return false;
                     }
-
-                    // I can't find the code that determines how a tree node name is rendered.
-                    // So this is a stupid hack until I can ask someone who might know.
-                    if (extractUuidObjectType(item.uuid) === ResourceObjectType.USER) {
-                        item['name'] = item['fullName'] + " Home Project";
-                    }
-
                     return true;
+                }).map(item => {
+                    if (extractUuidObjectType(item.uuid) === ResourceObjectType.USER) {
+                        return {...item,
+                                uuid: includeOwners ? "search-"+item.uuid : item.uuid,
+                                name: item['fullName'] + " Home Project",
+                                weight: includeOwners ? 1 : 0,
+                                kind: ResourceKind.USER,
+                        }
+                    }
+                    return {...item,
+                            uuid: includeOwners ? "search-"+item.uuid : item.uuid,
+                            weight: includeOwners ? 1 : 0,};
+
                 }),
                 extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
             }));
@@ -337,16 +344,16 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                     if (!projects.hasOwnProperty(item.ownerUuid)) {
                         projects[item.ownerUuid] = [];
                     }
-                    projects[item.ownerUuid].push(item);
+                    projects[item.ownerUuid].push({...item, weight: 2});
                 });
                 for (const prj in projects) {
                     dispatch<any>(receiveTreePickerData<GroupContentsResource>({
-                        id: prj,
+                        id: "search-"+prj,
                         pickerId,
                         data: projects[prj],
                         extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
                     }));
-                }
+                    }
             }
         } catch(e) {
             console.error("Failed to load project into tree picker:", e);;
