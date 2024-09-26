@@ -379,6 +379,10 @@ func (e *singularityExecutor) Pid() int {
 }
 
 func (e *singularityExecutor) Stop() error {
+	if e.child == nil || e.child.Process == nil {
+		// no process started, or Wait already called
+		return nil
+	}
 	if err := e.child.Process.Signal(syscall.Signal(0)); err != nil {
 		// process already exited
 		return nil
