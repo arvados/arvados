@@ -2,6 +2,53 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+describe('Details panel', () => {
+  let adminUser;
+
+  before(() => {
+    cy.getUser("active", "Active", "User", true, true)
+      .as("activeUser")
+      .then((user) => {
+        adminUser = user;
+      });
+  });
+
+  // Add this test to the existing describe block in details-panel.cy.js
+
+  it('displays root project details when no items are selected', () => {
+    cy.loginAs(adminUser);
+
+    // Navigate to the user's root project
+    cy.visit(`/projects/${adminUser.user.uuid}`);
+
+    // Wait for the data table to load
+    cy.get('[data-cy=data-table]').should('be.visible');
+
+    // Ensure no items are selected
+    cy.get('[data-cy=data-table-row] input[type="checkbox"]:checked').should('not.exist');
+
+    // Open the details panel
+    cy.get('[data-cy=details-panel]').should('not.exist');
+    cy.get('[data-testid=InfoIcon]').click();
+    cy.get('[data-cy=details-panel]').should('be.visible');
+
+    // Check if root project details are displayed
+    cy.get('[data-cy=details-panel]').within(() => {
+      cy.contains('Type').should('be.visible');
+      cy.contains('Root Project').should('be.visible');
+      cy.contains('User').should('be.visible');
+      cy.contains('Created at').should('be.visible');
+      cy.contains('UUID').should('be.visible');
+
+      // Verify specific root project details
+      cy.contains(adminUser.user.uuid).should('be.visible');
+    });
+
+    // Verify that the Root Project icon is displayed
+    cy.get('[data-cy=details-panel]').find('[data-testid=InboxIcon]').should('be.visible');
+  });
+});
+
 describe('Collection details panel', () => {
   let adminUser;
 
