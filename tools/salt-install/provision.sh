@@ -782,20 +782,20 @@ else
             grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
-          for SVC in grafana prometheus; do
+          for SVC in grafana prometheus loki; do
             copy_custom_cert ${CUSTOM_CERTS_DIR} ${SVC}
           done
         fi
         ### Pillars ###
         grep -q "prometheus_server" ${PILLARS_TOP} || echo "    - prometheus_server" >> ${PILLARS_TOP}
         grep -q "grafana" ${PILLARS_TOP} || echo "    - grafana" >> ${PILLARS_TOP}
-        for SVC in grafana prometheus; do
+        for SVC in grafana prometheus loki; do
           grep -q "nginx_${SVC}_configuration" ${PILLARS_TOP} || echo "    - nginx_${SVC}_configuration" >> ${PILLARS_TOP}
         done
         grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
-          for SVC in grafana prometheus; do
+          for SVC in grafana prometheus loki; do
             grep -q "letsencrypt_${SVC}_configuration" ${PILLARS_TOP} || echo "    - letsencrypt_${SVC}_configuration" >> ${PILLARS_TOP}
             sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${DOMAIN}*/g;
                     s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${DOMAIN}/fullchain.pem#g;
@@ -807,7 +807,7 @@ else
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
-          for SVC in grafana prometheus; do
+          for SVC in grafana prometheus loki; do
             sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${SVC}_cert_file_copy/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${SVC}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${SVC}.key#g" \
