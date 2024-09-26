@@ -332,11 +332,16 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	// and https://dev.arvados.org/issues/19081
 	env = append(env, "SINGULARITY_NO_EVAL=1")
 
-	// If we don't propagate XDG_RUNTIME_DIR, singularity resource
-	// limits fail with "FATAL: container creation failed: while
-	// applying cgroups config: system configuration does not
-	// support cgroup management"
+	// If we don't propagate XDG_RUNTIME_DIR and
+	// DBUS_SESSION_BUS_ADDRESS, singularity resource limits fail
+	// with "FATAL: container creation failed: while applying
+	// cgroups config: system configuration does not support
+	// cgroup management" or "FATAL: container creation failed:
+	// while applying cgroups config: rootless cgroups require a
+	// D-Bus session - check that XDG_RUNTIME_DIR and
+	// DBUS_SESSION_BUS_ADDRESS are set".
 	env = append(env, "XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"))
+	env = append(env, "DBUS_SESSION_BUS_ADDRESS="+os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
 
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)
