@@ -159,9 +159,9 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
 
                 return <div className={this.props.classes.pickerHeight} >
                     <span className={this.props.classes.searchFlex}>
-                        <SearchInput value="" label="Search for a Project" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  />
+                        <SearchInput value="" label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  />
                         {this.props.includeCollections &&
-                         <SearchInput value="" label="Filter Collections list in Projects" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" />}
+                         <SearchInput value="" label="Collection search" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" />}
                     </span>
 
                     <div className={this.props.classes.scrolledBox}>
@@ -186,7 +186,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                          </>}
                     </div>
                 </div >;
-                        }
+            }
         }));
 
 const getRelatedTreePickers = pipe(getProjectsTreePickerIds, values);
