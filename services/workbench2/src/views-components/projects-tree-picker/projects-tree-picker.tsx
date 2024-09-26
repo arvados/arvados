@@ -157,31 +157,31 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 };
                 return <div className={this.props.classes.pickerHeight} >
                     <span className={this.props.classes.searchFlex}>
-                        <SearchInput value="" label="Search for a Project" selfClearProp='' onSearch={onProjectSearch} debounce={500} />
+                        <SearchInput value="" label="Search for a Project" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  />
                         {this.props.includeCollections &&
-                            <SearchInput value="" label="Filter Collections list in Projects" selfClearProp='' onSearch={onCollectionFilter} debounce={500} />}
+                         <SearchInput value="" label="Filter Collections list in Projects" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" />}
                     </span>
 
                     <div className={this.props.classes.scrolledBox}>
                         {this.props.projectSearch ?
-                            <div data-cy="projects-tree-search-picker">
-                                <SearchProjectsPicker {...p} pickerId={search} />
-                            </div>
-                            :
-                            <>
-                                <div data-cy="projects-tree-home-tree-picker">
-                                    <HomeTreePicker {...p} pickerId={home} />
-                                </div>
-                                <div data-cy="projects-tree-shared-tree-picker">
-                                    <SharedTreePicker {...p} pickerId={shared} />
-                                </div>
-                                <div data-cy="projects-tree-public-favourites-tree-picker">
-                                    <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
-                                </div>
-                                <div data-cy="projects-tree-favourites-tree-picker">
-                                    <FavoritesTreePicker {...p} pickerId={favorites} />
-                                </div>
-                            </>}
+                         <div data-cy="projects-tree-search-picker">
+                             <SearchProjectsPicker {...p} pickerId={search} />
+                         </div>
+                        :
+                         <>
+                             <div data-cy="projects-tree-home-tree-picker">
+                                 <HomeTreePicker {...p} pickerId={home} />
+                             </div>
+                        <div data-cy="projects-tree-shared-tree-picker">
+                            <SharedTreePicker {...p} pickerId={shared} />
+                        </div>
+                        <div data-cy="projects-tree-public-favourites-tree-picker">
+                            <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
+                        </div>
+                        <div data-cy="projects-tree-favourites-tree-picker">
+                            <FavoritesTreePicker {...p} pickerId={favorites} />
+                        </div>
+                         </>}
                     </div>
                 </div >;
             }

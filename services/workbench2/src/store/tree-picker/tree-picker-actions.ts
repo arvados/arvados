@@ -184,13 +184,6 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         const collectionFilter = state.treePickerSearch.collectionFilterValues[pickerId];
         const projectFilter = state.treePickerSearch.projectSearchValues[pickerId];
 
-        if (searching) {
-            dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId }));
-            dispatch<any>(initSearchProject(pickerId));
-        }
-
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
-
         let filterB = new FilterBuilder();
 
         let includeOwners: string|undefined = undefined;
@@ -199,6 +192,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             // opening top level search
             if (projectFilter) {
                 filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
+                includeOwners = "owner_uuid";
 
                 const objtype = extractUuidObjectType(projectFilter);
                 if (objtype === ResourceObjectType.GROUP || objtype === ResourceObjectType.USER) {
@@ -210,6 +204,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             } else if (collectionFilter) {
                 filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION]);
                 includeOwners = "owner_uuid";
+
                 const objtype = extractUuidObjectType(collectionFilter);
                 if (objtype === ResourceObjectType.COLLECTION) {
                     filterB = filterB.addEqual('uuid', collectionFilter);
@@ -239,6 +234,13 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
         // Must be under 1000
         const itemLimit = 200;
+
+        if (includeOwners) {
+            dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId }));
+            dispatch<any>(initSearchProject(pickerId));
+        }
+
+        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
         try {
             const { items, included } = await services.groupsService.contents(globalSearch ? '' : id,
