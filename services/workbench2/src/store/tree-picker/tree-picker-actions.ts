@@ -191,15 +191,25 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         if (searching) {
             // opening top level search
             if (projectFilter) {
-                filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
                 includeOwners = "owner_uuid";
 
+                if (includeCollections) {
+                    filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION]);
+                } else {
+                    filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
+                }
+
                 const objtype = extractUuidObjectType(projectFilter);
-                if (objtype === ResourceObjectType.GROUP || objtype === ResourceObjectType.USER) {
-                    filterB = filterB.addEqual('uuid', projectFilter);
+                if (objtype === ResourceObjectType.GROUP || objtype === ResourceObjectType.USER ||
+                    (includeCollections && objtype === ResourceObjectType.COLLECTION))
+                {
+                        filterB = filterB.addEqual('uuid', projectFilter);
                 }
                 else {
                     filterB = filterB.addFullTextSearch(projectFilter, 'groups');
+                    if (includeCollections) {
+                        filterB = filterB.addFullTextSearch(projectFilter, 'collections');
+                    }
                 }
             } else if (collectionFilter) {
                 filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION]);
@@ -243,7 +253,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
         try {
-            const { items, included } = await services.groupsService.contents(globalSearch ? '' : id,
+            let { items, included } = await services.groupsService.contents(globalSearch ? '' : id,
                                                                               { filters,
                                                                                 excludeHomeProject: loadShared || undefined,
                                                                                 limit: itemLimit+1,
@@ -254,11 +264,31 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             //let rootItems: GroupContentsResource[] | GroupContentsIncludedResource[] = items;
             let rootItems: any[] = items;
 
-            dispatch<any>(updateResources(items));
-            if (includeOwners) {
+            const seen = {};
+
+            if (includeOwners && included) {
+                included = included.filter(item => {
+                    if (seen.hasOwnProperty(item.uuid)) {
+                        return false;
+                    } else {
+                        seen[item.uuid] = true;
+                        return true;
+                    }
+                });
                 dispatch<any>(updateResources(included));
+
                 rootItems = included;
             }
+
+            items = items.filter(item => {
+                if (seen.hasOwnProperty(item.uuid)) {
+                    return false;
+                } else {
+                    seen[item.uuid] = true;
+                    return true;
+                }
+            });
+            dispatch<any>(updateResources(items));
 
             if (items.length > itemLimit) {
                 rootItems.push({

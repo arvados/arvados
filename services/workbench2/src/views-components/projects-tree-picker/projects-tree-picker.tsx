@@ -155,6 +155,8 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                     relatedTreePickers,
                     disableActivation,
                 };
+
+
                 return <div className={this.props.classes.pickerHeight} >
                     <span className={this.props.classes.searchFlex}>
                         <SearchInput value="" label="Search for a Project" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  />
@@ -184,7 +186,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                          </>}
                     </div>
                 </div >;
-            }
+                        }
         }));
 
 const getRelatedTreePickers = pipe(getProjectsTreePickerIds, values);
