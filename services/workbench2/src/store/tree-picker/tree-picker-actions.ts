@@ -11,12 +11,13 @@ import { getUserUuid } from "common/getuser";
 import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
-import { ResourceKind } from 'models/resource';
-import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { Resource, ResourceKind, ResourceObjectType, extractUuidObjectType } from 'models/resource';
+import { GroupContentsResource, GroupContentsIncludedResource } from 'services/groups-service/groups-service';
 import { getTreePicker, TreePicker } from './tree-picker';
 import { ProjectsTreePickerItem } from './tree-picker-middleware';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
+import { UserResource } from 'models/user';
 import { mapTree } from '../../models/tree';
 import { LinkResource, LinkClass } from "models/link";
 import { mapTreeValues } from "models/tree";
@@ -159,7 +160,6 @@ interface LoadProjectParamsWithId extends LoadProjectParams {
     id: string;
     pickerId: string;
     loadShared?: boolean;
-    searchProjects?: boolean;
 }
 
 /**
@@ -177,28 +177,63 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             includeFilterGroups = false,
             loadShared = false,
             options,
-            searchProjects = false
         } = params;
+
+        const searching = (id === SEARCH_PROJECT_ID);
+        const state = getState();
+        const collectionFilter = state.treePickerSearch.collectionFilterValues[pickerId];
+        const projectFilter = state.treePickerSearch.projectSearchValues[pickerId];
+
+        if (searching) {
+            dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId }));
+            dispatch<any>(initSearchProject(pickerId));
+        }
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
         let filterB = new FilterBuilder();
 
-        filterB = (includeCollections && !searchProjects)
-            ? filterB.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
-            : filterB.addIsA('uuid', [ResourceKind.PROJECT]);
+        let includeOwners: string|undefined = undefined;
 
-        const state = getState();
+        if (searching) {
+            // opening top level search
+            if (projectFilter) {
+                filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
+
+                const objtype = extractUuidObjectType(projectFilter);
+                if (objtype === ResourceObjectType.GROUP || objtype === ResourceObjectType.USER) {
+                    filterB = filterB.addEqual('uuid', projectFilter);
+                }
+                else {
+                    filterB = filterB.addFullTextSearch(projectFilter, 'groups');
+                }
+            } else if (collectionFilter) {
+                filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION]);
+                includeOwners = "owner_uuid";
+                const objtype = extractUuidObjectType(collectionFilter);
+                if (objtype === ResourceObjectType.COLLECTION) {
+                    filterB = filterB.addEqual('uuid', collectionFilter);
+                } else {
+                    filterB = filterB.addFullTextSearch(collectionFilter, 'collections');
+                }
+            } else {
+                return;
+            }
+        } else {
+            // opening a folder below the top level
+            if (collectionFilter) {
+                filterB = filterB.addIsA('uuid', [ResourceKind.COLLECTION])
+                                 .addFullTextSearch(collectionFilter, 'collections');
+            } else if (includeCollections) {
+                filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION]);
+            } else {
+                filterB = filterB.addIsA('uuid', [ResourceKind.PROJECT]);
+            }
+        }
 
         filterB = filterB.addNotIn("collections.properties.type", ["intermediate", "log"]);
 
-        if (state.treePickerSearch.collectionFilterValues[pickerId]) {
-            filterB = filterB.addFullTextSearch(state.treePickerSearch.collectionFilterValues[pickerId], 'collections');
-        }
-
-        if (searchProjects && state.treePickerSearch.projectSearchValues[pickerId]) {
-            filterB = filterB.addFullTextSearch(state.treePickerSearch.projectSearchValues[pickerId], 'groups');
-        }
+        const globalSearch = loadShared || id === SEARCH_PROJECT_ID;
 
         const filters = filterB.getFilters();
 
@@ -206,26 +241,26 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         const itemLimit = 200;
 
         try {
-
-
-            //select: ["name", "description", "owner_uuid", "created_at",
-                     //"modified_by_user_uuid", "modified_at", "properties"]
-
-            const { items, included } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id,
+            const { items, included } = await services.groupsService.contents(globalSearch ? '' : id,
                                                                               { filters,
                                                                                 excludeHomeProject: loadShared || undefined,
                                                                                 limit: itemLimit+1,
                                                                                 count: "none",
-                                                                                include: "owner_uuid",
+                                                                                include: includeOwners,
             });
+
+            //let rootItems: GroupContentsResource[] | GroupContentsIncludedResource[] = items;
+            let rootItems: any[] = items;
+
             dispatch<any>(updateResources(items));
-            if (included) {
+            if (includeOwners) {
                 dispatch<any>(updateResources(included));
+                rootItems = included;
             }
 
             if (items.length > itemLimit) {
-                items.push({
-                    uuid: "more-items-available",
+                rootItems.push({
+                    uuid: "more-items-available-"+id,
                     kind: ResourceKind.WORKFLOW,
                     name: `*** Not all items listed, reduce item count with search or filter ***`,
                     description: "",
@@ -242,7 +277,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             dispatch<any>(receiveTreePickerData<GroupContentsResource>({
                 id,
                 pickerId,
-                data: items.filter((item) => {
+                data: rootItems.filter(item => {
                     if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
                         return false;
                     }
@@ -251,10 +286,36 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                         return false;
                     }
 
+                    // I can't find the code that determines how a tree node name is rendered.
+                    // So this is a stupid hack until I can ask someone who might know.
+                    if (extractUuidObjectType(item.uuid) === ResourceObjectType.USER) {
+                        item['name'] = item['fullName'] + " Home Project";
+                    }
+
                     return true;
                 }),
                 extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
             }));
+
+            if (includeOwners) {
+                // Searching for collections, we already have the
+                // contents to put in the owner projects so load it up.
+                const projects = {};
+                items.forEach(item => {
+                    if (!projects.hasOwnProperty(item.ownerUuid)) {
+                        projects[item.ownerUuid] = [];
+                    }
+                    projects[item.ownerUuid].push(item);
+                });
+                for (const prj in projects) {
+                    dispatch<any>(receiveTreePickerData<GroupContentsResource>({
+                        id: prj,
+                        pickerId,
+                        data: projects[prj],
+                        extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
+                    }));
+                }
+            }
         } catch(e) {
             console.error("Failed to load project into tree picker:", e);;
             dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load project`, kind: SnackbarKind.ERROR }));

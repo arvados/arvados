@@ -123,6 +123,7 @@ const FileInputComponent = connect()(
             root: {
                 display: 'flex',
                 flexDirection: 'column',
+                height: "80vh",
             },
             pickerWrapper: {
                 flexBasis: `${spacing(8)}vh`,

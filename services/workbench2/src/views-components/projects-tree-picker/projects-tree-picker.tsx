@@ -51,7 +51,7 @@ const mapStateToProps = (state: RootState, props: ToplevelPickerProps): Projects
     const { search } = getProjectsTreePickerIds(props.pickerId);
     return {
         ...props,
-        projectSearch: state.treePickerSearch.projectSearchValues[search],
+        projectSearch: state.treePickerSearch.projectSearchValues[search] || state.treePickerSearch.collectionFilterValues[search],
         collectionFilter: state.treePickerSearch.collectionFilterValues[search],
     };
 };

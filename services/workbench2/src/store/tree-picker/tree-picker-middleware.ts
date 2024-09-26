@@ -59,7 +59,6 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
                         ...loadParams,
                         id: SEARCH_PROJECT_ID,
                         pickerId: pickerId,
-                        searchProjects: true
                     }));
                 }
             }),
@@ -100,7 +99,6 @@ const refreshPickers = (store: MiddlewareAPI) => ({ pickerId }) =>
                                 ...loadParams,
                                 id: node.id,
                                 pickerId: pickerId,
-                                searchProjects: true
                             }));
                         }
                         if (node.id === FAVORITES_PROJECT_ID) {
