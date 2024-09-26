@@ -275,11 +275,31 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")
 	}
+
+	// If we ask for resource limits that aren't supported,
+	// singularity will not run the container at all. So we probe
+	// for support first, and only apply the limits that appear to
+	// be supported.
+	//
+	// Default debian configuration lets non-root users set memory
+	// limits but not CPU limits, so we enable/disable those
+	// limits independently.
+	//
+	// https://rootlesscontaine.rs/getting-started/common/cgroup2/
+	checkCgroupSupport(e.logf)
 	if e.spec.VCPUs > 0 {
-		args = append(args, "--cpus", fmt.Sprintf("%d", e.spec.VCPUs))
+		if cgroupSupport["cpu"] {
+			args = append(args, "--cpus", fmt.Sprintf("%d", e.spec.VCPUs))
+		} else {
+			e.logf("cpu limits are not supported by current systemd/cgroup configuration, not setting --cpu %d", e.spec.VCPUs)
+		}
 	}
 	if e.spec.RAM > 0 {
-		args = append(args, "--memory", fmt.Sprintf("%d", e.spec.RAM))
+		if cgroupSupport["memory"] {
+			args = append(args, "--memory", fmt.Sprintf("%d", e.spec.RAM))
+		} else {
+			e.logf("memory limits are not supported by current systemd/cgroup configuration, not setting --memory %d", e.spec.RAM)
+		}
 	}
 
 	readonlyflag := map[bool]string{

@@ -6,8 +6,11 @@ package crunchrun
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/fs"
+	"os"
+	"sync"
 )
 
 // Return the current process's cgroup for the given subsystem.
@@ -45,4 +48,53 @@ func findCgroup(fsys fs.FS, subsystem string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("subsystem %q not found in /proc/self/cgroup", subsystem)
+}
+
+var (
+	cgroupSupport     map[string]bool
+	cgroupSupportLock sync.Mutex
+)
+
+// checkCgroupSupport should be called before looking up strings like
+// "memory" and "cpu" in cgroupSupport.
+func checkCgroupSupport(logf func(string, ...interface{})) {
+	cgroupSupportLock.Lock()
+	defer cgroupSupportLock.Unlock()
+	if cgroupSupport != nil {
+		return
+	}
+	cgroupSupport = make(map[string]bool)
+	mount, err := cgroupMount()
+	if err != nil {
+		logf("no cgroup support: %s", err)
+		return
+	}
+	cgroup, err := findCgroup(os.DirFS("/"), "")
+	if err != nil {
+		logf("cannot find cgroup: %s", err)
+		return
+	}
+	controllers, err := os.ReadFile(mount + cgroup + "/cgroup.controllers")
+	if err != nil {
+		logf("cannot read cgroup.controllers file: %s", err)
+		return
+	}
+	for _, controller := range bytes.Split(bytes.TrimRight(controllers, "\n"), []byte{' '}) {
+		cgroupSupport[string(controller)] = true
+	}
+}
+
+// Return the cgroup2 mount point, typically "/sys/fs/cgroup".
+func cgroupMount() (string, error) {
+	mounts, err := os.ReadFile("/proc/mounts")
+	if err != nil {
+		return "", err
+	}
+	for _, mount := range bytes.Split(mounts, []byte{'\n'}) {
+		toks := bytes.Split(mount, []byte{' '})
+		if len(toks) > 2 && bytes.Equal(toks[0], []byte("cgroup2")) {
+			return string(toks[1]), nil
+		}
+	}
+	return "", errors.New("cgroup2 mount not found")
 }
