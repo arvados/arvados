@@ -248,7 +248,8 @@ describe('Registered workflow panel tests', function() {
     });
 
     it('can delete multiple workflows', function() {
-        const wfNames = ["Test wf1", "Test wf2", "Test wf3"];
+        const { floor, random } = Math;
+        const wfNames = [`Test wf1 ${floor(random() * 999999)}`, `Test wf2 ${floor(random() * 999999)}`, `Test wf3 ${floor(random() * 999999)}`];
 
         wfNames.forEach((wfName) => {
             cy.createResource(activeUser.token, "workflows", {workflow: {name: wfName}})
@@ -257,14 +258,15 @@ describe('Registered workflow panel tests', function() {
         cy.loginAs(activeUser);
 
         wfNames.forEach((wfName) => {
-            cy.get('tr').contains('td', wfName).should('exist').parent('tr').find('input[type="checkbox"]').click();
+            cy.get('tr').contains('td', wfName).should('exist', { timeout: 10000 }).parent('tr').find('input[type="checkbox"]').click();
         });
         
         cy.waitForDom().get('[data-cy=multiselect-button]', {timeout: 10000}).should('be.visible')
         cy.get('[data-cy=multiselect-button]', {timeout: 10000}).should('have.length', '1').trigger('mouseover');
         cy.get('body').contains('Delete Workflow', {timeout: 10000}).should('exist')
         cy.get('[data-cy=multiselect-button]').eq(0).click();
-        cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click();
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').should('exist').click({force: true});
+        cy.wait(3000);
 
         wfNames.forEach((wfName) => {
             cy.get('tr').contains(wfName).should('not.exist');

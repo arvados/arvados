@@ -14,6 +14,7 @@ import { DataTableFilters } from "components/data-table-filters/data-table-filte
 import { toggleMSToolbar, setCheckedListOnStore } from "store/multiselect/multiselect-actions";
 import { setSelectedResourceUuid } from "store/selected-resource/selected-resource-actions";
 import { usesDetailsCard } from "components/multiselect-toolbar/MultiselectToolbar";
+import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 
 interface Props {
     id: string;
@@ -24,7 +25,7 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar}: RootState, { id }: Props) => {
+const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect, selectedResourceUuid, properties, searchBar, detailsPanel}: RootState, { id }: Props) => {
     const working = !!progressIndicator.some(p => p.working);
     const dataExplorerState = getDataExplorer(dataExplorer, id);
     const currentRoute = router.location ? router.location.pathname : "";
@@ -38,6 +39,7 @@ const mapStateToProps = ({ progressIndicator, dataExplorer, router, multiselect,
         checkedList: multiselect.checkedList,
         working,
         searchBarValue: searchBar.searchValue,
+        detailsPanelResourceUuid: detailsPanel.resourceUuid,
     };
 };
 
@@ -85,6 +87,10 @@ const mapDispatchToProps = () => {
 
         setSelectedUuid: (uuid: string | null) => {
             dispatch<any>(setSelectedResourceUuid(uuid));
+        },
+
+        loadDetailsPanel: (uuid: string) => {
+            dispatch<any>(loadDetailsPanel(uuid || ''));
         },
 
         onRowClick,
