@@ -41,9 +41,10 @@ interface ParticipantSelectProps {
 }
 
 interface ParticipantSelectState {
+    isWorking: boolean;
     value: string;
     suggestions: ParticipantResource[];
-    isWorking: boolean;
+    cachedSuggestions: ParticipantResource[];
 }
 
 const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) => {
@@ -71,10 +72,17 @@ const getDisplayTooltip = (item: GroupResource | UserResource) => {
 export const ParticipantSelect = connect()(
     class ParticipantSelect extends React.Component<ParticipantSelectProps & DispatchProp, ParticipantSelectState> {
         state: ParticipantSelectState = {
+            isWorking: false,
             value: '',
             suggestions: [],
-            isWorking: false,
+            cachedSuggestions: [],
         };
+
+        componentDidUpdate(prevProps: ParticipantSelectProps & DispatchProp, prevState: ParticipantSelectState) {
+            if (prevState.suggestions.length === 0 && this.state.suggestions.length > 0 && this.state.value.length === 0) {
+                this.setState({ cachedSuggestions: this.state.suggestions });
+            }
+        }
 
         render() {
             const { label = 'Add people and groups' } = this.props;
@@ -152,8 +160,7 @@ export const ParticipantSelect = connect()(
             if (!selection) return;
             const { uuid } = selection;
             const { onSelect = noop } = this.props;
-            this.setState({ value: '', suggestions: [] });
-            this.getSuggestions();
+            this.setState({ value: '', suggestions: this.state.cachedSuggestions });
             onSelect({
                 name: getDisplayName(selection, false),
                 tooltip: getDisplayTooltip(selection),
