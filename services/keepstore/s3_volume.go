@@ -74,7 +74,7 @@ type s3Volume struct {
 	startOnce  sync.Once
 
 	overrideEndpoint *aws.Endpoint
-	usePathStyle     bool // used by test suite
+	//usePathStyle     bool // used by test suite
 }
 
 // s3bucket wraps s3.bucket and counts I/O and API usage stats. The
@@ -265,7 +265,7 @@ func (v *s3Volume) check(ec2metadataHostname string) error {
 	v.bucket = &s3Bucket{
 		bucket: v.Bucket,
 		svc: s3.NewFromConfig(cfg, func(o *s3.Options) {
-			if v.usePathStyle {
+			if v.UsePathStyle {
 				o.UsePathStyle = true
 			}
 		}),

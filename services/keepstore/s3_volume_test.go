@@ -151,7 +151,7 @@ func (s *stubbedS3Suite) TestSignature(c *check.C) {
 		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
 	}
 	// Our test S3 server uses the older 'Path Style'
-	vol.usePathStyle = true
+	vol.UsePathStyle = true
 	err := vol.check("")
 
 	c.Check(err, check.IsNil)
@@ -619,13 +619,13 @@ func (s *stubbedS3Suite) newTestableVolume(c *check.C, params newVolumeParams, r
 				LocationConstraint: true,
 				UnsafeDelete:       true,
 				IndexPageSize:      1000,
+                                UsePathStyle:       true,
 			},
 			cluster:      params.Cluster,
 			volume:       params.ConfigVolume,
 			logger:       params.Logger,
 			metrics:      params.MetricsVecs,
 			bufferPool:   params.BufferPool,
-			usePathStyle: true,
 		},
 		c:           c,
 		s3fakeClock: s.s3fakeClock,
