@@ -63,9 +63,9 @@ export const loadProcess =
         try {
             const containerRequestResult = await services.groupsService.contents(
                 '', {
-                    filters: new FilterBuilder().addIsA('uuid', 'arvados#containerRequest').
-                                                 addEqual('uuid', containerRequestUuid).
-                                                 getFilters(),
+                    filters: new FilterBuilder().addIsA('uuid', 'arvados#containerRequest')
+                                                 .addEqual('uuid', containerRequestUuid)
+                                                 .getFilters(),
                     include: ["container_uuid"]
             });
             if (containerRequestResult.items.length === 1) {

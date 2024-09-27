@@ -397,7 +397,7 @@ export const DataExplorer = withStyles(styles)(
                                 working={working}
                                 isNotFound={this.props.isNotFound}
                                 detailsPanelResourceUuid={detailsPanelResourceUuid}
-                                loadDetailsPanel={this.props.loadDetailsPanel}
+                                loadDetailsPanel={loadDetailsPanel}
                             />
                         </Grid>
                         <Grid
