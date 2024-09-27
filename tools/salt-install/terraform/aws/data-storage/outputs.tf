@@ -13,3 +13,13 @@ output "compute_node_iam_role_name" {
 output "use_external_db" {
   value = var.use_external_db
 }
+
+output "loki_iam_access_key_id" {
+  value = aws_iam_access_key.loki.id
+  sensitive = true
+}
+
+output "loki_iam_secret_access_key" {
+  value = aws_iam_access_key.loki.secret
+  sensitive = true
+}

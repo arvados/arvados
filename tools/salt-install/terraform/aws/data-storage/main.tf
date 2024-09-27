@@ -64,3 +64,35 @@ resource "aws_iam_policy_attachment" "s3_full_access_policy_attachment" {
   policy_arn = aws_iam_policy.s3_full_access.arn
 }
 
+# S3 bucket and access resources for Loki
+resource "aws_s3_bucket" "loki_storage" {
+  bucket = "${local.cluster_name}-loki-object-storage"
+}
+
+resource "aws_iam_user" "loki" {
+  name = "${var.cluster_name}-loki"
+  path = "/"
+}
+
+resource "aws_iam_access_key" "loki" {
+  user = aws_iam_user.loki.name
+}
+
+resource "aws_iam_policy" "loki_s3_full_access" {
+  name = "${local.cluster_name}_loki_s3_full_access"
+  user = aws_iam_user.loki.name
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Id: "Loki S3 storage policy",
+    Statement: [{
+      Effect: "Allow",
+      Action: [
+        "s3:*",
+      ],
+      Resource: [
+        "arn:aws:s3:::${local.cluster_name}-loki-object-storage",
+        "arn:aws:s3:::${local.cluster_name}-loki-object-storage/*"
+      ]
+    }]
+  })
+}
