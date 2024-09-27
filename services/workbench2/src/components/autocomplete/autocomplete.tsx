@@ -86,6 +86,9 @@ export const Autocomplete = withStyles(autocompleteStyles)(
                 this.setState({ selectedSuggestionIndex: 0, selectedTab: 0 });
             }
             if (category === AutocompleteCat.SHARING) {
+                if( prevProps.items.length !== this.props.items.length) {
+                    this.setState({ selectedTab: 0, selectedSuggestionIndex: 0 });
+                }
                 if (Object.keys(this.state.tabbedListContents).length === 0) {
                     this.setState({ tabbedListContents: { groups: [], users: [] } });
                 }
