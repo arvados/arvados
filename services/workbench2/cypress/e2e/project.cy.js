@@ -70,6 +70,7 @@ describe("Project tests", function () {
 
         // Create project and confirm the properties' real values.
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
         cy.waitForDom();
         cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });        
@@ -136,11 +137,12 @@ describe("Project tests", function () {
                 });
             });
         cy.get("[data-cy=form-submit-btn]").click();
+        cy.waitForDom();
         cy.get("[data-cy=form-dialog]").should("not.exist");
 
         const editProjectDescription = (name, type) => {
             cy.get("[data-cy=side-panel-tree]").contains("Home Projects").click();
-            cy.get("[data-cy=project-panel] tbody tr").contains(name).rightclick({ force: true });
+            cy.get("[data-cy=project-panel] tbody").contains(name).rightclick({ force: true });
             cy.get("[data-cy=context-menu]").contains("Edit").click();
             cy.get("[data-cy=form-dialog]").within(() => {
                 cy.get("div[contenteditable=true]").click().type(type);
@@ -263,6 +265,7 @@ describe("Project tests", function () {
         cy.get('[data-cy=multiselect-button]').should('have.length', msButtonTooltips.length)
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseover');
+            cy.wait(1000);
             cy.get('body').contains(msButtonTooltips[i]).should('exist')
             cy.get('[data-cy=multiselect-button]').eq(i).trigger('mouseout');
         }
@@ -292,6 +295,7 @@ describe("Project tests", function () {
 
         cy.loginAs(activeUser);
         cy.goToPath(`/projects/${activeUser.user.uuid}`);
+        cy.get("[data-cy=breadcrumb-first]").should('exist');
         cy.get("[data-cy=breadcrumb-first]").should("contain", "Projects");
         cy.get("[data-cy=breadcrumb-last]").should("not.exist");
         // Create new project
@@ -365,6 +369,7 @@ describe("Project tests", function () {
 
             // Go to subproject and trash it.
             cy.goToPath(`/projects/${testSubProject.uuid}`);
+            cy.get("[data-cy=side-panel-tree]").should('exist');
             cy.get("[data-cy=side-panel-tree]").should("contain", testSubProject.name);
             cy.waitForDom();
             cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
@@ -437,6 +442,7 @@ describe("Project tests", function () {
 
             // Go to innermost project and trash its parent.
             cy.goToPath(`/projects/${testSubSubProject.uuid}`);
+            cy.get("[data-cy=side-panel-tree]").should('exist');
             cy.get("[data-cy=side-panel-tree]").should("contain", testSubSubProject.name);
             cy.waitForDom();
             cy.get("[data-cy=breadcrumb-last]").should('exist', { timeout: 10000 });
@@ -476,7 +482,7 @@ describe("Project tests", function () {
             cy.get("[data-cy=search-input] input").type("test123");
 
             cy.get("[data-cy=side-panel-tree]").contains("Projects").click();
-
+            cy.get("[data-cy=search-input] input").should('exist');
             cy.get("[data-cy=search-input] input").should("not.have.value", "test123");
         });
     });
