@@ -23,9 +23,13 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
+import { ResourceKind } from 'models/resource';
+import { DefaultView } from 'components/default-view/default-view';
+import { ProjectDetailsComponent } from 'views-components/details-panel/project-details';
+import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
 
 export interface ToplevelPickerProps {
-    currentUuids?: string[];
+        currentUuids?: string[];
     pickerId: string;
     cascadeSelection: boolean;
     includeCollections?: boolean;
@@ -83,29 +87,66 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (Pr
     }
 };
 
-type CssRules = 'pickerHeight' | 'searchFlex' | 'scrolledBox';
+type CssRules = 'pickerHeight' | 'searchFlex' | 'scrolledBox' | 'detailsBox' | 'twoCol';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     pickerHeight: {
-        display: "flex",
-        flexDirection: "column",
-        overflowY: "auto",
+        overflowY: "clip",
+        height: "100%",
     },
     searchFlex: {
         display: "flex",
         justifyContent: "space-around",
-        paddingBottom: "1em"
+        paddingBottom: "2em",
+        height: "45px",
     },
     scrolledBox: {
-        overflow: "scroll"
+        overflow: "scroll",
+        width: "calc(100% - 300px)",
+        height: "calc(100% - 45px)",
+    },
+    twoCol: {
+        display: "flex",
+        flexDirection: "row",
+        height: "100%",
+    },
+    detailsBox: {
+        width: "300px",
     }
 });
 
 type ProjectsTreePickerCombinedProps = ToplevelPickerProps & ProjectsTreePickerSearchProps & ProjectsTreePickerActionProps & DispatchProp & WithStyles<CssRules>;
 
+interface SelectionComponentState {
+    activeItem?: ProjectsTreePickerItem;
+}
+
+const Details = (props: { res?: ProjectsTreePickerItem }) => {
+    if (props.res && 'kind' in props.res) {
+        switch (props.res.kind) {
+            case ResourceKind.PROJECT:
+                return <ProjectDetailsComponent project={props.res} hideEdit={true} />
+            case ResourceKind.COLLECTION:
+                return <CollectionDetailsAttributes item={props.res} />;
+                /* case ResourceKind.PROCESS:
+                        *     return new ProcessDetails(res);
+                 * case ResourceKind.WORKFLOW:
+                 *     return new WorkflowDetails(res);
+                 * case ResourceKind.USER:
+                 *     return new RootProjectDetails(res); */
+        }
+    } else {
+        //return new FileDetails(res);
+    }
+    return <DefaultView messages={['Select a file or folder to view its details.']} />;
+};
+
+
 export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
         class FileInputComponent extends React.Component<ProjectsTreePickerCombinedProps> {
+            state: SelectionComponentState = {
+            };
 
             componentDidMount() {
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
@@ -136,6 +177,13 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: publicFavorites }));
             }
 
+            setSelection(event: React.MouseEvent<HTMLElement>,
+                         item: TreeItem<ProjectsTreePickerItem>,
+                         pickerId: string) {
+                this.setState({activeItem: item.data});
+                console.log(item.data);
+            }
+
             render() {
                 const pickerId = this.props.pickerId;
                 const onProjectSearch = this.props.onProjectSearch;
@@ -143,6 +191,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
 
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
                 const relatedTreePickers = getRelatedTreePickers(pickerId);
+                const _this = this;
                 const p = {
                     cascadeSelection: this.props.cascadeSelection,
                     includeCollections: this.props.includeCollections,
@@ -150,7 +199,14 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                     includeFiles: this.props.includeFiles,
                     showSelection: this.props.showSelection,
                     options: this.props.options,
-                    toggleItemActive: this.props.toggleItemActive,
+                    toggleItemActive: (event: React.MouseEvent<HTMLElement>,
+                                       item: TreeItem<ProjectsTreePickerItem>,
+                                       pickerId: string): void => {
+                                           _this.setSelection(event, item, pickerId);
+                                           if (_this.props.toggleItemActive) {
+                                               _this.props.toggleItemActive(event, item, pickerId);
+                                           }
+                                       },
                     toggleItemSelection: this.props.toggleItemSelection,
                     relatedTreePickers,
                     disableActivation,
@@ -158,34 +214,40 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
 
 
                 return <div className={this.props.classes.pickerHeight} >
-                    <span className={this.props.classes.searchFlex}>
+                    <div className={this.props.classes.searchFlex}>
                         <SearchInput value="" label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  />
                         {this.props.includeCollections &&
                          <SearchInput value="" label="Collection search" selfClearProp='' onSearch={onCollectionFilter} debounce={500} width="18rem" />}
-                    </span>
-
-                    <div className={this.props.classes.scrolledBox}>
-                        {this.props.projectSearch ?
-                         <div data-cy="projects-tree-search-picker">
-                             <SearchProjectsPicker {...p} pickerId={search} />
-                         </div>
-                        :
-                         <>
-                             <div data-cy="projects-tree-home-tree-picker">
-                                 <HomeTreePicker {...p} pickerId={home} />
-                             </div>
-                        <div data-cy="projects-tree-shared-tree-picker">
-                            <SharedTreePicker {...p} pickerId={shared} />
-                        </div>
-                        <div data-cy="projects-tree-public-favourites-tree-picker">
-                            <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
-                        </div>
-                        <div data-cy="projects-tree-favourites-tree-picker">
-                            <FavoritesTreePicker {...p} pickerId={favorites} />
-                        </div>
-                         </>}
                     </div>
-                </div >;
+
+                    <div className={this.props.classes.twoCol}>
+                        <div className={this.props.classes.scrolledBox}>
+                            {this.props.projectSearch ?
+                             <div data-cy="projects-tree-search-picker">
+                                 <SearchProjectsPicker {...p} pickerId={search} />
+                             </div>
+                            :
+                             <>
+                                 <div data-cy="projects-tree-home-tree-picker">
+                                     <HomeTreePicker {...p} pickerId={home} />
+                                 </div>
+                            <div data-cy="projects-tree-shared-tree-picker">
+                                <SharedTreePicker {...p} pickerId={shared} />
+                            </div>
+                            <div data-cy="projects-tree-public-favourites-tree-picker">
+                                <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
+                            </div>
+                            <div data-cy="projects-tree-favourites-tree-picker">
+                                <FavoritesTreePicker {...p} pickerId={favorites} />
+                            </div>
+                             </>}
+                        </div>
+
+                        <div className={this.props.classes.detailsBox}>
+                            <Details res={this.state.activeItem} />
+                        </div>
+                    </div>
+                </div>;
             }
         }));
 
