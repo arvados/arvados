@@ -191,24 +191,33 @@ func (s *executorSuite) TestIPAddress(c *C) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
 
-	for ctx.Err() == nil {
-		time.Sleep(time.Second / 10)
-		_, err := s.executor.IPAddress()
-		if err == nil {
+	for {
+		if ctx.Err() != nil {
+			c.Error("timed out")
 			break
 		}
-	}
-	// When we connect to the port using s.executor.IPAddress(),
-	// we should reach the nc process running inside the
-	// container, not the net.Listen() running outside the
-	// container, even though both listen on the same port.
-	ip, err := s.executor.IPAddress()
-	if c.Check(err, IsNil) && c.Check(ip, Not(Equals), "") {
+		time.Sleep(time.Second / 10)
+		ip, err := s.executor.IPAddress()
+		if err != nil {
+			continue
+		}
+		c.Assert(ip, Not(Equals), "")
+
+		// When we connect to the port using
+		// s.executor.IPAddress(), we should reach the nc
+		// process running inside the container, not the
+		// net.Listen() running outside the container, even
+		// though both listen on the same port.
 		req, err := http.NewRequest("BREW", "http://"+net.JoinHostPort(ip, port), nil)
 		c.Assert(err, IsNil)
 		resp, err := http.DefaultClient.Do(req)
-		c.Assert(err, IsNil)
+		if err != nil {
+			c.Logf("%s (retrying...)", err)
+			continue
+		}
 		c.Check(resp.StatusCode, Equals, http.StatusTeapot)
+		c.Logf("%s %q: %s", req.Method, req.URL, resp.Status)
+		break
 	}
 
 	s.executor.Stop()
