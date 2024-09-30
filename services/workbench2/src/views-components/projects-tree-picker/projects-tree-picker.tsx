@@ -91,27 +91,30 @@ type CssRules = 'pickerHeight' | 'searchFlex' | 'scrolledBox' | 'detailsBox' | '
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     pickerHeight: {
-        overflowY: "clip",
         height: "100%",
     },
     searchFlex: {
         display: "flex",
         justifyContent: "space-around",
-        paddingBottom: "2em",
-        height: "45px",
+        height: "64px",
     },
     scrolledBox: {
         overflow: "scroll",
-        width: "calc(100% - 300px)",
-        height: "calc(100% - 45px)",
+        width: "calc(100% - 320px)",
+        marginRight: "8px",
+        height: "100%",
     },
     twoCol: {
         display: "flex",
         flexDirection: "row",
-        height: "100%",
+        height: "calc(100% - 64px)",
     },
     detailsBox: {
-        width: "300px",
+        width: "320px",
+        height: "100%",
+        overflow: "scroll",
+        borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
+        paddingLeft: "4px",
     }
 });
 
@@ -213,7 +216,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 };
 
 
-                return <div className={this.props.classes.pickerHeight} >
+                return <>
                     <div className={this.props.classes.searchFlex}>
                         <SearchInput value="" label="Project search" selfClearProp='' onSearch={onProjectSearch} debounce={500} width="18rem"  />
                         {this.props.includeCollections &&
@@ -247,7 +250,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                             <Details res={this.state.activeItem} />
                         </div>
                     </div>
-                </div>;
+                </>;
             }
         }));
 
