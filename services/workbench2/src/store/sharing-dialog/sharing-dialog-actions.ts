@@ -33,6 +33,7 @@ import {
 import { resourcesActions } from "store/resources/resources-actions";
 import { getPublicGroupUuid, getAllUsersGroupUuid } from "store/workflow-panel/workflow-panel-actions";
 import { getSharingPublicAccessFormData } from './sharing-dialog-types';
+import { UserResource } from "models/user";
 
 export const openSharingDialog = (resourceUuid: string, refresh?: () => void) =>
     (dispatch: Dispatch) => {
@@ -161,9 +162,16 @@ export const initializeManagementForm = async (dispatch: Dispatch, getState: () 
 
     const getEmail = (tailUuid: string) => {
         const user = users.find(({ uuid }) => uuid === tailUuid);
-        const group = groups.find(({ uuid }) => uuid === tailUuid);
         return user
             ? user.email
+            : null;
+    };
+
+    const getFullname = (tailUuid: string) => {
+        const user = users.find(({ uuid }) => uuid === tailUuid);
+        const group = groups.find(({ uuid }) => uuid === tailUuid);
+        return user
+            ? (user as UserResource & {fullName: string}).fullName
             : group
                 ? group.name
                 : tailUuid;
@@ -172,6 +180,7 @@ export const initializeManagementForm = async (dispatch: Dispatch, getState: () 
     const managementPermissions = permissionLinks
         .map(({ tailUuid, name, uuid }) => ({
             email: getEmail(tailUuid),
+            fullName: getFullname(tailUuid),
             permissions: name as PermissionLevel,
             permissionUuid: uuid,
         }));

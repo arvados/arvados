@@ -30,7 +30,7 @@ export interface SharingManagementFormData {
 }
 
 export interface SharingManagementFormDataRow {
-    email: string;
+    email: string | null;
     permissions: PermissionLevel;
     permissionUuid: string;
 }
