@@ -58,6 +58,17 @@ const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) =
     }
 };
 
+const getSharingDisplayName = (item: GroupResource | UserResource, detailed: boolean = false) => {
+    switch (item.kind) {
+        case ResourceKind.USER:
+            return `${getUserDisplayName(item, detailed, detailed)} (${item.email})`;
+        case ResourceKind.GROUP:
+            return item.name;
+        default:
+            return (item as Resource).uuid;
+    }
+};
+
 const getDisplayTooltip = (item: GroupResource | UserResource) => {
     switch (item.kind) {
         case ResourceKind.USER:
@@ -162,7 +173,7 @@ export const ParticipantSelect = connect()(
             const { onSelect = noop } = this.props;
             this.setState({ value: '', suggestions: this.state.cachedSuggestions });
             onSelect({
-                name: getDisplayName(selection, false),
+                name: this.props.category === AutocompleteCat.SHARING ? getSharingDisplayName(selection) : getDisplayName(selection, false),
                 tooltip: getDisplayTooltip(selection),
                 uuid,
             });
