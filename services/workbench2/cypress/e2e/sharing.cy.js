@@ -168,6 +168,7 @@ describe('Sharing tests', function () {
                 cy.get('[data-cy=context-menu]').contains('Share').click({ waitForAnimations: false });
                 cy.get('button').get('[data-cy=add-invited-people]').should('be.disabled');
                 cy.get('[data-cy=invite-people-field] input').type('Anonymous');
+                cy.get('[data-cy=loading-spinner]').should('not.exist');
                 cy.get('[data-cy="users-tab-label"]').click();
                 cy.waitForDom();
                 cy.get('[data-cy=sharing-suggestion]').contains('Anonymous').click();
