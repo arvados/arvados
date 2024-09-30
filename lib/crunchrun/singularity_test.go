@@ -23,6 +23,11 @@ func (s *singularitySuite) SetUpSuite(c *C) {
 	if err != nil {
 		c.Skip("looks like singularity is not installed")
 	}
+	uuc, err := os.ReadFile("/proc/sys/kernel/unprivileged_userns_clone")
+	c.Assert(err, check.IsNil)
+	if string(uuc) == "0\n" {
+		c.Skip("insufficient privileges to run singularity tests -- `singularity exec --fakeroot` requires /proc/sys/kernel/unprivileged_userns_clone = 1")
+	}
 	s.newExecutor = func(c *C) {
 		var err error
 		s.executor, err = newSingularityExecutor(c.Logf)
@@ -37,16 +42,18 @@ func (s *singularitySuite) TearDownSuite(c *C) {
 }
 
 func (s *singularitySuite) TestIPAddress(c *C) {
-	// In production, executor will choose --network=bridge
-	// because uid=0 under arvados-dispatch-cloud. But in test
-	// cases, uid!=0, which means --network=bridge is conditional
-	// on --fakeroot.
-	uuc, err := os.ReadFile("/proc/sys/kernel/unprivileged_userns_clone")
-	c.Check(err, check.IsNil)
-	if string(uuc) == "0\n" {
-		c.Skip("insufficient privileges to run this test case -- `singularity exec --fakeroot` requires /proc/sys/kernel/unprivileged_userns_clone = 1")
+	// With modern iptables, singularity (as of 4.2.1) cannot
+	// enable networking when invoked by a regular user. Under
+	// arvados-dispatch-cloud, crunch-run runs as root, so it's
+	// OK. For testing, assuming tests are not running as root, we
+	// use sudo -- but only if requested via environment variable.
+	if os.Getuid() != 0 {
+		if os.Getenv("ARVADOS_TEST_USE_SUDO") != "" {
+			s.executor.(*singularityExecutor).sudo = true
+		} else {
+			c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_USE_SUDO=1 to enable this test")
+		}
 	}
-	s.executor.(*singularityExecutor).fakeroot = true
 	s.executorSuite.TestIPAddress(c)
 }
 

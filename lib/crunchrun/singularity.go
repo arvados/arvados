@@ -26,7 +26,7 @@ import (
 
 type singularityExecutor struct {
 	logf          func(string, ...interface{})
-	fakeroot      bool // use --fakeroot flag, allow --network=bridge when non-root (currently only used by tests)
+	sudo          bool // use sudo to run singularity (only used by tests)
 	spec          containerSpec
 	tmpdir        string
 	child         *exec.Cmd
@@ -257,19 +257,21 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 
 func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd=" + e.spec.WorkingDir}
-	if e.fakeroot {
-		args = append(args, "--fakeroot")
-	}
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
-	} else if u, err := user.Current(); err == nil && u.Uid == "0" || e.fakeroot {
-		// Specifying --network=bridge fails unless (a) we are
-		// root, (b) we are using --fakeroot, or (c)
-		// singularity has been configured to allow our
-		// uid/gid to use it like so:
+	} else if u, err := user.Current(); err == nil && u.Uid == "0" || e.sudo {
+		// Specifying --network=bridge fails unless
+		// singularity is running as root.
+		//
+		// Note this used to be possible with --fakeroot, or
+		// configuring singularity like so:
 		//
 		// singularity config global --set 'allow net networks' bridge
 		// singularity config global --set 'allow net groups' mygroup
+		//
+		// However, these options no longer work (as of debian
+		// bookworm) because iptables now refuses to run in a
+		// setuid environment.
 		args = append(args, "--net", "--network=bridge")
 	}
 	if e.spec.CUDADeviceCount != 0 {
@@ -345,6 +347,13 @@ func (e *singularityExecutor) Start() error {
 		return err
 	}
 	child := e.execCmd(path)
+	if e.sudo {
+		child.Args = append([]string{child.Path}, child.Args...)
+		child.Path, err = exec.LookPath("sudo")
+		if err != nil {
+			return err
+		}
+	}
 	err = child.Start()
 	if err != nil {
 		return err
@@ -462,7 +471,11 @@ func (e *singularityExecutor) containedProcess() (int, error) {
 	if e.child == nil || e.child.Process == nil {
 		return 0, errContainerNotStarted
 	}
-	lsns, err := exec.Command("lsns").CombinedOutput()
+	cmd := exec.Command("lsns")
+	if e.sudo {
+		cmd = exec.Command("sudo", "lsns")
+	}
+	lsns, err := cmd.CombinedOutput()
 	if err != nil {
 		return 0, fmt.Errorf("lsns: %w", err)
 	}
