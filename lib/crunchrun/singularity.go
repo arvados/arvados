@@ -133,7 +133,6 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 		if err != nil {
 			return nil, fmt.Errorf("error creating '%v' collection: %s", collectionName, err)
 		}
-
 	}
 
 	return &imageCollection, nil
