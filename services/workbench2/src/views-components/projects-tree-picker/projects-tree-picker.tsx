@@ -24,12 +24,16 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ResourceKind } from 'models/resource';
+import { CollectionFileType } from 'models/collection-file';
 import { DefaultView } from 'components/default-view/default-view';
 import { ProjectDetailsComponent } from 'views-components/details-panel/project-details';
 import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
+import { RootProjectDetailsComponent } from 'views-components/details-panel/root-project-details';
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
+import { formatFileSize } from 'common/formatters';
 
 export interface ToplevelPickerProps {
-        currentUuids?: string[];
+    currentUuids?: string[];
     pickerId: string;
     cascadeSelection: boolean;
     includeCollections?: boolean;
@@ -125,21 +129,30 @@ interface SelectionComponentState {
 }
 
 const Details = (props: { res?: ProjectsTreePickerItem }) => {
-    if (props.res && 'kind' in props.res) {
-        switch (props.res.kind) {
-            case ResourceKind.PROJECT:
-                return <ProjectDetailsComponent project={props.res} hideEdit={true} />
-            case ResourceKind.COLLECTION:
-                return <CollectionDetailsAttributes item={props.res} />;
-                /* case ResourceKind.PROCESS:
-                        *     return new ProcessDetails(res);
-                 * case ResourceKind.WORKFLOW:
-                 *     return new WorkflowDetails(res);
-                 * case ResourceKind.USER:
-                 *     return new RootProjectDetails(res); */
+    if (props.res) {
+        if ('kind' in props.res) {
+            switch (props.res.kind) {
+                case ResourceKind.PROJECT:
+                    return <ProjectDetailsComponent project={props.res} hideEdit={true} />
+                case ResourceKind.COLLECTION:
+                    return <CollectionDetailsAttributes item={props.res} />;
+                case ResourceKind.USER:
+                    return <RootProjectDetailsComponent rootProject={props.res} />;
+                    // case ResourceKind.PROCESS:
+                    //                         return new ProcessDetails(res);
+                    // case ResourceKind.WORKFLOW:
+                    //     return new WorkflowDetails(res);
+            }
+        } else if ('type' in props.res) {
+            if (props.res.type === CollectionFileType.FILE) {
+                return <>
+                <DetailsAttribute label='Type' value="File" />
+                <DetailsAttribute label='Size' value={formatFileSize(props.res.size)} />
+                </>;
+            } else {
+                return <DetailsAttribute label='Type' value="Directory" />
+            }
         }
-    } else {
-        //return new FileDetails(res);
     }
     return <DefaultView messages={['Select a file or folder to view its details.']} />;
 };

@@ -13,6 +13,7 @@ import {
     SHARED_PROJECT_ID, FAVORITES_PROJECT_ID, PUBLIC_FAVORITES_PROJECT_ID, SEARCH_PROJECT_ID
 } from "./tree-picker-actions";
 import { LinkResource } from "models/link";
+import { UserResource } from "models/user";
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionDirectory, CollectionFile } from 'models/collection-file';
 
@@ -21,7 +22,7 @@ export interface ProjectsTreePickerRootItem {
     name: string;
 }
 
-export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile | LinkResource;
+export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile | LinkResource | UserResource;
 
 export const treePickerSearchMiddleware: Middleware = store => next => action => {
     let isSearchAction = false;

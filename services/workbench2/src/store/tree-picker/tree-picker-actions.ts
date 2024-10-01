@@ -655,6 +655,10 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
         const uuidPrefix = getState().auth.config.uuidPrefix;
         const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 
+        // TODO:
+        // favorites and public favorites ought to use a single method
+        // after getting back a list of links, need to look and stash the resources
+
         const filters = pipe(
             (fb: FilterBuilder) => includeCollections
                 ? fb.addIsA('head_uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
