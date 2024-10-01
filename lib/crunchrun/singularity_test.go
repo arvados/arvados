@@ -9,7 +9,6 @@ import (
 	"os/exec"
 
 	. "gopkg.in/check.v1"
-	check "gopkg.in/check.v1"
 )
 
 var _ = Suite(&singularitySuite{})
@@ -22,11 +21,6 @@ func (s *singularitySuite) SetUpSuite(c *C) {
 	_, err := exec.LookPath("singularity")
 	if err != nil {
 		c.Skip("looks like singularity is not installed")
-	}
-	uuc, err := os.ReadFile("/proc/sys/kernel/unprivileged_userns_clone")
-	c.Assert(err, check.IsNil)
-	if string(uuc) == "0\n" {
-		c.Skip("insufficient privileges to run singularity tests -- `singularity exec --fakeroot` requires /proc/sys/kernel/unprivileged_userns_clone = 1")
 	}
 	s.newExecutor = func(c *C) {
 		var err error
@@ -41,20 +35,21 @@ func (s *singularitySuite) TearDownSuite(c *C) {
 	}
 }
 
-func (s *singularitySuite) TestIPAddress(c *C) {
+func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
 	// With modern iptables, singularity (as of 4.2.1) cannot
 	// enable networking when invoked by a regular user. Under
 	// arvados-dispatch-cloud, crunch-run runs as root, so it's
 	// OK. For testing, assuming tests are not running as root, we
 	// use sudo -- but only if requested via environment variable.
-	if os.Getuid() != 0 {
-		if os.Getenv("ARVADOS_TEST_USE_SUDO") != "" {
-			s.executor.(*singularityExecutor).sudo = true
-		} else {
-			c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_USE_SUDO=1 to enable this test")
-		}
+	if os.Getuid() == 0 {
+		// already root
+	} else if os.Getenv("ARVADOS_TEST_USE_SUDO") != "" {
+		c.Logf("ARVADOS_TEST_USE_SUDO is set, invoking 'sudo singularity ...'")
+		s.executor.(*singularityExecutor).sudo = true
+	} else {
+		c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_USE_SUDO=1 to enable this test")
 	}
-	s.executorSuite.TestIPAddress(c)
+	s.executorSuite.TestEnableNetwork_Listen(c)
 }
 
 func (s *singularitySuite) TestInject(c *C) {

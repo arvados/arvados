@@ -273,6 +273,13 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 		// bookworm) because iptables now refuses to run in a
 		// setuid environment.
 		args = append(args, "--net", "--network=bridge")
+	} else {
+		// If we don't pass a --net argument at all, the
+		// container will be in the same network namespace as
+		// the host.
+		//
+		// Note this allows the container to listen on the
+		// host's external ports.
 	}
 	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")
