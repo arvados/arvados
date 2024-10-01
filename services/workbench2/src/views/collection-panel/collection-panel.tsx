@@ -161,8 +161,10 @@ export const CollectionPanel = withStyles(styles)(connect(
     })(
         class extends React.Component<CollectionPanelProps> {
 
-            componentDidMount() {
-                this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+            componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
+                if (prevProps.item && prevProps.item.uuid !== this.props.item.uuid) {
+                    this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+                }
             }
 
             render() {
