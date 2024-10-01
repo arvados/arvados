@@ -25,9 +25,9 @@ type QueueEnt struct {
 }
 
 const (
-	schedStatusPreparingRuntimeEnvironment = "preparing runtime environment"
-	schedStatusPriorityZero                = "not scheduling: priority 0" // ", state X" appended at runtime
-	schedStatusContainerLimitReached       = "not starting: supervisor container limit has been reached"
+	schedStatusPreparingRuntimeEnvironment = "An instance has been allocated and Crunch is now preparing to run the container."
+	schedStatusPriorityZero                = "This container will not be scheduled because its priority is 0 and state is %v."
+	schedStatusSupervisorLimitReached      = "The cluster is at capacity, this workflow has position %v in the workflow queue."
 	schedStatusWaitingForPreviousAttempt   = "waiting for previous attempt to exit"
 	schedStatusWaitingNewInstance          = "waiting for new instance to be ready"
 	schedStatusWaitingInstanceType         = "waiting for suitable instance type to become available" // ": queue position X" appended at runtime
@@ -204,12 +204,12 @@ tryrun:
 			continue
 		}
 		if ctr.Priority < 1 {
-			sorted[i].SchedulingStatus = schedStatusPriorityZero + ", state " + string(ctr.State)
+			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusPriorityZero, string(ctr.State))
 			continue
 		}
 		if ctr.SchedulingParameters.Supervisor && maxSupervisors > 0 && supervisors > maxSupervisors {
 			overmaxsuper = append(overmaxsuper, sorted[i])
-			sorted[i].SchedulingStatus = schedStatusContainerLimitReached
+			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusSupervisorLimitReached, len(overmaxsuper))
 			continue
 		}
 		// If we have unalloc instances of any of the eligible
