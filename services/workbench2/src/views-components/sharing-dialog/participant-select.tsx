@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Autocomplete } from 'components/autocomplete/autocomplete';
+import { Autocomplete, AutocompleteCat } from 'components/autocomplete/autocomplete';
 import { connect, DispatchProp } from 'react-redux';
 import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
@@ -31,6 +31,7 @@ interface ParticipantSelectProps {
     onlyPeople?: boolean;
     onlyActive?: boolean;
     disabled?: boolean;
+    category?: AutocompleteCat;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -40,8 +41,10 @@ interface ParticipantSelectProps {
 }
 
 interface ParticipantSelectState {
+    isWorking: boolean;
     value: string;
     suggestions: ParticipantResource[];
+    cachedSuggestions: ParticipantResource[];
 }
 
 const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) => {
@@ -50,6 +53,17 @@ const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) =
             return getUserDisplayName(item, detailed, detailed);
         case ResourceKind.GROUP:
             return item.name + `(${`(${(item as Resource).uuid})`})`;
+        default:
+            return (item as Resource).uuid;
+    }
+};
+
+const getSharingDisplayName = (item: GroupResource | UserResource, detailed: boolean = false) => {
+    switch (item.kind) {
+        case ResourceKind.USER:
+            return `${getUserDisplayName(item, detailed, detailed)} (${item.email})`;
+        case ResourceKind.GROUP:
+            return item.name;
         default:
             return (item as Resource).uuid;
     }
@@ -69,9 +83,17 @@ const getDisplayTooltip = (item: GroupResource | UserResource) => {
 export const ParticipantSelect = connect()(
     class ParticipantSelect extends React.Component<ParticipantSelectProps & DispatchProp, ParticipantSelectState> {
         state: ParticipantSelectState = {
+            isWorking: false,
             value: '',
-            suggestions: []
+            suggestions: [],
+            cachedSuggestions: [],
         };
+
+        componentDidUpdate(prevProps: ParticipantSelectProps & DispatchProp, prevState: ParticipantSelectState) {
+            if (prevState.suggestions.length === 0 && this.state.suggestions.length > 0 && this.state.value.length === 0) {
+                this.setState({ cachedSuggestions: this.state.suggestions });
+            }
+        }
 
         render() {
             const { label = 'Add people and groups' } = this.props;
@@ -87,13 +109,21 @@ export const ParticipantSelect = connect()(
                     onCreate={this.handleCreate}
                     onSelect={this.handleSelect}
                     onDelete={this.props.onDelete && !this.props.disabled ? this.handleDelete : undefined}
-                    onFocus={this.props.onFocus}
+                    onFocus={this.props.onFocus || this.onFocus}
                     onBlur={this.onBlur}
                     renderChipValue={this.renderChipValue}
                     renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
+                    category={this.props.category}
+                    isWorking={this.state.isWorking}
+                    maxLength={this.props.category === AutocompleteCat.SHARING ? 10 : undefined}
                     disabled={this.props.disabled} />
             );
+        }
+
+        onFocus = (e) => {
+            this.setState({ isWorking: true });
+            this.getSuggestions();
         }
 
         onBlur = (e) => {
@@ -138,11 +168,12 @@ export const ParticipantSelect = connect()(
         }
 
         handleSelect = (selection: ParticipantResource) => {
+            if (!selection) return;
             const { uuid } = selection;
             const { onSelect = noop } = this.props;
-            this.setState({ value: '', suggestions: [] });
+            this.setState({ value: '', suggestions: this.state.cachedSuggestions });
             onSelect({
-                name: getDisplayName(selection, false),
+                name: this.props.category === AutocompleteCat.SHARING ? getSharingDisplayName(selection) : getDisplayName(selection, false),
                 tooltip: getDisplayTooltip(selection),
                 uuid,
             });
@@ -155,8 +186,10 @@ export const ParticipantSelect = connect()(
         getSuggestions = debounce(() => this.props.dispatch<any>(this.requestSuggestions), 500);
 
         requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
+            this.setState({ isWorking: true });
             const { value } = this.state;
-            const limit = 5; // FIXME: Does this provide a good UX?
+            // +1 to see if there are more than 10 results
+            const limit = 11;
 
             const filterUsers = new FilterBuilder()
                 .addILike('any', value)
@@ -175,7 +208,8 @@ export const ParticipantSelect = connect()(
             this.setState({
                 suggestions: this.props.onlyPeople
                     ? userItems.items
-                    : userItems.items.concat(groupItems.items)
+                    : userItems.items.concat(groupItems.items),
+                isWorking: false,
             });
         }
     });

@@ -38,23 +38,24 @@ export const SharingManagementFormComponent = withStyles(headerStyles)(
 
 export default SharingManagementFormComponent;
 
-const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } & WrappedFieldArrayProps<{ email: string }>) =>
+const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } & WrappedFieldArrayProps<{ email: string, fullName: string }>) =>
     <div>{fields.map((field, index, fields) =>
         <PermissionManagementRow key={field} {...{ field, index, fields }} onSave={onSave} />)}
     </div>;
 
 const permissionManagementRowStyles: CustomStyleRulesCallback<'root'> = theme => ({
     root: {
-        padding: `${theme.spacing(1)} 0`,
+        padding: `${theme.spacing(0.5)} 0`,
     }
 });
 
 const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
-    ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }>, onSave: () => void; } & WithStyles<'root'>) =>
-        <>
+    ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string, fullName: string }>, onSave: () => void; } & WithStyles<'root'>) => {
+        const { email, fullName } = fields.get(index);
+        return <>
             <Grid container alignItems='center' spacing={1} wrap='nowrap' className={classes.root}>
                 <Grid item xs={7}>
-                    <Typography noWrap variant='subtitle1'>{fields.get(index).email}</Typography>
+                    <Typography noWrap variant='subtitle1'>{email ? `${fullName} (${email})` : fullName}</Typography>
                 </Grid>
                 <Grid item xs={1} container wrap='nowrap'>
                     <Tooltip title='Remove access'>
@@ -76,6 +77,7 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
             </Grid>
             <Divider />
         </>
+    }
 );
 
 const PermissionSelectComponent = ({ input }: WrappedFieldProps) =>
