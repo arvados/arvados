@@ -40,17 +40,22 @@ import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 
-type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
+type CssRules = "root" | "toolbarContainer" | "button" | "iconContainer" | "icon" | "divider";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",
         width: 0,
-        height: '2.5rem',
         padding: 0,
         margin: 0,
         overflow: 'hidden',
+    },
+    toolbarContainer: {
+        height: '3rem',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'start',
     },
     button: {
         width: "2.5rem",
@@ -125,7 +130,7 @@ export const MultiselectToolbar = connect(
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
         return (
-            <React.Fragment>
+            <div className={classes.toolbarContainer}>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
                     style={{ width: `${(actions.length * 2.5) + 2}rem`}}
@@ -190,7 +195,7 @@ export const MultiselectToolbar = connect(
                         <></>
                     )}
                 </Toolbar>
-            </React.Fragment>
+            </div>
         );
     })
 );

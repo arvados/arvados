@@ -44,6 +44,7 @@ type CssRules =
     | 'moreOptionsButton'
     | 'title'
     | 'subProcessTitle'
+    | 'workflowTabToolbar'
     | 'dataTable'
     | 'container'
     | 'paginationLabel'
@@ -110,6 +111,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: "18px",
         flexGrow: 0,
         paddingRight: "10px",
+    },
+    workflowTabToolbar: {
+        marginTop: '-15px',
     },
     progressWrapper: {
         margin: "28px 0 0",
@@ -369,6 +373,7 @@ export const DataExplorer = withStyles(styles)(
                             <div className={classes.subToolbarWrapper}>
                                 {!this.state.hideToolbar && <MultiselectToolbar
                                     forceMultiSelectMode={forceMultiSelectMode}
+                                    injectedStyles={classes.workflowTabToolbar}
                                 />}
                             </div>
                         }
