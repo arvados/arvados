@@ -73,18 +73,24 @@ func checkCgroupSupport(logf func(string, ...interface{})) {
 		return
 	}
 	cgroupSupport = make(map[string]bool)
-	err := exec.Command("systemd-run", "--wait", "--user", "true").Run()
-	if err != nil {
-		logf("`systemd-run --wait --user true` failed (%s) -- singularity resource limits are not supported", err)
-		return
-	}
-	version, err := exec.Command("systemd-run", "--version").CombinedOutput()
-	if match := regexp.MustCompile(`^systemd (\d+)`).FindSubmatch(version); err != nil || match == nil {
-		logf("could not get systemd version -- singularity resource limits are not supported")
-		return
-	} else if v, _ := strconv.ParseInt(string(match[1]), 10, 64); v < 224 {
-		logf("systemd version %s < minimum 224 -- singularity resource limits are not supported", match[1])
-		return
+	if os.Getuid() != 0 {
+		xrd := os.Getenv("XDG_RUNTIME_DIR")
+		if xrd == "" || os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
+			logf("not running as root, and empty XDG_RUNTIME_DIR or DBUS_SESSION_BUS_ADDRESS -- singularity resource limits are not supported")
+			return
+		}
+		if fi, err := os.Stat(xrd + "/systemd"); err != nil || !fi.IsDir() {
+			logf("not running as root, and %s/systemd is not a directory -- singularity resource limits are not supported", xrd)
+			return
+		}
+		version, err := exec.Command("systemd-run", "--version").CombinedOutput()
+		if match := regexp.MustCompile(`^systemd (\d+)`).FindSubmatch(version); err != nil || match == nil {
+			logf("not running as root, and could not get systemd version -- singularity resource limits are not supported")
+			return
+		} else if v, _ := strconv.ParseInt(string(match[1]), 10, 64); v < 224 {
+			logf("not running as root, and systemd version %s < minimum 224 -- singularity resource limits are not supported", match[1])
+			return
+		}
 	}
 	mount, err := cgroupMount()
 	if err != nil {
