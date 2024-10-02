@@ -7,6 +7,7 @@ package container
 import (
 	"errors"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -250,6 +251,10 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 	})
 	if err != nil {
 		logger.WithError(err).Warn("error getting mounts")
+		if strings.Contains(err.Error(), "json: cannot unmarshal") {
+			// see https://dev.arvados.org/issues/21314
+			go cq.cancelUnsatisfiableContainer(ctr, "error getting mounts from container record: "+err.Error())
+		}
 		return
 	}
 	types, err := cq.chooseType(&ctr)
@@ -262,46 +267,8 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		// We assume here that any chooseType error is a hard
 		// error: it wouldn't help to try again, or to leave
 		// it for a different dispatcher process to attempt.
-		errorString := err.Error()
 		logger.WithError(err).Warn("cancel container with no suitable instance type")
-		go func() {
-			if ctr.State == arvados.ContainerStateQueued {
-				// Can't set runtime error without
-				// locking first.
-				err := cq.Lock(ctr.UUID)
-				if err != nil {
-					logger.WithError(err).Warn("lock failed")
-					return
-					// ...and try again on the
-					// next Update, if the problem
-					// still exists.
-				}
-			}
-			var err error
-			defer func() {
-				if err == nil {
-					return
-				}
-				// On failure, check current container
-				// state, and don't log the error if
-				// the failure came from losing a
-				// race.
-				var latest arvados.Container
-				cq.client.RequestAndDecode(&latest, "GET", "arvados/v1/containers/"+ctr.UUID, nil, map[string][]string{"select": {"state"}})
-				if latest.State == arvados.ContainerStateCancelled {
-					return
-				}
-				logger.WithError(err).Warn("error while trying to cancel unsatisfiable container")
-			}()
-			err = cq.setRuntimeError(ctr.UUID, errorString)
-			if err != nil {
-				return
-			}
-			err = cq.Cancel(ctr.UUID)
-			if err != nil {
-				return
-			}
-		}()
+		go cq.cancelUnsatisfiableContainer(ctr, err.Error())
 		return
 	}
 	typeNames := ""
@@ -318,6 +285,43 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		"InstanceTypes": typeNames,
 	}).Info("adding container to queue")
 	cq.current[uuid] = QueueEnt{Container: ctr, InstanceTypes: types, FirstSeenAt: time.Now()}
+}
+
+func (cq *Queue) cancelUnsatisfiableContainer(ctr arvados.Container, errorString string) {
+	logger := cq.logger.WithField("ContainerUUID", ctr.UUID)
+	if ctr.State == arvados.ContainerStateQueued {
+		// Can't set runtime error without locking first.
+		err := cq.Lock(ctr.UUID)
+		if err != nil {
+			logger.WithError(err).Warn("lock failed")
+			return
+			// ...and try again on the next Update, if the
+			// problem still exists.
+		}
+	}
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		// On failure, check current container state, and
+		// don't log the error if the failure came from losing
+		// a race.
+		var latest arvados.Container
+		cq.client.RequestAndDecode(&latest, "GET", "arvados/v1/containers/"+ctr.UUID, nil, map[string][]string{"select": {"state"}})
+		if latest.State == arvados.ContainerStateCancelled {
+			return
+		}
+		logger.WithError(err).Warn("error while trying to cancel unsatisfiable container")
+	}()
+	err = cq.setRuntimeError(ctr.UUID, errorString)
+	if err != nil {
+		return
+	}
+	err = cq.Cancel(ctr.UUID)
+	if err != nil {
+		return
+	}
 }
 
 // Lock acquires the dispatch lock for the given container.
