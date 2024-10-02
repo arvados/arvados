@@ -11,7 +11,7 @@ import { getUserUuid } from "common/getuser";
 import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
-import { Resource, ResourceKind, ResourceObjectType, extractUuidObjectType } from 'models/resource';
+import { Resource, ResourceKind, ResourceObjectType, extractUuidObjectType, COLLECTION_PDH_REGEX } from 'models/resource';
 import { GroupContentsResource, GroupContentsIncludedResource } from 'services/groups-service/groups-service';
 import { getTreePicker, TreePicker } from './tree-picker';
 import { ProjectsTreePickerItem } from './tree-picker-middleware';
@@ -213,6 +213,8 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                 const objtype = extractUuidObjectType(collectionFilter);
                 if (objtype === ResourceObjectType.COLLECTION) {
                     filterB = filterB.addEqual('uuid', collectionFilter);
+                } else if (COLLECTION_PDH_REGEX.exec(collectionFilter)) {
+                    filterB = filterB.addEqual('portable_data_hash', collectionFilter);
                 } else {
                     filterB = filterB.addFullTextSearch(collectionFilter, 'collections');
                 }
