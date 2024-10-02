@@ -50,23 +50,30 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
     // pass it on to the reducer
     const r = next(action);
 
-    treePickerSearchActions.match(action, {
-        SET_TREE_PICKER_PROJECT_SEARCH: ({ pickerId }) =>
-            store.dispatch<any>((dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-                const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
-                if (picker) {
-                    const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
-                    dispatch<any>(loadProject({
-                        ...loadParams,
-                        id: SEARCH_PROJECT_ID,
-                        pickerId: pickerId,
-                    }));
-                }
-            }),
+    const loadSearchRoot = ({ pickerId }) =>
+        store.dispatch<any>((dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
+            if (picker) {
+                const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
+                dispatch<any>(loadProject({
+                    ...loadParams,
+                    id: SEARCH_PROJECT_ID,
+                    pickerId: pickerId,
+                }));
+            }
+        });
 
-        SET_TREE_PICKER_COLLECTION_FILTER: refreshPickers(store),
+    treePickerSearchActions.match(action, {
+        SET_TREE_PICKER_PROJECT_SEARCH: loadSearchRoot,
+        SET_TREE_PICKER_COLLECTION_FILTER: (act) => {
+            if (store.getState().treePickerSearch.projectSearchValues[act.pickerId] !== "") {
+                refreshPickers(store)(act);
+            } else {
+                loadSearchRoot(act);
+            }
+        },
         default: () => { }
-    });
+            });
 
     return r;
 }

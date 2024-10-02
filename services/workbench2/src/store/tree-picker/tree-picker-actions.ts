@@ -337,7 +337,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             }));
 
             if (includeOwners) {
-                // Searching for collections, we already have the
+                // Searching, we already have the
                 // contents to put in the owner projects so load it up.
                 const projects = {};
                 items.forEach(item => {
@@ -388,7 +388,7 @@ export const loadCollection = (id: string, pickerId: string, includeDirectories?
                     }));
 
                 // Expand collection root node
-                dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
+                dispatch(treePickerActions.EXPAND_TREE_PICKER_NODE({ id, pickerId }));
             }
         }
     };
@@ -701,7 +701,7 @@ export const receiveTreePickerProjectsData = (id: string, projects: ProjectResou
             pickerId,
         }));
 
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
+        dispatch(treePickerActions.EXPAND_TREE_PICKER_NODE({ id, pickerId }));
     };
 
 export const loadProjectTreePickerProjects = (id: string) =>

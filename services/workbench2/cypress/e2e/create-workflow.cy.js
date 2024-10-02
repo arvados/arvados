@@ -19,7 +19,7 @@ describe('Create workflow tests', function () {
             );
     });
 
-    it('can create project with nested data', function () {
+    function createNestedHelper(testRemainder) {
         cy.createGroup(adminUser.token, {
             group_class: "project",
             name: `Test project (${Math.floor(Math.random() * 999999)})`,
@@ -76,6 +76,16 @@ describe('Create workflow tests', function () {
                     cy.contains('input').next().click();
                 });
 
+            testRemainder();
+
+            cy.get('[data-cy=new-process-panel]')
+                .find('button').contains('Run workflow').should('not.be.disabled');
+        });
+    }
+
+    it('can create project with nested data', function () {
+        this.createNestedHelper = createNestedHelper;
+        this.createNestedHelper(() => {
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
             cy.get('@chooseFileDialog').contains('Home Projects').closest('ul').find('i').click();
 
@@ -98,9 +108,126 @@ describe('Create workflow tests', function () {
             cy.get('@chooseFileDialog').contains('baz').click();
 
             cy.get('@chooseFileDialog').find('button').contains('Ok').click();
+        });
+    });
 
-            cy.get('[data-cy=new-process-panel]')
-                .find('button').contains('Run workflow').should('not.be.disabled');
+    it('can search for nested project by name', function () {
+        this.createNestedHelper = createNestedHelper;
+        this.createNestedHelper(() => {
+            cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
+
+            cy.get('@project3').then((project3) => {
+                cy.get('[data-cy=picker-dialog-project-search]')
+                    .find('[data-cy=search-input]')
+                    .type(project3.name)
+
+                cy.waitForDom();
+
+                cy.get('@chooseFileDialog').find(`[data-id=${project3.uuid}]`).find('i').click();
+
+                cy.get('@testCollection').then((testCollection) => {
+                    cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`).find('i').click();
+                });
+
+                cy.get('@chooseFileDialog').contains('baz').click();
+
+                cy.get('@chooseFileDialog').find('button').contains('Ok').click();
+            });
+        });
+    });
+
+    it('can search for nested project by uuid', function () {
+        this.createNestedHelper = createNestedHelper;
+        this.createNestedHelper(() => {
+            cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
+
+            cy.get('@project3').then((project3) => {
+                cy.get('[data-cy=picker-dialog-project-search]')
+                    .find('[data-cy=search-input]')
+                    .type(project3.uuid)
+
+                cy.waitForDom();
+
+                cy.get('@chooseFileDialog').find(`[data-id=${project3.uuid}]`).find('i').click();
+
+                cy.get('@testCollection').then((testCollection) => {
+                    cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`).find('i').click();
+                });
+
+                cy.get('@chooseFileDialog').contains('baz').click();
+
+                cy.get('@chooseFileDialog').find('button').contains('Ok').click();
+            });
+        });
+    });
+
+
+    it.only('can search for collection by name', function () {
+        this.createNestedHelper = createNestedHelper;
+        this.createNestedHelper(() => {
+            cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
+
+            cy.get('@testCollection').then((testCollection) => {
+                cy.get('[data-cy=picker-dialog-collection-search]')
+                    .find('[data-cy=search-input]')
+                    .type(testCollection.name)
+
+                cy.waitForDom();
+
+                cy.get('@testCollection').then((testCollection) => {
+                    cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`).find('i').click();
+                });
+
+                cy.get('@chooseFileDialog').contains('baz').click();
+
+                cy.get('@chooseFileDialog').find('button').contains('Ok').click();
+            });
+        });
+    });
+
+    it.only('can search for collection by uuid', function () {
+        this.createNestedHelper = createNestedHelper;
+        this.createNestedHelper(() => {
+            cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
+
+            cy.get('@testCollection').then((testCollection) => {
+                cy.get('[data-cy=picker-dialog-collection-search]')
+                    .find('[data-cy=search-input]')
+                    .type(testCollection.uuid)
+
+                cy.waitForDom();
+
+                cy.get('@testCollection').then((testCollection) => {
+                    cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`).find('i').click();
+                });
+
+                cy.get('@chooseFileDialog').contains('baz').click();
+
+                cy.get('@chooseFileDialog').find('button').contains('Ok').click();
+            });
+        });
+    });
+
+    it.only('can search for collection by PDH', function () {
+        this.createNestedHelper = createNestedHelper;
+        this.createNestedHelper(() => {
+            cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
+
+            cy.get('@testCollection').then((testCollection) => {
+                cy.get('[data-cy=picker-dialog-collection-search]')
+                    .find('[data-cy=search-input]')
+                    .type(testCollection.portable_data_hash)
+
+                cy.waitForDom();
+
+                cy.get('@testCollection').then((testCollection) => {
+                    cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`).find('i').click();
+                });
+
+                cy.get('@chooseFileDialog').contains('baz').click();
+
+                cy.get('@chooseFileDialog').find('button').contains('Ok').click();
+            });
         });
     });
 
@@ -140,6 +267,8 @@ describe('Create workflow tests', function () {
                 cy.loginAs(activeUser);
 
                 cy.get('main').contains(myProject1.name).click();
+
+                cy.waitForDom();
 
                 cy.get('[data-cy=side-panel-button]').click();
 
