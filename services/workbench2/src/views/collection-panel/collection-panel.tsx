@@ -32,6 +32,7 @@ import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explo
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { NotFoundView } from 'views/not-found-panel/not-found-panel';
+import { setSelectedResourceUuid } from 'store/selected-resource/selected-resource-actions';
 
 type CssRules =
     'root'
@@ -159,6 +160,17 @@ export const CollectionPanel = withStyles(styles)(connect(
         return { item, isWritable, isOldVersion };
     })(
         class extends React.Component<CollectionPanelProps> {
+
+            componentDidMount() {
+                if (this.props.item) this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+            }
+
+            componentDidUpdate( prevProps: Readonly<CollectionPanelProps>, prevState: Readonly<{}>, snapshot?: any ): void {
+                if (prevProps.item && prevProps.item.uuid !== this.props.item.uuid) {
+                    this.props.dispatch<any>(setSelectedResourceUuid(this.props.item.uuid));
+                }
+            }
+
             render() {
                 const { classes, item, dispatch, isWritable, isOldVersion } = this.props;
                 const panelsData: MPVPanelState[] = [

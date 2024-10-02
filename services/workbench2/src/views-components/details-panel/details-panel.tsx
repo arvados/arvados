@@ -217,7 +217,7 @@ export const DetailsPanel = withStyles(styles)(
                                 variant='fullWidth'
                                 value={(item.getTabLabels().length >= tabNr + 1) ? tabNr : 0}>
                                 {item.getTabLabels().map((tabLabel, idx) =>
-                                    <Tab key={`tab-label-${idx}`} disableRipple label={tabLabel} />)
+                                    <Tab key={`tab-label-${idx}`} data-cy={`details-panel-tab-${tabLabel}`} disableRipple label={tabLabel} />)
                                 }
                             </Tabs>
                         </Grid>

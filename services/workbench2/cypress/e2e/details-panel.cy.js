@@ -110,4 +110,73 @@ describe('Collection details panel', () => {
       });
     });
   });
+
+  describe('Collection versioning', () => {
+    let adminUser;
+  
+    before(() => {
+      cy.getUser("active", "Active", "User", true, true)
+        .as("activeUser")
+        .then((user) => {
+          adminUser = user;
+        });
+    });
+  
+    it('creates a collection, edits it, and verifies version information', () => {
+      cy.loginAs(adminUser);
+  
+      // Create a test collection
+      const collectionName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+      cy.createCollection(adminUser.token, {
+        name: collectionName,
+        owner_uuid: adminUser.user.uuid,
+        manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n",
+      }).as('testCollection');
+  
+      cy.get('@testCollection').then((collection) => {
+        // Navigate to the project containing the collection
+        cy.visit(`/projects/${adminUser.user.uuid}`);
+  
+        // Wait for the data table to load
+        cy.get('[data-cy=data-table]').should('be.visible');
+  
+        // Find and open the test collection
+        cy.contains('[data-cy=data-table-row]', collectionName).rightclick();
+  
+        // Edit the collection
+        cy.get("[data-cy=context-menu]").within(() => {
+          cy.get('[data-cy="Edit collection"]').click();
+        });
+  
+        // Change the name in the edit dialog
+        const newName = `${collectionName} (edited)`;
+        cy.get('[data-cy=form-dialog]').within(() => {
+          cy.get('input[name=name]').clear().type(newName);
+          cy.get('[data-cy=form-submit-btn]').click();
+        });
+  
+        // Wait for the update to complete
+        cy.contains('[data-cy=data-table]', newName).should('be.visible');
+
+        // open the collection viewer
+        cy.contains(newName).click();
+  
+        // Verify that the version number has increased
+        cy.get('[data-cy=collection-version-number]').should('contain', '2');
+  
+        // Click on the version number to open the details panel
+        cy.get('[data-cy=collection-version-number]').click();
+  
+        // Verify that the details panel is open and the "Versions" tab is selected
+        cy.get('[data-cy=details-panel]').should('be.visible');
+        cy.get('[data-cy=details-panel-tab-Versions]').should('have.attr', 'aria-selected', 'true');
+  
+        // Verify that the version number is visible in the details panel
+        cy.get('[data-cy=collection-version-browser]').within(() => {
+          cy.get('[data-cy=collection-version-browser-select-2]').should('be.visible');
+          cy.get('[data-cy=collection-version-browser-select-2]').should('have.class', 'Mui-selected');
+        });
+      });
+    });
+  });
 });
