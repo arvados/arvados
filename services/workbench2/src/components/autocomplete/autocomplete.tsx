@@ -236,7 +236,7 @@ export const Autocomplete = withStyles(autocompleteStyles)(
     }
 
     handleNavigationKeyPress = (ev: React.KeyboardEvent<HTMLInputElement>) => {
-        if (ev.key === 'Tab' && this.isSuggestionBoxOpen()) {
+        if (ev.key === 'Tab' && this.isSuggestionBoxOpen() && this.props.category === AutocompleteCat.SHARING) {
             ev.preventDefault();
             // Cycle through tabs, or loop back to the first tab
             this.setState({ selectedTab: ((this.state.selectedTab + 1) % Object.keys(this.state.tabbedListContents).length)} || 0)
