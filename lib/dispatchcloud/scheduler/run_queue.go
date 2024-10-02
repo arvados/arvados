@@ -31,9 +31,9 @@ const (
 	schedStatusSupervisorLimitReached      = "Waiting in workflow queue at position %v.  Cluster is at capacity and cannot start any new workflows right now."
 	schedStatusWaitingForPreviousAttempt   = "Waiting for previous container attempt to exit."
 	schedStatusWaitingNewInstance          = "Waiting for a %v instance to boot and be ready to accept work."
-	schedStatusWaitingInstanceType         = "Waiting in container queue at position %v.  Cluster is at capacity for all the eligible instance types (%v) and cannot start a new instance right now."
-	schedStatusWaitingCloudResources       = "Waiting in container queue at position %v.  Cluster is at cloud account limits and cannot start any new instances right now."
-	schedStatusWaitingClusterCapacity      = "Waiting in container queue at position %v.  Cluster is at capacity and cannot start any new instances right now."
+	schedStatusWaitingInstanceType         = "Waiting in queue at position %v.  Cluster is at capacity for all eligible instance types (%v) and cannot start a new instance right now."
+	schedStatusWaitingCloudResources       = "Waiting in queue at position %v.  Cluster is at cloud account limits and cannot start any new instances right now."
+	schedStatusWaitingClusterCapacity      = "Waiting in queue at position %v.  Cluster is at capacity and cannot start any new instances right now."
 )
 
 // Queue returns the sorted queue from the last scheduling iteration.
