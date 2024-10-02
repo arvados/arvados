@@ -113,7 +113,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingRight: "10px",
     },
     workflowTabToolbar: {
-        marginTop: '-15px',
+        marginTop: '-12px',
     },
     progressWrapper: {
         margin: "28px 0 0",
