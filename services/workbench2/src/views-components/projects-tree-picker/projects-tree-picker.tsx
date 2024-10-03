@@ -259,7 +259,7 @@ const Details = (props: { res?: ProjectsTreePickerItem }) => {
                                  </>}
                             </div>
 
-                            <div className={this.props.classes.detailsBox}>
+                            <div className={this.props.classes.detailsBox} data-cy="picker-dialog-details">
                                 <Details res={this.state.activeItem} />
                             </div>
                         </div>

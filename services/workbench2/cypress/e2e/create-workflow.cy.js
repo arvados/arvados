@@ -83,29 +83,82 @@ describe('Create workflow tests', function () {
         });
     }
 
-    it('can create project with nested data', function () {
+    it.only('can create project with nested data', function () {
         this.createNestedHelper = createNestedHelper;
         this.createNestedHelper(() => {
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
-            cy.get('@chooseFileDialog').contains('Home Projects').closest('ul').find('i').click();
+            cy.get('@chooseFileDialog').contains('Home Projects')
+                .parents('[data-cy=tree-li]')
+                .find('[data-cy=side-panel-arrow-icon]')
+                .click();
 
             cy.get('@project1').then((project1) => {
-                cy.get('@chooseFileDialog').find(`[data-id=${project1.uuid}]`).find('i').click();
+                cy.get('@chooseFileDialog').find(`[data-id=${project1.uuid}]`);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${project1.uuid}]`)
+                    .find('[data-action=TOGGLE_ACTIVE]')
+                    .click();
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains("Project");
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains(project1.uuid);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${project1.uuid}]`)
+                    .find('[data-action=TOGGLE_OPEN]')
+                    .click();
             });
 
             cy.get('@project2').then((project2) => {
-                cy.get('@chooseFileDialog').find(`[data-id=${project2.uuid}]`).find('i').click();
+                cy.get('@chooseFileDialog').find(`[data-id=${project2.uuid}]`);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${project2.uuid}]`)
+                    .find('[data-action=TOGGLE_ACTIVE]')
+                    .click();
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains("Project");
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains(project2.uuid);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${project2.uuid}]`)
+                    .find('[data-action=TOGGLE_OPEN]')
+                    .click();
             });
 
             cy.get('@project3').then((project3) => {
-                cy.get('@chooseFileDialog').find(`[data-id=${project3.uuid}]`).find('i').click();
+                cy.get('@chooseFileDialog').find(`[data-id=${project3.uuid}]`);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${project3.uuid}]`)
+                    .find('[data-action=TOGGLE_ACTIVE]')
+                    .click();
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains("Project");
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains(project3.uuid);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${project3.uuid}]`)
+                    .find('[data-action=TOGGLE_OPEN]')
+                    .click();
             });
 
             cy.get('@testCollection').then((testCollection) => {
-                cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`).find('i').click();
+                cy.get('@chooseFileDialog').find(`[data-id=${testCollection.uuid}]`);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${testCollection.uuid}]`)
+                    .find('[data-action=TOGGLE_ACTIVE]')
+                    .click();
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains("Collection");
+                cy.get('[data-cy=picker-dialog-details]')
+                    .contains(testCollection.uuid);
+                cy.get('@chooseFileDialog')
+                    .find(`[data-id=${testCollection.uuid}]`)
+                    .find('[data-action=TOGGLE_OPEN]')
+                    .click();
             });
 
             cy.get('@chooseFileDialog').contains('baz').click();
+            cy.get('[data-cy=picker-dialog-details]')
+                .contains("File");
 
             cy.get('@chooseFileDialog').find('button').contains('Ok').click();
         });
@@ -162,7 +215,7 @@ describe('Create workflow tests', function () {
     });
 
 
-    it.only('can search for collection by name', function () {
+    it('can search for collection by name', function () {
         this.createNestedHelper = createNestedHelper;
         this.createNestedHelper(() => {
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
@@ -185,7 +238,7 @@ describe('Create workflow tests', function () {
         });
     });
 
-    it.only('can search for collection by uuid', function () {
+    it('can search for collection by uuid', function () {
         this.createNestedHelper = createNestedHelper;
         this.createNestedHelper(() => {
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
@@ -208,7 +261,7 @@ describe('Create workflow tests', function () {
         });
     });
 
-    it.only('can search for collection by PDH', function () {
+    it('can search for collection by PDH', function () {
         this.createNestedHelper = createNestedHelper;
         this.createNestedHelper(() => {
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
