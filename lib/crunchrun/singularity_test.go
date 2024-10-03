@@ -43,11 +43,11 @@ func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
 	// use sudo -- but only if requested via environment variable.
 	if os.Getuid() == 0 {
 		// already root
-	} else if os.Getenv("ARVADOS_TEST_USE_SUDO") != "" {
-		c.Logf("ARVADOS_TEST_USE_SUDO is set, invoking 'sudo singularity ...'")
+	} else if os.Getenv("ARVADOS_TEST_PRIVESC") == "sudo" {
+		c.Logf("ARVADOS_TEST_PRIVESC is 'sudo', invoking 'sudo singularity ...'")
 		s.executor.(*singularityExecutor).sudo = true
 	} else {
-		c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_USE_SUDO=1 to enable this test")
+		c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_PRIVESC=sudo to enable this test")
 	}
 	s.executorSuite.TestEnableNetwork_Listen(c)
 }
