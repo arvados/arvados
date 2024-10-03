@@ -424,7 +424,7 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	// HeadObject with superfluous leading slashes
 	exists, err = bucket.Exists(prefix + "//sailboat.txt")
 	c.Check(err, check.IsNil)
-	c.Check(exists, check.Equals, true)
+	c.Check(exists, check.Equals, false)
 }
 
 func (s *IntegrationSuite) checkMetaEquals(c *check.C, hdr http.Header, expect map[string]string) {
@@ -526,15 +526,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 			size:        1 << 26,
 			contentType: "application/octet-stream",
 		}, {
-			path:        "/aaa",
-			size:        2,
-			contentType: "application/octet-stream",
-		}, {
-			path:        "//bbb",
-			size:        2,
-			contentType: "application/octet-stream",
-		}, {
-			path:        "ccc//",
+			path:        "ccc/",
 			size:        0,
 			contentType: "application/x-directory",
 		}, {
@@ -699,15 +691,7 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 		}, {
 			path: "emptydir/",
 		}, {
-			path: "emptydir//",
-		}, {
 			path: "newdir/",
-		}, {
-			path: "newdir//",
-		}, {
-			path: "/",
-		}, {
-			path: "//",
 		}, {
 			path: "",
 		},
@@ -865,7 +849,11 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 		{"/foo%2fbar", "/foo/bar"},                 // / must not be escaped
 		{"/(foo)/[];,", "/%28foo%29/%5B%5D%3B%2C"}, // ()[];, must be escaped
 		{"/foo%5bbar", "/foo%5Bbar"},               // %XX must be uppercase
-		{"//foo///.bar", "/foo/.bar"},              // "//" and "///" must be squashed to "/"
+		// unicode chars must be UTF-8 encoded and escaped
+		{"/\u26f5", "/%E2%9B%B5"},
+		// "//" and "///" must not be squashed -- see example,
+		// https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
+		{"//foo///.bar", "//foo///.bar"},
 	} {
 		c.Logf("trial %q", trial)
 

@@ -186,7 +186,7 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 	}
 
 	normalizedPath := normalizePath(r.URL.Path)
-	ctxlog.FromContext(r.Context()).Debugf("normalizedPath %q", normalizedPath)
+	ctxlog.FromContext(r.Context()).Debugf("normalizedPath %s", normalizedPath)
 	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedPath, s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
 	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
 	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
@@ -201,7 +201,7 @@ func normalizePath(s string) string {
 	// even chars like ";" and "," that are not normally
 	// percent-encoded in paths.
 	out := ""
-	for _, c := range []byte(reMultipleSlashChars.ReplaceAllString(s, "/")) {
+	for _, c := range []byte(s) {
 		if (c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') ||
 			(c >= '0' && c <= '9') ||
