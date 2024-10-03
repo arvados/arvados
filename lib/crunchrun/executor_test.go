@@ -12,7 +12,9 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -172,7 +174,7 @@ func (s *executorSuite) TestExecStdoutStderr(c *C) {
 	c.Check(s.stderr.String(), Equals, "barwaz\n")
 }
 
-func (s *executorSuite) TestIPAddress(c *C) {
+func (s *executorSuite) TestEnableNetwork_Listen(c *C) {
 	// Listen on an available port on the host.
 	ln, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", "0"))
 	c.Assert(err, IsNil)
@@ -191,24 +193,37 @@ func (s *executorSuite) TestIPAddress(c *C) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
 
-	for ctx.Err() == nil {
+	for {
 		time.Sleep(time.Second / 10)
-		_, err := s.executor.IPAddress()
-		if err == nil {
+		if ctx.Err() != nil {
+			c.Error("timed out")
 			break
 		}
-	}
-	// When we connect to the port using s.executor.IPAddress(),
-	// we should reach the nc process running inside the
-	// container, not the net.Listen() running outside the
-	// container, even though both listen on the same port.
-	ip, err := s.executor.IPAddress()
-	if c.Check(err, IsNil) && c.Check(ip, Not(Equals), "") {
-		req, err := http.NewRequest("BREW", "http://"+net.JoinHostPort(ip, port), nil)
+
+		ip, err := s.executor.IPAddress()
+		if err != nil {
+			c.Logf("s.executor.IPAddress: %s", err)
+			continue
+		}
+		c.Assert(ip, Not(Equals), "")
+
+		// When we connect to the port using
+		// s.executor.IPAddress(), we should reach the nc
+		// process running inside the container, not the
+		// net.Listen() running outside the container, even
+		// though both listen on the same port.
+		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second))
+		defer cancel()
+		req, err := http.NewRequestWithContext(ctx, "BREW", "http://"+net.JoinHostPort(ip, port), nil)
 		c.Assert(err, IsNil)
 		resp, err := http.DefaultClient.Do(req)
-		c.Assert(err, IsNil)
+		if err != nil {
+			c.Logf("%s (retrying...)", err)
+			continue
+		}
 		c.Check(resp.StatusCode, Equals, http.StatusTeapot)
+		c.Logf("%s %q: %s", req.Method, req.URL, resp.Status)
+		break
 	}
 
 	s.executor.Stop()
@@ -218,6 +233,29 @@ func (s *executorSuite) TestIPAddress(c *C) {
 
 	c.Logf("stdout:\n%s\n\n", s.stdout.String())
 	c.Logf("stderr:\n%s\n\n", s.stderr.String())
+}
+
+func (s *executorSuite) TestEnableNetwork_IPAddress(c *C) {
+	s.spec.Command = []string{"ip", "ad"}
+	s.spec.EnableNetwork = true
+	c.Assert(s.executor.Create(s.spec), IsNil)
+	c.Assert(s.executor.Start(), IsNil)
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+	defer cancel()
+	code, _ := s.executor.Wait(ctx)
+	c.Check(code, Equals, 0)
+	c.Logf("stdout:\n%s\n\n", s.stdout.String())
+	c.Logf("stderr:\n%s\n\n", s.stderr.String())
+
+	found := false
+	for _, m := range regexp.MustCompile(` inet (.+?)/`).FindAllStringSubmatch(s.stdout.String(), -1) {
+		if addr, err := netip.ParseAddr(m[1]); err == nil && !addr.IsLoopback() {
+			found = true
+			c.Logf("found non-loopback IP address %q", m[1])
+			break
+		}
+	}
+	c.Check(found, Equals, true, Commentf("container does not appear to have a non-loopback IP address"))
 }
 
 func (s *executorSuite) TestInject(c *C) {
