@@ -133,7 +133,6 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 		if err != nil {
 			return nil, fmt.Errorf("error creating '%v' collection: %s", collectionName, err)
 		}
-
 	}
 
 	return &imageCollection, nil
@@ -285,6 +284,32 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 		args = append(args, "--nv")
 	}
 
+	// If we ask for resource limits that aren't supported,
+	// singularity will not run the container at all. So we probe
+	// for support first, and only apply the limits that appear to
+	// be supported.
+	//
+	// Default debian configuration lets non-root users set memory
+	// limits but not CPU limits, so we enable/disable those
+	// limits independently.
+	//
+	// https://rootlesscontaine.rs/getting-started/common/cgroup2/
+	checkCgroupSupport(e.logf)
+	if e.spec.VCPUs > 0 {
+		if cgroupSupport["cpu"] {
+			args = append(args, "--cpus", fmt.Sprintf("%d", e.spec.VCPUs))
+		} else {
+			e.logf("cpu limits are not supported by current systemd/cgroup configuration, not setting --cpu %d", e.spec.VCPUs)
+		}
+	}
+	if e.spec.RAM > 0 {
+		if cgroupSupport["memory"] {
+			args = append(args, "--memory", fmt.Sprintf("%d", e.spec.RAM))
+		} else {
+			e.logf("memory limits are not supported by current systemd/cgroup configuration, not setting --memory %d", e.spec.RAM)
+		}
+	}
+
 	readonlyflag := map[bool]string{
 		false: "rw",
 		true:  "ro",
@@ -335,6 +360,17 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	// and https://dev.arvados.org/issues/19081
 	env = append(env, "SINGULARITY_NO_EVAL=1")
 
+	// If we don't propagate XDG_RUNTIME_DIR and
+	// DBUS_SESSION_BUS_ADDRESS, singularity resource limits fail
+	// with "FATAL: container creation failed: while applying
+	// cgroups config: system configuration does not support
+	// cgroup management" or "FATAL: container creation failed:
+	// while applying cgroups config: rootless cgroups require a
+	// D-Bus session - check that XDG_RUNTIME_DIR and
+	// DBUS_SESSION_BUS_ADDRESS are set".
+	env = append(env, "XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"))
+	env = append(env, "DBUS_SESSION_BUS_ADDRESS="+os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
+
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)
 
@@ -370,11 +406,18 @@ func (e *singularityExecutor) Start() error {
 }
 
 func (e *singularityExecutor) Pid() int {
-	// see https://dev.arvados.org/issues/17244#note-21
-	return 0
+	childproc, err := e.containedProcess()
+	if err != nil {
+		return 0
+	}
+	return childproc
 }
 
 func (e *singularityExecutor) Stop() error {
+	if e.child == nil || e.child.Process == nil {
+		// no process started, or Wait already called
+		return nil
+	}
 	if err := e.child.Process.Signal(syscall.Signal(0)); err != nil {
 		// process already exited
 		return nil
