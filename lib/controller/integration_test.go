@@ -1315,7 +1315,7 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 			// database/dispatcher via separate API calls,
 			// so we can also see "Queued, preparing
 			// runtime environment".
-			`((Queued|Locked), (waiting .*|preparing runtime environment)\n)*`+
+			`((Queued|Locked), (waiting .*|Container is allocated to an instance and preparing to run\.)\n)*`+
 			`(Running, \n)?`+
 			`Complete, \n`)
 	}
