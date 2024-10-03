@@ -17,9 +17,7 @@ import {
 } from 'store/run-process-panel/run-process-panel-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
-import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
-import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
-import { RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-advanced-form';
+import { RUN_PROCESS_BASIC_FORM, RUN_PROCESS_INPUTS_FORM, RUN_PROCESS_ADVANCED_FORM } from 'store/run-process-panel/run-process-panel-actions';
 import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';

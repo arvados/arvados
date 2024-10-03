@@ -14,13 +14,7 @@ import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { WorkflowResource } from 'models/workflow';
 import { ArvadosTheme, CustomStyleRulesCallback } from 'common/custom-theme';
-
-export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
-
-export interface RunProcessBasicFormData {
-    name: string;
-    owner?: ProjectResource | UserResource;
-}
+import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from 'store/run-process-panel/run-process-panel-actions';
 
 interface RunProcessBasicFormProps {
     workflow?: WorkflowResource;

@@ -17,14 +17,15 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ColumnSelector } from "components/column-selector/column-selector";
-import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
+import { DataColumns } from "components/data-table/data-column";
+import { DataTable, DataTableFetchMode } from "components/data-table/data-table";
 import { DataColumn } from "components/data-table/data-column";
 import { SearchInput } from "components/search-input/search-input";
 import { ArvadosTheme } from "common/custom-theme";
 import { MultiselectToolbar } from "components/multiselect-toolbar/MultiselectToolbar";
 import { TCheckedList } from "components/data-table/data-table";
 import { createTree } from "models/tree";
-import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters";
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreVerticalIcon } from "components/icon/icon";
 import { PaperProps } from "@mui/material/Paper";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
@@ -48,8 +49,8 @@ type CssRules =
     | 'container'
     | 'paginationLabel'
     | 'paginationRoot'
-    | "subToolbarWrapper" 
-    | 'progressWrapper' 
+    | "subToolbarWrapper"
+    | 'progressWrapper'
     | 'progressWrapperNoTitle';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -420,9 +421,9 @@ export const DataExplorer = withStyles(styles)(
                                             labelDisplayedRows={renderPaginationLabel(loadingItemsAvailable)}
                                             nextIconButtonProps={getPaginiationButtonProps(itemsAvailable, loadingItemsAvailable)}
                                             component="div"
-                                            classes={{ 
+                                            classes={{
                                                 root: classes.paginationRoot,
-                                                selectLabel: classes.paginationLabel, 
+                                                selectLabel: classes.paginationLabel,
                                                 displayedRows: classes.paginationLabel,
                                             }}
                                         />

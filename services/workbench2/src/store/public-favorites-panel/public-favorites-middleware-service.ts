@@ -12,7 +12,7 @@ import { resourcesActions } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel';
 import { publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { LinkClass, LinkResource } from 'models/link';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';

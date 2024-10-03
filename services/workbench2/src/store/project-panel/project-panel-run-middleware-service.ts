@@ -10,9 +10,8 @@ import {
 } from "store/data-explorer/data-explorer-middleware-service";
 import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
 import { RootState } from "store/store";
-import { DataColumns } from "components/data-table/data-table";
 import { ServiceRepository } from "services/services";
-import { SortDirection } from "components/data-table/data-column";
+import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";

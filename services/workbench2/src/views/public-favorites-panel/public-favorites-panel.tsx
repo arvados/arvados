@@ -8,7 +8,7 @@ import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { ResourceKind } from 'models/resource';

@@ -18,6 +18,7 @@ import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
 import { verifyAndUpdateLinks } from 'common/link-update-name';
+import { ProcessIcon, ProjectIcon, FilterGroupIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon } from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',
@@ -330,4 +331,29 @@ export const getSidePanelTreeNodeAncestorsIds = (id: string) => (treePicker: Tre
     return sidePanelTree
         ? getNodeAncestorsIds(id)(sidePanelTree)
         : [];
+};
+
+export const getSidePanelIcon = (category: string) => {
+    switch (category) {
+        case SidePanelTreeCategory.FAVORITES:
+            return FavoriteIcon;
+        case SidePanelTreeCategory.PROJECTS:
+            return ProjectsIcon;
+        case SidePanelTreeCategory.SHARED_WITH_ME:
+            return ShareMeIcon;
+        case SidePanelTreeCategory.TRASH:
+            return TrashIcon;
+        case SidePanelTreeCategory.PUBLIC_FAVORITES:
+            return PublicFavoriteIcon;
+        case SidePanelTreeCategory.ALL_PROCESSES:
+            return ProcessIcon;
+        case SidePanelTreeCategory.INSTANCE_TYPES:
+            return ResourceIcon;
+        case SidePanelTreeCategory.GROUPS:
+            return GroupsIcon;
+        case SidePanelTreeCategory.SHELL_ACCESS:
+            return TerminalIcon
+        default:
+            return ProjectIcon;
+    }
 };

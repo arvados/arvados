@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { runProcess } from "./run-process-panel-actions";
-import { RUN_PROCESS_BASIC_FORM } from "views/run-process-panel/run-process-basic-form";
-import { RUN_PROCESS_INPUTS_FORM } from "views/run-process-panel/run-process-inputs-form";
+import { RUN_PROCESS_BASIC_FORM, RUN_PROCESS_INPUTS_FORM } from "./run-process-panel-actions";
 import { navigateTo } from "store/navigation/navigation-action";
-  
+
 describe("run-process-panel-actions", () => {
     describe("runProcess", () => {
         const newProcessUUID = 'newProcessUUID';

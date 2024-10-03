@@ -6,7 +6,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';

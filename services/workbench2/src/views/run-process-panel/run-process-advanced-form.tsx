@@ -11,26 +11,15 @@ import { ExpandIcon } from 'components/icon/icon';
 import * as IntInput from './inputs/int-input';
 import { min } from 'validators/min';
 import { optional } from 'validators/optional';
-
-export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
-
-export const DESCRIPTION_FIELD = 'description';
-export const OUTPUT_FIELD = 'output';
-export const RUNTIME_FIELD = 'runtime';
-export const RAM_FIELD = 'ram';
-export const VCPUS_FIELD = 'vcpus';
-export const KEEP_CACHE_RAM_FIELD = 'keep_cache_ram';
-export const RUNNER_IMAGE_FIELD = 'acr_container_image';
-
-export interface RunProcessAdvancedFormData {
-    [DESCRIPTION_FIELD]?: string;
-    [OUTPUT_FIELD]?: string;
-    [RUNTIME_FIELD]?: number;
-    [RAM_FIELD]: number;
-    [VCPUS_FIELD]: number;
-    [KEEP_CACHE_RAM_FIELD]: number;
-    [RUNNER_IMAGE_FIELD]: string;
-}
+import { RUN_PROCESS_ADVANCED_FORM,
+         OUTPUT_FIELD,
+         RUNTIME_FIELD,
+         RAM_FIELD,
+         VCPUS_FIELD,
+         KEEP_CACHE_RAM_FIELD,
+         RUNNER_IMAGE_FIELD,
+         RunProcessAdvancedFormData
+} from 'store/run-process-panel/run-process-panel-actions';
 
 export const RunProcessAdvancedForm =
     reduxForm<RunProcessAdvancedFormData>({

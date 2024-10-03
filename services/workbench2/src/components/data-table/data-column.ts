@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
+import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { createTree } from 'models/tree';
 
 /**
@@ -55,3 +55,5 @@ export const createDataColumn = <I, R>(dataColumn: Partial<DataColumn<I, R>>): D
     render: () => React.createElement('span'),
     ...dataColumn,
 });
+
+export type DataColumns<I, R> = Array<DataColumn<I, R>>;
