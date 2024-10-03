@@ -22,7 +22,6 @@ import (
 var (
 	ErrReadOnlyFile      = errors.New("read-only file")
 	ErrNegativeOffset    = errors.New("cannot seek to negative offset")
-	ErrFileExists        = errors.New("file exists")
 	ErrInvalidOperation  = errors.New("invalid operation")
 	ErrInvalidArgument   = errors.New("invalid argument")
 	ErrDirectoryNotEmpty = errors.New("directory not empty")
@@ -536,7 +535,7 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 			return nil, ErrInvalidArgument
 		}
 	} else if flag&os.O_EXCL != 0 {
-		return nil, ErrFileExists
+		return nil, os.ErrExist
 	} else if flag&os.O_TRUNC != 0 {
 		if !writable {
 			return nil, fmt.Errorf("invalid flag O_TRUNC in read-only mode")
