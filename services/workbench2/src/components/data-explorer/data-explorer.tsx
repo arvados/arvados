@@ -50,6 +50,7 @@ type CssRules =
     | 'paginationLabel'
     | 'paginationRoot'
     | "subToolbarWrapper" 
+    | 'searchResultsToolbar'
     | 'progressWrapper' 
     | 'progressWrapperNoTitle';
 
@@ -67,6 +68,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: "-20px",
         marginTop: "-10px",
         flexShrink: 0,
+    },
+    searchResultsToolbar: {
+        marginTop: "10px",
+        marginBottom: "auto",
     },
     searchBox: {
         paddingBottom: 0,
@@ -370,7 +375,7 @@ export const DataExplorer = withStyles(styles)(
                             )}
                         </div>
                         {!this.multiSelectToolbarInTitle &&
-                            <div className={classes.subToolbarWrapper}>
+                            <div className={classNames(classes.subToolbarWrapper, path?.includes('search-results') ? classes.searchResultsToolbar : null)}>
                                 {!this.state.hideToolbar && <MultiselectToolbar
                                     forceMultiSelectMode={forceMultiSelectMode}
                                     injectedStyles={classes.workflowTabToolbar}
