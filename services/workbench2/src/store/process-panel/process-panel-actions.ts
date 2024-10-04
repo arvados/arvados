@@ -50,8 +50,6 @@ export const loadProcess =
         let containerRequest: ContainerRequestResource | undefined = undefined;
         let container: ContainerResource | undefined = undefined;
 
-        dispatch<any>(loadContainerStatus(containerRequestUuid));
-
         try {
             const containerRequestResult = await services.groupsService.contents(
                 '', {
