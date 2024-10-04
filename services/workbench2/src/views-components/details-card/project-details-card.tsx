@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Card, CardHeader, Typography, CardContent, Tooltip, Collapse, Grid } from '@mui/material';
 import { WithStyles } from '@mui/styles';
@@ -40,6 +40,7 @@ type CssRules =
     | 'chipSection'
     | 'tag'
     | 'description'
+    | 'oneLineDescription'
     | 'toolbarStyles';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -126,6 +127,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     description: {
         marginTop: 0,
         marginRight: '2rem',
+    },
+    oneLineDescription: {
+        marginTop: 0,
+        marginRight: '2rem',
         marginBottom: '-0.85rem',
     },
     toolbarStyles: {
@@ -170,8 +175,22 @@ export const ProjectCard = connect(
     withStyles(styles)((props: ProjectCardProps) => {
         const { classes, currentResource, frozenByFullName, handleCardClick, isSelected } = props;
         const { name, description, uuid } = currentResource as ProjectResource;
-        const [showDescription, setShowDescription] = React.useState(false);
-        const [showProperties, setShowProperties] = React.useState(false);
+        const [showDescription, setShowDescription] = useState(false);
+        const [showProperties, setShowProperties] = useState(false);
+        const [isMultiLine, setIsMultiLine] = useState(false);
+        const descriptionRef = useRef<HTMLDivElement>(null);
+
+        useEffect(() => {
+            const checkIfMultiLine = () => {
+              const element = descriptionRef.current;
+              if (element) {
+                // Compare the scroll width and offset width to determine if wrapping occurs
+                setIsMultiLine(element.scrollWidth > element.offsetWidth);
+              }
+            };
+        
+            checkIfMultiLine();
+          }, [description]);
 
         const toggleDescription = () => {
             setShowDescription(!showDescription);
@@ -248,8 +267,11 @@ export const ProjectCard = connect(
                                     timeout='auto'
                                     collapsedSize='1.25rem'
                                 >
+                                    {/* Hidden paragraph for measuring the text to determine if it is longer than one line */}
+                                        <div ref={descriptionRef} style={{ position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', width: '100%' }}>{description}</div>
+                                    
                                     <Typography
-                                        className={classes.description}
+                                        className={isMultiLine ? classes.description : classes.oneLineDescription}
                                         data-cy='project-description'
                                         //dangerouslySetInnerHTML is ok here only if description is sanitized,
                                         //which it is before it is loaded into the redux store
