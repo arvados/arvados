@@ -13,10 +13,11 @@ import { Process, getProcess } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { CollectionFile, CollectionFileType } from "models/collection-file";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { ContainerRequestResource, ContainerRequestState, ContainerStatus } from "models/container-request";
+import { ContainerState } from "models/container";
 
 const SNIPLINE = `================ ✀ ================ ✀ ========= Some log(s) were skipped ========= ✀ ================ ✀ ================`;
-const LOG_TIMESTAMP_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{9}Z/;
+const LOG_TIMESTAMP_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{0,}Z/;
 
 export const processLogsPanelActions = unionize({
     RESET_PROCESS_LOGS_PANEL: ofType<{}>(),
@@ -79,33 +80,47 @@ export const initProcessLogsPanel = (processUuid: string) =>
     };
 
 export const pollProcessLogs = (processUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, { logService, containerRequestService }: ServiceRepository) => {
         try {
             // Get log panel state and process from store
             const currentState = getState().processLogsPanel;
             const process = getProcess(processUuid)(getState().resources);
 
             // Check if container request is present and initial logs state loaded
-            if (process?.containerRequest?.uuid && Object.keys(currentState.logs).length > 0) {
-                const logFiles = await loadContainerLogFileList(process.containerRequest, logService);
-
-                // Determine byte to fetch from while filtering unchanged files
-                const filesToUpdateWithProgress = logFiles.reduce((acc, updatedFile) => {
-                    // Fetch last byte or 0 for new log files
-                    const currentStateLogLastByte = currentState.logs[logFileToLogType(updatedFile)]?.lastByte || 0;
-
-                    const isNew = !Object.keys(currentState.logs).find((currentStateLogName) => (updatedFile.name.startsWith(currentStateLogName)));
-                    const isChanged = !isNew && currentStateLogLastByte < updatedFile.size;
-
-                    if (isNew || isChanged) {
-                        return acc.concat({ file: updatedFile, lastByte: currentStateLogLastByte });
-                    } else {
-                        return acc;
-                    }
-                }, [] as FileWithProgress[]);
+            if (process?.containerRequest?.uuid) {
 
                 // Perform range request(s) for each file
-                const logFragments = await loadContainerLogFileContents(filesToUpdateWithProgress, logService, process);
+                let logFiles: CollectionFile[] = [];
+                let logFragments: LogFragment[] = [];
+
+                if (process.containerRequest.logUuid && Object.keys(currentState.logs).length > 0) {
+                    logFiles = await loadContainerLogFileList(process.containerRequest, logService);
+
+                    // Determine byte to fetch from while filtering unchanged files
+                    const filesToUpdateWithProgress = logFiles.reduce((acc, updatedFile) => {
+                        // Fetch last byte or 0 for new log files
+                        const currentStateLogLastByte = currentState.logs[logFileToLogType(updatedFile)]?.lastByte || 0;
+
+                        const isNew = !Object.keys(currentState.logs).find((currentStateLogName) => (updatedFile.name.startsWith(currentStateLogName)));
+                        const isChanged = !isNew && currentStateLogLastByte < updatedFile.size;
+
+                        if (isNew || isChanged) {
+                            return acc.concat({ file: updatedFile, lastByte: currentStateLogLastByte });
+                        } else {
+                            return acc;
+                        }
+                    }, [] as FileWithProgress[]);
+
+                    logFragments = await loadContainerLogFileContents(filesToUpdateWithProgress, logService, process);
+                }
+
+                if (process?.container?.state === ContainerState.QUEUED || process?.container?.state === ContainerState.LOCKED) {
+                    const containerStatus: ContainerStatus = await containerRequestService.containerStatus(process?.containerRequest?.uuid, false);
+                    logFragments.push({
+                        logType: LogEventType.SCHEDULING,
+                        contents: [`${new Date().toISOString()} ${containerStatus.schedulingStatus}`],
+                    });
+                }
 
                 if (logFragments.length) {
                     // Convert LogFragments to ProcessLogs with All/Main sorting & line-merging
@@ -347,6 +362,7 @@ const MAIN_EVENT_TYPES = [
     LogEventType.CRUNCH_RUN,
     LogEventType.STDERR,
     LogEventType.STDOUT,
+    LogEventType.SCHEDULING,
 ];
 
 const PROCESS_PANEL_LOG_EVENT_TYPES = [
@@ -360,6 +376,7 @@ const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.STDOUT,
     LogEventType.CONTAINER,
     LogEventType.KEEPSTORE,
+    LogEventType.SCHEDULING
 ];
 
 const NON_SORTED_LOG_TYPES = [

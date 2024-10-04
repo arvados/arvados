@@ -35,7 +35,7 @@ export const useAsyncInterval = function (callback, delay) {
         }
         if (delay !== null) {
             ref.current.active = true;
-            setTimeout(tick, delay);
+            setTimeout(tick, 0); // want the first callback to happen immediately.
         }
         // Suppress warning about cleanup function - can be ignored when variables are unrelated to dom elements
         //   https://github.com/facebook/react/issues/15841#issuecomment-500133759

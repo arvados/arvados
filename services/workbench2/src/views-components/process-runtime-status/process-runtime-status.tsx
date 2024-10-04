@@ -22,9 +22,7 @@ type CssRules = 'root'
               | 'errorColor'
               | 'warning'
               | 'warningColor'
-              | 'paperRoot'
-              | 'schedulingStatus'
-              | 'schedulingText';
+              | 'paperRoot';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -63,17 +61,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     warningColor: {
         color: theme.customs.colors.grey700,
     },
-    schedulingStatus: {
-        backgroundColor: theme.palette.common.white,
-        color: theme.customs.colors.grey600,
-        border: `2px solid ${theme.customs.colors.grey600}`,
-        borderRadius: `5px`,
-        marginTop: '8px',
-    },
-    schedulingText: {
-        paddingTop: theme.spacing(1),
-        paddingBottom: theme.spacing(1),
-    },
     paperRoot: {
         minHeight: theme.spacing(6),
         display: 'flex',
@@ -83,21 +70,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface ProcessRuntimeStatusDataProps {
     runtimeStatus: RuntimeStatus | undefined;
     containerCount: number;
-    schedulingStatus: string;
 }
 
 type ProcessRuntimeStatusProps = ProcessRuntimeStatusDataProps & WithStyles<CssRules>;
 
 export const ProcessRuntimeStatus = withStyles(styles)(
-    ({ runtimeStatus, containerCount, schedulingStatus, classes }: ProcessRuntimeStatusProps) => {
+    ({ runtimeStatus, containerCount, classes }: ProcessRuntimeStatusProps) => {
         return <div className={classes.root}>
-        { schedulingStatus !== "" &&
-          <div data-cy='process-runtime-scheduling-status' className={classes.schedulingStatus}>
-              <Typography className={classNames(classes.heading, classes.summary, classes.schedulingText)}>
-                  {`Scheduling status: ${schedulingStatus}`}
-              </Typography>
-          </div>
-        }
         { runtimeStatus?.error &&
           <div data-cy='process-runtime-status-error'><Accordion className={classes.error} elevation={0}>
               <AccordionSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
