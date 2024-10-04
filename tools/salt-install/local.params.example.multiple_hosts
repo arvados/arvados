@@ -88,7 +88,7 @@ SSL_KEY_ENCRYPTED="no"
 SSL_KEY_AWS_SECRET_NAME="${CLUSTER}-arvados-ssl-privkey-password"
 SSL_KEY_AWS_REGION="${AWS_REGION}"
 
-# Customize Prometheus & Grafana web UI access credentials
+# Customize Prometheus, Grafana and Loki web UI access credentials
 MONITORING_USERNAME=${INITIAL_USER}
 MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 
@@ -98,6 +98,11 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # Sets the amount of data (expressed in time) Prometheus keeps on its
 # time-series database. Default is 15 days.
 # PROMETHEUS_DATA_RETENTION_TIME="180d"
+
+# Loki S3 storage settings
+LOKI_AWS_S3_BUCKET="${CLUSTER}-loki-object-storage"
+LOKI_LOG_RETENTION_TIME="180d"
+LOKI_AWS_REGION="${AWS_REGION}"
 
 # The mapping of nodes to roles
 # installer.sh will log in to each of these nodes and then provision

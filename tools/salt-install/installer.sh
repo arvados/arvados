@@ -278,9 +278,9 @@ terraform)
     echo -n 'letsencrypt_iam_secret_access_key = ' && \
     terraform output letsencrypt_iam_secret_access_key && \
     echo -n 'database_password = ' && \
-    terraform output database_password && \
+    terraform output database_password 2>/dev/null || echo '<not set>' && \
     echo -n 'loki_iam_secret_access_key = ' && \
-    terraform output loki_iam_secret_access_key && \
+    terraform output loki_iam_secret_access_key
   ) 2>&1 | tee -a $logfile
   ;;
 
