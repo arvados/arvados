@@ -58,6 +58,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
+        marginTop: "-5px",
     },
     msToolbarStyles: {
         paddingTop: "0.6rem",
@@ -131,6 +132,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     dataTable: {
         height: "100%",
         overflowY: "auto",
+        marginTop: "-10px",
     },
     container: {
         height: "100%",
@@ -374,7 +376,7 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle &&
+                        {this.multiSelectToolbarInTitle ? <div className={classes.subToolbarWrapper} /> :
                             <div className={classNames(classes.subToolbarWrapper, path?.includes('search-results') ? classes.searchResultsToolbar : null)}>
                                 {!this.state.hideToolbar && <MultiselectToolbar
                                     forceMultiSelectMode={forceMultiSelectMode}

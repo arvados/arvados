@@ -62,6 +62,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: "2.5rem ",
         paddingLeft: 0,
         border: "1px solid transparent",
+        zIndex: 10,
     },
     iconContainer: {
         height: '100%',
