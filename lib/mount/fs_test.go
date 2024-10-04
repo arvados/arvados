@@ -57,6 +57,13 @@ func (s *FSSuite) TestOpendir(c *C) {
 	c.Check(fh, Equals, invalidFH)
 }
 
+func (s *FSSuite) TestMknod_ReadOnly(c *C) {
+	s.fs.ReadOnly = true
+	path := "/by_id/" + arvadostest.FooCollection + "/z"
+	errc := s.fs.Mknod(path, syscall.S_IFREG, 0)
+	c.Check(errc, Equals, -fuse.EROFS)
+}
+
 func (s *FSSuite) TestMknod(c *C) {
 	path := "/by_id/" + arvadostest.FooCollection + "/z"
 	_, err := s.fs.root.Stat(path)
