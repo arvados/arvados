@@ -55,7 +55,7 @@ export const runProcessPanelReducer = (state = initialState, action: RunProcessP
             const termRegex = new RegExp(term, 'i');
             return {
                 ...state,
-                searchWorkflows: state.workflows.filter(workflow => termRegex.test(workflow.name)),
+                searchWorkflows: state.workflows.filter(workflow => (termRegex.test(workflow.name)||termRegex.test(workflow.description))),
             };
         },
         RESET_RUN_PROCESS_PANEL: () => ({ ...initialState, processOwnerUuid: state.processOwnerUuid }),

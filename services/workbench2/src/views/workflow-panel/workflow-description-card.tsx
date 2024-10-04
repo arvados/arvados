@@ -24,7 +24,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     inputTab: {
         overflow: 'auto',
-        maxHeight: '300px',
+        height: "50vh",
         marginTop: theme.spacing(1)
     },
     graphTab: {
@@ -37,7 +37,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     descriptionTab: {
         overflow: 'auto',
-        maxHeight: '300px',
+        height: "50vh",
         marginTop: theme.spacing(1),
     },
     inputsTable: {
