@@ -18,6 +18,7 @@ import { ResourceKind } from 'models/resource';
 import { GroupClass } from 'models/group';
 import { SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
 import { kebabCase } from 'lodash';
+import { TreeItemWeight } from 'store/tree-picker/tree-picker';
 
 type CssRules = 'list'
               | 'listItem'
@@ -95,14 +96,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     childItemName: {
         fontSize: '0.875rem',
     },
-    childItemNameLight: {
-        fontSize: '0.875rem',
-        color: theme.customs.colors.greyL,
-    },
-    childItemNameDark: {
-        fontSize: '0.875rem',
-        color: "black",
-    },
     childItemIcon: {
         marginLeft: '8px',
         marginRight: '16px',
@@ -110,6 +103,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     active: {
         color: theme.palette.primary.main,
+    },
+    itemWeightLight: {
+        color: theme.customs.colors.greyL,
+    },
+    itemWeightDark: {
+        color: "black",
     },
     frozenIcon: {
         fontSize: 20,
@@ -277,11 +276,15 @@ const FlatTree = (props: FlatTreeProps) =>
         {
             (props.it.items || [])
                 .map((item: any, index: number) => <div key={item.id || index} data-id={item.id}
-                                                            className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
-                                                            style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
+                    className={classnames(props.classes.childItem, {
+                        [props.classes.active]: item.active,
+                        [props.classes.itemWeightLight]: (item.data.weight === TreeItemWeight.LIGHT && !item.active),
+                        [props.classes.itemWeightDark]: (item.data.weight === TreeItemWeight.DARK && !item.active),
+                    })}
+                    style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
                     {isInFavoritesTree(props.it) ?
                      <div className={props.classes.indentSpacer} />
-                    :
+:
                      <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
                          <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
                              {props.getProperArrowAnimation(item.status, item.items!)}
@@ -299,18 +302,14 @@ const FlatTree = (props: FlatTreeProps) =>
                          className={props.classes.checkbox}
                          color="primary" />}
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer} ref={item.active ? props.selectedRef : undefined}>
-                        <span className={props.classes.childLi}>
-                            <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} headKind={item.data.headKind || null} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
-                            <span className={item.data.weight === 1 ?
-                                             props.classes.childItemNameLight :
-                                             (item.data.weight === 2 ?
-                                              props.classes.childItemNameDark :
-                                              props.classes.childItemName)}>
-                                {item.data.name}
-                            </span>
-                            {
-                                !!item.data.frozenByUuid ? <FreezeIcon className={props.classes.frozenIcon} /> : null
-                            }
+                    <span className={props.classes.childLi}>
+                    <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} headKind={item.data.headKind || null} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
+                    <span className={props.classes.childItemName}>
+                        {item.data.name}
+                    </span>
+                    {
+                        !!item.data.frozenByUuid ? <FreezeIcon className={props.classes.frozenIcon} /> : null
+                    }
                         </span>
                     </div>
                 </div>)

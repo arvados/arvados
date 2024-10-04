@@ -14,3 +14,9 @@ export const createTreePickerNode = (data: { nodeId: string, value: any }) => ({
     collapsed: true,
     status: TreeItemStatus.INITIAL
 });
+
+export enum TreeItemWeight {
+    NORMAL = 0,
+    LIGHT = 1,
+    DARK = 2,
+};

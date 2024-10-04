@@ -13,7 +13,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
 import { Resource, ResourceKind, ResourceObjectType, extractUuidObjectType, COLLECTION_PDH_REGEX } from 'models/resource';
 import { GroupContentsResource, GroupContentsIncludedResource } from 'services/groups-service/groups-service';
-import { getTreePicker, TreePicker } from './tree-picker';
+import { getTreePicker, TreePicker, TreeItemWeight } from './tree-picker';
 import { ProjectsTreePickerItem } from './tree-picker-middleware';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
@@ -326,13 +326,13 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                         return {...item,
                                 uuid: includeOwners ? "search-"+item.uuid : item.uuid,
                                 name: item['fullName'] + " Home Project",
-                                weight: includeOwners ? 1 : 0,
+                                weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,
                                 kind: ResourceKind.USER,
                         }
                     }
                     return {...item,
                             uuid: includeOwners ? "search-"+item.uuid : item.uuid,
-                            weight: includeOwners ? 1 : 0,};
+                            weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,};
 
                 }),
                 extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
@@ -346,7 +346,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                     if (!projects.hasOwnProperty(item.ownerUuid)) {
                         projects[item.ownerUuid] = [];
                     }
-                    projects[item.ownerUuid].push({...item, weight: 2});
+                    projects[item.ownerUuid].push({...item, weight: TreeItemWeight.DARK});
                 });
                 for (const prj in projects) {
                     dispatch<any>(receiveTreePickerData<GroupContentsResource>({
