@@ -550,6 +550,40 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 	}
 }
 
+func (s *RouterIntegrationSuite) TestIncluded(c *check.C) {
+	for _, trial := range []struct {
+		uuid            string
+		expectOwnerUUID string
+		expectOwnerKind string
+	}{
+		{
+			uuid:            arvadostest.ASubprojectUUID,
+			expectOwnerUUID: arvadostest.AProjectUUID,
+			expectOwnerKind: "arvados#group",
+		},
+		{
+			uuid:            arvadostest.AProjectUUID,
+			expectOwnerUUID: arvadostest.ActiveUserUUID,
+			expectOwnerKind: "arvados#user",
+		},
+	} {
+		c.Logf("trial: %#v", trial)
+		token := arvadostest.ActiveTokenV2
+		jresp := map[string]interface{}{}
+		_, rr := doRequest(c, s.rtr, token, "GET", `/arvados/v1/groups/contents?include=owner_uuid&filters=[["uuid","=","`+trial.uuid+`"]]`, true, nil, nil, jresp)
+		c.Check(rr.Code, check.Equals, http.StatusOK)
+
+		c.Assert(jresp["included"], check.FitsTypeOf, []interface{}{})
+		included, ok := jresp["included"].([]interface{})
+		c.Assert(ok, check.Equals, true)
+		c.Assert(included, check.HasLen, 1)
+		owner, ok := included[0].(map[string]interface{})
+		c.Assert(ok, check.Equals, true)
+		c.Check(owner["kind"], check.Equals, trial.expectOwnerKind)
+		c.Check(owner["uuid"], check.Equals, trial.expectOwnerUUID)
+	}
+}
+
 func (s *RouterIntegrationSuite) TestHEAD(c *check.C) {
 	_, rr := doRequest(c, s.rtr, arvadostest.ActiveTokenV2, "HEAD", "/arvados/v1/containers/"+arvadostest.QueuedContainerUUID, true, nil, nil, nil)
 	c.Check(rr.Code, check.Equals, http.StatusOK)

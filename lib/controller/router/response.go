@@ -138,12 +138,13 @@ func (rtr *router) sendError(w http.ResponseWriter, err error) {
 }
 
 var infixMap = map[string]interface{}{
-	"gj3su": arvados.APIClientAuthorization{},
 	"4zz18": arvados.Collection{},
-	"xvhdp": arvados.ContainerRequest{},
-	"dz642": arvados.Container{},
-	"j7d0g": arvados.Group{},
 	"7fd4e": arvados.Workflow{},
+	"dz642": arvados.Container{},
+	"gj3su": arvados.APIClientAuthorization{},
+	"j7d0g": arvados.Group{},
+	"tpzed": arvados.User{},
+	"xvhdp": arvados.ContainerRequest{},
 }
 
 var specialKindTransforms = map[string]string{
