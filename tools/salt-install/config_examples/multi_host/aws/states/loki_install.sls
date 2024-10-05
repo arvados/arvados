@@ -16,8 +16,8 @@ extra_loki_config:
   file.managed:
     - name: {{ loki['config_path'] }}
     - contents: {{ loki['config_contents'] | yaml_dquote }}
-    - mode: '0644'
-    - user: root
+    - mode: '0640'
+    - user: loki
     - group: root
     - require:
       - pkg: extra_install_loki

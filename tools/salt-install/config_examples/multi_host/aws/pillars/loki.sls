@@ -19,6 +19,7 @@ loki:
     ########################################################################
     # File managed by Salt. Your changes will be overwritten.
     ########################################################################
+    auth_enabled: false
     server:
       http_listen_port: 3100
       grpc_listen_port: 9096
