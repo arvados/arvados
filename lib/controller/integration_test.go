@@ -1309,7 +1309,7 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		c.Check(ctr.ExitCode, check.Equals, expectExitCode)
 		err = ac.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
 		c.Assert(err, check.IsNil)
-		c.Check(allStatus, check.Matches, `Queued, waiting for dispatch\n`+
+		c.Check(allStatus, check.Matches, `(Queued, Waiting in queue\.\n)?`+
 			// Occasionally the dispatcher will
 			// unlock/retry, and we get state/status from
 			// database/dispatcher via separate API calls,
