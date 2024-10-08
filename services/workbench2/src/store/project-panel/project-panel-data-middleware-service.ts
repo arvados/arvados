@@ -109,7 +109,7 @@ export class ProjectPanelDataMiddlewareService extends DataExplorerMiddlewareSer
 export const setItems = (listResults: ListResults<GroupContentsResource>) =>
     projectPanelDataActions.SET_ITEMS({
         ...listResultsToDataExplorerItemsMeta(listResults),
-        items: listResults.items.map(resource => resource.uuid),
+        items: listResults.items,
     });
 
 export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean): ContentsArguments => ({

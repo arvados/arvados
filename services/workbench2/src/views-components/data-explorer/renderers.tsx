@@ -60,6 +60,7 @@ import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
 import { CustomTheme } from "common/custom-theme";
+import { dispatchAction } from "common/dispatch-action";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -71,7 +72,7 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
+export const renderName = (item: any) => {
     const navFunc = "groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo;
     return (
         <Grid
@@ -87,7 +88,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
                     style={{ width: "auto", cursor: "pointer" }}
                     onClick={(ev) => {
                         ev.stopPropagation()
-                        dispatch<any>(navFunc(item.uuid))
+                        dispatchAction(navFunc, item.uuid)
                     }}
                 >
                     {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION ? <IllegalNamingWarning name={item.name} /> : null}
@@ -131,7 +132,7 @@ export const FrozenProject = (props: { item: ProjectResource }) => {
 export const ResourceName = connect((state: RootState, props: { uuid: string }) => {
     const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
     return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
+})((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource));
 
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
