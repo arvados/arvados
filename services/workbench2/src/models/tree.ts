@@ -250,8 +250,10 @@ const toggleParentNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
     return tree;
 };
 
-const mapNodeValue = <T, R>(mapFn: (value: T) => R) => (node: TreeNode<T>): TreeNode<R> =>
-    ({ ...node, value: mapFn(node.value) });
+const mapNodeValue = <T, R>(mapFn: (value: T) => R) => (node: TreeNode<T>): TreeNode<R> =>{
+    if(!mapFn) mapFn = value => value as unknown as R;
+    return { ...node, value: mapFn(node.value) };
+}
 
 const getRootNodeChildrenIds = <T>(tree: Tree<T>) =>
     Object
