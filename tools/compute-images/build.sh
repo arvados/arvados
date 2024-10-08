@@ -61,6 +61,8 @@ Options:
       Azure SKU image to use
   --ssh_user <user> (default: packer)
       The user packer will use to log into the image
+  --workdir <path> (default: /tmp)
+      The directory on which data files are copied and setup scripts are run
   --resolver <resolver_IP>
       The dns resolver for the machine (default: host's network provided)
   --reposuffix <suffix>
@@ -97,13 +99,14 @@ AZURE_LOCATION=
 AZURE_CLOUD_ENVIRONMENT=
 DEBUG=
 SSH_USER=
+WORKDIR=
 AWS_DEFAULT_REGION=us-east-1
 PUBLIC_KEY_FILE=
 MKSQUASHFS_MEM=256M
 NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,workdir:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -176,6 +179,9 @@ while [ $# -gt 0 ]; do
             ;;
         --ssh_user)
             SSH_USER="$2"; shift
+            ;;
+        --workdir)
+            WORKDIR="$2"; shift
             ;;
         --resolver)
             RESOLVER="$2"; shift
@@ -298,6 +304,9 @@ if [[ -n "$AZURE_CLOUD_ENVIRONMENT" ]]; then
 fi
 if [[ -n "$SSH_USER" ]]; then
   EXTRA2+=" -var ssh_user=$SSH_USER"
+fi
+if [[ -n "$WORKDIR" ]]; then
+  EXTRA2+=" -var workdir=$WORKDIR"
 fi
 if [[ -n "$RESOLVER" ]]; then
   EXTRA2+=" -var resolver=$RESOLVER"
