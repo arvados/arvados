@@ -769,10 +769,12 @@ else
         rm -f "${GRAFANA_DASHBOARDS_DEST_DIR}"/*
         # "ArvadosPromDataSource" is the hardcoded UID for Prometheus' datasource
         # in Grafana.
+        # "ArvadosLokiDataSource" if Loki's UID in Grafana
         for f in $(ls "${GRAFANA_DASHBOARDS_DIR}"/*.json); do
           sed "s#__TLS_EXPIRATION_YELLOW__#${TLS_EXPIRATION_YELLOW}#g;
                s#__TLS_EXPIRATION_GREEN__#${TLS_EXPIRATION_GREEN}#g;
-               s#\${DS_PROMETHEUS}#ArvadosPromDataSource#g" \
+               s#\${DS_PROMETHEUS}#ArvadosPromDataSource#g;
+               s#\${DS_LOKI}#ArvadosLokiDataSource#g" \
           "${f}" > "${GRAFANA_DASHBOARDS_DEST_DIR}"/$(basename "${f}")
         done
 
