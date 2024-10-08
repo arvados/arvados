@@ -11,6 +11,7 @@ import subprocess
 import time
 import unittest
 import tempfile
+import stat
 
 from pathlib import Path
 from unittest import mock
@@ -486,12 +487,6 @@ class FuseWriteFileTest(MountTestBase):
         self.assertRegex(collection2["manifest_text"],
             r'\. 86fb269d190d2c85f6e0468ceca42a20\+12\+A\S+ 0:12:file1\.txt$')
 
-def fuseMknodTestHelperMknod(mounttmp):
-    class Test(unittest.TestCase):
-        def runTest(self):
-            os.mknod(os.path.join(mounttmp, "file1.txt"))
-    Test().runTest()
-
 def fuseMknodTestHelperReadFile(mounttmp):
     class Test(unittest.TestCase):
         def runTest(self):
@@ -499,8 +494,6 @@ def fuseMknodTestHelperReadFile(mounttmp):
                 self.assertEqual(f.read(), "")
     Test().runTest()
 
-
-@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseMknodTest(MountTestBase):
     def runTest(self):
         # Check that os.mknod() can be used to create normal files.
@@ -515,12 +508,35 @@ class FuseMknodTest(MountTestBase):
         self.assertNotIn("file1.txt", collection)
 
         self.assertEqual(0, self.operations.write_counter.get())
-        self.pool.apply(fuseMknodTestHelperMknod, (self.mounttmp,))
+        self.pool.apply(os.mknod, (os.path.join(self.mounttmp, "file1.txt"),))
 
         with collection.open("file1.txt") as f:
             self.assertEqual(f.read(), "")
 
         self.pool.apply(fuseMknodTestHelperReadFile, (self.mounttmp,))
+
+        # Fail trying to create a FIFO
+        with self.assertRaises(OSError) as exc_check:
+            self.pool.apply(os.mknod, (os.path.join(self.mounttmp, "file2.txt"), stat.S_IFIFO))
+
+class FuseMknodReadOnlyTest(MountTestBase):
+    def runTest(self):
+        collection = arvados.collection.Collection(api_client=self.api)
+        collection.save_new()
+
+        m = self.make_mount(fuse.CollectionDirectory, enable_write=False)
+        with llfuse.lock:
+            m.new_collection(collection.api_response(), collection)
+        self.assertTrue(m.writable() is False)
+        with self.assertRaises(OSError) as exc_check:
+            self.pool.apply(os.mknod, (os.path.join(self.mounttmp, "file1.txt"),))
+
+class FuseMknodProjectTest(MountTestBase):
+    def runTest(self):
+        self.make_mount(fuse.ProjectDirectory,
+                        project_object=self.api.users().current().execute())
+        with self.assertRaises(OSError) as exc_check:
+            self.pool.apply(os.mknod, (os.path.join(self.mounttmp, "file1.txt"),))
 
 
 def fuseUpdateFileTestHelper(mounttmp):
