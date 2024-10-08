@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { CardContent, Tab, Tabs, Table, TableHead, TableCell, TableBody, TableRow } from '@mui/material';
+import { CardContent, Tab, Tabs, Table, TableHead, TableCell, TableBody, TableRow, Typography } from '@mui/material';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -13,7 +13,7 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
 import { WorkflowDetailsCardDataProps, WorkflowDetailsAttributes } from 'views-components/details-panel/workflow-details';
 
-export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
+export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable' | 'workflowName';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -43,6 +43,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     inputsTable: {
         tableLayout: 'fixed',
     },
+    workflowName: {
+        minHeight: "4rem",
+    }
 });
 
 type WorkflowDetailsCardProps = WorkflowDetailsCardDataProps & WithStyles<CssRules>;
@@ -61,6 +64,9 @@ export const WorkflowDetailsCard = withStyles(styles)(
             const { classes, workflow } = this.props;
             const { value } = this.state;
             return <div className={classes.root}>
+                <Typography className={classes.workflowName} variant='h6'>
+                    {workflow && workflow.name}
+                </Typography>
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
                     <Tab className={classes.tab} label="Description" />
                     <Tab className={classes.tab} label="Inputs" />
