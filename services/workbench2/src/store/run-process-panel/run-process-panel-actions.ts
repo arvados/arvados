@@ -52,7 +52,7 @@ export const loadRunProcessPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
             dispatch(setBreadcrumbs([{ label: 'Run Process' }]));
-            const response = await services.workflowService.list();
+            const response = await services.workflowService.list({limit: 200});
             dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
         } catch (e) {
             return;
