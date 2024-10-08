@@ -13,7 +13,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
 import { Resource, ResourceKind, ResourceObjectType, extractUuidObjectType, COLLECTION_PDH_REGEX } from 'models/resource';
 import { GroupContentsResource, GroupContentsIncludedResource } from 'services/groups-service/groups-service';
-import { getTreePicker, TreePicker, TreeItemWeight } from './tree-picker';
+import { getTreePicker, TreePicker, TreeItemWeight, TreeItemWithWeight } from './tree-picker';
 import { ProjectsTreePickerItem } from './tree-picker-middleware';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
@@ -70,6 +70,8 @@ export const getProjectsTreePickerIds = (pickerId: string) => ({
     publicFavorites: `${pickerId}_publicFavorites`,
     search: `${pickerId}_search`,
 });
+
+export const SEARCH_PROJECT_ID_PREFIX = "search-";
 
 export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Value>) => true) => (state: TreePicker) =>
     pipe(
@@ -139,23 +141,35 @@ export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>)
         dispatch(treePickerActions.EXPAND_TREE_PICKER_NODE({ id, pickerId }));
     };
 
-export const extractGroupContentsNodeData = (expandableCollections: boolean) => (item: GroupContentsResource) => (
-    item.uuid === "more-items-available"
-        ? {
+export const extractGroupContentsNodeData = (expandableCollections: boolean) => (item: GroupContentsResource & TreeItemWithWeight) => {
+    if (item.uuid === "more-items-available") {
+        return {
             id: item.uuid,
             value: item,
             status: TreeNodeStatus.LOADED
         }
-        : {
-            id: item.uuid,
+    } else if (item.weight === TreeItemWeight.LIGHT) {
+        return {
+            id: SEARCH_PROJECT_ID_PREFIX+item.uuid,
             value: item,
             status: item.kind === ResourceKind.PROJECT
-                ? TreeNodeStatus.INITIAL
-                : item.kind === ResourceKind.COLLECTION && expandableCollections
-                    ? TreeNodeStatus.INITIAL
-                    : TreeNodeStatus.LOADED
-        }
-);
+                  ? TreeNodeStatus.INITIAL
+                  : item.kind === ResourceKind.COLLECTION && expandableCollections
+                  ? TreeNodeStatus.INITIAL
+                  : TreeNodeStatus.LOADED
+        };
+    } else {
+        return { id: item.uuid,
+                 value: item,
+                 status: item.kind === ResourceKind.PROJECT
+                       ? TreeNodeStatus.INITIAL
+                       : item.kind === ResourceKind.COLLECTION && expandableCollections
+                       ? TreeNodeStatus.INITIAL
+                       : TreeNodeStatus.LOADED
+        };
+    }
+};
+
 interface LoadProjectParamsWithId extends LoadProjectParams {
     id: string;
     pickerId: string;
@@ -188,7 +202,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
 
         let includeOwners: string|undefined = undefined;
 
-        if (id.startsWith("search-")) {
+        if (id.startsWith(SEARCH_PROJECT_ID_PREFIX)) {
             return;
         }
 
@@ -324,14 +338,14 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                 }).map(item => {
                     if (extractUuidObjectType(item.uuid) === ResourceObjectType.USER) {
                         return {...item,
-                                uuid: includeOwners ? "search-"+item.uuid : item.uuid,
+                                uuid: item.uuid,
                                 name: item['fullName'] + " Home Project",
                                 weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,
                                 kind: ResourceKind.USER,
                         }
                     }
                     return {...item,
-                            uuid: includeOwners ? "search-"+item.uuid : item.uuid,
+                            uuid: item.uuid,
                             weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,};
 
                 }),
@@ -350,12 +364,12 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                 });
                 for (const prj in projects) {
                     dispatch<any>(receiveTreePickerData<GroupContentsResource>({
-                        id: "search-"+prj,
+                        id: SEARCH_PROJECT_ID_PREFIX+prj,
                         pickerId,
                         data: projects[prj],
                         extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
                     }));
-                    }
+                }
             }
         } catch(e) {
             console.error("Failed to load project into tree picker:", e);;

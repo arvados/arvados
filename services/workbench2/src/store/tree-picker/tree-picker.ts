@@ -20,3 +20,7 @@ export enum TreeItemWeight {
     LIGHT = 1,
     DARK = 2,
 };
+
+export interface TreeItemWithWeight {
+    weight?: TreeItemWeight;
+};

@@ -24,8 +24,6 @@ type CssRules = 'list'
               | 'listItem'
               | 'childLi'
               | 'childItemName'
-              | 'childItemNameDark'
-              | 'childItemNameLight'
               | 'active'
               | 'loader'
               | 'toggableIconContainer'
@@ -37,7 +35,9 @@ type CssRules = 'list'
               | 'childItem'
               | 'childItemIcon'
               | 'frozenIcon'
-              | 'indentSpacer';
+              | 'indentSpacer'
+              | 'itemWeightLight'
+              | 'itemWeightDark';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
