@@ -13,7 +13,7 @@ import { FavoritesTreePicker } from 'views-components/projects-tree-picker/favor
 import { SearchProjectsPicker } from 'views-components/projects-tree-picker/search-projects-picker';
 import {
     getProjectsTreePickerIds, treePickerActions, treePickerSearchActions, initProjectsTreePicker,
-    SHARED_PROJECT_ID, FAVORITES_PROJECT_ID
+    SHARED_PROJECT_ID, FAVORITES_PROJECT_ID, treePickerSearchSagas
 } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
@@ -79,7 +79,7 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (Pr
     dispatch(treePickerSearchActions.SET_TREE_PICKER_LOAD_PARAMS({ pickerId: search, params }));
 
     return {
-        onProjectSearch: (projectSearchValue: string) => dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue })),
+        onProjectSearch: (projectSearchValue: string) => dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue })),
         onCollectionFilter: (collectionFilterValue: string) => {
             dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: home, collectionFilterValue }));
             dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: shared, collectionFilterValue }));
@@ -175,7 +175,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 } : undefined;
                 this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, preloadParams));
 
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
+                this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: home, collectionFilterValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: shared, collectionFilterValue: "" }));

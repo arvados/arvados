@@ -11,13 +11,12 @@ import { getUserUuid } from "common/getuser";
 import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
-import { Resource, ResourceKind, ResourceObjectType, extractUuidObjectType, COLLECTION_PDH_REGEX } from 'models/resource';
-import { GroupContentsResource, GroupContentsIncludedResource } from 'services/groups-service/groups-service';
+import { ResourceKind, ResourceObjectType, extractUuidObjectType, COLLECTION_PDH_REGEX } from 'models/resource';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getTreePicker, TreePicker, TreeItemWeight, TreeItemWithWeight } from './tree-picker';
 import { ProjectsTreePickerItem } from './tree-picker-middleware';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
-import { UserResource } from 'models/user';
 import { mapTree } from '../../models/tree';
 import { LinkResource, LinkClass } from "models/link";
 import { mapTreeValues } from "models/tree";
@@ -27,6 +26,7 @@ import { CollectionResource } from "models/collection";
 import { getResource } from "store/resources/resources";
 import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
+import { call, put, takeEvery, takeLatest, getContext, cancelled, select } from "redux-saga/effects";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -62,6 +62,43 @@ export const treePickerSearchActions = unionize({
 });
 
 export type TreePickerSearchAction = UnionOf<typeof treePickerSearchActions>;
+
+export const treePickerSearchSagas = unionize({
+    SET_PROJECT_SEARCH: ofType<{ pickerId: string, projectSearchValue: string }>(),
+    LOAD_PROJECT: ofType<LoadProjectParamsWithId>(),
+    LOAD_SEARCH: ofType<LoadProjectParamsWithId>(),
+    // REFRESH_TREE_PICKER: ofType<{ pickerId: string }>(),
+});
+
+export function* setTreePickerProjectSearchWatcher() {
+    yield takeLatest(treePickerSearchSagas.tags.SET_PROJECT_SEARCH, setTreePickerProjectSearchSaga);
+}
+
+function* setTreePickerProjectSearchSaga({type, payload}: {
+    type: typeof treePickerSearchSagas.tags.SET_PROJECT_SEARCH,
+    payload: typeof treePickerSearchSagas._Record.SET_PROJECT_SEARCH,
+}) {
+    try {
+        const { pickerId , projectSearchValue } = payload;
+        const state: RootState = yield select();
+        const searchChanged = state.treePickerSearch.projectSearchValues[pickerId] !== projectSearchValue;
+
+        if (searchChanged) {
+            yield put(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH(payload));
+            const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(state.treePicker);
+            if (picker) {
+                const loadParams = state.treePickerSearch.loadProjectParams[pickerId];
+                yield put(treePickerSearchSagas.LOAD_SEARCH({
+                    ...loadParams,
+                    id: SEARCH_PROJECT_ID,
+                    pickerId: pickerId,
+                }));
+            }
+        }
+    } catch (e) {
+        yield put(snackbarActions.OPEN_SNACKBAR({ message: `Failed to search`, kind: SnackbarKind.ERROR }));
+    }
+}
 
 export const getProjectsTreePickerIds = (pickerId: string) => ({
     home: `${pickerId}_home`,
@@ -176,12 +213,30 @@ interface LoadProjectParamsWithId extends LoadProjectParams {
     loadShared?: boolean;
 }
 
+export const loadProject = (params: LoadProjectParamsWithId) => (treePickerSearchSagas.LOAD_PROJECT(params));
+
+export function* loadProjectWatcher() {
+    yield takeEvery(treePickerSearchSagas.tags.LOAD_PROJECT, loadProjectSaga);
+}
+
+export const loadSearch = (params: LoadProjectParamsWithId) => (treePickerSearchSagas.LOAD_SEARCH(params));
+
+export function* loadSearchWatcher() {
+    yield takeLatest(treePickerSearchSagas.tags.LOAD_SEARCH, loadProjectSaga);
+}
+
 /**
  * loadProject is used to load or refresh a project node in a tree picker
  *   Errors are caught and a toast is shown if the project fails to load
  */
-export const loadProject = (params: LoadProjectParamsWithId) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+function* loadProjectSaga({type, payload}: {
+    type: typeof treePickerSearchSagas.tags.LOAD_PROJECT,
+    payload: typeof treePickerSearchSagas._Record.LOAD_PROJECT,
+}) {
+    try {
+        const services: ServiceRepository = yield getContext("services");
+        const state: RootState = yield select();
+
         const {
             id,
             pickerId,
@@ -191,10 +246,9 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
             includeFilterGroups = false,
             loadShared = false,
             options,
-        } = params;
+        } = payload;
 
         const searching = (id === SEARCH_PROJECT_ID);
-        const state = getState();
         const collectionFilter = state.treePickerSearch.collectionFilterValues[pickerId];
         const projectFilter = state.treePickerSearch.projectSearchValues[pickerId];
 
@@ -260,122 +314,125 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         // Must be under 1000
         const itemLimit = 200;
 
-        dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
+        yield put(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
-        try {
-            let { items, included } = await services.groupsService.contents(globalSearch ? '' : id,
-                                                                              { filters,
-                                                                                excludeHomeProject: loadShared || undefined,
-                                                                                limit: itemLimit+1,
-                                                                                count: "none",
-                                                                                include: includeOwners,
-            });
+        let { items, included } = yield call({context: services.groupsService, fn: services.groupsService.contents},
+                                                    globalSearch ? '' : id,
+                                                                            { filters,
+                                                                            excludeHomeProject: loadShared || undefined,
+                                                                            limit: itemLimit+1,
+                                                                            count: "none",
+                                                                            include: includeOwners,
+        });
 
-            if (!included) {
-                includeOwners = undefined;
-            }
+        if (!included) {
+            includeOwners = undefined;
+        }
 
-            //let rootItems: GroupContentsResource[] | GroupContentsIncludedResource[] = items;
-            let rootItems: any[] = items;
+        //let rootItems: GroupContentsResource[] | GroupContentsIncludedResource[] = items;
+        let rootItems: any[] = items;
 
-            const seen = {};
+        const seen = {};
 
-            if (includeOwners && included) {
-                included = included.filter(item => {
-                    if (seen.hasOwnProperty(item.uuid)) {
-                        return false;
-                    } else {
-                        seen[item.uuid] = item;
-                        return true;
-                    }
-                });
-                dispatch<any>(updateResources(included));
-
-                rootItems = included;
-            }
-
-            items = items.filter(item => {
+        if (includeOwners && included) {
+            included = included.filter(item => {
                 if (seen.hasOwnProperty(item.uuid)) {
                     return false;
                 } else {
                     seen[item.uuid] = item;
-                    if (!seen[item.ownerUuid] && includeOwners) {
-                        rootItems.push(item);
-                    }
                     return true;
                 }
             });
-            dispatch<any>(updateResources(items));
+            yield put<any>(updateResources(included));
 
-            if (items.length > itemLimit) {
-                rootItems.push({
-                    uuid: "more-items-available-"+id,
-                    kind: ResourceKind.WORKFLOW,
-                    name: `*** Not all items listed, reduce item count with search or filter ***`,
-                    description: "",
-                    definition: "",
-                    ownerUuid: "",
-                    createdAt: "",
-                    modifiedByUserUuid: "",
-                    modifiedAt: "",
-                    href: "",
-                    etag: ""
-                });
+            rootItems = included;
+        }
+
+        items = items.filter(item => {
+            if (seen.hasOwnProperty(item.uuid)) {
+                return false;
+            } else {
+                seen[item.uuid] = item;
+                if (!seen[item.ownerUuid] && includeOwners) {
+                    rootItems.push(item);
+                }
+                return true;
             }
+        });
+        yield put(updateResources(items));
 
-            dispatch<any>(receiveTreePickerData<GroupContentsResource>({
-                id,
-                pickerId,
-                data: rootItems.filter(item => {
-                    if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
-                        return false;
-                    }
+        if (items.length > itemLimit) {
+            rootItems.push({
+                uuid: "more-items-available-"+id,
+                kind: ResourceKind.WORKFLOW,
+                name: `*** Not all items listed, reduce item count with search or filter ***`,
+                description: "",
+                definition: "",
+                ownerUuid: "",
+                createdAt: "",
+                modifiedByUserUuid: "",
+                modifiedAt: "",
+                href: "",
+                etag: ""
+            });
+        }
 
-                    if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
-                        return false;
-                    }
-                    return true;
-                }).map(item => {
-                    if (extractUuidObjectType(item.uuid) === ResourceObjectType.USER) {
-                        return {...item,
-                                uuid: item.uuid,
-                                name: item['fullName'] + " Home Project",
-                                weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,
-                                kind: ResourceKind.USER,
-                        }
-                    }
+        yield put(receiveTreePickerData<GroupContentsResource>({
+            id,
+            pickerId,
+            data: rootItems.filter(item => {
+                if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
+                    return false;
+                }
+
+                if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
+                    return false;
+                }
+                return true;
+            }).map(item => {
+                if (extractUuidObjectType(item.uuid) === ResourceObjectType.USER) {
                     return {...item,
                             uuid: item.uuid,
-                            weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,};
-
-                }),
-                extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
-            }));
-
-            if (includeOwners) {
-                // Searching, we already have the
-                // contents to put in the owner projects so load it up.
-                const projects = {};
-                items.forEach(item => {
-                    if (!projects.hasOwnProperty(item.ownerUuid)) {
-                        projects[item.ownerUuid] = [];
+                            name: item['fullName'] + " Home Project",
+                            weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,
+                            kind: ResourceKind.USER,
                     }
-                    projects[item.ownerUuid].push({...item, weight: TreeItemWeight.DARK});
-                });
-                for (const prj in projects) {
-                    dispatch<any>(receiveTreePickerData<GroupContentsResource>({
-                        id: SEARCH_PROJECT_ID_PREFIX+prj,
-                        pickerId,
-                        data: projects[prj],
-                        extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
-                    }));
                 }
+                return {...item,
+                        uuid: item.uuid,
+                        weight: includeOwners ? TreeItemWeight.LIGHT : TreeItemWeight.NORMAL,};
+
+            }),
+            extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
+        }));
+
+        if (includeOwners) {
+            // Searching, we already have the
+            // contents to put in the owner projects so load it up.
+            const projects = {};
+            items.forEach(item => {
+                if (!projects.hasOwnProperty(item.ownerUuid)) {
+                    projects[item.ownerUuid] = [];
+                }
+                projects[item.ownerUuid].push({...item, weight: TreeItemWeight.DARK});
+            });
+            for (const prj in projects) {
+                yield put(receiveTreePickerData<GroupContentsResource>({
+                    id: SEARCH_PROJECT_ID_PREFIX+prj,
+                    pickerId,
+                    data: projects[prj],
+                    extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
+                }));
             }
-        } catch(e) {
-            console.error("Failed to load project into tree picker:", e);;
-            dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load project`, kind: SnackbarKind.ERROR }));
         }
-    };
+    } catch(e) {
+        console.error("Failed to load project into tree picker:", e);;
+        yield put(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load project`, kind: SnackbarKind.ERROR }));
+    } finally {
+        // Optionally handle cleanup when task cancelled
+        // if (yield cancelled()) {}
+    }
+};
 
 export const loadCollection = (id: string, pickerId: string, includeDirectories?: boolean, includeFiles?: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

@@ -9,7 +9,7 @@ import { Middleware } from "redux";
 import { getNode, getNodeDescendantsIds, TreeNodeStatus } from 'models/tree';
 import { getTreePicker } from './tree-picker';
 import {
-    treePickerSearchActions, loadProject, loadFavoritesProject, loadPublicFavoritesProject,
+    treePickerSearchActions, loadSearch, loadProject, loadFavoritesProject, loadPublicFavoritesProject,
     SHARED_PROJECT_ID, FAVORITES_PROJECT_ID, PUBLIC_FAVORITES_PROJECT_ID, SEARCH_PROJECT_ID
 } from "./tree-picker-actions";
 import { LinkResource } from "models/link";
@@ -29,10 +29,11 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
     let searchChanged = false;
 
     treePickerSearchActions.match(action, {
-        SET_TREE_PICKER_PROJECT_SEARCH: ({ pickerId, projectSearchValue }) => {
-            isSearchAction = true;
-            searchChanged = store.getState().treePickerSearch.projectSearchValues[pickerId] !== projectSearchValue;
-        },
+        // SET_TREE_PICKER_PROJECT_SEARCH: ({ pickerId, projectSearchValue }) => {
+        //     console.log("--middleware-1");
+        //     isSearchAction = true;
+        //     searchChanged = store.getState().treePickerSearch.projectSearchValues[pickerId] !== projectSearchValue;
+        // },
 
         SET_TREE_PICKER_COLLECTION_FILTER: ({ pickerId, collectionFilterValue }) => {
             isSearchAction = true;
@@ -55,7 +56,7 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
             const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
             if (picker) {
                 const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
-                dispatch<any>(loadProject({
+                dispatch<any>(loadSearch({
                     ...loadParams,
                     id: SEARCH_PROJECT_ID,
                     pickerId: pickerId,
@@ -64,7 +65,7 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
         });
 
     treePickerSearchActions.match(action, {
-        SET_TREE_PICKER_PROJECT_SEARCH: loadSearchRoot,
+        // SET_TREE_PICKER_PROJECT_SEARCH: loadSearchRoot,
         SET_TREE_PICKER_COLLECTION_FILTER: (act) => {
             if (store.getState().treePickerSearch.projectSearchValues[act.pickerId] !== "") {
                 refreshPickers(store)(act);
