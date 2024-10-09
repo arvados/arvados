@@ -10,6 +10,9 @@ on:
     branches:
       - main
 
+env:
+  CYPRESS_INTERNAL_BROWSER_CONNECT_TIMEOUT: 300000 # Workaround to prevent orphaned browser process https://github.com/cypress-io/cypress/issues/28397
+
 jobs:
   workbench2:
     name: Workbench2 Tests
