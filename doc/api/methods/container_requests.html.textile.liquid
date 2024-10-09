@@ -28,7 +28,7 @@ All attributes are optional, unless otherwise marked as required.
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
 |name|string|The name of the container_request.||
-|description|string|The description of the container_request.  Allows "HTML formatting.":resources#descriptions ||
+|description|string|The description of the container_request.  Allows "HTML formatting.":{{site.baseurl}}/api/resources.html#descriptions ||
 |properties|hash|User-defined metadata that does not affect how the container is run.  May be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters||
 |state|string|The allowed states are "Uncommitted", "Committed", and "Final".|Once a request is Committed, the only attributes that can be modified are priority, container_uuid, and container_count_max. A request in the "Final" state cannot have any of its functional parts modified (i.e., only name, description, and properties fields can be modified).|
 |requesting_container_uuid|string|The uuid of the parent container that created this container_request, if any. Represents a process tree.|The priority of this container_request is inherited from the parent container, if the parent container is cancelled, this container_request will be cancelled as well.|
