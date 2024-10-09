@@ -18,9 +18,6 @@ import {
     SIDE_PANEL_TREE,
 } from "store/side-panel-tree/side-panel-tree-actions";
 import { updateResources } from "store/resources/resources-actions";
-import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
-import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
-import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
 import { matchRootRoute } from "routes/routes";
 import {
     setGroupDetailsBreadcrumbs,
@@ -50,17 +47,15 @@ import * as collectionMoveActions from "store/collections/collection-move-action
 import * as processMoveActions from "store/processes/process-move-actions";
 import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
-import { trashPanelColumns } from "views/trash-panel/trash-panel";
+
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
 import { loadProcess as loadProcessResources, loadProcessPanel } from "store/process-panel/process-panel-actions";
 import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
-import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-panel";
 import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
 import { workflowPanelActions } from "store/workflow-panel/workflow-panel-actions";
 import { loadSshKeysPanel } from "store/auth/auth-action-ssh";
 import { loadLinkAccountPanel, linkAccountPanelActions } from "store/link-account-panel/link-account-panel-actions";
 import { loadSiteManagerPanel } from "store/auth/auth-action-session";
-import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { getProgressIndicator } from "store/progress-indicator/progress-indicator-reducer";
 import { extractUuidKind, Resource, ResourceKind } from "models/resource";
@@ -72,39 +67,48 @@ import { collectionPanelActions, loadCollectionPanel } from "store/collection-pa
 import { CollectionResource } from "models/collection";
 import { WorkflowResource } from "models/workflow";
 import { loadSearchResultsPanel, searchResultsPanelActions } from "store/search-results-panel/search-results-panel-actions";
-import { searchResultsPanelColumns } from "views/search-results-panel/search-results-panel-view";
 import { loadVirtualMachinesPanel } from "store/virtual-machines/virtual-machines-actions";
 import { loadRepositoriesPanel } from "store/repositories/repositories-actions";
 import { loadKeepServicesPanel } from "store/keep-services/keep-services-actions";
 import { loadUsersPanel, userBindedActions } from "store/users/users-actions";
 import * as userProfilePanelActions from "store/user-profile/user-profile-actions";
 import { linkPanelActions, loadLinkPanel } from "store/link-panel/link-panel-actions";
-import { linkPanelColumns } from "views/link-panel/link-panel-root";
-import { userPanelColumns } from "views/user-panel/user-panel";
 import { loadApiClientAuthorizationsPanel, apiClientAuthorizationsActions } from "store/api-client-authorizations/api-client-authorizations-actions";
-import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
 import * as groupPanelActions from "store/groups-panel/groups-panel-actions";
-import { groupsPanelColumns } from "views/groups-panel/groups-panel";
 import * as groupDetailsPanelActions from "store/group-details-panel/group-details-panel-actions";
-import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel";
-import { DataTableFetchMode } from "components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
-import { publicFavoritePanelColumns } from "views/public-favorites-panel/public-favorites-panel";
 import {
     loadCollectionsContentAddressPanel,
     collectionsContentAddressActions,
 } from "store/collections-content-address-panel/collections-content-address-panel-actions";
-import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
 import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
-import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
-import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
-import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
-import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
-import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 import { deselectOne } from "store/multiselect/multiselect-actions";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
-import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
 import { workflowProcessesPanelActions } from "store/workflow-panel/workflow-panel-actions";
+import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
+
+import { DataTableFetchMode } from "components/data-table/data-table";
+import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
+
+import { sharedWithMePanelColumns } from "views/shared-with-me-panel/shared-with-me-columns";
+import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
+import { searchResultsPanelColumns } from "views/search-results-panel/search-results-panel-view";
+import { linkPanelColumns } from "views/link-panel/link-panel-root";
+import { userPanelColumns } from "views/user-panel/user-panel";
+import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
+import { groupsPanelColumns } from "views/groups-panel/groups-panel";
+import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel";
+import { publicFavoritePanelColumns } from "views/public-favorites-panel/public-favorites-panel";
+import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
+import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
+import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
+import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
+import { workflowProcessesPanelColumns } from "views/workflow-panel/workflow-processes-panel-root";
+import { trashPanelColumns } from "views/trash-panel/trash-panel";
+import { projectPanelDataColumns } from "views/project-panel/project-panel-data";
+import { projectPanelRunColumns } from "views/project-panel/project-panel-run";
+import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
+
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 

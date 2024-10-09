@@ -3,7 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { getInputs, getOutputParameters, getRawInputs, getRawOutputs } from "store/processes/processes-actions";
+import { getInputs,
+         getOutputParameters,
+         getRawInputs,
+         getRawOutputs
+} from "store/processes/processes-actions";
 import { Dispatch } from "redux";
 import { Process, ProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";

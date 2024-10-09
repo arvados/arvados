@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Tree } from 'models/tree';
+
 export interface DataTableFilterItem {
     name: string;
-    selected: boolean;
 }
+
+export type DataTableFilters = Tree<DataTableFilterItem>;

@@ -13,8 +13,7 @@ import {
     ResourceShare,
     ResourceRunProcess
 } from "views-components/data-explorer/renderers";
-import { SortDirection } from 'components/data-table/data-column';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { Grid, Paper } from '@mui/material';
 import { WorkflowDetailsCard } from './workflow-description-card';

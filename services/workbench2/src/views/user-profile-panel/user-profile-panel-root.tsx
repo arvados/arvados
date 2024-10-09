@@ -29,7 +29,7 @@ import { PROFILE_EMAIL_VALIDATION, PROFILE_URL_VALIDATION } from "validators/val
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
 import { DetailsIcon, GroupsIcon, MoreVerticalIcon } from 'components/icon/icon';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible, UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { getResource, ResourcesState } from 'store/resources/resources';

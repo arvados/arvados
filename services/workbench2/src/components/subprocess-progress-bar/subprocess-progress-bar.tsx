@@ -20,7 +20,7 @@ import { RootState } from "store/store";
 import { ProcessResource } from "models/process";
 import { getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
 import { ProjectPanelRunColumnNames } from "views/project-panel/project-panel-run";
-import { DataColumns } from "components/data-table/data-table";
+import { DataColumns } from "components/data-table/data-column";
 
 type CssRules = 'progressStacked';
 

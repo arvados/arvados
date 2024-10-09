@@ -16,7 +16,7 @@ import { ListArguments, ListResults } from 'services/common-service/common-servi
 import { ContentsArguments } from 'services/groups-service/groups-service';
 import { ProcessResource } from 'models/process';
 import { FilterBuilder } from 'services/api/filter-builder';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-column';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';

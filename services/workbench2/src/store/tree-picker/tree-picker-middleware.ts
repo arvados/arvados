@@ -13,6 +13,7 @@ import {
     SHARED_PROJECT_ID, FAVORITES_PROJECT_ID, PUBLIC_FAVORITES_PROJECT_ID, SEARCH_PROJECT_ID
 } from "./tree-picker-actions";
 import { LinkResource } from "models/link";
+import { UserResource } from "models/user";
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionDirectory, CollectionFile } from 'models/collection-file';
 
@@ -21,7 +22,7 @@ export interface ProjectsTreePickerRootItem {
     name: string;
 }
 
-export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile | LinkResource;
+export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile | LinkResource | UserResource;
 
 export const treePickerSearchMiddleware: Middleware = store => next => action => {
     let isSearchAction = false;
@@ -49,24 +50,30 @@ export const treePickerSearchMiddleware: Middleware = store => next => action =>
     // pass it on to the reducer
     const r = next(action);
 
-    treePickerSearchActions.match(action, {
-        SET_TREE_PICKER_PROJECT_SEARCH: ({ pickerId }) =>
-            store.dispatch<any>((dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-                const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
-                if (picker) {
-                    const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
-                    dispatch<any>(loadProject({
-                        ...loadParams,
-                        id: SEARCH_PROJECT_ID,
-                        pickerId: pickerId,
-                        searchProjects: true
-                    }));
-                }
-            }),
+    const loadSearchRoot = ({ pickerId }) =>
+        store.dispatch<any>((dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+            const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(getState().treePicker);
+            if (picker) {
+                const loadParams = getState().treePickerSearch.loadProjectParams[pickerId];
+                dispatch<any>(loadProject({
+                    ...loadParams,
+                    id: SEARCH_PROJECT_ID,
+                    pickerId: pickerId,
+                }));
+            }
+        });
 
-        SET_TREE_PICKER_COLLECTION_FILTER: refreshPickers(store),
+    treePickerSearchActions.match(action, {
+        SET_TREE_PICKER_PROJECT_SEARCH: loadSearchRoot,
+        SET_TREE_PICKER_COLLECTION_FILTER: (act) => {
+            if (store.getState().treePickerSearch.projectSearchValues[act.pickerId] !== "") {
+                refreshPickers(store)(act);
+            } else {
+                loadSearchRoot(act);
+            }
+        },
         default: () => { }
-    });
+            });
 
     return r;
 }
@@ -100,7 +107,6 @@ const refreshPickers = (store: MiddlewareAPI) => ({ pickerId }) =>
                                 ...loadParams,
                                 id: node.id,
                                 pickerId: pickerId,
-                                searchProjects: true
                             }));
                         }
                         if (node.id === FAVORITES_PROJECT_ID) {

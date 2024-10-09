@@ -64,7 +64,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 type RootProjectDetailsComponentProps = RootProjectDetailsComponentDataProps & WithStyles<CssRules>;
 
-const RootProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
+export const RootProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
         ({ rootProject}: RootProjectDetailsComponentProps & { resources: ResourcesState }) => <div>
             <DetailsAttribute label='Type' value="Root Project" />

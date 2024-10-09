@@ -9,7 +9,7 @@ import { WrappedFieldProps } from 'redux-form';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { PickerIdProp } from 'store/tree-picker/picker-id';
-import { FileOperationLocation, getFileOperationLocation } from "store/tree-picker/tree-picker-actions";
+import { FileOperationLocation, getFileOperationLocation, SEARCH_PROJECT_ID_PREFIX } from "store/tree-picker/tree-picker-actions";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 
@@ -29,8 +29,13 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
     </div>;
 
 const handleChange = (props: WrappedFieldProps) =>
-    (_: any, { id }: TreeItem<ProjectsTreePickerItem>) =>
-        props.input.onChange(id);
+    (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
+        if (id.startsWith(SEARCH_PROJECT_ID_PREFIX)) {
+            props.input.onChange(id.slice(SEARCH_PROJECT_ID_PREFIX.length));
+        } else {
+            props.input.onChange(id);
+        }
+    }
 
 export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>

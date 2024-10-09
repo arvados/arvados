@@ -17,9 +17,9 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
-import { DataColumn, SortDirection } from "./data-column";
+import { DataColumn, DataColumns, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
-import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
+import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty } from "models/tree";
@@ -31,8 +31,6 @@ import { DataTableMultiselectOption } from "../data-table-multiselect-popover/da
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
 import { CustomTheme, ArvadosTheme } from "common/custom-theme";
-
-export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
 export enum DataTableFetchMode {
     PAGINATED,

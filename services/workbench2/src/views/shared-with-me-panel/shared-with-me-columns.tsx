@@ -2,38 +2,34 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
-import { ProjectIcon } from "components/icon/icon";
-import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
-import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { ProjectResource } from 'models/project';
-import { DataColumns, SortDirection } from "components/data-table/data-column";
-import { createTree } from "models/tree";
+import { DataColumns } from 'components/data-table/data-column';
 import {
-    ContainerRunTime,
-    ResourceContainerUuid,
-    ResourceCreatedAtDate,
-    ResourceDeleteDate,
-    ResourceLastModifiedDate,
-    ResourceLogUuid,
-    ResourceModifiedByUserUuid,
     ResourceName,
-    ResourceOutputUuid,
-    ResourceOwnerWithName,
-    ResourceParentProcess,
-    ResourceStatus,
-    ResourceTrashDate,
+    ProcessStatus as ResourceStatus,
     ResourceType,
+    ResourceOwnerWithNameLink,
+    ResourcePortableDataHash,
+    ResourceFileSize,
+    ResourceFileCount,
     ResourceUUID,
-} from "views-components/data-explorer/renderers";
-import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "store/resource-type-filters/resource-type-filters";
-import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
-import { connect } from "react-redux";
-import { RootState } from "store/store";
-import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
-import { getResource } from "store/resources/resources";
+    ResourceContainerUuid,
+    ContainerRunTime,
+    ResourceOutputUuid,
+    ResourceLogUuid,
+    ResourceParentProcess,
+    ResourceModifiedByUserUuid,
+    ResourceVersion,
+    ResourceCreatedAtDate,
+    ResourceLastModifiedDate,
+    ResourceTrashDate,
+    ResourceDeleteDate,
+} from 'views-components/data-explorer/renderers';
+import { ProjectResource } from 'models/project';
+import { createTree } from 'models/tree';
+import { SortDirection } from 'components/data-table/data-column';
+import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 
-export enum ProjectPanelRunColumnNames {
+export enum SharedWithMePanelColumnNames {
     NAME = 'Name',
     STATUS = 'Status',
     TYPE = 'Type',
@@ -55,9 +51,9 @@ export enum ProjectPanelRunColumnNames {
     DELETE_AT = 'Delete at',
 }
 
-export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
+export const sharedWithMePanelColumns: DataColumns<string, ProjectResource> = [
     {
-        name: ProjectPanelRunColumnNames.NAME,
+        name: SharedWithMePanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'name' },
@@ -65,7 +61,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceName uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.STATUS,
+        name: SharedWithMePanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         mutuallyExclusiveFilters: true,
@@ -73,70 +69,98 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceStatus uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.TYPE,
+        name: SharedWithMePanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        filters: getInitialProcessTypeFilters(),
+        filters: getInitialResourceTypeFilters(),
         render: (uuid) => <ResourceType uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.OWNER,
+        name: SharedWithMePanelColumnNames.OWNER,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: (uuid) => <ResourceOwnerWithNameLink uuid={uuid} />,
+    },
+    {
+        name: SharedWithMePanelColumnNames.PORTABLE_DATA_HASH,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: (uuid) => <ResourceOwnerWithName uuid={uuid} />,
+        render: (uuid) => <ResourcePortableDataHash uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.UUID,
+        name: SharedWithMePanelColumnNames.FILE_SIZE,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: (uuid) => <ResourceFileSize uuid={uuid} />,
+    },
+    {
+        name: SharedWithMePanelColumnNames.FILE_COUNT,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: (uuid) => <ResourceFileCount uuid={uuid} />,
+    },
+    {
+        name: SharedWithMePanelColumnNames.UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ResourceUUID uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.CONTAINER_UUID,
+        name: SharedWithMePanelColumnNames.CONTAINER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ResourceContainerUuid uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.RUNTIME,
-        selected: true,
+        name: SharedWithMePanelColumnNames.RUNTIME,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ContainerRunTime uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.OUTPUT_UUID,
+        name: SharedWithMePanelColumnNames.OUTPUT_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ResourceOutputUuid uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.LOG_UUID,
+        name: SharedWithMePanelColumnNames.LOG_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ResourceLogUuid uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.PARENT_PROCESS,
+        name: SharedWithMePanelColumnNames.PARENT_PROCESS,
         selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ResourceParentProcess uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.MODIFIED_BY_USER_UUID,
+        name: SharedWithMePanelColumnNames.MODIFIED_BY_USER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
         render: (uuid) => <ResourceModifiedByUserUuid uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.CREATED_AT,
+        name: SharedWithMePanelColumnNames.VERSION,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: (uuid) => <ResourceVersion uuid={uuid} />,
+    },
+    {
+        name: SharedWithMePanelColumnNames.CREATED_AT,
         selected: false,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'createdAt' },
@@ -144,7 +168,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceCreatedAtDate uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.LAST_MODIFIED,
+        name: SharedWithMePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
         sort: { direction: SortDirection.DESC, field: 'modifiedAt' },
@@ -152,7 +176,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceLastModifiedDate uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.TRASH_AT,
+        name: SharedWithMePanelColumnNames.TRASH_AT,
         selected: false,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'trashAt' },
@@ -160,7 +184,7 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceTrashDate uuid={uuid} />,
     },
     {
-        name: ProjectPanelRunColumnNames.DELETE_AT,
+        name: SharedWithMePanelColumnNames.DELETE_AT,
         selected: false,
         configurable: true,
         sort: { direction: SortDirection.NONE, field: 'deleteAt' },
@@ -168,35 +192,3 @@ export const projectPanelRunColumns: DataColumns<string, ProjectResource> = [
         render: (uuid) => <ResourceDeleteDate uuid={uuid} />,
     },
 ];
-
-const DEFAULT_VIEW_MESSAGES = ['No workflow runs found'];
-
-interface ProjectPanelRunProps {
-    project?: ProjectResource;
-    paperClassName?: string;
-    onRowClick: (uuid: string) => void;
-    onRowDoubleClick: (uuid: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => void;
-}
-
-const mapStateToProps = (state: RootState): Pick<ProjectPanelRunProps, 'project'> => {
-    const projectUuid = getProjectPanelCurrentUuid(state) || "";
-    const project = getResource<ProjectResource>(projectUuid)(state.resources);
-    return {
-        project,
-    };
-};
-
-export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunProps) => {
-    return <DataExplorer
-        id={PROJECT_PANEL_RUN_ID}
-        onRowClick={props.onRowClick}
-        onRowDoubleClick={props.onRowDoubleClick}
-        onContextMenu={props.onContextMenu}
-        contextMenuColumn={true}
-        defaultViewIcon={ProjectIcon}
-        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
-        progressBar={<SubprocessProgressBar parentResource={props.project} dataExplorerId={PROJECT_PANEL_RUN_ID} />}
-        paperClassName={props.paperClassName}
-    />;
-});

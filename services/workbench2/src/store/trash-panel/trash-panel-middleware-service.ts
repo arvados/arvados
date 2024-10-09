@@ -8,9 +8,8 @@ import {
 } from "../data-explorer/data-explorer-middleware-service";
 import { RootState } from "../store";
 import { getUserUuid } from "common/getuser";
-import { DataColumns } from "components/data-table/data-table";
 import { ServiceRepository } from "services/services";
-import { SortDirection } from "components/data-table/data-column";
+import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { FilterBuilder } from "services/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";

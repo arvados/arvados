@@ -244,13 +244,12 @@ const DirectoryArrayInputComponent = connect(mapStateToProps, mapDispatchToProps
             root: {
                 display: 'flex',
                 flexDirection: 'column',
+                height: "80vh",
             },
             pickerWrapper: {
                 display: 'flex',
                 flexDirection: 'column',
-                flexBasis: `${spacing(8)}vh`,
-                flexShrink: 1,
-                minHeight: 0,
+                height: "100%",
             },
             tree: {
                 flex: 3,

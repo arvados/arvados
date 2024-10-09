@@ -4,10 +4,9 @@
 
 import React from 'react';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataColumns } from 'components/data-table/data-table';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from 'models/container-request';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { ResourceKind } from 'models/resource';
 import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime } from 'views-components/data-explorer/renderers';
 import { ProcessIcon } from 'components/icon/icon';
