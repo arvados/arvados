@@ -185,7 +185,7 @@ export const DataTable = withStyles(styles)(
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
-            if((this.props.items.length > 0) && !this.state.isLoaded || !this.props.working) {
+            if(((this.props.items.length > 0) && !this.state.isLoaded) || !this.props.working) {
                 this.setState({ isLoaded: true });
             }
         }
