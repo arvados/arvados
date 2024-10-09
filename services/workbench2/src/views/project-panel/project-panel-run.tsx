@@ -194,7 +194,7 @@ export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunP
         onRowClick={props.onRowClick}
         onRowDoubleClick={props.onRowDoubleClick}
         onContextMenu={props.onContextMenu}
-        contextMenuColumn={true}
+        contextMenuColumn={false}
         defaultViewIcon={ProjectIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         progressBar={<SubprocessProgressBar parentResource={props.project} dataExplorerId={PROJECT_PANEL_RUN_ID} />}
