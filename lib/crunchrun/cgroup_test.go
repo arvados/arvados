@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -71,4 +72,15 @@ func (s *CgroupSuite) TestFindCgroup(c *C) {
 			}
 		}
 	}
+}
+
+func (s *CgroupSuite) TestCgroupSupport(c *C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	checkCgroupSupport(logger.Printf)
+	c.Check(logbuf.String(), Equals, "")
+	c.Check(cgroupSupport, NotNil)
+	c.Check(cgroupSupport["memory"], Equals, true)
+	c.Check(cgroupSupport["entropy"], Equals, false)
 }

@@ -7,6 +7,7 @@ package scheduler
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
@@ -25,14 +26,14 @@ type QueueEnt struct {
 }
 
 const (
-	schedStatusPreparingRuntimeEnvironment = "preparing runtime environment"
-	schedStatusPriorityZero                = "not scheduling: priority 0" // ", state X" appended at runtime
-	schedStatusContainerLimitReached       = "not starting: supervisor container limit has been reached"
-	schedStatusWaitingForPreviousAttempt   = "waiting for previous attempt to exit"
-	schedStatusWaitingNewInstance          = "waiting for new instance to be ready"
-	schedStatusWaitingInstanceType         = "waiting for suitable instance type to become available" // ": queue position X" appended at runtime
-	schedStatusWaitingCloudResources       = "waiting for cloud resources"
-	schedStatusWaitingClusterCapacity      = "waiting while cluster is running at capacity" // ": queue position X" appended at runtime
+	schedStatusPreparingRuntimeEnvironment = "Container is allocated to an instance and preparing to run."
+	schedStatusPriorityZero                = "This container will not be scheduled to run because its priority is 0 and state is %v."
+	schedStatusSupervisorLimitReached      = "Waiting in workflow queue at position %v.  Cluster is at capacity and cannot start any new workflows right now."
+	schedStatusWaitingForPreviousAttempt   = "Waiting for previous container attempt to exit."
+	schedStatusWaitingNewInstance          = "Waiting for a %v instance to boot and be ready to accept work."
+	schedStatusWaitingInstanceType         = "Waiting in queue at position %v.  Cluster is at capacity for all eligible instance types (%v) and cannot start a new instance right now."
+	schedStatusWaitingCloudResources       = "Waiting in queue at position %v.  Cluster is at cloud account limits and cannot start any new instances right now."
+	schedStatusWaitingClusterCapacity      = "Waiting in queue at position %v.  Cluster is at capacity and cannot start any new instances right now."
 )
 
 // Queue returns the sorted queue from the last scheduling iteration.
@@ -204,12 +205,12 @@ tryrun:
 			continue
 		}
 		if ctr.Priority < 1 {
-			sorted[i].SchedulingStatus = schedStatusPriorityZero + ", state " + string(ctr.State)
+			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusPriorityZero, string(ctr.State))
 			continue
 		}
 		if ctr.SchedulingParameters.Supervisor && maxSupervisors > 0 && supervisors > maxSupervisors {
 			overmaxsuper = append(overmaxsuper, sorted[i])
-			sorted[i].SchedulingStatus = schedStatusContainerLimitReached
+			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusSupervisorLimitReached, len(overmaxsuper))
 			continue
 		}
 		// If we have unalloc instances of any of the eligible
@@ -287,7 +288,7 @@ tryrun:
 					sorted[i].SchedulingStatus = schedStatusPreparingRuntimeEnvironment
 					logger.Trace("StartContainer => true")
 				} else {
-					sorted[i].SchedulingStatus = schedStatusWaitingNewInstance
+					sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, unallocType.Name)
 					logger.Trace("StartContainer => false")
 					containerAllocatedWorkerBootingCount += 1
 					dontstart[unallocType] = true
@@ -318,7 +319,11 @@ tryrun:
 				// runQueue(), rather than run
 				// container B now.
 				qpos++
-				sorted[i].SchedulingStatus = schedStatusWaitingInstanceType + fmt.Sprintf(": queue position %d", qpos)
+				var typenames []string
+				for _, tp := range types {
+					typenames = append(typenames, tp.Name)
+				}
+				sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingInstanceType, qpos, strings.Join(typenames, ", "))
 				logger.Trace("all eligible types at capacity")
 				continue
 			}
@@ -333,7 +338,7 @@ tryrun:
 			// asynchronously and does its own logging
 			// about the eventual outcome, so we don't
 			// need to.)
-			sorted[i].SchedulingStatus = schedStatusWaitingNewInstance
+			sorted[i].SchedulingStatus = fmt.Sprintf(schedStatusWaitingNewInstance, availableType.Name)
 			logger.Info("creating new instance")
 			// Don't bother trying to start the container
 			// yet -- obviously the instance will take
@@ -355,7 +360,7 @@ tryrun:
 	for i, ent := range sorted {
 		if ent.SchedulingStatus == "" && (ent.Container.State == arvados.ContainerStateQueued || ent.Container.State == arvados.ContainerStateLocked) {
 			qpos++
-			sorted[i].SchedulingStatus = fmt.Sprintf("%s: queue position %d", qreason, qpos)
+			sorted[i].SchedulingStatus = fmt.Sprintf(qreason, qpos)
 		}
 	}
 	sch.lastQueue.Store(sorted)

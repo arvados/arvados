@@ -11,6 +11,7 @@ import { ParticipantSelect, Participant } from './participant-select';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
+import { AutocompleteCat } from 'components/autocomplete/autocomplete';
 
 type SharingStyles = 'root';
 
@@ -45,7 +46,8 @@ const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Particip
     <ParticipantSelect
         items={fields.getAll() || []}
         onSelect={fields.push}
-        onDelete={fields.remove} />;
+        onDelete={fields.remove}
+        category={AutocompleteCat.SHARING} />;
 
 const PermissionSelectField = () =>
     <Field

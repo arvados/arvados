@@ -17,7 +17,7 @@ export interface ArvadosTheme extends Theme {
     };
 }
 
-export type CustomStyleRulesCallback<ClassKey extends string = string> = 
+export type CustomStyleRulesCallback<ClassKey extends string = string> =
     StyleRulesCallback<Theme, {}, ClassKey>
 
 interface Colors {
@@ -202,6 +202,11 @@ export const themeOptions: ArvadosThemeOptions = {
                 '&$completed': {
                     color: 'inherited'
                 },
+            }
+        },
+        MuiStepConnector: {
+            vertical: {
+                flex: "unset",
             }
         },
         MuiLinearProgress: {

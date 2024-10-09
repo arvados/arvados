@@ -15,12 +15,16 @@ import {
     List,
     FormHelperText,
     Tooltip,
+    Typography,
 } from '@mui/material';
 import withStyles from '@mui/styles/withStyles';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { PopperProps } from '@mui/material/Popper';
 import { WithStyles } from '@mui/styles';
 import { noop } from 'lodash';
+import { isGroup } from 'common/isGroup';
+import { sortByKey } from 'common/objects';
+import { TabbedList } from 'components/tabbedList/tabbed-list';
 
 export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
@@ -40,19 +44,64 @@ export interface AutocompleteProps<Item, Suggestion> {
     renderChipValue?: (item: Item) => string;
     renderChipTooltip?: (item: Item) => string;
     renderSuggestion?: (suggestion: Suggestion) => React.ReactNode;
+    category?: AutocompleteCat;
+    isWorking?: boolean;
+    maxLength?: number;
 }
+
+type AutocompleteClasses = 'listItemStyle';
+
+const autocompleteStyles: CustomStyleRulesCallback<AutocompleteClasses> = theme => ({
+    listItemStyle: {
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+    },
+});
+
+export enum AutocompleteCat {
+    SHARING = 'sharing',
+};
 
 export interface AutocompleteState {
     suggestionsOpen: boolean;
+    selectedTab: number;
     selectedSuggestionIndex: number;
+    tabbedListContents: Record<string, any[]>;
 }
 
-export class Autocomplete<Value, Suggestion> extends React.Component<AutocompleteProps<Value, Suggestion>, AutocompleteState> {
+export const Autocomplete = withStyles(autocompleteStyles)(
+    class Autocomplete<Value, Suggestion> extends React.Component<AutocompleteProps<Value, Suggestion> & WithStyles<AutocompleteClasses>, AutocompleteState> {
 
     state = {
         suggestionsOpen: false,
+        selectedTab: 0,
         selectedSuggestionIndex: 0,
+        tabbedListContents: {},
     };
+
+    componentDidUpdate(prevProps: AutocompleteProps<Value, Suggestion>, prevState: AutocompleteState) {
+        const { suggestions = [], category } = this.props;
+            if( prevProps.suggestions?.length === 0 && suggestions.length > 0) {
+                this.setState({ selectedSuggestionIndex: 0, selectedTab: 0 });
+            }
+            if (category === AutocompleteCat.SHARING) {
+                if( prevProps.items.length !== this.props.items.length) {
+                    this.setState({ selectedTab: 0, selectedSuggestionIndex: 0 });
+                }
+                if (Object.keys(this.state.tabbedListContents).length === 0) {
+                    this.setState({ tabbedListContents: { groups: [], users: [] } });
+                }
+                if (prevProps.suggestions !== suggestions) {
+                    const users = sortByKey<Suggestion>(suggestions.filter(item => !isGroup(item)), 'fullName');
+                    const groups = sortByKey<Suggestion>(suggestions.filter(item => isGroup(item)), 'name');
+                    this.setState({ tabbedListContents: { groups: groups, users: users } });
+                }
+                if (prevState.selectedTab !== this.state.selectedTab) {
+                    this.setState({ selectedSuggestionIndex: 0 });
+                }
+            }
+    }
 
     containerRef = React.createRef<HTMLDivElement>();
     inputRef = React.createRef<HTMLInputElement>();
@@ -63,7 +112,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                         {this.renderLabel()}
                         {this.renderInput()}
                         {this.renderHelperText()}
-                        {this.renderSuggestions()}
+                        {this.props.category === AutocompleteCat.SHARING ? this.renderTabbedSuggestions() : this.renderSuggestions()}
                     </FormControl>
                </div>
         }
@@ -117,6 +166,33 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         );
     }
 
+    renderTabbedSuggestions() {
+        const { suggestions = [] } = this.props;
+        
+        return (
+            <Popper
+                open={this.state.suggestionsOpen}
+                anchorEl={this.containerRef.current || this.inputRef.current}
+                key={suggestions.length}
+                style={{ width: this.getSuggestionsWidth()}}
+            >
+                <Paper onMouseDown={this.preventBlur}>
+                    <TabbedList 
+                        tabbedListContents={this.state.tabbedListContents} 
+                        renderListItem={this.renderSharingSuggestion} 
+                        selectedIndex={this.state.selectedSuggestionIndex}
+                        selectedTab={this.state.selectedTab}
+                        handleTabChange={this.handleTabChange}
+                        handleSelect={this.handleSelect}
+                        includeContentsLength={true}
+                        isWorking={this.props.isWorking}
+                        maxLength={this.props.maxLength}
+                        />
+                </Paper>
+            </Popper>
+        );
+    }
+
     isSuggestionBoxOpen() {
         const { suggestions = [] } = this.props;
         return this.state.suggestionsOpen && suggestions.length > 0;
@@ -124,7 +200,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
         const { onFocus = noop } = this.props;
-        this.setState({ suggestionsOpen: true });
+        this.setState({ suggestionsOpen: true, selectedTab: 0 });
         onFocus(event);
     }
 
@@ -136,33 +212,56 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         });
     }
 
+    handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        event.preventDefault();
+        this.setState({ selectedTab: newValue });
+    };
+
     handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
         const { onCreate = noop, onSelect = noop, suggestions = [] } = this.props;
-        const { selectedSuggestionIndex } = this.state;
+        const { selectedSuggestionIndex, selectedTab } = this.state;
         if (event.key === 'Enter') {
             if (this.isSuggestionBoxOpen() && selectedSuggestionIndex < suggestions.length) {
                 // prevent form submissions when selecting a suggestion
                 event.preventDefault();
-                onSelect(suggestions[selectedSuggestionIndex]);
+                if(this.props.category === AutocompleteCat.SHARING) {
+                    onSelect(this.state.tabbedListContents[Object.keys(this.state.tabbedListContents)[selectedTab]][selectedSuggestionIndex]);
+                } else {
+                    onSelect(suggestions[selectedSuggestionIndex]);
+                }
             } else if (this.props.value.length > 0) {
                 onCreate();
             }
         }
     }
 
-    handleNavigationKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
-        if (key === 'ArrowUp') {
+    handleNavigationKeyPress = (ev: React.KeyboardEvent<HTMLInputElement>) => {
+        if (ev.key === 'Tab' && this.isSuggestionBoxOpen() && this.props.category === AutocompleteCat.SHARING) {
+            ev.preventDefault();
+            // Cycle through tabs, or loop back to the first tab
+            this.setState({ selectedTab: ((this.state.selectedTab + 1) % Object.keys(this.state.tabbedListContents).length)} || 0)
+        }
+        if (ev.key === 'ArrowUp') {
+            ev.preventDefault();
             this.updateSelectedSuggestionIndex(-1);
-        } else if (key === 'ArrowDown') {
+        } else if (ev.key === 'ArrowDown') {
+            ev.preventDefault();
             this.updateSelectedSuggestionIndex(1);
         }
     }
 
     updateSelectedSuggestionIndex(value: -1 | 1) {
-        const { suggestions = [] } = this.props;
-        this.setState(({ selectedSuggestionIndex }) => ({
-            selectedSuggestionIndex: (selectedSuggestionIndex + value) % suggestions.length
-        }));
+        const { suggestions = [], category } = this.props;
+        const { tabbedListContents, selectedTab, selectedSuggestionIndex } = this.state;
+        const tabLabels = Object.keys(tabbedListContents);
+        const currentList = category === AutocompleteCat.SHARING ? tabbedListContents[tabLabels[selectedTab]] : suggestions;
+        if(selectedSuggestionIndex <= 0 && value === -1) {
+            this.setState({selectedSuggestionIndex: currentList.length - 1});
+        } else {
+            this.setState(({ selectedSuggestionIndex }) => ({
+                selectedSuggestionIndex: (selectedSuggestionIndex + value) % currentList.length,
+                }));
+            }
     }
 
     renderChips() {
@@ -212,7 +311,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         }
     }
 
-    handleSelect(suggestion: Suggestion) {
+    handleSelect = (suggestion: Suggestion) => {
         return () => {
             const { onSelect = noop } = this.props;
             const { current } = this.inputRef;
@@ -230,10 +329,18 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
             : <ListItemText>{JSON.stringify(suggestion)}</ListItemText>;
     }
 
+    renderSharingSuggestion = (suggestion: Suggestion) => {
+        return <ListItemText>
+                    <Typography className={this.props.classes.listItemStyle} data-cy="sharing-suggestion">
+                        { isGroup(suggestion) ? `${(suggestion as any).name}` : `${(suggestion as any).fullName} (${(suggestion as any).email})` }
+                    </Typography>
+                </ListItemText>;
+    }
+
     getSuggestionsWidth() {
         return this.containerRef.current ? this.containerRef.current.offsetWidth : 'auto';
     }
-}
+});
 
 type ChipClasses = 'root';
 

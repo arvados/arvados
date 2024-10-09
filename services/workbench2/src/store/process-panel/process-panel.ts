@@ -52,7 +52,6 @@ export interface ProcessPanel {
     outputParams: ProcessIOParameter[] | null;
     nodeInfo: NodeInstanceType | null;
     usageReport: CollectionFile | null;
-    containerStatus: ContainerStatus | null;
 }
 
 export const getProcessPanelCurrentUuid = (router: RouterState) => {

@@ -86,7 +86,7 @@ export const SharingDialogComponent = (props: SharingDialogComponentProps) => {
     }, [withExpiration]);
 
     return (
-        <Dialog {...{ open, onClose }} className="sharing-dialog" onClose={handleClose} fullWidth maxWidth='sm' >
+        <Dialog {...{ open, onClose }} className="sharing-dialog" onClose={handleClose} fullWidth maxWidth='md' >
             <DialogTitle>
                 Sharing settings
             </DialogTitle>

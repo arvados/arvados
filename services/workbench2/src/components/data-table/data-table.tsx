@@ -57,6 +57,8 @@ export interface DataTableDataProps<I> {
     selectedResourceUuid: string;
     setSelectedUuid: (uuid: string | null) => void;
     isNotFound?: boolean;
+    detailsPanelResourceUuid?: string;
+    loadDetailsPanel: (uuid: string) => void;
 }
 
 type CssRules =
@@ -212,6 +214,9 @@ export const DataTable = withStyles(styles)(
             }
             if((this.props.items.length > 0) && !this.state.isLoaded) {
                 this.setState({ isLoaded: true });
+            }
+            if(this.props.detailsPanelResourceUuid !== this.props.selectedResourceUuid) {
+                this.props.loadDetailsPanel(this.props.selectedResourceUuid);
             }
         }
 

@@ -26,7 +26,7 @@ import (
 
 type singularityExecutor struct {
 	logf          func(string, ...interface{})
-	fakeroot      bool // use --fakeroot flag, allow --network=bridge when non-root (currently only used by tests)
+	sudo          bool // use sudo to run singularity (only used by tests)
 	spec          containerSpec
 	tmpdir        string
 	child         *exec.Cmd
@@ -133,7 +133,6 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 		if err != nil {
 			return nil, fmt.Errorf("error creating '%v' collection: %s", collectionName, err)
 		}
-
 	}
 
 	return &imageCollection, nil
@@ -257,23 +256,58 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 
 func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd=" + e.spec.WorkingDir}
-	if e.fakeroot {
-		args = append(args, "--fakeroot")
-	}
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
-	} else if u, err := user.Current(); err == nil && u.Uid == "0" || e.fakeroot {
-		// Specifying --network=bridge fails unless (a) we are
-		// root, (b) we are using --fakeroot, or (c)
-		// singularity has been configured to allow our
-		// uid/gid to use it like so:
+	} else if u, err := user.Current(); err == nil && u.Uid == "0" || e.sudo {
+		// Specifying --network=bridge fails unless
+		// singularity is running as root.
+		//
+		// Note this used to be possible with --fakeroot, or
+		// configuring singularity like so:
 		//
 		// singularity config global --set 'allow net networks' bridge
 		// singularity config global --set 'allow net groups' mygroup
+		//
+		// However, these options no longer work (as of debian
+		// bookworm) because iptables now refuses to run in a
+		// setuid environment.
 		args = append(args, "--net", "--network=bridge")
+	} else {
+		// If we don't pass a --net argument at all, the
+		// container will be in the same network namespace as
+		// the host.
+		//
+		// Note this allows the container to listen on the
+		// host's external ports.
 	}
 	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")
+	}
+
+	// If we ask for resource limits that aren't supported,
+	// singularity will not run the container at all. So we probe
+	// for support first, and only apply the limits that appear to
+	// be supported.
+	//
+	// Default debian configuration lets non-root users set memory
+	// limits but not CPU limits, so we enable/disable those
+	// limits independently.
+	//
+	// https://rootlesscontaine.rs/getting-started/common/cgroup2/
+	checkCgroupSupport(e.logf)
+	if e.spec.VCPUs > 0 {
+		if cgroupSupport["cpu"] {
+			args = append(args, "--cpus", fmt.Sprintf("%d", e.spec.VCPUs))
+		} else {
+			e.logf("cpu limits are not supported by current systemd/cgroup configuration, not setting --cpu %d", e.spec.VCPUs)
+		}
+	}
+	if e.spec.RAM > 0 {
+		if cgroupSupport["memory"] {
+			args = append(args, "--memory", fmt.Sprintf("%d", e.spec.RAM))
+		} else {
+			e.logf("memory limits are not supported by current systemd/cgroup configuration, not setting --memory %d", e.spec.RAM)
+		}
 	}
 
 	readonlyflag := map[bool]string{
@@ -326,6 +360,17 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	// and https://dev.arvados.org/issues/19081
 	env = append(env, "SINGULARITY_NO_EVAL=1")
 
+	// If we don't propagate XDG_RUNTIME_DIR and
+	// DBUS_SESSION_BUS_ADDRESS, singularity resource limits fail
+	// with "FATAL: container creation failed: while applying
+	// cgroups config: system configuration does not support
+	// cgroup management" or "FATAL: container creation failed:
+	// while applying cgroups config: rootless cgroups require a
+	// D-Bus session - check that XDG_RUNTIME_DIR and
+	// DBUS_SESSION_BUS_ADDRESS are set".
+	env = append(env, "XDG_RUNTIME_DIR="+os.Getenv("XDG_RUNTIME_DIR"))
+	env = append(env, "DBUS_SESSION_BUS_ADDRESS="+os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
+
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)
 
@@ -345,6 +390,13 @@ func (e *singularityExecutor) Start() error {
 		return err
 	}
 	child := e.execCmd(path)
+	if e.sudo {
+		child.Args = append([]string{child.Path}, child.Args...)
+		child.Path, err = exec.LookPath("sudo")
+		if err != nil {
+			return err
+		}
+	}
 	err = child.Start()
 	if err != nil {
 		return err
@@ -354,11 +406,18 @@ func (e *singularityExecutor) Start() error {
 }
 
 func (e *singularityExecutor) Pid() int {
-	// see https://dev.arvados.org/issues/17244#note-21
-	return 0
+	childproc, err := e.containedProcess()
+	if err != nil {
+		return 0
+	}
+	return childproc
 }
 
 func (e *singularityExecutor) Stop() error {
+	if e.child == nil || e.child.Process == nil {
+		// no process started, or Wait already called
+		return nil
+	}
 	if err := e.child.Process.Signal(syscall.Signal(0)); err != nil {
 		// process already exited
 		return nil
@@ -462,7 +521,11 @@ func (e *singularityExecutor) containedProcess() (int, error) {
 	if e.child == nil || e.child.Process == nil {
 		return 0, errContainerNotStarted
 	}
-	lsns, err := exec.Command("lsns").CombinedOutput()
+	cmd := exec.Command("lsns")
+	if e.sudo {
+		cmd = exec.Command("sudo", "lsns")
+	}
+	lsns, err := cmd.CombinedOutput()
 	if err != nil {
 		return 0, fmt.Errorf("lsns: %w", err)
 	}

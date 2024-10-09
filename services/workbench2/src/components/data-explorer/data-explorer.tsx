@@ -174,6 +174,7 @@ interface DataExplorerDataProps<T> {
     searchBarValue: string;
     paperClassName?: string;
     forceMultiSelectMode?: boolean;
+    detailsPanelResourceUuid: string;
 }
 
 interface DataExplorerActionProps<T> {
@@ -193,6 +194,7 @@ interface DataExplorerActionProps<T> {
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
     setSelectedUuid: (uuid: string) => void;
     usesDetailsCard: (uuid: string) => boolean;
+    loadDetailsPanel: (uuid: string) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -269,6 +271,8 @@ export const DataExplorer = withStyles(styles)(
                 working,
                 paperClassName,
                 forceMultiSelectMode,
+                detailsPanelResourceUuid,
+                loadDetailsPanel,
             } = this.props;
             return (
                 <Paper
@@ -393,6 +397,8 @@ export const DataExplorer = withStyles(styles)(
                                 currentRouteUuid={this.props.currentRouteUuid}
                                 working={working}
                                 isNotFound={this.props.isNotFound}
+                                detailsPanelResourceUuid={detailsPanelResourceUuid}
+                                loadDetailsPanel={loadDetailsPanel}
                             />
                         </Grid>
                         <Grid

@@ -277,7 +277,7 @@ def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
     supported_versions = ["v1.0", "v1.1", "v1.2"]
     for s in supported_versions:
-        customschema = importlib.resources.read_text(__name__, f'arv-cwl-schema-{s}.yml', 'utf-8')
+        customschema = importlib.resources.read_text(__name__, f'arv-cwl-schema-{s}.yml', encoding='utf-8')
         use_custom_schema(s, "http://arvados.org/cwl", customschema)
     cwltool.process.supportedProcessRequirements.extend([
         "http://arvados.org/cwl#RunInSingleContainer",

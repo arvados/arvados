@@ -94,6 +94,28 @@ func (fs *keepFS) Create(path string, flags int, mode uint32) (errc int, fh uint
 	return 0, fs.newFH(f)
 }
 
+func (fs *keepFS) Mknod(path string, mode uint32, dev uint64) int {
+	defer fs.debugPanics()
+	fs.debugOp("Mknod", path)
+	if filetype := mode & uint32(^os.ModePerm); filetype != 0 && filetype != uint32(fuse.S_IFREG) {
+		return -fuse.ENOSYS
+	}
+	if fs.ReadOnly {
+		_, err := fs.root.Stat(path)
+		if err != nil {
+			return -fuse.EROFS
+		} else {
+			return -fuse.EEXIST
+		}
+	}
+	f, err := fs.root.OpenFile(path, os.O_CREATE|os.O_EXCL, os.FileMode(mode)&os.ModePerm)
+	if err != nil {
+		return fs.errCode("Mknod", path, err)
+	}
+	f.Close()
+	return 0
+}
+
 func (fs *keepFS) Open(path string, flags int) (errc int, fh uint64) {
 	defer fs.debugPanics()
 	fs.debugOp("Open", path)
