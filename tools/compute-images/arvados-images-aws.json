@@ -17,7 +17,8 @@
     "resolver": "",
     "ssh_user": "admin",
     "subnet_id": "",
-    "vpc_id": ""
+    "vpc_id": "",
+    "workdir": "/tmp"
   },
   "builders": [{
     "type": "amazon-ebs",
@@ -70,27 +71,27 @@
   "provisioners": [{
     "type": "file",
     "source": "1078ECD7.asc",
-    "destination": "/tmp/1078ECD7.asc"
+    "destination": "{{user `workdir`}}/1078ECD7.asc"
   },{
     "type": "file",
     "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
-    "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
+    "destination": "{{user `workdir`}}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
     "type": "file",
     "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",
-    "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions.sh"
+    "destination": "{{user `workdir`}}/usr-local-bin-ensure-encrypted-partitions.sh"
   },{
     "type": "file",
     "source": "scripts/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh",
-    "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh"
+    "destination": "{{user `workdir`}}/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh"
   },{
     "type": "file",
     "source": "{{user `public_key_file`}}",
-    "destination": "/tmp/crunch-authorized_keys"
+    "destination": "{{user `workdir`}}/crunch-authorized_keys"
   },{
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=aws","AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}","GOVERSION={{user `goversion`}}"]
+    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=aws","AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}","GOVERSION={{user `goversion`}}","WORKDIR={{user `workdir`}}"]
   }]
 }

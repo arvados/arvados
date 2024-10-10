@@ -18,7 +18,8 @@
     "ssh_private_key_file": "{{env `PACKERPRIVKEY`}}",
     "ssh_user": "packer",
     "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
-    "tenant_id": "{{env `ARM_TENANT_ID`}}"
+    "tenant_id": "{{env `ARM_TENANT_ID`}}",
+    "workdir": "/tmp"
   },
   "builders": [
     {
@@ -50,23 +51,23 @@
   "provisioners": [{
     "type": "file",
     "source": "1078ECD7.asc",
-    "destination": "/tmp/1078ECD7.asc"
+    "destination": "/{{user `workdir`}}/1078ECD7.asc"
   },{
     "type": "file",
     "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
-    "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
+    "destination": "/{{user `workdir`}}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
     "type": "file",
     "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",
-    "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions.sh"
+    "destination": "/{{user `workdir`}}/usr-local-bin-ensure-encrypted-partitions.sh"
   },{
     "type": "file",
     "source": "{{user `public_key_file`}}",
-    "destination": "/tmp/crunch-authorized_keys"
+    "destination": "/{{user `workdir`}}/crunch-authorized_keys"
   },{
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=azure"]
+    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=azure","WORKDIR={{user `workdir`}}"]
   }]
 }
