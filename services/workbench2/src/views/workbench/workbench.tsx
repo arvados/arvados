@@ -98,7 +98,6 @@ import { RemoveGroupMemberDialog } from "views-components/groups-dialog/member-r
 import { GroupMemberAttributesDialog } from "views-components/groups-dialog/member-attributes-dialog";
 import { PublicFavoritePanel } from "views/public-favorites-panel/public-favorites-panel";
 import { LinkAccountPanel } from "views/link-account-panel/link-account-panel";
-import { FedLogin } from "./fed-login";
 import { CollectionsContentAddressPanel } from "views/collection-content-address-panel/collection-content-address-panel";
 import { AllProcessesPanel } from "../all-processes-panel/all-processes-panel";
 import { NotFoundPanel } from "../not-found-panel/not-found-panel";
@@ -456,7 +455,6 @@ const { classes, sidePanelIsCollapsed, isNotLinking, isTransitioning, isUserActi
             <ActivateDialog />
             <SetupDialog />
             <VirtualMachineAttributesDialog />
-            <FedLogin />
             <WebDavS3InfoDialog />
             <Banner />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
