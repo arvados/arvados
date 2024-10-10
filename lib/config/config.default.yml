@@ -1724,6 +1724,7 @@ Clusters:
           Bucket: aaaaa
           LocationConstraint: false
           V2Signature: false
+          UsePathStyle: false
           IndexPageSize: 1000
           ConnectTimeout: 1m
           ReadTimeout: 10m

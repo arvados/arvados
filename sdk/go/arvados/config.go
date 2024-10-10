@@ -315,6 +315,7 @@ type S3VolumeDriverParameters struct {
 	RaceWindow         Duration
 	UnsafeDelete       bool
 	PrefixLength       int
+	UsePathStyle       bool
 }
 
 type AzureVolumeDriverParameters struct {
