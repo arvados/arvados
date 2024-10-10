@@ -62,7 +62,7 @@ Options:
   --ssh_user <user> (default: packer)
       The user packer will use to log into the image
   --workdir <path> (default: /tmp)
-      The directory on which data files are copied and setup scripts are run
+      The directory where data files are staged and setup scripts are run
   --resolver <resolver_IP>
       The dns resolver for the machine (default: host's network provided)
   --reposuffix <suffix>
