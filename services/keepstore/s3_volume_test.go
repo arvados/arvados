@@ -145,13 +145,12 @@ func (s *stubbedS3Suite) TestSignature(c *check.C) {
 			Endpoint:        stub.URL,
 			Region:          "test-region-1",
 			Bucket:          "test-bucket-name",
+			UsePathStyle:    true,
 		},
 		cluster: s.cluster,
 		logger:  ctxlog.TestLogger(c),
 		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
 	}
-	// Our test S3 server uses the older 'Path Style'
-	vol.UsePathStyle = true
 	err := vol.check("")
 
 	c.Check(err, check.IsNil)
