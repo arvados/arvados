@@ -137,6 +137,7 @@ compute_subnet_id = "subnet-abcdef12345"
 deploy_user = "admin"
 domain_name = "xarv1.example.com"
 letsencrypt_iam_access_key_id = "AKAA43MAAAWAKAADAASD"
+loki_iam_access_key_id = "AKAABCDEFGJKLMNOP1234"
 private_ip = {
   "controller" = "10.1.1.1"
   "keep0" = "10.1.1.3"
@@ -163,6 +164,8 @@ route53_dns_ns = tolist([
 ssl_password_secret_name = "xarv1-arvados-ssl-privkey-password"
 vpc_id = "vpc-0999994998399923a"
 letsencrypt_iam_secret_access_key = "XXXXXSECRETACCESSKEYXXXX"
+database_password = <not set>
+loki_iam_secret_access_key = "YYYYYYSECRETACCESSKEYYYYYYY"
 </code></pre>
 
 
@@ -291,6 +294,8 @@ DATABASE_PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
    For example, if the password is @Lq&MZ<V']d?j@
    With backslash quoting the special characters it should appear like this in local.params:
 <pre><code>DATABASE_PASSWORD="Lq\&MZ\<V\'\]d\?j"</code></pre>
+# Set @LE_AWS_*@ credentials to allow Let's Encrypt do authentication through Route53
+# Set @LOKI_AWS_*@ credentials to enable the Loki service to store centralized logs on its dedicated S3 bucket.
 # Set @DISPATCHER_SSH_PRIVKEY@ to a SSH private key that @arvados-dispatch-cloud@ will use to connect to the compute nodes:
 <pre><code>DISPATCHER_SSH_PRIVKEY="-----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn

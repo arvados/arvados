@@ -55,6 +55,7 @@
 #     "download",
 #     "prometheus",
 #     "grafana",
+#     "loki",
 #     "*.collections"
 #   ]
 # }

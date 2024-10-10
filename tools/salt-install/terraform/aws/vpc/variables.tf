@@ -62,6 +62,7 @@ variable "dns_aliases" {
       "download",
       "prometheus",
       "grafana",
+      "loki",
       "*.collections"
     ]
   }

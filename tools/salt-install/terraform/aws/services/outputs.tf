@@ -81,3 +81,12 @@ output "database_password" {
 output "database_version" {
   value = one(aws_db_instance.postgresql_service[*].engine_version_actual)
 }
+
+output "loki_iam_access_key_id" {
+  value = data.terraform_remote_state.data-storage.outputs.loki_iam_access_key_id
+}
+
+output "loki_iam_secret_access_key" {
+  value = data.terraform_remote_state.data-storage.outputs.loki_iam_secret_access_key
+  sensitive = true
+}
