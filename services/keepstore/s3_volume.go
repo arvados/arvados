@@ -74,7 +74,6 @@ type s3Volume struct {
 	startOnce  sync.Once
 
 	overrideEndpoint *aws.Endpoint
-	//usePathStyle     bool // used by test suite
 }
 
 // s3bucket wraps s3.bucket and counts I/O and API usage stats. The
