@@ -11,16 +11,22 @@ class ExcludeContainerImageFromTextSearch < ActiveRecord::Migration[7.0]
   end
 
   def up
+    old_value = query_value('SHOW statement_timeout')
+    execute "SET statement_timeout TO '0'"
     trgm_indexes.each do |model, indx, _|
       execute "DROP INDEX IF EXISTS #{indx}"
       execute "CREATE INDEX #{indx} ON #{model} USING gin((#{model.classify.constantize.full_text_trgm}) gin_trgm_ops)"
     end
+    execute "SET statement_timeout TO #{quote(old_value)}"
   end
 
   def down
+    old_value = query_value('SHOW statement_timeout')
+    execute "SET statement_timeout TO '0'"
     trgm_indexes.each do |model, indx, full_text_trgm|
       execute "DROP INDEX IF EXISTS #{indx}"
       execute "CREATE INDEX #{indx} ON #{model} USING gin((#{full_text_trgm}) gin_trgm_ops)"
     end
+    execute "SET statement_timeout TO #{quote(old_value)}"
   end
 end
