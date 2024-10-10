@@ -94,6 +94,11 @@ func checkCgroupSupport(logf func(string, ...interface{})) {
 	}
 	mount, err := cgroupMount()
 	if err != nil {
+		if os.Getuid() == 0 && checkCgroup1Support(os.DirFS("/"), logf) {
+			// If running as root, singularity also
+			// supports cgroups v1.
+			return
+		}
 		logf("no cgroup support: %s", err)
 		return
 	}
@@ -110,6 +115,32 @@ func checkCgroupSupport(logf func(string, ...interface{})) {
 	for _, controller := range bytes.Split(bytes.TrimRight(controllers, "\n"), []byte{' '}) {
 		cgroupSupport[string(controller)] = true
 	}
+	if !cgroupSupport["memory"] && !cgroupSupport["cpu"] && os.Getuid() == 0 {
+		// On a system running in "unified" mode, the
+		// controllers we need might be mounted under the v1
+		// hierarchy, in which case we will not have seen them
+		// in the cgroup2 mount, but (if running as root)
+		// singularity can use them through v1.  See #22185.
+		checkCgroup1Support(os.DirFS("/"), logf)
+	}
+}
+
+// Check for legacy cgroups v1 support. Caller must have
+// cgroupSupportLock.
+func checkCgroup1Support(fsys fs.FS, logf func(string, ...interface{})) bool {
+	cgroup, err := fs.ReadFile(fsys, "proc/self/cgroup")
+	if err != nil {
+		logf("%s", err)
+		return false
+	}
+	for _, line := range bytes.Split(cgroup, []byte{'\n'}) {
+		if toks := bytes.SplitN(line, []byte{':'}, 3); len(toks) == 3 && len(toks[1]) > 0 {
+			for _, controller := range bytes.Split(toks[1], []byte{','}) {
+				cgroupSupport[string(controller)] = true
+			}
+		}
+	}
+	return true
 }
 
 // Return the cgroup2 mount point, typically "/sys/fs/cgroup".
