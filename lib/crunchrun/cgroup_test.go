@@ -84,3 +84,49 @@ func (s *CgroupSuite) TestCgroupSupport(c *C) {
 	c.Check(cgroupSupport["memory"], Equals, true)
 	c.Check(cgroupSupport["entropy"], Equals, false)
 }
+
+func (s *CgroupSuite) TestCgroup1Support(c *C) {
+	defer func() {
+		// Reset global state.  Other tests need to re-check
+		// the real system config instead of using the results
+		// from our fake /proc/self/cgroup.
+		cgroupSupport = nil
+	}()
+	tmpdir := c.MkDir()
+	err := os.MkdirAll(tmpdir+"/proc/self", 0777)
+	c.Assert(err, IsNil)
+	err = os.WriteFile(tmpdir+"/proc/self/cgroup", []byte(`12:blkio:/user.slice
+11:perf_event:/
+10:freezer:/
+9:pids:/user.slice/user-1000.slice/session-5.scope
+8:hugetlb:/
+7:rdma:/
+6:cpu,cpuacct:/user.slice
+5:devices:/user.slice
+4:memory:/user.slice/user-1000.slice/session-5.scope
+3:net_cls,net_prio:/
+2:cpuset:/
+1:name=systemd:/user.slice/user-1000.slice/session-5.scope
+0::/user.slice/user-1000.slice/session-5.scope
+`), 0777)
+	c.Assert(err, IsNil)
+	cgroupSupport = map[string]bool{}
+	ok := checkCgroup1Support(os.DirFS(tmpdir), c.Logf)
+	c.Check(ok, Equals, true)
+	c.Check(cgroupSupport, DeepEquals, map[string]bool{
+		"blkio":        true,
+		"cpu":          true,
+		"cpuacct":      true,
+		"cpuset":       true,
+		"devices":      true,
+		"freezer":      true,
+		"hugetlb":      true,
+		"memory":       true,
+		"name=systemd": true,
+		"net_cls":      true,
+		"net_prio":     true,
+		"perf_event":   true,
+		"pids":         true,
+		"rdma":         true,
+	})
+}
