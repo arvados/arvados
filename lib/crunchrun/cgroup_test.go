@@ -86,6 +86,12 @@ func (s *CgroupSuite) TestCgroupSupport(c *C) {
 }
 
 func (s *CgroupSuite) TestCgroup1Support(c *C) {
+	defer func() {
+		// Reset global state.  Other tests need to re-check
+		// the real system config instead of using the results
+		// from our fake /proc/self/cgroup.
+		cgroupSupport = nil
+	}()
 	tmpdir := c.MkDir()
 	err := os.MkdirAll(tmpdir+"/proc/self", 0777)
 	c.Assert(err, IsNil)
