@@ -31,17 +31,19 @@ func SaltToken(token, remote string) (string, error) {
 	}
 	uuid := parts[1]
 	secret := parts[2]
-	if len(secret) != 40 {
+	if strings.HasPrefix(uuid, remote) {
+		// target cluster issued this token -- send the real
+		// token
+		return token, nil
+	} else if len(secret) != 40 {
 		// not already salted
 		hmac := hmac.New(sha1.New, []byte(secret))
 		io.WriteString(hmac, remote)
 		secret = fmt.Sprintf("%x", hmac.Sum(nil))
 		return "v2/" + uuid + "/" + secret, nil
-	} else if strings.HasPrefix(uuid, remote) {
-		// already salted for the desired remote
-		return token, nil
 	} else {
-		// salted for a different remote, can't be used
+		// already salted, and not issued by target cluster --
+		// can't be used
 		return "", ErrSalted
 	}
 }

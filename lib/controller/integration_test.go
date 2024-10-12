@@ -299,6 +299,38 @@ func (s *IntegrationSuite) TestRemoteUserAndTokenCacheRace(c *check.C) {
 	wg2.Wait()
 }
 
+// After using a token issued by z1111 to call the Logout endpoint on
+// z2222, the token should be expired and rejected by both z1111 and
+// z2222.
+func (s *IntegrationSuite) TestLogoutUsingLoginCluster(c *check.C) {
+	conn1 := s.super.Conn("z1111")
+	conn2 := s.super.Conn("z2222")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	_, ac1, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, "user1@example.com", true)
+	userctx2, ac2, _ := s.super.ClientsWithToken("z2222", ac1.AuthToken)
+	c.Assert(ac2.AuthToken, check.Matches, `^v2/z1111-.*`)
+	_, err := conn1.CollectionCreate(userctx2, arvados.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	_, err = conn2.CollectionCreate(userctx2, arvados.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	_, err = conn2.Logout(userctx2, arvados.LogoutOptions{})
+	c.Assert(err, check.IsNil)
+
+	_, err = conn1.CollectionCreate(userctx2, arvados.CreateOptions{})
+	se, ok := err.(httpserver.HTTPStatusError)
+	if c.Check(ok, check.Equals, true, check.Commentf("after logging out, token should have been rejected by login cluster")) {
+		c.Check(se.HTTPStatus(), check.Equals, 401)
+	}
+
+	_, err = conn2.CollectionCreate(userctx2, arvados.CreateOptions{})
+	se, ok = err.(httpserver.HTTPStatusError)
+	if c.Check(ok, check.Equals, true, check.Commentf("after logging out, token should have been rejected by remote cluster")) {
+		c.Check(se.HTTPStatus(), check.Equals, 401)
+	}
+
+}
+
 func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
 	if _, err := exec.LookPath("s3cmd"); err != nil {
 		c.Skip("s3cmd not in PATH")
