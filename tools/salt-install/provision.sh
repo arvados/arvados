@@ -1079,10 +1079,5 @@ fi
 # Test that the installation finished correctly
 if [ "x${TEST:-}" = "xyes" ]; then
   cd ${T_DIR}
-  # If we use RVM, we need to run this with it, or most ruby commands will fail
-  RVM_EXEC=""
-  if [ -x /usr/local/rvm/bin/rvm-exec ]; then
-    RVM_EXEC="/usr/local/rvm/bin/rvm-exec"
-  fi
-  ${RVM_EXEC} ./run-test.sh
+  ./run-test.sh
 fi
