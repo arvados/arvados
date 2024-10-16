@@ -61,6 +61,8 @@ describe('Page not found tests', function() {
         cy.loginAs(adminUser);
         cy.waitForDom();
 
+        cy.get('[data-cy=project-panel]').contains("test-project").click();
+
         cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
         cy.contains('No workflow runs found').should('exist');
     });
