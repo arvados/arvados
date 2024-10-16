@@ -387,6 +387,7 @@ export const DataTable = withStyles(styles)(
                 // isLoaded && !working && !isNotFound
                 return (
                     <DataTableDefaultView
+                        data-cy="data-table-default-view"
                         icon={this.props.defaultViewIcon}
                         messages={this.props.defaultViewMessages}
                         filtersApplied={dirty}

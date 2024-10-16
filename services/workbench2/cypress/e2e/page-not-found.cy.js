@@ -52,4 +52,17 @@ describe('Page not found tests', function() {
             cy.get('[data-cy=not-found-view]').should('exist');
         });
     });
-})
+
+    it('shows not found popup in workflow tab', function() {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'test-project',
+        })
+        cy.loginAs(adminUser);
+        cy.waitForDom();
+
+        cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+        cy.contains('No workflow runs found').should('exist');
+    });
+});
+
