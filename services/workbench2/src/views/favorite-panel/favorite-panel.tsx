@@ -185,7 +185,7 @@ export const FavoritePanel = withStyles(styles)(
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
+                    contextMenuColumn={false}
                     defaultViewIcon={FavoriteIcon}
                     defaultViewMessages={['Your favorites list is empty.']} />
                 </div>;

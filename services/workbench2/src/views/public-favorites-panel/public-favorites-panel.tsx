@@ -169,7 +169,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu(this.props.resources)}
-                    contextMenuColumn={true}
+                    contextMenuColumn={false}
                     defaultViewIcon={PublicFavoriteIcon}
                     defaultViewMessages={['Public favorites list is empty.']} />
                 </div>;

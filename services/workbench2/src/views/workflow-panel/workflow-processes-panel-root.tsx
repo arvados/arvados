@@ -117,7 +117,7 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
-        contextMenuColumn={true}
+        contextMenuColumn={false}
         defaultViewIcon={ProcessIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         doHidePanel={props.doHidePanel}
