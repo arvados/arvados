@@ -155,6 +155,9 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.WORKFLOW]: workflowOrder,
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 
+    [ContextMenuKind.FILTER_GROUP]: projectOrder,
+    [ContextMenuKind.FILTER_GROUP_ADMIN]: projectOrder,
+
     [ContextMenuKind.ROOT_PROJECT]: rootProjectOrder,
     [ContextMenuKind.ROOT_PROJECT_ADMIN]: rootProjectOrder,
 };
