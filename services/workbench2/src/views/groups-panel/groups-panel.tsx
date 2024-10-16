@@ -102,7 +102,7 @@ export const GroupsPanel = withStyles(styles)(connect(
                     onRowClick={this.props.handleRowClick}
                     onRowDoubleClick={noop}
                     onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
+                    contextMenuColumn={false}
                     hideColumnSelector
                     actions={
                         <Grid container justifyContent='flex-end'>
