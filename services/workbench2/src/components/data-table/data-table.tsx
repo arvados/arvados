@@ -183,7 +183,7 @@ export const DataTable = withStyles(styles)(
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
-            if((this.props.items.length > 0) && !this.state.isLoaded) {
+            if(((this.props.items.length > 0) && !this.state.isLoaded) || !this.props.working) {
                 this.setState({ isLoaded: true });
             }
         }
@@ -208,6 +208,9 @@ export const DataTable = withStyles(styles)(
             }
             if (!singleSelected && this.isAnySelected()) {
                 this.props.setSelectedUuid(null);
+            }
+            if(prevProps.working === false && this.props.working === true) {
+                this.setState({ isLoaded: false });
             }
             if(prevProps.working === true && this.props.working === false) {
                 this.setState({ isLoaded: true });
@@ -382,6 +385,7 @@ export const DataTable = withStyles(styles)(
                 // isLoaded && !working && !isNotFound
                 return (
                     <DataTableDefaultView
+                        data-cy="data-table-default-view"
                         icon={this.props.defaultViewIcon}
                         messages={this.props.defaultViewMessages}
                         filtersApplied={dirty}
