@@ -96,25 +96,27 @@ export const GroupsPanel = withStyles(styles)(connect(
 
         render() {
             return (
-                <div className={this.props.classes.root}><DataExplorer
-                    id={GROUPS_PANEL_ID}
-                    data-cy="groups-panel-data-explorer"
-                    onRowClick={this.props.handleRowClick}
-                    onRowDoubleClick={noop}
-                    onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
-                    hideColumnSelector
-                    actions={
-                        <Grid container justifyContent='flex-end'>
-                            <Button
-                                data-cy="groups-panel-new-group"
-                                variant="contained"
-                                color="primary"
-                                onClick={this.props.onNewGroup}>
-                                <AddIcon /> New group
-                        </Button>
-                        </Grid>
-                    } /></div>
+                <div className={this.props.classes.root}>
+                    <DataExplorer
+                        id={GROUPS_PANEL_ID}
+                        data-cy="groups-panel-data-explorer"
+                        onRowClick={this.props.handleRowClick}
+                        onRowDoubleClick={noop}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={true}
+                        hideColumnSelector
+                        actions={
+                            <Grid container justifyContent='flex-end'>
+                                <Button
+                                    data-cy="groups-panel-new-group"
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={this.props.onNewGroup}>
+                                    <AddIcon /> New group
+                                </Button>
+                            </Grid>
+                        } />
+                    </div>
             );
         }
 
