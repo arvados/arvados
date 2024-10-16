@@ -180,6 +180,5 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                             : <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>}
                     </div >
                 }
-                forceMultiSelectMode
             /></span>;
     });
