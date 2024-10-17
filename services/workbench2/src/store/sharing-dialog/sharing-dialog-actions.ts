@@ -34,6 +34,8 @@ import { resourcesActions } from "store/resources/resources-actions";
 import { getPublicGroupUuid, getAllUsersGroupUuid } from "store/workflow-panel/workflow-panel-actions";
 import { getSharingPublicAccessFormData } from './sharing-dialog-types';
 import { UserResource } from "models/user";
+import { GroupResource } from "models/group";
+import { ListResults } from 'services/common-service/common-service';
 
 export const openSharingDialog = (resourceUuid: string, refresh?: () => void) =>
     (dispatch: Dispatch) => {
@@ -150,48 +152,65 @@ export const initializeManagementForm = async (dispatch: Dispatch, getState: () 
         return;
     }
     dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
-    const resourceUuid = dialog?.data.resourceUuid;
-    const { items: permissionLinks } = await permissionService.listResourcePermissions(resourceUuid);
-    dispatch<any>(initializePublicAccessForm(permissionLinks));
-    const filters = new FilterBuilder()
-        .addIn('uuid', Array.from(new Set(permissionLinks.map(({ tailUuid }) => tailUuid))))
-        .getFilters();
+    try {
+        const resourceUuid = dialog?.data.resourceUuid;
+        const { items: permissionLinks } = await permissionService.listResourcePermissions(resourceUuid);
+        dispatch<any>(initializePublicAccessForm(permissionLinks));
 
-    const { items: users } = await userService.list({ filters, count: "none", limit: 1000 });
-    const { items: groups } = await groupsService.list({ filters, count: "none", limit: 1000 });
+        const queryusers = permissionLinks.map(({ tailUuid }) => tailUuid)
+                                          .filter(uuid => extractUuidObjectType(uuid) === ResourceObjectType.USER);
+        const querygroups = permissionLinks.map(({ tailUuid }) => tailUuid)
+                                           .filter(uuid => extractUuidObjectType(uuid) === ResourceObjectType.GROUP);
 
-    const getEmail = (tailUuid: string) => {
-        const user = users.find(({ uuid }) => uuid === tailUuid);
-        return user
-            ? user.email
-            : null;
-    };
+        const userfilters = new FilterBuilder()
+            .addIn('uuid', Array.from(new Set(queryusers)))
+            .getFilters();
+        const groupfilters = new FilterBuilder()
+            .addIn('uuid', Array.from(new Set(querygroups)))
+            .getFilters();
 
-    const getFullname = (tailUuid: string) => {
-        const user = users.find(({ uuid }) => uuid === tailUuid);
-        const group = groups.find(({ uuid }) => uuid === tailUuid);
-        return user
-            ? (user as UserResource & {fullName: string}).fullName
-            : group
-                ? group.name
-                : tailUuid;
-    };
+        const userpromise = queryusers.length > 0 ? userService.list({ filters: userfilters, count: "none", limit: 1000 }) : Promise.resolve({items: ([] as Array<UserResource>)});
+        const grouppromise = querygroups.length > 0 ? groupsService.list({ filters: groupfilters, count: "none", limit: 1000 }) : Promise.resolve({items: ([] as Array<GroupResource>)});
 
-    const managementPermissions = permissionLinks
-        .map(({ tailUuid, name, uuid }) => ({
-            email: getEmail(tailUuid),
-            fullName: getFullname(tailUuid),
-            permissions: name as PermissionLevel,
-            permissionUuid: uuid,
-        }));
+        const results = await Promise.all([userpromise, grouppromise]);
 
-    const managementFormData: SharingManagementFormData = {
-        permissions: managementPermissions,
-        initialPermissions: managementPermissions,
-    };
+        const users = (results[0] as ListResults<UserResource>).items;
+        const groups = (results[1] as ListResults<GroupResource>).items;
 
-    dispatch(initialize(SHARING_MANAGEMENT_FORM_NAME, managementFormData));
-    dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+        const getEmail = (tailUuid: string) => {
+            const user = users.find(({ uuid }) => uuid === tailUuid);
+            return user
+                 ? (user as UserResource).email
+                 : null;
+        };
+
+        const getFullname = (tailUuid: string) => {
+            const user = users.find(({ uuid }) => uuid === tailUuid);
+            const group = groups.find(({ uuid }) => uuid === tailUuid);
+            return user
+                 ? (user as UserResource & {fullName: string}).fullName
+                 : group
+                 ? (group as GroupResource).name
+                 : tailUuid;
+        };
+
+        const managementPermissions = permissionLinks
+            .map(({ tailUuid, name, uuid }) => ({
+                email: getEmail(tailUuid),
+                fullName: getFullname(tailUuid),
+                permissions: name as PermissionLevel,
+                permissionUuid: uuid,
+            }));
+
+        const managementFormData: SharingManagementFormData = {
+            permissions: managementPermissions,
+            initialPermissions: managementPermissions,
+        };
+
+        dispatch(initialize(SHARING_MANAGEMENT_FORM_NAME, managementFormData));
+    } finally {
+        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+    }
 };
 
 const initializePublicAccessForm = (permissionLinks: PermissionResource[]) =>
