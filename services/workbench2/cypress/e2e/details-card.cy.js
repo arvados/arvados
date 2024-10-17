@@ -97,7 +97,7 @@ describe('Project Details Card tests', function () {
                 });
             });
         cy.get('[data-cy=form-submit-btn]').click();
-        cy.get('[data-cy=form-dialog]').should('not.exist');
+        cy.waitForDom().get('[data-cy=form-dialog]').should('not.exist');
 
         cy.get('[data-cy=project-details-card]').should('be.visible');
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
@@ -133,7 +133,7 @@ describe('Project Details Card tests', function () {
                 });
             });
         cy.get('[data-cy=form-submit-btn]').should('exist').click();
-        cy.get('[data-cy=form-dialog]').should('not.exist');
+        cy.waitForDom().get('[data-cy=form-dialog]').should('not.exist');
 
         for (let i = 0; i < msButtonTooltips.length; i++) {
             cy.get('[data-cy=multiselect-button]').eq(i).should('exist');
@@ -184,17 +184,14 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
-        //card height should not change if description is a single line
+        cy.get('[data-cy=project-details-card]').contains(projDescription).should('not.be.visible');
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 80);
+        cy.get('[data-cy=toggle-description]').click();
+        cy.waitForDom();
         cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
-        cy.get('[data-cy=toggle-description]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
-        cy.get('[data-cy=toggle-description]').click();
-        cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 80);
 
-        //modify description to be multi-line
+        // modify description to be multi-line
         cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).rightclick({ force: true });
         cy.get('[data-cy=context-menu]').contains('Edit').click();
@@ -205,15 +202,15 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-panel] tbody tr').contains(projName).click({ force: true });
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
-        //card height should change if description is multi-line
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+        // card height should change if description is multi-line
+        cy.get('[data-cy=project-details-card]').contains(projDescription).should('not.be.visible');
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 80);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 90);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 130);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
-        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
+        cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 80);
     });
 
     // The following test is enabled on Electron only, as Chromium and Firefox

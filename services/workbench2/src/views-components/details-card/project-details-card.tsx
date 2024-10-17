@@ -186,7 +186,9 @@ export const ProjectCard = connect(
             title={
                 <section className={classes.nameSection}>
                 <section className={classes.namePlate}>
-                {expandable && <span className={classes.descriptionToggle} onClick={toggleDescription}>
+                                   {expandable && <span className={classes.descriptionToggle}
+                                                                  onClick={toggleDescription}
+                                                        data-cy="toggle-description">
                     <ExpandChevronRight expanded={showDescription} />
                 </span>}
                 <Typography
