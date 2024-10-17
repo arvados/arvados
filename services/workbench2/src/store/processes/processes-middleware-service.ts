@@ -120,8 +120,8 @@ import { containerFieldsNoMounts } from 'store/processes/processes-actions';
 
         if (criteriaChanged && countParams !== null) {
             // Get itemsAvailable
-            return this.services.containerRequestService.list(countParams)
-                .then((results: ListResults<ContainerRequestResource>) => {
+            return this.services.groupsService.contents('', countParams)
+                       .then((results: ListResults<ContainerRequestResource>) => {
                     if (results.itemsAvailable !== undefined) {
                         api.dispatch<any>(this.actions.SET_ITEMS_AVAILABLE(results.itemsAvailable));
                     } else {
