@@ -250,16 +250,18 @@ describe('Project Details Card tests', function () {
 
         //toggle chips
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
-        cy.get('[data-cy=toggle-chips]').click();
+        cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.gt', 96);
-        cy.get('[data-cy=toggle-chips').click();
+        cy.get('[data-cy=toggle-description').click();
         cy.waitForDom();
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 95);
 
         //check for key/value pairs in project details card
         // only run in electron because other browsers require permission for clipboard
         if (Cypress.browser.name === 'electron') {
+            cy.get('[data-cy=toggle-description]').click();
+            cy.waitForDom();
             cy.get('[data-cy=project-details-card]').contains('Animal').should('be.visible');
             cy.get('[data-cy=project-details-card]').contains('Importance').should('be.visible').click();
             cy.waitForDom();
