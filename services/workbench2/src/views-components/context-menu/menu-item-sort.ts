@@ -155,6 +155,8 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.WORKFLOW]: workflowOrder,
     [ContextMenuKind.READONLY_WORKFLOW]: workflowOrder,
 
+    [ContextMenuKind.GROUPS]: projectOrder,
+
     [ContextMenuKind.FILTER_GROUP]: projectOrder,
     [ContextMenuKind.FILTER_GROUP_ADMIN]: projectOrder,
 
@@ -192,5 +194,7 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
         else leftovers.push(item);
     });
 
-    return Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null);
+    return Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null).reduce((acc, val)=>{
+        return acc.at(-1)?.name === "Divider" && val.name === "Divider" ? acc : acc.concat(val)
+    }, []);
 };
