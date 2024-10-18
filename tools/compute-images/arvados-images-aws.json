@@ -78,6 +78,14 @@
     "destination": "{{user `workdir`}}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
     "type": "file",
+    "source": "scripts/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf",
+    "destination": "{{user `workdir`}}/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf"
+  },{
+    "type": "file",
+    "source": "scripts/usr-local-bin-detect-gpu.sh",
+    "destination": "{{user `workdir`}}/usr-local-bin-detect-gpu.sh"
+  },{
+    "type": "file",
     "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",
     "destination": "{{user `workdir`}}/usr-local-bin-ensure-encrypted-partitions.sh"
   },{

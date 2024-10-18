@@ -178,11 +178,24 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
 
   $SUDO apt-get update
   $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
-  # This service fails to start when the image is booted without Nvidia GPUs present, which makes
-  # `systemctl is-system-running` respond with "degraded" and since that command is our default
-  # BootProbeCommand, compute nodes never finish booting from Arvados' perspective.
-  # Disable the service to avoid this. This should be fine because crunch-run does its own basic
-  # CUDA initialization.
+
+  # Various components fail to start, and cause systemd to boot in degraded
+  # state, if the system does not actually have an NVIDIA GPU. Configure the
+  # image to adapt at boot time.
+
+  # Don't load modules unconditionally.
+  # Instead load them if hardware is detected.
+  if [[ -f /etc/modules-load.d/nvidia.conf ]]; then
+      $SUDO mv /etc/modules-load.d/nvidia.conf /etc/modules-load.d/nvidia.avail
+  fi
+  $SUDO install "$WORKDIR/usr-local-bin-detect-gpu.sh" /usr/local/bin/detect-gpu.sh
+  $SUDO install -d /etc/systemd/system/systemd-modules-load.service.d
+  $SUDO install -m 0644 \
+        "$WORKDIR/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf" \
+        /etc/systemd/system/systemd-modules-load.service.d/detect-gpu.conf
+
+  # Don't start the persistence daemon.
+  # Instead rely on crunch-run's CUDA initialization.
   $SUDO systemctl disable nvidia-persistenced.service
 fi
 
