@@ -848,10 +848,15 @@ interface LoadFavoritesProjectParams {
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
-export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
-    options: { showOnlyOwned: boolean, showOnlyWritable: boolean } = { showOnlyOwned: true, showOnlyWritable: false }) =>
+export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const { pickerId, includeCollections = false, includeDirectories = false, includeFiles = false } = params;
+        const {
+            pickerId,
+            includeCollections = false,
+            includeDirectories = false,
+            includeFiles = false,
+            options = { showOnlyOwned: true, showOnlyWritable: false },
+        } = params;
         const uuid = getUserUuid(getState());
         if (uuid) {
             const filters = pipe(
