@@ -69,6 +69,7 @@ export const treePickerSearchSagas = unionize({
     LOAD_PROJECT: ofType<LoadProjectParamsWithId>(),
     LOAD_SEARCH: ofType<LoadProjectParamsWithId>(),
     LOAD_FAVORITES_PROJECT: ofType<LoadFavoritesProjectParams>(),
+    LOAD_PUBLIC_FAVORITES_PROJECT: ofType<LoadFavoritesProjectParams>(),
     REFRESH_TREE_PICKER: ofType<{ pickerId: string }>(),
 });
 
@@ -586,10 +587,12 @@ function* refreshTreePickerSaga({type, payload}: {
                             }}));
                         }
                         if (node.id === PUBLIC_FAVORITES_PROJECT_ID) {
-                            return acc.concat(put(loadPublicFavoritesProject({
-                                ...loadParams,
-                                pickerId,
-                            })));
+                            return acc.concat(call(loadPublicFavoritesProjectSaga, {
+                                type: treePickerSearchSagas.tags.LOAD_PUBLIC_FAVORITES_PROJECT,
+                                payload: {
+                                    ...loadParams,
+                                    pickerId,
+                            }}));
                         }
                     }
                     return acc;
@@ -913,10 +916,22 @@ function* loadFavoritesProjectSaga({type, payload}: {
     }
 }
 
-export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =>
-    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const { pickerId, includeCollections = false, includeDirectories = false, includeFiles = false } = params;
-        const uuidPrefix = getState().auth.config.uuidPrefix;
+export const loadPublicFavoritesProject = (params: typeof treePickerSearchSagas._Record.LOAD_PUBLIC_FAVORITES_PROJECT) => (treePickerSearchSagas.LOAD_PUBLIC_FAVORITES_PROJECT(params));
+
+export function* loadPublicFavoritesProjectWatcher() {
+    yield takeEvery(treePickerSearchSagas.tags.LOAD_PUBLIC_FAVORITES_PROJECT, loadPublicFavoritesProjectSaga);
+}
+
+function* loadPublicFavoritesProjectSaga({type, payload}: {
+    type: typeof treePickerSearchSagas.tags.LOAD_PUBLIC_FAVORITES_PROJECT,
+    payload: typeof treePickerSearchSagas._Record.LOAD_PUBLIC_FAVORITES_PROJECT,
+}) {
+    try {
+        const services: ServiceRepository = yield getContext("services");
+        const state: RootState = yield select();
+
+        const { pickerId, includeCollections = false, includeDirectories = false, includeFiles = false, options } = payload;
+        const uuidPrefix = state.auth.config.uuidPrefix;
         const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 
         // TODO:
@@ -933,13 +948,16 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
                 .getFilters(),
         )(new FilterBuilder());
 
-        const { items } = await services.linkService.list({ filters });
+        const { items } = yield call(
+            {context: services.linkService, fn: services.linkService.list},
+            { filters },
+        );
 
-        dispatch<any>(receiveTreePickerData<LinkResource>({
+        yield put(receiveTreePickerData<LinkResource>({
             id: 'Public Favorites',
             pickerId,
             data: items.filter(item => {
-                if (params.options && params.options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as any).frozenByUuid) {
+                if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as any).frozenByUuid) {
                     return false;
                 }
 
@@ -955,7 +973,10 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
                         : TreeNodeStatus.LOADED
             }),
         }));
-    };
+    } catch (e) {
+        yield put(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load public favorites`, kind: SnackbarKind.ERROR }));
+    }
+}
 
 export const receiveTreePickerProjectsData = (id: string, projects: ProjectResource[], pickerId: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

@@ -10,6 +10,7 @@ import {
     refreshTreePickerWatcher,
     setTreePickerCollectionFilterWatcher,
     loadFavoritesProjectWatcher,
+    loadPublicFavoritesProjectWatcher,
 } from "./tree-picker/tree-picker-actions";
 
 /**
@@ -23,6 +24,7 @@ export const rootSaga = function* () {
        loadProjectWatcher,
        loadSearchWatcher,
        loadFavoritesProjectWatcher,
+       loadPublicFavoritesProjectWatcher,
    ];
 
    yield all(sagas.map(saga =>
