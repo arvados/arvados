@@ -173,18 +173,8 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # Install libnvidia-container, the tooling for Docker/Singularity
   curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
     $SUDO apt-key add -
-  if [[ "$VERSION_CODENAME" == bullseye ]]; then
-    # As of 2021-12-16 libnvidia-container and friends are only available for
-    # Debian 10, not yet Debian 11. Install experimental rc1 package as per this
-    # workaround:
-    # https://github.com/NVIDIA/nvidia-docker/issues/1549#issuecomment-989670662
-    curl -s -L https://nvidia.github.io/libnvidia-container/debian10/libnvidia-container.list | \
-      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
-    $SUDO sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
-  else
-    curl -s -L "https://nvidia.github.io/libnvidia-container/$DISTRO_ID$VERSION_ID/libnvidia-container.list" | \
-      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
-  fi
+  curl -fsSLO --output-dir /etc/apt/sources.list.d \
+       "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list"
 
   $SUDO apt-get update
   $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
