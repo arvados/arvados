@@ -3,7 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { call, all, spawn } from "redux-saga/effects";
-import { setTreePickerProjectSearchWatcher, loadProjectWatcher, loadSearchWatcher } from "./tree-picker/tree-picker-actions";
+import {
+    setTreePickerProjectSearchWatcher,
+    loadProjectWatcher,
+    loadSearchWatcher,
+    refreshTreePickerWatcher,
+    setTreePickerCollectionFilterWatcher,
+} from "./tree-picker/tree-picker-actions";
 
 /**
 * Auto restart sagas with error logging
@@ -11,6 +17,8 @@ import { setTreePickerProjectSearchWatcher, loadProjectWatcher, loadSearchWatche
 export const rootSaga = function* () {
    const sagas = [
        setTreePickerProjectSearchWatcher,
+       setTreePickerCollectionFilterWatcher,
+       refreshTreePickerWatcher,
        loadProjectWatcher,
        loadSearchWatcher,
    ];

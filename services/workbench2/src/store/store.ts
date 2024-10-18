@@ -30,7 +30,6 @@ import { collectionPanelReducer } from "./collection-panel/collection-panel-redu
 import { dialogReducer } from "./dialog/dialog-reducer";
 import { ServiceRepository } from "services/services";
 import { treePickerReducer, treePickerSearchReducer } from "./tree-picker/tree-picker-reducer";
-import { treePickerSearchMiddleware } from "./tree-picker/tree-picker-middleware";
 import { resourcesReducer } from "store/resources/resources-reducer";
 import { propertiesReducer } from "./properties/properties-reducer";
 import { fileUploaderReducer } from "./file-uploader/file-uploader-reducer";
@@ -165,7 +164,6 @@ export function configureStore(history: History, services: ServiceRepository, co
         publicFavoritesMiddleware,
         collectionsContentAddress,
         subprocessMiddleware,
-        treePickerSearchMiddleware,
         workflowProcessessPanelMiddleware
     ];
 
