@@ -71,7 +71,8 @@ export const treePickerSearchSagas = unionize({
 });
 
 export function* setTreePickerProjectSearchWatcher() {
-    yield takeLatest(treePickerSearchSagas.tags.SET_PROJECT_SEARCH, setTreePickerProjectSearchSaga);
+    // Race conditions are handled in loadSearchWatcher so takeEvery is used here to avoid confusion
+    yield takeEvery(treePickerSearchSagas.tags.SET_PROJECT_SEARCH, setTreePickerProjectSearchSaga);
 }
 
 function* setTreePickerProjectSearchSaga({type, payload}: {
@@ -88,10 +89,11 @@ function* setTreePickerProjectSearchSaga({type, payload}: {
             const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(state.treePicker);
             if (picker) {
                 const loadParams = state.treePickerSearch.loadProjectParams[pickerId];
+                // Put is non-blocking so race-condition prevention is handled by the loadSearchWatcher
                 yield put(treePickerSearchSagas.LOAD_SEARCH({
                     ...loadParams,
                     id: SEARCH_PROJECT_ID,
-                    pickerId: pickerId,
+                    pickerId,
                 }));
             }
         }
@@ -213,21 +215,27 @@ interface LoadProjectParamsWithId extends LoadProjectParams {
     loadShared?: boolean;
 }
 
+/**
+ * Kicks off a picker search load that allows paralell runs
+ * Used for expanding nodes
+ */
 export const loadProject = (params: LoadProjectParamsWithId) => (treePickerSearchSagas.LOAD_PROJECT(params));
-
 export function* loadProjectWatcher() {
     yield takeEvery(treePickerSearchSagas.tags.LOAD_PROJECT, loadProjectSaga);
 }
 
+/**
+ * Asynchronously kicks off a race-free picker search load - does not block when used this way
+ */
 export const loadSearch = (params: LoadProjectParamsWithId) => (treePickerSearchSagas.LOAD_SEARCH(params));
-
 export function* loadSearchWatcher() {
     yield takeLatest(treePickerSearchSagas.tags.LOAD_SEARCH, loadProjectSaga);
 }
 
 /**
- * loadProject is used to load or refresh a project node in a tree picker
- *   Errors are caught and a toast is shown if the project fails to load
+ * loadProjectSaga is used to load or refresh a project node in a tree picker
+ * Errors are caught and a toast is shown if the project fails to load
+ * Blocks when called directly with call(), can be composed into race-free groups
  */
 function* loadProjectSaga({type, payload}: {
     type: typeof treePickerSearchSagas.tags.LOAD_PROJECT,
@@ -343,7 +351,7 @@ function* loadProjectSaga({type, payload}: {
                     return true;
                 }
             });
-            yield put<any>(updateResources(included));
+            yield put(updateResources(included));
 
             rootItems = included;
         }
