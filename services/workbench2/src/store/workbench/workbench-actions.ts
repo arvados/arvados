@@ -49,7 +49,7 @@ import * as processUpdateActions from "store/processes/process-update-actions";
 import * as processCopyActions from "store/processes/process-copy-actions";
 
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
-import { loadProcess as loadProcessResources, loadProcessPanel } from "store/process-panel/process-panel-actions";
+import { loadProcessPanel } from "store/process-panel/process-panel-actions";
 import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
 import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
 import { workflowPanelActions } from "store/workflow-panel/workflow-panel-actions";
@@ -557,8 +557,7 @@ export const loadProcess = (uuid: string) =>
     handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState) => {
         try {
             dispatch(progressIndicatorActions.START_WORKING(uuid));
-            dispatch<any>(loadProcessPanel(uuid));
-            const process = await dispatch<any>(loadProcessResources(uuid));
+            const process = await dispatch<any>(loadProcessPanel(uuid));
             if (process) {
                 await dispatch<any>(finishLoadingProject(process.containerRequest.ownerUuid));
                 await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));

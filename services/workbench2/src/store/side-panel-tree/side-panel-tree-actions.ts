@@ -13,7 +13,7 @@ import { getTreePicker, TreePicker } from 'store/tree-picker/tree-picker';
 import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from 'models/tree';
 import { ProjectResource } from 'models/project';
 import { OrderBuilder } from 'services/api/order-builder';
-import { ResourceKind } from 'models/resource';
+import { ResourceKind, extractUuidObjectType, ResourceObjectType } from 'models/resource';
 import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
@@ -115,6 +115,12 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
 
 const loadProject = (projectUuid: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+
+        const objectType = extractUuidObjectType(projectUuid);
+        if (objectType !== ResourceObjectType.USER && objectType !== ResourceObjectType.GROUP) {
+            return;
+        }
+
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: projectUuid, pickerId: SIDE_PANEL_TREE }));
         const params = {
             filters: new FilterBuilder()
