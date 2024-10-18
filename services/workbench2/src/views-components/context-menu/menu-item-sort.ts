@@ -59,70 +59,72 @@ export enum ContextMenuKind {
     MULTI = "Multi",
 }
 
-
-
 const processOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.COPY_UUID,
-    ContextMenuActionNames.OUTPUTS,
-    ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
-    ContextMenuActionNames.EDIT_PROCESS,
     ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
     ContextMenuActionNames.CANCEL,
+    ContextMenuActionNames.EDIT_PROCESS,
     ContextMenuActionNames.REMOVE,
     ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.OUTPUTS,
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.API_DETAILS,
 ];
 
 const projectOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.COPY_UUID,
-    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
-    ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.SHARE,
-    ContextMenuActionNames.NEW_PROJECT,
     ContextMenuActionNames.EDIT_PROJECT,
-    ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.MOVE_TO_TRASH,
     ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.NEW_PROJECT,
+    ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.FREEZE_PROJECT,
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
+    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
+    ContextMenuActionNames.API_DETAILS,
 ];
 
 const collectionOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.COPY_UUID,
-    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
-    ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.SHARE,
     ContextMenuActionNames.EDIT_COLLECTION,
-    ContextMenuActionNames.MOVE_TO,
-    ContextMenuActionNames.MAKE_A_COPY,
     ContextMenuActionNames.MOVE_TO_TRASH,
     ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.MAKE_A_COPY,
+    ContextMenuActionNames.MOVE_TO,
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
+    ContextMenuActionNames.OPEN_WITH_3RD_PARTY_CLIENT,
+    ContextMenuActionNames.API_DETAILS,
 ];
 
 const workflowOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
-    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.COPY_UUID,
-    ContextMenuActionNames.API_DETAILS,
     ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.RUN_WORKFLOW,
     ContextMenuActionNames.DELETE_WORKFLOW,
+    ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
+    ContextMenuActionNames.API_DETAILS,
 ]
 
 const rootProjectOrder = [
