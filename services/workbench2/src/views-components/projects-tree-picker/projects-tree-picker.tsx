@@ -189,7 +189,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                          item: TreeItem<ProjectsTreePickerItem>,
                          pickerId: string) {
                 this.setState({activeItem: item.data});
-                console.log(item.data);
             }
 
             render() {

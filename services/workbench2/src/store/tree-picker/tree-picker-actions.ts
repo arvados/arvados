@@ -68,6 +68,7 @@ export const treePickerSearchSagas = unionize({
     APPLY_COLLECTION_FILTER: ofType<{ pickerId: string }>(),
     LOAD_PROJECT: ofType<LoadProjectParamsWithId>(),
     LOAD_SEARCH: ofType<LoadProjectParamsWithId>(),
+    LOAD_FAVORITES_PROJECT: ofType<LoadFavoritesProjectParams>(),
     REFRESH_TREE_PICKER: ofType<{ pickerId: string }>(),
 });
 
@@ -400,14 +401,17 @@ function* loadProjectSaga({type, payload}: {
 
         yield put(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
-        let { items, included } = yield call({context: services.groupsService, fn: services.groupsService.contents},
-                                                    globalSearch ? '' : id,
-                                                                            { filters,
-                                                                            excludeHomeProject: loadShared || undefined,
-                                                                            limit: itemLimit+1,
-                                                                            count: "none",
-                                                                            include: includeOwners,
-        });
+        let { items, included } = yield call(
+            {context: services.groupsService, fn: services.groupsService.contents},
+            globalSearch ? '' : id,
+            {
+                filters,
+                excludeHomeProject: loadShared || undefined,
+                limit: itemLimit+1,
+                count: "none",
+                include: includeOwners,
+            }
+        );
 
         if (!included) {
             includeOwners = undefined;
@@ -574,10 +578,12 @@ function* refreshTreePickerSaga({type, payload}: {
                             }}));
                         }
                         if (node.id === FAVORITES_PROJECT_ID) {
-                            return acc.concat(put(loadFavoritesProject({
-                                ...loadParams,
-                                pickerId,
-                            })));
+                            return acc.concat(call(loadFavoritesProjectSaga, {
+                                type: treePickerSearchSagas.tags.LOAD_FAVORITES_PROJECT,
+                                payload: {
+                                    ...loadParams,
+                                    pickerId,
+                            }}));
                         }
                         if (node.id === PUBLIC_FAVORITES_PROJECT_ID) {
                             return acc.concat(put(loadPublicFavoritesProject({
@@ -848,16 +854,28 @@ interface LoadFavoritesProjectParams {
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
-export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
-    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+export const loadFavoritesProject = (params: typeof treePickerSearchSagas._Record.LOAD_FAVORITES_PROJECT) => (treePickerSearchSagas.LOAD_FAVORITES_PROJECT(params));
+
+export function* loadFavoritesProjectWatcher() {
+    yield takeEvery(treePickerSearchSagas.tags.LOAD_FAVORITES_PROJECT, loadFavoritesProjectSaga);
+}
+
+function* loadFavoritesProjectSaga({type, payload}: {
+    type: typeof treePickerSearchSagas.tags.LOAD_FAVORITES_PROJECT,
+    payload: typeof treePickerSearchSagas._Record.LOAD_FAVORITES_PROJECT,
+}) {
+    try {
+        const services: ServiceRepository = yield getContext("services");
+        const state: RootState = yield select();
+
         const {
             pickerId,
             includeCollections = false,
             includeDirectories = false,
             includeFiles = false,
             options = { showOnlyOwned: true, showOnlyWritable: false },
-        } = params;
-        const uuid = getUserUuid(getState());
+        } = payload;
+        const uuid = getUserUuid(state);
         if (uuid) {
             const filters = pipe(
                 (fb: FilterBuilder) => includeCollections
@@ -866,9 +884,14 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
                 fb => fb.getFilters(),
             )(new FilterBuilder());
 
-            const { items } = await services.favoriteService.list(uuid, { filters }, options.showOnlyOwned);
+            const { items } = yield call(
+                {context: services.favoriteService, fn: services.favoriteService.list},
+                uuid,
+                { filters },
+                options.showOnlyOwned,
+            );
 
-            dispatch<any>(receiveTreePickerData<GroupContentsResource>({
+            yield put(receiveTreePickerData<GroupContentsResource>({
                 id: 'Favorites',
                 pickerId,
                 data: items.filter((item) => {
@@ -885,7 +908,10 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
                 extractNodeData: extractGroupContentsNodeData(includeDirectories || includeFiles),
             }));
         }
-    };
+    } catch(e) {
+        yield put(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load favorites`, kind: SnackbarKind.ERROR }));
+    }
+}
 
 export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
