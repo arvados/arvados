@@ -78,8 +78,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: '.5rem',
         paddingTop: '0px',
         paddingBottom: '0px',
-        paddingLeft: '16px',
-        paddingRight: '16px',
+        paddingLeft: '.5rem',
+        paddingRight: '.5rem',
     },
     nameSection: {
         display: 'flex',
@@ -92,7 +92,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center',
         margin: 0,
         minHeight: '2.7rem',
-        marginLeft: '16px',
+        marginLeft: '.5rem',
     },
     faveIcon: {
         fontSize: '0.8rem',
@@ -116,7 +116,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: 0,
         marginRight: '2rem',
         marginLeft: '8px',
-        //marginBottom: '-0.85rem',
+        maxWidth: "50em",
     },
     toolbarStyles: {
         marginRight: '-0.5rem',
