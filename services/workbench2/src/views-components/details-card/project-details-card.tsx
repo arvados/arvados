@@ -172,96 +172,98 @@ export const ProjectCard = connect(
 
         return (
             <Card
-            className={classes.root}
-            onClick={() => handleCardClick(uuid)}
-            data-cy='project-details-card'
+                className={classes.root}
+                onClick={() => handleCardClick(uuid)}
+                data-cy='project-details-card'
             >
-            <Grid
-            container
-            wrap='nowrap'
-            className={classes.cardHeaderContainer}
-            >
-            <CardHeader
-            className={classes.cardHeader}
-            title={
-                <section className={classes.nameSection}>
-                <section className={classes.namePlate}>
-                                   {expandable && <span className={classes.descriptionToggle}
-                                                                  onClick={toggleDescription}
-                                                        data-cy="toggle-description">
-                    <ExpandChevronRight expanded={showDescription} />
-                </span>}
-                <Typography
-                    variant='h6'
-                    style={{ marginRight: '1rem' }}
+                <Grid
+                    container
+                    wrap='nowrap'
+                    className={classes.cardHeaderContainer}
                 >
-                    {name}
-                </Typography>
-                <FavoriteStar
-                    className={classes.faveIcon}
-                    resourceUuid={currentResource.uuid}
-                />
-                <PublicFavoriteStar
-                    className={classes.faveIcon}
-                    resourceUuid={currentResource.uuid}
-                />
-                {!!frozenByFullName && (
-                    <Tooltip
-                        className={classes.frozenIcon}
-                        disableFocusListener
-                        title={<span>Project was frozen by {frozenByFullName}</span>}
-                    >
-                        <FreezeIcon style={{ fontSize: 'inherit' }} />
-                    </Tooltip>
-                )}
-                </section>
-                {!hasDescription && (
-                    <Typography
-                        data-cy='no-description'
-                        className={classes.noDescription}
-                    >
-                        no description available
-                    </Typography>
-                )}
-                </section>
-            }
-            />
-            {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
-            </Grid>
+                    <CardHeader
+                        className={classes.cardHeader}
+                        title={
+                            <section className={classes.nameSection}>
+                                <section className={classes.namePlate}>
+                                    <Typography
+                                        variant='h6'
+                                        style={{ marginRight: '1rem' }}
+                                    >
+                                                 {name}
+                                                 {expandable && <span className={classes.descriptionToggle}
+                                                                      onClick={toggleDescription}
+                                                                      data-cy="toggle-description">
+                                                     <ExpandChevronRight expanded={showDescription} />
+                                                 </span>}
+                                    </Typography>
 
-            {expandable && <Collapse
-                               in={showDescription}
-                               timeout='auto'
-                               collapsedSize='0rem'
-                           >
-                <CardContent className={classes.cardContent}>
-                    {hasProperties &&
-                     <section data-cy='project-properties'>
-                         <Typography
-                             component='div'
-                             className={classes.chipSection}
-                         >
-                             {Object.keys(currentResource.properties).map((k) =>
-                                 Array.isArray(currentResource.properties[k])
-                                 ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                 : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                             )}
-                         </Typography>
-                     </section>}
+                                    <FavoriteStar
+                                        className={classes.faveIcon}
+                                        resourceUuid={currentResource.uuid}
+                                    />
+                                    <PublicFavoriteStar
+                                        className={classes.faveIcon}
+                                        resourceUuid={currentResource.uuid}
+                                    />
+                                                  {!!frozenByFullName && (
+                                                      <Tooltip
+                                                          className={classes.frozenIcon}
+                                                          disableFocusListener
+                                                          title={<span>Project was frozen by {frozenByFullName}</span>}
+                                                      >
+                                                          <FreezeIcon style={{ fontSize: 'inherit' }} />
+                                                      </Tooltip>
+                                                  )}
+                                                                            {!hasDescription && (
+                                                                                <Typography
+                                                                                    data-cy='no-description'
+                                                                                    className={classes.noDescription}
+                                                                                >
+                                                                                             no description available
+                                                                                </Typography>
+                                                                            )}
 
-                    {hasDescription && (
-                        <section data-cy='project-description'>
-                            <Typography
-                                className={classes.description}
-                                component='div'
-                                //dangerouslySetInnerHTML is ok here only if description is sanitized,
-                                //which it is before it is loaded into the redux store
-                                dangerouslySetInnerHTML={{ __html: description }}
-                            />
-                        </section>
-                    )}
-                </CardContent>
-            </Collapse>}
+                                </section>
+                            </section>
+                        }
+                    />
+                    {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
+                </Grid>
+
+                {expandable && <Collapse
+                                   in={showDescription}
+                                   timeout='auto'
+                                   collapsedSize='0rem'
+                               >
+                    <CardContent className={classes.cardContent}>
+                        {hasProperties &&
+                         <section data-cy='project-properties'>
+                             <Typography
+                                 component='div'
+                                 className={classes.chipSection}
+                             >
+                                 {Object.keys(currentResource.properties).map((k) =>
+                                     Array.isArray(currentResource.properties[k])
+                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                     : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                 )}
+                             </Typography>
+                         </section>}
+
+                        {hasDescription && (
+                            <section data-cy='project-description'>
+                                <Typography
+                                    className={classes.description}
+                                    component='div'
+                                    //dangerouslySetInnerHTML is ok here only if description is sanitized,
+                                    //which it is before it is loaded into the redux store
+                                    dangerouslySetInnerHTML={{ __html: description }}
+                                />
+                            </section>
+                        )}
+                    </CardContent>
+                </Collapse>}
             </Card>
         );
     })
