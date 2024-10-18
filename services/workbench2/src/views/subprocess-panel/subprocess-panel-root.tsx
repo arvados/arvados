@@ -129,6 +129,5 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         panelName={props.panelName}
         title={<SubProcessesTitle/>}
         progressBar={<SubprocessProgressBar parentResource={props.process} />}
-        forceMultiSelectMode
     />;
 };

@@ -125,5 +125,5 @@ export const WorkflowProcessesPanelRoot = (props: WorkflowProcessesPanelProps & 
         panelMaximized={props.panelMaximized}
         panelName={props.panelName}
         title={<WorkflowProcessesTitle />}
-        forceMultiSelectMode />;
+        />;
 };
