@@ -14,7 +14,7 @@ import {
     AdvancedIcon,
     OpenIcon,
     StopIcon,
-    Link,
+    CopyIcon,
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
@@ -79,7 +79,7 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
             },
         },
         {
-            icon: Link,
+            icon: CopyIcon,
             name: ContextMenuActionNames.COPY_UUID,
             execute: (dispatch, resources) => {
                 dispatch<any>(copyStringToClipboardAction(resources[0].uuid));

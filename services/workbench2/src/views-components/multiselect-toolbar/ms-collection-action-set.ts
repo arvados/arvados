@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MoveToIcon, CopyIcon, RenameIcon, ShareIcon } from "components/icon/icon";
+import { MoveToIcon, CopyIcon, RenameIcon, ShareIcon, FileCopyOutlinedIcon } from "components/icon/icon";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
@@ -20,7 +20,7 @@ const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, O
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
-    icon: CopyIcon,
+    icon: FileCopyOutlinedIcon,
     hasAlts: false,
     isForMulti: true,
     execute: (dispatch, [...resources]) => {
@@ -71,7 +71,7 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
-    icon: Link,
+    icon: CopyIcon,
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {

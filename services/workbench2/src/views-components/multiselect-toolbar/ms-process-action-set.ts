@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
-import { DeleteForever, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon, Link } from "components/icon/icon";
+import { DeleteForever, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon, CopyIcon } from "components/icon/icon";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
 import { openRemoveProcessDialog } from "store/processes/processes-actions";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from "./ms-menu-actions";
@@ -38,7 +38,7 @@ const msRemoveProcess: MultiSelectMenuAction = {
 
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
-    icon: Link,
+    icon: CopyIcon,
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {

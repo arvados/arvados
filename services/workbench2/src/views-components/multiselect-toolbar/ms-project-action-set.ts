@@ -13,6 +13,7 @@ import {
     RenameIcon,
     UnfreezeIcon,
     ShareIcon,
+    CopyIcon,
 } from 'components/icon/icon';
 import { RestoreFromTrashIcon, TrashIcon, FolderSharedIcon, Link } from 'components/icon/icon';
 import { getResource } from 'store/resources/resources';
@@ -52,7 +53,7 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
-    icon: Link,
+    icon: CopyIcon,
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {

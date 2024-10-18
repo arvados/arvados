@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet, ContextMenuActionNames } from "../context-menu-action-set";
-import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from "components/icon/icon";
+import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon, CopyIcon } from "components/icon/icon";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
@@ -48,7 +48,7 @@ export const copyToClipboardMenuAction = {
 };
 
 export const copyUuidAction = {
-    icon: Link,
+    icon: CopyIcon,
     name: ContextMenuActionNames.COPY_UUID,
     execute: (dispatch, resources) => {
         dispatch(copyStringToClipboardAction(resources[0].uuid));

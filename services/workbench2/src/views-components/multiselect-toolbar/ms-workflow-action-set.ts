@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { openRunProcess, openRemoveWorkflowDialog } from 'store/workflow-panel/workflow-panel-actions';
-import { StartIcon, DeleteForever, Link } from 'components/icon/icon';
+import { StartIcon, DeleteForever, Link, CopyIcon } from 'components/icon/icon';
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from './ms-menu-actions';
 import { ContextMenuActionNames } from 'views-components/context-menu/context-menu-action-set';
 import { copyToClipboardAction, copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
@@ -46,7 +46,7 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
 
 const msCopyUuid: MultiSelectMenuAction  = {
     name: COPY_UUID,
-    icon: Link,
+    icon: CopyIcon,
     hasAlts: false,
     isForMulti: false,
     execute: (dispatch, resources) => {

@@ -16,6 +16,7 @@ import {
     Link,
     RestoreVersionIcon,
     FolderSharedIcon,
+    FileCopyOutlinedIcon,
 } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
@@ -62,14 +63,14 @@ const commonActionSet: ContextMenuActionSet = [
             },
         },
         {
-            icon: Link,
+            icon: CopyIcon,
             name: ContextMenuActionNames.COPY_UUID,
             execute: (dispatch, resources) => {
                 dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
             },
         },
         {
-            icon: CopyIcon,
+            icon: FileCopyOutlinedIcon,
             name: ContextMenuActionNames.MAKE_A_COPY,
             execute: (dispatch, resources) => {
                 if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
