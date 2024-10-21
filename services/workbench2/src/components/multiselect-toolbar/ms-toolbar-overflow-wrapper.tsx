@@ -52,7 +52,6 @@ type WrapperProps = {
 
 export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
     const { classes, children, menuLength } = props;
-    console.log(children)
     const lastEntryId = (children[menuLength - 1] as any).props['data-targetid'];
     const navRef = useRef<any>(null);
     const [visibilityMap, setVisibilityMap] = useState<Record<string, boolean>>({});
@@ -129,7 +128,7 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
                 return (
                     <Tooltip
                         className={classes.tooltip}
-                        title={child.props['data-targetid']}
+                        title={child.props['data-title']}
                         key={child.props['data-targetid']}
                         disableFocusListener
                         >

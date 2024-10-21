@@ -91,7 +91,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                     if (!visibilityMap[child.props['data-targetid']]) {
                         return (
                             <Tooltip
-                                title={child.props['data-targetid']}
+                                title={child.props['data-title']}
                                 key={child.props['data-targetid']}
                                 disableFocusListener
                                 placement='left-start'

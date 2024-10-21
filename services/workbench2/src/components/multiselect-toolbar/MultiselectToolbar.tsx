@@ -5,7 +5,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Toolbar, Tooltip, IconButton } from "@mui/material";
+import { Toolbar, IconButton } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
@@ -141,7 +141,7 @@ export const MultiselectToolbar = connect(
                                     </div>
                                 )
                             ) : hasAlts ? (
-                                <span className={classes.iconContainer} data-targetid={name}>
+                                <span className={classes.iconContainer} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
                                     <IconButton
                                         data-cy='multiselect-button'
                                         disabled={disabledButtons.has(name)}
@@ -152,7 +152,9 @@ export const MultiselectToolbar = connect(
                                     </IconButton>
                                 </span>
                             ) : (
-                                <span className={classes.iconContainer} data-targetid={name}>
+                                //data-targetid is used to determine what goes to the overflow menu
+                                //data-title is used to display the tooltip text
+                                <span className={classes.iconContainer} data-targetid={name} data-title={name}>
                                     <IconButton
                                         data-cy='multiselect-button'
                                         onClick={() => {
