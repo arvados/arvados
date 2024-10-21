@@ -33,15 +33,15 @@ describe("Collection panel tests", function () {
         const msButtonTooltips = [
             'View details',
             'Open in new tab',
+            'Share',
+            'Edit collection',
+            'Move to trash',
+            'Make a copy',
+            'Move to',
+            'Add to favorites',
             'Copy link to clipboard',
             'Open with 3rd party client',
             'API Details',
-            'Share',
-            'Edit collection',
-            'Move to',
-            'Make a copy',
-            'Move to trash',
-            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);
