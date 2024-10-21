@@ -40,7 +40,7 @@ import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 
-type CssRules = "root" | "button" | "iconContainer" | "icon" | "divider";
+type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -52,12 +52,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         margin: 0,
         overflow: 'hidden',
     },
-    button: {
-        width: "2.5rem",
-        height: "2.5rem ",
-        paddingLeft: 0,
-        border: "1px solid transparent",
-    },
     iconContainer: {
         height: '100%',
     },
@@ -65,6 +59,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: '-0.5rem',
     },
     divider: {
+        marginTop: '5px',
         display: "flex",
         alignItems: "center",
     },
@@ -146,43 +141,27 @@ export const MultiselectToolbar = connect(
                                     </div>
                                 )
                             ) : hasAlts ? (
-                                <Tooltip
-                                    className={classes.button}
-                                    data-targetid={name}
-                                    title={currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton
-                                            data-cy='multiselect-button'
-                                            disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
-                                            className={classes.icon}
-                                            size="large">
-                                            {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                <span className={classes.iconContainer} data-targetid={name}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        disabled={disabledButtons.has(name)}
+                                        onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
+                                        className={classes.icon}
+                                        size="large">
+                                        {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                    </IconButton>
+                                </span>
                             ) : (
-                                <Tooltip
-                                    className={classes.button}
-                                    data-targetid={name}
-                                    title={action.name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton
-                                            data-cy='multiselect-button'
-                                            onClick={() => {
-                                                props.executeMulti(action, targetResources, iconProps.resources)}}
-                                            className={classes.icon}
-                                            size="large">
-                                            {action.icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                <span className={classes.iconContainer} data-targetid={name}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        onClick={() => {
+                                            props.executeMulti(action, targetResources, iconProps.resources)}}
+                                        className={classes.icon}
+                                        size="large">
+                                        {action.icon({})}
+                                    </IconButton>
+                                </span>
                             );
                             })}
                         </IntersectionObserverWrapper>

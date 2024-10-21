@@ -9,8 +9,9 @@ import withStyles from '@mui/styles/withStyles';
 import classnames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
 import { OverflowMenu, OverflowChild } from './ms-toolbar-overflow-menu';
+import { Tooltip } from '@mui/material';
 
-type CssRules = 'visible' | 'inVisible' | 'toolbarWrapper' | 'overflowStyle';
+type CssRules = 'visible' | 'inVisible' | 'tooltip' | 'toolbarWrapper' | 'overflowStyle';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     visible: {
@@ -29,11 +30,18 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         padding: '0 0px 0 20px',
         width: '100%',
     },
+    tooltip: {
+        width: "2.5rem",
+        height: "2.5rem ",
+        paddingLeft: 0,
+        border: "1px solid transparent",
+    },
     overflowStyle: {
         order: 99,
         position: 'sticky',
         right: '-2rem',
         width: 0,
+        paddingBottom: '0.5rem',
     },
 });
 
@@ -44,6 +52,7 @@ type WrapperProps = {
 
 export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperProps & WithStyles<CssRules>) => {
     const { classes, children, menuLength } = props;
+    console.log(children)
     const lastEntryId = (children[menuLength - 1] as any).props['data-targetid'];
     const navRef = useRef<any>(null);
     const [visibilityMap, setVisibilityMap] = useState<Record<string, boolean>>({});
@@ -116,13 +125,22 @@ export const IntersectionObserverWrapper = withStyles(styles)((props: WrapperPro
             ref={navRef}
         >
             {React.Children.map(children, (child) => {
-                return React.cloneElement(child, {
-                    className: classnames(child.props.className, {
-                        [classes.visible]: !!visibilityMap[child.props['data-targetid']],
-                        [classes.inVisible]: !visibilityMap[child.props['data-targetid']],
-                    }),
-                });
-            })}
+                const isVisible = !!visibilityMap[child.props['data-targetid']];
+                return (
+                    <Tooltip
+                        className={classes.tooltip}
+                        title={child.props['data-targetid']}
+                        key={child.props['data-targetid']}
+                        disableFocusListener
+                        >
+                            { React.cloneElement(child, {
+                            className: classnames(child.props.className, {
+                                [classes.visible]: isVisible,
+                                [classes.inVisible]: !isVisible,
+                            }),
+                        })}
+                    </Tooltip>)
+                })}
             {numHidden >= 2 && (
                 <OverflowMenu
                     visibilityMap={visibilityMap}

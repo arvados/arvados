@@ -89,15 +89,23 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
             >
                 {React.Children.map(children, (child: any) => {
                     if (!visibilityMap[child.props['data-targetid']]) {
-                        return <MenuItem
-                                key={child}
-                                onClick={handleClose}
-                                className={classes.menuItem}
+                        return (
+                            <Tooltip
+                                title={child.props['data-targetid']}
+                                key={child.props['data-targetid']}
+                                disableFocusListener
+                                placement='left-start'
                             >
-                                {React.cloneElement(child, {
-                                    className: classnames(classes.menuElement),
-                                })}
-                            </MenuItem>
+                                <MenuItem
+                                    key={child}
+                                    onClick={handleClose}
+                                    className={classes.menuItem}
+                                    >
+                                    {React.cloneElement(child, {
+                                        className: classnames(classes.menuElement),
+                                    })}
+                                </MenuItem>
+                        </Tooltip>)
                     }
                     return null;
                 })}
