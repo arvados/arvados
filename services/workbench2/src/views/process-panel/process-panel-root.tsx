@@ -180,6 +180,7 @@ export const ProcessPanelRoot = withStyles(styles)(({
                         process={process}
                         params={outputParams}
                         raw={outputData?.raw}
+                        failedToLoadOutputCollection={outputData?.failedToLoadOutputCollection}
                         outputUuid={outputUuid || ""}
                     />
                 </MPVPanelContent>
@@ -223,5 +224,5 @@ export const ProcessPanelRoot = withStyles(styles)(({
                 messages={["Process not found"]}
             />
         );
-    }
+}
 );

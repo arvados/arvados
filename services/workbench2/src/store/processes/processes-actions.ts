@@ -206,7 +206,7 @@ export const getInputs = (data: any): CommandInputParameter[] => {
  * Fetches raw outputs from containerRequest properties
  * Assumes containerRequest is loaded
  */
-export const getRawOutputs = (data: any): CommandInputParameter[] | undefined => {
+export const getRawOutputs = (data: any): any | undefined => {
     if (!data || !data.properties || !data.properties.cwl_output) {
         return undefined;
     }
