@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect, useCallback, useState } from 'react';
-import { SortDirection } from 'components/data-table/data-column';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { extractUuidKind, ResourceKind } from 'models/resource';
 import { ContainerRequestState } from 'models/container-request';
@@ -181,6 +180,5 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                             : <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>}
                     </div >
                 }
-                forceMultiSelectMode
             /></span>;
     });

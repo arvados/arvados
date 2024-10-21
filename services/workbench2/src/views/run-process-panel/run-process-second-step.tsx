@@ -4,14 +4,18 @@
 
 import React from 'react';
 import { Grid, Button } from '@mui/material';
-import { RunProcessBasicForm, RUN_PROCESS_BASIC_FORM } from './run-process-basic-form';
+import {
+         RUN_PROCESS_BASIC_FORM,
+         RUN_PROCESS_INPUTS_FORM,
+    RUN_PROCESS_ADVANCED_FORM
+} from 'store/run-process-panel/run-process-panel-actions';
+import { RunProcessBasicForm } from './run-process-basic-form';
+import { RunProcessAdvancedForm } from './run-process-advanced-form';
 import { RunProcessInputsForm } from 'views/run-process-panel/run-process-inputs-form';
 import { CommandInputParameter, WorkflowResource } from 'models/workflow';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import { isValid } from 'redux-form';
-import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
-import { RunProcessAdvancedForm, RUN_PROCESS_ADVANCED_FORM } from './run-process-advanced-form';
 import { createStructuredSelector } from 'reselect';
 import { selectPreset } from 'store/run-process-panel/run-process-panel-actions';
 

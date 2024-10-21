@@ -5,10 +5,9 @@
 import React from "react";
 import { ProjectIcon } from "components/icon/icon";
 import { PROJECT_PANEL_RUN_ID } from "store/project-panel/project-panel-action-bind";
-import { DataColumns } from 'components/data-table/data-table';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { ProjectResource } from 'models/project';
-import { SortDirection } from "components/data-table/data-column";
+import { DataColumns, SortDirection } from "components/data-table/data-column";
 import { createTree } from "models/tree";
 import {
     ContainerRunTime,
@@ -194,7 +193,7 @@ export const ProjectPanelRun = connect(mapStateToProps)((props: ProjectPanelRunP
         onRowClick={props.onRowClick}
         onRowDoubleClick={props.onRowDoubleClick}
         onContextMenu={props.onContextMenu}
-        contextMenuColumn={true}
+        contextMenuColumn={false}
         defaultViewIcon={ProjectIcon}
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         progressBar={<SubprocessProgressBar parentResource={props.project} dataExplorerId={PROJECT_PANEL_RUN_ID} />}

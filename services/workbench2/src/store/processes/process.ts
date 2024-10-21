@@ -216,6 +216,10 @@ export const isProcessRunning = ({ container }: Process): boolean => (
     container?.state === ContainerState.RUNNING
 );
 
+export const isProcessQueued = ({ container }: Process): boolean => (
+    container?.state === ContainerState.QUEUED || container?.state === ContainerState.LOCKED
+);
+
 export const isProcessRunnable = ({ containerRequest }: Process): boolean => (
     containerRequest.state === ContainerRequestState.UNCOMMITTED
 );
@@ -225,8 +229,8 @@ export const isProcessResumable = ({ containerRequest, container }: Process): bo
     containerRequest.priority === 0 &&
     // Don't show run button when container is present & running or cancelled
     !(container && (container.state === ContainerState.RUNNING ||
-        container.state === ContainerState.CANCELLED ||
-        container.state === ContainerState.COMPLETE))
+                    container.state === ContainerState.CANCELLED ||
+                    container.state === ContainerState.COMPLETE))
 );
 
 export const isProcessCancelable = ({ containerRequest, container }: Process): boolean => (

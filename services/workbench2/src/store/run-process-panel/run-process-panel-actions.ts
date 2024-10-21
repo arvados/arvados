@@ -9,21 +9,43 @@ import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { WorkflowResource, WorkflowRunnerResources, getWorkflow, getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 import { getFormValues, initialize } from 'redux-form';
-import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from 'views/run-process-panel/run-process-basic-form';
-import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
 import { WorkflowInputsData } from 'models/workflow';
 import { createWorkflowMounts, createWorkflowSecretMounts } from 'models/process';
 import { ContainerRequestState } from 'models/container-request';
 import { navigateTo } from '../navigation/navigation-action';
-import {
-    RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD,
-    KEEP_CACHE_RAM_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, RUNNER_IMAGE_FIELD
-} from 'views/run-process-panel/run-process-advanced-form';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
 import { getResource } from 'store/resources/resources';
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
+
+export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
+export const RUN_PROCESS_INPUTS_FORM = 'runProcessInputsForm';
+
+export interface RunProcessBasicFormData {
+    name: string;
+    owner?: ProjectResource | UserResource;
+}
+
+export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
+
+export const DESCRIPTION_FIELD = 'description';
+export const OUTPUT_FIELD = 'output';
+export const RUNTIME_FIELD = 'runtime';
+export const RAM_FIELD = 'ram';
+export const VCPUS_FIELD = 'vcpus';
+export const KEEP_CACHE_RAM_FIELD = 'keep_cache_ram';
+export const RUNNER_IMAGE_FIELD = 'acr_container_image';
+
+export interface RunProcessAdvancedFormData {
+    [DESCRIPTION_FIELD]?: string;
+    [OUTPUT_FIELD]?: string;
+    [RUNTIME_FIELD]?: number;
+    [RAM_FIELD]: number;
+    [VCPUS_FIELD]: number;
+    [KEEP_CACHE_RAM_FIELD]: number;
+    [RUNNER_IMAGE_FIELD]: string;
+}
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_PATHNAME: ofType<string>(),
@@ -52,7 +74,7 @@ export const loadRunProcessPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
             dispatch(setBreadcrumbs([{ label: 'Run Process' }]));
-            const response = await services.workflowService.list();
+            const response = await services.workflowService.list({limit: 200});
             dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
         } catch (e) {
             return;

@@ -17,9 +17,9 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import classnames from "classnames";
-import { DataColumn, SortDirection } from "./data-column";
+import { DataColumn, DataColumns, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
-import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
+import { DataTableFilters } from "../data-table-filters/data-table-filters";
 import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
 import { countNodes, getTreeDirty } from "models/tree";
@@ -31,8 +31,6 @@ import { DataTableMultiselectOption } from "../data-table-multiselect-popover/da
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
 import { PendingIcon } from "components/icon/icon";
 import { CustomTheme, ArvadosTheme } from "common/custom-theme";
-
-export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
 export enum DataTableFetchMode {
     PAGINATED,
@@ -185,8 +183,11 @@ export const DataTable = withStyles(styles)(
 
         componentDidMount(): void {
             this.initializeCheckedList([]);
-            if((this.props.items.length > 0) && !this.state.isLoaded) {
+            if(((this.props.items.length > 0) && !this.state.isLoaded) || !this.props.working) {
                 this.setState({ isLoaded: true });
+            }
+            if(this.props.detailsPanelResourceUuid !== this.props.selectedResourceUuid) {
+                this.props.loadDetailsPanel(this.props.selectedResourceUuid);
             }
         }
 
@@ -211,14 +212,14 @@ export const DataTable = withStyles(styles)(
             if (!singleSelected && this.isAnySelected()) {
                 this.props.setSelectedUuid(null);
             }
+            if(prevProps.working === false && this.props.working === true) {
+                this.setState({ isLoaded: false });
+            }
             if(prevProps.working === true && this.props.working === false) {
                 this.setState({ isLoaded: true });
             }
             if((this.props.items.length > 0) && !this.state.isLoaded) {
                 this.setState({ isLoaded: true });
-            }
-            if(this.props.detailsPanelResourceUuid !== this.props.selectedResourceUuid) {
-                this.props.loadDetailsPanel(this.props.selectedResourceUuid);
             }
         }
 
@@ -384,6 +385,7 @@ export const DataTable = withStyles(styles)(
                 // isLoaded && !working && !isNotFound
                 return (
                     <DataTableDefaultView
+                        data-cy="data-table-default-view"
                         icon={this.props.defaultViewIcon}
                         messages={this.props.defaultViewMessages}
                         filtersApplied={dirty}

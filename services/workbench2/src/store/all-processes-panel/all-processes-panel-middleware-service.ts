@@ -9,7 +9,7 @@ import { joinFilters } from "services/api/filter-builder";
 import { allProcessesPanelActions } from "./all-processes-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { DataExplorer } from "store/data-explorer/data-explorer-reducer";
-import { DataColumns } from "components/data-table/data-table";
+import { DataColumns } from "components/data-table/data-column";
 import {
     serializeOnlyProcessTypeFilters
 } from "../resource-type-filters/resource-type-filters";

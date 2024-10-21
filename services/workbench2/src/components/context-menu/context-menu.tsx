@@ -43,10 +43,12 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
                             item.component
                                 ? <item.component
                                     key={actionIndex}
+                                    data-cy={item.name}
                                     onClick={() => onItemClick(item)} />
                                 : <ListItem
                                     button
                                     key={actionIndex}
+                                    data-cy={item.name}
                                     onClick={() => onItemClick(item)}>
                                     {item.icon &&
                                         <ListItemIcon>

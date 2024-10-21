@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+import importlib.resources
 import json
-import pkg_resources
 from arvados._internal.report_template import ReportTemplate
 
 class DygraphsChart(ReportTemplate):
@@ -38,7 +38,11 @@ class DygraphsChart(ReportTemplate):
         </script>'''.format(
             jslib=self.JSLIB,
             chartdata=json.dumps(self.sections()),
-            jsassets='\n'.join([pkg_resources.resource_string('crunchstat_summary', jsa).decode('utf-8') for jsa in self.JSASSETS]))
+            jsassets='\n'.join(
+                importlib.resources.read_text('crunchstat_summary', jsa, encoding='utf-8')
+                for jsa in self.JSASSETS
+            ),
+        )
 
     def sections(self):
         return [

@@ -21,7 +21,7 @@ import {
     WordWrapOffIcon,
     WordWrapOnIcon,
 } from 'components/icon/icon';
-import { Process, isProcessRunning } from 'store/processes/process';
+import { Process, isProcessRunning, isProcessQueued } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
     FilterOption,
@@ -88,101 +88,101 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines,
-        onLogFilterChange, navigateToLog, onCopy, pollProcessLogs,
-        doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
-        const [wordWrap, setWordWrap] = useState<boolean>(true);
-        const [fontSize, setFontSize] = useState<number>(3);
-        const fontBaseSize = 10;
-        const fontStepSize = 1;
+       onLogFilterChange, navigateToLog, onCopy, pollProcessLogs,
+       doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
+           const [wordWrap, setWordWrap] = useState<boolean>(true);
+           const [fontSize, setFontSize] = useState<number>(3);
+           const fontBaseSize = 10;
+           const fontStepSize = 1;
 
-        useAsyncInterval(() => (
-            pollProcessLogs(process.containerRequest.uuid)
-        ), isProcessRunning(process) ? 2000 : null);
+           useAsyncInterval(() => (
+               pollProcessLogs(process.containerRequest.uuid)
+           ), isProcessQueued(process) ? 20000 : (isProcessRunning(process) ? 2000 : null));
 
-        return (
-            <Grid item className={classes.root} xs={12}>
-                <Card className={classes.card}>
-                    <CardHeader className={classes.header}
-                        avatar={<LogIcon className={classes.iconHeader} />}
-                        action={<Grid container direction='row' alignItems='center'>
-                            <Grid item>
-                                <ProcessLogForm selectedFilter={selectedFilter}
-                                    filters={filters} onChange={onLogFilterChange} />
-                            </Grid>
-                            <Grid item>
-                                <Tooltip title="Decrease font size" disableFocusListener>
-                                    <IconButton onClick={() => fontSize > 1 && setFontSize(fontSize-1)} size="large">
-                                        <TextDecreaseIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </Grid>
-                            <Grid item>
-                                <Tooltip title="Increase font size" disableFocusListener>
-                                    <IconButton onClick={() => fontSize < 5 && setFontSize(fontSize+1)} size="large">
-                                        <TextIncreaseIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </Grid>
-                            <Grid item>
-                                <Tooltip title="Copy link to clipboard" disableFocusListener>
-                                    <IconButton size="large">
-                                        <CopyToClipboard text={lines.join()} onCopy={() => onCopy("Log copied to clipboard")}>
-                                            <CopyIcon />
-                                        </CopyToClipboard>
-                                    </IconButton>
-                                </Tooltip>
-                            </Grid>
-                            <Grid item>
-                                <Tooltip title={`${wordWrap ? 'Disable' : 'Enable'} word wrapping`} disableFocusListener>
-                                    <IconButton onClick={() => setWordWrap(!wordWrap)} size="large">
-                                        {wordWrap ? <WordWrapOffIcon /> : <WordWrapOnIcon />}
-                                    </IconButton>
-                                </Tooltip>
-                            </Grid>
-                            <Grid item>
-                                <Tooltip title="Go to Log collection" disableFocusListener>
-                                    <IconButton
-                                        onClick={() => navigateToLog(process.containerRequest.logUuid!)}
-                                        size="large">
-                                        <CollectionIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </Grid>
-                            { doUnMaximizePanel && panelMaximized &&
-                            <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
-                                <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
-                            </Tooltip> }
-                            { doMaximizePanel && !panelMaximized &&
-                            <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
-                                <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
-                            </Tooltip> }
-                            { doHidePanel &&
-                            <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
-                            </Tooltip> }
-                        </Grid>}
-                        title={
-                            <Typography noWrap variant='h6' className={classes.title}>
-                                Logs
-                            </Typography>}
-                    />
-                    <CardContent className={classes.content}>
-                        {lines.length > 0
-                            ? < Grid
-                                className={classes.logViewerContainer}
-                                container
-                                spacing={3}
-                                direction='column'>
-                                <Grid className={classes.logViewer} item xs>
-                                    <ProcessLogCodeSnippet fontSize={fontBaseSize+(fontStepSize*fontSize)} wordWrap={wordWrap} lines={lines} />
-                                </Grid>
-                            </Grid>
+           return (
+               <Grid item className={classes.root} xs={12}>
+                   <Card className={classes.card}>
+                       <CardHeader className={classes.header}
+                                   avatar={<LogIcon className={classes.iconHeader} />}
+                                   action={<Grid container direction='row' alignItems='center'>
+                                       <Grid item>
+                                           <ProcessLogForm selectedFilter={selectedFilter}
+                                                           filters={filters} onChange={onLogFilterChange} />
+                                       </Grid>
+                                       <Grid item>
+                                           <Tooltip title="Decrease font size" disableFocusListener>
+                                               <IconButton onClick={() => fontSize > 1 && setFontSize(fontSize-1)} size="large">
+                                                   <TextDecreaseIcon />
+                                               </IconButton>
+                                           </Tooltip>
+                                       </Grid>
+                                       <Grid item>
+                                           <Tooltip title="Increase font size" disableFocusListener>
+                                               <IconButton onClick={() => fontSize < 5 && setFontSize(fontSize+1)} size="large">
+                                                   <TextIncreaseIcon />
+                                               </IconButton>
+                                           </Tooltip>
+                                       </Grid>
+                                       <Grid item>
+                                           <Tooltip title="Copy link to clipboard" disableFocusListener>
+                                               <IconButton size="large">
+                                                   <CopyToClipboard text={lines.join()} onCopy={() => onCopy("Log copied to clipboard")}>
+                                                       <CopyIcon />
+                                                   </CopyToClipboard>
+                                               </IconButton>
+                                           </Tooltip>
+                                       </Grid>
+                                       <Grid item>
+                                           <Tooltip title={`${wordWrap ? 'Disable' : 'Enable'} word wrapping`} disableFocusListener>
+                                               <IconButton onClick={() => setWordWrap(!wordWrap)} size="large">
+                                                                   {wordWrap ? <WordWrapOffIcon /> : <WordWrapOnIcon />}
+                                               </IconButton>
+                                           </Tooltip>
+                                       </Grid>
+                                       <Grid item>
+                                           <Tooltip title="Go to Log collection" disableFocusListener>
+                                               <IconButton
+                                                   onClick={() => navigateToLog(process.containerRequest.logUuid!)}
+                                                   size="large">
+                                                   <CollectionIcon />
+                                               </IconButton>
+                                           </Tooltip>
+                                       </Grid>
+                                                           { doUnMaximizePanel && panelMaximized &&
+                                                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
+                                                                 <IconButton onClick={doUnMaximizePanel} size="large"><UnMaximizeIcon /></IconButton>
+                                                             </Tooltip> }
+                                                                                     { doMaximizePanel && !panelMaximized &&
+                                                                                       <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
+                                                                                           <IconButton onClick={doMaximizePanel} size="large"><MaximizeIcon /></IconButton>
+                                                                                       </Tooltip> }
+                                                                                                               { doHidePanel &&
+                                                                                                                 <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                                                                                                     <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large"><CloseIcon /></IconButton>
+                                                                                                                 </Tooltip> }
+                                   </Grid>}
+                                   title={
+                                       <Typography noWrap variant='h6' className={classes.title}>
+                                                                   Logs
+                                       </Typography>}
+                       />
+                       <CardContent className={classes.content}>
+                           {lines.length > 0
+                                         ? < Grid
+                           className={classes.logViewerContainer}
+                           container
+                           spacing={3}
+                           direction='column'>
+                           <Grid className={classes.logViewer} item xs>
+                               <ProcessLogCodeSnippet fontSize={fontBaseSize+(fontStepSize*fontSize)} wordWrap={wordWrap} lines={lines} />
+                           </Grid>
+                           </Grid>
                             : <DefaultView
-                                icon={LogIcon}
-                                messages={['No logs yet']} />
-                        }
-                    </CardContent>
-                </Card>
-            </Grid >
-        );
+                                  icon={LogIcon}
+                                  messages={['No logs yet']} />
+                           }
+                       </CardContent>
+                   </Card>
+               </Grid >
+           );
 });

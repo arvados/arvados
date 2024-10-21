@@ -18,6 +18,7 @@ export enum LogEventType {
     STDERR = 'stderr',
     CONTAINER = 'container',
     KEEPSTORE = 'keepstore',
+    SCHEDULING = 'scheduling',
 }
 
 export interface LogResource extends Resource, ResourceWithProperties {

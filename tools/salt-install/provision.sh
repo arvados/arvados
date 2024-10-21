@@ -217,6 +217,11 @@ apply_var_substitutions() {
        s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']:-}#g;
        s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']:-}#g;
        s#__PROMETHEUS_DATA_RETENTION_TIME__#${PROMETHEUS_DATA_RETENTION_TIME:-15d}#g;
+       s#__LOKI_AWS_S3_ACCESS_KEY_ID__#${LOKI_AWS_S3_ACCESS_KEY_ID:-}#g;
+       s#__LOKI_AWS_S3_SECRET_ACCESS_KEY__#${LOKI_AWS_S3_SECRET_ACCESS_KEY:-}#g;
+       s#__LOKI_AWS_S3_BUCKET__#${LOKI_AWS_S3_BUCKET:-}#g;
+       s#__LOKI_LOG_RETENTION_TIME__#${LOKI_LOG_RETENTION_TIME:-15d}#g;
+       s#__LOKI_AWS_REGION__#${LOKI_AWS_REGION:-}#g;
        s#__CONTROLLER_NODES__#${ROLE2NODES['controller']:-}#g;
        s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
@@ -738,6 +743,10 @@ else
   grep -q "\- prometheus$" ${STATES_TOP} || echo "    - prometheus" >> ${STATES_TOP}
   # Prometheus node exporter pillar
   grep -q "prometheus_node_exporter" ${PILLARS_TOP} || echo "    - prometheus_node_exporter" >> ${PILLARS_TOP}
+  # Grafana Alloy OpenTelemetry client state & pillar on all nodes
+  grep -q "\- grafana$" ${STATES_TOP} || echo "    - grafana" >> ${STATES_TOP}
+  grep -q "extra.alloy_install" ${STATES_TOP} || echo "    - extra.alloy_install" >> ${STATES_TOP}
+  grep -q "alloy" ${PILLARS_TOP} || echo "    - alloy" >> ${PILLARS_TOP}
 
   for R in ${ROLES:-}; do
     case "${R}" in
@@ -760,10 +769,12 @@ else
         rm -f "${GRAFANA_DASHBOARDS_DEST_DIR}"/*
         # "ArvadosPromDataSource" is the hardcoded UID for Prometheus' datasource
         # in Grafana.
+        # "ArvadosLokiDataSource" if Loki's UID in Grafana
         for f in $(ls "${GRAFANA_DASHBOARDS_DIR}"/*.json); do
           sed "s#__TLS_EXPIRATION_YELLOW__#${TLS_EXPIRATION_YELLOW}#g;
                s#__TLS_EXPIRATION_GREEN__#${TLS_EXPIRATION_GREEN}#g;
-               s#\${DS_PROMETHEUS}#ArvadosPromDataSource#g" \
+               s#\${DS_PROMETHEUS}#ArvadosPromDataSource#g;
+               s#\${DS_LOKI}#ArvadosLokiDataSource#g" \
           "${f}" > "${GRAFANA_DASHBOARDS_DEST_DIR}"/$(basename "${f}")
         done
 
@@ -776,26 +787,29 @@ else
         grep -q "extra.grafana_dashboards" ${STATES_TOP} || echo "    - extra.grafana_dashboards" >> ${STATES_TOP}
         grep -q "extra.grafana_admin_user" ${STATES_TOP} || echo "    - extra.grafana_admin_user" >> ${STATES_TOP}
 
+        grep -q "extra.loki_install" ${STATES_TOP} || echo "    - extra.loki_install" >> ${STATES_TOP}
+
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
           if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
             grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
-          for SVC in grafana prometheus; do
+          for SVC in grafana prometheus loki; do
             copy_custom_cert ${CUSTOM_CERTS_DIR} ${SVC}
           done
         fi
         ### Pillars ###
         grep -q "prometheus_server" ${PILLARS_TOP} || echo "    - prometheus_server" >> ${PILLARS_TOP}
         grep -q "grafana" ${PILLARS_TOP} || echo "    - grafana" >> ${PILLARS_TOP}
-        for SVC in grafana prometheus; do
+        grep -q "loki" ${PILLARS_TOP} || echo "    - loki" >> ${PILLARS_TOP}
+        for SVC in grafana prometheus loki; do
           grep -q "nginx_${SVC}_configuration" ${PILLARS_TOP} || echo "    - nginx_${SVC}_configuration" >> ${PILLARS_TOP}
         done
         grep -q "nginx_snippets" ${PILLARS_TOP} || echo "    - nginx_snippets" >> ${PILLARS_TOP}
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
-          for SVC in grafana prometheus; do
+          for SVC in grafana prometheus loki; do
             grep -q "letsencrypt_${SVC}_configuration" ${PILLARS_TOP} || echo "    - letsencrypt_${SVC}_configuration" >> ${PILLARS_TOP}
             sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${DOMAIN}*/g;
                     s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${DOMAIN}/fullchain.pem#g;
@@ -807,7 +821,7 @@ else
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
-          for SVC in grafana prometheus; do
+          for SVC in grafana prometheus loki; do
             sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_${SVC}_cert_file_copy/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${SVC}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${SVC}.key#g" \
@@ -1065,10 +1079,5 @@ fi
 # Test that the installation finished correctly
 if [ "x${TEST:-}" = "xyes" ]; then
   cd ${T_DIR}
-  # If we use RVM, we need to run this with it, or most ruby commands will fail
-  RVM_EXEC=""
-  if [ -x /usr/local/rvm/bin/rvm-exec ]; then
-    RVM_EXEC="/usr/local/rvm/bin/rvm-exec"
-  fi
-  ${RVM_EXEC} ./run-test.sh
+  ./run-test.sh
 fi

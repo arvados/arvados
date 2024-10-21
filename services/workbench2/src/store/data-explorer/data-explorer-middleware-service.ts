@@ -4,13 +4,12 @@
 
 import { Dispatch, MiddlewareAPI } from 'redux';
 import { RootState } from '../store';
-import { DataColumns } from 'components/data-table/data-table';
 import { DataExplorer, getSortColumn } from './data-explorer-reducer';
 import { ListResults } from 'services/common-service/common-service';
 import { createTree } from 'models/tree';
-import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { DataTableFilters } from 'components/data-table-filters/data-table-filters';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { Resource } from 'models/resource';
 
 export abstract class DataExplorerMiddlewareService {

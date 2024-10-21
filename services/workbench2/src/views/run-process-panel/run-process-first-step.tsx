@@ -26,7 +26,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         borderLeft: `1px solid ${theme.palette.grey["300"]}`
     },
     list: {
-        maxHeight: 300,
+        height: "50vh",
         position: 'relative',
         overflow: 'auto'
     },
@@ -62,15 +62,15 @@ export const RunProcessFirstStep = withStyles(styles)(
         <Grid container spacing={2}>
             <Grid container item xs={6} className={classes.root}>
                 <Grid item xs={12} className={classes.searchGrid}>
-                    <SearchInput selfClearProp={JSON.stringify(selectedWorkflow)} value='' onSearch={onSearch} />
+                    <SearchInput selfClearProp="" value='' onSearch={onSearch} />
                 </Grid>
                 <Grid item xs={12}>
                     <List className={classes.list}>
                         {workflows.map(workflow => (
                             <ListItem key={workflow.uuid} button
-                                classes={{ root: classes.listItem, selected: classes.itemSelected}}
-                                selected={selectedWorkflow && (selectedWorkflow.uuid === workflow.uuid)}
-                                onClick={() => onSetWorkflow(workflow)}>
+                                      classes={{ root: classes.listItem, selected: classes.itemSelected}}
+                                      selected={selectedWorkflow && (selectedWorkflow.uuid === workflow.uuid)}
+                                      onClick={() => onSetWorkflow(workflow)}>
                                 <ListItemIcon>
                                     <WorkflowIcon className={classes.listItemIcon}/>
                                 </ListItemIcon>
@@ -85,9 +85,9 @@ export const RunProcessFirstStep = withStyles(styles)(
             </Grid>
             <Grid item xs={12}>
                 <Button variant="contained" color="primary"
-                    data-cy="run-process-next-button"
-                    disabled={!(!!selectedWorkflow)}
-                    onClick={() => onSetStep(1)}>
+                        data-cy="run-process-next-button"
+                        disabled={!(!!selectedWorkflow)}
+                        onClick={() => onSetStep(1)}>
                     Next
                 </Button>
             </Grid>

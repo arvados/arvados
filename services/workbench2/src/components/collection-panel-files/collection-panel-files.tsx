@@ -34,6 +34,7 @@ import { sortBy } from "lodash";
 import { formatFileSize } from "common/formatters";
 import { getInlineFileUrl, sanitizeToken } from "views-components/context-menu/actions/helpers";
 import { extractUuidKind, ResourceKind } from "models/resource";
+import { CollectionFile } from "models/collection-file";
 
 export interface CollectionPanelFilesProps {
     isWritable: boolean;
@@ -245,7 +246,7 @@ export const CollectionPanelFiles = withStyles(styles)(
 
         const parentRef = React.useRef(null);
         const [path, setPath] = React.useState<string[]>([]);
-        const [pathData, setPathData] = React.useState({});
+        const [pathData, setPathData] = React.useState<Record<string, CollectionFile[]>>({});
         const [isLoading, setIsLoading] = React.useState(false);
         const [leftSearch, setLeftSearch] = React.useState("");
         const [rightSearch, setRightSearch] = React.useState("");
@@ -340,7 +341,7 @@ export const CollectionPanelFiles = withStyles(styles)(
         React.useEffect(() => {
             if (rightData) {
                 const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
-                setCollectionFiles(filtered, false)(dispatch);
+                dispatch(setCollectionFiles(filtered, false)); 
             }
         }, [rightData, dispatch, rightSearch]);
 

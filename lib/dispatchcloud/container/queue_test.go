@@ -5,12 +5,15 @@
 package container
 
 import (
+	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"github.com/sirupsen/logrus"
@@ -108,7 +111,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 	wg.Wait()
 }
 
-func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
+func (suite *IntegrationSuite) TestCancel_NoInstanceType(c *check.C) {
 	errorTypeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
 		// Make sure the relevant container fields are
 		// actually populated.
@@ -123,22 +126,7 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	client := arvados.NewClientFromEnv()
 	cq := NewQueue(logger(), nil, errorTypeChooser, client)
 
-	ch := cq.Subscribe()
-	go func() {
-		defer cq.Unsubscribe(ch)
-		for range ch {
-			// Container should never be added to
-			// queue. Note that polling the queue this way
-			// doesn't guarantee a bug (container being
-			// incorrectly added to the queue) will cause
-			// a test failure.
-			_, ok := cq.Get(arvadostest.QueuedContainerUUID)
-			if !c.Check(ok, check.Equals, false) {
-				// Don't spam the log with more failures
-				break
-			}
-		}
-	}()
+	go failIfContainerAppearsInQueue(c, cq, arvadostest.QueuedContainerUUID)
 
 	var ctr arvados.Container
 	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
@@ -154,6 +142,60 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 		return err == nil && ctr.State == arvados.ContainerStateCancelled
 	})
 	c.Check(ctr.RuntimeStatus["error"], check.Equals, `no suitable instance type`)
+}
+
+func (suite *IntegrationSuite) TestCancel_InvalidMountsField(c *check.C) {
+	cfg, err := arvados.GetConfig(filepath.Join(os.Getenv("WORKSPACE"), "tmp", "arvados.yml"))
+	c.Assert(err, check.IsNil)
+	cc, err := cfg.GetCluster("zzzzz")
+	c.Assert(err, check.IsNil)
+	db, err := (&ctrlctx.DBConnector{PostgreSQL: cc.PostgreSQL}).GetDB(context.Background())
+	c.Assert(err, check.IsNil)
+	_, err = db.Exec(`update containers set mounts=$1 where uuid=$2`, `{"stdin":["bork"]}`, arvadostest.QueuedContainerUUID)
+	c.Assert(err, check.IsNil)
+	// Note this setup gets cleaned up by the database reset in
+	// TearDownTest.
+
+	typeChooser := func(ctr *arvados.Container) ([]arvados.InstanceType, error) {
+		return []arvados.InstanceType{}, nil
+	}
+	client := arvados.NewClientFromEnv()
+	cq := NewQueue(logger(), nil, typeChooser, client)
+
+	go failIfContainerAppearsInQueue(c, cq, arvadostest.QueuedContainerUUID)
+
+	var ctr arvados.Container
+	err = client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, arvados.GetOptions{Select: []string{"state"}})
+	c.Check(err, check.IsNil)
+	c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
+
+	go cq.Update()
+
+	// Wait for the cancel operation to take effect. Container
+	// will have state=Cancelled or just disappear from the queue.
+	suite.waitfor(c, time.Second, func() bool {
+		err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, arvados.GetOptions{Select: []string{"state", "runtime_status"}})
+		return err == nil && ctr.State == arvados.ContainerStateCancelled
+	})
+	c.Logf("runtime_status: %v", ctr.RuntimeStatus)
+	c.Check(ctr.RuntimeStatus["error"], check.Matches, `error getting mounts from container record: json: cannot unmarshal .*`)
+}
+
+func failIfContainerAppearsInQueue(c *check.C, cq *Queue, uuid string) {
+	ch := cq.Subscribe()
+	defer cq.Unsubscribe(ch)
+	for range ch {
+		// Container should never be added to
+		// queue. Note that polling the queue this way
+		// doesn't guarantee a bug (container being
+		// incorrectly added to the queue) will cause
+		// a test failure.
+		_, ok := cq.Get(uuid)
+		if !c.Check(ok, check.Equals, false) {
+			// Don't spam the log with more failures
+			break
+		}
+	}
 }
 
 func (suite *IntegrationSuite) waitfor(c *check.C, timeout time.Duration, fn func() bool) {

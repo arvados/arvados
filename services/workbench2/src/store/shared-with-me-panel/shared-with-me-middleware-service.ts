@@ -18,7 +18,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from 'services/common-service/common-service';
 import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
@@ -26,9 +26,8 @@ import { updatePublicFavorites } from 'store/public-favorites/public-favorites-a
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { AuthState } from 'store/auth/auth-reducer';
-import { SharedWithMePanelColumnNames } from 'views/shared-with-me-panel/shared-with-me-panel';
+import { SharedWithMePanelColumnNames } from 'views/shared-with-me-panel/shared-with-me-columns';
 import { buildProcessStatusFilters, serializeResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
-import { DataColumns } from 'components/data-table/data-table';
 import { couldNotFetchItemsAvailable } from 'store/data-explorer/data-explorer-action';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {

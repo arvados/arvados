@@ -21,7 +21,8 @@ import withStyles from '@mui/styles/withStyles';
 import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
 import { createTree } from 'models/tree';
-import { DataTableFilters, DataTableFiltersTree } from './data-table-filters-tree';
+import { DataTableFilters } from './data-table-filters';
+import { DataTableFiltersTree } from './data-table-filters-tree';
 import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
 

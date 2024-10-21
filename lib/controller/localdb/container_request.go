@@ -70,7 +70,7 @@ func (conn *Conn) ContainerRequestContainerStatus(ctx context.Context, opts arva
 		return ret, err
 	}
 	if cr.ContainerUUID == "" {
-		ret.SchedulingStatus = "no container assigned"
+		ret.SchedulingStatus = "No container is assigned."
 		return ret, nil
 	}
 	// We use admin credentials to get the container record so we
@@ -142,6 +142,6 @@ func (conn *Conn) ContainerRequestContainerStatus(ctx context.Context, opts arva
 		// Scheduling status does not apply.
 		return ret, nil
 	}
-	ret.SchedulingStatus = "waiting for dispatch"
+	ret.SchedulingStatus = "Waiting in queue."
 	return ret, nil
 }

@@ -1553,7 +1553,7 @@ func (dn *dirnode) createFileAndParents(names []string) (fn *filenode, err error
 				child.SetParent(node, name)
 				return child, nil
 			} else if !child.IsDir() {
-				return child, ErrFileExists
+				return child, os.ErrExist
 			} else {
 				return child, nil
 			}

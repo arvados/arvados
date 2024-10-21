@@ -59,6 +59,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface ProjectDetailsComponentDataProps {
     project: ProjectResource;
+    hideEdit?: boolean;
 }
 
 interface ProjectDetailsComponentActionProps {
@@ -78,48 +79,48 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
 
-const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
+export const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
-        ({ classes, project, resources, onClick }: ProjectDetailsComponentProps & { resources: ResourcesState }) => <div>
-            {project.groupClass !== GroupClass.FILTER ?
-                <Button onClick={onClick({
-                    uuid: project.uuid,
-                    name: project.name,
-                    description: project.description,
-                    properties: project.properties,
-                })}
-                    disabled={resourceIsFrozen(project, resources)}
-                    className={classes.editButton} variant='contained'
-                    data-cy='details-panel-edit-btn' color='primary' size='small'>
-                    <RenameIcon className={classes.editIcon} /> Edit
-                </Button>
-                : ''
+        ({ classes, project, resources, onClick, hideEdit }: ProjectDetailsComponentProps & { resources: ResourcesState }) => <div>
+            {project.groupClass !== GroupClass.FILTER && !hideEdit ?
+             <Button onClick={onClick({
+                 uuid: project.uuid,
+                 name: project.name,
+                 description: project.description,
+                 properties: project.properties,
+             })}
+                     disabled={resourceIsFrozen(project, resources)}
+                     className={classes.editButton} variant='contained'
+                     data-cy='details-panel-edit-btn' color='primary' size='small'>
+                 <RenameIcon className={classes.editIcon} /> Edit
+             </Button>
+            : ''
             }
             <DetailsAttribute label='Type' value={project.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)} />
             <DetailsAttribute label='UUID' linkToUuid={project.uuid} value={project.uuid} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+                              uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
             <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
             <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
             <DetailsAttribute label='Last modified by' linkToUuid={project.modifiedByUserUuid}
-                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+                              uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
             <DetailsAttribute label='Description'>
                 {project.description ?
-                    <RichTextEditorLink
-                        title={`Description of ${project.name}`}
-                        content={project.description}
-                        label='Show full description' />
-                    : '---'
+                 <RichTextEditorLink
+                     title={`Description of ${project.name}`}
+                     content={project.description}
+                     label='Show full description' />
+                : '---'
                 }
             </DetailsAttribute>
             <DetailsAttribute label='Properties' />
             {
                 Object.keys(project.properties).map(k =>
                     Array.isArray(project.properties[k])
-                        ? project.properties[k].map((v: string) =>
-                            getPropertyChip(k, v, undefined, classes.tag))
-                        : getPropertyChip(k, project.properties[k], undefined, classes.tag)
+                    ? project.properties[k].map((v: string) =>
+                        getPropertyChip(k, v, undefined, classes.tag))
+                    : getPropertyChip(k, project.properties[k], undefined, classes.tag)
                 )
             }
         </div>
-    ));
+));

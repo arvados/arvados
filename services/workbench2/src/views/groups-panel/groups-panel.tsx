@@ -9,8 +9,7 @@ import { Grid, Button } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
-import { DataColumns } from 'components/data-table/data-table';
-import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns, SortDirection } from 'components/data-table/data-column';
 import { GroupMembersCount, ResourceUuid } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
@@ -97,25 +96,27 @@ export const GroupsPanel = withStyles(styles)(connect(
 
         render() {
             return (
-                <div className={this.props.classes.root}><DataExplorer
-                    id={GROUPS_PANEL_ID}
-                    data-cy="groups-panel-data-explorer"
-                    onRowClick={this.props.handleRowClick}
-                    onRowDoubleClick={noop}
-                    onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
-                    hideColumnSelector
-                    actions={
-                        <Grid container justifyContent='flex-end'>
-                            <Button
-                                data-cy="groups-panel-new-group"
-                                variant="contained"
-                                color="primary"
-                                onClick={this.props.onNewGroup}>
-                                <AddIcon /> New group
-                        </Button>
-                        </Grid>
-                    } /></div>
+                <div className={this.props.classes.root}>
+                    <DataExplorer
+                        id={GROUPS_PANEL_ID}
+                        data-cy="groups-panel-data-explorer"
+                        onRowClick={this.props.handleRowClick}
+                        onRowDoubleClick={noop}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={false}
+                        hideColumnSelector
+                        actions={
+                            <Grid container justifyContent='flex-end'>
+                                <Button
+                                    data-cy="groups-panel-new-group"
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={this.props.onNewGroup}>
+                                    <AddIcon /> New group
+                                </Button>
+                            </Grid>
+                        } />
+                    </div>
             );
         }
 

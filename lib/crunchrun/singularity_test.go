@@ -9,7 +9,6 @@ import (
 	"os/exec"
 
 	. "gopkg.in/check.v1"
-	check "gopkg.in/check.v1"
 )
 
 var _ = Suite(&singularitySuite{})
@@ -36,18 +35,21 @@ func (s *singularitySuite) TearDownSuite(c *C) {
 	}
 }
 
-func (s *singularitySuite) TestIPAddress(c *C) {
-	// In production, executor will choose --network=bridge
-	// because uid=0 under arvados-dispatch-cloud. But in test
-	// cases, uid!=0, which means --network=bridge is conditional
-	// on --fakeroot.
-	uuc, err := os.ReadFile("/proc/sys/kernel/unprivileged_userns_clone")
-	c.Check(err, check.IsNil)
-	if string(uuc) == "0\n" {
-		c.Skip("insufficient privileges to run this test case -- `singularity exec --fakeroot` requires /proc/sys/kernel/unprivileged_userns_clone = 1")
+func (s *singularitySuite) TestEnableNetwork_Listen(c *C) {
+	// With modern iptables, singularity (as of 4.2.1) cannot
+	// enable networking when invoked by a regular user. Under
+	// arvados-dispatch-cloud, crunch-run runs as root, so it's
+	// OK. For testing, assuming tests are not running as root, we
+	// use sudo -- but only if requested via environment variable.
+	if os.Getuid() == 0 {
+		// already root
+	} else if os.Getenv("ARVADOS_TEST_PRIVESC") == "sudo" {
+		c.Logf("ARVADOS_TEST_PRIVESC is 'sudo', invoking 'sudo singularity ...'")
+		s.executor.(*singularityExecutor).sudo = true
+	} else {
+		c.Skip("test case needs to run singularity as root -- set ARVADOS_TEST_PRIVESC=sudo to enable this test")
 	}
-	s.executor.(*singularityExecutor).fakeroot = true
-	s.executorSuite.TestIPAddress(c)
+	s.executorSuite.TestEnableNetwork_Listen(c)
 }
 
 func (s *singularitySuite) TestInject(c *C) {
@@ -73,10 +75,25 @@ func (s *singularityStubSuite) TestSingularityExecArgs(c *C) {
 		BindMounts:      map[string]bindmount{"/mnt": {HostPath: "/hostpath", ReadOnly: true}},
 		EnableNetwork:   false,
 		CUDADeviceCount: 3,
+		VCPUs:           2,
+		RAM:             12345678,
 	})
 	c.Check(err, IsNil)
 	e.imageFilename = "/fake/image.sif"
 	cmd := e.execCmd("./singularity")
-	c.Check(cmd.Args, DeepEquals, []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd=/WorkingDir", "--net", "--network=none", "--nv", "--bind", "/hostpath:/mnt:ro", "/fake/image.sif"})
-	c.Check(cmd.Env, DeepEquals, []string{"SINGULARITYENV_FOO=bar", "SINGULARITY_NO_EVAL=1"})
+	expectArgs := []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd=/WorkingDir", "--net", "--network=none", "--nv"}
+	if cgroupSupport["cpu"] {
+		expectArgs = append(expectArgs, "--cpus", "2")
+	}
+	if cgroupSupport["memory"] {
+		expectArgs = append(expectArgs, "--memory", "12345678")
+	}
+	expectArgs = append(expectArgs, "--bind", "/hostpath:/mnt:ro", "/fake/image.sif")
+	c.Check(cmd.Args, DeepEquals, expectArgs)
+	c.Check(cmd.Env, DeepEquals, []string{
+		"SINGULARITYENV_FOO=bar",
+		"SINGULARITY_NO_EVAL=1",
+		"XDG_RUNTIME_DIR=" + os.Getenv("XDG_RUNTIME_DIR"),
+		"DBUS_SESSION_BUS_ADDRESS=" + os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
+	})
 }
