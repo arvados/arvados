@@ -25,7 +25,7 @@ import {
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
-import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon } from "components/icon/icon";
+import { CloseIcon, InputIcon, OutputIcon, MaximizeIcon, UnMaximizeIcon, InfoIcon, WarningIcon } from "components/icon/icon";
 import { MPVPanelProps } from "components/multi-panel-view/multi-panel-view";
 import {
     BooleanCommandInputParameter,
@@ -275,6 +275,7 @@ export interface ProcessIOCardDataProps {
     mounts?: InputCollectionMount[];
     outputUuid?: string;
     forceShowParams?: boolean;
+    failedToLoadOutputCollection?: boolean;
 }
 
 type ProcessIOCardProps = ProcessIOCardDataProps & WithStyles<CssRules> & MPVPanelProps;
@@ -294,12 +295,13 @@ export const ProcessIOCard = withStyles(styles)(
         panelName,
         process,
         forceShowParams,
+        failedToLoadOutputCollection,
     }: ProcessIOCardProps) => {
         const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
         const mainProcess = !(process && process!.containerRequest.requestingContainerUuid);
         const showParamTable = mainProcess || forceShowParams;
 
-        const loading = raw === null || raw === undefined || params === null;
+        const loading = (raw === null || raw === undefined || params === null) && !failedToLoadOutputCollection;
 
         const hasRaw = !!(raw && Object.keys(raw).length > 0);
         const hasParams = !!(params && params.length > 0);
@@ -308,123 +310,132 @@ export const ProcessIOCard = withStyles(styles)(
 
         // Subprocess
         const hasInputMounts = !!(label === ProcessIOCardType.INPUT && mounts && mounts.length);
-        const hasOutputCollecton = !!(label === ProcessIOCardType.OUTPUT && outputUuid);
+        const hasOutputCollecton = !!(label === ProcessIOCardType.OUTPUT && outputUuid) && !failedToLoadOutputCollection;
         // Subprocess should not show loading if hasOutputCollection or hasInputMounts
         const subProcessLoading = loading && !hasOutputCollecton && !hasInputMounts;
 
         return (
             <Card
-                className={classes.card}
-                data-cy="process-io-card"
+            className={classes.card}
+            data-cy="process-io-card"
             >
-                <CardHeader
-                    className={classes.header}
-                    classes={{
-                        content: classes.title,
-                        avatar: classes.avatar,
-                    }}
-                    avatar={<PanelIcon className={classes.iconHeader} />}
-                    title={
-                        <Typography
-                            noWrap
-                            variant="h6"
-                            color="inherit"
+            <CardHeader
+                className={classes.header}
+                classes={{
+                    content: classes.title,
+                    avatar: classes.avatar,
+                }}
+                avatar={<PanelIcon className={classes.iconHeader} />}
+                title={
+                    <Typography
+                        noWrap
+                        variant="h6"
+                        color="inherit"
+                    >
+                                 {label}
+                    </Typography>
+                }
+                action={
+                    <div>
+                          {doUnMaximizePanel && panelMaximized && (
+                              <Tooltip
+                                  title={`Unmaximize ${panelName || "panel"}`}
+                                  disableFocusListener
+                              >
+                                  <IconButton onClick={doUnMaximizePanel} size="large">
+                                      <UnMaximizeIcon />
+                                  </IconButton>
+                              </Tooltip>
+                          )}
+                                                      {doMaximizePanel && !panelMaximized && (
+                                                          <Tooltip
+                                                              title={`Maximize ${panelName || "panel"}`}
+                                                              disableFocusListener
+                                                          >
+                                                              <IconButton onClick={doMaximizePanel} size="large">
+                                                                  <MaximizeIcon />
+                                                              </IconButton>
+                                                          </Tooltip>
+                                                      )}
+                                                                                  {doHidePanel && (
+                                                                                      <Tooltip
+                                                                                          title={`Close ${panelName || "panel"}`}
+                                                                                          disableFocusListener
+                                                                                      >
+                                                                                          <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
+                                                                                              <CloseIcon />
+                                                                                          </IconButton>
+                                                                                      </Tooltip>
+                                                                                  )}
+                    </div>
+                }
+            />
+            <CardContent className={classes.content}>
+            {!loading && failedToLoadOutputCollection && !hasRaw && !hasParams ?
+             (<Grid
+                  container
+                  item
+                  alignItems="center"
+                  justifyContent="center"
+              >
+                 <DefaultView messages={["Output collection was trashed or deleted"]} icon={WarningIcon} />
+             </Grid>) :
+                 (showParamTable ? (
+                     <>
+                     {/* raw is undefined until params are loaded */}
+                     {loading && (
+                         <Grid
+                             container
+                             item
+                             alignItems="center"
+                             justifyContent="center"
+                         >
+                             <CircularProgress data-cy="process-io-circular-progress" />
+                         </Grid>
+                     )}
+                    {/* Once loaded, either raw or params may still be empty
+                      *   Raw when all params are empty
+                      *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+                      */}
+                    {!loading && (hasRaw || hasParams) && (
+                        <ConditionalTabs
+                            variant="fullWidth"
+                            className={classes.symmetricTabs}
+                            tabs={[
+                                {
+                                    // params will be empty on processes without workflow definitions in mounts, so we only show raw
+                                    show: hasParams,
+                                    label: "Parameters",
+                                    content: <ProcessIOPreview
+                                                 data={params || []}
+                                                 valueLabel={forceShowParams ? "Default value" : "Value"}
+                                             />,
+                                },
+                                {
+                                    show: !forceShowParams,
+                                    label: "JSON",
+                                    content: <ProcessIORaw data={raw} />,
+                                },
+                                {
+                                    show: hasOutputCollecton,
+                                    label: "Collection",
+                                    content: <ProcessOutputCollection outputUuid={outputUuid} />,
+                                },
+                            ]}
+                        />
+                    )}
+                    {!loading && !hasRaw && !hasParams && (
+                        <Grid
+                            container
+                            item
+                            alignItems="center"
+                            justifyContent="center"
                         >
-                            {label}
-                        </Typography>
-                    }
-                    action={
-                        <div>
-                            {doUnMaximizePanel && panelMaximized && (
-                                <Tooltip
-                                    title={`Unmaximize ${panelName || "panel"}`}
-                                    disableFocusListener
-                                >
-                                    <IconButton onClick={doUnMaximizePanel} size="large">
-                                        <UnMaximizeIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                            {doMaximizePanel && !panelMaximized && (
-                                <Tooltip
-                                    title={`Maximize ${panelName || "panel"}`}
-                                    disableFocusListener
-                                >
-                                    <IconButton onClick={doMaximizePanel} size="large">
-                                        <MaximizeIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                            {doHidePanel && (
-                                <Tooltip
-                                    title={`Close ${panelName || "panel"}`}
-                                    disableFocusListener
-                                >
-                                    <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
-                                        <CloseIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                        </div>
-                    }
-                />
-                <CardContent className={classes.content}>
-                    {showParamTable ? (
-                        <>
-                            {/* raw is undefined until params are loaded */}
-                            {loading && (
-                                <Grid
-                                    container
-                                    item
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <CircularProgress data-cy="process-io-circular-progress" />
-                                </Grid>
-                            )}
-                            {/* Once loaded, either raw or params may still be empty
-                                *   Raw when all params are empty
-                                *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
-                                */}
-                            {!loading && (hasRaw || hasParams) && (
-                                <ConditionalTabs
-                                    variant="fullWidth"
-                                    className={classes.symmetricTabs}
-                                    tabs={[
-                                        {
-                                            // params will be empty on processes without workflow definitions in mounts, so we only show raw
-                                            show: hasParams,
-                                            label: "Parameters",
-                                            content: <ProcessIOPreview
-                                                    data={params || []}
-                                                    valueLabel={forceShowParams ? "Default value" : "Value"}
-                                            />,
-                                        },
-                                        {
-                                            show: !forceShowParams,
-                                            label: "JSON",
-                                            content: <ProcessIORaw data={raw} />,
-                                        },
-                                        {
-                                            show: hasOutputCollecton,
-                                            label: "Collection",
-                                            content: <ProcessOutputCollection outputUuid={outputUuid} />,
-                                        },
-                                    ]}
-                                />
-                            )}
-                            {!loading && !hasRaw && !hasParams && (
-                                <Grid
-                                    container
-                                    item
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <DefaultView messages={["No parameters found"]} />
-                                </Grid>
-                            )}
+                            <DefaultView messages={["No parameters found"]} />
+                        </Grid>
+                    )}
                         </>
-                    ) : (
+                        ) : (
                         // Subprocess
                         <>
                             {subProcessLoading ? (
@@ -468,12 +479,12 @@ export const ProcessIOCard = withStyles(styles)(
                                     <DefaultView messages={["No data to display"]} />
                                 </Grid>
                             )}
-                        </>
-                    )}
+                            </>
+                ))}
                 </CardContent>
-            </Card>
+                </Card>
         );
-    }
+            }
 );
 
 export type ProcessIOValue = {

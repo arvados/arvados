@@ -13,6 +13,7 @@ import { ContainerStatus } from 'models/container-request';
 export type OutputDetails = {
     raw?: any;
     pdh?: string;
+    failedToLoadOutputCollection?: boolean;
 }
 
 export interface CUDAFeatures {

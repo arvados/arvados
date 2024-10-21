@@ -154,8 +154,9 @@ export const loadOutputs =
             }));
             return;
         }
+        let propsOutputs: any = undefined;
         try {
-            const propsOutputs = getRawOutputs(containerRequest);
+            propsOutputs = getRawOutputs(containerRequest);
             const filesPromise = services.collectionService.files(containerRequest.outputUuid);
             const collectionPromise = services.collectionService.get(containerRequest.outputUuid);
             const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
@@ -190,7 +191,7 @@ export const loadOutputs =
                 }
             }
         } catch {
-            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({ uuid: containerRequest.uuid, payload: noOutputs }));
+            dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_DATA({ uuid: containerRequest.uuid, payload: { raw: propsOutputs, failedToLoadOutputCollection: true } }));
         }
     };
 
