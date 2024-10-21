@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"sort"
 	"syscall"
 
@@ -59,6 +60,38 @@ func (s *copierSuite) SetUpTest(c *check.C) {
 func (s *copierSuite) TestEmptyOutput(c *check.C) {
 	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Check(err, check.IsNil)
+	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
+	c.Check(len(s.cp.files), check.Equals, 0)
+}
+
+func (s *copierSuite) TestEmptyWritableMount(c *check.C) {
+	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":""}`)
+	s.cp.mounts[s.cp.ctrOutputDir] = arvados.Mount{
+		Kind:     "collection",
+		Writable: true,
+	}
+
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Assert(err, check.IsNil)
+	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
+	c.Check(len(s.cp.files), check.Equals, 0)
+}
+
+func (s *copierSuite) TestOutputCollectionWithOnlySubmounts(c *check.C) {
+	s.writeFileInOutputDir(c, "foo", `foo`)
+	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"}`)
+	s.cp.mounts[s.cp.ctrOutputDir] = arvados.Mount{
+		Kind:     "collection",
+		Writable: true,
+	}
+	s.cp.mounts[path.Join(s.cp.ctrOutputDir, "foo")] = arvados.Mount{
+		Kind:             "collection",
+		Path:             "foo",
+		PortableDataHash: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+	}
+
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Assert(err, check.IsNil)
 	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
 	c.Check(len(s.cp.files), check.Equals, 0)
 }
