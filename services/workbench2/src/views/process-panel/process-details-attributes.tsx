@@ -16,16 +16,15 @@ import { getProcess, getProcessStatus, ProcessProperties } from "store/processes
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
-import { ContainerResource, ContainerState } from "models/container";
+import { ContainerResource } from "models/container";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
-import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { ContainerRequestResource } from "models/container-request";
 import { filterResources } from "store/resources/resources";
 import { JSONMount } from 'models/mount-types';
 import { getCollectionUrl } from 'models/collection';
-import { useAsyncInterval } from 'common/use-async-interval';
 import { Link } from "react-router-dom";
 import { getResourceUrl } from "routes/routes";
 import WarningIcon from '@mui/icons-material/Warning';

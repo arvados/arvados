@@ -18,7 +18,7 @@ import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 import { LinkClass, LinkResource } from 'models/link';
 import { verifyAndUpdateLinks } from 'common/link-update-name';
-import { ProcessIcon, ProjectIcon, FilterGroupIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon } from 'components/icon/icon';
+import { ProcessIcon, ProjectIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon, GroupsIcon, TerminalIcon, ResourceIcon } from 'components/icon/icon';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Home Projects',

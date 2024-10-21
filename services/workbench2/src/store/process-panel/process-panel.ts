@@ -8,7 +8,6 @@ import { matchProcessRoute } from "routes/routes";
 import { ProcessIOParameter } from "views/process-panel/process-io-card";
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { CollectionFile } from 'models/collection-file';
-import { ContainerStatus } from 'models/container-request';
 
 export type OutputDetails = {
     raw?: any;

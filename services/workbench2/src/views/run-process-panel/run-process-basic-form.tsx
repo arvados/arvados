@@ -10,8 +10,6 @@ import { WithStyles } from '@mui/styles';
 import { TextField } from 'components/text-field/text-field';
 import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
 import { PROCESS_NAME_VALIDATION } from 'validators/validators';
-import { ProjectResource } from 'models/project';
-import { UserResource } from 'models/user';
 import { WorkflowResource } from 'models/workflow';
 import { ArvadosTheme, CustomStyleRulesCallback } from 'common/custom-theme';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from 'store/run-process-panel/run-process-panel-actions';

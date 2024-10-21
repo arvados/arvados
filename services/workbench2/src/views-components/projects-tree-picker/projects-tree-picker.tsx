@@ -161,7 +161,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             };
 
             componentDidMount() {
-                const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
+                const { search } = getProjectsTreePickerIds(this.props.pickerId);
 
                 const preloadParams = this.props.currentUuids ? {
                     selectedItemUuids: this.props.currentUuids,

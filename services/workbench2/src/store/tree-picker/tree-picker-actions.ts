@@ -26,7 +26,7 @@ import { CollectionResource } from "models/collection";
 import { getResource } from "store/resources/resources";
 import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
-import { call, put, takeEvery, takeLatest, getContext, cancelled, select, all } from "redux-saga/effects";
+import { call, put, takeEvery, takeLatest, getContext, select, all } from "redux-saga/effects";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -165,7 +165,6 @@ function* applyCollectionFilterSaga({type, payload}: {
             const picker = getTreePicker<ProjectsTreePickerItem>(pickerId)(state.treePicker);
             if (picker) {
                 const loadParams = state.treePickerSearch.loadProjectParams[pickerId];
-                console.log(loadParams);
                 yield call(loadProjectSaga, {
                     type: treePickerSearchSagas.tags.LOAD_PROJECT,
                     payload: {
@@ -518,9 +517,6 @@ function* loadProjectSaga({type, payload}: {
         console.error("Failed to load project into tree picker:", e);;
         yield put(snackbarActions.OPEN_SNACKBAR({ message: `Failed to load project`, kind: SnackbarKind.ERROR }));
     } finally {
-        if (yield cancelled()) {
-            console.log("cancelled loadProject");
-        }
         // Optionally handle cleanup when task cancelled
         // if (yield cancelled()) {}
     }
