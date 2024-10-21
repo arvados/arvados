@@ -66,13 +66,9 @@ You can have box pop up when users load Workbench to give information such as li
 
 The banner appears when a user loads workbench and have not yet viewed the current banner text.  Users can also view the banner after dismissing it by selecting the *Restore Banner* option from the *Notifications* menu.
 
-The banner text (HTML formatted) is loaded from the file @banner.html@ in the collection provided in @BannerUUID@.
+The banner text (HTML formatted) is loaded from the file @banner.html@ in the collection provided in @BannerUUID@.  The banner does _not_ need to be wrapped by *html* or *body* tags (if present, they will be removed).
 
-The following HTML tags are allowed in banner.html: a, b, blockquote, br, code, del, dd, dl, dt, em, h1-h6, hr, i, img, kbd, li, ol, p, pre, s, del, section, span, strong, sub, sup, and ul. 
-
-The following attributes are allowed: src, width, height, href, alt, title, and style. 
-
-All styling must be made in-line with the style attribute. Disallowed tags and attributes will not render.
+{% include 'html_tags' %}
 
 h3. Tooltips
 
