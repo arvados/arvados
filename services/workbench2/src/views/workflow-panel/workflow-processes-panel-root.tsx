@@ -34,6 +34,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     cardHeader: {
         display: 'flex',
+        marginBottom: '10px',
     },
 });
 
