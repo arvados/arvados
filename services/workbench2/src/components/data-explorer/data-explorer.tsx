@@ -45,18 +45,21 @@ type CssRules =
     | 'moreOptionsButton'
     | 'title'
     | 'subProcessTitle'
+    | 'workflowTabToolbar'
     | 'dataTable'
     | 'container'
     | 'paginationLabel'
     | 'paginationRoot'
-    | "subToolbarWrapper"
-    | 'progressWrapper'
+    | "subToolbarWrapper" 
+    | 'searchResultsToolbar'
+    | 'progressWrapper' 
     | 'progressWrapperNoTitle';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
+        marginTop: "-5px",
     },
     msToolbarStyles: {
         paddingTop: "0.6rem",
@@ -67,6 +70,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: "-20px",
         marginTop: "-10px",
         flexShrink: 0,
+    },
+    searchResultsToolbar: {
+        marginTop: "10px",
+        marginBottom: "auto",
     },
     searchBox: {
         paddingBottom: 0,
@@ -112,6 +119,9 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexGrow: 0,
         paddingRight: "10px",
     },
+    workflowTabToolbar: {
+        marginTop: '-12px',
+    },
     progressWrapper: {
         margin: "28px 0 0",
         flexGrow: 1,
@@ -123,6 +133,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     dataTable: {
         height: "100%",
         overflowY: "auto",
+        marginTop: "-10px",
     },
     container: {
         height: "100%",
@@ -366,10 +377,11 @@ export const DataExplorer = withStyles(styles)(
                                 </Grid>
                             )}
                         </div>
-                        {!this.multiSelectToolbarInTitle &&
-                            <div className={classes.subToolbarWrapper}>
+                        {this.multiSelectToolbarInTitle ? <div className={classes.subToolbarWrapper} /> :
+                            <div className={classNames(classes.subToolbarWrapper, path?.includes('search-results') ? classes.searchResultsToolbar : null)}>
                                 {!this.state.hideToolbar && <MultiselectToolbar
                                     forceMultiSelectMode={forceMultiSelectMode}
+                                    injectedStyles={classes.workflowTabToolbar}
                                 />}
                             </div>
                         }

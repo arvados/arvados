@@ -185,7 +185,7 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
         //card height should not change if description is a single line
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
+        cy.get('[data-cy=project-description]').should('be.visible');
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();
@@ -206,7 +206,7 @@ describe('Project Details Card tests', function () {
         cy.get('[data-cy=project-details-card]').contains(projName).should('be.visible');
 
         //card height should change if description is multi-line
-        cy.get('[data-cy=project-details-card]').contains(projDescription).should('be.visible');
+        cy.get('[data-cy=project-description]').should('be.visible');
         cy.get('[data-cy=project-details-card]').invoke('height').should('be.lt', 90);
         cy.get('[data-cy=toggle-description]').click();
         cy.waitForDom();

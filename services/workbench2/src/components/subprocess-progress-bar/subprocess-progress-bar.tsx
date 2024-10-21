@@ -33,6 +33,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme) => ({
     progressStacked: {
         border: "1px solid gray",
         height: "10px",
+        marginTop: "-5px",
         // Override stripe color to be close to white
         "& .progress-bar-striped": {
             backgroundImage:
