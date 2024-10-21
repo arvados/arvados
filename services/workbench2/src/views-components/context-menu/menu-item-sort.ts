@@ -73,6 +73,7 @@ const processOrder = [
     ContextMenuActionNames.ADD_TO_FAVORITES,
     ContextMenuActionNames.ADD_TO_PUBLIC_FAVORITES,
     ContextMenuActionNames.DIVIDER,
+    ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
     ContextMenuActionNames.API_DETAILS,
 ];
 

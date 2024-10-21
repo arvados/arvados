@@ -85,6 +85,13 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
                 dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
             },
         },
+        {
+            icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_LINK_TO_CLIPBOARD,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+            },
+        }
     ],
 ];
 
