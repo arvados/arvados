@@ -28,7 +28,6 @@ type CssRules =
     | 'cardHeaderContainer'
     | 'cardHeader'
     | 'descriptionToggle'
-    | 'showMore'
     | 'noDescription'
     | 'userNameContainer'
     | 'cardContent'
@@ -36,7 +35,6 @@ type CssRules =
     | 'namePlate'
     | 'faveIcon'
     | 'frozenIcon'
-    | 'chipToggle'
     | 'chipSection'
     | 'tag'
     | 'description'
@@ -69,20 +67,19 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     cardHeader: {
         minWidth: '30rem',
-        padding: '0.2rem 0.4rem 0.2rem 1rem',
+        padding: '0.2rem',
     },
     descriptionToggle: {
-        display: 'flex',
-        flexDirection: 'row',
-        cursor: 'pointer',
-        marginTop: '-0.25rem',
-        paddingBottom: '0.5rem',
+        marginLeft: '-16px',
     },
     cardContent: {
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 0,
-        paddingLeft: '0.1rem',
+        marginTop: '.5rem',
+        paddingTop: '0px',
+        paddingBottom: '0px',
+        paddingLeft: '.5rem',
+        paddingRight: '.5rem',
     },
     nameSection: {
         display: 'flex',
@@ -95,6 +92,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center',
         margin: 0,
         minHeight: '2.7rem',
+        marginLeft: '.5rem',
     },
     faveIcon: {
         fontSize: '0.8rem',
@@ -107,17 +105,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '1rem',
         color: theme.palette.text.primary,
     },
-    showMore: {
-        marginTop: 0,
-        cursor: 'pointer',
-    },
-    chipToggle: {
-        display: 'flex',
-        alignItems: 'center',
-        height: '2rem',
-    },
     chipSection: {
-        marginBottom: '-1rem',
+        marginBottom: '.5rem',
     },
     tag: {
         marginRight: '0.75rem',
@@ -126,7 +115,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     description: {
         marginTop: 0,
         marginRight: '2rem',
-        marginBottom: '-0.85rem',
+        marginLeft: '8px',
+        maxWidth: "50em",
     },
     toolbarStyles: {
         marginRight: '-0.5rem',
@@ -171,15 +161,14 @@ export const ProjectCard = connect(
         const { classes, currentResource, frozenByFullName, handleCardClick, isSelected } = props;
         const { name, description, uuid } = currentResource as ProjectResource;
         const [showDescription, setShowDescription] = React.useState(false);
-        const [showProperties, setShowProperties] = React.useState(false);
 
         const toggleDescription = () => {
             setShowDescription(!showDescription);
         };
 
-        const toggleProperties = () => {
-            setShowProperties(!showProperties);
-        };
+        const hasDescription = !!(description && description.length > 0);
+        const hasProperties = (typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0);
+        const expandable = hasDescription || hasProperties;
 
         return (
             <Card
@@ -201,8 +190,14 @@ export const ProjectCard = connect(
                                         variant='h6'
                                         style={{ marginRight: '1rem' }}
                                     >
-                                        {name}
+                                                 {name}
+                                                 {expandable && <span className={classes.descriptionToggle}
+                                                                      onClick={toggleDescription}
+                                                                      data-cy="toggle-description">
+                                                     <ExpandChevronRight expanded={showDescription} />
+                                                 </span>}
                                     </Typography>
+
                                     <FavoriteStar
                                         className={classes.faveIcon}
                                         resourceUuid={currentResource.uuid}
@@ -211,95 +206,64 @@ export const ProjectCard = connect(
                                         className={classes.faveIcon}
                                         resourceUuid={currentResource.uuid}
                                     />
-                                    {!!frozenByFullName && (
-                                        <Tooltip
-                                            className={classes.frozenIcon}
-                                            disableFocusListener
-                                            title={<span>Project was frozen by {frozenByFullName}</span>}
-                                        >
-                                            <FreezeIcon style={{ fontSize: 'inherit' }} />
-                                        </Tooltip>
-                                    )}
+                                                  {!!frozenByFullName && (
+                                                      <Tooltip
+                                                          className={classes.frozenIcon}
+                                                          disableFocusListener
+                                                          title={<span>Project was frozen by {frozenByFullName}</span>}
+                                                      >
+                                                          <FreezeIcon style={{ fontSize: 'inherit' }} />
+                                                      </Tooltip>
+                                                  )}
+                                                                            {!hasDescription && (
+                                                                                <Typography
+                                                                                    data-cy='no-description'
+                                                                                    className={classes.noDescription}
+                                                                                >
+                                                                                             no description available
+                                                                                </Typography>
+                                                                            )}
+
                                 </section>
-                                {!description && (
-                                    <Typography
-                                        data-cy='no-description'
-                                        className={classes.noDescription}
-                                    >
-                                        no description available
-                                    </Typography>
-                                )}
                             </section>
                         }
                     />
                     {isSelected && <MultiselectToolbar injectedStyles={classes.toolbarStyles} />}
                 </Grid>
-                <section onClick={(ev) => ev.stopPropagation()}>
-                    {description ? (
-                        <section
-                            onClick={toggleDescription}
-                            className={classes.descriptionToggle}
-                            data-cy='toggle-description'
-                        >
-                            <ExpandChevronRight expanded={showDescription} />
-                            <section className={classes.showMore}>
-                                <Collapse
-                                    in={showDescription}
-                                    timeout='auto'
-                                    collapsedSize='1.25rem'
-                                >
-                                    <Typography
-                                        className={classes.description}
-                                        data-cy='project-description'
-                                        //dangerouslySetInnerHTML is ok here only if description is sanitized,
-                                        //which it is before it is loaded into the redux store
-                                        dangerouslySetInnerHTML={{ __html: description }}
-                                    />
-                                </Collapse>
+
+                {expandable && <Collapse
+                                   in={showDescription}
+                                   timeout='auto'
+                                   collapsedSize='0rem'
+                               >
+                    <CardContent className={classes.cardContent}>
+                        {hasProperties &&
+                         <section data-cy='project-properties'>
+                             <Typography
+                                 component='div'
+                                 className={classes.chipSection}
+                             >
+                                 {Object.keys(currentResource.properties).map((k) =>
+                                     Array.isArray(currentResource.properties[k])
+                                     ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
+                                     : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
+                                 )}
+                             </Typography>
+                         </section>}
+
+                        {hasDescription && (
+                            <section data-cy='project-description'>
+                                <Typography
+                                    className={classes.description}
+                                    component='div'
+                                    //dangerouslySetInnerHTML is ok here only if description is sanitized,
+                                    //which it is before it is loaded into the redux store
+                                    dangerouslySetInnerHTML={{ __html: description }}
+                                />
                             </section>
-                        </section>
-                    ) : (
-                        <></>
-                    )}
-                    {typeof currentResource.properties === 'object' && Object.keys(currentResource.properties).length > 0 ? (
-                        <section
-                            onClick={toggleProperties}
-                            className={classes.descriptionToggle}
-                        >
-                            <div
-                                className={classes.chipToggle}
-                                data-cy='toggle-chips'
-                            >
-                                <ExpandChevronRight expanded={showProperties} />
-                            </div>
-                            <section className={classes.showMore}>
-                                <Collapse
-                                    in={showProperties}
-                                    timeout='auto'
-                                    collapsedSize='35px'
-                                >
-                                    <div
-                                        className={classes.description}
-                                        data-cy='project-description'
-                                    >
-                                        <CardContent className={classes.cardContent}>
-                                            <Typography
-                                                component='div'
-                                                className={classes.chipSection}
-                                            >
-                                                {Object.keys(currentResource.properties).map((k) =>
-                                                    Array.isArray(currentResource.properties[k])
-                                                        ? currentResource.properties[k].map((v: string) => getPropertyChip(k, v, undefined, classes.tag))
-                                                        : getPropertyChip(k, currentResource.properties[k], undefined, classes.tag)
-                                                )}
-                                            </Typography>
-                                        </CardContent>
-                                    </div>
-                                </Collapse>
-                            </section>
-                        </section>
-                    ) : null}
-                </section>
+                        )}
+                    </CardContent>
+                </Collapse>}
             </Card>
         );
     })
