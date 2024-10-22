@@ -13,7 +13,7 @@ import { FavoritesTreePicker } from 'views-components/projects-tree-picker/favor
 import { SearchProjectsPicker } from 'views-components/projects-tree-picker/search-projects-picker';
 import {
     getProjectsTreePickerIds, treePickerActions, treePickerSearchActions, initProjectsTreePicker,
-    SHARED_PROJECT_ID, FAVORITES_PROJECT_ID
+    SHARED_PROJECT_ID, FAVORITES_PROJECT_ID, treePickerSearchSagas
 } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
@@ -79,13 +79,9 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (Pr
     dispatch(treePickerSearchActions.SET_TREE_PICKER_LOAD_PARAMS({ pickerId: search, params }));
 
     return {
-        onProjectSearch: (projectSearchValue: string) => dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue })),
+        onProjectSearch: (projectSearchValue: string) => dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue })),
         onCollectionFilter: (collectionFilterValue: string) => {
-            dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: home, collectionFilterValue }));
-            dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: shared, collectionFilterValue }));
-            dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: favorites, collectionFilterValue }));
-            dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: publicFavorites, collectionFilterValue }));
-            dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue }));
+            dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: props.pickerId, collectionFilterValue }));
         },
         dispatch
     }
@@ -165,7 +161,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             };
 
             componentDidMount() {
-                const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
+                const { search } = getProjectsTreePickerIds(this.props.pickerId);
 
                 const preloadParams = this.props.currentUuids ? {
                     selectedItemUuids: this.props.currentUuids,
@@ -175,12 +171,8 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 } : undefined;
                 this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, preloadParams));
 
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue: "" }));
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: home, collectionFilterValue: "" }));
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: shared, collectionFilterValue: "" }));
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: favorites, collectionFilterValue: "" }));
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: publicFavorites, collectionFilterValue: "" }));
+                this.props.dispatch(treePickerSearchSagas.SET_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
+                this.props.dispatch(treePickerSearchSagas.SET_COLLECTION_FILTER({ pickerMainId: this.props.pickerId, collectionFilterValue: "" }));
             }
 
             componentWillUnmount() {
@@ -197,7 +189,6 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                          item: TreeItem<ProjectsTreePickerItem>,
                          pickerId: string) {
                 this.setState({activeItem: item.data});
-                console.log(item.data);
             }
 
             render() {

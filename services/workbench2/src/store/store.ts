@@ -30,7 +30,6 @@ import { collectionPanelReducer } from "./collection-panel/collection-panel-redu
 import { dialogReducer } from "./dialog/dialog-reducer";
 import { ServiceRepository } from "services/services";
 import { treePickerReducer, treePickerSearchReducer } from "./tree-picker/tree-picker-reducer";
-import { treePickerSearchMiddleware } from "./tree-picker/tree-picker-middleware";
 import { resourcesReducer } from "store/resources/resources-reducer";
 import { propertiesReducer } from "./properties/properties-reducer";
 import { fileUploaderReducer } from "./file-uploader/file-uploader-reducer";
@@ -83,6 +82,8 @@ import { bannerReducer } from "./banner/banner-reducer";
 import { multiselectReducer } from "./multiselect/multiselect-reducer";
 import { composeWithDevTools } from "redux-devtools-extension";
 import { selectedResourceReducer } from "./selected-resource/selected-resource-reducer";
+import createSagaMiddleware from 'redux-saga';
+import { rootSaga } from "./redux-saga";
 
 declare global {
     interface Window {
@@ -135,9 +136,14 @@ export function configureStore(history: History, services: ServiceRepository, co
         return next(action);
     };
 
+    const sagaMiddleware = createSagaMiddleware({
+        context: { services }
+    });
+
     let middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
+        sagaMiddleware,
         authMiddleware(services),
         tooltipsMiddleware(services),
         projectPanelDataMiddleware,
@@ -158,7 +164,6 @@ export function configureStore(history: History, services: ServiceRepository, co
         publicFavoritesMiddleware,
         collectionsContentAddress,
         subprocessMiddleware,
-        treePickerSearchMiddleware,
         workflowProcessessPanelMiddleware
     ];
 
@@ -169,7 +174,11 @@ export function configureStore(history: History, services: ServiceRepository, co
     const enhancer = composeWithDevTools({
         /* options */
     })(applyMiddleware(redirectToMiddleware, ...middlewares));
-    return createStore(rootReducer, enhancer);
+    const store = createStore(rootReducer, enhancer);
+
+    sagaMiddleware.run(rootSaga);
+
+    return store;
 }
 
 const createRootReducer = (services: ServiceRepository) =>
