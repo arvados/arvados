@@ -144,6 +144,7 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
 
     [ContextMenuKind.PROJECT]: projectOrder,
     [ContextMenuKind.PROJECT_ADMIN]: projectOrder,
+    [ContextMenuKind.READONLY_PROJECT]: projectOrder,
     [ContextMenuKind.FROZEN_PROJECT]: projectOrder,
     [ContextMenuKind.FROZEN_PROJECT_ADMIN]: projectOrder,
 
@@ -170,6 +171,8 @@ export const menuDirection = {
 }
 
 export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuAction[], orthagonality: string): ContextMenuAction[] | MultiSelectMenuAction[] => {
+
+    console.log('menuKind', menuKind)
 
     const preferredOrder = kindToOrder[menuKind];
     //if no specified order, sort by name
