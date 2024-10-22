@@ -11,19 +11,19 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes the common attributes of Arvados resources.
+This page describes the common attributes shared by most or all Arvados resources.
 
 h2(#resource). Resource
 
 table(table table-bordered table-condensed).
 |_. Attribute |_. Type |_. Description |_. Example|
-|uuid|string|universally unique object identifier, set on @create@|@mk2qn-4zz18-w3anr2hk2wgfpuo@|
-|owner_uuid|string|UUID of owner (must be a User or Group), set on @create@, controls who may access the resource, ownership may be changed explicitly with @update@, see "permission model":{{site.baseurl}}/api/permission-model.html for details.|@mk2qn-tpzed-a4lcehql0dv2u25@|
-|created_at|datetime|When resource was created, set on @create@|@2013-01-21T22:17:39Z@|
-|modified_by_client_uuid|string|API client software which most recently modified the resource, set on @create@ and @update@|@mk2qn-ozdt8-vq8l5qkzj7pr7h7@|
-|modified_by_user_uuid|string|Authenticated user, on whose behalf the client was acting when modifying the resource, set on @create@ and @update@|@mk2qn-tpzed-a4lcehql0dv2u25@|
-|modified_at|datetime|When resource was last modified, set on @create@ and @update@|@2013-01-25T22:29:32Z@|
-|href|string|a URL that can be used to address this resource||
+|uuid|string|universally unique object identifier.  Set on @create@.|@mk2qn-4zz18-w3anr2hk2wgfpuo@|
+|owner_uuid|string|UUID of owner (must be a User or Group), set on @create@.  Controls who may access the resource. Ownership may be changed explicitly with @update@, see "permission model":{{site.baseurl}}/api/permission-model.html for details.|@mk2qn-tpzed-a4lcehql0dv2u25@|
+|name|string|Human-assigned name.  Not present on all object types, check individual API page.  Uniqueness constraint varys by object type.||
+|description|string|Free text description of the object.  Not present on all object types, check individual API page.  May be HTML formatted, "see below for valid HTML tags and attributes":#descriptions .||
+|created_at|datetime|When resource was created.  Set on @create@.|@2013-01-21T22:17:39Z@|
+|modified_at|datetime|When resource was last modified.  Set on @create@ and @update@.|@2013-01-25T22:29:32Z@|
+|modified_by_user_uuid|string|The owner of the API token used to authenticate the @create@ or @update@ request.|@mk2qn-tpzed-a4lcehql0dv2u25@|
 |kind|string|@arvados#{resource_type}@|@arvados#collection@|
 |etag|string|The ETag[1] of the resource|@1xlmizzjq7wro3dlb2dirf505@|
 
@@ -34,6 +34,10 @@ Each object is assigned a UUID.  This has the format @aaaaa-bbbbb-cccccccccccccc
 # The first field (@aaaaa@ in the example) is the site prefix.  This is unique to a specific Arvados installation.
 # The second field (@bbbbb@ in the example) is the object type.
 # The third field (@ccccccccccccccc@ in the example) uniquely identifies the object.
+
+h2(#descriptions). Descriptions
+
+{% include 'html_tags' %}
 
 h2. Timestamps
 

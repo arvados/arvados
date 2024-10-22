@@ -173,26 +173,29 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # Install libnvidia-container, the tooling for Docker/Singularity
   curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
     $SUDO apt-key add -
-  if [[ "$VERSION_CODENAME" == bullseye ]]; then
-    # As of 2021-12-16 libnvidia-container and friends are only available for
-    # Debian 10, not yet Debian 11. Install experimental rc1 package as per this
-    # workaround:
-    # https://github.com/NVIDIA/nvidia-docker/issues/1549#issuecomment-989670662
-    curl -s -L https://nvidia.github.io/libnvidia-container/debian10/libnvidia-container.list | \
-      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
-    $SUDO sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
-  else
-    curl -s -L "https://nvidia.github.io/libnvidia-container/$DISTRO_ID$VERSION_ID/libnvidia-container.list" | \
-      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
-  fi
+  curl -fsSLO --output-dir /etc/apt/sources.list.d \
+       "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list"
 
   $SUDO apt-get update
   $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
-  # This service fails to start when the image is booted without Nvidia GPUs present, which makes
-  # `systemctl is-system-running` respond with "degraded" and since that command is our default
-  # BootProbeCommand, compute nodes never finish booting from Arvados' perspective.
-  # Disable the service to avoid this. This should be fine because crunch-run does its own basic
-  # CUDA initialization.
+
+  # Various components fail to start, and cause systemd to boot in degraded
+  # state, if the system does not actually have an NVIDIA GPU. Configure the
+  # image to adapt at boot time.
+
+  # Don't load modules unconditionally.
+  # Instead load them if hardware is detected.
+  if [[ -f /etc/modules-load.d/nvidia.conf ]]; then
+      $SUDO mv /etc/modules-load.d/nvidia.conf /etc/modules-load.d/nvidia.avail
+  fi
+  $SUDO install "$WORKDIR/usr-local-bin-detect-gpu.sh" /usr/local/bin/detect-gpu.sh
+  $SUDO install -d /etc/systemd/system/systemd-modules-load.service.d
+  $SUDO install -m 0644 \
+        "$WORKDIR/etc-systemd-system-systemd-modules-load.service.d-detect-gpu.conf" \
+        /etc/systemd/system/systemd-modules-load.service.d/detect-gpu.conf
+
+  # Don't start the persistence daemon.
+  # Instead rely on crunch-run's CUDA initialization.
   $SUDO systemctl disable nvidia-persistenced.service
 fi
 

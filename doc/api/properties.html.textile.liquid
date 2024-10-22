@@ -13,6 +13,14 @@ Arvados allows you to attach arbitrary properties to "collection":methods/collec
 
 Searching for records using properties is described in "Filtering on subproperties":methods.html#subpropertyfilters .
 
+h2. Controlling user-supplied properties
+
+Arvados can be configured with a vocabulary file that lists valid properties and the range of valid values for those properties.  This is described in "Metadata vocabulary":{{site.baseurl}}/admin/metadata-vocabulary.html .
+
+Arvados offers options to set properties automatically and/or prevent certain properties, once set, from being changed by non-admin users.  This is described in "Configuring collection's managed properties":{{site.baseurl}}/admin/collection-managed-properties.html .
+
+The admin can require that certain properties must be non-empty before "freezing a project":methods/groups.html#frozen .
+
 h2. Reserved properties
 
 Components that ship with Arvados may automatically set properties on objects. These usually help track provenance or provide additional link metadata. These properties usually have a key that starts with @arv:@, and can always be set even when the system is configured with a strict vocabulary.
@@ -61,11 +69,3 @@ table(table table-bordered table-condensed).
 |output|The collection contains the output of a top-level container run (this is a container request where @requesting_container_uuid@  is null).|
 |intermediate|The collection contains the output of a child container run (this is a container request where @requesting_container_uuid@ is non-empty).|
 |workflow|A collection created by @arvados-cwl-runner --create-workflow@ containing a workflow definition.|
-
-h2. Controlling user-supplied properties
-
-Arvados can be configured with a vocabulary file that lists valid properties and the range of valid values for those properties.  This is described in "Metadata vocabulary":{{site.baseurl}}/admin/metadata-vocabulary.html .
-
-Arvados offers options to set properties automatically and/or prevent certain properties, once set, from being changed by non-admin users.  This is described in "Configuring collection's managed properties":{{site.baseurl}}/admin/collection-managed-properties.html .
-
-The admin can require that certain properties must be non-empty before "freezing a project":methods/groups.html#frozen .

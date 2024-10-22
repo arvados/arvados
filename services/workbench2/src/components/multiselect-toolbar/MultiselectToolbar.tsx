@@ -47,7 +47,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: "flex",
         flexDirection: "row",
         width: 0,
-        height: '2.5rem',
         padding: 0,
         margin: 0,
         overflow: 'hidden',
@@ -120,7 +119,7 @@ export const MultiselectToolbar = connect(
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
         return (
-            <React.Fragment>
+            <div>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
                     style={{ width: `${(actions.length * 2.5) + 2}rem`}}
@@ -171,7 +170,7 @@ export const MultiselectToolbar = connect(
                         <></>
                     )}
                 </Toolbar>
-            </React.Fragment>
+            </div>
         );
     })
 );
