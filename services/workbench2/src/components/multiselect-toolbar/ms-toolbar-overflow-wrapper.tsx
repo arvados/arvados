@@ -27,7 +27,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbarWrapper: {
         display: 'flex',
         overflow: 'hidden',
-        padding: '0 0px 0 20px',
+        padding: '0 0px 5px 20px',
         width: '100%',
     },
     tooltip: {
@@ -42,7 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         position: 'sticky',
         right: '-2rem',
         width: 0,
-        paddingBottom: '0.5rem',
+        height: '1rem',
     },
 });
 

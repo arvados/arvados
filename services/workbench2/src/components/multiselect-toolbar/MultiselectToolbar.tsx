@@ -59,9 +59,10 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     divider: {
         marginTop: '5px',
-        marginRight: '-15px',
+        width: '2rem',
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
     },
 });
 

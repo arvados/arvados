@@ -31,8 +31,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
         marginTop: 0,
         paddingTop: 0,
-        paddingLeft: '1rem',
+        paddingLeft: '0.5rem',
         height: '2.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
     },
     menuElement: {
         width: '2rem',
