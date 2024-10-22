@@ -686,7 +686,8 @@ describe("Collection panel tests", function () {
             cy.get("[data-cy=collection-files-panel]").should("contain", fileName);
             cy.get("[data-cy=collection-info-panel]").should("not.contain", projName).and("not.contain", testProject.uuid);
             cy.get("[data-cy=collection-panel-options-btn]").click();
-            cy.get("[data-cy=context-menu]").contains("Move to").click();
+            cy.get("[data-cy=context-menu]").should('exist');
+            cy.get("[data-cy='Move to']").click();
             cy.get("[data-cy=form-dialog]")
                 .should("contain", "Move to")
                 .within(() => {
