@@ -63,6 +63,7 @@ describe("Process tests", function () {
                 'Remove',
                 'Outputs',
                 'Add to favorites',
+                'Copy link to clipboard',
                 'API Details',
             ];
 

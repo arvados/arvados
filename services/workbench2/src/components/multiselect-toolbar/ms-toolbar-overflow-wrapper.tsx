@@ -34,6 +34,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: "2.5rem",
         height: "2.5rem ",
         paddingLeft: 0,
+        zIndex: 1000,
         border: "1px solid transparent",
     },
     overflowStyle: {
