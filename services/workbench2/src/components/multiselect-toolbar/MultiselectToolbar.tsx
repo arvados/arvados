@@ -55,10 +55,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%',
     },
     icon: {
-        marginLeft: '-0.5rem',
+        marginLeft: '-5px',
     },
     divider: {
         marginTop: '5px',
+        marginRight: '-15px',
         display: "flex",
         alignItems: "center",
     },
