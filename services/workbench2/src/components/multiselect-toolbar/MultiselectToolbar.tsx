@@ -120,7 +120,7 @@ export const MultiselectToolbar = connect(
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
         return (
-            <div>
+            <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
                     style={{ width: `${(actions.length * 2.5) + 2}rem`}}
@@ -171,7 +171,7 @@ export const MultiselectToolbar = connect(
                         <></>
                     )}
                 </Toolbar>
-            </div>
+            </React.Fragment>
         );
     })
 );
