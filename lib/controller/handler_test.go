@@ -643,6 +643,12 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 				check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
 		}
 	}
+
+	// The "href" field has been removed. We don't particularly
+	// care whether Rails returns it, as long as controller
+	// doesn't.
+	_, hasHref := proxied["href"]
+	c.Check(hasHref, check.Equals, false)
 }
 
 func (s *HandlerSuite) TestGetObjects(c *check.C) {
@@ -677,16 +683,16 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	c.Assert(auth.UUID, check.Not(check.Equals), "")
 
 	testCases := map[string]map[string]bool{
-		"api_client_authorizations/" + auth.UUID:                       {"href": true, "modified_by_client_uuid": true, "modified_by_user_uuid": true},
-		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       {"href": true},
-		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     {"href": true},
+		"api_client_authorizations/" + auth.UUID:                       {"modified_by_client_uuid": true, "modified_by_user_uuid": true},
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
+		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     nil,
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
 		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
 		"groups/" + arvadostest.AProjectUUID:                           nil,
 		"keep_services/" + ksUUID:                                      nil,
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
 		"logs/" + arvadostest.CrunchstatForRunningContainerLogUUID:     nil,
-		"users/" + arvadostest.ActiveUserUUID:                          {"href": true},
+		"users/" + arvadostest.ActiveUserUUID:                          nil,
 		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
 		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
 	}

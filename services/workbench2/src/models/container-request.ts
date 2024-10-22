@@ -60,7 +60,6 @@ export const containerRequestFieldsNoMounts = [
     "etag",
     "expires_at",
     "filters",
-    "href",
     "kind",
     "log_uuid",
     "modified_at",

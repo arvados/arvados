@@ -8,7 +8,6 @@ export interface Resource {
     createdAt: string;
     modifiedByUserUuid: string;
     modifiedAt: string;
-    href: string;
     kind: ResourceKind;
     etag: string;
 }

@@ -10,7 +10,6 @@ import "time"
 type Link struct {
 	UUID               string                 `json:"uuid,omitempty"`
 	Etag               string                 `json:"etag"`
-	Href               string                 `json:"href"`
 	OwnerUUID          string                 `json:"owner_uuid"`
 	Name               string                 `json:"name"`
 	LinkClass          string                 `json:"link_class"`
