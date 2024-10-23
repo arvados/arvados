@@ -744,7 +744,6 @@ else
   # Prometheus node exporter pillar
   grep -q "prometheus_node_exporter" ${PILLARS_TOP} || echo "    - prometheus_node_exporter" >> ${PILLARS_TOP}
   # Grafana Alloy OpenTelemetry client state & pillar on all nodes
-  grep -q "\- grafana$" ${STATES_TOP} || echo "    - grafana" >> ${STATES_TOP}
   grep -q "extra.alloy_install" ${STATES_TOP} || echo "    - extra.alloy_install" >> ${STATES_TOP}
   grep -q "alloy" ${PILLARS_TOP} || echo "    - alloy" >> ${PILLARS_TOP}
 
