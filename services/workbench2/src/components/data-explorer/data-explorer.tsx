@@ -44,12 +44,12 @@ type CssRules =
     | 'root'
     | 'moreOptionsButton'
     | 'title'
-    | 'subProcessTitle'
     | 'dataTable'
     | 'container'
     | 'paginationLabel'
     | 'paginationRoot'
-    | "subToolbarWrapper" 
+    | "subToolbarWrapper"
+    | 'runsToolbarWrapper' 
     | 'searchResultsToolbar'
     | 'progressWrapper' 
     | 'progressWrapperNoTitle';
@@ -60,11 +60,16 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: "space-between",
         marginTop: "5px",
         marginBottom: "-5px",
+        // border: "1px solid red",
     },
     msToolbarStyles: {
         marginLeft: "-5px",
     },
     subToolbarWrapper: {
+        marginTop: "5px",
+        marginLeft: "-15px",
+    },
+    runsToolbarWrapper: {
         marginTop: "5px",
         marginLeft: "-15px",
     },
@@ -102,13 +107,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: '8.5rem',
     },
     title: {
-        display: "inline-block",
-        paddingLeft: theme.spacing(2),
-        paddingTop: theme.spacing(2),
-        fontSize: "18px",
-        paddingRight: "10px",
-    },
-    subProcessTitle: {
         display: "inline-block",
         paddingLeft: theme.spacing(2),
         paddingTop: theme.spacing(2),
@@ -302,7 +300,7 @@ export const DataExplorer = withStyles(styles)(
                                 <Grid
                                     item
                                     xs
-                                    className={!!progressBar ? classes.subProcessTitle : classes.title}
+                                    className={classes.title}
                                 >
                                     {title}
 
@@ -312,7 +310,7 @@ export const DataExplorer = withStyles(styles)(
                                 ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
                                 : <MultiselectToolbar 
                                     forceMultiSelectMode={forceMultiSelectMode} 
-                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : '')}/>)
+                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
                             }
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
