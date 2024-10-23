@@ -75,11 +75,20 @@ func (s *copierSuite) TestEmptyWritableMount(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
 	c.Check(len(s.cp.files), check.Equals, 0)
+	rootdir, err := s.cp.staged.Open(".")
+	c.Assert(err, check.IsNil)
+	defer rootdir.Close()
+	fis, err := rootdir.Readdir(-1)
+	c.Assert(err, check.IsNil)
+	c.Check(fis, check.HasLen, 0)
 }
 
 func (s *copierSuite) TestOutputCollectionWithOnlySubmounts(c *check.C) {
-	s.writeFileInOutputDir(c, "foo", `foo`)
-	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"}`)
+	// Note this 6-byte "foo" file will not be copied, because
+	// it's superseded by the 3-byte "foo" file in FooCollection
+	// mounted at the same location.
+	s.writeFileInOutputDir(c, "foo", `foobar`)
+	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":". 3858f62230ac3c915f300c664312c63f+6 0:6:foo\n"}`)
 	s.cp.mounts[s.cp.ctrOutputDir] = arvados.Mount{
 		Kind:     "collection",
 		Writable: true,
@@ -87,13 +96,26 @@ func (s *copierSuite) TestOutputCollectionWithOnlySubmounts(c *check.C) {
 	s.cp.mounts[path.Join(s.cp.ctrOutputDir, "foo")] = arvados.Mount{
 		Kind:             "collection",
 		Path:             "foo",
-		PortableDataHash: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+		PortableDataHash: arvadostest.FooCollectionPDH,
 	}
 
 	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Assert(err, check.IsNil)
+
+	// s.cp.dirs and s.cp.files are empty, because nothing needs
+	// to be copied from disk.
 	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
 	c.Check(len(s.cp.files), check.Equals, 0)
+
+	// The 3-byte "foo" file has already been copied from
+	// FooCollection to s.cp.staged via Snapshot+Splice.
+	rootdir, err := s.cp.staged.Open(".")
+	c.Assert(err, check.IsNil)
+	defer rootdir.Close()
+	fis, err := rootdir.Readdir(-1)
+	c.Assert(err, check.IsNil)
+	c.Assert(fis, check.HasLen, 1)
+	c.Check(fis[0].Size(), check.Equals, int64(3))
 }
 
 func (s *copierSuite) TestRegularFilesAndDirs(c *check.C) {
