@@ -117,7 +117,6 @@ const workflowOrder = [
     ContextMenuActionNames.VIEW_DETAILS,
     ContextMenuActionNames.OPEN_IN_NEW_TAB,
     ContextMenuActionNames.COPY_UUID,
-    ContextMenuActionNames.DIVIDER,
     ContextMenuActionNames.RUN_WORKFLOW,
     ContextMenuActionNames.DELETE_WORKFLOW,
     ContextMenuActionNames.DIVIDER,
