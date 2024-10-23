@@ -56,7 +56,6 @@ export const defaultCollectionSelectedFields = [
     'createdAt',
     'modifiedByUserUuid',
     'modifiedAt',
-    'href',
     'kind',
     'etag',
 ];

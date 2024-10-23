@@ -460,7 +460,6 @@ function* loadProjectSaga({type, payload}: {
                 createdAt: "",
                 modifiedByUserUuid: "",
                 modifiedAt: "",
-                href: "",
                 etag: ""
             });
         }

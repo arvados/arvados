@@ -58,7 +58,6 @@ describe("run-process-panel-actions", () => {
                     processPathname: "/projects/zzzzz-tpzed-yid70bw31f51234",
                     processOwnerUuid: "zzzzz-tpzed-yid70bw31f51234",
                     selectedWorkflow: {
-                        href: "/workflows/zzzzz-7fd4e-2tlnerdkxnl4fjt",
                         kind: "arvados#workflow",
                         etag: "8gh5xlhlgo61yqscyl1spw8tc",
                         uuid: "zzzzz-7fd4e-2tlnerdkxnl4fjt",
