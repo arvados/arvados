@@ -34,6 +34,7 @@ import { InlinePulser } from "components/loading/inline-pulser";
 
 type CssRules =
     | 'titleWrapper'
+    | 'searchResultsTitleWrapper'
     | 'msToolbarStyles'
     | 'searchBox'
     | 'headerMenu'
@@ -60,7 +61,12 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: "space-between",
         marginTop: "5px",
         marginBottom: "-5px",
-        // border: "1px solid red",
+    },
+    searchResultsTitleWrapper: {
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: "5px",
+        height: "30px",
     },
     msToolbarStyles: {
         marginLeft: "-5px",
@@ -205,6 +211,7 @@ export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
         state = {
             hideToolbar: true,
+            isSearchResults: false,
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -214,6 +221,7 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
+            this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
@@ -228,6 +236,9 @@ export const DataExplorer = withStyles(styles)(
             }
             if (this.props.searchBarValue !== prevProps.searchBarValue) {
                 this.maxItemsAvailable = 0;
+            }
+            if (this.props.path !== prevProps.path) {
+                this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
         }
 
@@ -282,7 +293,17 @@ export const DataExplorer = withStyles(styles)(
                     {...paperProps}
                     key={path}
                     data-cy={this.props["data-cy"]}
-                >
+                    >
+                    {title && this.state.isSearchResults && (
+                                <Grid
+                                    item
+                                    xs
+                                    className={classes.title}
+                                >
+                                    {title}
+
+                                </Grid>
+                            )}
                     <Grid
                         container
                         direction="column"
@@ -295,8 +316,8 @@ export const DataExplorer = withStyles(styles)(
                                     [classes.progressWrapperNoTitle]: !title,
                                 })}>{progressBar}</div>
                             }
-                        <div data-cy="title-wrapper" className={classes.titleWrapper}>
-                            {title && (
+                        <div data-cy="title-wrapper" className={classNames(this.state.isSearchResults ? classes.searchResultsTitleWrapper : classes.titleWrapper)}>
+                            {title && !this.state.isSearchResults && (
                                 <Grid
                                     item
                                     xs
