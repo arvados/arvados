@@ -65,11 +65,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginLeft: "-5px",
     },
     subToolbarWrapper: {
-        height: "48px",
-        paddingTop: 0,
-        marginBottom: "-20px",
-        marginTop: "-10px",
-        flexShrink: 0,
+        marginTop: "5px",
+        marginLeft: "-15px",
     },
     searchResultsToolbar: {
         marginTop: "10px",
@@ -120,7 +117,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingRight: "10px",
     },
     progressWrapper: {
-        margin: "28px 0 0",
+        margin: "14px 0 0",
         paddingLeft: "20px",
         paddingRight: "20px",
     },
@@ -313,7 +310,9 @@ export const DataExplorer = withStyles(styles)(
                             )}
                             {!this.state.hideToolbar && (this.multiSelectToolbarInTitle 
                                 ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
-                                : <MultiselectToolbar forceMultiSelectMode={forceMultiSelectMode} />)
+                                : <MultiselectToolbar 
+                                    forceMultiSelectMode={forceMultiSelectMode} 
+                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : '')}/>)
                             }
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
