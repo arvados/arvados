@@ -254,7 +254,6 @@ describe("Search tests", function () {
                             uuid: federatedColUuid,
                             portable_data_hash: "00000000000000000000000000000000+0",
                             name: federatedColName,
-                            href: res.body.items[0].href.replace(testCollection.uuid, federatedColUuid),
                         },
                     ];
                     res.body.items_available += 1;
