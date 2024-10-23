@@ -314,7 +314,10 @@ export const DataExplorer = withStyles(styles)(
                                     [classes.progressWrapperNoTitle]: !title,
                                 })}>{progressBar}</div>
                             }
-                            {this.multiSelectToolbarInTitle && !this.state.hideToolbar && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
+                            {!this.state.hideToolbar && (this.multiSelectToolbarInTitle 
+                                ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
+                                : <MultiselectToolbar forceMultiSelectMode={forceMultiSelectMode} injectedStyles={classes.workflowTabToolbar} />)
+                            }
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -376,15 +379,8 @@ export const DataExplorer = withStyles(styles)(
                                     </Toolbar>
                                 </Grid>
                             )}
+                            
                         </div>
-                        {this.multiSelectToolbarInTitle ? <div className={classes.subToolbarWrapper} /> :
-                            <div className={classNames(classes.subToolbarWrapper, path?.includes('search-results') ? classes.searchResultsToolbar : null)}>
-                                {!this.state.hideToolbar && <MultiselectToolbar
-                                    forceMultiSelectMode={forceMultiSelectMode}
-                                    injectedStyles={classes.workflowTabToolbar}
-                                />}
-                            </div>
-                        }
                         <Grid
                             item
                             className={classes.dataTable}
