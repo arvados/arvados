@@ -46,6 +46,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",
+        height: '2.5rem',
         width: 0,
         padding: 0,
         margin: 0,
@@ -124,7 +125,7 @@ export const MultiselectToolbar = connect(
             <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
-                    style={{ width: `${(actions.length * 2.5) + 2}rem`}}
+                    style={{ width: `${(actions.length * 2.5) + 2}rem`, height: '2.5rem'}}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (

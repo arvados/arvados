@@ -62,7 +62,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: "-5px",
     },
     msToolbarStyles: {
-        paddingTop: "0.6rem",
+        marginLeft: "-5px",
     },
     subToolbarWrapper: {
         height: "48px",
@@ -130,7 +130,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     dataTable: {
         height: "100%",
         overflowY: "auto",
-        marginTop: "-10px",
     },
     container: {
         height: "100%",
