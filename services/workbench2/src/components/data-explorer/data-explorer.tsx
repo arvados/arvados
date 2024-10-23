@@ -45,7 +45,6 @@ type CssRules =
     | 'moreOptionsButton'
     | 'title'
     | 'subProcessTitle'
-    | 'workflowTabToolbar'
     | 'dataTable'
     | 'container'
     | 'paginationLabel'
@@ -59,7 +58,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
-        marginTop: "-5px",
+        marginTop: "5px",
+        marginBottom: "-5px",
     },
     msToolbarStyles: {
         paddingTop: "0.6rem",
@@ -119,15 +119,13 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexGrow: 0,
         paddingRight: "10px",
     },
-    workflowTabToolbar: {
-        marginTop: '-12px',
-    },
     progressWrapper: {
         margin: "28px 0 0",
-    },
-    progressWrapperNoTitle: {
         paddingLeft: "20px",
         paddingRight: "20px",
+    },
+    progressWrapperNoTitle: {
+        marginTop: '12px',
     },
     dataTable: {
         height: "100%",
@@ -311,12 +309,12 @@ export const DataExplorer = withStyles(styles)(
                                     className={!!progressBar ? classes.subProcessTitle : classes.title}
                                 >
                                     {title}
+
                                 </Grid>
                             )}
-
                             {!this.state.hideToolbar && (this.multiSelectToolbarInTitle 
                                 ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
-                                : <MultiselectToolbar forceMultiSelectMode={forceMultiSelectMode} injectedStyles={classes.workflowTabToolbar} />)
+                                : <MultiselectToolbar forceMultiSelectMode={forceMultiSelectMode} />)
                             }
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
