@@ -128,7 +128,8 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexBasis: "100px",
     },
     progressWrapperNoTitle: {
-        paddingLeft: "10px",
+        paddingLeft: "20px",
+        paddingRight: "20px",
     },
     dataTable: {
         height: "100%",
@@ -298,6 +299,12 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
+                        {!!progressBar &&
+                                <div className={classNames({
+                                    [classes.progressWrapper]: true,
+                                    [classes.progressWrapperNoTitle]: !title,
+                                })}>{progressBar}</div>
+                            }
                         <div data-cy="title-wrapper" className={classes.titleWrapper}>
                             {title && (
                                 <Grid
@@ -308,12 +315,7 @@ export const DataExplorer = withStyles(styles)(
                                     {title}
                                 </Grid>
                             )}
-                            {!!progressBar &&
-                                <div className={classNames({
-                                    [classes.progressWrapper]: true,
-                                    [classes.progressWrapperNoTitle]: !title,
-                                })}>{progressBar}</div>
-                            }
+
                             {!this.state.hideToolbar && (this.multiSelectToolbarInTitle 
                                 ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
                                 : <MultiselectToolbar forceMultiSelectMode={forceMultiSelectMode} injectedStyles={classes.workflowTabToolbar} />)
