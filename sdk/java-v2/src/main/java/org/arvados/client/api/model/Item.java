@@ -16,12 +16,10 @@ import java.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder({ "href", "kind", "etag", "uuid", "owner_uuid", "created_at", "modified_by_client_uuid",
+@JsonPropertyOrder({ "kind", "etag", "uuid", "owner_uuid", "created_at", "modified_by_client_uuid",
         "modified_by_user_uuid", "modified_at", "updated_at" })
 public abstract class Item {
 
-    @JsonProperty("href")
-    private String href;
     @JsonProperty("kind")
     private String kind;
     @JsonProperty("etag")
@@ -40,10 +38,6 @@ public abstract class Item {
     private LocalDateTime modifiedAt;
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
-
-    public String getHref() {
-        return this.href;
-    }
 
     public String getKind() {
         return this.kind;
@@ -79,10 +73,6 @@ public abstract class Item {
 
     public LocalDateTime getUpdatedAt() {
         return this.updatedAt;
-    }
-
-    public void setHref(String href) {
-        this.href = href;
     }
 
     public void setKind(String kind) {
