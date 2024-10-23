@@ -124,8 +124,6 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     progressWrapper: {
         margin: "28px 0 0",
-        flexGrow: 1,
-        flexBasis: "100px",
     },
     progressWrapperNoTitle: {
         paddingLeft: "20px",
@@ -299,7 +297,7 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        {!!progressBar &&
+                        {!!progressBar && !title &&
                                 <div className={classNames({
                                     [classes.progressWrapper]: true,
                                     [classes.progressWrapperNoTitle]: !title,
@@ -387,6 +385,12 @@ export const DataExplorer = withStyles(styles)(
                             item
                             className={classes.dataTable}
                         >
+                            {!!progressBar && !!title &&
+                                <div className={classNames({
+                                    [classes.progressWrapper]: true,
+                                    [classes.progressWrapperNoTitle]: !title,
+                                })}>{progressBar}</div>
+                            }
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                                 items={items}
