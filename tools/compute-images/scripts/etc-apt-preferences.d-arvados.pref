@@ -12,11 +12,11 @@ Pin-Priority: 50
 # pin those packages to the last tested and known good version.
 
 Package: src:docker-ce
-Pin: version 5:26.*
+Pin: version 5:27.*
 Pin-Priority: 995
 
 Package: containerd.io
-Pin: version 1.6.*
+Pin: version 1.7.*
 Pin-Priority: 995
 
 Package: src:libnvidia-container
