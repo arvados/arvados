@@ -8,7 +8,7 @@ import { ServiceRepository } from "services/services";
 import { updateResources } from "store/resources/resources-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { projectPanelDataActions } from "store/project-panel/project-panel-action-bind";
+import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
 import { navigateToRunProcess } from "store/navigation/navigation-action";
 import { goToStep, runProcessPanelActions } from "store/run-process-panel/run-process-panel-actions";
 import { getResource } from "store/resources/resources";
@@ -20,12 +20,13 @@ import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutpu
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
-import { ContainerRequestState } from "models/container-request";
+import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
 
 export const loadContainers =
     (containerUuids: string[], loadMounts: boolean = true) =>
@@ -274,6 +275,7 @@ export const openRemoveProcessDialog =
 export const REMOVE_PROCESS_DIALOG = "removeProcessDialog";
 
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const currentProjectUuid = getProjectPanelCurrentUuid(getState());
     const resource = getState().dialog.removeProcessDialog.data.resource;
     const checkedList = getState().multiselect.checkedList;
 
@@ -286,19 +288,45 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
         .map(uuid => getResource(uuid)(getState().resources) as Resource)
         .filter(resource => resource.kind === ResourceKind.PROCESS);
 
-    for (const process of processesToRemove) {
-        try {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
-            await services.containerRequestService.delete(process.uuid, false);
-            dispatch(projectPanelDataActions.REQUEST_ITEMS());
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        } catch (e) {
-            const error = getCommonResourceServiceError(e);
-            if (error === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-            } else {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+    await Promise.allSettled(processesToRemove.map(process => services.containerRequestService.delete(process.uuid, false)))
+        .then(res => {
+            const failed = res.filter((promiseResult): promiseResult is PromiseRejectedResult => promiseResult.status === 'rejected');
+            const succeeded = res.filter((promiseResult): promiseResult is PromiseFulfilledResult<ContainerRequestResource> => promiseResult.status === 'fulfilled');
+
+            // Get error kinds
+            const accessDeniedError = failed.filter((promiseResult) => {
+                return getCommonResourceServiceError(promiseResult.reason) === CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
+            });
+            const genericError = failed.filter((promiseResult) => {
+                return getCommonResourceServiceError(promiseResult.reason) !== CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
+            });
+
+            // Show grouped errors for access or generic error
+            if (accessDeniedError.length) {
+                if (accessDeniedError.length > 1) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied: ${accessDeniedError.length} items`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Access denied`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                }
             }
-        }
-    }
+            if (genericError.length) {
+                if (genericError.length > 1) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed: ${genericError.length} items`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Deletion failed`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                }
+            }
+            if (succeeded.length) {
+                if (succeeded.length > 1) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Removed ${succeeded.length} items`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                } else {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                }
+            }
+
+            // If currently viewing the parent project of any of the deleted runs, refresh project runs tab
+            if (currentProjectUuid && succeeded.find((promiseResult) => promiseResult.value.ownerUuid === currentProjectUuid)) {
+                dispatch(projectPanelRunActions.REQUEST_ITEMS());
+            }
+        });
 };
