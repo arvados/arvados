@@ -1560,4 +1560,82 @@ describe("Process tests", function () {
             });
         });
     });
+
+    describe("Process operations", function () {
+        it("navigates home when deleting current process", function () {
+            createContainerRequest(
+                activeUser,
+                `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                "arvados/jobs",
+                ["echo", "hello world"],
+                false,
+                "Committed"
+            ).then(function (containerRequest) {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/processes/${containerRequest.uuid}`);
+                cy.get("[data-cy=process-details]").should("contain", containerRequest.name);
+
+                // Delete process
+                cy.get("[data-cy=process-details]").find('button[aria-label="More options"]').click();
+                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").within(() => {
+                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                });
+
+                // Verify we are in home project
+                cy.get("[data-cy=project-panel]").should('exist');
+                cy.url().should("contain", `/projects/${activeUser.user.uuid}`);
+            });
+        });
+
+        it("refreshes project runs tab when deleting process", function () {
+            createContainerRequest(
+                activeUser,
+                `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                "arvados/jobs",
+                ["echo", "hello world"],
+                false,
+                "Committed"
+            ).as('firstCr')
+            .then(function () {
+                createContainerRequest(
+                    activeUser,
+                    `test_container_request ${Math.floor(Math.random() * 999999)}`,
+                    "arvados/jobs",
+                    ["echo", "hello world"],
+                    false,
+                    "Committed"
+                ).as('secondCr');
+            });
+
+            cy.getAll("@firstCr", "@secondCr").then(function ([firstCr, secondCr]) {
+                cy.loginAs(activeUser);
+                cy.get('[data-cy=mpv-tabs]').contains("Workflow Runs").click();
+
+                // Delete firstCr
+                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('exist').parents('[data-cy=data-table-row]').rightclick();
+                cy.waitForDom();
+                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").within(() => {
+                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                });
+
+                // DE should refresh
+                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('not.exist');
+                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('exist');
+
+                // Delete second CR
+                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('exist').parents('[data-cy=data-table-row]').rightclick();
+                cy.waitForDom();
+                cy.get("ul[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").within(() => {
+                    cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                });
+
+                // No CRs
+                cy.get('[data-cy=data-table-row]').contains(firstCr.name).should('not.exist');
+                cy.get('[data-cy=data-table-row]').contains(secondCr.name).should('not.exist');
+            });
+        });
+    });
 });
