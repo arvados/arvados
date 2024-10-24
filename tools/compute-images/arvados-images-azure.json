@@ -82,6 +82,7 @@
         "MKSQUASHFS_MEM={{user `mksquashfs_mem`}}",
         "NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}",
         "CLOUD=azure",
+        "GOVERSION={{user `goversion`}}",
         "WORKDIR={{user `workdir`}}"
     ]
   }]
