@@ -1643,6 +1643,9 @@ func (dn *dirnode) Splice(repl inode) error {
 		dn.Lock()
 		defer dn.Unlock()
 		dn.inodes = repl.inodes
+		for name, child := range dn.inodes {
+			child.SetParent(dn, name)
+		}
 		dn.setTreeFS(dn.fs)
 	case *filenode:
 		dn.parent.Lock()
