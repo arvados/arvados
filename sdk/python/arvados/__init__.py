@@ -6,8 +6,16 @@
 This module provides the entire Python SDK for Arvados. The most useful modules
 include:
 
-* arvados.api - After you `import arvados`, you can call `arvados.api` as a
-  shortcut to the client constructor function `arvados.api.api`.
+* arvados.api - This module provides the `arvados.api.api` function to
+  construct an Arvados REST API client, as well as other classes and functions
+  that support it. You can call the `arvados.api` module just like a function
+  as a shortcut for calling `arvados.api.api`.
+
+* arvados.api_resources - The methods on an Arvados REST API client are
+  generated dynamically at runtime. This module documents those methods and
+  return values for the current version of Arvados. This module does not
+  implement anything so you don't need to import it, but it's a helpful
+  reference to understand how to use the Arvados REST API client.
 
 * arvados.collection - The `arvados.collection.Collection` class provides a
   high-level interface to read and write collections. It coordinates sending
