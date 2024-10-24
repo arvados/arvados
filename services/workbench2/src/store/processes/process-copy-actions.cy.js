@@ -30,7 +30,6 @@ describe('ProcessCopyAction', () => {
         etag: "2es6px6q7uo0yqi2i291x8gd6",
         expires_at: null,
         filters: null,
-        href: "/container_requests/zzzzz-xvhdp-111111111111111",
         kind: "arvados#containerRequest",
         log_uuid: "zzzzz-4zz18-a1gxqy9o6zyrdy8",
         modified_at: "2023-01-24T21:13:54.772612000Z",

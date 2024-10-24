@@ -11,7 +11,6 @@ module CommonApiTemplate
     end
     base.extend(ClassMethods)
     base.api_accessible :common do |t|
-      t.add :href
       t.add :kind
       t.add :etag
       t.add :uuid

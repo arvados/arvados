@@ -55,7 +55,6 @@ export const containerFieldsNoMounts = [
     "exit_code",
     "finished_at",
     "gateway_address",
-    "href",
     "interactive_session_started",
     "kind",
     "lock_count",

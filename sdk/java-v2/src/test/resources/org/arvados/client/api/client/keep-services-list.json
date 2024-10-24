@@ -6,7 +6,6 @@
     "limit": 100,
     "items": [
         {
-            "href": "/keep_services/112ci-bi6l4-f0r03wrqymotwql",
             "kind": "arvados#keepService",
             "etag": "7m64l69kko4bytpsykf8cay7t",
             "uuid": "112ci-bi6l4-f0r03wrqymotwql",
@@ -22,7 +21,6 @@
             "read_only": false
         },
         {
-            "href": "/keep_services/112ci-bi6l4-hv02fg8sbti8ykk",
             "kind": "arvados#keepService",
             "etag": "bjzh7og2d9z949lbd38vnnslt",
             "uuid": "112ci-bi6l4-hv02fg8sbti8ykk",
@@ -38,7 +36,6 @@
             "read_only": false
         },
         {
-            "href": "/keep_services/112ci-bi6l4-ko27cfbsf2ssx2m",
             "kind": "arvados#keepService",
             "etag": "4be61qkpt6nzdfff4vj9nkpmj",
             "uuid": "112ci-bi6l4-ko27cfbsf2ssx2m",

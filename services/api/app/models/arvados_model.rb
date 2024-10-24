@@ -92,10 +92,6 @@ class ArvadosModel < ApplicationRecord
     kind.match(/^arvados\#(.+)$/)[1].classify.safe_constantize rescue nil
   end
 
-  def href
-    "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
-  end
-
   def self.permit_attribute_params raw_params
     # strong_parameters does not provide security: permissions are
     # implemented with before_save hooks.
