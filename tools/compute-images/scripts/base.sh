@@ -173,8 +173,8 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # Install libnvidia-container, the tooling for Docker/Singularity
   curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
     $SUDO apt-key add -
-  curl -fsSLO --output-dir /etc/apt/sources.list.d \
-       "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list"
+  curl -fsSL "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list" |
+    $SUDO tee /etc/apt/sources.list.d/nvidia-container-toolkit.list >/dev/null
 
   $SUDO apt-get update
   $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
