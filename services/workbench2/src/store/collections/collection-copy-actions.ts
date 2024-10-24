@@ -46,10 +46,9 @@ export const copyCollection =
             }
             const collManifestText = await services.collectionService.get(resource.uuid, undefined, ["manifestText"]);
             collection.manifestText = collManifestText.manifestText;
-            const { href, ...collectionRecord } = collection;
             const newCollection = await services.collectionService.create(
                 {
-                    ...collectionRecord,
+                    ...collection,
                     ownerUuid: resource.ownerUuid,
                     name: resource.name,
                 },

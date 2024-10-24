@@ -76,9 +76,9 @@ describe("FilterBuilder", () => {
         expect(
             filters
                 .addIn("etag", ["etagValue1", "etagValue2"])
-                .addEqual("href", "hrefValue")
+                .addEqual("name", "nameValue")
                 .getFilters()
-        ).to.equal(`["etag","in",["etagValue1","etagValue2"]],["href","=","hrefValue"]`);
+        ).to.equal(`["etag","in",["etagValue1","etagValue2"]],["name","=","nameValue"]`);
     });
 
     it("should add attribute prefix", () => {

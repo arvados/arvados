@@ -6,7 +6,6 @@
   "limit": 100,
   "items": [
     {
-      "href": "/groups/ardev-j7d0g-ylx7wnu1moge2di",
       "kind": "arvados#group",
       "etag": "68vubv3iw7663763bozxebmyf",
       "uuid": "ardev-j7d0g-ylx7wnu1moge2di",
@@ -27,7 +26,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-mnzhga726itrbrq",
       "kind": "arvados#group",
       "etag": "68q7r8r37u9hckr2zsynvton3",
       "uuid": "ardev-j7d0g-mnzhga726itrbrq",
@@ -48,7 +46,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-0w9m1sz46ljtdnm",
       "kind": "arvados#group",
       "etag": "ef4vzx5gyudkrg9zml0zdv6qu",
       "uuid": "ardev-j7d0g-0w9m1sz46ljtdnm",
@@ -69,7 +66,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-r20iem5ou6h5wao",
       "kind": "arvados#group",
       "etag": "6h6h4ta6yyf9058delxk8fnqs",
       "uuid": "ardev-j7d0g-r20iem5ou6h5wao",
@@ -90,7 +86,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-j7drd8yikkp6evd",
       "kind": "arvados#group",
       "etag": "6se2y8f9o7uu06pbopgq56xds",
       "uuid": "ardev-j7d0g-j7drd8yikkp6evd",
@@ -111,7 +106,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-kh1g7i5va870xt0",
       "kind": "arvados#group",
       "etag": "2si26vaig3vig9266pqkqh2gy",
       "uuid": "ardev-j7d0g-kh1g7i5va870xt0",
@@ -132,7 +126,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-sclkdyuwm4h2m78",
       "kind": "arvados#group",
       "etag": "edgnz6q0vt2u3o13ujtfohb75",
       "uuid": "ardev-j7d0g-sclkdyuwm4h2m78",
@@ -153,7 +146,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-593khc577zuyyhe",
       "kind": "arvados#group",
       "etag": "39ig9ttgec6lbe096uetn2cb9",
       "uuid": "ardev-j7d0g-593khc577zuyyhe",
@@ -174,7 +166,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-iotds0tm559dbz7",
       "kind": "arvados#group",
       "etag": "1dpr8v6tx6pta0fozq93eyeou",
       "uuid": "ardev-j7d0g-iotds0tm559dbz7",
@@ -195,7 +186,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-gbqay74778tonb8",
       "kind": "arvados#group",
       "etag": "dizbavs2opfe1wpx6thocfki0",
       "uuid": "ardev-j7d0g-gbqay74778tonb8",
@@ -216,7 +206,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-fmq1t0jlznehbdm",
       "kind": "arvados#group",
       "etag": "6xue8m3lx9qpptfvdf13val5t",
       "uuid": "ardev-j7d0g-fmq1t0jlznehbdm",
@@ -237,7 +226,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-vxju56ch64u51gq",
       "kind": "arvados#group",
       "etag": "2gqix9e4m023usi9exhrsjx6z",
       "uuid": "ardev-j7d0g-vxju56ch64u51gq",
@@ -258,7 +246,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-g8m4w0d22gv6fbj",
       "kind": "arvados#group",
       "etag": "73n8x82814o6ihld0kltf468d",
       "uuid": "ardev-j7d0g-g8m4w0d22gv6fbj",
@@ -279,7 +266,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-lstqed4y78khaqm",
       "kind": "arvados#group",
       "etag": "91f7uwq7pj3d3ez1u4smjg3ch",
       "uuid": "ardev-j7d0g-lstqed4y78khaqm",
@@ -300,7 +286,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-0jbezvnq8i07l7p",
       "kind": "arvados#group",
       "etag": "7dbxhvbcfaogwnvo8k4mtqthk",
       "uuid": "ardev-j7d0g-0jbezvnq8i07l7p",
@@ -321,7 +306,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-72dxer22g6iltqz",
       "kind": "arvados#group",
       "etag": "dhfu203rckzdzvx832wm7jv59",
       "uuid": "ardev-j7d0g-72dxer22g6iltqz",
@@ -342,7 +326,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-nebzwquxtq1v3o5",
       "kind": "arvados#group",
       "etag": "7l9oxbdf4e1m9ddnujokf7czz",
       "uuid": "ardev-j7d0g-nebzwquxtq1v3o5",
@@ -363,7 +346,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-5589c8dmxevecqh",
       "kind": "arvados#group",
       "etag": "83862x2o4453mja2rvypjl5gv",
       "uuid": "ardev-j7d0g-5589c8dmxevecqh",
@@ -384,7 +366,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-bmg3pfqtx3ivczp",
       "kind": "arvados#group",
       "etag": "3hw0vk4mbl0ofvia5k6x4dwrx",
       "uuid": "ardev-j7d0g-bmg3pfqtx3ivczp",
@@ -405,7 +386,6 @@
       "is_trashed": false
     },
     {
-      "href": "/groups/ardev-j7d0g-mfitz2oa4rpycou",
       "kind": "arvados#group",
       "etag": "6p9xbxpttj782mpqs537gfvc6",
       "uuid": "ardev-j7d0g-mfitz2oa4rpycou",

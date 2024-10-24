@@ -6,7 +6,6 @@
   "limit": 100,
   "items": [
     {
-      "href": "/links/arkau-o0j2j-x2b4rdadxs2fizn",
       "kind": "arvados#link",
       "etag": "dkhtr9tvp9zfy0d90xjn7w1t7",
       "uuid": "arkau-o0j2j-x2b4rdadxs2fizn",
@@ -24,7 +23,6 @@
       "properties": {}
     },
     {
-      "href": "/links/arkau-o0j2j-r5am4lz9gnu488k",
       "kind": "arvados#link",
       "etag": "9nt0c2xn5oz1jzjzawlycmehz",
       "uuid": "arkau-o0j2j-r5am4lz9gnu488k",
