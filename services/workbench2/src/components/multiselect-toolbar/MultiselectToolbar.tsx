@@ -254,7 +254,10 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
     switch (kind) {
         case ResourceKind.PROJECT:
             if (isFrozen) {
-                return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
+                return isAdmin ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
+                : isEditable 
+                ? ContextMenuKind.FROZEN_PROJECT
+                : ContextMenuKind.READONLY_PROJECT;
             }
 
             if (isAdmin && !readonly) {

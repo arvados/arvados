@@ -263,7 +263,10 @@ export const resourceUuidToContextMenuKind =
         switch (kind) {
             case ResourceKind.PROJECT:
                 if (isFrozen) {
-                    return isAdminUser ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
+                    return isAdminUser ? ContextMenuKind.FROZEN_PROJECT_ADMIN 
+                    : isEditable 
+                    ? ContextMenuKind.FROZEN_PROJECT
+                    : ContextMenuKind.READONLY_PROJECT;
                 }
 
                 return isAdminUser && !readonly
