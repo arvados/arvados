@@ -42,6 +42,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flexGrow: 1,
         display: 'flex',
         flexDirection: 'column',
+        minHeight: "500px",
         '& > div': {
             height: '100%',
         },

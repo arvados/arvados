@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useState, useMemo, ReactElement, JSXElementConstructor } from 'react';
-import { DoubleRightArrows } from 'components/icon/icon';
+import { MoreVert } from '@mui/icons-material';
 import classnames from 'classnames';
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
@@ -77,7 +77,7 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
                     className={classes.openMenuButton}
                     data-cy='overflow-menu-button'
                     size="large">
-                        <DoubleRightArrows />
+                    <MoreVert />
                 </IconButton>
             </Tooltip>
             <Menu

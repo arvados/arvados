@@ -8,17 +8,17 @@ import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from 'common/custom-theme';
+import { IconButton } from "@mui/material";
 
 type CssRules = 'root' | 'default' | 'expanded';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         width: '24px',
         height: '24px',
         cursor: 'pointer',
+        marginLeft: '1em',
+        marginTop: "-.2em",
     },
     default: {
         transition: 'all 0.1s ease',
@@ -41,9 +41,9 @@ export const ExpandChevronRight = withStyles(styles)(
         render() {
             const { classes, expanded } = this.props;
             return (
-                <div className={classes.root}>
+                <IconButton className={classes.root}>
                     <ChevronRight className={expanded ? classes.expanded : classes.default} />
-                </div>
+                </IconButton>
             );
         }
     }
