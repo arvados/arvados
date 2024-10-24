@@ -56,6 +56,13 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes
 $SUDO /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 $SUDO /usr/sbin/locale-gen
 
+if [[ "${PIN_PACKAGES:-true}" != false ]]; then
+    $SUDO install -d /etc/apt/preferences.d
+    $SUDO install -m 0644 \
+          "$WORKDIR/etc-apt-preferences.d-arvados.pref" \
+          /etc/apt/preferences.d/arvados.pref
+fi
+
 # Install some packages we always need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
