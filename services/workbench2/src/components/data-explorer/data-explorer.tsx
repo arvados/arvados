@@ -34,6 +34,7 @@ import { InlinePulser } from "components/loading/inline-pulser";
 
 type CssRules =
     | 'titleWrapper'
+    | 'searchResultsTitleWrapper'
     | 'msToolbarStyles'
     | 'searchBox'
     | 'headerMenu'
@@ -44,13 +45,12 @@ type CssRules =
     | 'root'
     | 'moreOptionsButton'
     | 'title'
-    | 'subProcessTitle'
-    | 'workflowTabToolbar'
     | 'dataTable'
     | 'container'
     | 'paginationLabel'
     | 'paginationRoot'
-    | "subToolbarWrapper" 
+    | "subToolbarWrapper"
+    | 'runsToolbarWrapper' 
     | 'searchResultsToolbar'
     | 'progressWrapper' 
     | 'progressWrapperNoTitle';
@@ -59,17 +59,25 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     titleWrapper: {
         display: "flex",
         justifyContent: "space-between",
-        marginTop: "-5px",
+        marginTop: "5px",
+        marginBottom: "-5px",
+    },
+    searchResultsTitleWrapper: {
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: "5px",
+        height: "30px",
     },
     msToolbarStyles: {
-        paddingTop: "0.6rem",
+        marginLeft: "-5px",
     },
     subToolbarWrapper: {
-        height: "48px",
-        paddingTop: 0,
-        marginBottom: "-20px",
-        marginTop: "-10px",
-        flexShrink: 0,
+        marginTop: "5px",
+        marginLeft: "-15px",
+    },
+    runsToolbarWrapper: {
+        marginTop: "5px",
+        marginLeft: "-15px",
     },
     searchResultsToolbar: {
         marginTop: "10px",
@@ -109,31 +117,20 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing(2),
         paddingTop: theme.spacing(2),
         fontSize: "18px",
-        paddingRight: "10px",
-    },
-    subProcessTitle: {
-        display: "inline-block",
-        paddingLeft: theme.spacing(2),
-        paddingTop: theme.spacing(2),
-        fontSize: "18px",
         flexGrow: 0,
         paddingRight: "10px",
     },
-    workflowTabToolbar: {
-        marginTop: '-12px',
-    },
     progressWrapper: {
-        margin: "28px 0 0",
-        flexGrow: 1,
-        flexBasis: "100px",
+        margin: "14px 0 0",
+        paddingLeft: "20px",
+        paddingRight: "20px",
     },
     progressWrapperNoTitle: {
-        paddingLeft: "10px",
+        marginTop: '12px',
     },
     dataTable: {
         height: "100%",
         overflowY: "auto",
-        marginTop: "-10px",
     },
     container: {
         height: "100%",
@@ -214,6 +211,7 @@ export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
         state = {
             hideToolbar: true,
+            isSearchResults: false,
         };
 
         multiSelectToolbarInTitle = !this.props.title && !this.props.progressBar;
@@ -223,6 +221,7 @@ export const DataExplorer = withStyles(styles)(
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
+            this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
         }
 
         componentDidUpdate( prevProps: Readonly<DataExplorerProps<T>>, prevState: Readonly<{}>, snapshot?: any ): void {
@@ -237,6 +236,9 @@ export const DataExplorer = withStyles(styles)(
             }
             if (this.props.searchBarValue !== prevProps.searchBarValue) {
                 this.maxItemsAvailable = 0;
+            }
+            if (this.props.path !== prevProps.path) {
+                this.setState({ isSearchResults: this.props.path?.includes("search-results") ? true : false })
             }
         }
 
@@ -291,30 +293,40 @@ export const DataExplorer = withStyles(styles)(
                     {...paperProps}
                     key={path}
                     data-cy={this.props["data-cy"]}
-                >
+                    >
+                    {title && this.state.isSearchResults && (
+                                <Grid
+                                    item
+                                    xs
+                                    className={classes.title}
+                                >
+                                    {title}
+
+                                </Grid>
+                            )}
                     <Grid
                         container
                         direction="column"
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        <div data-cy="title-wrapper" className={classes.titleWrapper}>
-                            {title && (
+                        <div data-cy="title-wrapper" className={classNames(this.state.isSearchResults ? classes.searchResultsTitleWrapper : classes.titleWrapper)}>
+                            {title && !this.state.isSearchResults && (
                                 <Grid
                                     item
                                     xs
-                                    className={!!progressBar ? classes.subProcessTitle : classes.title}
+                                    className={classes.title}
                                 >
                                     {title}
+
                                 </Grid>
                             )}
-                            {!!progressBar &&
-                                <div className={classNames({
-                                    [classes.progressWrapper]: true,
-                                    [classes.progressWrapperNoTitle]: !title,
-                                })}>{progressBar}</div>
+                            {!this.state.hideToolbar && (this.multiSelectToolbarInTitle 
+                                ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
+                                : <MultiselectToolbar 
+                                    forceMultiSelectMode={forceMultiSelectMode} 
+                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
                             }
-                            {this.multiSelectToolbarInTitle && !this.state.hideToolbar && <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid
                                     className={classes.headerMenu}
@@ -376,19 +388,18 @@ export const DataExplorer = withStyles(styles)(
                                     </Toolbar>
                                 </Grid>
                             )}
+                            
                         </div>
-                        {this.multiSelectToolbarInTitle ? <div className={classes.subToolbarWrapper} /> :
-                            <div className={classNames(classes.subToolbarWrapper, path?.includes('search-results') ? classes.searchResultsToolbar : null)}>
-                                {!this.state.hideToolbar && <MultiselectToolbar
-                                    forceMultiSelectMode={forceMultiSelectMode}
-                                    injectedStyles={classes.workflowTabToolbar}
-                                />}
-                            </div>
-                        }
                         <Grid
                             item
                             className={classes.dataTable}
                         >
+                            {!!progressBar &&
+                                <div className={classNames({
+                                    [classes.progressWrapper]: true,
+                                    [classes.progressWrapperNoTitle]: !title,
+                                })}>{progressBar}</div>
+                            }
                             <DataTable
                                 columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                                 items={items}

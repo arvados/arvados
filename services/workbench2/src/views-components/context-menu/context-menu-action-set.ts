@@ -24,6 +24,7 @@ export enum ContextMenuActionNames {
     COPY_UUID_LINK_TO_CLIPBOARD = 'Copy link to clipboard (uuid)',
     COPY_PDH_LINK_TO_CLIPBOARD = 'Copy link to clipboard (pdh)',
     COPY_CWL_LINK_TO_CLIPBOARD = 'Copy link to clipboard (cwl)',
+    COPY_UUID = 'Copy UUID',
     DEACTIVATE_USER = 'Deactivate user',
     DELETE_WORKFLOW = 'Delete Workflow',
     DIVIDER = 'Divider',

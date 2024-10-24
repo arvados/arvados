@@ -20,6 +20,7 @@ import {
     moveToAction,
     toggleTrashAction,
     newProjectAction,
+    copyUuidAction,
 } from "views-components/context-menu/action-sets/project-action-set";
 
 export const togglePublicFavoriteAction = {
@@ -47,6 +48,7 @@ export const projectAdminActionSet: ContextMenuActionSet = [
         newProjectAction,
         freezeProjectAction,
         togglePublicFavoriteAction,
+        copyUuidAction,
     ],
 ];
 
@@ -63,6 +65,7 @@ export const filterGroupAdminActionSet: ContextMenuActionSet = [
         moveToAction,
         toggleTrashAction,
         togglePublicFavoriteAction,
+        copyUuidAction,
     ],
 ];
 
@@ -77,5 +80,6 @@ export const frozenAdminActionSet: ContextMenuActionSet = [
         advancedAction,
         openWith3rdPartyClientAction,
         freezeProjectAction,
+        copyUuidAction,
     ],
 ];
