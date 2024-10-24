@@ -9,7 +9,7 @@ import { updateResources } from "store/resources/resources-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
-import { navigateToRunProcess } from "store/navigation/navigation-action";
+import { navigateToRootProject, navigateToRunProcess } from "store/navigation/navigation-action";
 import { goToStep, runProcessPanelActions } from "store/run-process-panel/run-process-panel-actions";
 import { getResource } from "store/resources/resources";
 import { initialize } from "redux-form";
@@ -26,6 +26,7 @@ import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolb
 import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
+import { getProcessPanelCurrentUuid } from "store/process-panel/process-panel";
 import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
 
 export const loadContainers =
@@ -275,6 +276,7 @@ export const openRemoveProcessDialog =
 export const REMOVE_PROCESS_DIALOG = "removeProcessDialog";
 
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const currentProcessPanelUuid = getProcessPanelCurrentUuid(getState().router);
     const currentProjectUuid = getProjectPanelCurrentUuid(getState());
     const resource = getState().dialog.removeProcessDialog.data.resource;
     const checkedList = getState().multiselect.checkedList;
@@ -321,6 +323,14 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: `Removed ${succeeded.length} items`, hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
                 } else {
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+                }
+            }
+
+            // If currently viewing any of the deleted runs, navigate to home
+            if (currentProcessPanelUuid) {
+                const currentProcessDeleted = succeeded.find((promiseResult) => promiseResult.value.uuid === currentProcessPanelUuid);
+                if (currentProcessDeleted) {
+                    dispatch<any>(navigateToRootProject);
                 }
             }
 
