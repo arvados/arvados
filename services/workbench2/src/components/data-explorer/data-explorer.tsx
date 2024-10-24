@@ -310,12 +310,6 @@ export const DataExplorer = withStyles(styles)(
                         wrap="nowrap"
                         className={classes.container}
                     >
-                        {!!progressBar && !title &&
-                                <div className={classNames({
-                                    [classes.progressWrapper]: true,
-                                    [classes.progressWrapperNoTitle]: !title,
-                                })}>{progressBar}</div>
-                            }
                         <div data-cy="title-wrapper" className={classNames(this.state.isSearchResults ? classes.searchResultsTitleWrapper : classes.titleWrapper)}>
                             {title && !this.state.isSearchResults && (
                                 <Grid
@@ -400,7 +394,7 @@ export const DataExplorer = withStyles(styles)(
                             item
                             className={classes.dataTable}
                         >
-                            {!!progressBar && !!title &&
+                            {!!progressBar &&
                                 <div className={classNames({
                                     [classes.progressWrapper]: true,
                                     [classes.progressWrapperNoTitle]: !title,
