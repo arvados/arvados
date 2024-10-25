@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { MoveToIcon, CopyIcon, RenameIcon, ShareIcon } from "components/icon/icon";
+import { MoveToIcon, CopyIcon, RenameIcon, ShareIcon, FileCopyOutlinedIcon } from "components/icon/icon";
 import { openMoveCollectionDialog } from "store/collections/collection-move-actions";
 import { openCollectionCopyDialog, openMultiCollectionCopyDialog } from "store/collections/collection-copy-actions";
 import { toggleCollectionTrashed } from "store/trash/trash-actions";
@@ -11,16 +11,16 @@ import { msCommonActionSet, MultiSelectMenuActionSet, MultiSelectMenuAction } fr
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { TrashIcon, Link, FolderSharedIcon } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
-import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { copyToClipboardAction, copyStringToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 
 
-const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_LINK_TO_CLIPBOARD, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
+const { MAKE_A_COPY, MOVE_TO, MOVE_TO_TRASH, EDIT_COLLECTION, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, COPY_LINK_TO_CLIPBOARD, COPY_UUID, VIEW_DETAILS, API_DETAILS, ADD_TO_FAVORITES, SHARE} = ContextMenuActionNames;
 
 const msCopyCollection: MultiSelectMenuAction = {
     name: MAKE_A_COPY,
-    icon: CopyIcon,
+    icon: FileCopyOutlinedIcon,
     hasAlts: false,
     isForMulti: true,
     execute: (dispatch, [...resources]) => {
@@ -69,6 +69,16 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     },
 };
 
+const msCopyUuid: MultiSelectMenuAction  = {
+    name: COPY_UUID,
+    icon: CopyIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+    },
+};
+
 const msOpenWith3rdPartyClientAction: MultiSelectMenuAction  = {
     name: OPEN_WITH_3RD_PARTY_CLIENT,
     icon: FolderSharedIcon,
@@ -99,6 +109,7 @@ export const msCollectionActionSet: MultiSelectMenuActionSet = [
         msCopyToClipboardMenuAction,
         msOpenWith3rdPartyClientAction,
         msShareAction,
+        msCopyUuid,
     ],
 ];
 

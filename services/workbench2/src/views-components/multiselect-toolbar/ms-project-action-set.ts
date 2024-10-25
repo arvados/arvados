@@ -13,6 +13,7 @@ import {
     RenameIcon,
     UnfreezeIcon,
     ShareIcon,
+    CopyIcon,
 } from 'components/icon/icon';
 import { RestoreFromTrashIcon, TrashIcon, FolderSharedIcon, Link } from 'components/icon/icon';
 import { getResource } from 'store/resources/resources';
@@ -20,7 +21,7 @@ import { openProjectCreateDialog } from 'store/projects/project-create-actions';
 import { openProjectUpdateDialog } from 'store/projects/project-update-actions';
 import { freezeProject, unfreezeProject } from 'store/projects/project-lock-actions';
 import { openWebDavS3InfoDialog } from 'store/collections/collection-info-actions';
-import { copyToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
+import { copyToClipboardAction, copyStringToClipboardAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 
 const {
@@ -28,6 +29,7 @@ const {
     ADD_TO_PUBLIC_FAVORITES,
     OPEN_IN_NEW_TAB,
     COPY_LINK_TO_CLIPBOARD,
+    COPY_UUID,
     VIEW_DETAILS,
     API_DETAILS,
     OPEN_WITH_3RD_PARTY_CLIENT,
@@ -46,6 +48,16 @@ const msCopyToClipboardMenuAction: MultiSelectMenuAction  = {
     isForMulti: false,
     execute: (dispatch, resources) => {
         dispatch<any>(copyToClipboardAction(resources));
+    },
+};
+
+const msCopyUuid: MultiSelectMenuAction  = {
+    name: COPY_UUID,
+    icon: CopyIcon,
+    hasAlts: false,
+    isForMulti: false,
+    execute: (dispatch, resources) => {
+        dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
     },
 };
 
@@ -146,6 +158,7 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
         msOpenWith3rdPartyClientAction,
         msCopyToClipboardMenuAction,
         msShareAction,
+        msCopyUuid,
     ],
 ];
 
@@ -162,10 +175,11 @@ export const msCommonProjectActionFilter = new Set<string>([
     OPEN_WITH_3RD_PARTY_CLIENT,
     SHARE,
     VIEW_DETAILS,
+    COPY_UUID,
 ]);
-export const msReadOnlyProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS,]);
-export const msFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT])
-export const msAdminFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT, ADD_TO_PUBLIC_FAVORITES])
+export const msReadOnlyProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS,]);
+export const msFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT])
+export const msAdminFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT, ADD_TO_PUBLIC_FAVORITES])
 
-export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO])
-export const msAdminFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO, ADD_TO_PUBLIC_FAVORITES])
+export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO])
+export const msAdminFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO, ADD_TO_PUBLIC_FAVORITES])

@@ -56,13 +56,15 @@ describe("Process tests", function () {
             const msButtonTooltips = [
                 'View details',
                 'Open in new tab',
-                'Outputs',
-                'API Details',
-                'Edit process',
+                'Copy UUID',
                 'Copy and re-run process',
                 'CANCEL',
+                'Edit process',
                 'Remove',
+                'Outputs',
                 'Add to favorites',
+                'Copy link to clipboard',
+                'API Details',
             ];
 
             createContainerRequest(

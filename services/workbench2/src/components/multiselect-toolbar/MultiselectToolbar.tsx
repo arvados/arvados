@@ -5,7 +5,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
-import { Toolbar, Tooltip, IconButton } from "@mui/material";
+import { Toolbar, IconButton } from "@mui/material";
 import { WithStyles } from '@mui/styles';
 import withStyles from '@mui/styles/withStyles';
 import { ArvadosTheme } from "common/custom-theme";
@@ -40,39 +40,30 @@ import { IntersectionObserverWrapper } from "./ms-toolbar-overflow-wrapper";
 import classNames from "classnames";
 import { ContextMenuKind, sortMenuItems, menuDirection } from 'views-components/context-menu/menu-item-sort';
 
-type CssRules = "root" | "toolbarContainer" | "button" | "iconContainer" | "icon" | "divider";
+type CssRules = "root" | "iconContainer" | "icon" | "divider";
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: "flex",
         flexDirection: "row",
+        height: '2.5rem',
         width: 0,
         padding: 0,
         margin: 0,
         overflow: 'hidden',
     },
-    toolbarContainer: {
-        height: '3rem',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'start',
-    },
-    button: {
-        width: "2.5rem",
-        height: "2.5rem ",
-        paddingLeft: 0,
-        border: "1px solid transparent",
-        zIndex: 10,
-    },
     iconContainer: {
         height: '100%',
     },
     icon: {
-        marginLeft: '-0.5rem',
+        marginLeft: '-5px',
     },
     divider: {
+        marginTop: '5px',
+        width: '2rem',
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
     },
 });
 
@@ -131,10 +122,10 @@ export const MultiselectToolbar = connect(
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
         return (
-            <div className={classes.toolbarContainer}>
+            <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
-                    style={{ width: `${(actions.length * 2.5) + 2}rem`}}
+                    style={{ width: `${(actions.length * 2.5) + 2}rem`, height: '2.5rem'}}
                     data-cy='multiselect-toolbar'
                     >
                     {actions.length ? (
@@ -152,43 +143,29 @@ export const MultiselectToolbar = connect(
                                     </div>
                                 )
                             ) : hasAlts ? (
-                                <Tooltip
-                                    className={classes.button}
-                                    data-targetid={name}
-                                    title={currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton
-                                            data-cy='multiselect-button'
-                                            disabled={disabledButtons.has(name)}
-                                            onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
-                                            className={classes.icon}
-                                            size="large">
-                                            {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                <span className={classes.iconContainer} data-targetid={name} data-title={(useAlts && useAlts(selectedResourceUuid, iconProps)) ? altName : name}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        disabled={disabledButtons.has(name)}
+                                        onClick={() => props.executeMulti(action, targetResources, iconProps.resources)}
+                                        className={classes.icon}
+                                        size="large">
+                                        {currentPathIsTrash || (useAlts && useAlts(selectedResourceUuid, iconProps)) ? altIcon && altIcon({}) : icon({})}
+                                    </IconButton>
+                                </span>
                             ) : (
-                                <Tooltip
-                                    className={classes.button}
-                                    data-targetid={name}
-                                    title={action.name}
-                                    key={i}
-                                    disableFocusListener
-                                >
-                                    <span className={classes.iconContainer}>
-                                        <IconButton
-                                            data-cy='multiselect-button'
-                                            onClick={() => {
-                                                props.executeMulti(action, targetResources, iconProps.resources)}}
-                                            className={classes.icon}
-                                            size="large">
-                                            {action.icon({})}
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
+                                //data-targetid is used to determine what goes to the overflow menu
+                                //data-title is used to display the tooltip text
+                                <span className={classes.iconContainer} data-targetid={name} data-title={name}>
+                                    <IconButton
+                                        data-cy='multiselect-button'
+                                        onClick={() => {
+                                            props.executeMulti(action, targetResources, iconProps.resources)}}
+                                        className={classes.icon}
+                                        size="large">
+                                        {action.icon({})}
+                                    </IconButton>
+                                </span>
                             );
                             })}
                         </IntersectionObserverWrapper>
@@ -196,7 +173,7 @@ export const MultiselectToolbar = connect(
                         <></>
                     )}
                 </Toolbar>
-            </div>
+            </React.Fragment>
         );
     })
 );

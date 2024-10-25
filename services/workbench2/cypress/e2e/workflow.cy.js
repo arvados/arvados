@@ -298,10 +298,11 @@ describe('Registered workflow panel tests', function() {
         const msButtonTooltips = [
             'View details',
             'Open in new tab',
-            'Copy link to clipboard',
-            'API Details',
+            'Copy UUID',
             'Run Workflow',
             'Delete Workflow',
+            'Copy link to clipboard',
+            'API Details',
         ];
 
         cy.createResource(activeUser.token, "workflows", {workflow: {name: "Test wf"}})

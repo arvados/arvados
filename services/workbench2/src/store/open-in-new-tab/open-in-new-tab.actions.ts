@@ -38,3 +38,29 @@ export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispa
             })
         );
 };
+
+export const copyStringToClipboardAction = (string: string) => (dispatch: Dispatch, getState: () => RootState) => {
+    let wasCopied;
+
+    if (string.length) {
+        wasCopied = copy(string);
+    }
+
+    if (wasCopied){
+        dispatch(
+            snackbarActions.OPEN_SNACKBAR({
+                message: "Copied",
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS,
+            })
+        );
+    } else {
+        dispatch(
+            snackbarActions.OPEN_SNACKBAR({
+                message: "Failed to copy",
+                hideDuration: 2000,
+                kind: SnackbarKind.ERROR,
+            })
+        );
+    }
+};
