@@ -136,6 +136,10 @@ Options:
       The dns resolver for the machine (default: host's network provided)
   --reposuffix &lt;suffix&gt;
       Set this to "-dev" to track the unstable/dev Arvados repositories
+  --pin-packages, --no-pin-packages
+      These flags determine whether or not to configure apt pins for Arvados
+      and third-party packages it depends on. By default packages are pinned
+      unless you set `--reposuffix -dev`.
   --public-key-file &lt;path&gt;
       Path to the public key file that a-d-c will use to log into the compute node (required)
   --mksquashfs-mem (default: 256M)
@@ -172,6 +176,12 @@ If you plan on using instance types with NVIDIA GPUs, add @--nvidia-gpu-support@
 {% include 'singularity_mksquashfs_configuration' %}
 
 The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to "the build script":#building. It defaults to @256M@.
+
+h3(#apt-pins). apt package version pins
+
+By default, unless your image uses development packages with @--reposuffix -dev@, the build script configures apt with version pins for Arvados and third-party packages it depends on. This ensures that everything apt installs has been tested and is known to work with your version of Arvados. The version pins have some flexibility to allow apt to install security updates and other changes that are unlikely to interfere with Arvados.
+
+You can explicitly control whether or not these version pins are configured with the @--pin-packages@ and @--no-pin-packages@ flags. You should only need to use these flags if you are doing development work on the compute image and specifically want to test compatibility with different versions.
 
 h2(#aws). Build an AWS image
 
