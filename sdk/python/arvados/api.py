@@ -1,12 +1,30 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
-"""Arvados API client
+"""Arvados REST API client
 
-The code in this module builds Arvados API client objects you can use to submit
-Arvados API requests. This includes extending the underlying HTTP client with
-niceties such as caching, X-Request-Id header for tracking, and more. The main
-client constructors are `api` and `api_from_config`.
+This module provides classes and functions to construct an Arvados REST API
+client. Most users will want to use one of these constructor functions, in
+order of preference:
+
+* `arvados.api.api` provides a high-level interface to construct a client from
+  either arguments or user configuration. You can call this module just like
+  a function as a shortcut for calling `arvados.api.api`.
+
+* `arvados.api.api_from_config` constructs a client from user configuration in
+  a dictionary.
+
+* `arvados.api.api_client` provides a lower-level interface to construct a
+  simpler client object that is not threadsafe.
+
+Other classes and functions is this module support creating and customizing
+the client for specialized use-cases.
+
+The methods on an Arvados REST API client are generated dynamically at
+runtime. The `arvados.api_resources` module documents those methods and
+return values for the current version of Arvados. It does not
+implement anything so you don't need to import it, but it's a helpful
+reference to understand how to use the Arvados REST API client.
 """
 
 import collections
