@@ -14,6 +14,7 @@
     "nvidia_gpu_support": "",
     "goversion": "",
     "reposuffix": "",
+    "pin_packages": "true",
     "resolver": "",
     "ssh_user": "admin",
     "subnet_id": "",
@@ -74,6 +75,10 @@
     "destination": "{{user `workdir`}}/1078ECD7.asc"
   },{
     "type": "file",
+    "source": "scripts/etc-apt-preferences.d-arvados.pref",
+    "destination": "{{user `workdir`}}/etc-apt-preferences.d-arvados.pref"
+  },{
+    "type": "file",
     "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
     "destination": "{{user `workdir`}}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
@@ -100,6 +105,15 @@
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=aws","AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}","GOVERSION={{user `goversion`}}","WORKDIR={{user `workdir`}}"]
+    "environment_vars": [
+        "RESOLVER={{user `resolver`}}",
+        "REPOSUFFIX={{user `reposuffix`}}",
+        "MKSQUASHFS_MEM={{user `mksquashfs_mem`}}",
+        "NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}",
+        "CLOUD=aws",
+        "AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}",
+        "GOVERSION={{user `goversion`}}",
+        "WORKDIR={{user `workdir`}}"
+    ]
   }]
 }
