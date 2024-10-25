@@ -237,7 +237,9 @@ func (conn *Conn) applyReplaceFilesOption(ctx context.Context, fromUUID string, 
 	for _, src := range replaceFiles {
 		if strings.HasPrefix(src, "current/") && current[src] == nil {
 			current[src], err = arvados.Snapshot(dstfs, src[8:])
-			if err != nil {
+			if os.IsNotExist(err) {
+				return nil, httpserver.Errorf(http.StatusBadRequest, "replace_files: nonexistent source %q", src)
+			} else if err != nil {
 				return nil, fmt.Errorf("%s: %w", src, err)
 			}
 		}
