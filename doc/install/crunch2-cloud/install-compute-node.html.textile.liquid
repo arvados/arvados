@@ -203,9 +203,7 @@ The @VPC@ and @Subnet@ should be configured for where you want the compute image
            --aws-subnet-id Subnet \
            --ssh_user admin \
            --public-key-file ArvadosDispatchCloudPublicKeyPath
-</span>
-</code></pre></notextile>
-
+</span></code></pre></notextile>
 
 h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
@@ -254,8 +252,7 @@ h2(#azure). Build an Azure image
            --azure-secrets-file AzureSecretsFilePath \
            --resolver ResolverIP \
            --public-key-file ArvadosDispatchCloudPublicKeyPath
-</span>
-</code></pre></notextile>
+</span></code></pre></notextile>
 
 For @ClusterID@, fill in your cluster ID. The @ResourceGroup@ and @AzureRegion@ (e.g. 'eastus2') should be configured for where you want the compute image to be generated and stored. The @AzureSKU@ is the SKU of the base image to be used, e.g. '18.04-LTS' for Ubuntu 18.04.
 
