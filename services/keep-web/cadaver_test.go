@@ -189,18 +189,30 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
+			// This forces a refresh via needSync --
+			// otherwise, in the next "move" trial,
+			// cadaver will probe "PROPFIND newdir1",
+			// conclude newdir1 is an existing directory,
+			// and change our "move newdir1x newdir1"
+			// command to "move newdir1x
+			// newdir1/newdir1x".
+			path:  writePath,
+			cmd:   "get newdir1x/nofile " + checkfile.Name() + "\n",
+			match: `(?ms).*Downloading .* failed.*`,
+		},
+		{
 			path:  writePath,
 			cmd:   "move newdir1x newdir1\n",
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir0/testfile newdir1/\n",
+			cmd:   "move newdir0/testfile newdir1/testfile\n",
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
 		{
 			path:  writePath,
-			cmd:   "move newdir1 newdir1/\n",
+			cmd:   "move newdir1 newdir1/newdir1\n",
 			match: `(?ms).*Moving .* failed.*`,
 		},
 		{
@@ -282,7 +294,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			match: `(?ms).*Locking .* failed:.*405 Method Not Allowed.*`,
 		},
 	} {
-		c.Logf("%s %+v", s.testServer.URL, trial)
+		c.Logf("=== %s trial %+v", s.testServer.URL, trial)
 		if skip != nil && skip(trial.path) {
 			c.Log("(skip)")
 			continue

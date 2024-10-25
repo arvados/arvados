@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -184,6 +185,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
 		r.URL.Scheme = xfp
 	}
+
+	httpserver.SetResponseLogFields(r.Context(), logrus.Fields{
+		"webdavDepth":       r.Header.Get("Depth"),
+		"webdavDestination": r.Header.Get("Destination"),
+		"webdavOverwrite":   r.Header.Get("Overwrite"),
+	})
 
 	wbuffer := newWriteBuffer(wOrig, int(h.Cluster.Collections.WebDAVOutputBuffer))
 	defer wbuffer.Close()
@@ -616,6 +623,16 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
 	}
 
+	colltarget := strings.Join(pathParts[stripParts:], "/")
+	colltarget = strings.TrimSuffix(colltarget, "/")
+	if !forceReload && needSync(sessionFS, r, webdavPrefix, collectionID, colltarget) {
+		err := collectionDir.Sync()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+	}
+
 	writing := writeMethod[r.Method]
 	if writing {
 		// We implement write operations by writing to a
@@ -638,8 +655,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal error: writing to anything other than /by_id/{collectionID}", http.StatusInternalServerError)
 			return
 		}
-		colltarget := strings.Join(pathParts[stripParts:], "/")
-		colltarget = strings.TrimSuffix(colltarget, "/")
 
 		// Create a temporary collection filesystem for webdav
 		// to operate on.
@@ -667,24 +682,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 		switch r.Method {
 		case "COPY", "MOVE":
-			dsturl, err := url.Parse(r.Header.Get("Destination"))
+			dsttarget, err := copyMoveDestination(r, webdavPrefix)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
-			}
-			if dsturl.Host != "" && dsturl.Host != r.Host {
-				http.Error(w, "destination host mismatch", http.StatusBadGateway)
-				return
-			}
-			var dsttarget string
-			if webdavPrefix == "" {
-				dsttarget = dsturl.Path
-			} else {
-				dsttarget = strings.TrimPrefix(dsturl.Path, webdavPrefix)
-				if len(dsttarget) == len(dsturl.Path) {
-					http.Error(w, "destination path not supported", http.StatusBadRequest)
-					return
-				}
 			}
 
 			srcspec := "current/" + colltarget
@@ -769,21 +770,46 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 					return err
 				}
 
-				// We want subsequent reqs to account
-				// for this change.  Sync() can be
-				// expensive on a large collection, so
-				// in the simple (and common) case of
-				// uploading a single file, we just
-				// splice the new file into sessionFS
-				// instead.
-				if r.Method == "PUT" {
+				// If a subsequent request depends on
+				// this change, it should succeed.  We
+				// could call collectionDir.Sync(),
+				// but that's not ideal: it can be
+				// expensive on a large collection;
+				// most of the time it is not needed;
+				// even when it is needed, overlapping
+				// update-and-Sync sequences can still
+				// result in a stale sessionFS (see
+				// #22184); and it doesn't address
+				// cases where the subsequent request
+				// goes through a different keep-web
+				// service in a load-balanced setup.
+				//
+				// So, in some simple/common cases
+				// (PUT, MKCOL, DELETE) we
+				// splice/update sessionFS, which is
+				// fast.
+				//
+				// In other cases (and in case that
+				// somehow fails) we rely on the
+				// subsequent request running the
+				// "Sync if target or parent is
+				// missing" code above.
+				switch r.Method {
+				case "PUT":
 					err = arvados.Splice(sessionFS, fstarget, snap)
 					if err != nil {
 						logger.WithError(err).Warn("splice failed")
-						collectionDir.Sync()
 					}
-				} else {
-					collectionDir.Sync()
+				case "MKCOL":
+					err = sessionFS.Mkdir(fstarget, 0777)
+					if err != nil {
+						logger.WithError(err).Warn("Mkdir failed")
+					}
+				case "DELETE":
+					err = sessionFS.RemoveAll(fstarget)
+					if err != nil {
+						logger.WithError(err).Warn("RemoveAll failed")
+					}
 				}
 				return nil
 			}}
@@ -1106,6 +1132,79 @@ func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arva
 		return false
 	}
 	return true
+}
+
+// Parse the request's Destination header and return the destination
+// path relative to the current collection, i.e., with webdavPrefix
+// stripped off.
+func copyMoveDestination(r *http.Request, webdavPrefix string) (string, error) {
+	dsturl, err := url.Parse(r.Header.Get("Destination"))
+	if err != nil {
+		return "", err
+	}
+	if dsturl.Host != "" && dsturl.Host != r.Host {
+		return "", errors.New("destination host mismatch")
+	}
+	if webdavPrefix == "" {
+		return dsturl.Path, nil
+	}
+	dsttarget := strings.TrimPrefix(dsturl.Path, webdavPrefix)
+	if len(dsttarget) == len(dsturl.Path) {
+		return "", errors.New("destination path not supported")
+	}
+	return dsttarget, nil
+}
+
+// It is possible for our long-lived sessionFS to be out of date in a
+// way that would cause the current operation to fail.  E.g., if MKCOL
+// /A succeeded moments ago on a different keep-web server, and the
+// current request is PUT /A/B, then replace_files will succeed --
+// however, if the webdav operation fails due to /A not existing in
+// our stale sessionFS, then we won't even get as far as attempting
+// replace_files.  Here, we detect these situations where our handler
+// should call Sync() before calling through to the webdav handler.
+//
+// Those situations are:
+// * PUT or MKCOL, and parent dir is missing
+// * PUT, and target is a directory
+// * MKCOL, and target exists
+// * not PUT, and target is missing (including source of COPY or MOVE)
+// * COPY or MOVE, and destination parent dir is missing (or is not a directory)
+// * COPY or MOVE with Overwrite=F, and destination exists
+func needSync(sessionFS arvados.CustomFileSystem, r *http.Request, webdavPrefix, collectionID, colltarget string) bool {
+	collprefix := "by_id/" + collectionID + "/"
+	if r.Method == "PUT" || r.Method == "MKCOL" {
+		parentdir, _ := filepath.Split(colltarget)
+		if fi, err := sessionFS.Stat(collprefix + parentdir); os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
+			return true
+		}
+		if fi, err := sessionFS.Stat(collprefix + colltarget); err == nil {
+			if r.Method == "PUT" && fi.IsDir() ||
+				r.Method == "MKCOL" {
+				return true
+			}
+		}
+		return false
+	}
+	_, err := sessionFS.Stat(collprefix + colltarget)
+	if os.IsNotExist(err) {
+		return true
+	}
+	if r.Method == "COPY" || r.Method == "MOVE" {
+		dsttarget, err := copyMoveDestination(r, webdavPrefix)
+		if err != nil {
+			// the request will fail anyway
+			return false
+		}
+		dstparentdir, _ := filepath.Split(dsttarget)
+		if fi, err := sessionFS.Stat(collprefix + dstparentdir); os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
+			return true
+		}
+		if r.Header.Get("Overwrite") == "F" {
+			return true
+		}
+	}
+	return false
 }
 
 type fileEventLog struct {
