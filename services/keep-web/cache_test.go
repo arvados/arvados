@@ -129,29 +129,35 @@ func (s *IntegrationSuite) TestForceReloadUUID(c *check.C) {
 	var coll arvados.Collection
 	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]string{
-			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:oldfile\n",
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:empty_file\n",
 		},
 	})
 	c.Assert(err, check.IsNil)
 	defer client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
 
-	_, resp := s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", arvadostest.ActiveToken, nil)
+	_, resp := s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil)
 	c.Check(resp.Code, check.Equals, http.StatusNotFound)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/oldfile", arvadostest.ActiveToken, nil)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", arvadostest.ActiveToken, nil)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", arvadostest.ActiveToken, nil)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil)
 	c.Check(resp.Code, check.Equals, http.StatusNotFound)
 	err = client.RequestAndDecode(&coll, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 		"collection": map[string]string{
-			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:oldfile 0:0:newfile\n",
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:different_empty_file\n",
 		},
 	})
 	c.Assert(err, check.IsNil)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", arvadostest.ActiveToken, nil)
-	c.Check(resp.Code, check.Equals, http.StatusNotFound)
-	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", "", http.Header{
+	// Before we set the force-reload header, the cached version
+	// with empty_file is still accessible.
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", arvadostest.ActiveToken, nil)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	// If we set the force-reload header, we get the latest
+	// version and empty_file is gone.
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/empty_file", "", http.Header{
 		"Authorization": {"Bearer " + arvadostest.ActiveToken},
 		"Cache-Control": {"must-revalidate"},
 	})
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/different_empty_file", arvadostest.ActiveToken, nil)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 }
