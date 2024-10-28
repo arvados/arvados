@@ -49,11 +49,13 @@ UNION
 end
 
 def update_priorities starting_container_uuid
-  # Ensure the row locks were taken in order
-  row_lock_for_priority_update starting_container_uuid
+  Container.transaction do
+    # Ensure the row locks were taken in order
+    row_lock_for_priority_update starting_container_uuid
 
-  ActiveRecord::Base.connection.exec_query %{
+    ActiveRecord::Base.connection.exec_query %{
 update containers set priority=computed.upd_priority from container_tree_priorities($1) as computed
  where containers.uuid = computed.pri_container_uuid and priority != computed.upd_priority
 }, 'update_priorities', [starting_container_uuid]
+  end
 end
