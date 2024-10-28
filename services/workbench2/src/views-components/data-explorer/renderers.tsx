@@ -60,6 +60,8 @@ import { loadUsersPanel } from "store/users/users-actions";
 import { InlinePulser } from "components/loading/inline-pulser";
 import { ProcessTypeFilter } from "store/resource-type-filters/resource-type-filters";
 import { CustomTheme } from "common/custom-theme";
+import { getProperty } from "store/properties/properties";
+import { ClusterBadge } from "store/auth/cluster-badges";
 
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -472,36 +474,23 @@ export const TokenScopes = withResourceData("scopes", renderCommonData);
 
 export const TokenUserId = withResourceData("userId", renderCommonData);
 
-const clusterColors = [
-    ["#f44336", "#fff"],
-    ["#2196f3", "#fff"],
-    ["#009688", "#fff"],
-    ["#cddc39", "#fff"],
-    ["#ff9800", "#fff"],
-];
+export const ResourceCluster = connect((state: RootState, props: { uuid: string }) => {
+    const clusterId = props.uuid.slice(0, 5)
+    const clusterBadge = getProperty<ClusterBadge[]>('clusterBadges')(state.properties)?.find(badge => badge.text === clusterId);
+    // dark grey is default BG color
+    return clusterBadge || { text: clusterId, color: '#fff', backgroundColor: '#696969' };
+})(renderClusterBadge);
 
-export const ResourceCluster = (props: { uuid: string }) => {
-    const CLUSTER_ID_LENGTH = 5;
-    const pos = props.uuid.length > CLUSTER_ID_LENGTH ? props.uuid.indexOf("-") : 5;
-    const clusterId = pos >= CLUSTER_ID_LENGTH ? props.uuid.substring(0, pos) : "";
-    const ci =
-        pos >= CLUSTER_ID_LENGTH
-            ? ((props.uuid.charCodeAt(0) * props.uuid.charCodeAt(1) + props.uuid.charCodeAt(2)) * props.uuid.charCodeAt(3) +
-                  props.uuid.charCodeAt(4)) %
-              clusterColors.length
-            : 0;
-    return (
-        <span
-            style={{
-                backgroundColor: clusterColors[ci][0],
-                color: clusterColors[ci][1],
-                padding: "2px 7px",
-                borderRadius: 3,
-            }}
-        >
-            {clusterId}
-        </span>
-    );
+function renderClusterBadge(badge: ClusterBadge) {
+    
+    const style = {
+        backgroundColor: badge.backgroundColor,
+        color: badge.color,
+        padding: "2px 7px",
+        borderRadius: 3,
+    };
+
+    return <span style={style}>{badge.text}</span>
 };
 
 // Links Resources
