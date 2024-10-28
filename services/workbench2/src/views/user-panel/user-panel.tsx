@@ -135,14 +135,10 @@ export const UserPanel = compose(
                     <DataExplorer
                         id={USERS_PANEL_ID}
                         title={
-                            <>
-                                <Typography>
-                                    User records are created automatically on first log in.
-                                </Typography>
-                                <Typography>
-                                    To add a new user, add them to your configured log in provider.
-                                </Typography>
-                            </>}
+                            <Typography>
+                           User records are created automatically on first log in.
+                           To add a new user, add them to your configured log in provider.
+                            </Typography>}
                         onRowClick={noop}
                         onRowDoubleClick={noop}
                         onContextMenu={this.handleContextMenu}

@@ -50,9 +50,9 @@ type CssRules =
     | 'paginationLabel'
     | 'paginationRoot'
     | "subToolbarWrapper"
-    | 'runsToolbarWrapper' 
+    | 'runsToolbarWrapper'
     | 'searchResultsToolbar'
-    | 'progressWrapper' 
+    | 'progressWrapper'
     | 'progressWrapperNoTitle';
 
 const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -117,7 +117,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing(2),
         paddingTop: theme.spacing(2),
         fontSize: "18px",
-        flexGrow: 0,
+        flexGrow: 1,
         paddingRight: "10px",
     },
     progressWrapper: {
@@ -294,148 +294,149 @@ export const DataExplorer = withStyles(styles)(
                     key={path}
                     data-cy={this.props["data-cy"]}
                     >
-                    {title && this.state.isSearchResults && (
-                                <Grid
-                                    item
-                                    xs
-                                    className={classes.title}
-                                >
-                                    {title}
-
-                                </Grid>
-                            )}
                     <Grid
                         container
                         direction="column"
                         wrap="nowrap"
                         className={classes.container}
-                    >
-                        <div data-cy="title-wrapper" className={classNames(this.state.isSearchResults ? classes.searchResultsTitleWrapper : classes.titleWrapper)}>
-                            {title && !this.state.isSearchResults && (
-                                <Grid
-                                    item
-                                    xs
-                                    className={classes.title}
-                                >
-                                    {title}
-
-                                </Grid>
-                            )}
-                            {!this.state.hideToolbar && (this.multiSelectToolbarInTitle 
-                                ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} /> 
-                                : <MultiselectToolbar 
-                                    forceMultiSelectMode={forceMultiSelectMode} 
-                                    injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
-                            }
-                            {(!hideColumnSelector || !hideSearchInput || !!actions) && (
-                                <Grid
-                                    className={classes.headerMenu}
-                                    item
-                                    xs
-                                >
-                                    <Toolbar className={classes.toolbar}>
-                                        <Grid container justifyContent="space-between" wrap="nowrap" alignItems="center">
-                                            {!hideSearchInput && (
-                                                <div className={classes.searchBox}>
-                                                    {!hideSearchInput && (
-                                                        <SearchInput
-                                                            label={searchLabel}
-                                                            value={searchValue}
-                                                            selfClearProp={""}
-                                                            onSearch={onSearch}
-                                                        />
-                                                    )}
-                                                </div>
-                                            )}
-                                            {actions}
-                                            {!hideColumnSelector && (
-                                                <ColumnSelector
-                                                    columns={columns}
-                                                    onColumnToggle={onColumnToggle}
-                                                />
-                                            )}
-                                        </Grid>
-                                        {doUnMaximizePanel && panelMaximized && (
-                                            <Tooltip
-                                                title={`Unmaximize ${panelName || "panel"}`}
-                                                disableFocusListener
-                                            >
-                                                <IconButton onClick={doUnMaximizePanel} size="large">
-                                                    <UnMaximizeIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                        {doMaximizePanel && !panelMaximized && (
-                                            <Tooltip
-                                                title={`Maximize ${panelName || "panel"}`}
-                                                disableFocusListener
-                                            >
-                                                <IconButton onClick={doMaximizePanel} size="large">
-                                                    <MaximizeIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                        {doHidePanel && (
-                                            <Tooltip
-                                                title={`Close ${panelName || "panel"}`}
-                                                disableFocusListener
-                                            >
-                                                <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
-                                                    <CloseIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                    </Toolbar>
-                                </Grid>
-                            )}
-                            
-                        </div>
-                        <Grid
-                            item
-                            className={classes.dataTable}
-                        >
-                            {!!progressBar &&
-                                <div className={classNames({
-                                    [classes.progressWrapper]: true,
-                                    [classes.progressWrapperNoTitle]: !title,
-                                })}>{progressBar}</div>
-                            }
-                            <DataTable
-                                columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
-                                items={items}
-                                onRowClick={(_, item: T) => onRowClick(item)}
-                                onContextMenu={onContextMenu}
-                                onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}
-                                onFiltersChange={onFiltersChange}
-                                onSortToggle={onSortToggle}
-                                extractKey={extractKey}
-                                defaultViewIcon={defaultViewIcon}
-                                defaultViewMessages={defaultViewMessages}
-                                currentRoute={path}
-                                toggleMSToolbar={toggleMSToolbar}
-                                setCheckedListOnStore={setCheckedListOnStore}
-                                checkedList={checkedList}
-                                selectedResourceUuid={selectedResourceUuid}
-                                setSelectedUuid={this.props.setSelectedUuid}
-                                currentRouteUuid={this.props.currentRouteUuid}
-                                working={working}
-                                isNotFound={this.props.isNotFound}
-                                detailsPanelResourceUuid={detailsPanelResourceUuid}
-                                loadDetailsPanel={loadDetailsPanel}
-                            />
-                        </Grid>
+                >
+                    {title && this.state.isSearchResults && (
                         <Grid
                             item
                             xs
+                            className={classes.title}
                         >
-                            <Toolbar className={classes.footer}>
-                                {elementPath && (
-                                    <Grid container>
-                                        <span data-cy="element-path">{elementPath.length > 2 ? elementPath : ''}</span>
-                                    </Grid>
+                            {title}
+
+                        </Grid>
+                    )}
+
+                <div data-cy="title-wrapper" className={classNames(this.state.isSearchResults ? classes.searchResultsTitleWrapper : classes.titleWrapper)}>
+                    {title && !this.state.isSearchResults && (
+                        <Grid
+                            item
+                            xs
+                            className={classes.title}
+                        >
+                            {title}
+
+                        </Grid>
+                    )}
+                    {!this.state.hideToolbar && (this.multiSelectToolbarInTitle
+                                               ? <MultiselectToolbar injectedStyles={classes.msToolbarStyles} />
+                                               : <MultiselectToolbar
+                                                     forceMultiSelectMode={forceMultiSelectMode}
+                                                     injectedStyles={classNames(panelName === 'Subprocesses' ? classes.subToolbarWrapper : panelName === 'Runs' ? classes.runsToolbarWrapper : '')}/>)
+                    }
+                    {(!hideColumnSelector || !hideSearchInput || !!actions) && (
+                        <Grid
+                            className={classes.headerMenu}
+                            item
+                            xs
+                        >
+                            <Toolbar className={classes.toolbar}>
+                                <Grid container justifyContent="space-between" wrap="nowrap" alignItems="center">
+                                    {!hideSearchInput && (
+                                        <div className={classes.searchBox}>
+                                            {!hideSearchInput && (
+                                                <SearchInput
+                                                    label={searchLabel}
+                                                    value={searchValue}
+                                                    selfClearProp={""}
+                                                    onSearch={onSearch}
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                    {actions}
+                                    {!hideColumnSelector && (
+                                        <ColumnSelector
+                                            columns={columns}
+                                            onColumnToggle={onColumnToggle}
+                                        />
+                                    )}
+                                </Grid>
+                                {doUnMaximizePanel && panelMaximized && (
+                                    <Tooltip
+                                        title={`Unmaximize ${panelName || "panel"}`}
+                                        disableFocusListener
+                                    >
+                                        <IconButton onClick={doUnMaximizePanel} size="large">
+                                            <UnMaximizeIcon />
+                                        </IconButton>
+                                    </Tooltip>
                                 )}
-                                <Grid
-                                    container={!elementPath}
+                                {doMaximizePanel && !panelMaximized && (
+                                    <Tooltip
+                                        title={`Maximize ${panelName || "panel"}`}
+                                        disableFocusListener
+                                    >
+                                        <IconButton onClick={doMaximizePanel} size="large">
+                                            <MaximizeIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                {doHidePanel && (
+                                    <Tooltip
+                                        title={`Close ${panelName || "panel"}`}
+                                        disableFocusListener
+                                    >
+                                        <IconButton disabled={panelMaximized} onClick={doHidePanel} size="large">
+                                            <CloseIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                            </Toolbar>
+                        </Grid>
+                    )}
+
+                </div>
+                <Grid
+                    item
+                    className={classes.dataTable}
+                >
+                    {!!progressBar &&
+                     <div className={classNames({
+                         [classes.progressWrapper]: true,
+                         [classes.progressWrapperNoTitle]: !title,
+                     })}>{progressBar}</div>
+                    }
+                    <DataTable
+                        columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
+                        items={items}
+                        onRowClick={(_, item: T) => onRowClick(item)}
+                        onContextMenu={onContextMenu}
+                        onRowDoubleClick={(_, item: T) => onRowDoubleClick(item)}
+                        onFiltersChange={onFiltersChange}
+                        onSortToggle={onSortToggle}
+                        extractKey={extractKey}
+                        defaultViewIcon={defaultViewIcon}
+                        defaultViewMessages={defaultViewMessages}
+                        currentRoute={path}
+                        toggleMSToolbar={toggleMSToolbar}
+                        setCheckedListOnStore={setCheckedListOnStore}
+                        checkedList={checkedList}
+                        selectedResourceUuid={selectedResourceUuid}
+                        setSelectedUuid={this.props.setSelectedUuid}
+                        currentRouteUuid={this.props.currentRouteUuid}
+                        working={working}
+                        isNotFound={this.props.isNotFound}
+                        detailsPanelResourceUuid={detailsPanelResourceUuid}
+                        loadDetailsPanel={loadDetailsPanel}
+                    />
+                </Grid>
+                <Grid
+                item
+                xs
+                >
+                <Toolbar className={classes.footer}>
+                {elementPath && (
+                    <Grid container>
+                        <span data-cy="element-path">{elementPath.length > 2 ? elementPath : ''}</span>
+                    </Grid>
+                )}
+                <Grid
+                container={!elementPath}
                                     justifyContent="flex-end"
                                 >
                                     {fetchMode === DataTableFetchMode.PAGINATED ? (
