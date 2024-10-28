@@ -1,7 +1,6 @@
 {
     "kind": "arvados#collectionList",
     "etag": "",
-    "self_link": "",
     "offset": 0,
     "limit": 100,
     "items": [

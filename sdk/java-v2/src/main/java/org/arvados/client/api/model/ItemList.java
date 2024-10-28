@@ -14,15 +14,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder({ "kind", "etag", "self_link", "offset", "limit", "items_available" })
+@JsonPropertyOrder({ "kind", "etag", "offset", "limit", "items_available" })
 public class ItemList {
 
     @JsonProperty("kind")
     private String kind;
     @JsonProperty("etag")
     private String etag;
-    @JsonProperty("self_link")
-    private String selfLink;
     @JsonProperty("offset")
     private Object offset;
     @JsonProperty("limit")
@@ -36,10 +34,6 @@ public class ItemList {
 
     public String getEtag() {
         return this.etag;
-    }
-
-    public String getSelfLink() {
-        return this.selfLink;
     }
 
     public Object getOffset() {
@@ -60,10 +54,6 @@ public class ItemList {
 
     public void setEtag(String etag) {
         this.etag = etag;
-    }
-
-    public void setSelfLink(String selfLink) {
-        this.selfLink = selfLink;
     }
 
     public void setOffset(Object offset) {
