@@ -6,7 +6,7 @@ import { ContextMenuKind } from 'views-components/context-menu/menu-item-sort';
 import { resourceUuidToContextMenuKind } from './context-menu-actions';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
-import { PROJECT_PANEL_CURRENT_UUID } from '../project-panel/project-panel-action';
+import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { GroupClass } from 'models/group';
 
 describe('context-menu-actions', () => {

@@ -30,7 +30,7 @@ import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from "st
 import { SubprocessProgressBar } from "components/subprocess-progress-bar/subprocess-progress-bar";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
-import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { getResource } from "store/resources/resources";
 
 export enum ProjectPanelRunColumnNames {

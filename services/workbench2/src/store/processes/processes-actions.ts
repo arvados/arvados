@@ -27,7 +27,7 @@ import { Resource, ResourceKind } from "models/resource";
 import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { getProcessPanelCurrentUuid } from "store/process-panel/process-panel";
-import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
+import { getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 
 export const loadContainers =
     (containerUuids: string[], loadMounts: boolean = true) =>

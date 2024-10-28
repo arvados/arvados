@@ -15,7 +15,7 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { getProperty } from 'store/properties/properties';
-import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
+import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { ArvadosTheme } from 'common/custom-theme';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';

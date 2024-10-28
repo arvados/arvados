@@ -16,7 +16,7 @@ import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { ContentsArguments, GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
-import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel-action";
+import { IS_PROJECT_PANEL_TRASHED, getProjectPanelCurrentUuid } from "store/project-panel/project-panel";
 import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "models/project";
