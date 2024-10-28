@@ -117,7 +117,7 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing(2),
         paddingTop: theme.spacing(2),
         fontSize: "18px",
-        flexGrow: 0,
+        flexGrow: 1,
         paddingRight: "10px",
     },
     progressWrapper: {
