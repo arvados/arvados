@@ -5,11 +5,10 @@
 import { ContextMenuActionNames } from "views-components/context-menu/context-menu-action-set";
 import { DeleteForever, ReRunProcessIcon, OutputIcon, RenameIcon, StopIcon } from "components/icon/icon";
 import { openCopyProcessDialog } from "store/processes/process-copy-actions";
-import { openRemoveProcessDialog } from "store/processes/processes-actions";
+import { openRemoveProcessDialog, cancelRunningWorkflow } from "store/processes/processes-actions";
 import { MultiSelectMenuAction, MultiSelectMenuActionSet, msCommonActionSet } from "./ms-menu-actions";
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
 import { msNavigateToOutput } from "store/multiselect/multiselect-actions";
-import { cancelRunningWorkflow } from "store/processes/processes-actions";
 
 const msCopyAndRerunProcess: MultiSelectMenuAction = {
     name: ContextMenuActionNames.COPY_AND_RERUN_PROCESS,
