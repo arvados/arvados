@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"sort"
 	"syscall"
 
@@ -61,6 +62,56 @@ func (s *copierSuite) TestEmptyOutput(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
 	c.Check(len(s.cp.files), check.Equals, 0)
+}
+
+func (s *copierSuite) TestEmptyWritableMount(c *check.C) {
+	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":""}`)
+	s.cp.mounts[s.cp.ctrOutputDir] = arvados.Mount{
+		Kind:     "collection",
+		Writable: true,
+	}
+
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Assert(err, check.IsNil)
+	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
+	c.Check(len(s.cp.files), check.Equals, 0)
+	rootdir, err := s.cp.staged.Open(".")
+	c.Assert(err, check.IsNil)
+	defer rootdir.Close()
+	fis, err := rootdir.Readdir(-1)
+	c.Assert(err, check.IsNil)
+	c.Check(fis, check.HasLen, 0)
+}
+
+func (s *copierSuite) TestOutputCollectionWithOnlySubmounts(c *check.C) {
+	s.writeFileInOutputDir(c, ".arvados#collection", `{"manifest_text":""}`)
+	s.cp.mounts[s.cp.ctrOutputDir] = arvados.Mount{
+		Kind:     "collection",
+		Writable: true,
+	}
+	s.cp.mounts[path.Join(s.cp.ctrOutputDir, "foo")] = arvados.Mount{
+		Kind:             "collection",
+		Path:             "foo",
+		PortableDataHash: arvadostest.FooCollectionPDH,
+	}
+
+	err := s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
+	c.Assert(err, check.IsNil)
+
+	// s.cp.dirs and s.cp.files are empty, because nothing needs
+	// to be copied from disk.
+	c.Check(s.cp.dirs, check.DeepEquals, []string(nil))
+	c.Check(len(s.cp.files), check.Equals, 0)
+
+	// The "foo" file has already been copied from FooCollection
+	// to s.cp.staged via Snapshot+Splice.
+	rootdir, err := s.cp.staged.Open(".")
+	c.Assert(err, check.IsNil)
+	defer rootdir.Close()
+	fis, err := rootdir.Readdir(-1)
+	c.Assert(err, check.IsNil)
+	c.Assert(fis, check.HasLen, 1)
+	c.Check(fis[0].Size(), check.Equals, int64(3))
 }
 
 func (s *copierSuite) TestRegularFilesAndDirs(c *check.C) {

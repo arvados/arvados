@@ -180,7 +180,6 @@ describe('renderers', () => {
                 "etag": "0000000000000000000000000",
                 "frozenByUuid": null,
                 "groupClass": "role",
-                "href": `/groups/${props.uuid}`,
                 "isTrashed": false,
                 "kind": ResourceKind.GROUP,
                 "modifiedAt": "2020-09-24T22:52:57.545669000Z",

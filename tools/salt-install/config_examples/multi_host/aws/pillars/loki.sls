@@ -49,7 +49,7 @@ loki:
         cache_location: {{ data_path }}/index_cache
         cache_ttl: 24h
       aws:
-        s3: s3://{{ aws_key_id }}:{{ aws_secret }}@{{ aws_region }}
+        s3: s3://{{ aws_key_id }}:{{ aws_secret | urlencode | regex_replace('/','%2F') }}@{{ aws_region }}
         bucketnames: {{ aws_s3_bucket }}
 
     schema_config:

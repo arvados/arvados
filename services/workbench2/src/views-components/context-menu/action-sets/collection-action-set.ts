@@ -16,6 +16,7 @@ import {
     Link,
     RestoreVersionIcon,
     FolderSharedIcon,
+    FileCopyOutlinedIcon,
 } from "components/icon/icon";
 import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
@@ -27,7 +28,7 @@ import { toggleCollectionTrashed } from "store/trash/trash-actions";
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { openDetailsPanel } from "store/details-panel/details-panel-action";
-import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { copyToClipboardAction, copyStringToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openRestoreCollectionVersionDialog } from "store/collections/collection-version-actions";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
@@ -63,6 +64,13 @@ const commonActionSet: ContextMenuActionSet = [
         },
         {
             icon: CopyIcon,
+            name: ContextMenuActionNames.COPY_UUID,
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyStringToClipboardAction(resources[0].uuid));
+            },
+        },
+        {
+            icon: FileCopyOutlinedIcon,
             name: ContextMenuActionNames.MAKE_A_COPY,
             execute: (dispatch, resources) => {
                 if (resources[0].fromContextMenu || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));

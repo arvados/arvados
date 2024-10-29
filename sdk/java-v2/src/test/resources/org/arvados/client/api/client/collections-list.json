@@ -1,12 +1,10 @@
 {
     "kind": "arvados#collectionList",
     "etag": "",
-    "self_link": "",
     "offset": 0,
     "limit": 100,
     "items": [
         {
-            "href": "/collections/112ci-4zz18-x6xfmvz0chnkzgv",
             "kind": "arvados#collection",
             "etag": "8xyiwnih5b5vzmj5sa33348a7",
             "uuid": "112ci-4zz18-x6xfmvz0chnkzgv",
@@ -27,7 +25,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-p51w7z3fpopo6sm",
             "kind": "arvados#collection",
             "etag": "8cmhep8aixe4p42pxjoct5502",
             "uuid": "112ci-4zz18-p51w7z3fpopo6sm",
@@ -48,7 +45,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-xb6gf2yraln7cwa",
             "kind": "arvados#collection",
             "etag": "de2ol2dyvsba3mn46al760cyg",
             "uuid": "112ci-4zz18-xb6gf2yraln7cwa",
@@ -69,7 +65,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-r5jfktpn3a9o0ap",
             "kind": "arvados#collection",
             "etag": "dby68gd0vatvi090cu0axvtq3",
             "uuid": "112ci-4zz18-r5jfktpn3a9o0ap",
@@ -90,7 +85,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-nqxk8xjn6mtskzt",
             "kind": "arvados#collection",
             "etag": "2b34uzau862w862a2rv36agv6",
             "uuid": "112ci-4zz18-nqxk8xjn6mtskzt",
@@ -111,7 +105,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-rs9bcf5qnyfjrkm",
             "kind": "arvados#collection",
             "etag": "60aywazztwfspnasltufcjxpa",
             "uuid": "112ci-4zz18-rs9bcf5qnyfjrkm",
@@ -132,7 +125,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-af656lee4kv7q2m",
             "kind": "arvados#collection",
             "etag": "1jward6snif3tsjzftxh8hvwh",
             "uuid": "112ci-4zz18-af656lee4kv7q2m",
@@ -153,7 +145,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-y2zqix7k9an7nro",
             "kind": "arvados#collection",
             "etag": "zs2n4zliu6nb5yk3rw6h5ugw",
             "uuid": "112ci-4zz18-y2zqix7k9an7nro",
@@ -174,7 +165,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-wq77jfi62u5i4rv",
             "kind": "arvados#collection",
             "etag": "eijhemzgy44ofmu0dtrowl604",
             "uuid": "112ci-4zz18-wq77jfi62u5i4rv",
@@ -195,7 +185,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-unaeckkjgeg7ui0",
             "kind": "arvados#collection",
             "etag": "1oq7ye0gfbf3ih6y864w3n683",
             "uuid": "112ci-4zz18-unaeckkjgeg7ui0",
@@ -216,7 +205,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-5y6atonkxq55lms",
             "kind": "arvados#collection",
             "etag": "4qmqlro878yx8q7ikhilo8qwn",
             "uuid": "112ci-4zz18-5y6atonkxq55lms",
@@ -237,7 +225,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-b3fjqd01pxjvseo",
             "kind": "arvados#collection",
             "etag": "91v698hngoz241c38bbmh0ogc",
             "uuid": "112ci-4zz18-b3fjqd01pxjvseo",
@@ -258,7 +245,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-cwfxl8h41q18n65",
             "kind": "arvados#collection",
             "etag": "215t842ckrrgjpxrxr4j0gsui",
             "uuid": "112ci-4zz18-cwfxl8h41q18n65",
@@ -279,7 +265,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-uv4xu08739tn1vy",
             "kind": "arvados#collection",
             "etag": "90z6i3oqv197osng3wvjjir3t",
             "uuid": "112ci-4zz18-uv4xu08739tn1vy",
@@ -300,7 +285,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-pzisn8c5mefzczv",
             "kind": "arvados#collection",
             "etag": "5lcf6wvc3wypwobswdz22wen",
             "uuid": "112ci-4zz18-pzisn8c5mefzczv",
@@ -321,7 +305,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-mj24uwtnqqrno27",
             "kind": "arvados#collection",
             "etag": "98s08xew49avui1gy3mzit8je",
             "uuid": "112ci-4zz18-mj24uwtnqqrno27",
@@ -342,7 +325,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-oco162516upgqng",
             "kind": "arvados#collection",
             "etag": "a09wnvl4i51xqx7u9yf4qbi94",
             "uuid": "112ci-4zz18-oco162516upgqng",
@@ -363,7 +345,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-tlze7dgczsdwkep",
             "kind": "arvados#collection",
             "etag": "4ee2xudbc5rkr597drgu9tg10",
             "uuid": "112ci-4zz18-tlze7dgczsdwkep",
@@ -384,7 +365,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-nq0kxi9d7w64la1",
             "kind": "arvados#collection",
             "etag": "5aa3evnbceo3brnps2e1sq8ts",
             "uuid": "112ci-4zz18-nq0kxi9d7w64la1",
@@ -405,7 +385,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-fks9mewtw155pvx",
             "kind": "arvados#collection",
             "etag": "97vicgogv8bovmk4s2jymsdq",
             "uuid": "112ci-4zz18-fks9mewtw155pvx",
@@ -426,7 +405,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-kp356e0q2wdl2df",
             "kind": "arvados#collection",
             "etag": "btktwjclv063s1rd6duvk51v3",
             "uuid": "112ci-4zz18-kp356e0q2wdl2df",
@@ -447,7 +425,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-0ey8ob38xf7surq",
             "kind": "arvados#collection",
             "etag": "bob83na42pufqli1a5buxryvm",
             "uuid": "112ci-4zz18-0ey8ob38xf7surq",
@@ -468,7 +445,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-wu2n0fv3cewna1n",
             "kind": "arvados#collection",
             "etag": "7pl1x327eeutqtsjppdj284g8",
             "uuid": "112ci-4zz18-wu2n0fv3cewna1n",
@@ -489,7 +465,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-hyybo6yuvkx4hrm",
             "kind": "arvados#collection",
             "etag": "2wg1wn2o18ubrgbhbqwwsslhf",
             "uuid": "112ci-4zz18-hyybo6yuvkx4hrm",
@@ -510,7 +485,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-h3gjq7gzd4syanw",
             "kind": "arvados#collection",
             "etag": "8jk0at4e69cwjyjamvm4wz2oj",
             "uuid": "112ci-4zz18-h3gjq7gzd4syanw",
@@ -531,7 +505,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-jinwyyaeigjs1yg",
             "kind": "arvados#collection",
             "etag": "be57zhzufz2hp1tbdwidoro5j",
             "uuid": "112ci-4zz18-jinwyyaeigjs1yg",
@@ -552,7 +525,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-etf8aghyxlfxvo1",
             "kind": "arvados#collection",
             "etag": "29lj2roie4cygo5ffgrduflly",
             "uuid": "112ci-4zz18-etf8aghyxlfxvo1",
@@ -573,7 +545,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-jtbn4edpkkhbm9b",
             "kind": "arvados#collection",
             "etag": "6div78e1nhusii4x1xkp3rg2v",
             "uuid": "112ci-4zz18-jtbn4edpkkhbm9b",
@@ -594,7 +565,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-whdleimp34hiqp6",
             "kind": "arvados#collection",
             "etag": "12wlbsxlmy3sze4v2m0ua7ake",
             "uuid": "112ci-4zz18-whdleimp34hiqp6",
@@ -615,7 +585,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-kj8dz72zpo5kbtm",
             "kind": "arvados#collection",
             "etag": "9bv1bw9afb3w84gu55uzcgd6h",
             "uuid": "112ci-4zz18-kj8dz72zpo5kbtm",
@@ -636,7 +605,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-tr306nau9hrr437",
             "kind": "arvados#collection",
             "etag": "683d77tvlhe97etk9bk2bx8ds",
             "uuid": "112ci-4zz18-tr306nau9hrr437",
@@ -657,7 +625,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-oxuk69569mxztp0",
             "kind": "arvados#collection",
             "etag": "1m34v9jbna2v7gv7auio54i8w",
             "uuid": "112ci-4zz18-oxuk69569mxztp0",
@@ -678,7 +645,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-wf8sl6xbyfwjyer",
             "kind": "arvados#collection",
             "etag": "7l2a9fhqmxg7ghn7osx0s19v4",
             "uuid": "112ci-4zz18-wf8sl6xbyfwjyer",
@@ -699,7 +665,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-drpia2es1hp9ydi",
             "kind": "arvados#collection",
             "etag": "33dw426fhs2vlb50b6301ukn0",
             "uuid": "112ci-4zz18-drpia2es1hp9ydi",
@@ -720,7 +685,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-5b4px2i2dwyidfi",
             "kind": "arvados#collection",
             "etag": "2437tnhn2gmti52lpm8nfq9ct",
             "uuid": "112ci-4zz18-5b4px2i2dwyidfi",
@@ -741,7 +705,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-94oslnwnxe1f9wp",
             "kind": "arvados#collection",
             "etag": "7e0k48zu93o57zudxjp1yrgjq",
             "uuid": "112ci-4zz18-94oslnwnxe1f9wp",
@@ -762,7 +725,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-2fk0d5d4jjc1fmq",
             "kind": "arvados#collection",
             "etag": "cuirr803f54e89reakuq50oaq",
             "uuid": "112ci-4zz18-2fk0d5d4jjc1fmq",
@@ -783,7 +745,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-xp9pu81xyc5h422",
             "kind": "arvados#collection",
             "etag": "3bi5xd8ezxrazk5266cwzn4s4",
             "uuid": "112ci-4zz18-xp9pu81xyc5h422",
@@ -804,7 +765,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-znb4lo0if2as58c",
             "kind": "arvados#collection",
             "etag": "59uaoxy6uh82i6lrvr3ht8gz1",
             "uuid": "112ci-4zz18-znb4lo0if2as58c",
@@ -825,7 +785,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-6pvl5ea5u932qzi",
             "kind": "arvados#collection",
             "etag": "dksrh8jznxoaidl29i1vv5904",
             "uuid": "112ci-4zz18-6pvl5ea5u932qzi",
@@ -846,7 +805,6 @@
             "is_trashed": false
         },
         {
-            "href": "/collections/112ci-4zz18-wq5pyrxfv1t9isu",
             "kind": "arvados#collection",
             "etag": "1w1rhhd6oql4ceb7h9t16sf0q",
             "uuid": "112ci-4zz18-wq5pyrxfv1t9isu",

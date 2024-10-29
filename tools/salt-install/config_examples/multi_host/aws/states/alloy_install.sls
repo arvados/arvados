@@ -5,12 +5,19 @@
 {%- set alloy = pillar.get('alloy', {'enabled': False}) %}
 
 {%- if alloy.enabled %}
+extra_grafana_package_repo:
+  pkgrepo.managed:
+    - humanname: grafana_official
+    - name: deb https://apt.grafana.com/ stable main
+    - file: /etc/apt/sources.list.d/grafana.list
+    - key_url: https://apt.grafana.com/gpg.key
+
 extra_install_alloy:
   pkg.installed:
     - name: {{ alloy.package }}
     - refresh: true
     - require:
-      - pkgrepo: grafana-package-repo-install-pkgrepo-managed
+      - pkgrepo: extra_grafana_package_repo
 
 extra_alloy_config:
   file.managed:

@@ -19,6 +19,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { AuthService } from "services/auth-service/auth-service";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import jsSHA from "jssha";
+import { initClusterBadges } from "store/auth/cluster-badges";
 
 const getClusterConfig = async (origin: string, apiClient: AxiosInstance): Promise<Config | null> => {
     let configFromDD: Config | undefined;
@@ -316,6 +317,7 @@ export const initSessions = (authService: AuthService, config: Config, user: Use
         const sessions = authService.buildSessions(config, user);
         dispatch(authActions.SET_SESSIONS(sessions));
         dispatch(validateSessions(authService.getApiClient()));
+        dispatch(initClusterBadges(sessions));
     };
 
 export const loadSiteManagerPanel = () =>

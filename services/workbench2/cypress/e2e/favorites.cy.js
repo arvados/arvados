@@ -111,9 +111,7 @@ describe('Favorites tests', function () {
                 cy.loginAs(activeUser);
 
                 cy.contains(testCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Move to').click();
-                });
+                cy.get('[data-cy="Move to"]').click();
 
                 cy.get('[data-cy=form-dialog]').within(function () {
                     // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
@@ -128,8 +126,9 @@ describe('Favorites tests', function () {
                     cy.get('[data-cy=form-submit-btn]').click();
                 });
 
-                cy.goToPath(`/projects/${mySharedWritableProject.uuid}`);
-                cy.get('main').contains(testCollection.name);
+                cy.visit(`/projects/${mySharedWritableProject.uuid}`).then(() => {
+                    cy.get('main').contains(testCollection.name);
+                });
             });
     });
 
@@ -284,9 +283,9 @@ describe('Favorites tests', function () {
                 cy.contains('Add to favorites').click();
 
                 //add two projects to public favorites
-                cy.get('[data-cy=side-panel-tree]').contains('myPublicFavoriteProject1').rightclick();
+                cy.get('[data-cy=data-table]').contains('myPublicFavoriteProject1').rightclick();
                 cy.contains('Add to public favorites').click();
-                cy.get('[data-cy=side-panel-tree]').contains('myPublicFavoriteProject2').rightclick();
+                cy.get('[data-cy=data-table]').contains('myPublicFavoriteProject2').rightclick();
                 cy.contains('Add to public favorites').click();
 
                 //close "Home Projects", which is open by default

@@ -67,6 +67,10 @@ Options:
       The dns resolver for the machine (default: host's network provided)
   --reposuffix <suffix>
       Set this to "-dev" to track the unstable/dev Arvados repositories
+  --pin-packages, --no-pin-packages
+      These flags determine whether or not to configure apt pins for Arvados
+      and third-party packages it depends on. By default packages are pinned
+      unless you set \`--reposuffix -dev\`.
   --public-key-file <path>
       Path to the public key file that a-d-c will use to log into the compute node (required)
   --mksquashfs-mem (default: 256M)
@@ -101,12 +105,13 @@ DEBUG=
 SSH_USER=
 WORKDIR=
 AWS_DEFAULT_REGION=us-east-1
+PIN_PACKAGES=
 PUBLIC_KEY_FILE=
 MKSQUASHFS_MEM=256M
 NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,workdir:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,workdir:,resolver:,reposuffix:,pin-packages,no-pin-packages,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -188,6 +193,12 @@ while [ $# -gt 0 ]; do
             ;;
         --reposuffix)
             REPOSUFFIX="$2"; shift
+            ;;
+        --pin-packages)
+            PIN_PACKAGES=true
+            ;;
+        --no-pin-packages)
+            PIN_PACKAGES=false
             ;;
         --public-key-file)
             PUBLIC_KEY_FILE="$2"; shift
@@ -314,6 +325,13 @@ fi
 if [[ -n "$REPOSUFFIX" ]]; then
   EXTRA2+=" -var reposuffix=$REPOSUFFIX"
 fi
+if [[ -z "$PIN_PACKAGES" ]]; then
+    case "$REPOSUFFIX" in
+        -dev) PIN_PACKAGES=false ;;
+        *) PIN_PACKAGES=true ;;
+    esac
+fi
+EXTRA2+=" -var pin_packages=$PIN_PACKAGES"
 if [[ -n "$PUBLIC_KEY_FILE" ]]; then
   EXTRA2+=" -var public_key_file=$PUBLIC_KEY_FILE"
 fi

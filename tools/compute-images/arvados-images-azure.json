@@ -13,6 +13,7 @@
     "mksquashfs_mem": "",
     "nvidia_gpu_support": "",
     "reposuffix": "",
+    "pin_packages": "true",
     "resolver": "",
     "resource_group": null,
     "ssh_private_key_file": "{{env `PACKERPRIVKEY`}}",
@@ -54,6 +55,10 @@
     "destination": "/{{user `workdir`}}/1078ECD7.asc"
   },{
     "type": "file",
+    "source": "scripts/etc-apt-preferences.d-arvados.pref",
+    "destination": "{{user `workdir`}}/etc-apt-preferences.d-arvados.pref"
+  },{
+    "type": "file",
     "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
     "destination": "/{{user `workdir`}}/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
@@ -76,6 +81,14 @@
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=azure","WORKDIR={{user `workdir`}}"]
+    "environment_vars": [
+        "RESOLVER={{user `resolver`}}",
+        "REPOSUFFIX={{user `reposuffix`}}",
+        "MKSQUASHFS_MEM={{user `mksquashfs_mem`}}",
+        "NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}",
+        "CLOUD=azure",
+        "GOVERSION={{user `goversion`}}",
+        "WORKDIR={{user `workdir`}}"
+    ]
   }]
 }

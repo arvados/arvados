@@ -17,7 +17,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonPropertyOrder({ "email", "username", "full_name", "first_name", "last_name", "identity_url", "is_active", "is_admin", "is_invited", 
-    "prefs", "writable_by", "default_owner_uuid" })
+    "prefs", "writable_by" })
 public class User extends Item {
 
     @JsonProperty("email")

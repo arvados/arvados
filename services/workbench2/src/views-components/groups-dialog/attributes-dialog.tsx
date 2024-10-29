@@ -63,7 +63,7 @@ export const GroupAttributesDialog = compose(
     );
 
 const attributes = (group: GroupResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, deleteAt, description, etag, href, isTrashed, trashAt} = group;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByUserUuid, name, deleteAt, description, etag, isTrashed, trashAt} = group;
     return (
         <span>
             <Grid container direction="row">
@@ -77,7 +77,6 @@ const attributes = (group: GroupResource, classes: any) => {
                     {deleteAt && <Grid item>Delete at</Grid>}
                     {description && <Grid item>Description</Grid>}
                     {etag && <Grid item>Etag</Grid>}
-                    {href && <Grid item>Href</Grid>}
                     {isTrashed && <Grid item>Is trashed</Grid>}
                     {trashAt && <Grid item>Trashed at</Grid>}
                 </Grid>
@@ -91,7 +90,6 @@ const attributes = (group: GroupResource, classes: any) => {
                     <Grid item>{deleteAt}</Grid>
                     <Grid item>{description}</Grid>
                     <Grid item>{etag}</Grid>
-                    <Grid item>{href}</Grid>
                     <Grid item>{isTrashed}</Grid>
                     <Grid item>{trashAt}</Grid>
                 </Grid>

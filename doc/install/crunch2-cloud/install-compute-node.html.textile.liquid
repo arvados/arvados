@@ -18,9 +18,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Create an SSH keypair":#sshkeypair
 # "Compute image requirements":#requirements
 # "The build script":#building
-# "DNS resolution":#dns-resolution
-# "NVIDIA GPU support":#nvidia
-# "Singularity mksquashfs configuration":#singularity_mksquashfs_configuration
+## "DNS resolution":#dns-resolution
+## "NVIDIA GPU support":#nvidia
+## "Singularity mksquashfs configuration":#singularity_mksquashfs_configuration
+## "apt package version pins":#apt-pins
 # "Build an AWS image":#aws
 ## "Autoscaling compute node scratch space":#aws-ebs-autoscaler
 # "Build an Azure image":#azure
@@ -130,12 +131,16 @@ Options:
       Azure SKU image to use
   --ssh_user &lt;user&gt; (default: packer)
       The user packer will use to log into the image
-  --workdir <path> (default: /tmp)
+  --workdir &lt;path&gt; (default: /tmp)
       The directory where data files are staged and setup scripts are run
   --resolver &lt;resolver_IP&gt;
       The dns resolver for the machine (default: host's network provided)
   --reposuffix &lt;suffix&gt;
       Set this to "-dev" to track the unstable/dev Arvados repositories
+  --pin-packages, --no-pin-packages
+      These flags determine whether or not to configure apt pins for Arvados
+      and third-party packages it depends on. By default packages are pinned
+      unless you set `--reposuffix -dev`.
   --public-key-file &lt;path&gt;
       Path to the public key file that a-d-c will use to log into the compute node (required)
   --mksquashfs-mem (default: 256M)
@@ -146,7 +151,9 @@ Options:
       Output debug information (default: no debug output is printed)
 </code></pre></notextile>
 
-h2(#dns-resolution). DNS resolution
+The following sections highlight common configuration settings with more information.
+
+h3(#dns-resolution). DNS resolution
 
 Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses.  If you are on AWS and using Route 53 for your DNS, the default resolver configuration can be used with no extra options.
 
@@ -161,15 +168,21 @@ As a third option, the services could be hardcoded into an @/etc/hosts@ file. Fo
 
 Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.
 
-h2(#nvidia). NVIDIA GPU support
+h3(#nvidia). NVIDIA GPU support
 
 If you plan on using instance types with NVIDIA GPUs, add @--nvidia-gpu-support@ to the build command line.  Arvados uses the same compute image for both GPU and non-GPU instance types.  The GPU tooling is ignored when using the image with a non-GPU instance type.
 
+{% assign mksquashfs_header = "h3" %}
 {% assign show_docker_warning = true %}
-
 {% include 'singularity_mksquashfs_configuration' %}
 
 The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to "the build script":#building. It defaults to @256M@.
+
+h3(#apt-pins). apt package version pins
+
+By default, unless your image uses development packages with @--reposuffix -dev@, the build script configures apt with version pins for Arvados and third-party packages it depends on. This ensures that everything apt installs has been tested and is known to work with your version of Arvados. The version pins have some flexibility to allow apt to install security updates and other changes that are unlikely to interfere with Arvados.
+
+You can explicitly control whether or not these version pins are configured with the @--pin-packages@ and @--no-pin-packages@ flags. You should only need to use these flags if you are doing development work on the compute image and specifically want to test compatibility with different versions.
 
 h2(#aws). Build an AWS image
 
@@ -191,9 +204,7 @@ The @VPC@ and @Subnet@ should be configured for where you want the compute image
            --aws-subnet-id Subnet \
            --ssh_user admin \
            --public-key-file ArvadosDispatchCloudPublicKeyPath
-</span>
-</code></pre></notextile>
-
+</span></code></pre></notextile>
 
 h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
@@ -242,8 +253,7 @@ h2(#azure). Build an Azure image
            --azure-secrets-file AzureSecretsFilePath \
            --resolver ResolverIP \
            --public-key-file ArvadosDispatchCloudPublicKeyPath
-</span>
-</code></pre></notextile>
+</span></code></pre></notextile>
 
 For @ClusterID@, fill in your cluster ID. The @ResourceGroup@ and @AzureRegion@ (e.g. 'eastus2') should be configured for where you want the compute image to be generated and stored. The @AzureSKU@ is the SKU of the base image to be used, e.g. '18.04-LTS' for Ubuntu 18.04.
 

@@ -233,16 +233,17 @@ describe("Project tests", function () {
         const msButtonTooltips = [
             'View details',
             'Open in new tab',
+            'Copy UUID',
+            'Share',
+            'Edit project',
+            'Move to trash',
+            'New project',
+            'Move to',
+            'Freeze project',
+            'Add to favorites',
             'Copy link to clipboard',
             'Open with 3rd party client',
             'API Details',
-            'Share',
-            'New project',
-            'Edit project',
-            'Move to',
-            'Move to trash',
-            'Freeze project',
-            'Add to favorites',
         ];
 
         cy.loginAs(activeUser);

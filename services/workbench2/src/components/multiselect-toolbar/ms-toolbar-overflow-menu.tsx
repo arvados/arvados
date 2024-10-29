@@ -31,8 +31,11 @@ const styles: CustomStyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
         marginTop: 0,
         paddingTop: 0,
-        paddingLeft: '1rem',
+        paddingLeft: '0.5rem',
         height: '2.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
     },
     menuElement: {
         width: '2rem',
@@ -89,15 +92,23 @@ export const OverflowMenu = withStyles(styles)((props: OverflowMenuProps & WithS
             >
                 {React.Children.map(children, (child: any) => {
                     if (!visibilityMap[child.props['data-targetid']]) {
-                        return <MenuItem
-                                   key={child}
-                                   onClick={handleClose}
-                                   className={classes.menuItem}
-                               >
-                            {React.cloneElement(child, {
-                                className: classnames(classes.menuElement),
-                            })}
-                        </MenuItem>
+                        return (
+                            <Tooltip
+                                title={child.props['data-title']}
+                                key={child.props['data-targetid']}
+                                disableFocusListener
+                                placement='left-start'
+                            >
+                                <MenuItem
+                                    key={child}
+                                    onClick={handleClose}
+                                    className={classes.menuItem}
+                                    >
+                                    {React.cloneElement(child, {
+                                        className: classnames(classes.menuElement),
+                                    })}
+                                </MenuItem>
+                        </Tooltip>)
                     }
                     return null;
                 })}

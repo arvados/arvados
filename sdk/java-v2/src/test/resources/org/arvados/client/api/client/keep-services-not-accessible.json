@@ -1,7 +1,6 @@
 {
     "kind": "arvados#keepServiceList",
     "etag": "",
-    "self_link": "",
     "offset": null,
     "limit": null,
     "items": [],

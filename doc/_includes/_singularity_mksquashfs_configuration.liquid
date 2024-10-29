@@ -4,7 +4,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2(#singularity_mksquashfs_configuration). Singularity mksquashfs configuration
+{{ mksquashfs_header|default: "h2" }}(#singularity_mksquashfs_configuration). Singularity mksquashfs configuration
 
 {% if show_docker_warning != nil %}
 {% include 'notebox_begin_warning' %}

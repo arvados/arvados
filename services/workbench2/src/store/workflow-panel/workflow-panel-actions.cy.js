@@ -51,7 +51,6 @@ describe('workflow-panel-actions', () => {
             createdAt: "",
             modifiedByUserUuid: "",
             modifiedAt: "",
-            href: "",
             etag: ""
         }];
         axiosMock
