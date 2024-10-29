@@ -58,7 +58,7 @@ describe("Process tests", function () {
                 'Open in new tab',
                 'Copy UUID',
                 'Copy and re-run process',
-                'CANCEL',
+                'Cancel',
                 'Edit process',
                 'Remove',
                 'Outputs',

@@ -13,7 +13,7 @@ export enum ContextMenuActionNames {
     ADD_TO_PUBLIC_FAVORITES = 'Add to public favorites',
     ATTRIBUTES = 'Attributes',
     API_DETAILS = 'API Details',
-    CANCEL = 'CANCEL',
+    CANCEL = 'Cancel',
     COPY_AND_RERUN_PROCESS = 'Copy and re-run process',
     COPY_ITEM_INTO_EXISTING_COLLECTION = 'Copy item into existing collection',
     COPY_ITEM_INTO_NEW_COLLECTION = 'Copy item into new collection',
