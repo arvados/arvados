@@ -9,7 +9,7 @@ import { updateResources } from "store/resources/resources-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { projectPanelRunActions } from "store/project-panel/project-panel-action-bind";
-import { navigateToRootProject, navigateToRunProcess } from "store/navigation/navigation-action";
+import { navigateTo, navigateToRunProcess } from "store/navigation/navigation-action";
 import { goToStep, runProcessPanelActions } from "store/run-process-panel/run-process-panel-actions";
 import { getResource } from "store/resources/resources";
 import { initialize } from "redux-form";
@@ -329,7 +329,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
             if (currentProcessPanelUuid) {
                 const currentProcessDeleted = succeeded.find((promiseResult) => promiseResult.value.uuid === currentProcessPanelUuid);
                 if (currentProcessDeleted) {
-                    dispatch<any>(navigateToRootProject);
+                    dispatch<any>(navigateTo(currentProcessDeleted.value.ownerUuid));
                 }
             }
 
