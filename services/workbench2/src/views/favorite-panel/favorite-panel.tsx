@@ -38,7 +38,7 @@ import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { getProperty } from 'store/properties/properties';
-import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
+import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel";
 import { CollectionResource } from 'models/collection';
 import { toggleOne, deselectAllOthers } from 'store/multiselect/multiselect-actions';
 

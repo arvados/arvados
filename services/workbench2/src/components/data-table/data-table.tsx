@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { CustomStyleRulesCallback } from 'common/custom-theme';
+import { CustomStyleRulesCallback, CustomTheme, ArvadosTheme } from 'common/custom-theme';
 import {
     Table,
     TableBody,
@@ -20,17 +20,13 @@ import classnames from "classnames";
 import { DataColumn, DataColumns, SortDirection } from "./data-column";
 import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
 import { DataTableFilters } from "../data-table-filters/data-table-filters";
-import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { DataTableMultiselectPopover, DataTableMultiselectOption } from "components/data-table-multiselect-popover/data-table-multiselect-popover";
 import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
-import { countNodes, getTreeDirty } from "models/tree";
-import { IconType } from "components/icon/icon";
+import { countNodes, getTreeDirty, createTree } from "models/tree";
+import { IconType, PendingIcon } from "components/icon/icon";
 import { SvgIconProps } from "@mui/material/SvgIcon";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import { createTree } from "models/tree";
-import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 import { isExactlyOneSelected } from "store/multiselect/multiselect-actions";
-import { PendingIcon } from "components/icon/icon";
-import { CustomTheme, ArvadosTheme } from "common/custom-theme";
 
 export enum DataTableFetchMode {
     PAGINATED,
