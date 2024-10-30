@@ -33,6 +33,7 @@ describe("Collection panel tests", function () {
         const msButtonTooltips = [
             'View details',
             'Open in new tab',
+            'Copy UUID',
             'Share',
             'Edit collection',
             'Move to trash',
