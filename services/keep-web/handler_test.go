@@ -2472,6 +2472,7 @@ func (s *IntegrationSuite) TestDepthHeader(c *check.C) {
 		req, err := http.NewRequest(trial.method, base+trial.path, strings.NewReader(""))
 		c.Assert(err, check.IsNil)
 		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+		req.Header.Set("Cache-Control", "must-revalidate")
 		if trial.destination != "" {
 			req.Header.Set("Destination", base+trial.destination)
 		}
