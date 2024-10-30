@@ -57,6 +57,7 @@ export enum ContextMenuKind {
     USER_DETAILS = "UserDetails",
     VIRTUAL_MACHINE = "VirtualMachine",
     WORKFLOW = "Workflow",
+    WRITEABLE_COLLECTION = "WriteableCollection",
     WRITEABLE_PROJECT = "WriteableProject",
 }
 
@@ -157,6 +158,7 @@ const kindToOrder: Record<string, ContextMenuActionNames[]> = {
     [ContextMenuKind.COLLECTION]: collectionOrder,
     [ContextMenuKind.COLLECTION_ADMIN]: collectionOrder,
     [ContextMenuKind.READONLY_COLLECTION]: collectionOrder,
+    [ContextMenuKind.WRITEABLE_COLLECTION]: collectionOrder,
     [ContextMenuKind.OLD_VERSION_COLLECTION]: collectionOrder,
 
     [ContextMenuKind.WORKFLOW]: workflowOrder,

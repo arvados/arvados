@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { MultiSelectMenuActionSet } from 'views-components/multiselect-toolbar/ms-menu-actions';
-import { msCollectionActionSet, msCommonCollectionActionFilter, msReadOnlyCollectionActionFilter } from 'views-components/multiselect-toolbar/ms-collection-action-set';
+import { msCollectionActionSet, msCommonCollectionActionFilter, msReadOnlyCollectionActionFilter, msWriteableCollectionActionFilter } from 'views-components/multiselect-toolbar/ms-collection-action-set';
 import {
     msProjectActionSet,
     msCommonProjectActionFilter,
@@ -25,6 +25,7 @@ const {
     COLLECTION,
     COLLECTION_ADMIN,
     READONLY_COLLECTION,
+    WRITEABLE_COLLECTION,
     READONLY_PROCESS_RESOURCE,
     PROCESS_RESOURCE,
     RUNNING_PROCESS_RESOURCE,
@@ -53,6 +54,7 @@ export const multiselectActionsFilters: TMultiselectActionsFilters = {
     [COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
     [COLLECTION_ADMIN]: [msCollectionActionSet, allActionNames(msCollectionActionSet)],
     [READONLY_COLLECTION]: [msCollectionActionSet, msReadOnlyCollectionActionFilter],
+    [WRITEABLE_COLLECTION]: [msCollectionActionSet, msWriteableCollectionActionFilter],
     [ResourceKind.COLLECTION]: [msCollectionActionSet, msCommonCollectionActionFilter],
 
     [PROCESS_RESOURCE]: [msProcessActionSet, msCommonProcessActionFilter],
