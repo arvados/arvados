@@ -227,6 +227,7 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
 
     const isFrozen = resource?.kind && resource.kind === ResourceKind.PROJECT ? resourceIsFrozen(resource, resources) : false;
     const isEditable = (user.isAdmin || (resource || ({} as EditableResource)).isEditable) && !readonly && !isFrozen;
+    const { canManage, canWrite } = resource || {};
 
     switch (kind) {
         case ResourceKind.PROJECT:
@@ -246,6 +247,8 @@ const resourceToMsResourceKind = (uuid: string, resources: ResourcesState, user:
                 }
                 return ContextMenuKind.PROJECT_ADMIN;
             }
+
+            if(canManage === false && canWrite === true) return ContextMenuKind.WRITEABLE_PROJECT;
 
             return isEditable
                 ? resource && resource.groupClass !== GroupClass.FILTER
