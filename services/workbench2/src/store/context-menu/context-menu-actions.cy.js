@@ -77,8 +77,8 @@ describe('context-menu-actions', () => {
 
                 [containerRequestUuid, false, true, true, false, ContextMenuKind.PROCESS_RESOURCE],
                 [containerRequestUuid, false, true, false, false, ContextMenuKind.PROCESS_RESOURCE],
-                [containerRequestUuid, false, false, true, false, ContextMenuKind.PROCESS_RESOURCE],
-                [containerRequestUuid, false, false, false, false, ContextMenuKind.PROCESS_RESOURCE],
+                [containerRequestUuid, false, false, true, false, ContextMenuKind.READONLY_PROCESS_RESOURCE],
+                [containerRequestUuid, false, false, false, false, ContextMenuKind.READONLY_PROCESS_RESOURCE],
                 [containerRequestUuid, false, false, false, true, ContextMenuKind.READONLY_PROCESS_RESOURCE],
                 [containerRequestUuid, true, true, true, false, ContextMenuKind.PROCESS_ADMIN],
                 [containerRequestUuid, true, true, false, false, ContextMenuKind.PROCESS_ADMIN],

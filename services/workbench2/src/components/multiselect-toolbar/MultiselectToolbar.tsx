@@ -119,6 +119,7 @@ export const MultiselectToolbar = connect(
             menuDirection.HORIZONTAL
         );
 
+        // eslint-disable-next-line
         const memoizedActions = useMemo(() => actions, [currentResourceKinds, currentPathIsTrash, selectedResourceUuid]);
 
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
