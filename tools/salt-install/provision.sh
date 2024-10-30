@@ -399,7 +399,7 @@ else
             echo "Salt already installed"
             break
         fi
-        salt_apt_key=/etc/apt/keyrings/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+        salt_apt_key=/etc/apt/keyrings/SALT-PROJECT-GPG-PUBKEY-2023.asc
         install -d -m 755 /etc/apt/keyrings /etc/apt/preferences.d
         curl -fsSL -o "$salt_apt_key" \
              "https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public"
