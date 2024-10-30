@@ -202,7 +202,9 @@ export const sortMenuItems = (menuKind: ContextMenuKind, menuItems: ContextMenuA
         else leftovers.push(item);
     });
 
-    return Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null).reduce((acc, val)=>{
+    const result =  Array.from(bucketMap.values()).concat(leftovers).filter((item) => item !== null).reduce((acc, val)=>{
         return acc.at(-1)?.name === "Divider" && val.name === "Divider" ? acc : acc.concat(val)
     }, []);
+
+    return result.at(-1)?.name === "Divider" ? result.slice(0, -1) : result;
 };
