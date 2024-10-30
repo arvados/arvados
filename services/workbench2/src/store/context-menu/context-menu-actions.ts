@@ -286,17 +286,21 @@ export const resourceUuidToContextMenuKind =
                 if (c === undefined) {
                     return;
                 }
+                const parent = getResource<GroupResource>(c.ownerUuid)(getState().resources);
+                const isWriteable = parent?.canWrite === true && parent.canManage === false;
                 const isOldVersion = c.uuid !== c.currentVersionUuid;
                 const isTrashed = c.isTrashed;
                 return isOldVersion
                     ? ContextMenuKind.OLD_VERSION_COLLECTION
                     : isTrashed && isEditable
-                    ? ContextMenuKind.TRASHED_COLLECTION
-                    : isAdminUser && isEditable
-                    ? ContextMenuKind.COLLECTION_ADMIN
-                    : isEditable
-                    ? ContextMenuKind.COLLECTION
-                    : ContextMenuKind.READONLY_COLLECTION;
+                        ? ContextMenuKind.TRASHED_COLLECTION
+                        : isAdminUser && isEditable
+                            ? ContextMenuKind.COLLECTION_ADMIN
+                            : isEditable
+                                ? isWriteable
+                                    ? ContextMenuKind.WRITEABLE_COLLECTION 
+                                    : ContextMenuKind.COLLECTION
+                                : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
                 return !isEditable
                     ? ContextMenuKind.READONLY_PROCESS_RESOURCE

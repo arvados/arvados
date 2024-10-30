@@ -50,6 +50,7 @@ import {
     collectionAdminActionSet,
     oldCollectionVersionActionSet,
     readOnlyCollectionActionSet,
+    writeableCollectionSet,
 } from "views-components/context-menu/action-sets/collection-action-set";
 import { loadWorkbench } from "store/workbench/workbench-actions";
 import { Routes } from "routes/routes";
@@ -151,6 +152,7 @@ addMenuActionSet(ContextMenuKind.READONLY_WORKFLOW, readOnlyWorkflowActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
 addMenuActionSet(ContextMenuKind.SEARCH_RESULTS, searchResultsActionSet);
 addMenuActionSet(ContextMenuKind.WRITEABLE_PROJECT, writeableProjectActionSet);
+addMenuActionSet(ContextMenuKind.WRITEABLE_COLLECTION, writeableCollectionSet);
 
 storeRedirects();
 

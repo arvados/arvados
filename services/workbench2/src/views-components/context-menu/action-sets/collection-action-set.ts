@@ -173,3 +173,11 @@ export const oldCollectionVersionActionSet: ContextMenuActionSet = [
         },
     ],
 ];
+
+export const writeableCollectionSet: ContextMenuActionSet = [
+    [
+        ...collectionActionSet.reduce((prev, next) => {
+            return prev.concat(next.filter(action => action.name !== ContextMenuActionNames.SHARE));
+        }, []),
+    ]
+];
