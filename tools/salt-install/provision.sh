@@ -415,7 +415,7 @@ Types: deb
 URIs: https://packages.broadcom.com/artifactory/saltproject-deb/
 Suites: stable
 Components: main
-Arch: amd64
+Architectures: amd64
 Signed-by: $salt_apt_key
 EOFSOURCES
         DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 update
