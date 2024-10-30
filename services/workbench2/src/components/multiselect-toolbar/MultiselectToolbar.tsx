@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
+import React, { useMemo} from "react";
 import { connect } from "react-redux";
 import { CustomStyleRulesCallback } from 'common/custom-theme';
 import { Toolbar, IconButton } from "@mui/material";
@@ -119,18 +119,23 @@ export const MultiselectToolbar = connect(
             menuDirection.HORIZONTAL
         );
 
+        const memoizedActions = useMemo(() => actions, [currentResourceKinds, currentPathIsTrash, selectedResourceUuid]);
+
         const targetResources = selectedResourceUuid ? {[selectedResourceUuid]: true} as TCheckedList : checkedList
 
         return (
             <React.Fragment>
                 <Toolbar
                     className={classNames(classes.root, injectedStyles)}
-                    style={{ width: `${(actions.length * 2.5) + 2}rem`, height: '2.5rem'}}
+                    style={{ width: `${(memoizedActions.length * 2.5) + 2}rem`, height: '2.5rem'}}
                     data-cy='multiselect-toolbar'
                     >
-                    {actions.length ? (
-                        <IntersectionObserverWrapper menuLength={actions.length}>
-                            {actions.map((action, i) =>{
+                    {memoizedActions.length ? (
+                        <IntersectionObserverWrapper 
+                            menuLength={memoizedActions.length}
+                            key={actions.map(a => a.name).join(',')}
+                            >
+                            {memoizedActions.map((action, i) =>{
                                 const { hasAlts, useAlts, name, altName, icon, altIcon } = action;
                             return action.name === ContextMenuActionNames.DIVIDER ? (
                                 action.component && (
