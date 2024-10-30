@@ -182,3 +182,19 @@ export const projectActionSet: ContextMenuActionSet = [
         copyUuidAction,
     ],
 ];
+
+export const writeableProjectActionSet = [
+    [
+        toggleFavoriteAction,
+        openInNewTabMenuAction,
+        copyToClipboardMenuAction,
+        viewDetailsAction,
+        advancedAction,
+        openWith3rdPartyClientAction,
+        editProjectAction,
+        moveToAction,
+        toggleTrashAction,
+        newProjectAction,
+        copyUuidAction,
+    ],
+];
