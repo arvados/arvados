@@ -399,17 +399,24 @@ else
             echo "Salt already installed"
             break
         fi
-        salt_apt_url="https://repo.saltproject.io/salt/py3/$_OS_ID/$_OS_VERSION_ID/$(dpkg --print-architecture)"
-        salt_apt_key=SALT-PROJECT-GPG-PUBKEY-2023.gpg
-        install -d -m 755 /etc/apt/keyrings
-        curl -fsSL -o "/etc/apt/keyrings/$salt_apt_key" "$salt_apt_url/$salt_apt_key"
-        chmod go+r "/etc/apt/keyrings/$salt_apt_key"
-        install -b -m 644 /dev/stdin "/etc/apt/sources.list.d/salt$SALT_VERSION.sources" <<EOFSOURCES
+        salt_apt_key=/etc/apt/keyrings/SALT-PROJECT-GPG-PUBKEY-2023.asc
+        install -d -m 755 /etc/apt/keyrings /etc/apt/preferences.d
+        curl -fsSL -o "$salt_apt_key" \
+             "https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public"
+        chmod go+r "$salt_apt_key"
+        install -b -m 644 /dev/stdin "/etc/apt/preferences.d/salt.pref" <<EOFPREFS
+Explanation: Salt $SALT_VERSION has been tested to successfully install Arvados.
+Package: salt-*
+Pin: version $SALT_VERSION.*
+Pin-Priority: 995
+EOFPREFS
+        install -b -m 644 /dev/stdin "/etc/apt/sources.list.d/salt.sources" <<EOFSOURCES
 Types: deb
-URIs: $salt_apt_url/$SALT_VERSION
-Suites: $_OS_VERSION_CODENAME
+URIs: https://packages.broadcom.com/artifactory/saltproject-deb/
+Suites: stable
 Components: main
-Signed-by: /etc/apt/keyrings/$salt_apt_key
+Architectures: amd64
+Signed-by: $salt_apt_key
 EOFSOURCES
         DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 update
         DEBIAN_FRONTEND=noninteractive apt-get install -y salt-minion
