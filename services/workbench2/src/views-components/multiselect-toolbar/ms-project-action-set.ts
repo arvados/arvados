@@ -38,6 +38,7 @@ const {
     MOVE_TO,
     MOVE_TO_TRASH,
     FREEZE_PROJECT,
+    FREEZE_MANAGEABLE_PROJECT,
     NEW_PROJECT,
 } = ContextMenuActionNames;
 
@@ -127,6 +128,25 @@ const msFreezeProjectAction: MultiSelectMenuAction = {
     },
 };
 
+const msFreezeManageableProjectAction: MultiSelectMenuAction = {
+    name: FREEZE_MANAGEABLE_PROJECT,
+    icon: FreezeIcon,
+    hasAlts: true,
+    altName: 'Unfreeze Project',
+    altIcon: UnfreezeIcon,
+    isForMulti: false,
+    useAlts: (uuid, iconProps) => {
+        return uuid ? !!(getResource(uuid)(iconProps.resources) as any).frozenByUuid : false;
+    },
+    execute: (dispatch, resources) => {
+        if ((resources[0] as any).isFrozen) {
+            dispatch<any>(unfreezeProject(resources[0].uuid));
+        } else {
+            dispatch<any>(freezeProject(resources[0].uuid));
+        }
+    },
+};
+
 const msNewProjectAction: MultiSelectMenuAction = {
     name: NEW_PROJECT,
     icon: NewProjectIcon,
@@ -159,6 +179,7 @@ export const msProjectActionSet: MultiSelectMenuActionSet = [
         msCopyToClipboardMenuAction,
         msShareAction,
         msCopyUuid,
+        msFreezeManageableProjectAction,
     ],
 ];
 
@@ -183,4 +204,4 @@ export const msAdminFrozenProjectActionFilter = new Set<string>([ADD_TO_FAVORITE
 export const msWriteableProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS,MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO, NEW_PROJECT])
 export const msFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO])
 export const msAdminFilterGroupActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, MOVE_TO_TRASH, EDIT_PROJECT, MOVE_TO, ADD_TO_PUBLIC_FAVORITES])
-export const msManageableProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_PROJECT])
+export const msManageableProjectActionFilter = new Set<string>([ADD_TO_FAVORITES, API_DETAILS, COPY_LINK_TO_CLIPBOARD, COPY_UUID, OPEN_IN_NEW_TAB, OPEN_WITH_3RD_PARTY_CLIENT, VIEW_DETAILS, SHARE, FREEZE_MANAGEABLE_PROJECT])

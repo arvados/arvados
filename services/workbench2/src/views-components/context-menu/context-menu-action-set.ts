@@ -33,6 +33,7 @@ export enum ContextMenuActionNames {
     EDIT_PROCESS = 'Edit process',
     EDIT_PROJECT = 'Edit project',
     FREEZE_PROJECT = 'Freeze project',
+    FREEZE_MANAGEABLE_PROJECT = 'Freeze project ',
     HOME_PROJECT = 'Home project',
     LOGIN_AS_USER = 'Login as user',
     MAKE_A_COPY = 'Make a copy',
